@@ -439,14 +439,17 @@ export class Gateway extends EventEmitter {
         }
       }
       const headers = getStorageUploadSecurityHeaders(pathname);
-      for (const [key, value] of Object.entries(headers)) {
-        res.setHeader(key, value);
-      }
       req.url = req.url.substring(APP_PUBLIC_PATH.length + 'storage'.length);
       await compress(req, res);
       return handler(req, res, {
         public: resolveStorageRoot(),
         directoryListing: false,
+        headers: [
+          {
+            source: '**/*',
+            headers: Object.entries(headers).map(([key, value]) => ({ key, value })),
+          },
+        ],
       });
     }
 

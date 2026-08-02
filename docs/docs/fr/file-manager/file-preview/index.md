@@ -19,17 +19,8 @@ NocoBase fournit actuellement les plugins d'aperçu de fichiers suivants :
 
 ## Aperçu PDF avec stockage externe
 
-L'aperçu PDF utilise PDF.js pour afficher les fichiers dans le navigateur. Le navigateur doit d'abord lire le contenu du fichier PDF, puis le transmettre à PDF.js pour le rendu. Par conséquent, lorsque les fichiers sont stockés dans un stockage externe comme OSS, S3, COS ou un CDN, et que le domaine d'accès au fichier est différent du domaine du site NocoBase, le stockage externe doit autoriser le site NocoBase à lire les fichiers entre origines.
+NocoBase prévisualise les PDF au moyen d'un iframe du navigateur. Certains navigateurs ou lecteurs PDF peuvent prendre en charge les scripts, les formulaires ou d'autres contenus interactifs dans les fichiers PDF. Si le fichier prévisualisé provient d'une source non fiable, il faut tenir compte de la limite de sécurité de l'exécution de scripts.
 
-Si CORS n'est pas configuré, le téléchargement des PDF peut toujours fonctionner normalement, mais l'aperçu peut échouer avec une erreur de chargement du fichier.
+Nous recommandons d'isoler le domaine d'accès aux fichiers des domaines du site NocoBase et de l'API. Par exemple, servez les fichiers OSS, S3, COS ou CDN depuis un domaine dédié, au lieu de partager la même origine que le frontend ou l'API NocoBase.
 
-La configuration CORS du stockage externe ou du CDN doit inclure :
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-`Access-Control-Allow-Origin` doit être défini sur le domaine réel utilisé pour accéder à NocoBase. Évitez d'utiliser durablement `*` pour des fichiers non publics, car cela élargit la liste des sites pouvant lire les fichiers.
+Si le domaine des fichiers est différent du domaine de l'API, et que l'API n'active pas CORS pour le domaine des fichiers, les scripts exécutés dans l'environnement d'aperçu PDF sont généralement limités par la politique de même origine du navigateur. Ils ne peuvent pas lire directement la page NocoBase, le stockage du navigateur ou les réponses de l'API.

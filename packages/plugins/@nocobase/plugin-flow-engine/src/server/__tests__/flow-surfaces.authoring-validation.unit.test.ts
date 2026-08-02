@@ -1043,6 +1043,159 @@ describe('flowSurfaces authoring validation unit', () => {
     expectRelationDataScopeErrors(configureErrors, '$.changes.dataScope.items[0].path');
   });
 
+  it('should reject UI-incompatible date comparison operators in public dataScope', async () => {
+    const dataScope = {
+      logic: '$and',
+      items: [
+        { path: 'lastFollowedAt', operator: '$eq', value: '2026-05-27T00:00:00.000Z' },
+        { path: 'startAt', operator: '$gte', value: '2026-05-28T00:00:00.000Z' },
+        { path: 'lastFollowedAt', operator: '$exists' },
+        { path: 'nickname', operator: '$eq', value: '2026-05-27T00:00:00.000Z' },
+      ],
+    };
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithDateDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope,
+                },
+                fields: ['nickname', 'lastFollowedAt', 'startAt'],
+              },
+            ],
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'employee-table-target' },
+        changes: {
+          dataScope,
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'table',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    const expectDateOperatorErrors = (errors: any[], firstPath: string, secondPath: string, thirdPath: string) => {
+      expect(errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: firstPath,
+            ruleId: 'dataScope-date-operator-ui-incompatible',
+            details: expect.objectContaining({
+              fieldPath: 'lastFollowedAt',
+              invalidOperator: '$eq',
+              suggestedOperator: '$dateOn',
+              suggestedValue: '2026-05-27',
+            }),
+          }),
+          expect.objectContaining({
+            path: secondPath,
+            ruleId: 'dataScope-date-operator-ui-incompatible',
+            details: expect.objectContaining({
+              fieldPath: 'startAt',
+              invalidOperator: '$gte',
+              suggestedOperator: '$dateNotBefore',
+              suggestedValue: '2026-05-28',
+            }),
+          }),
+          expect.objectContaining({
+            path: thirdPath,
+            ruleId: 'dataScope-date-operator-ui-incompatible',
+            details: expect.objectContaining({
+              fieldPath: 'lastFollowedAt',
+              invalidOperator: '$exists',
+            }),
+          }),
+        ]),
+      );
+      expect(errors.some((error: any) => error.details?.fieldPath === 'nickname')).toBe(false);
+    };
+
+    expectDateOperatorErrors(
+      applyBlueprintErrors,
+      '$.tabs[0].blocks[0].settings.dataScope.items[0].operator',
+      '$.tabs[0].blocks[0].settings.dataScope.items[1].operator',
+      '$.tabs[0].blocks[0].settings.dataScope.items[2].operator',
+    );
+    expectDateOperatorErrors(
+      configureErrors,
+      '$.changes.dataScope.items[0].operator',
+      '$.changes.dataScope.items[1].operator',
+      '$.changes.dataScope.items[2].operator',
+    );
+  });
+
+  it('should allow UI-compatible date operators in public dataScope', async () => {
+    const dataScope = {
+      logic: '$and',
+      items: [
+        { path: 'lastFollowedAt', operator: '$dateOn', value: '2026-05-27' },
+        { path: 'startAt', operator: '$dateBetween', value: ['2026-05-01', '2026-05-31'] },
+        { path: 'lastFollowedAt', operator: '$notEmpty' },
+      ],
+    };
+
+    const applyBlueprintErrors = await collectFlowSurfaceAuthoringErrors(
+      'applyBlueprint',
+      {
+        mode: 'create',
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'employeeTableWithValidDateDataScope',
+                type: 'table',
+                collection: 'employees',
+                settings: {
+                  dataScope,
+                },
+                fields: ['nickname', 'lastFollowedAt', 'startAt'],
+              },
+            ],
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+    const configureErrors = await collectFlowSurfaceAuthoringErrors(
+      'configure',
+      {
+        target: { uid: 'employee-table-target' },
+        changes: {
+          dataScope,
+        },
+      },
+      createDefaultFilterValidationContext({
+        hostBlockType: 'table',
+        hostCollectionName: 'employees',
+        hostDataSourceKey: 'main',
+      }),
+    );
+
+    expect(applyBlueprintErrors.map((error: any) => error.ruleId)).not.toContain(
+      'dataScope-date-operator-ui-incompatible',
+    );
+    expect(configureErrors.map((error: any) => error.ruleId)).not.toContain('dataScope-date-operator-ui-incompatible');
+  });
+
   it('should reject DateTime comparison template arithmetic across authoring condition surfaces', async () => {
     const invalidTemplate = '{{$now - 14 * 24 * 60 * 60 * 1000}}';
     const errors = await collectFlowSurfaceAuthoringErrors(
@@ -1499,6 +1652,69 @@ describe('flowSurfaces authoring validation unit', () => {
             invalidValue: ['{{ $vars.start }}', '2026-01-02', 'junk'],
             requiredBlockType: 'chart',
           }),
+        }),
+      ]),
+    );
+  });
+
+  it('should reject malformed linkageRules on configure and action authoring payloads', async () => {
+    const configureErrors = await collectFlowSurfaceAuthoringErrors('configure', {
+      changes: {
+        linkageRules: {},
+      },
+    });
+    const composeErrors = await collectFlowSurfaceAuthoringErrors(
+      'compose',
+      {
+        blocks: [
+          {
+            type: 'table',
+            collection: 'employees',
+            fields: ['nickname', 'status', 'email', 'manager'],
+            recordActions: [
+              {
+                type: 'updateRecord',
+                settings: {
+                  linkageRules: [
+                    {
+                      key: 'badThen',
+                      then: {},
+                    },
+                    {
+                      key: 'badCondition',
+                      condition: {
+                        logic: '$and',
+                        items: [{ path: 'nickname', operator: 'eq', value: 'Alice' }],
+                      },
+                      actions: [],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      createDefaultFilterValidationContext(),
+    );
+
+    expect(configureErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.changes.linkageRules',
+          ruleId: 'linkageRules-invalid-shape',
+        }),
+      ]),
+    );
+    expect(composeErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: '$.blocks[0].recordActions[0].settings.linkageRules[0].then',
+          ruleId: 'linkageRules-actions-invalid-shape',
+        }),
+        expect.objectContaining({
+          path: '$.blocks[0].recordActions[0].settings.linkageRules[1].condition',
+          ruleId: 'linkageRules-condition-invalid-shape',
         }),
       ]),
     );

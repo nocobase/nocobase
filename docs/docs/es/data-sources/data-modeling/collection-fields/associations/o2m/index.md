@@ -1,42 +1,48 @@
+---
+title: "Uno a muchos"
+description: "Campo de relación uno a muchos (O2M): una entidad se relaciona con varias entidades secundarias, como autor y artículos."
+keywords: "uno a muchos,O2M,HasMany,relación,NocoBase"
+---
+
 # Uno a muchos
 
-La relación entre una clase y sus estudiantes es un ejemplo de relación uno a muchos: una clase puede tener varios estudiantes, pero cada estudiante pertenece a una sola clase.
+La relación entre una clase y sus estudiantes es la siguiente: una clase puede tener varios estudiantes, pero cada estudiante solo puede pertenecer a una clase. En este caso, entre la clase y los estudiantes existe una relación uno a muchos.
 
-Diagrama ER:
+La relación ER es la siguiente
 
-![alt text](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
+![texto alternativo](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
 
-Configuración del campo:
+Configuración del campo
 
-![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
+![texto alternativo](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
 ## Descripción de los parámetros
 
-### Colección de origen
+### Source collection
 
-La colección de origen es la colección donde reside el campo actual.
+Tabla de origen, es decir, la tabla en la que se encuentra el campo actual.
 
-### Colección de destino
+### Target collection
 
-La colección de destino es la colección con la que se asociará.
+Tabla de destino, es decir, la tabla con la que se establece la relación.
 
-### Clave de origen
+### Source key
 
-Es el campo en la colección de origen al que hace referencia la clave foránea. Debe ser único.
+Campo al que hace referencia la restricción de clave externa; debe ser único.
 
-### Clave foránea
+### Foreign key
 
-Es el campo en la colección de destino que se utiliza para establecer la asociación entre las dos colecciones.
+Campo de la tabla de destino utilizado para establecer la relación entre las dos tablas.
 
-### Clave de destino
+### Target key
 
-Es el campo en la colección de destino que se usa para visualizar cada registro de fila en el bloque de relación, generalmente un campo único.
+Campo de la tabla de destino utilizado para mostrar los registros de cada fila del bloque de relaciones; normalmente es un campo con valores únicos.
 
 ### ON DELETE
 
-ON DELETE se refiere a las reglas que se aplican a las referencias de clave foránea en las colecciones secundarias relacionadas cuando se eliminan registros en la colección principal. Es una opción que se utiliza al definir una restricción de clave foránea. Las opciones comunes de ON DELETE incluyen:
+ON DELETE se refiere a la regla de operación aplicada a las referencias de clave externa de la tabla secundaria cuando se elimina un registro de la tabla principal. Es una opción que se utiliza al definir restricciones de clave externa. Las opciones comunes de ON DELETE incluyen:
 
-- **CASCADE**: Cuando se elimina un registro en la colección principal, todos los registros relacionados en la colección secundaria se eliminan automáticamente.
-- **SET NULL**: Cuando se elimina un registro en la colección principal, los valores de clave foránea en los registros de la colección secundaria relacionados se establecen en NULL.
-- **RESTRICT**: Es la opción predeterminada; evita la eliminación de un registro de la colección principal si existen registros relacionados en la colección secundaria.
-- **NO ACTION**: Similar a RESTRICT, evita la eliminación de un registro de la colección principal si existen registros relacionados en la colección secundaria.
+- CASCADE: al eliminar un registro de la tabla principal, se eliminan automáticamente todos los registros relacionados de la tabla secundaria.
+- SET NULL: al eliminar un registro de la tabla principal, el valor de la clave externa relacionada en la tabla secundaria se establece en NULL.
+- RESTRICT: opción predeterminada; cuando se intenta eliminar un registro de la tabla principal, se rechaza la eliminación si existen registros relacionados en la tabla secundaria.
+- NO ACTION: similar a RESTRICT; si existen registros relacionados en la tabla secundaria, se rechaza la eliminación del registro de la tabla principal.

@@ -19,17 +19,8 @@ keywords: "文件预览,Preview,缩略图,Office 预览,PDF 预览,图片预览,
 
 ## 外部存储的 PDF 预览
 
-PDF 文件预览使用 PDF.js 在浏览器中渲染。浏览器需要先读取 PDF 文件内容，再交给 PDF.js 渲染，因此当文件保存在 OSS、S3、COS、CDN 等外部存储，且文件访问域名与 NocoBase 站点域名不一致时，外部存储需要允许 NocoBase 站点跨域读取文件。
+NocoBase 使用浏览器 iframe 预览 PDF。部分浏览器或 PDF 阅读器可能支持 PDF 内的脚本、表单等交互内容。如果预览的是不可信来源的文件，需要关注脚本执行的安全边界。
 
-如果未配置 CORS，PDF 文件下载仍可正常使用，但预览可能会提示文件加载失败。
+推荐将文件访问域名与 NocoBase 站点和 API 域名隔离。比如将 OSS、S3、COS、CDN 文件放在独立域名下，不和 NocoBase 前端或 API 使用同一个 origin。
 
-外部存储或 CDN 的 CORS 配置建议包含：
-
-```http
-Access-Control-Allow-Origin: https://your-nocobase-domain
-Access-Control-Allow-Methods: GET, HEAD
-Access-Control-Allow-Headers: *
-Access-Control-Expose-Headers: Content-Length, Content-Range, Accept-Ranges, Content-Disposition, Content-Type
-```
-
-其中 `Access-Control-Allow-Origin` 应配置为实际访问 NocoBase 的站点域名。不建议对非公开文件长期使用 `*`，以免扩大文件读取范围。
+如果文件域名与 API 域名不同，且 API 没有向文件域名开放 CORS，那么即使 PDF 预览环境中存在脚本执行，脚本通常也会受浏览器同源策略限制，无法直接读取 NocoBase 页面内容、浏览器存储或 API 响应。

@@ -1,89 +1,92 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
+title: "Criptografia de campos"
+description: "Armazene dados comerciais privados (números de celular, e-mails, números de cartão etc.) de forma criptografada, salvando-os no banco de dados como texto cifrado para proteger informações sensíveis."
+keywords: "Criptografia de campos,Encryption,dados sensíveis,armazenamento de texto cifrado,NocoBase"
 ---
-
 # Criptografia
 
 ## Introdução
 
-Dados de negócios confidenciais, como número de celular de clientes, endereços de e-mail e números de cartão, podem ser criptografados. Após a criptografia, eles são armazenados no banco de dados como texto cifrado.
+Alguns dados comerciais privados, como números de celular de clientes, endereços de e-mail e números de cartão, podem ser criptografados. Após a criptografia, eles são armazenados no banco de dados na forma de texto cifrado.
 
 ![20251104192513](https://static-docs.nocobase.com/20251104192513.png)
 
-## Como funciona a Criptografia
+## Método de criptografia
 
 :::warning
-O plugin gera automaticamente uma `chave de aplicação`, que é armazenada no diretório `/storage/apps/main/encryption-field-keys`.
+O plugin gera automaticamente um`应用密钥`, e essa chave é armazenada no diretório `/storage/apps/main/encryption-field-keys`.
 
-O arquivo da `chave de aplicação` é nomeado com o ID da chave e tem a extensão `.key`. Por favor, não altere o nome do arquivo.
+O nome do arquivo `应用密钥` é o ID da chave, e a extensão é `.key`. Não altere o nome do arquivo sem necessidade.
 
-Mantenha o arquivo da `chave de aplicação` em segurança. Se você perder o arquivo da `chave de aplicação`, os dados criptografados não poderão ser descriptografados.
+Guarde o arquivo `应用密钥` com segurança. Se o arquivo `应用密钥` for perdido, os dados criptografados não poderão ser descriptografados.
 
-Se o plugin for ativado por uma sub-aplicação, a chave será salva por padrão no diretório `/storage/apps/${sub-application name}/encryption-field-keys`.
+Se o plugin for ativado por uma subaplicação, o diretório padrão de armazenamento da chave será `/storage/apps/${子应用name}/encryption-field-keys`
 :::
 
 ### Como funciona
 
-Utiliza Criptografia de Envelope
+É utilizado o método de criptografia envelope.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
 
 ### Processo de criação da chave
-1. Na primeira vez que um campo criptografado é criado, o sistema gera automaticamente uma `chave de aplicação` de 32 bits e a armazena no diretório de armazenamento padrão, codificada em Base64.
-2. Cada vez que um novo campo criptografado é criado, uma `chave de campo` aleatória de 32 bits é gerada para ele. Em seguida, essa chave é criptografada usando a `chave de aplicação` e um `vetor de criptografia de campo` de 16 bits gerado aleatoriamente (algoritmo de criptografia `AES`), sendo então armazenada no campo `options` da tabela `fields`.
+1. Na primeira vez que um campo criptografado é criado, o sistema gera automaticamente um `应用密钥` de 32 bytes e o salva no diretório de armazenamento padrão usando codificação base64.
+2. Cada vez que um novo campo criptografado é criado, é gerado um `字段密钥` aleatório de 32 bytes para esse campo. Em seguida, ele é criptografado usando `应用密钥` e um `字段加密向量` aleatório de 16 bytes (algoritmo de criptografia `AES`) e salvo no campo `options` da tabela `fields`.
 
-### Processo de criptografia de campo
-1. Cada vez que você escreve dados em um campo criptografado, você primeiro obtém a `chave de campo` criptografada e o `vetor de criptografia de campo` do campo `options` da tabela `fields`.
-2. A `chave de campo` criptografada é descriptografada usando a `chave de aplicação` e o `vetor de criptografia de campo`. Em seguida, os dados são criptografados usando a `chave de campo` e um `vetor de criptografia de dados` de 16 bits gerado aleatoriamente (algoritmo de criptografia `AES`).
-3. Os dados são assinados usando a `chave de campo` descriptografada (algoritmo de resumo `HMAC-SHA256`) e convertidos para uma string codificada em Base64 (a `assinatura de dados` resultante é usada posteriormente para recuperação de dados).
-4. O `vetor de criptografia de dados` de 16 bits e o `texto cifrado` criptografado são concatenados em binário e convertidos para uma string codificada em Base64.
-5. A string codificada em Base64 da `assinatura de dados` e a string codificada em Base64 do `texto cifrado` concatenado são unidas, separadas por um `.`.
-6. A string final concatenada é salva no banco de dados.
+### Processo de criptografia de campos
+1. Cada vez que dados são gravados em um campo criptografado, o `字段密钥` criptografado e o `字段加密向量` são obtidos primeiro do campo options da tabela fields.
+2. Use `应用密钥` e `字段加密向量` para descriptografar o `字段密钥` criptografado. Em seguida, use `字段密钥` e um `数据加密向量` aleatório de 16 bytes para criptografar os dados (algoritmo de criptografia `AES`).
+3. Assine os dados usando o `字段密钥` descriptografado (algoritmo de resumo `HMAC-SHA256`) e converta o resultado em uma string usando codificação base64 (o `数据签名` gerado será usado posteriormente para a busca de dados).
+4. Concatene em formato binário o `数据加密向量` de 16 bytes e o `数据密文` criptografado, e converta o resultado em uma string usando codificação base64.
+5. Concatene a string codificada em base64 de `数据签名` e a string codificada em base64 de `数据密文`, usando '.' como separador.
+6. Salve a string concatenada final no banco de dados.
 
-## Variáveis de Ambiente
 
-Se você quiser especificar uma `chave de aplicação` personalizada, defina a variável de ambiente `ENCRYPTION_FIELD_KEY_PATH`. O plugin carregará o arquivo nesse caminho como a `chave de aplicação`.
+## Variáveis de ambiente
 
-**Requisitos para o arquivo da chave de aplicação:**
+Para especificar `应用密钥`, use a variável de ambiente `ENCRYPTION_FIELD_KEY_PATH`. O plugin carregará o arquivo nesse caminho como `应用密钥`.
+
+`应用密钥`Requisitos de formato do arquivo:
 1. A extensão do arquivo deve ser `.key`.
-2. O nome do arquivo será usado como o ID da chave; é recomendado usar um UUID para garantir a exclusividade.
-3. O conteúdo do arquivo deve ser 32 bytes de dados binários codificados em Base64.
+2. O nome do arquivo será usado como ID da chave; recomenda-se usar um UUID para garantir a exclusividade.
+3. O conteúdo do arquivo deve ser um dado binário de 32 bytes codificado em base64.
 
 ```bash
 ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ```
 
-## Configuração de campo
+## Configuração de campos
 
 ![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
 
-## Impacto na filtragem após a criptografia
+## Impacto da criptografia na filtragem
 
-Campos criptografados suportam apenas as seguintes operações: igual a, diferente de, existe e não existe.
+Os campos criptografados oferecem suporte apenas a: igual, diferente, existe e não existe.
 
 ![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
 
-Fluxo de filtragem de dados:
-1. Obtenha a `chave de campo` do campo criptografado e descriptografe-a usando a `chave de aplicação`.
-2. Use a `chave de campo` para assinar o texto de pesquisa inserido pelo usuário (algoritmo de resumo `HMAC-SHA256`).
-3. Concatene o texto de pesquisa assinado com um separador `.` e realize uma pesquisa de correspondência de prefixo no campo criptografado no banco de dados.
+Método de filtragem de dados:
+1. Obtenha o `字段密钥` do campo criptografado e use `应用密钥` para descriptografar `字段密钥`.
+2. Use `字段密钥` para assinar o texto de busca inserido pelo usuário (algoritmo de resumo `HMAC-SHA256`).
+3. Concatene o texto de busca assinado com o separador `.` e realize uma busca por correspondência de prefixo no campo criptografado do banco de dados.
 
 ## Rotação de chaves
 
 :::warning
-Antes de usar o comando de rotação de chaves `nocobase key-rotation`, certifique-se de que a aplicação já carregou este plugin.
+Antes de usar o comando de rotação de chaves `nocobase key-rotation`, confirme se a aplicação já carregou este plugin.
 :::
 
-Após migrar uma aplicação para um novo ambiente, se você não quiser continuar usando a mesma chave do ambiente antigo, pode usar o comando `nocobase key-rotation` para substituir a `chave de aplicação`.
+Depois de migrar a aplicação para um novo ambiente, se você não quiser continuar usando a mesma chave do ambiente antigo, poderá usar o comando `nocobase key-rotation` para substituir `应用密钥`.
 
-A execução do comando de rotação de chaves requer que você especifique a `chave de aplicação` do ambiente antigo. Após a execução, uma nova `chave de aplicação` será gerada e substituirá a chave antiga. A nova `chave de aplicação` será salva (codificada em Base64) no diretório de armazenamento padrão.
+Para executar o comando de rotação de chaves, é necessário especificar a chave da aplicação do ambiente antigo. Após a execução, uma nova chave da aplicação será gerada para substituir a chave antiga. A nova chave da aplicação será salva no diretório de armazenamento padrão usando codificação base64.
 
 ```bash
-# --key-path especifica o arquivo da chave de aplicação do ambiente antigo que corresponde aos dados criptografados no banco de dados
+# --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
  yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
 
-Se você for substituir a `chave de aplicação` de uma sub-aplicação, precisará adicionar o parâmetro `--app-name` para especificar o `name` da sub-aplicação.
+Se estiver substituindo a subaplicação `应用密钥`, adicione o parâmetro `--app-name` para especificar `name`.
 
 ```bash
  yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key

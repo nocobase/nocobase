@@ -29,10 +29,12 @@ import {
 import {
   DEFAULT_DOCKER_REGISTRY,
   DEFAULT_DOCKER_REGISTRY_ZH_CN,
+  resolveOfficialDockerRegistry,
   resolveDockerImageRef,
 } from '../../lib/docker-image.ts';
 import { getEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { getCliConfigValue } from '../../lib/cli-config.js';
 import {
   buildBeforeDependencyInstallHookContext,
   runBeforeDependencyInstallHook,
@@ -467,8 +469,8 @@ export default class SourceDownload extends Command {
           label: downloadText('prompts.dockerPlatform.autoLabel'),
           hint: downloadText('prompts.dockerPlatform.autoHint'),
         },
-        { value: 'linux/amd64', label: 'linux/amd64' },
-        { value: 'linux/arm64', label: 'linux/arm64' },
+        { value: 'linux/amd64', label: 'amd64' },
+        { value: 'linux/arm64', label: 'arm64' },
       ],
       initialValue: DEFAULT_DOCKER_PLATFORM,
       yesInitialValue: DEFAULT_DOCKER_PLATFORM,
@@ -578,9 +580,9 @@ export default class SourceDownload extends Command {
     return outputAbs;
   }
 
-  private dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): string {
+  private async dockerTarPath(flags: DownloadResolvedFlags, outputAbs: string): Promise<string> {
     const imageRef = resolveDockerImageRef(flags['docker-registry'], flags.version, {
-      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultRegistry: await this.resolveConfiguredDockerRegistryDefault(),
       defaultVersion: 'latest',
     });
     const safeBase = imageRef.replace(/[\\/:]/g, '-');
@@ -591,9 +593,16 @@ export default class SourceDownload extends Command {
    * Defaults for prompts only. Keys present in **`preset`** are omitted so `runPromptCatalog` uses
    * **`values`** (preset) alone for those steps — no duplicate prefill for skipped prompts.
    */
-  private buildInitialValuesFromParsed(flags: DownloadParsedFlags, preset: PromptInitialValues): PromptInitialValues {
+  private async resolveConfiguredDockerRegistryDefault(): Promise<string> {
+    return resolveOfficialDockerRegistry(await getCliConfigValue('nb-image-registry'));
+  }
+
+  private buildInitialValuesFromParsed(
+    flags: DownloadParsedFlags,
+    preset: PromptInitialValues,
+    defaultDockerRegistry: string,
+  ): PromptInitialValues {
     const initialValues: PromptInitialValues = {};
-    const localeDefaultDockerRegistry = defaultDockerRegistryForLang(flags.locale ?? process.env.NB_LOCALE);
 
     const source = flags.source?.trim();
     if (source) {
@@ -622,7 +631,7 @@ export default class SourceDownload extends Command {
     if (flags['docker-registry'] !== undefined) {
       initialValues.dockerRegistry = String(flags['docker-registry'] ?? '').trim();
     } else {
-      initialValues.dockerRegistry = localeDefaultDockerRegistry;
+      initialValues.dockerRegistry = defaultDockerRegistry;
     }
 
     initialValues.dockerPlatform = normalizeDockerPlatform(flags['docker-platform']);
@@ -731,6 +740,7 @@ export default class SourceDownload extends Command {
   private mapCatalogResultsToResolved(
     results: Record<string, PromptValue>,
     flags: DownloadParsedFlags,
+    defaultDockerRegistry: string,
   ): DownloadResolvedFlags {
     const source = String(results.source) as DownloadSource;
     const version = resolveVersionFromResults(results, flags.version) || 'latest';
@@ -754,7 +764,7 @@ export default class SourceDownload extends Command {
       source === 'docker'
         ? results.dockerRegistry !== undefined
           ? String(results.dockerRegistry).trim() || undefined
-          : flags['docker-registry']?.trim() || defaultDockerRegistryForLang(flags.locale ?? process.env.NB_LOCALE)
+          : flags['docker-registry']?.trim() || defaultDockerRegistry
         : undefined;
 
     const dockerPlatform =
@@ -813,7 +823,8 @@ export default class SourceDownload extends Command {
     }
 
     const presetValues = this.buildPresetValuesFromFlags(flags);
-    const initialValues = this.buildInitialValuesFromParsed(flags, presetValues);
+    const defaultDockerRegistry = await this.resolveConfiguredDockerRegistryDefault();
+    const initialValues = this.buildInitialValuesFromParsed(flags, presetValues, defaultDockerRegistry);
 
     const results = await runPromptCatalog(SourceDownload.prompts, {
       initialValues,
@@ -844,7 +855,7 @@ export default class SourceDownload extends Command {
       this.error('--docker-save is only available when --source docker is selected.');
     }
 
-    return this.mapCatalogResultsToResolved(results, flags);
+    return this.mapCatalogResultsToResolved(results, flags, defaultDockerRegistry);
   }
 
   private npmRegistryUrl(flags: DownloadResolvedFlags): string | undefined {
@@ -1005,7 +1016,7 @@ export default class SourceDownload extends Command {
 
   async downloadFromDocker(flags: DownloadResolvedFlags): Promise<void> {
     const imageRef = resolveDockerImageRef(flags['docker-registry'], flags.version, {
-      defaultRegistry: defaultDockerRegistryForLang(process.env.NB_LOCALE),
+      defaultRegistry: await this.resolveConfiguredDockerRegistryDefault(),
       defaultVersion: 'latest',
     });
     const platform = dockerPlatformArg(flags['docker-platform']);
@@ -1034,7 +1045,7 @@ export default class SourceDownload extends Command {
       await fsp.rm(outAbs, { recursive: true, force: true });
     }
     await fsp.mkdir(outAbs, { recursive: true });
-    const tarPath = this.dockerTarPath(flags, outAbs);
+    const tarPath = await this.dockerTarPath(flags, outAbs);
     this.log(`Saving Docker image tarball to ${tarPath}`);
     await this.runExternalCommand('docker', ['save', '-o', tarPath, imageRef], {
       errorName: 'docker save',

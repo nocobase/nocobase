@@ -1,12 +1,12 @@
 ---
 title: "nb config list"
-description: "Справочник по команде nb config list: список явно заданных настроек CLI."
-keywords: "nb config list,NocoBase CLI,configuration"
+description: "Справочник по команде nb config list: список явно заданных параметров конфигурации CLI."
+keywords: "nb config list,NocoBase CLI,конфигурация"
 ---
 
 # nb config list
 
-Показывает явно заданные настройки CLI. Значения по умолчанию, которые никогда не задавались явно, не отображаются.
+Показывает явно заданные параметры конфигурации CLI. Значения по умолчанию, которые никогда не задавались явно, не отображаются.
 
 ## Использование
 
@@ -22,7 +22,7 @@ nb config list
 
 ## Примечания
 
-Если значения конфигурации не заданы, CLI выведет `No CLI config values are set.`.
+Если параметры конфигурации не заданы, CLI выведет `No CLI config values are set.`.
 
 ## Связанные команды
 

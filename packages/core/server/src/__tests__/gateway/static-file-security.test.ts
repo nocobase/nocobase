@@ -16,21 +16,32 @@ describe('static file security', () => {
     expect(hasActiveContentExtension('/storage/uploads/a.pdf')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.SVG')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.svgz?download=1')).toBe(true);
+    expect(hasActiveContentExtension('/storage/uploads/a.xml')).toBe(true);
+    expect(hasActiveContentExtension('/storage/uploads/a.xsl')).toBe(true);
     expect(hasActiveContentExtension('/storage/uploads/a.txt')).toBe(false);
   });
 
-  it('should force attachment for active content while preserving nosniff for all uploads', () => {
+  it('should sandbox uploads and force attachment for active content', () => {
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.xhtml')).toEqual({
       'Content-Disposition': 'attachment',
+      'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.pdf')).toEqual({
       'Content-Disposition': 'attachment',
+      'Content-Security-Policy': 'sandbox',
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    expect(getStorageUploadSecurityHeaders('/storage/uploads/a.xml')).toEqual({
+      'Content-Disposition': 'attachment',
+      'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
 
     expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt')).toEqual({
+      'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
   });

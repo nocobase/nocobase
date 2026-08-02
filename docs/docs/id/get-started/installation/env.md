@@ -359,15 +359,17 @@ Digunakan untuk mengonfigurasi mode kerja node yang berbeda saat melakukan servi
 
 ### SERVER_REQUEST_WHITELIST
 
-Whitelist target untuk request HTTP yang dikirim sisi server ke luar, untuk mencegah serangan SSRF (Server-Side Request Forgery). Dipisahkan dengan koma, mendukung IP eksak, range CIDR, domain eksak, dan subdomain wildcard (satu level).
+Whitelist target untuk request HTTP keluar yang dimulai oleh server NocoBase. Dipisahkan dengan koma, mendukung IP eksak, range CIDR, domain eksak, dan subdomain wildcard (satu level).
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Cakupan**: Node "HTTP Request" pada workflow, "Custom Request" pada tombol Action kustom. Path relatif (memanggil API NocoBase sendiri) tidak terpengaruh oleh batasan ini.
+**Cakupan**: Node "HTTP Request" pada workflow, "Custom Request" pada tombol Action kustom, layanan AI, dan request sisi server lainnya. Path relatif (memanggil API NocoBase sendiri) tidak terpengaruh oleh batasan ini.
 
-**Saat tidak dikonfigurasi**: Semua request `http`/`https` diizinkan (mempertahankan perilaku sebelumnya). **Setelah dikonfigurasi**: Hanya request yang cocok dengan whitelist yang diizinkan, request yang tidak cocok akan menghasilkan error.
+**Saat tidak dikonfigurasi**: Semua request keluar `http` / `https` tetap diizinkan untuk menjaga kompatibilitas. Namun, jika target adalah alamat loopback, private, link-local, metadata, atau domain yang resolve ke alamat tersebut, server akan menulis warning di log.
+
+**Setelah dikonfigurasi**: Request awal dan setiap tujuan redirect harus cocok dengan whitelist. Jika tidak cocok, NocoBase akan menghasilkan error sebelum mengirim request ke hop berikutnya. Versi mendatang dapat memperketat perilaku default secara bertahap. Jika deployment kamu perlu mengakses layanan internal, konfigurasikan whitelist eksplisit lebih awal.
 
 Format yang didukung:
 
@@ -375,8 +377,16 @@ Format yang didukung:
 | --- | --- | --- |
 | IPv4 eksak | `1.2.3.4` | Hanya cocok dengan IP tersebut |
 | IPv4 CIDR | `10.0.0.0/8` | Cocok dengan semua IP dalam network tersebut |
+| IPv6 eksak | `::1` | Hanya cocok dengan IP tersebut |
+| IPv6 CIDR | `fc00::/7` | Cocok dengan semua IP dalam network tersebut |
 | Domain eksak | `api.example.com` | Hanya cocok dengan domain tersebut |
 | Subdomain wildcard | `*.example.com` | Cocok dengan subdomain satu level, misalnya `foo.example.com`, tidak cocok dengan `example.com` atau `a.b.example.com` |
+
+:::warning Note
+
+Jika domain dikonfigurasi dalam whitelist, pemeriksaan whitelist menggunakan host pada URL request. Dengan kata lain, setelah `internal.example.com` dikonfigurasi, target tersebut dianggap diizinkan secara eksplisit meskipun domain resolve ke `127.0.0.1` atau alamat private.
+
+:::
 
 ## Environment Variable Eksperimental
 

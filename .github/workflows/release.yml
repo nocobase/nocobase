@@ -448,6 +448,26 @@ jobs:
     needs:
       - prepare-release
       - publish-packages
+    strategy:
+      fail-fast: false
+      matrix:
+        variant:
+          - name: default
+            dockerfile: ./docker/nocobase/Dockerfile
+            suffix: ''
+            install_nginx: '1'
+          - name: full
+            dockerfile: ./docker/nocobase/Dockerfile-full
+            suffix: '-full'
+            install_nginx: '1'
+          - name: no-nginx
+            dockerfile: ./docker/nocobase/Dockerfile
+            suffix: '-no-nginx'
+            install_nginx: '0'
+          - name: full-no-nginx
+            dockerfile: ./docker/nocobase/Dockerfile-full
+            suffix: '-full-no-nginx'
+            install_nginx: '0'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -457,62 +477,39 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Prepare all tags
+      - name: Prepare tags (${{ matrix.variant.name }})
         shell: bash
         run: |
           set -euo pipefail
           RELEASE_VERSION="${{ needs.prepare-release.outputs.release_version }}"
           MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
           DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
+          SUFFIX="${{ matrix.variant.suffix }}"
           ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
           MINOR_TAG="$MAJOR_MINOR_VERSION"
           if [[ "$DEFAULT_TAG" == "alpha" || "$DEFAULT_TAG" == "beta" ]]; then
             MINOR_TAG="$MAJOR_MINOR_VERSION-$DEFAULT_TAG"
           fi
 
+          RELEASE_TAG="${RELEASE_VERSION}${SUFFIX}"
+          MINOR_RELEASE_TAG="${MINOR_TAG}${SUFFIX}"
+          DEFAULT_RELEASE_TAG="${DEFAULT_TAG}${SUFFIX}"
+
           TAGS=(
-            "nocobase/nocobase:$RELEASE_VERSION"
-            "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION"
-            "nocobase/nocobase:$MINOR_TAG"
-            "$ALI_REG/nocobase/nocobase:$MINOR_TAG"
+            "nocobase/nocobase:$RELEASE_TAG"
+            "$ALI_REG/nocobase/nocobase:$RELEASE_TAG"
+            "nocobase/nocobase:$MINOR_RELEASE_TAG"
+            "$ALI_REG/nocobase/nocobase:$MINOR_RELEASE_TAG"
           )
 
-          # For v1 maintenance tags, do not push a floating default tag (e.g. `latest`).
+          # For v1 maintenance tags, do not push a floating default tag (for example `latest` or `latest-no-nginx`).
           if [[ "${{ needs.prepare-release.outputs.is_v1 }}" != 'true' ]]; then
-            TAGS+=("nocobase/nocobase:$DEFAULT_TAG")
-            TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG")
+            TAGS+=("nocobase/nocobase:$DEFAULT_RELEASE_TAG")
+            TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_RELEASE_TAG")
           fi
 
           ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
-          echo "ALL_TAGS=$ALL_TAGS" >> "$GITHUB_ENV"
-      - name: Prepare all full tags
-        shell: bash
-        run: |
-          set -euo pipefail
-          RELEASE_VERSION="${{ needs.prepare-release.outputs.release_version }}"
-          MAJOR_MINOR_VERSION="${{ needs.prepare-release.outputs.major_minor_version }}"
-          DEFAULT_TAG="${{ needs.prepare-release.outputs.default_tag }}"
-          ALI_REG="${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}"
-          MINOR_TAG="$MAJOR_MINOR_VERSION"
-          if [[ "$DEFAULT_TAG" == "alpha" || "$DEFAULT_TAG" == "beta" ]]; then
-            MINOR_TAG="$MAJOR_MINOR_VERSION-$DEFAULT_TAG"
-          fi
-
-          TAGS=(
-            "nocobase/nocobase:$RELEASE_VERSION-full"
-            "$ALI_REG/nocobase/nocobase:$RELEASE_VERSION-full"
-            "nocobase/nocobase:$MINOR_TAG-full"
-            "$ALI_REG/nocobase/nocobase:$MINOR_TAG-full"
-          )
-
-          # For v1 maintenance tags, do not push a floating default tag (e.g. `latest-full`).
-          if [[ "${{ needs.prepare-release.outputs.is_v1 }}" != 'true' ]]; then
-            TAGS+=("nocobase/nocobase:$DEFAULT_TAG-full")
-            TAGS+=("$ALI_REG/nocobase/nocobase:$DEFAULT_TAG-full")
-          fi
-
-          ALL_TAGS=$(IFS=, ; echo "${TAGS[*]}")
-          echo "ALL_FULL_TAGS=$ALL_TAGS" >> "$GITHUB_ENV"
+          echo "VARIANT_TAGS=$ALL_TAGS" >> "$GITHUB_ENV"
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -524,25 +521,17 @@ jobs:
           registry: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}
           username: ${{ secrets.ALI_DOCKER_USERNAME }}
           password: ${{ secrets.ALI_DOCKER_PASSWORD }}
-      - name: Build and push
+      - name: Build and push (${{ matrix.variant.name }})
         uses: docker/build-push-action@v3
         with:
           context: ./docker/nocobase
+          file: ${{ matrix.variant.dockerfile }}
           build-args: |
             CNA_VERSION=${{ needs.prepare-release.outputs.release_version }}
+            INSTALL_NGINX=${{ matrix.variant.install_nginx }}
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.ALL_TAGS }}
-      - name: Build and push (Full)
-        uses: docker/build-push-action@v3
-        with:
-          context: ./docker/nocobase
-          file: ./docker/nocobase/Dockerfile-full
-          build-args: |
-            CNA_VERSION=${{ needs.prepare-release.outputs.release_version }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ env.ALL_FULL_TAGS }}
+          tags: ${{ env.VARIANT_TAGS }}
 
   feishu-notify:
     runs-on: ubuntu-latest

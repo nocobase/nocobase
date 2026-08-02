@@ -148,7 +148,7 @@ export class PluginClientServer extends Plugin {
           const { id, username } = ctx.auth?.user ?? {};
           const user = id ? { id, username } : undefined;
 
-          const eventName = `${command}@${plugin}`;
+          const eventName = `${command.replaceAll(':', '.')}.${plugin}`;
           try {
             await ctx.app.eventQueue.publish(eventName, {
               plugin,

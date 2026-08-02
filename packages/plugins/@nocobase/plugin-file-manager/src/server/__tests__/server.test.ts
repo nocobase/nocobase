@@ -67,6 +67,58 @@ describe('file manager > server', () => {
         expect(model.toJSON()).toMatchObject(matcher);
       });
 
+      it('should hide attachments list even when role strategy allows file actions', async () => {
+        await app.destroy();
+        app = await getApp({ acl: true });
+        agent = app.agent();
+        db = app.db;
+
+        AttachmentRepo = db.getCollection('attachments').repository;
+        StorageRepo = db.getCollection('storages').repository;
+        defaultStorage = await StorageRepo.findOne();
+
+        app.acl.define({
+          role: 'attachment-manager',
+          strategy: {
+            actions: '*',
+          },
+        });
+        app.resourcer.use(
+          async (ctx, next) => {
+            ctx.state.currentRole = 'attachment-manager';
+            ctx.state.currentRoles = ['attachment-manager'];
+            await next();
+          },
+          {
+            tag: 'setAttachmentManagerRole',
+            after: 'auth',
+            before: 'acl',
+          },
+        );
+
+        const user = await db.getRepository('users').findOne();
+        const userAgent = await agent.login(user.id);
+        const attachment = await AttachmentRepo.create({
+          values: {
+            title: 'acl-test',
+            filename: 'acl-test.txt',
+            extname: '.txt',
+            path: '',
+            mimetype: 'text/plain',
+            storageId: defaultStorage.id,
+            createdById: user.id,
+          },
+        });
+
+        const getResponse = await userAgent.resource('attachments').get({
+          filterByTk: attachment.id,
+        });
+        expect(getResponse.statusCode).toBe(200);
+
+        const listResponse = await userAgent.resource('attachments').list();
+        expect(listResponse.statusCode).toBe(404);
+      });
+
       it('should be local2 storage', async () => {
         const storage = await StorageRepo.create({
           values: {

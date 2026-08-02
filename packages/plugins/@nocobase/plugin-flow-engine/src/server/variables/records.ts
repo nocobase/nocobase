@@ -77,9 +77,15 @@ export function mergeFieldsWithExtras(fields?: string[], extras: string[] = []):
   return uniqStrings([...fields, ...extras]);
 }
 
+function toJsonRecord(record: unknown): unknown {
+  if (!record || typeof record !== 'object') return record;
+  const toJSON = (record as { toJSON?: () => unknown }).toJSON;
+  return typeof toJSON === 'function' ? toJSON.call(record) : record;
+}
+
 function toJsonArray(rows: unknown): any[] {
   if (!Array.isArray(rows)) return [];
-  return rows.map((r: any) => (r?.toJSON ? r.toJSON() : r));
+  return rows.map(toJsonRecord);
 }
 
 /**
@@ -158,5 +164,5 @@ export async function fetchRecordOrRecordsJson(
   const rec = await repo.findOne(
     preferFullRecord ? { filterByTk: filterByTk as any } : { filterByTk: filterByTk as any, fields, appends },
   );
-  return rec ? rec.toJSON() : undefined;
+  return rec ? toJsonRecord(rec) : undefined;
 }

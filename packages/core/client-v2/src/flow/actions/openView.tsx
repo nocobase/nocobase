@@ -20,6 +20,7 @@ import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { PageModel, RootPageModel } from '../models';
 import _ from 'lodash';
+import { ROUTE_TRANSIENT_INPUT_ARGS_KEY } from '../routeTransientInputArgs';
 
 type DirtyAwareFlowModel = FlowModel & {
   getUserModifiedFields?: () => Set<string> | undefined;
@@ -29,6 +30,15 @@ type DirtyAwareFlowModel = FlowModel & {
 type BeforeCloseDirtyState = {
   hasDirtyForms: boolean;
   formModelUids: string[];
+};
+
+const pickRouteTransientInputArgs = (inputArgs: Record<string, unknown>) => {
+  return _.pickBy(
+    {
+      formData: inputArgs.formData,
+    },
+    (value) => typeof value !== 'undefined',
+  );
 };
 
 function collectDirtyFormModelUids(model?: FlowModel | null, ignoredDirtyFormModelUids: string[] = []): string[] {
@@ -363,7 +373,17 @@ export const openView = defineAction({
           tabUid: mergedTabUid,
           ...(effectiveRunJSOpenViewRouteState ? { openViewRouteState: effectiveRunJSOpenViewRouteState } : {}),
         };
-        ctx.view.navigation.navigateTo(nextView);
+        const transientInputArgs = pickRouteTransientInputArgs(inputArgs);
+        const navigationOptions = Object.keys(transientInputArgs).length
+          ? {
+              state: {
+                [ROUTE_TRANSIENT_INPUT_ARGS_KEY]: {
+                  [nextView.viewUid]: transientInputArgs,
+                },
+              },
+            }
+          : undefined;
+        ctx.view.navigation.navigateTo(nextView, navigationOptions);
         return;
       }
     }

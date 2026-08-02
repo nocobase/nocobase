@@ -66,6 +66,39 @@ describe('TableColumnModel sorter settings', () => {
     expect(setProps).toHaveBeenCalledWith('editable', false);
   });
 
+  it('checks record update scope and field permission before enabling quick edit', () => {
+    const can = vi.fn(() => false);
+    const model = {
+      props: { editable: true },
+      collectionField: { name: 'title' },
+      context: {
+        skipAclCheck: false,
+        acl: { can },
+        blockModel: {
+          collection: {
+            dataSourceKey: 'main',
+            name: 'posts',
+            getFilterByTK: () => 2,
+          },
+          resource: {
+            getResourceName: () => 'posts',
+            getMeta: () => ({ update: [1] }),
+          },
+        },
+      },
+    };
+
+    expect(TableColumnModel.prototype.canQuickEdit.call(model, { id: 2 })).toBe(false);
+    expect(can).toHaveBeenCalledWith({
+      dataSourceKey: 'main',
+      resourceName: 'posts',
+      actionName: 'update',
+      recordPkValue: 2,
+      allowedActions: { update: [1] },
+      fields: ['title'],
+    });
+  });
+
   it('hides sortable setting for association fields', async () => {
     const engine = new FlowEngine();
     const model = new TableColumnModel({ uid: 'table-column-association-sorter', flowEngine: engine } as any);
@@ -323,6 +356,57 @@ describe('TableColumnModel sorter settings', () => {
         format: 'YYYY-MM-DD h:mm a',
         showTime: true,
         timeFormat: 'h:mm a',
+      }),
+    );
+  });
+
+  it('keeps saved ordinary datetime format when table column initializes again', async () => {
+    const engine = new FlowEngine();
+    const model = new TableColumnModel({
+      uid: 'table-column-saved-datetime-format',
+      flowEngine: engine,
+    } as any);
+    const initStep = model.getFlow('tableColumnSettings')?.steps?.init as any;
+    const setProps = vi.fn();
+
+    await initStep.handler({
+      model: {
+        context: {
+          collectionField: {
+            title: 'Datetime',
+            name: 'datetime',
+            isAssociationField: () => false,
+            getComponentProps: () => ({
+              dateFormat: 'YYYY-MM-DD',
+              showTime: false,
+            }),
+          },
+        },
+        props: {},
+        subModels: {
+          field: {
+            getStepParams: (flowKey, stepKey) =>
+              flowKey === 'datetimeSettings' && stepKey === 'dateFormat'
+                ? {
+                    picker: 'date',
+                    dateFormat: 'YYYY-MM-DD',
+                    showTime: true,
+                    timeFormat: 'HH:mm:ss',
+                  }
+                : undefined,
+          },
+        },
+        applySubModelsBeforeRenderFlows: vi.fn(),
+        setProps,
+      },
+    });
+
+    expect(setProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFormat: 'YYYY-MM-DD',
+        format: 'YYYY-MM-DD HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
       }),
     );
   });

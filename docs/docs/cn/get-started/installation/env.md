@@ -359,15 +359,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-服务端对外发送 HTTP 请求的目标白名单，用于防止 SSRF（服务端请求伪造）攻击。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
+服务端对外发送 HTTP 请求的目标白名单，用于限制由 NocoBase 服务端主动发出的请求。逗号分隔，支持精确 IP、CIDR 范围、精确域名和通配符子域名（单级）。
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**适用范围**：工作流「HTTP 请求」节点、自定义操作按钮的「自定义请求」。相对路径（调用 NocoBase 自身 API）不受此限制影响。
+**适用范围**：工作流「HTTP 请求」节点、自定义操作按钮的「自定义请求」、AI 服务等服务端请求。相对路径（调用 NocoBase 自身 API）不受此限制影响。
 
-**未配置时**：所有 `http`/`https` 请求均放行（保持原有行为）。**配置后**：仅允许匹配白名单的请求，不匹配的请求会报错。
+**未配置时**：所有 `http` / `https` 请求均放行（保持原有行为）。不过，如果目标是 loopback、内网、link-local、metadata 地址，或者域名解析到了这些地址，服务端日志会输出 warning。
+
+**配置后**：初始请求和每个重定向目标都必须匹配白名单。不匹配时，会在发出下一跳请求前报错。后续版本可能会逐步收紧默认策略，如果你的部署需要访问内网服务，建议提前配置明确的白名单。
 
 支持的格式：
 
@@ -375,8 +377,16 @@ SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
 | --- | --- | --- |
 | 精确 IPv4 | `1.2.3.4` | 仅匹配该 IP |
 | IPv4 CIDR | `10.0.0.0/8` | 匹配该网段内所有 IP |
+| 精确 IPv6 | `::1` | 仅匹配该 IP |
+| IPv6 CIDR | `fc00::/7` | 匹配该网段内所有 IP |
 | 精确域名 | `api.example.com` | 仅匹配该域名 |
 | 通配符子域名 | `*.example.com` | 匹配一级子域名，如 `foo.example.com`，不匹配 `example.com` 或 `a.b.example.com` |
+
+:::warning 注意
+
+如果白名单中配置的是域名，白名单判断会以请求 URL 中的 host 为准。也就是说，配置 `internal.example.com` 后，即使该域名解析到 `127.0.0.1` 或内网地址，也会被视为显式允许。
+
+:::
 
 ## 实验性环境变量
 

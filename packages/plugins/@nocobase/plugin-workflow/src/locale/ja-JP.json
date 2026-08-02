@@ -253,6 +253,7 @@
   "Will be executed in the background as a queued task.": "キュータスクとしてバックグラウンドで実行されます。",
   "Workflow": "ワークフロー",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "ワークフローが実行されました。結果ステータス: <1>{{statusText}}</1><2>実行詳細を表示</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "現在のリクエストがトリガー要件を満たしていないため、ワークフローはトリガーされませんでした。",
   "Workflow of execution is not existed": "Workflow of execution is not existed",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "ワークフロー対応事項",

@@ -13,6 +13,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import type { DownloadResolvedFlags } from '../commands/source/download.js';
 import Download from '../commands/source/download.js';
+import { setCliConfigValue } from '../lib/cli-config.js';
 
 const mocks = vi.hoisted(() => ({
   run: vi.fn(),
@@ -64,6 +65,23 @@ async function useTempCwd(): Promise<string> {
   tempDirs.push(dir);
   vi.spyOn(process, 'cwd').mockReturnValue(dir);
   return dir;
+}
+
+async function withTempCliHome(run: () => Promise<void>) {
+  const previous = process.env.NB_CLI_ROOT;
+  const tempHome = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-download-config-'));
+  tempDirs.push(tempHome);
+
+  try {
+    process.env.NB_CLI_ROOT = tempHome;
+    await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previous;
+    }
+  }
 }
 
 async function pathExists(target: string): Promise<boolean> {
@@ -409,40 +427,47 @@ test('download forwards raw command output only in verbose mode', async () => {
 
 test('download shows a delayed loading indicator for long-running commands in non-verbose mode', async () => {
   await useTempCwd();
-  vi.useFakeTimers();
+  await withTempCliHome(async () => {
+    vi.useFakeTimers();
 
-  let resolveRun: (() => void) | undefined;
-  mocks.run.mockImplementationOnce(
-    () =>
-      new Promise<void>((resolve) => {
-        resolveRun = resolve;
-      }),
-  );
+    let resolveRun: (() => void) | undefined;
+    mocks.run.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveRun = resolve;
+        }),
+    );
 
-  const { command } = createCommand();
-  const flags: DownloadResolvedFlags = {
-    source: 'docker',
-    version: 'latest',
-    replace: false,
-    build: true,
-    'build-dts': false,
-    'docker-registry': 'nocobase/nocobase',
-    'docker-save': false,
-  };
+    const { command } = createCommand();
+    (
+      command as Download & {
+        resolveConfiguredDockerRegistryDefault: () => Promise<string>;
+      }
+    ).resolveConfiguredDockerRegistryDefault = vi.fn(async () => 'nocobase/nocobase');
+    const flags: DownloadResolvedFlags = {
+      source: 'docker',
+      version: 'latest',
+      replace: false,
+      build: true,
+      'build-dts': false,
+      'docker-registry': 'nocobase/nocobase',
+      'docker-save': false,
+    };
 
-  const promise = command.downloadFromDocker(flags);
+    const promise = command.downloadFromDocker(flags);
 
-  await vi.advanceTimersByTimeAsync(7_999);
-  expect(mocks.startTask.mock.calls.length).toBe(0);
+    await vi.advanceTimersByTimeAsync(7_999);
+    expect(mocks.startTask.mock.calls.length).toBe(0);
 
-  await vi.advanceTimersByTimeAsync(1);
-  expect(mocks.startTask.mock.calls).toEqual([['Pulling the Docker image. Please wait...']]);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(mocks.startTask.mock.calls).toEqual([['Pulling the Docker image. Please wait...']]);
 
-  resolveRun?.();
-  await promise;
+    resolveRun?.();
+    await promise;
 
-  expect(mocks.stopTask.mock.calls.length).toBe(1);
-  expect(mocks.updateTask.mock.calls.length).toBe(0);
+    expect(mocks.stopTask.mock.calls.length).toBe(1);
+    expect(mocks.updateTask.mock.calls.length).toBe(0);
+  });
 });
 
 test('download shows a preparation loading state before entering the source-specific flow', async () => {
@@ -618,26 +643,29 @@ test('download preserves raw failures in verbose mode', async () => {
   await expect(command.run()).rejects.toThrow('yarn install exited with code 1');
 });
 
-test('downloadFromDocker uses the locale-aware default registry when docker-registry is not set', async () => {
+test('downloadFromDocker uses the configured nb image registry when docker-registry is not set', async () => {
   await useTempCwd();
-  process.env.NB_LOCALE = 'zh-CN';
-  mocks.run.mockResolvedValue(undefined);
-  const { command } = createCommand();
-  const flags: DownloadResolvedFlags = {
-    source: 'docker',
-    version: 'alpha',
-    replace: false,
-    build: true,
-    'build-dts': false,
-    'docker-save': false,
-  };
+  await withTempCliHome(async () => {
+    await setCliConfigValue('nb-image-registry', 'aliyun', { scope: 'global' });
+    await setCliConfigValue('nb-image-variant', 'full', { scope: 'global' });
+    mocks.run.mockResolvedValue(undefined);
+    const { command } = createCommand();
+    const flags: DownloadResolvedFlags = {
+      source: 'docker',
+      version: 'alpha',
+      replace: false,
+      build: true,
+      'build-dts': false,
+      'docker-save': false,
+    };
 
-  await command.downloadFromDocker(flags);
+    await command.downloadFromDocker(flags);
 
-  expect(mocks.run.mock.calls[0]?.[1]).toEqual([
-    'pull',
-    'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full',
-  ]);
+    expect(mocks.run.mock.calls[0]?.[1]).toEqual([
+      'pull',
+      'registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full',
+    ]);
+  });
 });
 
 test('download resolves otherVersion into the final version value', async () => {

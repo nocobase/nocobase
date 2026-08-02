@@ -16,13 +16,30 @@ import axios from 'axios';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { Plugin } from '@nocobase/server';
 import { resolveContentType, resolveFileIdentity } from '../../utils';
+import { getAttachmentSource, type AttachmentSource } from '../../../attachments';
+
+function appendSource(record: unknown, source: AttachmentSource) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) {
+    return record;
+  }
+  return {
+    ...record,
+    source,
+  };
+}
 
 export abstract class Files {
-  static resolvers(plugin: Plugin, attachmentPart: Record<string, any>) {
+  static resolvers(plugin: Plugin, attachmentPart: { attachments?: unknown[] }) {
     const resolveAttachments = async (files: AIEmployeeInstructionFiles[]) => {
       const attachments = files
         .filter((it) => it.type === 'attachments')
-        .flatMap((it) => (_.isArray(it.value) ? it.value : [it.value]));
+        .flatMap((it) => (_.isArray(it.value) ? it.value : [it.value]))
+        .map((attachment) =>
+          appendSource(attachment, {
+            ...(getAttachmentSource(attachment) ?? {}),
+            trustworthy: true,
+          }),
+        );
       if (attachments.length) {
         attachmentPart.attachments = [...(attachmentPart.attachments ?? []), ...attachments];
       }
@@ -52,7 +69,13 @@ export abstract class Files {
           }
           attachmentPart.attachments = [
             ...(attachmentPart.attachments ?? []),
-            ...attachmentModels.map((it: any) => it.toJSON()),
+            ...attachmentModels.map((it: { toJSON: () => unknown }) =>
+              appendSource(it.toJSON(), {
+                dataSourceKey: 'main',
+                collectionName: collection as string,
+                trustworthy: true,
+              }),
+            ),
           ];
         }
       }
@@ -82,14 +105,19 @@ export abstract class Files {
                 filePath: tempFilePath,
                 storageName,
                 values: {
-                  ...fileIdentity,
+                  title: fileIdentity.title,
                   mimetype: contentType,
                   meta: {
                     sourceUrl: url,
+                    originalFilename: fileIdentity.filename,
                   },
                 },
               });
-              return created.toJSON();
+              return appendSource(created.toJSON(), {
+                dataSourceKey: 'main',
+                collectionName: 'aiFiles',
+                trustworthy: true,
+              });
             } finally {
               await fs.rm(tempFilePath, { force: true });
             }

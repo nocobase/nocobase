@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx info"
-description: "Справка по команде nb proxy nginx info: показать текущий драйвер provider Nginx, пути конфигурации и runtime-детали."
+description: "Справочник по команде nb proxy nginx info: вывод текущего драйвера провайдера Nginx, путей конфигурации и сведений о среде выполнения."
 keywords: "nb proxy nginx info,NocoBase CLI,nginx,пути,конфигурация"
 ---
 
 # nb proxy nginx info
 
-Показывает текущий драйвер provider Nginx, пути конфигурации и runtime-детали.
+Показывает текущий драйвер провайдера Nginx, пути конфигурации и сведения о среде выполнения.
 
 ## Использование
 

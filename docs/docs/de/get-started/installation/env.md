@@ -348,15 +348,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Whitelist der erlaubten Ziele für serverseitige ausgehende HTTP-Anfragen, um SSRF-Angriffe (Server-Side Request Forgery) zu verhindern. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
+Whitelist der erlaubten Ziele für ausgehende HTTP-Anfragen, die vom NocoBase-Server initiiert werden. Kommagetrennte Liste aus exakten IPs, CIDR-Bereichen, exakten Hostnamen und einstufigen Platzhalter-Subdomains.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Gilt für**: Workflow-Knoten „HTTP-Anfrage" und benutzerdefinierte Anfrage-Aktionsschaltflächen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
+**Gilt für**: Workflow-Knoten „HTTP-Anfrage", Aktionsschaltflächen für benutzerdefinierte Anfragen, AI-Dienste und andere serverseitige Anfragen. Relative Pfade (Aufrufe der NocoBase-API selbst) sind nicht betroffen.
 
-**Nicht konfiguriert**: Alle `http`/`https`-Anfragen sind erlaubt (bisheriges Verhalten). **Konfiguriert**: Nur Anfragen, deren Host einem Whitelist-Eintrag entspricht, sind erlaubt; nicht übereinstimmende Anfragen führen zu einem Fehler.
+**Nicht konfiguriert**: Alle ausgehenden `http` / `https`-Anfragen bleiben aus Kompatibilitätsgründen erlaubt. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log.
+
+**Konfiguriert**: Die ursprüngliche Anfrage und jedes Weiterleitungsziel müssen der Whitelist entsprechen. Bei fehlender Übereinstimmung erzeugt NocoBase einen Fehler, bevor die nächste Anfrage gesendet wird. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
 
 Unterstützte Formate:
 
@@ -364,8 +366,16 @@ Unterstützte Formate:
 | --- | --- | --- |
 | Exakte IPv4 | `1.2.3.4` | Nur diese IP |
 | IPv4 CIDR | `10.0.0.0/8` | Alle IPs im Subnetz |
+| Exakte IPv6 | `::1` | Nur diese IP |
+| IPv6 CIDR | `fc00::/7` | Alle IPs im Subnetz |
 | Exakter Hostname | `api.example.com` | Nur dieser Hostname |
 | Platzhalter-Subdomain | `*.example.com` | Eine Subdomain-Ebene, z. B. `foo.example.com`; **nicht** `example.com` oder `a.b.example.com` |
+
+:::warning Note
+
+Wenn eine Domain in der Whitelist konfiguriert ist, verwendet die Whitelist-Prüfung den Host in der Request-URL. Mit anderen Worten: Nach der Konfiguration von `internal.example.com` gilt dieses Ziel als explizit erlaubt, auch wenn die Domain auf `127.0.0.1` oder eine private Adresse auflöst.
+
+:::
 
 ## Experimentelle Umgebungsvariablen
 

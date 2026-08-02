@@ -2,6 +2,15 @@
 
 Um motor de armazenamento baseado no Tencent Cloud COS. Antes de usar, você precisa preparar a conta e as permissões relevantes.
 
+
+:::warning Observação
+
+Este mecanismo não oferece acesso privado. Depois que um arquivo é enviado, o NocoBase gera uma URL diretamente acessível, e qualquer pessoa com essa URL pode acessar o arquivo.
+
+Mesmo que o bucket COS seja privado, o mecanismo integrado Tencent COS não gera URLs assinadas temporárias para acesso a arquivos. Se precisar de acesso privado, use [S3 Pro](./s3-pro). Se já houver arquivos históricos, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parâmetros de Configuração
 
 ![Exemplo de Configuração do Motor de Armazenamento Tencent COS](https://static-docs.nocobase.com/20240712222125.png)

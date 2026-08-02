@@ -1,38 +1,45 @@
-# Muitos para Um
+---
+title: "Muitos para um"
+description: "Campo de relação muitos para um (M2O), em que várias entidades são associadas à mesma entidade pai, como aluno-turma."
+keywords: "Muitos para um,M2O,BelongsTo,associação,NocoBase"
+---
 
-Em um banco de dados de biblioteca, temos duas entidades: livros e autores. Um autor pode escrever vários livros, mas cada livro geralmente tem apenas um autor. Nesse cenário, a relação entre autores e livros é de muitos para um. Vários livros podem ser associados ao mesmo autor, mas cada livro só pode ter um autor.
 
-Diagrama ER:
+# Muitos para um
+
+Uma base de dados de biblioteca com duas entidades: livros e autores. Um autor pode escrever vários livros, mas cada livro tem apenas um autor (na maioria dos casos). Nesse cenário, a relação entre autores e livros é de muitos para um. Vários livros podem ser associados ao mesmo autor, mas cada livro pode ter apenas um autor.
+
+A relação ER é a seguinte
 
 ![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
 
-Configuração do Campo:
+Configuração do campo
 
 ![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
-## Descrição dos Parâmetros
+## Descrição dos parâmetros
 
-### Coleção de Origem
+### Source collection
 
-A coleção de origem, que é a coleção onde o campo atual está localizado.
+Tabela de origem, ou seja, a tabela na qual o campo atual está localizado.
 
-### Coleção de Destino
+### Target collection
 
-A coleção de destino, com a qual você quer fazer a associação.
+Tabela de destino, à qual a tabela atual está associada.
 
-### Chave Estrangeira
+### Foreign key
 
-O campo na coleção de origem que é usado para estabelecer a associação entre as duas coleções.
+Campo da tabela de origem usado para estabelecer a associação entre as duas tabelas.
 
-### Chave de Destino
+### Target key
 
-O campo na coleção de destino que é referenciado pela chave estrangeira. Ele deve ser único.
+Campo referenciado pela restrição de chave estrangeira, que deve ser exclusivo.
 
 ### ON DELETE
 
-ON DELETE se refere às regras aplicadas às referências de chave estrangeira em coleções filhas relacionadas quando registros na coleção pai são excluídos. É uma opção usada ao definir uma restrição de chave estrangeira. As opções comuns de ON DELETE incluem:
+ON DELETE define a regra de operação sobre as referências de chave estrangeira na tabela filha quando um registro é excluído da tabela pai. É uma opção usada na definição de restrições de chave estrangeira. As opções comuns de ON DELETE incluem:
 
-- **CASCADE**: Quando um registro na coleção pai é excluído, todos os registros relacionados na coleção filha são automaticamente excluídos.
-- **SET NULL**: Quando um registro na coleção pai é excluído, os valores da chave estrangeira nos registros relacionados da coleção filha são definidos como NULL.
-- **RESTRICT**: A opção padrão, ela impede a exclusão de um registro da coleção pai se houver registros relacionados na coleção filha.
-- **NO ACTION**: Semelhante ao RESTRICT, ela impede a exclusão de um registro da coleção pai se houver registros relacionados na coleção filha.
+- CASCADE: ao excluir um registro da tabela pai, exclui automaticamente todos os registros associados a ele na tabela filha.
+- SET NULL: ao excluir um registro da tabela pai, define como NULL o valor da chave estrangeira associada na tabela filha.
+- RESTRICT: opção padrão; ao tentar excluir um registro da tabela pai, a exclusão é recusada se existirem registros associados na tabela filha.
+- NO ACTION: semelhante a RESTRICT; se existirem registros associados na tabela filha, a exclusão do registro da tabela pai será recusada.

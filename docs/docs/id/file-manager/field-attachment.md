@@ -7,6 +7,12 @@ keywords: "field attachment,field attachment,upload file,tipe MIME,storage engin
 
 # Field Attachment
 
+:::warning Perhatian
+
+Field Attachment akan dihentikan pada versi mendatang. Untuk aplikasi baru atau saat menyesuaikan proses yang sudah ada, segera migrasikan ke file collection kustom dan kelola file terkait dengan field relasi.
+
+:::
+
 ## Pengantar
 
 Field tipe "Attachment" built-in sistem, digunakan untuk mendukung user upload file di tabel data kustom.

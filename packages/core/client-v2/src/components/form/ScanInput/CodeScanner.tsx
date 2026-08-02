@@ -11,7 +11,7 @@ import { FileImageOutlined, LeftOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Button, message, theme } from 'antd';
 import { Html5Qrcode } from 'html5-qrcode';
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ScanBox } from './ScanBox';
@@ -26,6 +26,14 @@ type CodeScannerProps = {
 };
 
 const MAX_CODE_IMAGE_SIZE = 10 * 1024 * 1024;
+const SCANNER_RENDER_WIDTH = 1280;
+
+function getViewportSize() {
+  return {
+    width: Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0),
+    height: Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0),
+  };
+}
 
 function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess }: CodeScannerProps) {
   const { t } = useTranslation();
@@ -34,20 +42,34 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   const scannerElementId = `code-scanner-${inputId}`;
   const imgUploaderRef = useRef<HTMLInputElement>(null);
   const [cameraAvailable, setCameraAvailable] = useState(false);
+  const [scannerSize, setScannerSize] = useState({ width: 0, height: 0 });
+  const [viewport, setViewport] = useState(getViewportSize);
 
-  const viewport = useMemo(() => {
-    const width = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-    const height = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-    return { width, height };
-  }, []);
-  const scanBoxSize = useMemo(
-    () => getCodeScanBoxSize(viewport.width, viewport.height),
-    [viewport.height, viewport.width],
-  );
+  const previewScale = scannerSize.width
+    ? Math.max(viewport.width / scannerSize.width, viewport.height / scannerSize.height)
+    : Math.min(1, viewport.width / SCANNER_RENDER_WIDTH);
+  const visibleScanBoxSize = scannerSize.width
+    ? getCodeScanBoxSize(viewport.width, viewport.height)
+    : { width: 0, height: 0 };
 
   const showScanFailure = useCallback(() => {
     message.error(t('Code recognition failed, please scan again'));
   }, [t]);
+
+  const showCameraStartFailure = useCallback(
+    (error: unknown) => {
+      const errorName = error instanceof Error ? error.name : '';
+      const errorMessage = error instanceof Error ? error.message : '';
+      const errorMap: Record<string, string> = {
+        NotFoundError: t('No camera device detected'),
+        NotAllowedError: t('You have not granted permission to use the camera'),
+      };
+
+      message.error(errorMap[errorName] || errorMessage || t('You have not granted permission to use the camera'));
+      onClose();
+    },
+    [onClose, t],
+  );
 
   const handleScanSuccess = useCallback(
     (text: string) => {
@@ -61,10 +83,17 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     enabled: visible && cameraAvailable,
     elementId: scannerElementId,
     formatsToSupport,
-    scanBoxSize,
+    onScannerSizeChanged: setScannerSize,
     onScanSuccess: handleScanSuccess,
     onScanFailure: showScanFailure,
+    onCameraStartFailure: showCameraStartFailure,
   });
+
+  useEffect(() => {
+    const handleResize = () => setViewport(getViewportSize());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!visible) {
@@ -129,24 +158,29 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
     inset: 0;
     z-index: ${token.zIndexPopupBase + 1000};
     overflow: hidden;
-    background: ${token.colorBgMask};
+    background: #000;
   `;
   const scannerWrapperClass = css`
     position: absolute;
     inset: 0;
     overflow: hidden;
   `;
+  const scannerSurfaceClass = css`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+  `;
   const scannerClass = css`
+    position: relative;
     width: 100%;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    line-height: 0;
 
     video {
-      width: auto !important;
-      height: 100% !important;
+      width: 100% !important;
+      height: auto !important;
       max-width: none !important;
+      display: block !important;
     }
 
     #qr-shaded-region {
@@ -174,26 +208,36 @@ function CodeScannerContent({ visible, formatsToSupport, onClose, onScanSuccess 
   return (
     <div className={rootClass}>
       <div className={scannerWrapperClass}>
-        <div id={scannerElementId} className={scannerClass} />
+        <div
+          className={scannerSurfaceClass}
+          style={{
+            width: `${SCANNER_RENDER_WIDTH}px`,
+            transform: `translate(-50%, -50%) scale(${previewScale})`,
+          }}
+        >
+          <div id={scannerElementId} className={scannerClass} />
+        </div>
       </div>
+      {cameraAvailable && scannerSize.width > 0 && (
+        <ScanBox
+          style={{
+            position: 'fixed',
+            top: `${(viewport.height - visibleScanBoxSize.height) / 2}px`,
+            left: `${(viewport.width - visibleScanBoxSize.width) / 2}px`,
+            width: `${visibleScanBoxSize.width}px`,
+            height: `${visibleScanBoxSize.height}px`,
+          }}
+        />
+      )}
+      <Button
+        aria-label={t('Close')}
+        className={closeButtonClass}
+        icon={<LeftOutlined />}
+        type="text"
+        onClick={onClose}
+      />
       {cameraAvailable && (
         <>
-          <ScanBox
-            style={{
-              position: 'fixed',
-              top: `${(viewport.height - scanBoxSize.height) / 2}px`,
-              left: `${(viewport.width - scanBoxSize.width) / 2}px`,
-              width: `${scanBoxSize.width}px`,
-              height: `${scanBoxSize.height}px`,
-            }}
-          />
-          <Button
-            aria-label={t('Close')}
-            className={closeButtonClass}
-            icon={<LeftOutlined />}
-            type="text"
-            onClick={onClose}
-          />
           <Button className={albumClass} icon={<FileImageOutlined />} type="text" onClick={handleImageButtonClick}>
             {t('Album')}
           </Button>

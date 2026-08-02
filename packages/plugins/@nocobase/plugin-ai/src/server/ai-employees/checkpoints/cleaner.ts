@@ -42,7 +42,10 @@ export class CheckpointCleaner {
 
     const sessionIds = outdatedConversations.map((conversation) => conversation.sessionId);
     const latestMessageRefs = await this.aiMessagesModel.findAll({
-      attributes: ['sessionId', [this.sequelize.fn('MAX', this.sequelize.col('messageId')), 'messageId']],
+      attributes: [
+        'sessionId',
+        [this.sequelize.fn('MAX', this.sequelize.col(this.aiMessagesMessageIdColumn)), 'messageId'],
+      ],
       where: {
         sessionId: {
           [Op.in]: sessionIds,
@@ -126,6 +129,16 @@ export class CheckpointCleaner {
 
   private get aiMessagesModel() {
     return this.collectionManager.getCollection('aiMessages').model;
+  }
+
+  private get aiMessagesMessageIdColumn() {
+    return (
+      this.aiMessagesModel.rawAttributes.messageId?.field || (this.isUnderscoredDatabase ? 'message_id' : 'messageId')
+    );
+  }
+
+  private get isUnderscoredDatabase() {
+    return this.collectionManager.db.options.underscored === true || process.env.DB_UNDERSCORED === 'true';
   }
 
   private get sequelize() {

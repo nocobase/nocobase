@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx current"
-description: "Справка по команде nb proxy nginx current: показывает текущий driver provider Nginx."
-keywords: "nb proxy nginx current,NocoBase CLI,nginx,driver"
+description: "Справочник по команде nb proxy nginx current: вывод текущего драйвера провайдера Nginx."
+keywords: "nb proxy nginx current,NocoBase CLI,nginx,драйвер"
 ---
 
 # nb proxy nginx current
 
-Показывает текущий driver provider Nginx.
+Выводит текущий драйвер провайдера Nginx.
 
 ## Использование
 
@@ -16,7 +16,7 @@ nb proxy nginx current
 
 ## Вывод
 
-Команда выводит одно из двух значений:
+Команда напрямую выводит одно значение:
 
 - `local`
 - `docker`

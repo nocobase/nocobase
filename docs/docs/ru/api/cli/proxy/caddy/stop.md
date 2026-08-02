@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy stop"
-description: "Справка по команде nb proxy caddy stop: останавливает proxy Caddy с текущим driver."
+description: "Справочник по команде nb proxy caddy stop: остановка прокси Caddy с текущим драйвером."
 keywords: "nb proxy caddy stop,NocoBase CLI,caddy,stop"
 ---
 
 # nb proxy caddy stop
 
-Останавливает proxy Caddy с текущим driver.
+Останавливает прокси Caddy с текущим драйвером.
 
 ## Использование
 
@@ -22,9 +22,9 @@ nb proxy caddy stop
 
 ## Примечания
 
-- С driver `local` эта команда останавливает локальный процесс Caddy
-- С driver `docker` эта команда останавливает контейнер proxy
-- Если proxy уже остановлен, команда сообщит об этом
+- С драйвером `local` команда останавливает локальный процесс Caddy
+- С драйвером `docker` команда останавливает контейнер прокси
+- Если прокси уже остановлен, команда сообщит об этом
 
 ## Связанные команды
 

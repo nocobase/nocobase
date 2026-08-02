@@ -1084,6 +1084,9 @@ function inferPopupActionSourceId(resourceInit?: Record<string, any>) {
   if (!resourceInit?.associationName) {
     return undefined;
   }
+  if (!Object.prototype.hasOwnProperty.call(resourceInit, 'sourceId')) {
+    return '{{ctx.view.inputArgs.sourceId}}';
+  }
   const sourceId = typeof resourceInit?.sourceId === 'string' ? resourceInit.sourceId.trim() : resourceInit?.sourceId;
   if (!sourceId) {
     return undefined;

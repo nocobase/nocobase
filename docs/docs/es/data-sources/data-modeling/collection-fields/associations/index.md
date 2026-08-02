@@ -1,12 +1,48 @@
-# Campos de relación
+---
+title: "Campo de relación"
+description: "Los campos de relación se utilizan para establecer asociaciones entre tablas de datos y admiten relaciones uno a uno, uno a muchos, muchos a uno, muchos a muchos y muchos a muchos mediante arrays."
+keywords: "campo de relación,BelongsTo,HasMany,O2O,O2M,M2O,M2M,campo asociado,NocoBase"
+---
 
-En NocoBase, los campos de relación no son campos reales, sino que se utilizan para establecer conexiones entre colecciones. Este concepto es equivalente a las relaciones en las bases de datos relacionales.
+# Campo de relación
 
-En las bases de datos relacionales, los tipos de relación más comunes son los siguientes:
+En NocoBase, los **campos de relación** se utilizan para establecer asociaciones entre distintas tablas de datos. Permiten que un registro haga referencia a un registro de otra tabla o a varios registros, por ejemplo, para asociar un pedido con un cliente, una tarea con su responsable o un estudiante con sus cursos.
 
-- [Uno a Uno](./o2o/index.md): Cada entidad en dos colecciones se corresponde con una única entidad en la otra colección. Este tipo de relación se utiliza generalmente para almacenar diferentes aspectos de una entidad en colecciones separadas, con el fin de reducir la redundancia y mejorar la consistencia de los datos.
-- [Uno a Muchos](./o2m/index.md): Cada entidad en una colección puede asociarse con múltiples entidades en otra colección. Este es uno de los tipos de relación más comunes. Por ejemplo, un autor puede escribir varios artículos, pero un artículo solo puede tener un autor.
-- [Muchos a Uno](./m2o/index.md): Múltiples entidades en una colección pueden asociarse con una entidad en otra colección. Este tipo de relación también es común en el modelado de datos. Por ejemplo, varios estudiantes pueden pertenecer a la misma clase.
-- [Muchos a Muchos](./m2m/index.md): Múltiples entidades en dos colecciones pueden asociarse entre sí. Este tipo de relación generalmente requiere una colección intermedia para registrar las asociaciones entre las entidades. Por ejemplo, la relación entre estudiantes y cursos: un estudiante puede inscribirse en múltiples cursos, y un curso puede tener múltiples estudiantes.
+Los campos de relación no funcionan exactamente igual que los campos comunes. Normalmente, los campos comunes corresponden a columnas reales de la base de datos y se utilizan para almacenar valores de texto, números, fechas, etc.; los campos de relación almacenan la configuración de conexión entre tablas y las claves utilizadas para localizar los registros relacionados. En la base de datos principal, los campos de relación pueden generar la configuración de relación necesaria al crear el campo; en bases de datos externas, normalmente se establecen a partir de claves primarias, claves foráneas o campos únicos existentes, sin modificar automáticamente la estructura de las tablas externas.
 
-Estos tipos de relación desempeñan un papel importante en el diseño de bases de datos y el modelado de datos, ayudando a describir relaciones y estructuras de datos complejas del mundo real.
+## Elegir el tipo de relación
+
+Los tipos de relación más comunes son los siguientes:
+
+| Tipo de relación | Caso de uso |
+| --- | --- |
+| [Uno a uno](./o2o/index.md) | Un registro solo se relaciona con un registro de otra tabla. Por ejemplo, un empleado se relaciona con un expediente de incorporación. |
+| [Uno a muchos](./o2m/index.md) | Un registro se relaciona con varios registros de otra tabla. Por ejemplo, un cliente se relaciona con varios pedidos. |
+| [Muchos a uno](./m2o/index.md) | Varios registros se relacionan con un mismo registro de destino. Por ejemplo, varios pedidos se relacionan con el mismo cliente. |
+| [Muchos a muchos](./m2m/index.md) | Dos tablas pueden relacionarse mutuamente con varios registros. Por ejemplo, los estudiantes y los cursos pueden relacionarse entre sí. |
+| [Muchos a muchos (array)](../../../field-m2m-array/index.md) | Utiliza un campo de tipo array para guardar los identificadores de varios registros de destino. Es adecuado para estructuras de tablas existentes que ya almacenan los valores de relación mediante arrays. |
+
+Como regla general, primero hay que tener en cuenta el significado del negocio: si el registro actual solo pertenece a un registro de destino, normalmente se utiliza una relación muchos a uno; si el registro actual necesita mostrar varios registros de la tabla de destino, normalmente se utiliza una relación uno a muchos; si ambos lados pueden relacionarse con varios registros, normalmente se utiliza una relación muchos a muchos.
+
+## Aspectos clave de la configuración
+
+Al configurar un campo de relación, es importante confirmar lo siguiente:
+
+- Tabla de datos de destino: la tabla con la que se establecerá la relación
+- Tipo de relación: uno a uno, uno a muchos, muchos a uno, muchos a muchos o muchos a muchos mediante arrays
+- Claves de relación: los campos utilizados para identificar los registros de ambos lados, normalmente una clave primaria, una clave foránea o un campo único
+- Campo de título: el campo que se mostrará de forma predeterminada para los registros relacionados en los selectores y bloques
+
+:::warning Atención
+
+En las bases de datos externas, los campos de relación son principalmente metadatos de relación guardados por NocoBase. Añadir un campo de relación no crea automáticamente claves foráneas, índices ni tablas intermedias reales en la base de datos externa. Si necesitas restricciones de clave foránea a nivel de base de datos, configúralas primero en la base de datos y, después, vuelve a NocoBase para sincronizar y configurar el campo.
+
+:::
+
+## Enlaces relacionados
+
+- [Uno a uno](./o2o/index.md) — Consulta la configuración de los campos de relación uno a uno
+- [Uno a muchos](./o2m/index.md) — Consulta la configuración de los campos de relación uno a muchos
+- [Muchos a uno](./m2o/index.md) — Consulta la configuración de los campos de relación muchos a uno
+- [Muchos a muchos](./m2m/index.md) — Consulta la configuración de los campos de relación muchos a muchos
+- [Muchos a muchos (array)](../../../field-m2m-array/index.md) — Consulta la relación muchos a muchos basada en arrays

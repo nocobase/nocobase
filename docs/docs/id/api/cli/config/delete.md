@@ -1,7 +1,7 @@
 ---
-title: "nb config delete"
-description: "Referensi perintah nb config delete: menghapus item konfigurasi CLI yang diatur secara eksplisit."
-keywords: "nb config delete,NocoBase CLI,menghapus konfigurasi"
+title: 'nb config delete'
+description: 'Referensi perintah nb config delete: menghapus item konfigurasi CLI yang diatur secara eksplisit.'
+keywords: 'nb config delete,NocoBase CLI,menghapus konfigurasi'
 ---
 
 # nb config delete
@@ -16,9 +16,9 @@ nb config delete <key>
 
 ## Parameter
 
-| Parameter | Tipe | Deskripsi |
-| --- | --- | --- |
-| `<key>` | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
+| Parameter | Tipe   | Deskripsi                                                                        |
+| --------- | ------ | -------------------------------------------------------------------------------- |
+| `<key>`   | string | Nama item konfigurasi. Lihat [`nb config`](./index.md) untuk nilai yang didukung |
 
 ## Contoh
 
@@ -27,6 +27,8 @@ nb config delete locale
 nb config delete update.policy
 nb config delete docker.network
 nb config delete docker.container-prefix
+nb config delete nb-image-registry
+nb config delete nb-image-variant
 nb config delete proxy.nb-cli-root
 nb config delete proxy.upstream-host
 nb config delete bin.nginx

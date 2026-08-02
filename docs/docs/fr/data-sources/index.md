@@ -1,55 +1,65 @@
-# Vue d'ensemble
+---
+title: "Présentation des sources de données"
+description: "Sources de données et modélisation des données dans NocoBase : base de données principale, bases de données externes, API REST, NocoBase externe, gestion des sources de données, tables ordinaires, tables arborescentes, tables SQL, tables de fichiers."
+keywords: "source de données,modélisation des données,base de données principale,base de données externe,REST API,NocoBase externe,Collection,table arborescente,table SQL,NocoBase"
+---
 
-La modélisation des données est une étape clé dans la conception des bases de données. Elle implique un processus d'analyse approfondie et d'abstraction des différents types de données du monde réel et de leurs interrelations. Au cours de ce processus, nous cherchons à révéler les liens intrinsèques entre les données et à les formaliser en modèles de données, jetant ainsi les bases de la structure de la base de données du système d'information. NocoBase est une plateforme axée sur les modèles de données, qui présente les caractéristiques suivantes :
+# Présentation générale
 
-## Prend en charge l'accès aux données de diverses sources
+La modélisation des données est une étape clé de la conception d’une base de données. Elle consiste à analyser et à abstraire en profondeur les différents types de données du monde réel ainsi que leurs relations. Au cours de ce processus, nous cherchons à révéler les liens intrinsèques entre les données et à les décrire formellement sous la forme d’un modèle de données, afin de jeter les bases de la structure de la base de données d’un système d’information. NocoBase est une plateforme pilotée par un modèle de données, qui présente les caractéristiques suivantes :
 
-Les sources de données de NocoBase peuvent provenir de diverses origines courantes : bases de données, plateformes API (SDK) et fichiers.
+## Prend en charge l’accès à des données provenant de diverses sources
+
+Les sources de données de NocoBase peuvent être les bases de données courantes, les plateformes d’API (SDK) et les fichiers.
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBase propose un [plugin de gestion des sources de données](/data-sources/data-source-manager) pour gérer les différentes sources de données et leurs collections. Ce plugin fournit uniquement une interface de gestion pour toutes les sources de données, mais n'offre pas la capacité d'y accéder directement. Il doit être utilisé en conjonction avec divers plugins de source de données. Les sources de données actuellement prises en charge incluent :
+NocoBase fournit le [plug-in de gestion des sources de données](./data-source-manager/index.md), qui permet de gérer les différentes sources de données et leurs tables. Le plug-in de gestion des sources de données fournit uniquement une interface de gestion pour toutes les sources de données ; il ne permet pas à lui seul de se connecter aux sources de données et doit être utilisé conjointement avec différents plug-ins de sources de données. Les sources de données actuellement prises en charge sont les suivantes :
 
-- [Base de données principale](/data-sources/data-source-main) : La base de données principale de NocoBase, prenant en charge les bases de données relationnelles telles que MySQL, PostgreSQL et MariaDB.
-- [KingbaseES](/data-sources/data-source-kingbase) : Utilise la base de données KingbaseES comme source de données, qui peut être utilisée comme base de données principale ou externe.
-- [MySQL externe](/data-sources/data-source-external-mysql) : Utilise une base de données MySQL externe comme source de données.
-- [MariaDB externe](/data-sources/data-source-external-mariadb) : Utilise une base de données MariaDB externe comme source de données.
-- [PostgreSQL externe](/data-sources/data-source-external-postgres) : Utilise une base de données PostgreSQL externe comme source de données.
-- [MSSQL externe](/data-sources/data-source-external-mssql) : Utilise une base de données MSSQL (SQL Server) externe comme source de données.
-- [Oracle externe](/data-sources/data-source-external-oracle) : Utilise une base de données Oracle externe comme source de données.
+- [Source de données principale](./data-source-main/index.md) : base de données principale de NocoBase, prenant en charge PostgreSQL, MySQL, MariaDB, KingbaseES et OceanBase.
+- [PostgreSQL externe](./data-source-external-postgres/index.md) : connexion à une base de données PostgreSQL existante.
+- [MySQL externe](./data-source-external-mysql/index.md) : connexion à une base de données MySQL existante.
+- [MariaDB externe](./data-source-external-mariadb/index.md) : connexion à une base de données MariaDB existante.
+- [MSSQL externe](./data-source-external-mssql/index.md) : connexion à une base de données SQL Server existante.
+- [KingbaseES externe](./data-source-kingbase/index.md) : connexion à une base de données KingbaseES existante.
+- [OceanBase externe](./external/oceanbase.md) : connexion à une base de données OceanBase existante.
+- [Oracle externe](./data-source-external-oracle/index.md) : connexion à une base de données Oracle existante.
+- [ClickHouse externe](./external/clickhouse.md) : connexion à une base de données ClickHouse existante.
+- [Doris externe](./external/doris.md) : connexion à une base de données Doris existante.
+- [Source de données REST API](./data-source-rest-api/index.md) : mappage de l’API REST d’un système tiers en tant que source de données.
+- [Source de données NocoBase externe](./data-source-external-nocobase/index.md) : connexion aux tables de données d’une autre application NocoBase.
 
 ![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
 
-## Propose une variété d'outils de modélisation des données
+## Fournit divers outils de modélisation des données
 
-**Interface de gestion des collections simplifiée** : Pour créer diverses collections (modèles de données) ou se connecter à des collections existantes.
+**Interface simplifiée de gestion des tables de données** : permet de créer différents modèles (tables de données) ou de se connecter à des modèles (tables de données) existants.
 
 ![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
 
-**Interface visuelle de type diagramme ER** : Pour extraire les entités et leurs relations à partir des exigences des utilisateurs et des besoins métier. Elle offre un moyen intuitif et facile à comprendre de décrire les modèles de données. Grâce aux diagrammes ER, vous pouvez comprendre plus clairement les principales entités de données du système et leurs liens.
+**Interface de visualisation de type diagramme ER** : permet d’extraire les entités et leurs relations à partir des besoins des utilisateurs et de l’activité. Elle offre une manière intuitive et facile à comprendre de décrire le modèle de données. Le diagramme ER permet de mieux comprendre les principales entités de données du système et les liens qui les unissent.
 
 ![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
 
-## Prend en charge divers types de collections
+## Prend en charge la création de différents types de tables de données
 
-| Collection | Description |
+| Table de données | Description |
 | - | - |
-| [Collection générale](/data-sources/data-source-main/general-collection) | Champs système courants intégrés. |
-| [Collection de calendrier](/data-sources/calendar/calendar-collection) | Pour créer des collections d'événements liées au calendrier. |
-| Collection de commentaires | Pour stocker les commentaires ou retours sur les données. |
-| [Collection arborescente](/data-sources/collection-tree) | Collection structurée en arbre, ne prend actuellement en charge que le modèle de liste d'adjacence. |
-| [Collection de fichiers](/data-sources/file-manager/file-collection) | Pour la gestion du stockage de fichiers. |
-| [Collection SQL](/data-sources/collection-sql) | Pas une collection de base de données réelle, mais visualise rapidement les requêtes SQL de manière structurée. |
-| [Connexion à une vue de base de données](/data-sources/collection-view) | Se connecte aux vues de base de données existantes. |
-| Collection d'expressions | Utilisée pour les scénarios d'expressions dynamiques dans les flux de travail. |
-| [Connexion à des données externes](/data-sources/collection-fdw) | Permet au système de base de données d'accéder et d'interroger directement les données dans des sources de données externes basées sur la technologie FDW. |
+| [Table de données ordinaire](/data-sources/data-source-main/general-collection) | Inclut les champs système couramment utilisés |
+| [Table de données de calendrier](/data-sources/calendar/calendar-collection) | Permet de créer des tables d’événements liés au calendrier |
+| [Table de commentaires](/data-sources/collection-comment/) | Permet de stocker des commentaires ou des retours sur les données |
+| [Table de structure arborescente](/data-sources/collection-tree/) | Table de structure arborescente prenant actuellement uniquement en charge la conception par liste d’adjacence |
+| [Table de données de fichiers](/data-sources/file-manager/file-collection) | Permet de gérer le stockage des fichiers |
+| [Connexion à une vue de base de données](/data-sources/collection-view/) | Permet de se connecter à une vue de base de données existante |
+| [Table de données SQL](/data-sources/collection-sql/) | Ne constitue pas une table réelle de la base de données, mais permet d’afficher rapidement et de manière structurée une requête SQL |
+| [Connexion à des données externes](/data-sources/collection-fdw) | Connexion à des tables de données distantes basée sur la technologie FDW des bases de données |
 
 ![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
 
-Pour plus de détails, consultez la section « [Collection / Vue d'ensemble](/data-sources/data-modeling/collection) ».
+Pour plus d’informations, consultez le chapitre « [Tables de données / Présentation](/data-sources/data-modeling/collection) »
 
-## Propose une grande variété de types de champs
+## Fournit un grand nombre de types de champs
 
 ![20240512110352](https://static-docs.nocobase.com/20240512110352.png)
 
-Pour plus de détails, consultez la section « [Champs de collection / Vue d'ensemble](/data-sources/data-modeling/collection-fields) ».
+Pour plus d’informations, consultez le chapitre « [Champs des tables de données / Présentation](/data-sources/data-modeling/collection-fields/) »

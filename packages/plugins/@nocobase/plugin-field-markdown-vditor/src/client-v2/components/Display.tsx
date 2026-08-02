@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { removeMarkdownIframes, stripMarkdownIframes } from '@nocobase/client-v2';
 import { Popover } from 'antd';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
@@ -74,8 +75,15 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
     Vditor.preview(containerRef.current, props.value ?? '', {
       mode: 'light',
       cdn,
-    });
+      markdown: {
+        sanitize: true,
+      },
+      transform: stripMarkdownIframes,
+    })
+      .then(() => removeMarkdownIframes(containerRef.current))
+      .catch(() => removeMarkdownIframes(containerRef.current));
     setTimeout(() => {
+      removeMarkdownIframes(containerRef.current);
       containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
         img.style.cursor = 'zoom-in';
         img.addEventListener('click', () => {
@@ -107,16 +115,25 @@ export const Display = (props) => {
       Vditor.md2html(value, {
         mode: 'light',
         cdn,
+        markdown: {
+          sanitize: true,
+        },
       })
         .then((html) => {
-          setText(convertToText(html));
+          setText(convertToText(stripMarkdownIframes(html)));
         })
         .catch(() => setText(''));
     } else {
       Vditor.preview(containerRef.current, value, {
         mode: 'light',
         cdn,
-      });
+        markdown: {
+          sanitize: true,
+        },
+        transform: stripMarkdownIframes,
+      })
+        .then(() => removeMarkdownIframes(containerRef.current))
+        .catch(() => removeMarkdownIframes(containerRef.current));
     }
   }, [value, props.ellipsis, cdn]);
 

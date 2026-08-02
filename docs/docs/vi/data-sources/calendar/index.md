@@ -1,81 +1,81 @@
 ---
 pkg: "@nocobase/plugin-calendar"
-title: "Block lịch"
-description: "Block lịch hiển thị dữ liệu sự kiện và ngày dưới dạng giao diện lịch, phù hợp với việc lên lịch họp, lập kế hoạch sự kiện, cấu hình field tiêu đề, thời gian bắt đầu/kết thúc, lịch âm, phạm vi dữ liệu."
-keywords: "Block lịch,giao diện lịch,sự kiện,lên lịch họp,Calendar,NocoBase"
+title: "Khối lịch"
+description: "Khối lịch hiển thị dữ liệu sự kiện và ngày tháng dưới dạng lịch, phù hợp với việc sắp xếp cuộc họp, lập kế hoạch hoạt động, cấu hình trường tiêu đề, thời gian bắt đầu/kết thúc, âm lịch và phạm vi dữ liệu."
+keywords: "Khối lịch, chế độ xem lịch, sự kiện, sắp xếp cuộc họp, Calendar,NocoBase"
 ---
-# Block lịch
+# Khối lịch
 
 ## Giới thiệu
 
-Block lịch hiển thị dữ liệu sự kiện và ngày dưới dạng giao diện lịch, phù hợp với các tình huống như lên lịch họp, lập kế hoạch sự kiện.
+Khối lịch hiển thị dữ liệu liên quan đến sự kiện và ngày tháng dưới dạng lịch, phù hợp với các tình huống như sắp xếp cuộc họp và lập kế hoạch hoạt động.
 
 ## Cài đặt
 
 Plugin tích hợp sẵn, không cần cài đặt.
 
-## Thêm block
+## Thêm khối
 
 ![20250403220300](https://static-docs.nocobase.com/20250403220300.png)
 
-1. Field tiêu đề: Dùng để hiển thị thông tin trên thanh lịch; hiện hỗ trợ các loại field như `input`, `select`, `phone`, `email`, `radioGroup`, `sequence`, có thể mở rộng các loại field tiêu đề mà block lịch hỗ trợ thông qua plugin.
-2. Thời gian bắt đầu: Thời gian bắt đầu của tác vụ.
-3. Thời gian kết thúc: Thời gian kết thúc của tác vụ.
+1. Trường tiêu đề: Dùng để hiển thị thông tin trên thanh lịch; hiện hỗ trợ các loại trường `input`, `select`, `phone`, `email`, `radioGroup`,`sequence` và có thể mở rộng các loại trường tiêu đề được khối lịch hỗ trợ thông qua plugin.
+2. Thời gian bắt đầu: Thời gian bắt đầu của tác vụ;
+3. Thời gian kết thúc: Thời gian kết thúc của tác vụ;
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20240419201640.mp4" type="video/mp4">
 </video>
 
 
-Khi bạn nhấp vào thanh tác vụ, thanh tác vụ cùng loại sẽ được làm nổi bật và xuất hiện popup.
+Nhấp vào thanh tác vụ, thanh tác vụ của cùng một tác vụ sẽ được tô sáng và một cửa sổ bật lên sẽ xuất hiện.
 
 ![20240408171928](https://static-docs.nocobase.com/20240408171928.png)
 
-## Mục cấu hình block
+## Các mục cấu hình khối
 
 ![20240419203321](https://static-docs.nocobase.com/20240419203321.png)
 
-### Hiển thị lịch âm
+### Hiển thị âm lịch
 
 ![20240419203603](https://static-docs.nocobase.com/20240419203603.png)
 
-- 
-- 
+-
+-
 
-### Thiết lập phạm vi dữ liệu
+### Cài đặt phạm vi dữ liệu
 
 ![20240419203751](https://static-docs.nocobase.com/20240419203751.png)
 
-Tham khảo thêm tại 
+Tham khảo thêm
 
-### Thiết lập chiều cao block
+### Cài đặt chiều cao khối
 
-Ví dụ: Điều chỉnh chiều cao của block lịch đơn hàng, bên trong block lịch sẽ không xuất hiện thanh cuộn.
+Ví dụ: điều chỉnh chiều cao của khối lịch đơn hàng để bên trong khối lịch không xuất hiện thanh cuộn.
 
 ![20240605215742](https://static-docs.nocobase.com/20240605215742.gif)
 
-Tham khảo thêm tại 
+Tham khảo thêm
 
-### Field màu nền
+### Trường màu nền
 
-:::info{title=Mẹo}
-Yêu cầu phiên bản NocoBase v1.4.0-beta trở lên.
+:::info{title=提示}
+Cần sử dụng phiên bản NocoBase v1.4.0-beta trở lên.
 :::
 
-Tùy chọn này có thể được sử dụng để cấu hình màu nền của sự kiện lịch. Cách sử dụng như sau:
+Tùy chọn này dùng để cấu hình màu nền cho các sự kiện trên lịch. Cách sử dụng như sau:
 
-1. Trong bảng lịch cần có một field kiểu **Dropdown chọn một (Single select)** hoặc **Radio (Radio group)**, field này cần được cấu hình màu sắc.
-2. Sau đó, quay lại giao diện cấu hình block lịch, chọn field vừa được cấu hình màu trong **Field màu nền**.
-3. Cuối cùng, bạn có thể thử chọn một màu cho sự kiện lịch, sau đó nhấp vào gửi để thấy màu đã có hiệu lực.
+1. Trong bảng dữ liệu lịch cần có một trường kiểu **Danh sách chọn một (Single select)** hoặc **Nhóm nút radio (Radio group)**; trường này cần được cấu hình màu.
+2. Sau đó, quay lại giao diện cấu hình khối lịch và chọn trường đã được cấu hình màu trong **Trường màu nền**.
+3. Cuối cùng, hãy thử chọn một màu cho một sự kiện trên lịch rồi nhấp vào gửi; bạn sẽ thấy màu đã có hiệu lực.
 
 ![20240914192017_rec_](https://static-docs.nocobase.com/20240914192017_rec_.gif)
 
 ### Ngày bắt đầu tuần
 
-> Hỗ trợ từ phiên bản v1.7.7 trở lên 
+> Phiên bản v1.7.7 trở lên hỗ trợ
 
-Block lịch hỗ trợ thiết lập ngày bắt đầu của mỗi tuần, có thể chọn **Chủ Nhật** hoặc **Thứ Hai** làm ngày đầu tiên của tuần.  
-Ngày bắt đầu mặc định là **Thứ Hai**, giúp bạn điều chỉnh hiển thị lịch theo thói quen của các khu vực khác nhau, phù hợp hơn với nhu cầu sử dụng thực tế.
+Khối lịch hỗ trợ thiết lập ngày bắt đầu của mỗi tuần, có thể chọn **Chủ nhật** hoặc **Thứ hai** làm ngày đầu tiên trong tuần.
+Ngày bắt đầu mặc định là **Thứ hai**, giúp người dùng điều chỉnh cách hiển thị lịch theo thói quen của từng khu vực và phù hợp hơn với nhu cầu sử dụng thực tế.
 
 ![20250707165958](https://static-docs.nocobase.com/20250707165958.png)
 ## Cấu hình thao tác
@@ -84,11 +84,11 @@ Ngày bắt đầu mặc định là **Thứ Hai**, giúp bạn điều chỉnh 
 
 ### Hôm nay
 
-Nút "Hôm nay" của block lịch cung cấp chức năng điều hướng tiện lợi, cho phép bạn nhanh chóng quay về trang lịch của ngày hiện tại sau khi đã chuyển sang ngày khác.
+Nút "Hôm nay" của khối lịch cung cấp chức năng điều hướng tiện lợi, cho phép người dùng nhanh chóng quay lại trang lịch chứa ngày hiện tại sau khi chuyển sang các ngày khác.
 
 ![20240419203514](https://static-docs.nocobase.com/20240419203514.png)
 
-### Chuyển đổi giao diện
+### Chuyển đổi chế độ xem
 
 Mặc định là tháng
 

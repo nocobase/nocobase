@@ -194,6 +194,35 @@ export class TableColumnModel extends DisplayItemModel {
       .filter(Boolean);
   }
 
+  canQuickEdit(record: Record<string, unknown>): boolean {
+    if (!this.props.editable) {
+      return false;
+    }
+    if (this.context.skipAclCheck) {
+      return true;
+    }
+
+    const blockModel = this.context.blockModel;
+    const collection = blockModel?.collection;
+    const resource = blockModel?.resource;
+    const collectionField = this.collectionField;
+    if (!collection || !resource || !collectionField) {
+      return false;
+    }
+
+    const filterByTk = collection.getFilterByTK(record);
+    const recordPkValue = typeof filterByTk === 'string' || typeof filterByTk === 'number' ? filterByTk : undefined;
+
+    return this.context.acl.can({
+      dataSourceKey: collection.dataSourceKey,
+      resourceName: resource.getResourceName() || collection.name,
+      actionName: 'update',
+      recordPkValue,
+      allowedActions: resource.getMeta('allowedActions'),
+      fields: [collectionField.name],
+    });
+  }
+
   getColumnProps(): TableColumnProps & { sortField?: string } {
     if (!this.props.width) {
       return;
@@ -250,7 +279,7 @@ export class TableColumnModel extends DisplayItemModel {
           record,
           recordIndex: record?.__index || recordIndex,
           width: this.props.width - 16,
-          editable: this.props.editable,
+          editable: this.canQuickEdit(record),
           dataIndex: this.props.dataIndex,
           title: this.props.title,
           overflowMode: this.props.overflowMode,
@@ -373,14 +402,18 @@ TableColumnModel.registerFlow({
               currentProps: ctx.model.props,
             })
           : undefined;
+        const collectionFieldComponentProps = collectionField.getComponentProps();
         const componentProps =
           collectionField.isAssociationField() && titleField
             ? {
-                ...collectionField.getComponentProps(),
+                ...collectionFieldComponentProps,
                 ...targetCollectionField?.getComponentProps?.(),
                 ...savedDateTimeDisplayProps,
               }
-            : collectionField.getComponentProps();
+            : {
+                ...collectionFieldComponentProps,
+                ...savedDateTimeDisplayProps,
+              };
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit

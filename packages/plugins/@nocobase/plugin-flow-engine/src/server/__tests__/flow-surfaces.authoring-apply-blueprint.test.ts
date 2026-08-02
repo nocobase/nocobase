@@ -120,6 +120,72 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     };
   }
 
+  async function createAuthoringMultiHopRelationFixture() {
+    const suffix = _.uniqueId();
+    const sourceCollection = `fab_mh_a_${suffix}`;
+    const middleCollection = `fab_mh_b_${suffix}`;
+    const targetCollection = `fab_mh_c_${suffix}`;
+    await rootAgent.resource('collections').create({
+      values: {
+        name: targetCollection,
+        title: targetCollection,
+        titleField: 'name',
+        filterTargetKey: 'id',
+        fields: [
+          { name: 'name', type: 'string', interface: 'input' },
+          { name: 'code', type: 'string', interface: 'input' },
+        ],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: middleCollection,
+        title: middleCollection,
+        titleField: 'name',
+        filterTargetKey: 'id',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections').create({
+      values: {
+        name: sourceCollection,
+        title: sourceCollection,
+        titleField: 'name',
+        filterTargetKey: 'id',
+        fields: [{ name: 'name', type: 'string', interface: 'input' }],
+      },
+    });
+    await rootAgent.resource('collections.fields', sourceCollection).create({
+      values: {
+        name: 'middle',
+        type: 'belongsTo',
+        target: middleCollection,
+        foreignKey: 'middleId',
+        interface: 'm2o',
+      },
+    });
+    await rootAgent.resource('collections.fields', middleCollection).create({
+      values: {
+        name: 'target',
+        type: 'belongsTo',
+        target: targetCollection,
+        foreignKey: 'targetId',
+        interface: 'm2o',
+      },
+    });
+    await waitForFixtureCollectionsReady(context.db, {
+      [sourceCollection]: ['name', 'middleId'],
+      [middleCollection]: ['name', 'targetId'],
+      [targetCollection]: ['name', 'code'],
+    });
+    return {
+      sourceCollection,
+      middleCollection,
+      targetCollection,
+      leafAssociationName: `${middleCollection}.target`,
+    };
+  }
+
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
       plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
@@ -3504,6 +3570,92 @@ describe('flowSurfaces backend authoring applyBlueprint compiler', () => {
     const detailsBlock = collectDescendantNodes(popupSurface, (item) => item?.use === 'DetailsBlockModel')[0];
     expect(detailsBlock?.uid).toBeTruthy();
     expect(readDetailsFieldPaths(detailsBlock)).toEqual(expect.arrayContaining(['name']));
+  });
+
+  it('should persist multi-hop relation field popups with the leaf association context like manual fields', async () => {
+    const { sourceCollection, middleCollection, targetCollection, leafAssociationName } =
+      await createAuthoringMultiHopRelationFixture();
+    const executeRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        mode: 'create',
+        navigation: {
+          item: {
+            title: `Authoring multi-hop relation field popup ${_.uniqueId()}`,
+          },
+        },
+        page: {
+          title: 'Authoring multi-hop relation field popup',
+        },
+        tabs: [
+          {
+            title: 'Overview',
+            blocks: [
+              {
+                key: 'sourceTable',
+                type: 'table',
+                collection: sourceCollection,
+                fields: [
+                  'name',
+                  {
+                    field: 'middle.target.name',
+                    popup: {
+                      tryTemplate: true,
+                      defaultType: 'view',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
+    const data = getData(executeRes);
+    const targetNameField = collectDescendantNodes(
+      data.surface.tree,
+      (item) =>
+        item?.use === 'DisplayTextFieldModel' &&
+        item?.stepParams?.fieldSettings?.init?.fieldPath === 'middle.target.name',
+    )[0];
+    expect(targetNameField?.uid).toBeTruthy();
+    expect(targetNameField?.stepParams?.fieldSettings?.init).toMatchObject({
+      collectionName: sourceCollection,
+      fieldPath: 'middle.target.name',
+      associationPathName: 'middle.target',
+    });
+
+    const persistedTargetNameField = await flowRepo.findModelById(targetNameField.uid, { includeAsyncNode: true });
+    const openView = readPopupOpenView(persistedTargetNameField);
+    expect(openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: targetCollection,
+      associationName: leafAssociationName,
+    });
+    expect(openView).not.toHaveProperty('sourceId');
+
+    const popupTemplateUid = readPopupTemplateUid(persistedTargetNameField);
+    const template = getData(
+      await rootAgent.resource('flowSurfaces').getTemplate({
+        values: {
+          uid: popupTemplateUid,
+        },
+      }),
+    );
+    expect(template).toMatchObject({
+      collectionName: targetCollection,
+      associationName: leafAssociationName,
+    });
+    expect(template.sourceId || undefined).toBeUndefined();
+
+    const popupSurface = await readPopupSurfaceForHost(rootAgent, flowRepo, persistedTargetNameField);
+    const detailsBlock = collectDescendantNodes(popupSurface, (item) => item?.use === 'DetailsBlockModel')[0];
+    expect(detailsBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: targetCollection,
+    });
+    expect(openView.associationName).toBe(`${middleCollection}.target`);
   });
 
   it('should reject raw createForm blocks without visible fields before generating fieldGroups', async () => {

@@ -2,6 +2,15 @@
 
 A storage engine based on Aliyun OSS. Before use, you need to prepare the relevant account and permissions.
 
+
+:::warning Note
+
+This engine does not support private access. After a file is uploaded, NocoBase generates a directly accessible URL, and anyone who has that URL can access the file.
+
+Even if the OSS bucket itself is private, the built-in Aliyun OSS engine does not generate temporary signed URLs for file access. If you need private access, use [S3 Pro](./s3-pro). If historical files already exist, see [Migrate to S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Configuration Parameters
 
 

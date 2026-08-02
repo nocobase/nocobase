@@ -123,6 +123,13 @@ export const createLoadedPageCache = () => {
       }
     },
 
+    markDirtyForOptions(options?: LoadedPageOptions): void {
+      const key = getLoadedPageKey(options);
+      if (key) {
+        dirtyKeys.add(key);
+      }
+    },
+
     shouldBypass(options?: LoadedPageOptions, isFlowSettingsEnabled?: () => boolean): boolean {
       const key = getLoadedPageKey(options);
       if (!key || !dirtyKeys.has(key)) {

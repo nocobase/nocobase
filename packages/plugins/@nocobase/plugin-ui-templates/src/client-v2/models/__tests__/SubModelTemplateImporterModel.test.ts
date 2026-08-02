@@ -7,9 +7,53 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { BlockModel, CommonItemModel, FormCustomItemModel } from '@nocobase/client-v2';
+import { FlowEngine, FlowModel, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { describe, it, expect, vi } from 'vitest';
 import { SubModelTemplateImporterModel, resolveExpectedRootUse } from '../SubModelTemplateImporterModel';
+
+function createFieldTemplateMenuEngine() {
+  class SubFormFieldModel extends FlowModel {}
+  class SubFormListFieldModel extends FlowModel {}
+
+  const engine = new FlowEngine();
+  engine.registerModels({
+    BlockModel,
+    CommonItemModel,
+    FormCustomItemModel,
+    SubFormFieldModel,
+    SubFormListFieldModel,
+    SubModelTemplateImporterModel,
+  });
+  return engine;
+}
+
+function createFieldsMenuModel(engine: FlowEngine, uidPrefix: string, relationSubFormUse?: string) {
+  const block = engine.createModel<BlockModel>({ uid: `${uidPrefix}-block`, use: 'BlockModel' });
+  if (!relationSubFormUse) {
+    return engine.createModel<FlowModel>({ uid: `${uidPrefix}-grid`, use: 'FlowModel', parentId: block.uid });
+  }
+
+  const relationField = engine.createModel<FlowModel>({
+    uid: `${uidPrefix}-relation-field`,
+    use: relationSubFormUse,
+    parentId: block.uid,
+  });
+  return engine.createModel<FlowModel>({ uid: `${uidPrefix}-grid`, use: 'FlowModel', parentId: relationField.uid });
+}
+
+function getFieldTemplateMenuItem(model: FlowModel) {
+  const items = FormCustomItemModel.defineChildren(model.context as FlowModelContext) as SubModelItem[];
+  return items.find((item) => item.key === 'SubModelTemplateImporterModel');
+}
+
+async function isMenuItemVisible(item: SubModelItem | undefined, ctx: FlowModelContext) {
+  if (!item) return false;
+  if (typeof item.hide === 'function') {
+    return !(await item.hide(ctx));
+  }
+  return !item.hide;
+}
 
 describe('resolveExpectedRootUse', () => {
   it('allows ApplyFormModel and ProcessFormModel to share templates', () => {
@@ -33,6 +77,29 @@ describe('resolveExpectedRootUse', () => {
 });
 
 describe('SubModelTemplateImporterModel', () => {
+  it('keeps the field template menu item visible in normal form fields menus', async () => {
+    const engine = createFieldTemplateMenuEngine();
+    const grid = createFieldsMenuModel(engine, 'normal');
+
+    const item = getFieldTemplateMenuItem(grid);
+
+    expect(item?.key).toBe('SubModelTemplateImporterModel');
+    expect(await isMenuItemVisible(item, grid.context as FlowModelContext)).toBe(true);
+  });
+
+  it.each(['SubFormFieldModel', 'SubFormListFieldModel'] as const)(
+    'hides the field template menu item inside %s fields menus',
+    async (relationSubFormUse) => {
+      const engine = createFieldTemplateMenuEngine();
+      const grid = createFieldsMenuModel(engine, relationSubFormUse, relationSubFormUse);
+
+      const item = getFieldTemplateMenuItem(grid);
+
+      expect(item?.key).toBe('SubModelTemplateImporterModel');
+      expect(await isMenuItemVisible(item, grid.context as FlowModelContext)).toBe(false);
+    },
+  );
+
   it('stores derived targetUid into stepParams in beforeParamsSave', async () => {
     const engine = new FlowEngine();
 

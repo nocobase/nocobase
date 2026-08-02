@@ -73,6 +73,24 @@ const omitNullAndUndefined = (obj: any) => {
   }, {});
 };
 
+const RuntimeTargetOptionKeys = new Set([
+  'url',
+  'baseURL',
+  'proxy',
+  'socketPath',
+  'transport',
+  'httpAgent',
+  'httpsAgent',
+]);
+
+const getForbiddenRuntimeTargetOptionKeys = (runtimeOptions: unknown) => {
+  if (!runtimeOptions || typeof runtimeOptions !== 'object' || Array.isArray(runtimeOptions)) {
+    return [];
+  }
+
+  return Object.keys(runtimeOptions).filter((key) => RuntimeTargetOptionKeys.has(key));
+};
+
 const CurrentUserVariableRegExp = /{{\s*(?:ctx\.)?(currentUser[^}]+)\s*}}/g;
 
 const getCurrentUserAppends = (str: string, user) => {
@@ -159,6 +177,14 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   if (!requestConfig) {
     ctx.throw(404, 'request config not found');
+  }
+
+  const forbiddenRuntimeOptionKeys = getForbiddenRuntimeTargetOptionKeys(runtimeOptions);
+  if (forbiddenRuntimeOptionKeys.length) {
+    return ctx.throw(
+      400,
+      ctx.t('Runtime request options cannot override the request target', { ns: 'action-custom-request' }),
+    );
   }
 
   ctx.withoutDataWrapping = true;

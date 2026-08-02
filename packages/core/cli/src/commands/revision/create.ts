@@ -126,7 +126,7 @@ export default class RevisionCreate extends Command {
       path: '/app:publishEvent',
       body: {
         plugin: 'plugin-version-control',
-        command: 'revision:create',
+        command: 'revision.create',
         payload: {
           description,
         },

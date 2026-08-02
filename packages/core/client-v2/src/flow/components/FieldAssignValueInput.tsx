@@ -1028,18 +1028,22 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       collectionField: effectiveCollectionField,
     });
 
-    const created = engine?.createModel?.({
-      use: 'VariableFieldFormModel',
-      subModels: {
-        fields: [
-          {
-            use: effectiveFieldModelUse,
-            stepParams: tempFieldStepParams,
-            props: tempFieldProps,
-          },
-        ],
+    const sourceContext = resolved?.itemModel?.context || flowCtx.model?.context;
+    const created = engine?.createModel?.(
+      {
+        use: 'VariableFieldFormModel',
+        subModels: {
+          fields: [
+            {
+              use: effectiveFieldModelUse,
+              stepParams: tempFieldStepParams,
+              props: tempFieldProps,
+            },
+          ],
+        },
       },
-    });
+      sourceContext ? { delegate: sourceContext } : undefined,
+    );
     if (!created) return;
 
     // 注入上下文（集合/数据源/字段/区块/资源）

@@ -21,12 +21,13 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
 import Dispatcher, { EventOptions } from './Dispatcher';
-import Processor from './Processor';
+import Processor, { ProcessorRerunOptions } from './Processor';
 import ExecutionTimeoutManager from './ExecutionTimeoutManager';
 import RunningExecutionRegistry from './RunningExecutionRegistry';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
 import { WorkflowValidationError } from './actions/workflows';
+import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -42,7 +43,7 @@ import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
-import type { ExecutionModel, WorkflowModel } from './types';
+import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 import type { Transaction } from '@nocobase/database';
 
@@ -174,21 +175,21 @@ export default class PluginWorkflowServer extends Plugin {
     }
 
     this.checker = setInterval(() => {
-      this.dispatcher.dispatch();
+      this.dispatcher.recover({ gracePeriod: 60_000 });
     }, 300_000);
 
     await this.timeoutManager.load();
 
-    this.app.on('workflow:dispatch', () => {
-      this.app.logger.info('workflow:dispatch');
-      this.dispatcher.dispatch();
+    this.app.on('workflow:recover', () => {
+      this.app.logger.info('workflow:recover');
+      this.dispatcher.recover();
     });
 
     this.dispatcher.setReady(true);
 
     // check for queueing executions
     this.getLogger('dispatcher').info('(starting) check for queueing executions');
-    this.dispatcher.dispatch();
+    this.dispatcher.recover();
   };
 
   private onBeforeStop = async () => {
@@ -203,8 +204,6 @@ export default class PluginWorkflowServer extends Plugin {
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
     }
-
-    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.loggerCache.clear();
   };
@@ -449,7 +448,7 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.eventQueue.subscribe(this.channelPendingExecution, {
       idle: () => this.serving() && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
+      process: this.dispatcher.onQueueTask,
     });
   }
 
@@ -506,32 +505,83 @@ export default class PluginWorkflowServer extends Plugin {
     workflow: WorkflowModel,
     context: object,
     options: EventOptions = {},
-  ): void | Promise<Processor | null> {
+  ): void | Promise<Processor | null | void> {
     return this.dispatcher.trigger(workflow, context, options);
   }
 
-  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
-    return this.dispatcher.run(pending);
+  public async rerun(execution: ExecutionModel | ID, rerun?: ProcessorRerunOptions): Promise<void> {
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution), rerun: rerun ?? {} });
   }
 
-  public dispatch() {
-    return this.dispatcher.dispatch();
+  public recover() {
+    return this.dispatcher.recover();
   }
 
-  public async resume(job) {
-    return this.dispatcher.resume(job);
+  /**
+   * Persist the current job state and publish a poke that evaluates that state.
+   *
+   * PENDING resume calls are valid for instructions such as delay and sequential approval.
+   * Callers that aggregate multiple user actions must only call this method when their
+   * atomic update changes the job from PENDING to a terminal status.
+   * Persistence and queue publication failures are logged and rethrown to awaiting callers.
+   */
+  public async resume(job: JobModel): Promise<void> {
+    const executionId = job.executionId ?? job.execution?.id;
+    if (executionId == null) {
+      this.getLogger('dispatcher').warn(`execution id of job (${job.id}) not found, resume ignored`);
+      return;
+    }
+
+    try {
+      if (job.changed()) {
+        await job.save();
+      }
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `persisting job (${job.id}) before resuming execution (${executionId}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
+
+    try {
+      await this.dispatcher.enqueue({ executionId, jobId: job.id });
+      this.getLogger('dispatcher').info(`execution (${executionId}) resuming from job (${job.id}) published to queue`);
+    } catch (error) {
+      this.getLogger('dispatcher').error(
+        `publishing resume task for execution (${executionId}) from job (${job.id}) failed`,
+        { error, executionId, jobId: job.id },
+      );
+      throw error;
+    }
   }
 
   /**
    * Start a deferred execution
    * @experimental
    */
-  public async start(execution: ExecutionModel) {
-    return this.dispatcher.start(execution);
+  public async start(execution: ExecutionModel | ID): Promise<void> {
+    if (typeof execution !== 'string' && typeof execution !== 'number') {
+      if (
+        execution.status !== EXECUTION_STATUS.QUEUEING &&
+        execution.status !== EXECUTION_STATUS.STARTED &&
+        execution.status != null
+      ) {
+        return;
+      }
+      if (execution.status === EXECUTION_STATUS.STARTED && execution.startedAt) {
+        return;
+      }
+    }
+    return this.dispatcher.enqueue({ executionId: this.getModelId(execution) });
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
+  }
+
+  private getModelId(input: ExecutionModel | ID): ID {
+    return typeof input === 'string' || typeof input === 'number' ? input : input.id;
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {

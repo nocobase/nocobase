@@ -11,7 +11,7 @@ import { Select, Space } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/css';
 import { BulkEditFormItemValueType } from '../types';
-import { lang } from '../locale';
+import { useBulkEditTranslation } from '../locale';
 
 function toFormFieldValue(value: any) {
   if (BulkEditFormItemValueType.Clear in value) {
@@ -24,6 +24,7 @@ function toFormFieldValue(value: any) {
 }
 
 export const BulkEditFieldV2 = (props) => {
+  const { t } = useBulkEditTranslation();
   const { formItemModel, onChange, field, ...rest } = props;
   const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
@@ -65,7 +66,7 @@ export const BulkEditFieldV2 = (props) => {
       // 移除所有规则
       formItemModel?.setProps({ required: false, rules: [] });
     }
-  }, [type]);
+  }, [formItemModel, originalRules, type]);
 
   const valueChangeHandler = (val) => {
     const v = val?.target?.value ?? val?.target?.checked ?? val;
@@ -89,9 +90,9 @@ export const BulkEditFieldV2 = (props) => {
       direction="vertical"
     >
       <Select defaultValue={type} value={type} onChange={typeChangeHandler} disabled={props.aclDisabled}>
-        <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{lang('Remains the same')}</Select.Option>
-        <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{lang('Changed to')}</Select.Option>
-        <Select.Option value={BulkEditFormItemValueType.Clear}>{lang('Clear')}</Select.Option>
+        <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
+        <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
+        <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>
       </Select>
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) && child}
     </Space>

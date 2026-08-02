@@ -39,5 +39,6 @@ export * from './collection-manager/interfaces';
 export * from './collection-manager/template-fields';
 export * from './data-source';
 export * from './flow';
+export * from './utils/markdownSanitize';
 export { DEFAULT_DATA_SOURCE_KEY, isTitleField, isTitleFieldInterface } from './flow-compat';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';

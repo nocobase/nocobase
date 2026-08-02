@@ -17,7 +17,15 @@ import { FilterFormBlockModel } from '../FilterFormBlockModel';
 function resolveTemplateValue(raw: any, values: Record<string, any>): any {
   if (typeof raw === 'string') {
     const matched = raw.match(/^\{\{\s*ctx\.formValues\.([^}]+?)\s*\}\}$/);
-    return matched ? values[matched[1]] : raw;
+    if (matched) {
+      return values[matched[1]];
+    }
+
+    if (/^\{\{\s*ctx\.date\.relative\.past\.day\.n7\s*\}\}$/.test(raw)) {
+      return '2026-06-15';
+    }
+
+    return raw;
   }
   if (Array.isArray(raw)) {
     return raw.map((item) => resolveTemplateValue(item, values));
@@ -30,7 +38,7 @@ function resolveTemplateValue(raw: any, values: Record<string, any>): any {
 
 function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<string, any> = {}) {
   const values = { ...initialValues };
-  const createItem = (fieldPath: string, uid: string) => ({
+  const createItem = (fieldPath: string, uid: string, operator?: string) => ({
     uid,
     fieldPath,
     props: { name: `${fieldPath}_${uid}` },
@@ -44,7 +52,7 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
       return undefined;
     },
     subModels: {
-      field: {},
+      field: operator ? { operator } : {},
     },
   });
   const model = {
@@ -76,7 +84,11 @@ function createFilterFormDefaultValuesModel(rules: any[], initialValues: Record<
     subModels: {
       grid: {
         subModels: {
-          items: [createItem('nickname', 'nick'), createItem('username', 'user')],
+          items: [
+            createItem('nickname', 'nick'),
+            createItem('username', 'user'),
+            createItem('birthdate_tz', 'birthdate', '$dateOn'),
+          ],
         },
       },
     },
@@ -301,6 +313,40 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('Manual');
   });
 
+  it('does not reapply a filter form default value after user clears the field', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-default',
+        enable: true,
+        targetPath: 'username',
+        mode: 'default',
+        value: 'admin',
+      },
+    ]);
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+    expect(values.username_user).toBe('admin');
+
+    values.username_user = undefined;
+    (model as any).handleFilterFormValuesChange({ username_user: undefined }, { username_user: undefined });
+
+    await waitFor(() => {
+      expect(model.dispatchEvent).toHaveBeenCalledWith(
+        'formValuesChange',
+        {
+          changedValues: {
+            username_user: undefined,
+          },
+          allValues: {
+            username_user: undefined,
+          },
+        },
+        { debounce: true },
+      );
+    });
+    expect(values.username_user).toBeUndefined();
+  });
+
   it('applies fixed values even when the target filter field already has a value', async () => {
     const { model, values } = createFilterFormDefaultValuesModel(
       [
@@ -318,6 +364,22 @@ describe('filter-form defaultValues wiring', () => {
     await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
 
     expect(values.username_user).toBe('Bob');
+  });
+
+  it('preserves relative date descriptors for date filter default values', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'birthdate-default',
+        enable: true,
+        targetPath: 'birthdate_tz',
+        mode: 'assign',
+        value: '{{ ctx.date.relative.past.day.n7 }}',
+      },
+    ]);
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.birthdate_tz_birthdate).toEqual({ type: 'past', unit: 'day', number: 7 });
   });
 
   it('applies override values until the target filter field is changed by user', async () => {

@@ -349,15 +349,17 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### SERVER_REQUEST_WHITELIST
 
-Whitelist of allowed targets for server-initiated outbound HTTP requests, used to prevent SSRF (Server-Side Request Forgery) attacks. Accepts a comma-separated list of exact IPs, CIDR ranges, exact hostnames, and single-level wildcard subdomains.
+Whitelist of allowed targets for outbound HTTP requests initiated by the NocoBase server. Accepts a comma-separated list of exact IPs, CIDR ranges, exact hostnames, and single-level wildcard subdomains.
 
 ```bash
-SERVER_REQUEST_WHITELIST=1.2.3.4,10.0.0.0/8,api.example.com,*.trusted.com
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 ```
 
-**Applies to**: Workflow "HTTP Request" nodes and Custom Request action buttons. Relative-path requests (calls to the NocoBase API itself) are not affected.
+**Applies to**: Workflow "HTTP Request" nodes, Custom Request action buttons, AI services, and other server-side requests. Relative-path requests (calls to the NocoBase API itself) are not affected.
 
-**When not set**: All `http`/`https` outbound requests are allowed (existing behaviour). **When set**: Only requests whose host matches a whitelist entry are permitted; non-matching requests will raise an error.
+**When not set**: All `http` / `https` outbound requests are allowed to keep existing behavior. However, if the target is a loopback, private, link-local, or metadata address, or if a domain resolves to one of these addresses, the server logs a warning.
+
+**When set**: The initial request and every redirect destination must match a whitelist entry; non-matching requests will raise an error before the next request is sent. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
 
 Supported formats:
 
@@ -365,8 +367,16 @@ Supported formats:
 | --- | --- | --- |
 | Exact IPv4 | `1.2.3.4` | That IP only |
 | IPv4 CIDR | `10.0.0.0/8` | All IPs in the subnet |
+| Exact IPv6 | `::1` | That IP only |
+| IPv6 CIDR | `fc00::/7` | All IPs in the subnet |
 | Exact hostname | `api.example.com` | That hostname only |
 | Wildcard subdomain | `*.example.com` | One subdomain level, e.g. `foo.example.com`; does **not** match `example.com` or `a.b.example.com` |
+
+:::warning Note
+
+If a domain is configured in the whitelist, the whitelist check uses the host in the request URL. In other words, after `internal.example.com` is configured, it is treated as explicitly allowed even if the domain resolves to `127.0.0.1` or a private address.
+
+:::
 
 ## Experimental Environment Variables
 

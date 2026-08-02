@@ -1,12 +1,12 @@
 ---
 title: "nb skills install"
-description: "Справочник по команде nb skills install: глобальная установка AI coding Skills NocoBase."
-keywords: "nb skills install,NocoBase CLI,установка Skills"
+description: "Справочник по команде nb skills install: глобальная установка навыков ИИ-разработки NocoBase."
+keywords: "nb skills install,NocoBase CLI,установка навыков"
 ---
 
 # nb skills install
 
-Глобально устанавливает AI coding Skills NocoBase. Если они уже установлены, эта команда не выполняет обновление.
+Глобально устанавливает навыки ИИ-разработки NocoBase. Если они уже установлены, эта команда не выполняет обновление.
 
 ## Использование
 

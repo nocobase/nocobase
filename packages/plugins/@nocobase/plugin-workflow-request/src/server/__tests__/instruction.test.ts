@@ -170,6 +170,19 @@ describe('workflow > instructions > request', () => {
     await app.destroy();
   });
 
+  async function waitFor<T>(load: () => Promise<T>, matched: (value: T) => boolean, timeout = 1000): Promise<T> {
+    const start = Date.now();
+    let value = await load();
+    while (Date.now() - start < timeout) {
+      if (matched(value)) {
+        return value;
+      }
+      await sleep(20);
+      value = await load();
+    }
+    return value;
+  }
+
   describe('params processing', () => {
     it('trim should not crash', async () => {
       await workflow.createNode({
@@ -270,7 +283,7 @@ describe('workflow > instructions > request', () => {
         enabled: true,
         type: 'collection',
         options: {
-          timeout: 300,
+          timeout: 1000,
         },
         config: {
           mode: 1,
@@ -289,23 +302,31 @@ describe('workflow > instructions > request', () => {
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(100);
-
-      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
-      let [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
+      let [execution] = await waitFor(
+        () => workflow.getExecutions(),
+        ([execution]) => execution?.status === EXECUTION_STATUS.STARTED,
+      );
+      expect(execution?.status).toBe(EXECUTION_STATUS.STARTED);
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
 
-      let [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.PENDING);
+      let [job] = await waitFor(
+        () => execution.getJobs(),
+        ([job]) => job?.status === JOB_STATUS.PENDING,
+      );
+      expect(job?.status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(350);
-
-      [execution] = await workflow.getExecutions();
-      expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
-      [job] = await execution.getJobs();
-      expect(job.status).toBe(JOB_STATUS.ABORTED);
+      [execution] = await waitFor(
+        () => workflow.getExecutions(),
+        ([execution]) => execution?.status === EXECUTION_STATUS.ABORTED,
+        2000,
+      );
+      expect(execution?.status).toBe(EXECUTION_STATUS.ABORTED);
+      [job] = await waitFor(
+        () => execution.getJobs(),
+        ([job]) => job?.status === JOB_STATUS.ABORTED,
+      );
+      expect(job?.status).toBe(JOB_STATUS.ABORTED);
 
       await sleep(2200);
 

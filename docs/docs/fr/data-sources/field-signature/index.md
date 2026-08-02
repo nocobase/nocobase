@@ -2,35 +2,35 @@
 pkg: "@nocobase/plugin-field-signature"
 ---
 
-# Champ de collection : signature manuscrite
+# Champ de table de données : signature manuscrite
 
-## Présentation
+## Introduction
 
-Le champ de signature manuscrite permet aux utilisateurs de signer sur un canevas avec la souris ou un écran tactile. Une fois sauvegardée, l'image de la signature est écrite dans la **collection de fichiers** sélectionnée et réutilise les flux d'upload et de stockage de fichiers fournis par le **File Manager**.
+Le champ de signature manuscrite permet aux utilisateurs d’écrire leur signature sur une zone de dessin à l’aide de la souris ou d’un écran tactile. Après l’enregistrement, l’image de la signature est écrite dans la **table de données de fichiers** sélectionnée et réutilise le processus de téléversement et de stockage des fichiers fourni par le **gestionnaire de fichiers**.
 
 ## Installation
 
-1. Vérifiez que l'environnement courant est en **édition Pro ou supérieure** et que la licence est valide.
-2. Ouvrez le **Plugin Manager**, trouvez **Champ de collection : signature manuscrite** (`@nocobase/plugin-field-signature`) et activez-le.
-3. Assurez-vous que le **File Manager** (`@nocobase/plugin-file-manager`) est activé. Le champ de signature manuscrite en dépend pour fournir la collection de fichiers, les capacités d'upload et de stockage. S'il n'est pas activé, l'image de la signature ne pourra pas être sauvegardée.
+1. Vérifiez que l’environnement actuel est en **édition professionnelle ou supérieure** et que la licence est valide.
+2. Ouvrez le **gestionnaire de plugins**, recherchez **Champ de table de données : signature manuscrite** (`@nocobase/plugin-field-signature`) et activez-le.
+3. Assurez-vous que le **gestionnaire de fichiers** (`@nocobase/plugin-file-manager`) est activé. Le champ de signature manuscrite dépend de ses capacités de table de données de fichiers, de téléversement et de stockage ; s’il n’est pas activé, l’image de la signature ne pourra pas être enregistrée.
 
-## Mode d'emploi
+## Mode d’emploi
 
 ### Ajouter un champ
 
-Allez dans **Source de données** → sélectionnez la collection → **Configurer les champs** → **Ajouter un champ** → choisissez **Signature manuscrite** dans le groupe Multimédia.
+Dans **Source de données** → sélectionnez une table de données → **Configurer les champs** → **Ajouter un champ** → dans le groupe Multimédia, sélectionnez **Signature manuscrite**.
 
 ### Configuration du champ
 
-- **Collection de fichiers** : obligatoire ; sélectionnez une collection de fichiers utilisée pour sauvegarder les fichiers (par exemple `attachments`). L'image de la signature y sera enregistrée.
-- La configuration de stockage et les règles d'upload effectivement utilisées pour l'image de la signature sont déterminées par la collection de fichiers sélectionnée elle-même.
+- **Table de données de fichiers** : obligatoire ; sélectionnez une table de données de fichiers destinée à enregistrer les fichiers (par exemple `attachments`). L’image de la signature y sera enregistrée.
+- La configuration de stockage et les règles de téléversement effectivement utilisées par l’image de la signature sont déterminées par la table de données de fichiers sélectionnée.
 
-### Configuration de l'interface
+### Configuration de l’interface
 
-- Après avoir ajouté un champ de signature manuscrite à un formulaire, vous pouvez ajuster les **paramètres de signature** dans la configuration d'interface du champ : couleur du trait, couleur de fond, largeur et hauteur du canevas de signature, ainsi que largeur et hauteur de la miniature.
-- Dans les scénarios d'affichage en lecture seule, vous pouvez également ajuster la largeur et la hauteur de la miniature de signature pour contrôler la taille d'affichage de l'image.
+- Après avoir ajouté le champ de signature manuscrite à un formulaire, vous pouvez ajuster les **paramètres de signature** dans la configuration de l’interface du champ, notamment la couleur du trait, la couleur d’arrière-plan, la largeur et la hauteur de la zone de signature, ainsi que la largeur et la hauteur de la miniature.
+- Dans les scénarios d’affichage en lecture seule, vous pouvez également ajuster la largeur et la hauteur de la miniature de la signature afin de contrôler les dimensions d’affichage de l’image.
+### Opérations dans l’interface
 
-### Opérations dans l'interface
-
-- Cliquez sur la zone du champ pour ouvrir le canevas de signature. Une fois la signature terminée et confirmée, elle est uploadée et associée à l'enregistrement de fichier correspondant.
-- Sur les appareils à petit écran, vous pouvez utiliser une interface de signature de type horizontal/plein écran pour faciliter l'écriture.
+- Cliquez sur la zone du champ pour ouvrir la zone de signature, puis confirmez une fois l’écriture terminée afin de téléverser la signature et de l’associer à l’enregistrement de fichier correspondant.
+- Sur les appareils à petit écran, vous pouvez utiliser une interface de signature en mode paysage ou plein écran pour faciliter l’écriture.
+![20260709232226](https://static-docs.nocobase.com/20260709232226.png)

@@ -11,6 +11,15 @@ import { FlowContext } from '@nocobase/flow-engine';
 
 import { ChartResource } from '../ChartResource';
 
+class TestChartResource extends ChartResource<any[]> {
+  runCalls = 0;
+
+  override async run() {
+    this.runCalls += 1;
+    return { data: [], meta: {} };
+  }
+}
+
 describe('client-v2 ChartResource', () => {
   test('fills aggregated order alias from selected query fields', () => {
     const resource = new ChartResource(new FlowContext());
@@ -44,5 +53,13 @@ describe('client-v2 ChartResource', () => {
     expect((resource as any).request.data.filter).toEqual({
       $and: [{ status: { $eq: 'paid' } }, { amount: { $gt: 0 } }],
     });
+  });
+
+  test('settles all callers when rapid refresh calls are debounced', async () => {
+    const resource = new TestChartResource(new FlowContext());
+
+    await expect(Promise.all([resource.refresh(), resource.refresh()])).resolves.toEqual([undefined, undefined]);
+
+    expect(resource.runCalls).toBe(1);
   });
 });

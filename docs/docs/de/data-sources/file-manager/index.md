@@ -1,38 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "ファイルマネージャー"
+description: "ファイルコレクション、添付ファイルフィールド、ローカル・Alibaba Cloud OSS・Amazon S3・Tencent Cloud COS に対応するファイルストレージエンジンを管理します。"
+keywords: "ファイルマネージャー,ファイルコレクション,添付ファイルフィールド,ストレージエンジン,OSS,S3,COS,NocoBase"
 ---
 
+# ファイルマネージャー
 
-# Dateimanager
+<PluginInfo name="file-manager"></PluginInfo>
 
-## Einführung
+## 概要
 
-Das Dateimanager-Plugin bietet eine Dateisammlung, Anhangsfelder und Dateispeicher-Engines zur effizienten Verwaltung von Dateien. Dateien sind Datensätze in einer speziellen Art von Sammlung, die als Dateisammlung bezeichnet wird. Diese speichert Dateimetadaten und kann über den Dateimanager verwaltet werden. Anhangsfelder sind spezifische Verknüpfungsfelder, die mit der Dateisammlung verknüpft sind. Das Plugin unterstützt verschiedene Speichermethoden. Zu den derzeit unterstützten Dateispeicher-Engines gehören die lokale Speicherung, Alibaba Cloud OSS, Amazon S3 und Tencent Cloud COS.
+ファイルマネージャープラグインは、ファイルコレクション、添付ファイルフィールド、およびファイルストレージエンジンを提供し、ファイルを効率的に管理できます。ファイルは特定の構造を持つデータテーブルのレコードであり、この構造を持つデータテーブルはファイルコレクションと呼ばれます。ファイルコレクションはファイルのメタ情報を保存し、ファイルマネージャーで管理できます。添付ファイルフィールドはファイルコレクションに関連付けられた特定の関連フィールドです。ファイルは複数の保存方法をサポートし、現在はローカルストレージ、Alibaba Cloud OSS、Amazon S3、Tencent Cloud COS のストレージエンジンを利用できます。
 
-## Benutzerhandbuch
+## ユーザーマニュアル
 
-### Dateisammlung
+### ファイルコレクション
 
-Eine `attachments`-Sammlung ist integriert, um alle Dateien zu speichern, die mit Anhangsfeldern verknüpft sind. Darüber hinaus können Sie neue Dateisammlungen erstellen, um spezifische Dateien zu speichern.
+attachments テーブルは、すべての添付ファイルフィールドに関連付けられたファイルを保存します。これとは別に、特定のファイルを保存する新しいファイルコレクションも作成できます。
 
-[Erfahren Sie mehr in der Dokumentation zur Dateisammlung](/data-sources/file-manager/file-collection)
+[ファイルコレクションの詳細](/data-sources/file-manager/file-collection)
 
-### Anhangsfeld
+### 添付ファイルフィールド
 
-Anhangsfelder sind spezifische Verknüpfungsfelder, die mit der Dateisammlung verknüpft sind, und können über den Feldtyp „Anhang“ erstellt oder über ein „Verknüpfungsfeld“ konfiguriert werden.
+添付ファイルフィールドはファイルコレクションに関連付けられた特定の関連フィールドです。「添付ファイルタイプ」フィールドとして作成することも、「関連」フィールドとして設定することもできます。
 
-[Erfahren Sie mehr in der Dokumentation zum Anhangsfeld](/data-sources/file-manager/field-attachment)
+[添付ファイルフィールドの詳細](/data-sources/file-manager/field-attachment)
 
-### Dateispeicher-Engine
+### ファイルストレージエンジン
 
-Die Dateispeicher-Engine wird verwendet, um Dateien in bestimmten Diensten zu speichern, einschließlich lokaler Speicherung (Speicherung auf der Festplatte des Servers), Cloud-Speicherung usw.
+ファイルストレージエンジンは、ファイルを特定のサービスに保存します。ローカルストレージ（サーバーのハードディスクへの保存）やクラウドストレージなどが含まれます。
 
-[Erfahren Sie mehr in der Dokumentation zur Dateispeicher-Engine](./storage/index.md)
+[ファイルストレージエンジンの詳細](./storage/index.md)
 
 ### HTTP API
 
-Datei-Uploads können über die HTTP API verarbeitet werden, siehe [HTTP API](./http-api.md).
+ファイルのアップロードは HTTP API を介して処理できます。詳細は [HTTP API](./http-api.md) を参照してください。
 
-## Entwicklung
+## 拡張開発
 
 *

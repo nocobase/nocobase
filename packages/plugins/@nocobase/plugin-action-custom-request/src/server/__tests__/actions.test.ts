@@ -210,6 +210,28 @@ describe('actions', () => {
         b: '100 + order-100',
       });
     });
+
+    test('runtime options cannot override request target', async () => {
+      params = undefined;
+
+      const res = await resource.send({
+        filterByTk: 'test',
+        values: {
+          options: {
+            url: 'http://169.254.169.254/latest/meta-data/',
+            baseURL: 'http://169.254.169.254',
+            proxy: {
+              host: '169.254.169.254',
+              port: 80,
+            },
+            socketPath: '/var/run/docker.sock',
+          },
+        },
+      });
+
+      expect(res.status).toBe(400);
+      expect(params).toBeUndefined();
+    });
   });
 
   describe('SSRF protection via SERVER_REQUEST_WHITELIST', () => {

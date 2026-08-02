@@ -25,6 +25,29 @@ Saat ini tipe engine yang didukung built-in oleh NocoBase adalah sebagai berikut
 
 Sistem akan otomatis menambahkan satu local storage engine saat instalasi, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
 
+
+Jika Anda sudah menggunakan storage engine yang hanya mendukung akses publik dan ingin memigrasikan file historis ke S3 Pro, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
+
+## Aksesibilitas file
+
+Setiap storage engine mendukung kontrol akses file yang berbeda. Sebelum konfigurasi, pastikan apakah file memerlukan akses privat:
+
+| Storage engine | Aksesibilitas file |
+| --- | --- |
+| [Local Storage](./local) | Hanya mendukung akses publik; akses privat tidak didukung |
+| [Amazon S3](./amazon-s3) | Hanya mendukung akses publik; akses privat tidak didukung |
+| [Aliyun OSS](./aliyun-oss) | Hanya mendukung akses publik; akses privat tidak didukung |
+| [Tencent COS](./tencent-cos) | Hanya mendukung akses publik; akses privat tidak didukung |
+| [S3 Pro](./s3-pro) | Mendukung akses privat melalui URL bertanda tangan sementara |
+
+:::warning Perhatian
+
+Local Storage, Amazon S3, Aliyun OSS, dan Tencent COS tidak melakukan autentikasi login untuk akses file dan tidak membuat URL bertanda tangan sementara. Setelah file di-upload, siapa pun yang memiliki URL akses file dapat mengakses file tersebut secara langsung.
+
+Jika perlu menyimpan kontrak, dokumen identitas, materi internal, atau file lain yang tidak boleh publik, gunakan [S3 Pro](./s3-pro) dan aktifkan akses privat.
+
+:::
+
 ## Parameter Umum Engine
 
 Selain parameter spesifik untuk setiap kategori engine, bagian berikut adalah parameter umum (contoh dengan local storage):

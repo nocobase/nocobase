@@ -143,6 +143,43 @@ vi.mock('../locale', () => ({
   useT: () => (value: string) => value,
 }));
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getByPath(source: unknown, path: string[]) {
+  let current = source;
+  for (const key of path) {
+    if (!isRecord(current)) {
+      return;
+    }
+    current = current[key];
+  }
+  return current;
+}
+
+function findPasswordItem(source: unknown): Record<string, unknown> | undefined {
+  if (Array.isArray(source)) {
+    for (const item of source) {
+      const matched = findPasswordItem(item);
+      if (matched) {
+        return matched;
+      }
+    }
+    return;
+  }
+
+  if (!isRecord(source)) {
+    return;
+  }
+
+  if (getByPath(source, ['stepParams', 'fieldSettings', 'init', 'fieldPath']) === 'password') {
+    return source;
+  }
+
+  return findPasswordItem(Object.values(source));
+}
+
 describe('UserFormDrawer', () => {
   beforeEach(() => {
     const model = {
@@ -249,46 +286,31 @@ describe('UserFormDrawer', () => {
     });
   });
 
-  it('should persist the create form model with password defaults', async () => {
+  it('should persist the create form model without password defaults', async () => {
     findOne.mockResolvedValueOnce(null);
 
     render(<UserFormDrawer onSubmitted={() => undefined} />);
 
     await waitFor(() => {
-      expect(save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          values: expect.objectContaining({
-            uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
-            use: 'UserCreateFormModel',
-            subModels: expect.objectContaining({
-              grid: expect.objectContaining({
-                subModels: expect.objectContaining({
-                  items: expect.arrayContaining([
-                    expect.objectContaining({
-                      stepParams: expect.objectContaining({
-                        fieldSettings: expect.objectContaining({
-                          init: expect.objectContaining({
-                            fieldPath: 'password',
-                          }),
-                        }),
-                      }),
-                      subModels: expect.objectContaining({
-                        field: expect.objectContaining({
-                          props: expect.objectContaining({
-                            checkStrength: false,
-                            initialValue: 'admin123',
-                          }),
-                        }),
-                      }),
-                    }),
-                  ]),
-                }),
-              }),
-            }),
-          }),
-        }),
-      );
+      expect(save).toHaveBeenCalled();
     });
+
+    const savedValues = getByPath(save.mock.calls[0]?.[0], ['values']);
+    expect(savedValues).toEqual(
+      expect.objectContaining({
+        uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+        use: 'UserCreateFormModel',
+      }),
+    );
+    const passwordItem = findPasswordItem(savedValues);
+    expect(passwordItem).toBeTruthy();
+    expect(getByPath(passwordItem, ['stepParams', 'editItemSettings', 'initialValue'])).toBeUndefined();
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props'])).toEqual(
+      expect.objectContaining({
+        checkStrength: false,
+      }),
+    );
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props', 'initialValue'])).toBeUndefined();
 
     expect(createModelAsync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -296,5 +318,56 @@ describe('UserFormDrawer', () => {
         use: expect.any(Function),
       }),
     );
+  });
+
+  it('should remove legacy password defaults from a persisted create form model', async () => {
+    findOne.mockResolvedValueOnce({
+      uid: ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
+      use: 'UserCreateFormModel',
+      subModels: {
+        grid: {
+          subModels: {
+            items: [
+              {
+                use: 'FormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      fieldPath: 'password',
+                    },
+                  },
+                  editItemSettings: {
+                    initialValue: {
+                      defaultValue: 'admin123',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'UserPasswordFieldModel',
+                    props: {
+                      checkStrength: false,
+                      initialValue: 'admin123',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    render(<UserFormDrawer onSubmitted={() => undefined} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    const createdModelTree = createModelAsync.mock.calls[0]?.[0];
+    const passwordItem = findPasswordItem(createdModelTree);
+    expect(passwordItem).toBeTruthy();
+    expect(getByPath(passwordItem, ['stepParams', 'editItemSettings', 'initialValue'])).toBeUndefined();
+    expect(getByPath(passwordItem, ['subModels', 'field', 'props', 'initialValue'])).toBeUndefined();
   });
 });

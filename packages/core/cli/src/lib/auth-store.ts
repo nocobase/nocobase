@@ -14,6 +14,14 @@ import { resolveAppPublicPath } from './app-public-path.js';
 import { resolveCliHomeDir, resolveConfiguredEnvPath, resolveEnvRelativePath } from './cli-home.js';
 import { normalizeCliLocale } from './cli-locale.js';
 import {
+  normalizeEnvProxyConfig,
+  normalizeEnvProxyProviderConfig,
+  type EnvProxyConfig,
+  type EnvProxyProvider,
+  type EnvProxyProviderConfig,
+  type EnvResolvedProxyEntry,
+} from './env-proxy-config.js';
+import {
   inferConfiguredAppPathFromLegacyConfig,
   resolveConfiguredAppPath,
   resolveConfiguredSourcePath,
@@ -123,6 +131,7 @@ export interface EnvConfigEntry {
     schemaHash?: string;
     generatedAt?: string;
   };
+  proxy?: EnvProxyConfig;
 }
 
 export interface AuthConfig {
@@ -139,6 +148,8 @@ export interface AuthConfig {
     docker?: {
       network?: string;
       containerPrefix?: string;
+      nbImageRegistry?: string;
+      nbImageVariant?: string;
     };
     bin?: {
       docker?: string;
@@ -268,12 +279,14 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
   const normalizedKind = resolveEnvKind(entry);
   const apiBaseUrl = readEnvApiBaseUrl(entry);
   const schemaVersion = normalizeEnvConfigSchemaVersion(entry.schemaVersion);
+  const proxy = normalizeEnvProxyConfig(entry.proxy);
   return {
     ...rest,
     ...(schemaVersion ? { schemaVersion } : {}),
     ...(normalizedKind ? { kind: normalizedKind } : {}),
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
     ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
+    ...(proxy ? { proxy } : {}),
   };
 }
 
@@ -316,11 +329,18 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
       ...(updatePolicy ? { update: { policy: updatePolicy } } : {}),
       ...(settings.license?.pkgUrl ? { license: { pkgUrl: normalizeOptionalString(settings.license.pkgUrl) } } : {}),
       ...(settings.docker?.network || settings.docker?.containerPrefix
+        || settings.docker?.nbImageRegistry || settings.docker?.nbImageVariant
         ? {
             docker: {
               ...(settings.docker?.network ? { network: normalizeOptionalString(settings.docker.network) } : {}),
               ...(settings.docker?.containerPrefix
                 ? { containerPrefix: normalizeOptionalString(settings.docker.containerPrefix) }
+                : {}),
+              ...(settings.docker?.nbImageRegistry
+                ? { nbImageRegistry: normalizeOptionalString(settings.docker.nbImageRegistry) }
+                : {}),
+              ...(settings.docker?.nbImageVariant
+                ? { nbImageVariant: normalizeOptionalString(settings.docker.nbImageVariant) }
                 : {}),
             },
           }
@@ -823,6 +843,80 @@ export async function setEnvRuntime(
     runtime,
   };
   await saveAuthConfig(config, options);
+}
+
+export function resolveEnvProxyEntry(
+  config: Pick<EnvConfigEntry, 'proxy'> | undefined,
+  provider: EnvProxyProvider,
+): EnvResolvedProxyEntry | undefined {
+  const proxy = normalizeEnvProxyConfig(config?.proxy);
+  const resolved: EnvResolvedProxyEntry = {
+    ...(proxy?.host ? { host: proxy.host } : {}),
+    ...(proxy?.port !== undefined ? { port: proxy.port } : {}),
+    ...((provider === 'nginx' ? proxy?.nginx : proxy?.caddy) ?? {}),
+  };
+  return Object.keys(resolved).length > 0 ? resolved : undefined;
+}
+
+export async function setEnvProxyEntry(
+  envName: string,
+  provider: EnvProxyProvider,
+  entry: EnvProxyProviderConfig | undefined,
+  options: AuthStoreOptions = {},
+) {
+  await writeEnv(
+    envName,
+    (previous) => {
+      const currentProxy = normalizeEnvProxyConfig(previous?.proxy) ?? {};
+      const nextEntry = normalizeEnvProxyProviderConfig(entry);
+      const nextProxy: EnvProxyConfig = { ...currentProxy };
+
+      if (nextEntry && 'host' in nextEntry) {
+        const host = normalizeOptionalString(nextEntry.host);
+        if (host) {
+          nextProxy.host = host;
+        } else {
+          delete nextProxy.host;
+        }
+      }
+
+      if (nextEntry && 'port' in nextEntry) {
+        const portValue = nextEntry.port;
+        const port =
+          typeof portValue === 'number' && Number.isInteger(portValue) && portValue >= 1 && portValue <= 65535
+            ? portValue
+            : undefined;
+        if (port !== undefined) {
+          nextProxy.port = port;
+        } else {
+          delete nextProxy.port;
+        }
+      }
+
+      const providerConfig =
+        nextEntry && Object.keys(nextEntry).some((key) => key !== 'host' && key !== 'port')
+          ? Object.fromEntries(Object.entries(nextEntry).filter(([key]) => key !== 'host' && key !== 'port'))
+          : undefined;
+
+      if (provider === 'nginx') {
+        if (providerConfig && Object.keys(providerConfig).length > 0) {
+          nextProxy.nginx = providerConfig;
+        } else {
+          delete nextProxy.nginx;
+        }
+      } else if (providerConfig && Object.keys(providerConfig).length > 0) {
+        nextProxy.caddy = providerConfig;
+      } else {
+        delete nextProxy.caddy;
+      }
+
+      return {
+        ...previous,
+        proxy: nextProxy,
+      };
+    },
+    options,
+  );
 }
 
 export async function clearEnvRootSetup(

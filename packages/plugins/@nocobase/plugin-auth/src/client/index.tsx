@@ -73,14 +73,17 @@ export class PluginAuthClient extends Plugin {
     });
     this.router.add('auth.signup', {
       path: '/signup',
+      skipAuthCheck: true,
       Component: 'SignUpPage',
     });
     this.router.add('auth.forgotPassword', {
       path: '/forgot-password',
+      skipAuthCheck: true,
       Component: 'ForgotPasswordPage',
     });
     this.router.add('auth.resetPassword', {
       path: '/reset-password',
+      skipAuthCheck: true,
       Component: 'ResetPasswordPage',
     });
 

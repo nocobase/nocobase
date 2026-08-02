@@ -65,6 +65,12 @@ export class BelongsToManyField extends RelationField {
     let { foreignKey, sourceKey, otherKey, targetKey } = this.options;
 
     const through = this.through;
+    if (through === this.target) {
+      throw new Error(
+        `BelongsToMany relation "${this.name}" cannot use target collection "${this.target}" as through collection`,
+      );
+    }
+
     const throughCollection = database.getCollection(through);
 
     if (!throughCollection) {

@@ -36,10 +36,11 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
-    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml))$ {
+    location ~* ^{{publicPath}}storage/uploads/(.*\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias {{cwd}}/storage/uploads/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -48,6 +49,7 @@ server {
     location {{publicPath}}storage/uploads/ {
         alias {{cwd}}/storage/uploads/;
         add_header Cache-Control "public";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -55,6 +57,8 @@ server {
         location ~* \.md$ {
             default_type text/markdown;
             add_header Content-Disposition "inline";
+            add_header Content-Security-Policy "sandbox" always;
+            add_header X-Content-Type-Options "nosniff" always;
         }
     }
 

@@ -10,8 +10,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PluginPublicFormsServer } from '../plugin';
 
+type PublicFormsServerApp = ConstructorParameters<typeof PluginPublicFormsServer>[0];
+
 function createPlugin() {
   return Object.create(PluginPublicFormsServer.prototype) as PluginPublicFormsServer & Record<string, any>;
+}
+
+function createAclPlugin() {
+  return new PluginPublicFormsServer(
+    {
+      db: {
+        getCollection: vi.fn(() => null),
+      },
+    } as unknown as PublicFormsServerApp,
+    { name: 'public-forms' },
+  );
 }
 
 function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = {}) {
@@ -76,6 +89,23 @@ function setupGetMetaPlugin(options: { password?: string; enabled?: boolean } = 
 
   return { plugin, sign };
 }
+
+type PublicFormAclContext = {
+  PublicForm: {
+    collectionName: string;
+    targetCollections: string[];
+  };
+  action: {
+    resourceName: string;
+    actionName: string;
+    params: {
+      fileCollectionName?: string;
+    };
+  };
+  permission?: {
+    skip: boolean;
+  };
+};
 
 describe('PluginPublicFormsServer', () => {
   it('keeps primary collection options in public form meta', async () => {
@@ -378,5 +408,28 @@ describe('PluginPublicFormsServer', () => {
     expect(plugin.validatePublicFormToken).toHaveBeenCalledWith('pf1', 'token');
     expect(plugin.isFlowModelDescendant).toHaveBeenCalledWith('pf1', 'popup-grid');
     expect(findModelById).toHaveBeenCalledWith('popup-grid', { includeAsyncNode: true });
+  });
+
+  it('allows public form storage checks', async () => {
+    const plugin = createAclPlugin();
+    const ctx: PublicFormAclContext = {
+      PublicForm: {
+        collectionName: 'orders',
+        targetCollections: [],
+      },
+      action: {
+        resourceName: 'storages',
+        actionName: 'check',
+        params: {
+          fileCollectionName: 'publicFiles',
+        },
+      },
+    };
+    const next = vi.fn(async () => undefined);
+
+    await plugin.parseACL(ctx, next);
+
+    expect(ctx.permission).toEqual({ skip: true });
+    expect(next).toHaveBeenCalled();
   });
 });

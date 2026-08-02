@@ -1,5 +1,11 @@
 # Campo de Anexo
 
+:::warning Observação
+
+O campo de anexo será descontinuado em uma versão futura. Para novas aplicações ou ao ajustar fluxos existentes, migre o quanto antes para uma tabela de arquivos personalizada e gerencie os arquivos relacionados com campos de relação.
+
+:::
+
 ## Introdução
 
 O sistema possui um tipo de campo "Anexo" integrado, que permite aos usuários fazer upload de arquivos em suas **coleções** personalizadas.

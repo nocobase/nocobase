@@ -1,0 +1,22 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Automated Company Background Research",
+    "link": "/ai-employees/scenarios/company-background-research"
+  },
+  {
+    "type": "custom-link",
+    "label": "Generate Business Analysis Report",
+    "link": "/ai-employees/scenarios/business-report"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lina: Localization Translation",
+    "link": "/ai-employees/scenarios/localization-hy-mt"
+  },
+  {
+    "type": "custom-link",
+    "label": "Let AI employees fill custom forms in JS blocks",
+    "link": "/building-tips/ai-fill-js-block-form"
+  }
+]

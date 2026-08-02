@@ -1,12 +1,12 @@
 ---
 title: "nb skills remove"
-description: "Справочник по команде nb skills remove: удаление глобальных AI coding Skills NocoBase."
-keywords: "nb skills remove,NocoBase CLI,удаление Skills"
+description: "Справочник по команде nb skills remove: удаление глобальных навыков ИИ-разработки NocoBase."
+keywords: "nb skills remove,NocoBase CLI,удаление навыков"
 ---
 
 # nb skills remove
 
-Удаляет глобальные AI coding Skills NocoBase, управляемые `nb`.
+Удаляет глобальные навыки ИИ-разработки NocoBase, управляемые `nb`.
 
 ## Использование
 

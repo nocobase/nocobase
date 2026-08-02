@@ -8,6 +8,7 @@
  */
 
 import type { EnvConfigEntry } from './auth-store.js';
+import { normalizeEnvProxyConfig } from './env-proxy-config.js';
 import { resolveAppPublicPath } from './app-public-path.js';
 
 const STRING_ENV_CONFIG_KEYS = [
@@ -63,6 +64,7 @@ export type StoredEnvConfigInput = {
   accessToken?: unknown;
   setupState?: unknown;
   schemaVersion?: unknown;
+  proxy?: unknown;
 } & Partial<Record<StringEnvConfigKey | BooleanEnvConfigKey, unknown>>;
 
 export type StoredEnvConfig = Partial<
@@ -145,6 +147,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   const accessToken = trimConfigValue(input.accessToken);
   if ((authType === 'basic' || authType === 'token') && accessToken) {
     envConfig.accessToken = accessToken;
+  }
+
+  const proxy = normalizeEnvProxyConfig(input.proxy);
+  if (proxy) {
+    envConfig.proxy = proxy;
   }
 
   return envConfig;

@@ -9,6 +9,15 @@ keywords: "Amazon S3,AWS,bucket,AccessKey,cloud storage,konfigurasi S3,NocoBase"
 
 Storage engine berdasarkan Amazon S3, perlu menyiapkan akun dan permission terkait sebelum digunakan.
 
+
+:::warning Perhatian
+
+Engine ini tidak mendukung akses privat. Setelah file di-upload, NocoBase membuat URL yang dapat diakses langsung, dan siapa pun yang memiliki URL tersebut dapat mengakses file.
+
+Meskipun bucket S3 disetel privat, engine bawaan Amazon S3 tidak membuat URL bertanda tangan sementara untuk akses file. Jika memerlukan akses privat, gunakan [S3 Pro](./s3-pro). Jika file historis sudah ada, lihat [Migrasi ke S3 Pro](./migrate-to-s3-pro.md).
+
+:::
+
 ## Parameter Konfigurasi
 
 ![Contoh konfigurasi storage engine Amazon S3](https://static-docs.nocobase.com/20251031092524.png)

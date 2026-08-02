@@ -57,6 +57,35 @@ API_BASE_PATH=/api/
 
 ## API_BASE_URL
 
+## SERVER_REQUEST_WHITELIST
+
+服务端发起外部 HTTP 请求时使用的目标白名单。会影响工作流请求节点、自定义请求、AI 服务等由 NocoBase 服务端主动发出的请求。
+
+未配置时，NocoBase 仍会允许 `http` / `https` 请求，以兼容已有部署。不过，如果目标是 loopback、内网、link-local、metadata 地址，或者域名解析到了这些地址，服务端日志会输出 warning。后续版本可能会逐步收紧默认策略，如果你的部署需要访问内网服务，建议提前配置明确的白名单。
+
+配置后，初始请求和每个重定向目标都必须匹配白名单。如果重定向指向未匹配的主机，NocoBase 会在发出下一跳请求前停止。
+
+支持的写法包括：
+
+- 精确 IPv4 地址，比如 `192.168.1.10`
+- IPv4 CIDR 网段，比如 `10.0.0.0/8`
+- 精确 IPv6 地址，比如 `::1`
+- IPv6 CIDR 网段，比如 `fc00::/7`
+- 精确域名，比如 `api.example.com`
+- 单层通配子域名，比如 `*.example.com`
+
+多个目标使用 `,` 分隔：
+
+```bash
+SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
+```
+
+:::warning 注意
+
+如果白名单中配置的是域名，白名单判断会以请求 URL 中的 host 为准。也就是说，配置 `internal.example.com` 后，即使该域名解析到 `127.0.0.1` 或内网地址，也会被视为显式允许。
+
+:::
+
 ## CLUSTER_MODE
 
 > `v1.6.0+`

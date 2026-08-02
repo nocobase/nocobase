@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Action, OpenModeProvider, SchemaComponentOptions, usePopupSettings } from '@nocobase/client';
+import { Action, OpenModeProvider, SchemaComponentOptions, useIsAdminPage, usePopupSettings } from '@nocobase/client';
 import { useMobileLayout } from '@nocobase/client-v2';
+import { Grid } from 'antd';
 import { createGlobalStyle } from 'antd-style';
 import React, { FC, useEffect } from 'react';
 import { ActionDrawerUsedInMobile, useToAdaptActionDrawerToMobile } from './adaptor-of-desktop/ActionDrawer';
@@ -58,12 +59,28 @@ const MobileAdapter: FC = (props) => {
   );
 };
 
+const responsiveAdminComponents = {
+  Select: mobileComponents.Select,
+};
+
+const ResponsiveAdminFieldsAdapter: FC = (props) => {
+  return <SchemaComponentOptions components={responsiveAdminComponents}>{props.children}</SchemaComponentOptions>;
+};
+
 export const MobileComponentsProvider: FC = (props) => {
   const { isMobileLayout } = useMobileLayout();
+  const isAdminPage = useIsAdminPage();
+  const screens = Grid.useBreakpoint();
+  const isMobileViewport =
+    screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
 
-  if (!isMobileLayout) {
-    return <>{props.children} </>;
+  if (isMobileLayout) {
+    return <MobileAdapter>{props.children}</MobileAdapter>;
   }
 
-  return <MobileAdapter>{props.children}</MobileAdapter>;
+  if (isAdminPage && isMobileViewport) {
+    return <ResponsiveAdminFieldsAdapter>{props.children}</ResponsiveAdminFieldsAdapter>;
+  }
+
+  return <>{props.children}</>;
 };

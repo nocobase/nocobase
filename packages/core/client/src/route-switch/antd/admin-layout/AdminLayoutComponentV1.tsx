@@ -38,6 +38,7 @@ import {
   MobileMenuControlContext,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
+import { AdminLayoutResponsiveOpenModeProvider } from './AdminLayoutResponsiveOpenModeProvider';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 import { PinnedPluginList } from '../../../plugin-manager';
@@ -779,15 +780,18 @@ export const AdminLayoutComponent = observer((props: any) => {
               <RouteContext.Consumer>
                 {(value: RouteContextType) => {
                   const { isMobile } = value;
+                  const isResponsive = isMobile || isMobileViewport;
 
                   return (
                     <SetIsMobileLayout isMobile={isMobile}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <AdminLayoutContentV1
-                          allAccessRoutes={allAccessRoutes}
-                          onContentElementChange={handleLayoutContentElementChange}
-                        />
+                        <AdminLayoutResponsiveOpenModeProvider responsive={isResponsive}>
+                          <AdminLayoutContentV1
+                            allAccessRoutes={allAccessRoutes}
+                            onContentElementChange={handleLayoutContentElementChange}
+                          />
+                        </AdminLayoutResponsiveOpenModeProvider>
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );

@@ -23,6 +23,20 @@ import {
 } from '../AssociationFieldModel/recordSelectShared';
 import _ from 'lodash';
 
+const mobileSelectSafeAreaPaddingBottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
+
+const mobileSelectConfirmFooterStyle: CSSProperties = {
+  paddingBottom: mobileSelectSafeAreaPaddingBottom,
+};
+
+function getMobileSelectListStyle(hasConfirmFooter: boolean): CSSProperties {
+  return {
+    maxHeight: '60vh',
+    overflowY: 'auto',
+    paddingBottom: hasConfirmFooter ? undefined : mobileSelectSafeAreaPaddingBottom,
+  };
+}
+
 const labelClassName = css`
   div {
     white-space: nowrap !important;
@@ -280,13 +294,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
             showCancelButton
           />
         </div>
-        <div
-          style={{
-            maxHeight: '60vh',
-            overflowY: 'auto',
-          }}
-          onScroll={handleScroll}
-        >
+        <div style={getMobileSelectListStyle(isMultiple)} onScroll={handleScroll}>
           <CheckList multiple={isMultiple} value={selectedValueIds} onChange={handleListChange}>
             {realOptions.map((item) => {
               const optionValue = item?.[valueKey];
@@ -311,9 +319,11 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
           )}
         </div>
         {isMultiple && (
-          <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
-            {t('Confirm')}
-          </Button>
+          <div style={mobileSelectConfirmFooterStyle}>
+            <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
+              {t('Confirm')}
+            </Button>
+          </div>
         )}
       </Popup>
     </>

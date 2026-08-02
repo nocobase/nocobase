@@ -24,6 +24,7 @@
   "Request settings": "请求设置",
   "Response type": "响应类型",
   "Roles": "角色",
+  "Runtime request options cannot override the request target": "运行时请求选项不能覆盖请求目标",
   "Stream": "流",
   "Timeout config": "超时设置",
   "Title": "标题",

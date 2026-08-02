@@ -1,6 +1,8 @@
 {
   "Application": "Application",
   "Authorization is complete. You can return to the terminal.": "Authorization is complete. You can return to the terminal.",
+  "Authentication failed": "Authentication failed",
+  "Authorize application": "Authorize application",
   "Back to home": "Back to home",
   "Cancel": "Cancel",
   "Confirm device": "Confirm device",
@@ -12,10 +14,18 @@
   "Enter the code shown in your terminal to continue signing in.": "Enter the code shown in your terminal to continue signing in.",
   "Enter the device code.": "Enter the device code.",
   "Failed to load device sign-in.": "Failed to load device sign-in.",
+  "Failed to load interaction.": "Failed to load interaction.",
   "Failed to submit device sign-in.": "Failed to submit device sign-in.",
+  "Failed to submit interaction.": "Failed to submit interaction.",
+  "Invalid interaction path": "Invalid interaction path",
+  "Issuer": "Issuer",
+  "Please wait while authorization continues.": "Please wait while authorization continues.",
+  "Redirecting...": "Redirecting...",
+  "Requested permissions": "Requested permissions",
   "The device code has already been used.": "The device code has already been used.",
   "The device code has expired.": "The device code has expired.",
   "The device code was not found.": "The device code was not found.",
   "The device sign-in request was cancelled.": "The device sign-in request was cancelled.",
+  "{{clientName}} requests access to your account.": "{{clientName}} requests access to your account.",
   "{{clientName}} is requesting access. Confirm that this code matches the one shown in your terminal.": "{{clientName}} is requesting access. Confirm that this code matches the one shown in your terminal."
 }

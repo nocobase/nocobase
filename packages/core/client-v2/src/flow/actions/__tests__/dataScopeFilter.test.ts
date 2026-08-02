@@ -64,6 +64,40 @@ describe('normalizeDataScopeFilter', () => {
     });
   });
 
+  it('prunes a missing URL search param variable', () => {
+    const rawFilter = {
+      logic: '$and',
+      items: [{ path: 'departmentId', operator: '$eq', value: '{{ ctx.urlSearchParams.departmentId }}' }],
+    };
+    const resolvedFilter = {
+      logic: '$and',
+      items: [{ path: 'departmentId', operator: '$eq', value: undefined }],
+    };
+
+    expect(normalizeDataScopeFilter(rawFilter, resolvedFilter)).toBeUndefined();
+  });
+
+  it('only prunes the missing URL search param condition from mixed filters', () => {
+    const rawFilter = {
+      logic: '$and',
+      items: [
+        { path: 'status', operator: '$eq', value: 'active' },
+        { path: 'departmentId', operator: '$eq', value: '{{ ctx.urlSearchParams.departmentId }}' },
+      ],
+    };
+    const resolvedFilter = {
+      logic: '$and',
+      items: [
+        { path: 'status', operator: '$eq', value: 'active' },
+        { path: 'departmentId', operator: '$eq', value: undefined },
+      ],
+    };
+
+    expect(normalizeDataScopeFilter(rawFilter, resolvedFilter)).toEqual({
+      $and: [{ status: { $eq: 'active' } }],
+    });
+  });
+
   it('still prunes empty constant values', () => {
     const filter = {
       logic: '$and',
@@ -137,6 +171,34 @@ describe('normalizeDataScopeFilter', () => {
       $and: [{ departmentId: { $eq: null } }],
     });
     expect(resource.removeFilterGroup).not.toHaveBeenCalled();
+  });
+
+  it('dataScope handler removes data scope when a URL search param is missing', async () => {
+    const resource = {
+      addFilterGroup: vi.fn(),
+      removeFilterGroup: vi.fn(),
+    };
+    const ctx = {
+      model: {
+        uid: 'field-1',
+        resource,
+      },
+      resolveJsonTemplate: vi.fn(async (template) => ({
+        ...template,
+        items: [{ ...template.items[0], value: undefined }],
+      })),
+    };
+    const params = {
+      filter: {
+        logic: '$and',
+        items: [{ path: 'departmentId', operator: '$eq', value: '{{ ctx.urlSearchParams.departmentId }}' }],
+      },
+    };
+
+    await (dataScope as any).handler(ctx, params);
+
+    expect(resource.removeFilterGroup).toHaveBeenCalledWith('field-1');
+    expect(resource.addFilterGroup).not.toHaveBeenCalled();
   });
 
   it('dataScope handler preserves current role as server-side variable', async () => {

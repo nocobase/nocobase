@@ -24,6 +24,7 @@
   "Request settings": "Request settings",
   "Response type": "Response type",
   "Roles": "Roles",
+  "Runtime request options cannot override the request target": "Runtime request options cannot override the request target",
   "Stream": "Stream",
   "Timeout config": "Timeout config",
   "Title": "Title",

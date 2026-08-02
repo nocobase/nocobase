@@ -1,18 +1,18 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
-title: "Manajemen Collection Visual"
-description: "Alat manajemen Collection visual mirip diagram ER, mendukung database utama, menampilkan entitas dan relasi secara intuitif, mengekstrak model data dari kebutuhan bisnis."
-keywords: "diagram ER,collection visual,pemodelan data,diagram entity relationship,Graph Collection,NocoBase"
+title: "Manajemen Tabel Data Visual"
+description: "Alat manajemen tabel data visual seperti diagram ER, mendukung basis data utama, menampilkan entitas dan relasi secara intuitif, serta mengekstrak model data dari kebutuhan bisnis."
+keywords: "Diagram ER,Tabel data visual,Pemodelan data,Diagram relasi entitas,Graph Collection,NocoBase"
 ---
-# Manajemen Collection Visual
+# Manajemen Tabel Data Visual
 
-## Pengantar
+## Pengenalan
 
-Alat mirip diagram ER, saat ini hanya mendukung database utama.
+Alat yang mirip diagram ER, saat ini hanya mendukung basis data utama.
 
 ## Instalasi
 
-Plugin pre-installed, perlu diaktifkan terlebih dahulu untuk digunakan.
+Plugin bawaan, harus diaktifkan terlebih dahulu sebelum dapat digunakan.
 
 ![20240322221627](https://static-docs.nocobase.com/20240322221627.png)
 

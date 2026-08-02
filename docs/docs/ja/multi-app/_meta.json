@@ -37,7 +37,17 @@
   },
   {
     "type": "custom-link",
+    "label": "マルチポータル",
+    "link": "/multi-app/multi-portal/"
+  },
+  {
+    "type": "custom-link",
     "label": "マルチスペース",
     "link": "/multi-app/multi-space/"
+  },
+  {
+    "type": "custom-link",
+    "label": "マルチアプリ vs マルチポータル vs マルチスペース",
+    "link": "/multi-app/multi-app-vs-multi-portal-vs-multi-space"
   }
 ]

@@ -1,12 +1,12 @@
 ---
 title: "nb proxy nginx restart"
-description: "Справка по команде nb proxy nginx restart: перезапускает proxy Nginx с текущим driver."
+description: "Справочник по команде nb proxy nginx restart: перезапуск прокси Nginx с текущим драйвером."
 keywords: "nb proxy nginx restart,NocoBase CLI,nginx,restart"
 ---
 
 # nb proxy nginx restart
 
-Перезапускает proxy Nginx с текущим driver.
+Перезапускает прокси Nginx с текущим драйвером.
 
 ## Использование
 
@@ -22,8 +22,8 @@ nb proxy nginx restart
 
 ## Примечания
 
-- Эта команда сначала останавливает proxy, а затем запускает его снова
-- При `local` или `docker` она работает с локальным процессом или Docker-контейнером, соответствующим текущему driver
+- Команда сначала останавливает прокси, а затем запускает его снова
+- С драйверами `local` или `docker` она работает с локальным процессом или Docker-контейнером текущего драйвера
 
 ## Связанные команды
 

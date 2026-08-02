@@ -1343,6 +1343,9 @@ export class FlowEngine {
     if (!this.ensureModelRepository()) return;
     const refresh = !!options?.refresh;
     const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (this.context.flowSettingsEnabled) {
+      this._loadedPageCache.markDirtyForOptions(options);
+    }
     if (!refresh && !bypassLoadedPageCache) {
       const model = this.findModelByParentId(options.parentId, options.subKey);
       if (model) {
@@ -1412,6 +1415,9 @@ export class FlowEngine {
     if (!this.ensureModelRepository()) return;
     const { uid, parentId, subKey } = options;
     const bypassLoadedPageCache = this._loadedPageCache.shouldBypass(options, () => this.context.flowSettingsEnabled);
+    if (this.context.flowSettingsEnabled) {
+      this._loadedPageCache.markDirtyForOptions(options);
+    }
     if (uid && !bypassLoadedPageCache && this._modelInstances.has(uid)) {
       return this._modelInstances.get(uid) as T;
     }

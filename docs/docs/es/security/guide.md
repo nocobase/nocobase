@@ -194,6 +194,29 @@ Si necesita almacenar archivos sensibles, se recomienda utilizar un servicio de 
 
 Para el almacenamiento local u otro almacenamiento público accesible directamente mediante URLs del mismo origen que la aplicación, también debe prestar especial atención a los riesgos introducidos por archivos con contenido activo. Archivos como `html`, `xhtml` y `svg` pueden ser interpretados y ejecutados directamente por el navegador. Si un atacante puede subir uno de estos archivos y engañar a un usuario para que lo abra, podría usar el dominio de confianza de su aplicación para alojar una página o script malicioso.
 
+La validación de cargas de NocoBase no confía en el `Content-Type` enviado por la solicitud, sino que prefiere el MIME type detectado en el servidor. La extensión de un archivo solo representa el nombre del archivo y no debe tratarse como el tipo de contenido autorizado. Por lo tanto, al servir archivos subidos públicamente, también debe asegurarse de que la ruta de acceso a los archivos tenga los encabezados de seguridad adecuados.
+
+Si despliega con Docker o utiliza la configuración nginx generada por NocoBase, el directorio de cargas ya incluye esta protección: todos los archivos subidos devuelven `X-Content-Type-Options: nosniff`, y los archivos con contenido activo como `html`, `xhtml`, `svg`, `svgz` y `pdf` se devuelven como descargas mediante `Content-Disposition: attachment`.
+
+Si utiliza un proxy personalizado, CDN, almacenamiento de objetos o expone directamente el directorio local de cargas, asegúrese de que estas reglas no se omitan. Puede usar la siguiente configuración nginx como referencia:
+
+```nginx
+location ~* ^/storage/uploads/(.*\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    alias /path/to/nocobase/storage/uploads/$1;
+    add_header Content-Disposition "attachment" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+
+location /storage/uploads/ {
+    alias /path/to/nocobase/storage/uploads/;
+    add_header X-Content-Type-Options "nosniff" always;
+    autoindex off;
+}
+```
+
+Si su aplicación NocoBase usa `APP_PUBLIC_PATH`, reemplace `/storage/uploads/` por el prefijo de acceso real, como `/nocobase/storage/uploads/`.
+
 Normalmente recomendamos a los administradores:
 
 - Priorizar almacenamiento privado, URLs firmadas o un dominio independiente para archivos, de modo que los archivos subidos por los usuarios no se sirvan directamente desde el mismo origen que la aplicación principal.

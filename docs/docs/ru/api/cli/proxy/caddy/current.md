@@ -1,12 +1,12 @@
 ---
 title: "nb proxy caddy current"
-description: "Справка по команде nb proxy caddy current: показывает текущий driver provider Caddy."
-keywords: "nb proxy caddy current,NocoBase CLI,caddy,driver"
+description: "Справочник по команде nb proxy caddy current: вывод текущего драйвера провайдера Caddy."
+keywords: "nb proxy caddy current,NocoBase CLI,caddy,драйвер"
 ---
 
 # nb proxy caddy current
 
-Показывает текущий driver provider Caddy.
+Выводит текущий драйвер провайдера Caddy.
 
 ## Использование
 
@@ -16,7 +16,7 @@ nb proxy caddy current
 
 ## Вывод
 
-Команда выводит одно из двух значений:
+Команда напрямую выводит одно значение:
 
 - `local`
 - `docker`

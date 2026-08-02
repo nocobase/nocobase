@@ -1,15 +1,21 @@
-# Haupt- und externe Datenbanken im Vergleich
+---
+title: "Vergleich zwischen Haupt- und externen Datenbanken"
+description: "Unterschiede zwischen Haupt- und externen Datenbanken: Vergleich der unterstützten Datenbanktypen, Datentabellentypen, Feldtypen sowie der Möglichkeiten für Sicherung, Wiederherstellung und Migration."
+keywords: "Hauptdatenbank, externe Datenbank, Datenquellenvergleich, schreibgeschützte Verbindung, Datentabellensynchronisierung, NocoBase"
+---
 
-Die Unterschiede zwischen Haupt- und externen Datenbanken in NocoBase zeigen sich hauptsächlich in vier Bereichen: der Unterstützung von Datenbanktypen, der Unterstützung von Sammlungstypen, der Unterstützung von Feldtypen sowie den Funktionen für Sicherung und Migration.
+# Vergleich zwischen Haupt- und externen Datenbanken
+
+Die Unterschiede zwischen der Hauptdatenbank und externen Datenbanken in NocoBase zeigen sich hauptsächlich in den folgenden vier Bereichen: Unterstützung von Datenbanktypen, Datentabellentypen und Feldtypen sowie Sicherung, Wiederherstellung und Migration.
 
 ## 1. Unterstützung von Datenbanktypen
 
-Weitere Details finden Sie unter: [Datenquellen-Verwaltung](https://docs.nocobase.com/data-sources/data-source-manager)
+Weitere Informationen finden Sie unter [Datenquellenverwaltung](https://docs.nocobase.com/data-sources/data-source-manager).
 
 ### Datenbanktypen
 
-| Datenbanktyp | Unterstützung Hauptdatenbank | Unterstützung externe Datenbank |
-|-------------|-----------------------------|--------------------------------|
+| Datenbanktyp | Von der Hauptdatenbank unterstützt | Von externen Datenbanken unterstützt |
+|-----------|-------------|--------------|
 | PostgreSQL | ✅ | ✅ |
 | MySQL | ✅ | ✅ |
 | MariaDB | ✅ | ✅ |
@@ -17,42 +23,42 @@ Weitere Details finden Sie unter: [Datenquellen-Verwaltung](https://docs.nocobas
 | MSSQL | ❌ | ✅ |
 | Oracle | ❌ | ✅ |
 
-### Sammlungsverwaltung
+### Datenbanktabellenverwaltung
 
-| Sammlungsverwaltung | Unterstützung Hauptdatenbank | Unterstützung externe Datenbank |
-|---------------------|-----------------------------|--------------------------------|
+| Tabellenverwaltung | Von der Hauptdatenbank unterstützt | Von externen Datenbanken unterstützt |
+|-----------|-------------|--------------|
 | Grundlegende Verwaltung | ✅ | ✅ |
 | Visuelle Verwaltung | ✅ | ❌ |
 
-## 2. Unterstützung von Sammlungstypen
+## 2. Unterstützung von Datentabellentypen
 
-Weitere Details finden Sie unter: [Sammlungen](https://docs.nocobase.com/data-sources/data-modeling/collection)
+Weitere Informationen finden Sie unter [Datentabellen](https://docs.nocobase.com/data-sources/data-modeling/collection).
 
-| Sammlungstyp | Hauptdatenbank | Externe Datenbank | Beschreibung |
-|-------------|---------------|-------------------|--------------|
-| Standard-Sammlung | ✅ | ✅ | Grundlegende Sammlung |
-| Ansichts-Sammlung | ✅ | ✅ | Datenquellen-Ansicht |
-| Vererbungs-Sammlung | ✅ | ❌ | Unterstützt Datenmodell-Vererbung, nur von der Hauptdatenquelle unterstützt |
-| Datei-Sammlung | ✅ | ❌ | Unterstützt Dateiuploads, nur von der Hauptdatenquelle unterstützt |
-| Kommentar-Sammlung | ✅ | ❌ | Integriertes Kommentarsystem, nur von der Hauptdatenquelle unterstützt |
-| Kalender-Sammlung | ✅ | ❌ | Sammlung für Kalenderansichten |
-| Ausdrucks-Sammlung | ✅ | ❌ | Unterstützt Formelberechnungen |
-| Baum-Sammlung | ✅ | ❌ | Für die Datenmodellierung von Baumstrukturen |
-| SQL-Sammlung | ✅ | ❌ | Sammlung, die über SQL definiert werden kann |
-| Verbindung zu externer Sammlung | ✅ | ❌ | Verbindungs-Sammlung für externe Datenquellen, mit eingeschränkter Funktionalität |
+| Datentabellentyp | Hauptdatenbank | Externe Datenbanken | Beschreibung |
+|-----------|---------|-----------|------|
+| Normale Tabelle | ✅ | ✅ | Grundlegende Datentabelle |
+| View-Tabelle | ✅ | ✅ | View der Datenquelle |
+| Vererbungstabelle | ✅ | ❌ | Unterstützt die Vererbung von Datenmodellen; nur von der Hauptdatenquelle unterstützt |
+| Dateitabelle | ✅ | ❌ | Unterstützt das Hochladen von Dateien; nur von der Hauptdatenquelle unterstützt |
+| Kommentartabelle | ✅ | ❌ | Integriertes Kommentarsystem; nur von der Hauptdatenquelle unterstützt |
+| Kalendertabelle | ✅ | ❌ | Datentabelle für Kalenderansichten |
+| Ausdruckstabelle | ✅ | ❌ | Unterstützt Formelberechnungen |
+| Baumtabelle | ✅ | ❌ | Zur Modellierung hierarchischer Datenstrukturen |
+| SQL-Tabelle | ✅ | ❌ | Datentabelle, die per SQL definiert werden kann |
+| Verbindung zu einer externen Datentabelle | ✅ | ❌ | Verknüpfte Tabelle einer externen Datenquelle mit eingeschränktem Funktionsumfang |
 
 ## 3. Unterstützung von Feldtypen
 
-Weitere Details finden Sie unter: [Sammlungsfelder](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
+Weitere Informationen finden Sie unter [Felder von Datentabellen](https://docs.nocobase.com/data-sources/data-modeling/collection-fields).
 
-### Basistypen
+### Grundlegende Typen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | Einzeiliger Text | ✅ | ✅ |
 | Mehrzeiliger Text | ✅ | ✅ |
 | Mobiltelefonnummer | ✅ | ✅ |
-| E-Mail | ✅ | ✅ |
+| E-Mail-Adresse | ✅ | ✅ |
 | URL | ✅ | ✅ |
 | Ganzzahl | ✅ | ✅ |
 | Zahl | ✅ | ✅ |
@@ -61,22 +67,22 @@ Weitere Details finden Sie unter: [Sammlungsfelder](https://docs.nocobase.com/da
 | Farbe | ✅ | ✅ |
 | Symbol | ✅ | ✅ |
 
-### Auswahltypen
+### Auswahแลtypen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | Kontrollkästchen | ✅ | ✅ |
-| Dropdown (Einzelauswahl) | ✅ | ✅ |
-| Dropdown (Mehrfachauswahl) | ✅ | ✅ |
+| Dropdown-Menü (Einzelauswahl) | ✅ | ✅ |
+| Dropdown-Menü (Mehrfachauswahl) | ✅ | ✅ |
 | Optionsfeld | ✅ | ✅ |
-| Kontrollkästchen-Gruppe | ✅ | ✅ |
-| Chinesische Region | ✅ | ❌ |
+| Kontrollkästchengruppe | ✅ | ✅ |
+| Chinesische Verwaltungsregion | ✅ | ❌ |
 
-### Medientypen
+### Multimedia-Typen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
-| Medien | ✅ | ✅ |
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
+| Multimedia | ✅ | ✅ |
 | Markdown | ✅ | ✅ |
 | Markdown (Vditor) | ✅ | ✅ |
 | Rich Text | ✅ | ✅ |
@@ -85,18 +91,18 @@ Weitere Details finden Sie unter: [Sammlungsfelder](https://docs.nocobase.com/da
 
 ### Datums- und Zeittypen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | Datum und Uhrzeit (mit Zeitzone) | ✅ | ✅ |
 | Datum und Uhrzeit (ohne Zeitzone) | ✅ | ✅ |
 | Unix-Zeitstempel | ✅ | ✅ |
 | Datum (ohne Uhrzeit) | ✅ | ✅ |
 | Uhrzeit | ✅ | ✅ |
 
-### Geometrische Typen
+### Geometrietypen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | Punkt | ✅ | ✅ |
 | Linie | ✅ | ✅ |
 | Kreis | ✅ | ✅ |
@@ -104,62 +110,62 @@ Weitere Details finden Sie unter: [Sammlungsfelder](https://docs.nocobase.com/da
 
 ### Erweiterte Typen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | UUID | ✅ | ✅ |
 | Nano ID | ✅ | ✅ |
 | Sortierung | ✅ | ✅ |
 | Berechnungsformel | ✅ | ✅ |
-| Automatische Nummerierung | ✅ | ✅ |
+| Automatische Codierung | ✅ | ✅ |
 | JSON | ✅ | ✅ |
-| Sammlungs-Selektor | ✅ | ❌ |
+| Datentabellenauswahl | ✅ | ❌ |
 | Verschlüsselung | ✅ | ✅ |
 
 ### Systeminformationsfelder
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
 | Erstellungsdatum | ✅ | ✅ |
-| Letztes Änderungsdatum | ✅ | ✅ |
-| Erstellt von | ✅ | ❌ |
+| Datum der letzten Änderung | ✅ | ✅ |
+| Ersteller | ✅ | ❌ |
 | Zuletzt geändert von | ✅ | ❌ |
-| Tabellen-OID | ✅ | ❌ |
+| Table OID | ✅ | ❌ |
 
 ### Beziehungstypen
 
-| Feldtyp | Hauptdatenbank | Externe Datenbank |
-|---------|---------------|-------------------|
-| Eins-zu-eins | ✅ | ✅ |
-| Eins-zu-viele | ✅ | ✅ |
-| Viele-zu-eins | ✅ | ✅ |
-| Viele-zu-viele | ✅ | ✅ |
-| Viele-zu-viele (Array) | ✅ | ✅ |
+| Feldtyp | Hauptdatenbank | Externe Datenbanken |
+|---------|---------|-----------|
+| Eins zu eins | ✅ | ✅ |
+| Eins zu viele | ✅ | ✅ |
+| Viele zu eins | ✅ | ✅ |
+| Viele zu viele | ✅ | ✅ |
+| Viele zu viele (Array) | ✅ | ✅ |
 
 :::info
-Anhangsfelder sind von Datei-Sammlungen abhängig. Da Datei-Sammlungen nur von Hauptdatenbanken unterstützt werden, bieten externe Datenbanken derzeit keine Unterstützung für Anhangsfelder.
+Anhangsfelder sind von Dateitabellen abhängig. Da Dateitabellen nur von der Hauptdatenbank unterstützt werden, werden Anhangsfelder von externen Datenbanken derzeit nicht unterstützt.
 :::
 
 ## 4. Vergleich der Unterstützung für Sicherung und Migration
 
-| Funktion | Hauptdatenbank | Externe Datenbank |
-|----------|---------------|-------------------|
-| Sicherung & Wiederherstellung | ✅ | ❌ (Manuelle Verwaltung erforderlich) |
-| Migrationsverwaltung | ✅ | ❌ (Manuelle Verwaltung erforderlich) |
+| Funktion | Hauptdatenbank | Externe Datenbanken |
+|-----|---------|-----------|
+| Sicherung und Wiederherstellung | ✅ | ❌ (muss selbst durchgeführt werden) |
+| Migrationsverwaltung | ✅ | ❌ (muss selbst durchgeführt werden) |
 
 :::info
-NocoBase bietet Funktionen für die Sicherung, Wiederherstellung und Strukturmigration von Hauptdatenbanken. Bei externen Datenbanken müssen diese Vorgänge vom Benutzer eigenständig und entsprechend der jeweiligen Datenbankumgebung durchgeführt werden, da NocoBase hierfür keine integrierte Unterstützung bietet.
+NocoBase bietet Funktionen zur Sicherung, Wiederherstellung und Strukt-urmigration der Hauptdatenbank. Bei externen Datenbanken müssen diese Vorgänge vom Benutzer entsprechend der jeweiligen Datenbankumgebung eigenständig durchgeführt werden. NocoBase bietet dafür keine integrierte Unterstützung.
 :::
 
 ## Zusammenfassender Vergleich
 
-| Vergleichspunkt | Hauptdatenbank | Externe Datenbank |
-|-----------------|---------------|-------------------|
+| Vergleichspunkt | Hauptdatenbank | Externe Datenbanken |
+|-------|---------|-----------|
 | Datenbanktypen | PostgreSQL, MySQL, MariaDB, KingbaseES | PostgreSQL, MySQL, MariaDB, MSSQL, Oracle, KingbaseES |
-| Unterstützung von Sammlungstypen | Alle Sammlungstypen | Unterstützt nur Standard- und Ansichts-Sammlungen |
+| Unterstützung von Tabellentypen | Alle Tabellentypen | Nur normale Tabellen und View-Tabellen |
 | Unterstützung von Feldtypen | Alle Feldtypen | Alle Feldtypen außer Anhangsfeldern |
-| Sicherung & Migration | Integrierte Unterstützung | Manuelle Verwaltung erforderlich |
+| Sicherung und Migration | Integrierte Unterstützung | Muss selbst durchgeführt werden |
 
 ## Empfehlungen
 
-- **Wenn Sie NocoBase für den Aufbau eines völlig neuen Geschäftssystems nutzen**, verwenden Sie bitte die **Hauptdatenbank**. So können Sie den vollen Funktionsumfang von NocoBase ausschöpfen.
-- **Wenn Sie NocoBase verwenden, um eine Verbindung zu Datenbanken anderer Systeme herzustellen und grundlegende CRUD-Operationen (Erstellen, Lesen, Aktualisieren, Löschen) durchzuführen**, nutzen Sie die **externen Datenbanken**.
+- **Wenn Sie mit NocoBase ein vollständig neues Geschäftssystem entwickeln**, verwenden Sie bitte die **Hauptdatenbank**. Damit können Sie den vollständigen Funktionsumfang von NocoBase nutzen.
+- **Wenn Sie NocoBase verwenden, um die Datenbank eines anderen Systems anzubinden und grundlegende Vorgänge zum Erstellen, Lesen, Aktualisieren und Löschen von Daten durchzuführen**, verwenden Sie eine **externe Datenbank**.

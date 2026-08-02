@@ -221,7 +221,10 @@ export default class RequestInterceptionTrigger extends Trigger {
   constructor(workflow) {
     super(workflow);
 
-    workflow.app.dataSourceManager.use(this.middleware);
+    workflow.app.dataSourceManager.use(this.middleware, {
+      after: 'parseVariables',
+      before: 'default',
+    });
 
     workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
       (err) => err instanceof RequestInterceptionError || err.name === 'RequestInterceptionError',

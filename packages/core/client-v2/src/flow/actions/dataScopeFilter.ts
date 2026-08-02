@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isVariableExpression, pruneFilter } from '@nocobase/flow-engine';
+import { extractPropertyPath, isVariableExpression, pruneFilter } from '@nocobase/flow-engine';
 import { transformFilter } from '@nocobase/utils/client';
 import _ from 'lodash';
 
@@ -45,6 +45,14 @@ function restorePreservedNull(value: any): any {
   return value;
 }
 
+function isUrlSearchParamsExpression(value: any) {
+  if (!isVariableExpression(value)) {
+    return false;
+  }
+
+  return extractPropertyPath(value)?.[0] === 'urlSearchParams';
+}
+
 function markEmptyVariableValues(rawNode: any, resolvedNode: any) {
   if (!rawNode || !resolvedNode || typeof rawNode !== 'object' || typeof resolvedNode !== 'object') {
     return;
@@ -57,6 +65,7 @@ function markEmptyVariableValues(rawNode: any, resolvedNode: any) {
     }
     if (
       isVariableExpression(rawNode.value) &&
+      !isUrlSearchParamsExpression(rawNode.value) &&
       (resolvedNode.value === undefined || resolvedNode.value === null || resolvedNode.value === '')
     ) {
       resolvedNode.value = PRESERVE_NULL;

@@ -18,6 +18,8 @@ Atualmente, o NocoBase oferece suporte integrado para os seguintes tipos de meca
 
 O sistema adiciona automaticamente um mecanismo de armazenamento local durante a instalação, que pode ser usado diretamente. Você também pode adicionar novos mecanismos ou editar os parâmetros dos existentes.
 
+
+Se você já usa um mecanismo de armazenamento que oferece apenas acesso público e deseja migrar arquivos históricos para o S3 Pro, consulte [Migrar para S3 Pro](./migrate-to-s3-pro.md).
 ## Parâmetros Comuns
 
 Além dos parâmetros específicos para diferentes tipos de mecanismos, os seguintes são parâmetros comuns (usando o armazenamento local como exemplo):
@@ -64,4 +66,24 @@ Após um arquivo ser enviado, o caminho de acesso final é construído concatena
 ```
 
 Por exemplo: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+:::
+
+## Acessibilidade dos arquivos
+
+Cada mecanismo de armazenamento oferece controles de acesso diferentes. Antes de configurar, confirme se os arquivos precisam de acesso privado:
+
+| Mecanismo de armazenamento | Acessibilidade dos arquivos |
+| --- | --- |
+| [Local Storage](./local) | Somente acesso público é suportado; acesso privado não é suportado |
+| [Amazon S3](./amazon-s3) | Somente acesso público é suportado; acesso privado não é suportado |
+| [Aliyun OSS](./aliyun-oss) | Somente acesso público é suportado; acesso privado não é suportado |
+| [Tencent COS](./tencent-cos) | Somente acesso público é suportado; acesso privado não é suportado |
+| [S3 Pro](./s3-pro) | Acesso privado é suportado por URLs assinadas temporárias |
+
+:::warning Observação
+
+Armazenamento local, Amazon S3, Aliyun OSS e Tencent COS não fazem autenticação de login para acesso a arquivos e não geram URLs assinadas temporárias. Depois que um arquivo é enviado, qualquer pessoa com a URL de acesso pode acessá-lo diretamente.
+
+Se você precisa armazenar contratos, documentos de identidade, materiais internos ou outros arquivos que não devem ser públicos, use [S3 Pro](./s3-pro) e ative o acesso privado.
+
 :::

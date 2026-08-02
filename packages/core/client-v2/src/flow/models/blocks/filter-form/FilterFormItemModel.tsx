@@ -62,9 +62,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+interface CollectionFieldWithAssociationMarker {
+  isAssociationField?: () => boolean;
+  target?: unknown;
+}
+
+function hasAssociationMarker(value: unknown): value is CollectionFieldWithAssociationMarker {
+  return isRecord(value) && (typeof value.isAssociationField === 'function' || 'target' in value);
+}
+
+const isAssociationCollectionField = (collectionField: unknown) => {
+  if (!hasAssociationMarker(collectionField)) {
+    return false;
+  }
+  return collectionField.isAssociationField ? collectionField.isAssociationField() : Boolean(collectionField.target);
+};
+
 const normalizeAssociationDefaultFilterValue = (value: any, fieldModel: any) => {
   const collectionField = fieldModel?.context?.collectionField;
-  if (!collectionField?.isAssociationField?.()) {
+  if (!isAssociationCollectionField(collectionField)) {
     return value;
   }
 
@@ -171,8 +187,7 @@ const buildFilterFormFieldItem = ({
   if (!binding) {
     return;
   }
-  const isAssociation =
-    typeof field?.isAssociationField === 'function' ? field.isAssociationField() : Boolean(field?.target);
+  const isAssociation = isAssociationCollectionField(field);
   const fieldModel =
     isAssociation && ctxWithFlags.engine?.getModelClass?.('FilterFormRecordSelectFieldModel')
       ? 'FilterFormRecordSelectFieldModel'
@@ -507,10 +522,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     const formValue = this.context.form?.getFieldValue(this.props.name);
     const modelValue = fieldModel.getFilterValue ? fieldModel.getFilterValue() : formValue;
     const collectionField = (fieldModel as any)?.context?.collectionField;
-    const isAssociationField =
-      typeof collectionField?.isAssociationField === 'function'
-        ? collectionField.isAssociationField()
-        : !!collectionField?.target;
+    const isAssociationField = isAssociationCollectionField(collectionField);
     const shouldUseFormValue =
       isAssociationField &&
       !this.mounted &&
@@ -547,11 +559,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
       return value;
     }
     const collectionField = (fieldModel as any)?.context?.collectionField;
-    const isAssociation =
-      typeof collectionField?.isAssociationField === 'function'
-        ? collectionField.isAssociationField()
-        : !!collectionField?.target;
-    if (!isAssociation) {
+    if (!isAssociationCollectionField(collectionField)) {
       return value;
     }
     const normalizedFieldNames = normalizeAssociationFieldNames(
@@ -798,6 +806,13 @@ FilterFormItemModel.registerFlow({
     },
     defaultOperator: {
       use: 'defaultOperator',
+      hideInSettings(ctx) {
+        const collectionField =
+          ctx.collectionField ||
+          ctx.model?.context?.collectionField ||
+          ctx.model?.subModels?.field?.context?.collectionField;
+        return isAssociationCollectionField(collectionField);
+      },
     },
     operatorComponentProps: {
       use: 'operatorComponentProps',

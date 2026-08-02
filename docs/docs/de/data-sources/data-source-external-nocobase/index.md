@@ -1,30 +1,30 @@
 ---
 title: 'Externes NocoBase'
-description: 'Binden Sie eine andere NocoBase-Anwendung als externe Datenquelle ein und erfahren Sie mehr über Konfiguration, verfügbare Funktionen und Workflow-Einschränkungen.'
-keywords: 'Externes NocoBase,NocoBase Datenquelle,Datenquellenverwaltung,Workflow,NocoBase'
+description: 'Eine andere NocoBase-Anwendung als externe Datenquelle in die aktuelle Anwendung integrieren und Konfiguration, verfügbare Funktionen sowie Einschränkungen bei der Workflow-Nutzung kennenlernen.'
+keywords: 'Externes NocoBase,NocoBase-Datenquelle,Datenquellenverwaltung,Workflow,NocoBase'
 ---
 
 # Externes NocoBase
 
 ## Einführung
 
-Die externe NocoBase-Datenquelle bindet eine andere NocoBase-Anwendung in die aktuelle Anwendung ein und übernimmt dabei Metadaten aus der entfernten Anwendung, darunter Sammlungen, Feldoberflächen, Titel und Beziehungsfelder.
+Mit einer externen NocoBase-Datenquelle kann eine andere NocoBase-Anwendung in die aktuelle Anwendung integriert werden. Dabei bleiben die in der entfernten Anwendung konfigurierten Metadaten wie Datentabellen, Feldoberflächen, Titel und Beziehungsfelder erhalten.
 
-Im Vergleich zu einer externen Datenbankdatenquelle müssen Feldoberflächen in der Regel nicht erneut konfiguriert und Beziehungsfelder nicht manuell erstellt werden. Neben dem Anzeigen, Erstellen, Bearbeiten und Löschen von Datensätzen werden auch Datei-Upload und Vorschau, Import und Export, Diagrammabfragen sowie einige Workflow-Szenarien unterstützt.
+Im Vergleich zu einer externen Datenbank-Datenquelle müssen nach der Anbindung von NocoBase in der Regel weder Feldoberflächen neu konfiguriert noch Beziehungsfelder manuell angelegt werden. Neben dem Anzeigen, Erstellen, Bearbeiten und Löschen von Datensätzen werden auch das Hochladen und die Vorschau von Dateien, Import und Export, Diagrammabfragen sowie bestimmte Workflowszenarien unterstützt.
 
-## Datenquelle Hinzufügen
+## Datenquelle hinzufügen
 
-Aktivieren Sie das Plugin, fügen Sie in der Datenquellenverwaltung eine externe NocoBase-Datenquelle hinzu und tragen Sie die Zugriffsinformationen der entfernten Anwendung ein.
+Aktivieren Sie das Plugin und fügen Sie unter „Datenquellenverwaltung“ eine externe NocoBase-Datenquelle hinzu. Geben Sie anschließend die Zugangsdaten der entfernten Anwendung ein.
 
-| Option | Beschreibung |
-| --- | --- |
-| API-Adresse | Die vollständige API-Adresse der entfernten NocoBase-Anwendung, z. B. `https://example.com/api` |
-| Origin | Der öffentliche Ursprung der entfernten NocoBase-Anwendung, z. B. `https://example.com`. Er wird hauptsächlich für Vorschauadressen lokaler Dateien in der entfernten Anwendung verwendet |
-| API-Key | Der Zugriffsnachweis, mit dem die aktuelle Anwendung auf die entfernte NocoBase-Anwendung zugreift |
-| Anfrage-Header | Zusätzliche Header, die an die entfernte Anwendung gesendet werden, z. B. Space-Informationen |
-| Timeout | Anfrage-Timeout für den Zugriff auf die entfernte Anwendung |
+| Konfiguration | Beschreibung                                                                                  |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| API-Adresse  | Vollständige API-Adresse der entfernten NocoBase-Anwendung, zum Beispiel `https://example.com/api` |
+| Origin       | Zugriffsadresse der entfernten NocoBase-Anwendung, zum Beispiel `https://example.com`; wird hauptsächlich für die Verarbeitung von Vorschauadressen lokaler Dateien der entfernten Anwendung verwendet |
+| API key      | Anmeldedaten, die von der aktuellen Anwendung für den Zugriff auf die entfernte NocoBase-Anwendung verwendet werden |
+| Request-Header | Header, die zusätzlich an die entfernte Anwendung übergeben werden müssen, zum Beispiel Informationen zum Namespace |
+| Timeout      | Zeitüberschreitung für Anfragen an die entfernte Anwendung                                      |
 
-Nach dem Aktivieren der Datenquelle lädt das System die Sammlungen aus der entfernten Anwendung.
+Nach der Aktivierung der Datenquelle lädt das System die Datentabellen der entfernten Anwendung.
 
 ![](https://static-docs.nocobase.com/202606101149185.png)
 
@@ -32,126 +32,126 @@ Nach dem Aktivieren der Datenquelle lädt das System die Sammlungen aus der entf
 
 Eine externe NocoBase-Datenquelle wird sowohl von den Berechtigungen der aktuellen Anwendung als auch von denen der entfernten Anwendung beeinflusst.
 
-- In der aktuellen Anwendung können Sie wie bei anderen externen Datenquellen Zugriffsrechte für verschiedene Sammlungen und Felder konfigurieren.
-- In der entfernten Anwendung werden Daten gemäß den Berechtigungen des konfigurierten API-Keys gelesen und bearbeitet.
+- In der aktuellen Anwendung können wie bei anderen externen Datenquellen Zugriffsberechtigungen für verschiedene Tabellen und Felder konfiguriert werden;
+- Die entfernte Anwendung liest und bearbeitet die entsprechenden Daten gemäß den Berechtigungen des konfigurierten API-Schlüssels.
 
-Externe NocoBase-Datenquellen geben keine Berechtigungsmetadaten zurück, mit denen die Sichtbarkeit von Schaltflächen im Frontend fein gesteuert wird. Daher werden einige Schaltflächen möglicherweise nicht wie bei der Hauptdatenquelle automatisch entsprechend den Berechtigungen ausgeblendet. Unabhängig davon, ob eine Schaltfläche sichtbar ist, werden abgeschickte Operationen weiterhin durch die serverseitige Berechtigungsprüfung der aktuellen Anwendung geprüft. Nicht autorisierte Operationen werden abgelehnt.
+Eine externe NocoBase-Datenquelle liefert keine Berechtigungsmetadaten, mit denen der Anzeigestatus von Schaltflächen im Frontend detailliert gesteuert werden kann. Daher werden einige Schaltflächen möglicherweise nicht wie bei der primären Datenquelle automatisch anhand der Berechtigungen ausgeblendet. Unabhängig davon, ob eine Schaltfläche angezeigt wird, wird die Berechtigung beim Absenden der Aktion weiterhin serverseitig von der aktuellen Anwendung geprüft. Nicht autorisierte Aktionen werden abgelehnt.
 
 :::warning{title=Hinweis}
-Verwenden Sie für die externe NocoBase-Datenquelle einen eigenen API-Key und gewähren Sie nur die erforderlichen Sammlungs- und Operationsberechtigungen. Wenn ein Benutzer in der aktuellen Anwendung berechtigt ist, die Operation aber fehlschlägt, prüfen Sie die Berechtigungen des entfernten API-Keys.
+Es wird empfohlen, für die externe NocoBase-Datenquelle einen eigenen API-Schlüssel zu verwenden und ihm nur die erforderlichen Tabellen- und Aktionsberechtigungen zu erteilen. Wenn in der aktuellen Anwendung die erforderlichen Berechtigungen vorhanden sind, eine Aktion jedoch fehlschlägt, überprüfen Sie die Berechtigungen des API-Schlüssels der entfernten Anwendung.
 :::
 
-## Sammlungen Verwenden
+## Datentabellen verwenden
 
-Nachdem die Sammlungen erfolgreich geladen wurden, wählen Sie diese Datenquelle in Seitenkonfigurationen, Blockkonfigurationen, Diagrammen oder Workflows aus, um Sammlungen aus der entfernten Anwendung zu verwenden.
+Nachdem die Datentabellen erfolgreich geladen wurden, wählen Sie diese Datenquelle in der Seiten-, Block-, Diagramm- oder Workflow-Konfiguration aus, um die Datentabellen der entfernten Anwendung zu verwenden.
 
-Wenn sich die Sammlungsstruktur in der entfernten Anwendung ändert, laden Sie die Sammlungen in der aktuellen Anwendung erneut.
+Wenn sich die Struktur der Datentabellen in der entfernten Anwendung ändert, müssen die Datentabellen in der aktuellen Anwendung erneut geladen werden.
 
-## Funktionen
+## Funktionsübersicht
 
-Externe NocoBase-Datenquellen dienen hauptsächlich dazu, Sammlungen und Daten einer entfernten Anwendung in der aktuellen Anwendung zu verwenden. Sammlungsstruktur, Feldkonfiguration und tatsächliche Daten werden weiterhin in der entfernten Anwendung gepflegt.
+Eine externe NocoBase-Datenquelle dient hauptsächlich dazu, Datentabellen und Daten der entfernten Anwendung in der aktuellen Anwendung zu verwenden. Struktur der Datentabellen, Feldkonfigurationen und tatsächliche Daten werden weiterhin von der entfernten Anwendung verwaltet.
 
-### Sammlungen und Felder
+### Datentabellen und Felder
 
-Die aktuelle Anwendung lädt Metadaten aus der entfernten Anwendung, darunter Sammlungen, Feldoberflächen, Titel und Beziehungsfelder. Im Vergleich zu einer externen Datenbankdatenquelle müssen Sie Feldoberflächen in der aktuellen Anwendung normalerweise nicht erneut konfigurieren und Beziehungsfelder nicht manuell erstellen.
+Die aktuelle Anwendung lädt Metadaten wie Datentabellen, Feldoberflächen, Titel und Beziehungsfelder aus der entfernten Anwendung. Im Vergleich zu einer externen Datenbank-Datenquelle müssen Feldoberflächen in der aktuellen Anwendung in der Regel nicht neu konfiguriert und Beziehungsfelder nicht manuell angelegt werden.
 
-Die aktuelle Anwendung unterstützt keine direkte Feldkonfiguration für externe NocoBase-Datenquellen. Wenn Sie Felder hinzufügen, Feldtypen anpassen oder Beziehungsfelder ändern möchten, nehmen Sie diese Änderungen in der entfernten Anwendung vor und laden Sie anschließend die Sammlungen in der aktuellen Anwendung erneut.
+Die aktuelle Anwendung unterstützt keine direkte Konfiguration von Feldern einer externen NocoBase-Datenquelle. Wenn Felder hinzugefügt, Feldtypen angepasst oder Beziehungsfelder geändert werden müssen, nehmen Sie diese Änderungen in der entfernten Anwendung vor und laden Sie anschließend die Datentabellen in der aktuellen Anwendung erneut.
 
-### Datensätze und Verknüpfte Daten
+### Datensätze und verknüpfte Daten
 
-Externe NocoBase-Datenquellen unterstützen das Anzeigen, Erstellen, Bearbeiten und Löschen von Datensätzen in Seitenblöcken sowie das Anzeigen und Pflegen verknüpfter Daten. Operationen werden von der aktuellen Anwendung ausgelöst und über den konfigurierten API-Key an die entfernte Anwendung gesendet.
+Eine externe NocoBase-Datenquelle unterstützt das Anzeigen, Erstellen, Bearbeiten und Löschen von Datensätzen in Seitenblöcken sowie das Anzeigen und Pflegen verknüpfter Daten. Die Aktionen werden von der aktuellen Anwendung initiiert, die über den konfigurierten API-Schlüssel Anfragen an die entfernte Anwendung sendet.
 
 ### Dateien und Anhänge
 
-Dateien werden in den von der entfernten Anwendung verwendeten Speicher hochgeladen. Die aktuelle Anwendung initiiert Upload-, Vorschau- und Download-Anfragen, speichert die Dateien selbst aber nicht.
+Dateien werden in dem von der entfernten Anwendung verwendeten Speicher abgelegt. Die aktuelle Anwendung initiiert Upload-, Vorschau- und Downloadanfragen; die Dateien selbst werden nicht in der aktuellen Anwendung gespeichert.
 
-Origin wird hauptsächlich für Vorschauadressen von Dateien verwendet, die in der entfernten Anwendung lokal gespeichert sind. Wenn die entfernte Anwendung einen relativen Pfad zurückgibt, ergänzt die aktuelle Anwendung mit Origin die vollständige Zugriffsadresse. Origin sollte die öffentliche Zugriffsadresse der entfernten NocoBase-Anwendung sein, zum Beispiel:
+Origin wird hauptsächlich für die Verarbeitung der Vorschauadressen von Dateien im lokalen Speicher der entfernten Anwendung verwendet. Wenn die entfernte Anwendung einen relativen Pfad zurückgibt, ergänzt die aktuelle Anwendung die Dateiadresse mit Origin. Als Origin sollte die öffentlich zugängliche Adresse der entfernten NocoBase-Anwendung eingetragen werden, zum Beispiel:
 
 ```text
 https://example.com
 ```
 
-Tragen Sie nicht die API-Adresse als Origin ein.
+Tragen Sie die API-Adresse nicht als Origin ein.
 
 ### Import und Export
 
-Import- und Exportoperationen lesen oder schreiben die Datenquelle über externe Dateien und werden zur Ausführung an die entfernte Anwendung weitergeleitet. Die aktuelle Anwendung verarbeitet Benutzeroperationen, leitet Anfragen weiter und gibt Download-Ergebnisse zurück. Das tatsächliche Lesen und Schreiben der Daten erfolgt in der entfernten Anwendung.
+Import und Export sind Vorgänge zum Lesen und Schreiben einer Datenquelle über externe Dateien und werden vollständig an die entfernte Anwendung weitergeleitet. Die aktuelle Anwendung nimmt die Benutzeraktion entgegen, leitet die Anfrage weiter und gibt das Downloadergebnis zurück. Das eigentliche Lesen und Schreiben der Daten erfolgt durch die entfernte Anwendung.
 
-- Datensätze importieren: Die aktuelle Anwendung nimmt die hochgeladene Importdatei entgegen und leitet sie zur Ausführung des Imports an die entfernte Anwendung weiter.
-- Datensätze exportieren: Die aktuelle Anwendung leitet die Anfrage zum Exportieren von Datensätzen an die entfernte Anwendung weiter. Im synchronen Modus wird die von der entfernten Anwendung zurückgegebene Datensatzdatei als Stream an den Browser zum Download zurückgegeben. Im asynchronen Modus wird eine lokale asynchrone Aufgabe erstellt, der Export in der entfernten Anwendung gestartet, der Fortschritt mit der lokalen Aufgabe synchronisiert und die Ergebnisdatei beim Download als Stream aus der entfernten Anwendung abgerufen.
-- Anhänge exportieren: Die aktuelle Anwendung leitet die Anfrage zum Exportieren von Anhängen an die entfernte Anwendung weiter. Im synchronen Modus wird das von der entfernten Anwendung zurückgegebene Anhangsarchiv als Stream an den Browser zum Download zurückgegeben. Im asynchronen Modus wird eine lokale asynchrone Aufgabe erstellt, der Anhangsexport in der entfernten Anwendung gestartet, der Fortschritt mit der lokalen Aufgabe synchronisiert und das Anhangsarchiv beim Download als Stream aus der entfernten Anwendung abgerufen.
+- Datensätze importieren: Die aktuelle Anwendung nimmt die hochgeladene Importdatei entgegen und leitet sie zur Ausführung des Imports an die entfernte Anwendung weiter;
+- Datensätze exportieren: Die aktuelle Anwendung leitet die Anfrage zum Export von Datensätzen an die entfernte Anwendung weiter. Im synchronen Modus wird der von der entfernten Anwendung zurückgegebene Datensatz-Dateistream direkt an den Browser zum Download weitergeleitet. Im asynchronen Modus wird eine lokale asynchrone Aufgabe erstellt, der Export der Datensätze in der entfernten Anwendung gestartet und der Fortschritt synchronisiert. Beim Herunterladen des Ergebnisses wird der Datensatz-Dateistream anschließend von der entfernten Anwendung abgerufen.
+- Anhänge exportieren: Die aktuelle Anwendung leitet die Anfrage zum Export von Anhängen an die entfernte Anwendung weiter. Im synchronen Modus wird das von der entfernten Anwendung zurückgegebene Anhangspaket direkt an den Browser zum Download weitergeleitet. Im asynchronen Modus wird eine lokale asynchrone Aufgabe erstellt, der Export der Anhänge in der entfernten Anwendung gestartet und der Fortschritt synchronisiert. Beim Herunterladen des Ergebnisses wird das Anhangspaket anschließend als Stream von der entfernten Anwendung abgerufen.
 
 ### Vorlagendruck
 
-Der Vorlagendruck kann Datensätze aus einer externen NocoBase-Datenquelle verwenden. Druckvorlagen und Druckaktionskonfigurationen werden in der aktuellen Anwendung gespeichert. Beim Drucken liest die aktuelle Anwendung entfernte Datensätze und verknüpfte Daten und erzeugt die Druckdatei in der aktuellen Anwendung.
+Für den Vorlagendruck können Datensätze aus einer externen NocoBase-Datenquelle verwendet werden. Druckvorlagen und Druckaktionen werden in der aktuellen Anwendung konfiguriert und gespeichert. Beim Drucken liest die aktuelle Anwendung die entfernten Datensätze und verknüpften Daten und erstellt die Druckdatei in der aktuellen Anwendung.
 
 ### Diagramme
 
 #### Abfragebereich
 
-Externe NocoBase-Datenquellen können im Abfragebereich von Diagrammen verwendet werden. Die aktuelle Anwendung verarbeitet Abfrageparameter gemäß den lokal konfigurierten Berechtigungen für Diagramm, Datenquelle, Sammlung und Felder und fordert anschließend Ergebnisse von der entfernten Anwendung an.
+Eine externe NocoBase-Datenquelle kann für Diagramm-Abfragebereiche verwendet werden. Die aktuelle Anwendung verarbeitet die Abfrageparameter anhand der lokal konfigurierten Diagramme, Datenquellen, Datentabellen und Feldberechtigungen und fordert anschließend die Ergebnisse von der entfernten Anwendung an.
 
-Der entfernte API-Key muss ebenfalls Zugriff auf die entsprechenden Daten haben, sonst schlägt die Abfrage fehl.
+Der API-Schlüssel der entfernten Anwendung muss ebenfalls über Zugriffsberechtigungen für die entsprechenden Daten verfügen, andernfalls schlägt die Abfrage fehl.
 
 #### SQL-Bereich
 
-Der SQL-Bereich ist der SQL-Abfragemodus in Diagrammen und dient nur Abfragen. Die aktuelle Anwendung speichert die SQL-Konfiguration und startet den Aufruf, während das SQL zur Ausführung an die entfernte Anwendung weitergeleitet wird.
+Der SQL-Bereich ist ein SQL-Abfragemodus für Diagramme und dient ausschließlich Abfragen. Die aktuelle Anwendung speichert die SQL-Konfiguration und initiiert den Aufruf; die SQL-Abfrage wird zur Ausführung an die entfernte Anwendung weitergeleitet.
 
-Bei Verwendung des SQL-Bereichs benötigt der lokale Benutzer UI-Konfigurationsberechtigungen in der aktuellen Anwendung, und der entfernte API-Key benötigt ebenfalls UI-Konfigurationsberechtigungen in der entfernten Anwendung. SQL wird nicht wie im Abfragebereich nach Sammlungs- und Feldberechtigungen aufgeschlüsselt. Gewähren Sie lokalen Benutzern und dem entsprechenden API-Key UI-Konfigurationsberechtigungen daher mit Vorsicht.
+Bei Verwendung des SQL-Bereichs benötigt der lokale Benutzer UI-Konfigurationsberechtigungen in der aktuellen Anwendung. Der API-Schlüssel muss außerdem in der entfernten Anwendung über UI-Konfigurationsberechtigungen verfügen. SQL-Abfragen werden im Gegensatz zu Abfragen im Abfragebereich nicht anhand von Tabellen- und Feldberechtigungen in Abfrageparameter aufgeteilt. Vergeben Sie die UI-Konfigurationsberechtigungen für lokale Benutzer und den entsprechenden API-Schlüssel daher mit Bedacht.
 
 ### Workflows
 
-Externe NocoBase-Datenquellen können Workflows sowohl in der aktuellen als auch in der entfernten Anwendung betreffen. Die aktuelle Anwendung reagiert auf Ereignisse in lokalen Seiten, Schaltflächen und API-Anfrageketten. Nachdem die entfernte Anwendung weitergeleitete Anfragen erhalten hat, verarbeitet sie diese gemäß ihrer eigenen Workflow-Konfiguration.
+Eine externe NocoBase-Datenquelle kann zwei Workflowsysteme betreffen: das der aktuellen Anwendung und das der entfernten Anwendung. Die aktuelle Anwendung reagiert auf Ereignisse in den Abläufen lokaler Seiten, Schaltflächen und API-Anfragen. Nachdem die entfernte Anwendung eine weitergeleitete Anfrage erhalten hat, verarbeitet sie diese gemäß ihrer eigenen Workflow-Konfiguration.
 
-Die aktuelle Anwendung überwacht keine Erstellungs-, Aktualisierungs- oder Löschereignisse, die innerhalb entfernter Sammlungen auftreten. Ereignisse entfernter Sammlungen werden nur in der entfernten Anwendung ausgelöst.
+Beachten Sie, dass die aktuelle Anwendung keine Ereignisse für das Erstellen, Aktualisieren oder Löschen überwacht, die innerhalb der entfernten Datentabellen auftreten. Ereignisse der entfernten Datentabellen werden nur in der entfernten Anwendung ausgelöst.
 
-#### Auslöser
+#### Trigger
 
-Die folgende Tabelle beschreibt, wie sich von externen NocoBase-Datenquellen betroffene Auslöser in der aktuellen und der entfernten Anwendung verhalten, wenn der entsprechende Workflow aktiviert ist.
+Die folgende Tabelle beschreibt, wann Trigger, die von einer externen NocoBase-Datenquelle beeinflusst werden, in der aktuellen und der entfernten Anwendung ausgelöst werden, sofern der entsprechende Workflow aktiviert ist.
 
-| Auslöser | Aktuelle Anwendung | Entfernte Anwendung | Beschreibung |
-| --- | --- | --- | --- |
-| Ereignis vor Aktion | Wird ausgelöst | Nur im globalen Modus | In der aktuellen Anwendung wird der globale Modus ausgelöst, der lokale Modus folgt den Schaltflächenbindungen der aktuellen Anwendung. Nachdem die entfernte Anwendung die weitergeleitete Anfrage erhalten hat, wird nur der globale Modus ausgelöst |
-| Ereignis nach Aktion | Wird ausgelöst | Nur im globalen Modus | In der aktuellen Anwendung wird der globale Modus ausgelöst, der lokale Modus folgt den Schaltflächenbindungen der aktuellen Anwendung. Nachdem die entfernte Anwendung die weitergeleitete Anfrage erhalten hat, wird nur der globale Modus ausgelöst |
-| Benutzerdefiniertes Aktionsereignis | Wird ausgelöst | Wird nicht ausgelöst | Eine in der aktuellen Anwendung gebundene Schaltfläche "Workflow auslösen" startet den lokalen Workflow. Weitergeleitete CRUD-Anfragen lösen keine entfernten benutzerdefinierten Aktionsereignisse aus |
-| Sammlungsereignis | Wird nicht ausgelöst | Wird ausgelöst | Die tatsächlichen Daten ändern sich in der entfernten Anwendung. Die aktuelle Anwendung löst keine lokalen Sammlungsereignisse aus, während die entfernte Anwendung ihre eigenen Sammlungsereignisse auslöst |
-| Zeitplan-Auslöser für Datumsfeld | Wird nicht ausgelöst | Wird ausgelöst | Die aktuelle Anwendung löst nicht auf Basis von Feldern entfernter Sammlungen aus. Die entfernte Anwendung löst gemäß ihrer eigenen Datumsfeldkonfiguration aus |
+| Trigger              | Aktuelle Anwendung | Entfernte Anwendung | Beschreibung                                                                                 |
+| -------------------- | ------------------ | ------------------- | -------------------------------------------------------------------------------------------- |
+| Ereignis vor der Anfrage | Ausgelöst        | Nur im globalen Modus ausgelöst | In der aktuellen Anwendung im globalen Modus ausgelöst; im lokalen Modus durch die Bindung an eine Schaltfläche der aktuellen Anwendung. Nachdem die entfernte Anwendung die weitergeleitete Anfrage erhalten hat, wird der Trigger nur im globalen Modus ausgelöst |
+| Ereignis nach der Anfrage | Ausgelöst       | Nur im globalen Modus ausgelöst | In der aktuellen Anwendung im globalen Modus ausgelöst; im lokalen Modus durch die Bindung an eine Schaltfläche der aktuellen Anwendung. Nachdem die entfernte Anwendung die weitergeleitete Anfrage erhalten hat, wird der Trigger nur im globalen Modus ausgelöst |
+| Ereignis einer benutzerdefinierten Aktion | Ausgelöst | Nicht ausgelöst | Die in der aktuellen Anwendung gebundene Schaltfläche „Workflow auslösen“ startet den lokalen Ablauf; weitergeleitete CRUD-Anfragen lösen keine Ereignisse für benutzerdefinierte Aktionen in der entfernten Anwendung aus |
+| Datentabellenereignis | Nicht ausgelöst | Ausgelöst | Die tatsächliche Datenänderung erfolgt in der entfernten Anwendung, daher löst die aktuelle Anwendung kein lokales Datentabellenereignis aus. Die entfernte Anwendung löst ihr eigenes Datentabellenereignis aus |
+| Zeitgesteuerter Trigger für Datumsfelder | Nicht ausgelöst | Ausgelöst | Die aktuelle Anwendung löst keine Trigger auf Grundlage von Feldern der entfernten Datentabellen aus. Die entfernte Anwendung löst sie gemäß ihrer eigenen Konfiguration für Datumsfelder aus |
 
-Auslöser, die nicht von Datenquellen abhängen, werden in der aktuellen und in der entfernten Anwendung gemäß ihrer jeweiligen Konfiguration ausgelöst.
+Trigger, die nicht von einer Datenquelle abhängen, werden in der aktuellen und der entfernten Anwendung jeweils gemäß der eigenen Konfiguration ausgelöst.
 
-Um Workflows in der aktuellen Anwendung zu erstellen, die Daten einer externen NocoBase-Datenquelle bearbeiten, verwenden Sie Ereignisse vor Aktion, Ereignisse nach Aktion oder benutzerdefinierte Aktionsereignisse. Bestehende Workflows in der entfernten Anwendung werden unabhängig in der entfernten Anwendung ausgeführt.
+Wenn in der aktuellen Anwendung ein Ablauf für die Verarbeitung externer NocoBase-Daten erstellt werden soll, wird empfohlen, ein Ereignis vor der Anfrage, ein Ereignis nach der Anfrage oder ein Ereignis einer benutzerdefinierten Aktion zu verwenden. Bereits in der entfernten Anwendung vorhandene Workflows werden unabhängig von der entfernten Anwendung ausgeführt.
 
 #### Knoten
 
-Die folgende Tabelle listet nur datenquellenbezogene Knoten auf. Allgemeine Knoten wie Bedingung, Berechnung, Schleife und JSON-Verarbeitung hängen nicht vom Datenquellentyp ab und können wie gewohnt verwendet werden.
+Die folgende Tabelle enthält nur datenquellenbezogene Knoten. Allgemeine Knoten wie Bedingungen, Berechnungen, Schleifen und JSON-Verarbeitung hängen nicht vom Typ der Datenquelle ab und können wie in einem normalen Workflow verwendet werden.
 
-| Knoten | Verfügbar | Beschreibung |
-| --- | --- | --- |
-| Datensätze abfragen | Verfügbar | Fragt Datensätze in der entfernten Anwendung ab |
-| Datensatz erstellen | Verfügbar | Erstellt Datensätze in der entfernten Anwendung |
-| Datensatz aktualisieren | Verfügbar | Aktualisiert Datensätze in der entfernten Anwendung |
-| Datensatz löschen | Verfügbar | Löscht Datensätze in der entfernten Anwendung |
-| SQL-Knoten | Nicht verfügbar | Der Workflow-SQL-Knoten unterstützt nur Datenbankdatenquellen |
-| Aggregationsknoten | Nicht verfügbar | Der Aggregationsknoten unterstützt nur Datenbankdatenquellen |
+| Knoten       | Verfügbar | Beschreibung                         |
+| ------------ | --------- | ------------------------------------ |
+| Datensätze abfragen | Verfügbar | Datensätze in der entfernten Anwendung abfragen |
+| Datensätze erstellen | Verfügbar | Datensätze in der entfernten Anwendung erstellen |
+| Datensätze aktualisieren | Verfügbar | Datensätze in der entfernten Anwendung aktualisieren |
+| Datensätze löschen | Verfügbar | Datensätze in der entfernten Anwendung löschen |
+| SQL-Knoten  | Nicht verfügbar | SQL-Knoten in Workflows unterstützen nur Datenbank-Datenquellen |
+| Aggregationsknoten | Nicht verfügbar | Aggregationsknoten unterstützen nur Datenbank-Datenquellen |
 
-## FAQ
+## Häufig gestellte Fragen
 
-### Sammlungen Werden Nicht Angezeigt
+### Datentabelle wird nicht angezeigt
 
-Prüfen Sie, ob die Datenquelle aktiviert ist und ob API-Adresse und API-Key korrekt sind. Die entfernte Anwendung muss dem API-Key außerdem Zugriff auf die entsprechenden Sammlungen erlauben.
+Überprüfen Sie, ob die Datenquelle aktiviert ist und ob API-Adresse und API-Schlüssel korrekt sind. Außerdem muss die entfernte Anwendung dem API-Schlüssel den Zugriff auf die entsprechende Datentabelle erlauben.
 
-### Dateien Wurden Hochgeladen, Können Aber Nicht Angezeigt Werden
+### Datei wurde erfolgreich hochgeladen, kann aber nicht in der Vorschau angezeigt werden
 
-Wenn die aktuelle Anwendung oder die entfernte Anwendung lokalen Dateispeicher verwendet, prüfen Sie, ob Origin die öffentliche Zugriffsadresse der entsprechenden Anwendung ist. Origin sollte nicht die API-Adresse sein.
+Wenn die aktuelle oder die entfernte Anwendung lokalen Dateispeicher verwendet, überprüfen Sie, ob Origin als öffentlich zugängliche Adresse der entsprechenden Anwendung eingetragen ist. Origin darf nicht als API-Adresse eingetragen werden.
 
-### Die Aktuelle Anwendung Hat Berechtigungen, Aber Die Operation Schlägt Fehl
+### In der aktuellen Anwendung sind Berechtigungen vorhanden, die Aktion schlägt jedoch fehl
 
-Prüfen Sie die API-Key-Berechtigungen in der entfernten Anwendung. Externe NocoBase-Datenquellen werden sowohl von den Berechtigungen der aktuellen Anwendung als auch von denen der entfernten Anwendung beeinflusst.
+Überprüfen Sie die Berechtigungen des API-Schlüssels der entfernten Anwendung. Eine externe NocoBase-Datenquelle wird sowohl von den Berechtigungen der aktuellen als auch von denen der entfernten Anwendung beeinflusst.
 
-### Sammlungen Können Nach Einem Fehler Des Entfernten Dienstes Nicht Verwendet Werden
+### Nach einem Fehler des entfernten Dienstes kann die Datentabelle nicht verwendet werden
 
-Wenn die entfernte Anwendung 502 zurückgibt, neu startet oder vorübergehend nicht verfügbar ist, kann die aktuelle Anwendung vorübergehend keine Metadaten entfernter Sammlungen lesen. Nachdem der entfernte Dienst wiederhergestellt ist, lädt die aktuelle Anwendung die Metadaten beim nächsten Zugriff auf die Sammlungen dieser Datenquelle automatisch neu.
+Wenn in der entfernten Anwendung ein 502-Fehler, ein Neustart oder eine kurzzeitige Nichtverfügbarkeit auftritt, kann die aktuelle Anwendung die Metadaten der entfernten Datentabelle möglicherweise vorübergehend nicht lesen. Sobald der entfernte Dienst wieder verfügbar ist, lädt die aktuelle Anwendung die Metadaten beim nächsten Zugriff auf die Datentabelle dieser Datenquelle automatisch erneut.
 
-### Warum Felder In Der Aktuellen Anwendung Nicht Konfiguriert Werden Können
+### Warum können Felder nicht in der aktuellen Anwendung konfiguriert werden?
 
-Externe NocoBase-Datenquellen verwenden die Sammlungsstruktur und Feldkonfiguration der entfernten Anwendung. Passen Sie Felder in der entfernten Anwendung an und laden Sie anschließend die Sammlungen in der aktuellen Anwendung erneut.
+Eine externe NocoBase-Datenquelle verwendet die Struktur der Datentabellen und die Feldkonfiguration der entfernten Anwendung. Passen Sie die Felder in der entfernten Anwendung an und laden Sie anschließend die Datentabelle in der aktuellen Anwendung erneut.

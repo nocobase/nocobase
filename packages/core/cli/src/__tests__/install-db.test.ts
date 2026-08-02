@@ -14,7 +14,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, test, expect, vi } from 'vitest';
 import Install from '../commands/install.js';
 import EnvAdd from '../commands/env/add.js';
-import { deleteCliConfigValue } from '../lib/cli-config.js';
+import { deleteCliConfigValue, setCliConfigValue } from '../lib/cli-config.js';
 import { resolveCliHomeRoot, resolveEnvRelativePath } from '../lib/cli-home.js';
 import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 
@@ -113,8 +113,6 @@ test('builtin postgres db plan uses workspace network and env scoped docker cont
     '-d',
     '--name',
     containerName,
-    '--restart',
-    'always',
     '--network',
     networkName,
     '-e',
@@ -567,16 +565,14 @@ test('builtin postgres db plan can use the workspace name from config', () => {
   expect(plan.containerName).toBe('nb-shared-workspace-demo-postgres');
 });
 
-test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN', () => {
-  process.env.NB_LOCALE = 'zh-CN';
-
+test('builtin db plan uses dockerhub defaults when no image registry override is configured', () => {
   const postgresPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
     storagePath: './storage/demo',
     source: 'npm',
     dbDialect: 'postgres',
   });
-  expect(postgresPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16');
+  expect(postgresPlan.image).toBe('postgres:16');
 
   const mysqlPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
@@ -584,7 +580,7 @@ test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN',
     source: 'npm',
     dbDialect: 'mysql',
   });
-  expect(mysqlPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8');
+  expect(mysqlPlan.image).toBe('mysql:8');
 
   const mariadbPlan = Install.buildBuiltinDbPlan({
     envName: 'demo',
@@ -592,7 +588,7 @@ test('builtin db plan uses locale-aware default images when NB_LOCALE is zh-CN',
     source: 'npm',
     dbDialect: 'mariadb',
   });
-  expect(mariadbPlan.image).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11');
+  expect(mariadbPlan.image).toBe('mariadb:11');
 });
 
 test('builtin db plan does not publish host port for docker source and uses container host', () => {
@@ -729,6 +725,56 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('DB_SCHEMA=test')).toBe(true);
   expect(plan.args.includes('DB_TABLE_PREFIX=nb_')).toBe(true);
   expect(plan.args.includes('DB_UNDERSCORED=true')).toBe(true);
+});
+
+test('docker app plan uses configured nb image registry and variant defaults', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const previousCliRoot = process.env.NB_CLI_ROOT;
+  const tempCliRoot = await mkdtemp(path.join(os.tmpdir(), 'nocobase-install-db-image-config-'));
+
+  try {
+    process.env.NB_CLI_ROOT = tempCliRoot;
+    await setCliConfigValue('nb-image-registry', 'aliyun', { scope: 'global' });
+    await setCliConfigValue('nb-image-variant', 'full-no-nginx', { scope: 'global' });
+
+    const plan = await installStatics.buildDockerAppPlan({
+      envName: 'demo',
+      networkName: 'nocobase',
+      appResults: {
+        appPort: '13000',
+        storagePath: './storage/demo',
+      },
+      downloadResults: {
+        source: 'docker',
+        version: 'latest',
+      },
+      dbResults: {
+        dbDialect: 'postgres',
+        dbHost: '127.0.0.1',
+        dbPort: '5432',
+        dbDatabase: 'nocobase',
+        dbUser: 'nocobase',
+        dbPassword: 'nocobase',
+      },
+      rootResults: {
+        rootUsername: 'nocobase',
+        rootEmail: 'admin@nocobase.com',
+        rootPassword: 'admin123',
+        rootNickname: 'Super Admin',
+      },
+    });
+
+    expect(plan.imageRef).toBe('registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full-no-nginx');
+    expect(plan.args.includes('13000:13000')).toBe(true);
+    expect(plan.args.includes('13000:80')).toBe(false);
+  } finally {
+    if (previousCliRoot === undefined) {
+      delete process.env.NB_CLI_ROOT;
+    } else {
+      process.env.NB_CLI_ROOT = previousCliRoot;
+    }
+    await rm(tempCliRoot, { recursive: true, force: true });
+  }
 });
 
 test('docker app plan enables NOCOBASE_EXTRACT_CLIENT_ASSETS by default', async () => {
@@ -1255,7 +1301,9 @@ test('install does not seed built-in database host port for docker source or exp
         dbDialect: 'postgres',
       },
     }),
-  ).toEqual({});
+  ).toEqual({
+    builtinDbImage: 'postgres:16',
+  });
   expect(
     await installStatics.buildDbPromptInitialValues({
       flags: {
@@ -1269,7 +1317,9 @@ test('install does not seed built-in database host port for docker source or exp
         dbDialect: 'postgres',
       },
     }),
-  ).toEqual({});
+  ).toEqual({
+    builtinDbImage: 'postgres:16',
+  });
 });
 
 test('install does not seed a built-in database host port for external db host presets', async () => {

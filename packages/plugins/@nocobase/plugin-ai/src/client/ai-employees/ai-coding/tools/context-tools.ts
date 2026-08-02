@@ -12,7 +12,7 @@ import { useChat } from '../../chatbox/hooks/useChat';
 import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 import { FlowContext } from '@nocobase/flow-engine';
-import { applyPatch } from 'diff';
+import { applyPatch, parsePatch } from 'diff';
 
 const { CodeToolCard } = lazy(() => import('../ui/CodeToolCard'), 'CodeToolCard');
 
@@ -108,9 +108,25 @@ function normalizeUnifiedDiffHunkHeaders(patch: string) {
 }
 
 export function applyUnifiedDiff(source: string, patch: string) {
-  const result = applyPatch(source, normalizeUnifiedDiffHunkHeaders(patch), { fuzzFactor: 2 });
+  const normalizedPatch = normalizeUnifiedDiffHunkHeaders(patch);
+  const parsedPatches = parsePatch(normalizedPatch);
+  const hunks = parsedPatches.flatMap((parsedPatch) => parsedPatch.hunks);
+  if (!hunks.length) {
+    throw new Error(
+      'Invalid unified diff: no valid hunks found. Use headers such as `@@ -1,1 +1,1 @@`; bare `@@` headers are not supported.',
+    );
+  }
+  const hasChanges = hunks.some((hunk) => hunk.lines.some((line) => line.startsWith('+') || line.startsWith('-')));
+  if (!hasChanges) {
+    throw new Error('Invalid unified diff: no changed lines found.');
+  }
+
+  const result = applyPatch(source, normalizedPatch, { fuzzFactor: 2 });
   if (result === false) {
     throw new Error('Patch could not be applied to the current editor code.');
+  }
+  if (result === source) {
+    throw new Error('Patch produced no changes to the current editor code.');
   }
   return result;
 }
