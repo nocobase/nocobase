@@ -639,17 +639,18 @@ function PortalCover(props: { record: MultiPortalRecord; href: string; openLabel
 
 function PortalTitle({ title }: { title: string }) {
   const titleRef = useRef<HTMLElement>(null);
-  const getTooltipTitle = useCallback(() => {
+  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const handleTooltipOpenChange = useCallback((open: boolean) => {
     const titleElement = titleRef.current;
-    return titleElement && titleElement.scrollWidth > titleElement.clientWidth ? title : null;
-  }, [title]);
+    setTooltipOpen(Boolean(open && titleElement && titleElement.scrollWidth > titleElement.clientWidth));
+  }, []);
 
   return (
     <span style={{ display: 'block', minWidth: 0, position: 'relative' }}>
       <Typography.Text ref={titleRef} strong ellipsis style={{ display: 'block', minWidth: 0 }}>
         {title}
       </Typography.Text>
-      <Tooltip title={getTooltipTitle}>
+      <Tooltip title={title} open={tooltipOpen} onOpenChange={handleTooltipOpenChange}>
         <span data-testid="portal-title-tooltip-trigger" style={{ inset: 0, position: 'absolute' }} />
       </Tooltip>
     </span>

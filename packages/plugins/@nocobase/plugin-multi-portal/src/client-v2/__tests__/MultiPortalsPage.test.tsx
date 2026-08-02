@@ -8,7 +8,7 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -257,6 +257,7 @@ async function clickCardMenuItem(user: ReturnType<typeof userEvent.setup>, card:
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   flowContext.current = undefined;
   window.__nocobase_modern_client_prefix__ = undefined;
 });
@@ -685,7 +686,6 @@ describe('plugin-multi-portal settings page', () => {
   });
 
   it('should show the complete portal title when an ellipsized title is hovered', async () => {
-    const user = userEvent.setup();
     const longTitle = 'Customer service and partner collaboration portal';
     const resource = makeResource({
       list: vi.fn().mockResolvedValue({
@@ -715,10 +715,64 @@ describe('plugin-multi-portal settings page', () => {
     Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 100 });
     Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 200 });
 
-    await user.hover(screen.getByTestId('portal-title-tooltip-trigger'));
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(longTitle);
+    expect(screen.getByRole('tooltip')).toHaveTextContent(longTitle);
     expect(title).toBeVisible();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+  });
+
+  it('should not show a tooltip when the portal title is not ellipsized', async () => {
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [portalValues],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(portalValues.title);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 100 });
+
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
   });
 
   it('should allow deleting default portals from the gallery', async () => {
