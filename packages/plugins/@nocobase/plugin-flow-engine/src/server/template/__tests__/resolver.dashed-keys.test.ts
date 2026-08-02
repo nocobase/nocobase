@@ -140,6 +140,7 @@ describe('server template resolver: dashed keys in dot-only path', () => {
       '{{ Function("return __resolveVariablePath0")()("user", ["id"]) }}',
       '{{ globalThis.eval("__resolveVariablePath0")("user", ["id"]) }}',
       '{{ (0, eval)("__resolveVariablePath0")("user", ["id"]) }}',
+      '{{ (() => { const alias = eval; return alias("__resolveVariablePath0")("user", ["id"]); })() }}',
     ];
 
     for (const attempt of attempts) expect(await resolveJsonTemplate(attempt, ctx)).toBe(attempt);

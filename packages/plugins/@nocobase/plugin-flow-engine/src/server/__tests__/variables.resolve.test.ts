@@ -161,6 +161,11 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         throw new TypeError('untrusted template');
       });
       const single = await execResolve({ template: invalidTemplate }, 1);
+      const singlePrototypeResults: unknown[] = [];
+      for (const template of prototypeTemplates) {
+        const singlePrototype = await execResolve({ template }, 1);
+        singlePrototypeResults.push(singlePrototype.body);
+      }
 
       analyze.mockImplementationOnce(() => {
         throw new TypeError('untrusted template');
@@ -181,6 +186,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(results[0]).toEqual({ id: 'thrown', data: invalidTemplate });
       prototypeTemplates.forEach((template, index) => {
         expect(results[index + 1]).toEqual({ id: `prototype-${index}`, data: template });
+        expect(singlePrototypeResults[index]).toBe(template);
       });
       expect(results.at(-1)).toEqual({ id: 'allowed', data: 1 });
     } finally {

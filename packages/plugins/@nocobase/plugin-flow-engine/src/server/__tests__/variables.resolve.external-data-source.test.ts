@@ -102,6 +102,7 @@ describe('variables:resolve external data source records', () => {
 
     const helperAttempts = {
       directEval: '{{ eval("__resolveVariablePath0") }}',
+      parenthesizedEval: '{{ (eval)("__resolveVariablePath0") }}',
       functionConstructor: '{{ Function("return __resolveVariablePath0")() }}',
       globalEval: '{{ globalThis.eval("__resolveVariablePath0") }}',
       indirectEval: '{{ (0, eval)("__resolveVariablePath0") }}',
