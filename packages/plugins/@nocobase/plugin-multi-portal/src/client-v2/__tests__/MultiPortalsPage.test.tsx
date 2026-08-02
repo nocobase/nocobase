@@ -670,9 +670,10 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
     expect(screen.getByText('No-code')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
-    // The device icon is mapped directly from the fixed uiLayoutUid, with its wording in the aria-label.
+    // No-code portals keep the device icon mapped from uiLayoutUid; AI portals do not expose a device layout.
     expect(within(customerPortalCard).getByLabelText('Mobile')).toHaveClass('anticon-mobile');
-    expect(within(developerPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
+    expect(within(developerPortalCard).queryByLabelText('Desktop')).not.toBeInTheDocument();
+    expect(within(developerPortalCard).queryByLabelText('Mobile')).not.toBeInTheDocument();
     expect(within(disabledPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
@@ -681,6 +682,43 @@ describe('plugin-multi-portal settings page', () => {
       pageSize: 20,
       sort: ['createdAt'],
     });
+  });
+
+  it('should show the complete portal title when an ellipsized title is hovered', async () => {
+    const user = userEvent.setup();
+    const longTitle = 'Customer service and partner collaboration portal';
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ ...portalValues, title: longTitle }],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(longTitle);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 200 });
+
+    await user.hover(screen.getByTestId('portal-title-tooltip-trigger'));
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(longTitle);
+    expect(title).toBeVisible();
   });
 
   it('should allow deleting default portals from the gallery', async () => {
