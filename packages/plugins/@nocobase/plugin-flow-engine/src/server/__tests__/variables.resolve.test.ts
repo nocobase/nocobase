@@ -10,7 +10,7 @@
 import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
 import { generateFlowModelRd } from '@nocobase/utils';
-import { variables, inferSelectsFromUsage } from '../variables/registry';
+import { inferSelectsFromUsage } from '../variables/registry';
 import FlowModelRepository from '../repository';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
@@ -120,6 +120,33 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
+  it('should fail closed for unsupported request expressions while resolving a valid sibling batch item', async () => {
+    const templates = [
+      '{{ __get(ctx.user, "id") }}',
+      '{{ __g\\u0065t(ctx.user, "id") }}',
+      '{{ ctx }}',
+      '{{ (() => { const alias = ctx; return alias.user.id; })() }}',
+      '{{ ctx["user"][ctx.now] }}',
+      '{{ ctx.user.get("id") }}',
+      '{{ ctx.user.id }',
+    ];
+    const res = await execResolve(
+      {
+        batch: [
+          ...templates.map((template, index) => ({ id: `blocked-${index}`, template: { value: template } })),
+          { id: 'allowed', template: { value: '{{ ctx.user.id }}' } },
+        ],
+      },
+      1,
+    );
+    const results = res.body?.results || [];
+
+    templates.forEach((template, index) => {
+      expect(results[index]).toEqual({ id: `blocked-${index}`, data: { value: template } });
+    });
+    expect(results[templates.length]).toEqual({ id: 'allowed', data: { value: 1 } });
+  });
+
   it('should keep original template when rd is missing for a non-configure role', async () => {
     const payload = {
       template: { id: '{{ ctx.view.record.id }}' },
@@ -173,7 +200,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
-  it('should keep strict source validation for ordinary record contextParams', async () => {
+  it('should authorize the path independently from the runtime record source', async () => {
     const flowModelUid = 'strict-view-record-source';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -206,10 +233,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       token: session.token,
     });
     const data = res.body?.data ?? res.body;
-    expect(data.name).toBe('{{ ctx.view.record.name }}');
+    expect(data.name).toBe('root');
   });
 
-  it('should let popup variable validation skip static source matching while keeping model allow-list checks', async () => {
+  it('should resolve an allow-listed popup path from the submitted runtime source', async () => {
     const flowModelUid = 'popup-template-source-skip';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -386,6 +413,49 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const r2 = results.find((r: any) => r.id === 't2');
     expect(typeof r1.data.ts).toBe('number');
     expect(r2.data.id).toBe('{{ ctx.view.record.id }}');
+  });
+
+  it('batch: preserves id, order, and original templates for unauthorized items', async () => {
+    const flowModelUid = 'mixed-authorized-batch';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      props: { id: '{{ ctx.view.record.id }}' },
+    });
+    const recordParams = { collection: 'users', dataSourceKey: 'main', filterByTk: 1 };
+    const res = await execResolve(
+      {
+        batch: [
+          {
+            id: 'allowed-first',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+          {
+            id: 'blocked-middle',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.nickname }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+          {
+            id: 'allowed-last',
+            rd: session.rd(flowModelUid),
+            template: { value: '{{ ctx.view.record.id }}' },
+            contextParams: { 'view.record': recordParams },
+          },
+        ],
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body?.results).toEqual([
+      { id: 'allowed-first', data: { value: 1 } },
+      { id: 'blocked-middle', data: { value: '{{ ctx.view.record.nickname }}' } },
+      { id: 'allowed-last', data: { value: 1 } },
+    ]);
   });
 
   it('batch: should resolve filterByTk array into record arrays (formValues.roles.title)', async () => {
@@ -717,17 +787,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.text.includes('{{ foo.bar }}')).toBeTruthy();
   });
 
-  it('should support calling ctx methods defined via registry attach', async () => {
-    // Register a lightweight variable that attaches a callable method onto ctx
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => {
-          flowCtx.defineMethod('twice', (n: any) => Number(n) * 2);
-        },
-      });
-    }
+  it('should keep ctx method calls unresolved', async () => {
     const payload = {
       template: {
         v: '{{ ctx.twice(21) }}',
@@ -736,8 +796,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     };
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data.v).toBe(42);
-    expect(data.nested).toBe(2);
+    expect(data.v).toBe('{{ ctx.twice(21) }}');
+    expect(data.nested).toBe('{{ ctx.twice(ctx.user.id) }}');
   });
 
   describe('custom collection: hospital_customers', () => {
@@ -1170,6 +1230,13 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       const r2 = inferSelectsFromUsage(['[0]', '[10]']);
       expect(r2.generatedFields).toBeUndefined();
       expect(r2.generatedAppends).toBeUndefined();
+    });
+
+    it('does not reinterpret structured literal dotted keys as associations', () => {
+      expect(inferSelectsFromUsage([['a.b']])).toEqual({
+        generatedAppends: undefined,
+        generatedFields: undefined,
+      });
     });
   });
 

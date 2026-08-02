@@ -12,6 +12,7 @@ import { variables } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
 import { resolveJsonTemplate } from '../template/resolver';
 import { HttpRequestContext } from '../template/contexts';
+import { analyzeVariableTemplate } from '../template/variable-expression';
 
 function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
   // 为新实现提供必要的模型元数据（rawAttributes/associations/primaryKey）
@@ -97,6 +98,40 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(usage.list.some((p) => p.startsWith('[0]'))).toBeTruthy();
     expect(usage.list.some((p) => p.startsWith('[1]'))).toBeTruthy();
     expect(usage.list.some((p) => p.includes('roles'))).toBeTruthy();
+  });
+
+  it('passes structured runtime paths directly to variable attach', async () => {
+    const received: Array<readonly (string | number)[]> = [];
+    variables.register({
+      name: 'probe',
+      scope: 'request',
+      attach: (_ctx, _koaCtx, _params, usage) => {
+        received.push(...(usage?.probe || []).map((ref) => ref.runtimeSegments));
+      },
+    });
+    const analysis = analyzeVariableTemplate({
+      first: '{{ ctx.probe[0].name }}',
+      second: '{{ ctx.probe[1].name }}',
+      repeat: '{{ ctx.probe[0].name }}',
+      dotted: '{{ ctx.probe["a.b"] }}',
+    });
+
+    await variables.attachUsedVariablesFromUsage(new HttpRequestContext({} as never), {} as never, analysis.usage, {});
+
+    expect(received).toEqual([[0, 'name'], [1, 'name'], ['a.b']]);
+  });
+
+  it('does not match a literal dotted segment to a flattened context key', async () => {
+    const calls: unknown[] = [];
+    const koa = makeKoaCtx((options) => calls.push(options));
+    const ctx = new HttpRequestContext(koa);
+    const analysis = analyzeVariableTemplate({ value: '{{ ctx.view["record.name"].id }}' });
+
+    await variables.attachUsedVariablesFromUsage(ctx, koa, analysis.usage, {
+      'view.record.name': { collection: 'users', filterByTk: 1 },
+    });
+
+    expect(calls).toHaveLength(0);
   });
 
   it('attachUsedVariables(dynamic: view.record): auto-generate appends and fields from usage', async () => {

@@ -9,17 +9,32 @@
 
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { GlobalContext, HttpRequestContext } from '../template/contexts';
-import { JSONValue, resolveJsonTemplate } from '../template/resolver';
+import {
+  analyzeVariableTemplate,
+  type AnalyzedTemplate,
+  type ResolvePathPolicy,
+} from '../template/variable-expression';
+import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
 import { variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
-type ResolveBatchItem = {
+export type ResolveBatchItem = {
   id?: string | number;
   template: JSONValue;
   contextParams?: Record<string, unknown>;
 };
 
+export type AnalyzedResolveBatchItem = ResolveBatchItem & {
+  analysis: AnalyzedTemplate;
+  policy: ResolvePathPolicy;
+};
+
 const GLOBAL_CONTEXT_KEY = Symbol.for('nocobase.flow-engine.variables.global-context');
+const TRUSTED_RESOLVE_POLICY: ResolvePathPolicy = {
+  allowAll: true,
+  allowedPaths: new Set(),
+  unrestrictedVariables: new Set(),
+};
 
 function getGlobalContext(ctx: ResourcerContext) {
   const app = ctx.app as typeof ctx.app & { [GLOBAL_CONTEXT_KEY]?: GlobalContext };
@@ -34,38 +49,61 @@ export async function resolveVariablesTemplate(
   template: JSONValue,
   contextParams: Record<string, unknown> = {},
 ) {
-  await prefetchRecordsForResolve(ctx, [{ template, contextParams }]);
-  return resolveVariablesTemplateWithPrefetchedRecords(ctx, template, contextParams);
+  const analysis = analyzeVariableTemplate(template);
+  return resolveAnalyzedVariablesTemplate(ctx, analysis, TRUSTED_RESOLVE_POLICY, contextParams);
 }
 
-async function resolveVariablesTemplateWithPrefetchedRecords(
+export async function resolveAnalyzedVariablesTemplate(
   ctx: ResourcerContext,
-  template: JSONValue,
+  analysis: AnalyzedTemplate,
+  policy: ResolvePathPolicy,
   contextParams: Record<string, unknown> = {},
+) {
+  await prefetchRecordsForResolve(ctx, [{ usage: analysis.usage, contextParams }]);
+  return resolveAnalyzedVariablesTemplateWithPrefetchedRecords(ctx, analysis, policy, contextParams);
+}
+
+async function resolveAnalyzedVariablesTemplateWithPrefetchedRecords(
+  ctx: ResourcerContext,
+  analysis: AnalyzedTemplate,
+  policy: ResolvePathPolicy,
+  contextParams: Record<string, unknown>,
 ) {
   const requestCtx = new HttpRequestContext(ctx);
   requestCtx.delegate(getGlobalContext(ctx));
-  await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-  return resolveJsonTemplate(template, requestCtx);
+  await variables.attachUsedVariablesFromUsage(requestCtx, ctx, analysis.usage, contextParams);
+  return resolveAnalyzedJsonTemplate(analysis, requestCtx, policy);
 }
 
 export async function resolveVariablesBatch(ctx: ResourcerContext, items: ResolveBatchItem[]) {
+  return resolveAnalyzedVariablesBatch(
+    ctx,
+    items.map((item) => ({
+      ...item,
+      analysis: analyzeVariableTemplate(item?.template ?? {}),
+      policy: TRUSTED_RESOLVE_POLICY,
+    })),
+  );
+}
+
+export async function resolveAnalyzedVariablesBatch(ctx: ResourcerContext, items: AnalyzedResolveBatchItem[]) {
   await prefetchRecordsForResolve(
     ctx,
     items.map((item) => ({
-      template: item?.template ?? {},
-      contextParams: (item?.contextParams || {}) as Record<string, unknown>,
+      usage: item.analysis.usage,
+      contextParams: item.contextParams || {},
     })),
   );
 
   const results: Array<{ id?: string | number; data: unknown }> = [];
   for (const item of items) {
-    const data = await resolveVariablesTemplateWithPrefetchedRecords(
+    const data = await resolveAnalyzedVariablesTemplateWithPrefetchedRecords(
       ctx,
-      item?.template ?? {},
-      (item?.contextParams || {}) as Record<string, unknown>,
+      item.analysis,
+      item.policy,
+      item.contextParams || {},
     );
-    results.push({ id: item?.id, data });
+    results.push({ id: item.id, data });
   }
   return results;
 }

@@ -16,12 +16,14 @@ import {
   type ResolvePathPolicy,
 } from '../template/variable-expression';
 import type { JSONValue } from '../template/resolver';
-import { sanitizeRegisteredVariableContextParams, variables } from './registry';
+import { sanitizeRegisteredVariableContextParams, type ValidateContextParamsResult, variables } from './registry';
 
 type RecordParams = {
+  appends?: unknown;
   associationName?: string;
   collection: string;
   dataSourceKey?: string;
+  fields?: unknown;
   filterByTk: unknown;
   sourceId?: unknown;
 };
@@ -253,14 +255,14 @@ export async function authorizeVariablesResolve(
   const flowModelRequiredVars = new Set<string>();
   for (const [varName, usedPaths] of Object.entries(analysis.usage)) {
     const def = variables.get(varName);
-    const validation = await def?.validateContextParams?.({
-      contextParams,
-      flowModelUid: flowModelUid || undefined,
-      koaCtx: ctx,
-      recordEntries: [],
-      usage: usedPaths as unknown as string[],
-      varName,
-    });
+    const validation: ValidateContextParamsResult =
+      (await def?.validateContextParams?.({
+        contextParams,
+        flowModelUid: flowModelUid || undefined,
+        koaCtx: ctx,
+        usage: usedPaths,
+        varName,
+      })) || {};
 
     contextParams = sanitizeContextParams(validation?.contextParams || contextParams);
     if (validation?.allowed === false) {

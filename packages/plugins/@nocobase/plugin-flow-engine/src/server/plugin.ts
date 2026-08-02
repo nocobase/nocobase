@@ -13,8 +13,9 @@ import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
+import type { AnalyzedTemplate, ResolvePathPolicy } from './template/variable-expression';
 import { authorizeVariablesResolve } from './variables/allow-list';
-import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
+import { resolveAnalyzedVariablesBatch, resolveAnalyzedVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   async afterAdd() {}
@@ -80,13 +81,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               contextParams?: Record<string, unknown>;
             }>;
             type AuthorizedBatchItem = {
+              analysis: AnalyzedTemplate;
               contextParams?: Record<string, unknown>;
               id?: string | number;
               index: number;
+              policy: ResolvePathPolicy;
               template: JSONValue;
             };
             const authorizedItems: AuthorizedBatchItem[] = [];
-            const authorizedItemsByIndex = new Map<number, AuthorizedBatchItem>();
             const passthroughResults: Array<{ id?: string | number; data: unknown } | undefined> = [];
 
             for (const [index, item] of batchItems.entries()) {
@@ -99,31 +101,33 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
               if (authorization.allowed) {
                 const authorizedItem = {
+                  analysis: authorization.analysis,
                   contextParams: authorization.contextParams,
                   id: item?.id,
                   index,
+                  policy: authorization.policy,
                   template,
                 };
                 authorizedItems.push(authorizedItem);
-                authorizedItemsByIndex.set(index, authorizedItem);
               } else {
                 passthroughResults[index] = { id: item?.id, data: template };
               }
             }
 
-            const resolvedItems = await resolveVariablesBatch(
+            const resolvedItems = await resolveAnalyzedVariablesBatch(
               ctx as ResourcerContext,
               authorizedItems.map((item) => ({
+                analysis: item.analysis,
                 id: item.index,
                 template: item.template,
                 contextParams: item.contextParams,
+                policy: item.policy,
               })),
             );
             for (const item of resolvedItems) {
               const index = Number(item.id);
-              const original = authorizedItemsByIndex.get(index);
               passthroughResults[index] = {
-                id: original?.id,
+                id: batchItems[index]?.id,
                 data: item.data,
               };
             }
@@ -151,7 +155,12 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
             template,
           });
           ctx.body = authorization.allowed
-            ? await resolveVariablesTemplate(ctx as ResourcerContext, template, authorization.contextParams)
+            ? await resolveAnalyzedVariablesTemplate(
+                ctx as ResourcerContext,
+                authorization.analysis,
+                authorization.policy,
+                authorization.contextParams,
+              )
             : template;
           await next();
         },

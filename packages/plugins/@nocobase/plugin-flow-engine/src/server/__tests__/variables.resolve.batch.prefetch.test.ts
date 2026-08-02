@@ -8,7 +8,10 @@
  */
 
 import { MockServer } from '@nocobase/test';
+import type { ResourcerContext } from '@nocobase/resourcer';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
+import * as variableExpression from '../template/variable-expression';
+import { resolveVariablesTemplate } from '../variables/resolve';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
   let app: MockServer;
@@ -62,6 +65,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     const cm = ds.collectionManager;
     const db = cm.db;
     const originalGetRepository = db.getRepository.bind(db);
+    const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate');
     let calls = 0;
     (db as any).getRepository = (collection: string) => {
       const repo = originalGetRepository(collection);
@@ -101,8 +105,104 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
 
       // ensure only one DB call for users collection due to prefetch merge
       expect(calls).toBe(1);
+      expect(analyze).toHaveBeenCalledTimes(2);
     } finally {
+      analyze.mockRestore();
       db.getRepository = originalGetRepository;
     }
+  });
+
+  it('prefetches an association target once and shares its target metadata and cache with the getter', async () => {
+    const relationCalls: Array<{ options: Record<string, unknown>; sourceId: number }> = [];
+    let baseCalls = 0;
+    const targetCollection = {
+      name: 'roles',
+      filterTargetKey: 'name',
+      model: {
+        primaryKeyAttribute: 'name',
+        rawAttributes: { name: {}, title: {} },
+        associations: {},
+      },
+    };
+    const createRelationRepository = (sourceId: number) => ({
+      collection: targetCollection,
+      targetCollection,
+      find: async (options: Record<string, unknown>) => {
+        relationCalls.push({ options, sourceId });
+        return [{ name: sourceId === 1 ? 'root' : 'member', title: 'Role' }];
+      },
+      findOne: async (options: Record<string, unknown>) => {
+        relationCalls.push({ options, sourceId });
+        return { name: sourceId === 1 ? 'root' : 'member', title: 'Role' };
+      },
+    });
+    const relationRepositories = new Map([
+      [1, createRelationRepository(1)],
+      [2, createRelationRepository(2)],
+    ]);
+    const baseRepository = {
+      collection: { ...targetCollection, name: 'users' },
+      find: async () => {
+        baseCalls += 1;
+        return [];
+      },
+      findOne: async () => {
+        baseCalls += 1;
+        return undefined;
+      },
+    };
+    const context = {
+      app: {
+        dataSourceManager: {
+          get: () => ({
+            collectionManager: {
+              db: {
+                getCollection: (name: string) => (name === 'roles' ? targetCollection : baseRepository.collection),
+                getRepository: (name: string, sourceId?: unknown) =>
+                  name === 'users.roles' && typeof sourceId === 'number'
+                    ? relationRepositories.get(sourceId)
+                    : baseRepository,
+              },
+            },
+          }),
+        },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+
+    const result = await resolveVariablesTemplate(
+      context,
+      { role: '{{ ctx.popup.record.name }}' },
+      {
+        'popup.record': {
+          associationName: 'users.roles',
+          collection: 'users',
+          filterByTk: 'root',
+          sourceId: 1,
+        },
+      },
+    );
+
+    expect(result.role).toBe('root');
+    const second = await resolveVariablesTemplate(
+      context,
+      { role: '{{ ctx.popup.record.name }}' },
+      {
+        'popup.record': {
+          associationName: 'users.roles',
+          collection: 'users',
+          filterByTk: 'member',
+          sourceId: 2,
+        },
+      },
+    );
+
+    expect(second.role).toBe('member');
+    expect(baseCalls).toBe(0);
+    expect(relationCalls).toHaveLength(2);
+    expect(relationCalls.map((call) => call.sourceId)).toEqual([1, 2]);
+    expect(relationCalls[0].options.fields).toEqual(['name']);
   });
 });

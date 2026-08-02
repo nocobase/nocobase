@@ -9,6 +9,7 @@
 
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import * as variableExpression from '../template/variable-expression';
 import { resolveVariablesTemplate } from '../variables/resolve';
 import { resetVariablesRegistryForTest } from './test-utils';
 
@@ -18,6 +19,7 @@ describe('variables:resolve external data source records', () => {
   });
 
   it('resolves a popup record field when the repository returns plain JSON', async () => {
+    const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate');
     const findOne = vi.fn(async () => ({ id: 'lead-1', email: 'acme@example.test' }));
     const repository = { findOne };
     const collection = {
@@ -65,5 +67,7 @@ describe('variables:resolve external data source records', () => {
       fields: undefined,
       appends: undefined,
     });
+    expect(analyze).toHaveBeenCalledTimes(1);
+    analyze.mockRestore();
   });
 });

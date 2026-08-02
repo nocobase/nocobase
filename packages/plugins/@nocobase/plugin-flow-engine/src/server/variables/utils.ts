@@ -8,184 +8,136 @@
  */
 
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import type { JSONValue } from '../template/resolver';
-import { variables, inferSelectsFromUsage } from './registry';
-import { adjustSelectsForCollection } from './selects';
-import { fetchRecordOrRecordsJson, getExtraKeyFieldsForSelect, mergeFieldsWithExtras } from './records';
+import type { PathSegment } from '../template/variable-expression';
+import { inferSelectsFromUsage, type VarUsage } from './registry';
+import {
+  fetchRecordOrRecordsJson,
+  getRecordRequestCache,
+  isRecordParams,
+  prepareRecordQuery,
+  resolveRecordTarget,
+  type RecordParams,
+  type RecordTarget,
+} from './records';
+
+type RecordUsageEntry = {
+  params: RecordParams;
+  prefix: readonly PathSegment[];
+  varName: string;
+};
+
+type PrefetchGroup = {
+  appends: Set<string>;
+  fields: Set<string>;
+  filterByTk: unknown;
+  preferFullRecord: boolean;
+  strictSelects: boolean;
+  target: RecordTarget;
+};
+
+function collectRecordUsageEntries(contextParams: Record<string, unknown>) {
+  const entries: RecordUsageEntry[] = [];
+  const normalizeSegment = (segment: string): PathSegment => (/^\d+$/.test(segment) ? Number(segment) : segment);
+  const visit = (varName: string, value: unknown, prefix: readonly PathSegment[]) => {
+    if (isRecordParams(value)) {
+      entries.push({ params: value, prefix, varName });
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    for (const [key, child] of Object.entries(value)) {
+      visit(varName, child, [...prefix, Array.isArray(value) ? normalizeSegment(key) : key]);
+    }
+  };
+
+  for (const [key, value] of Object.entries(contextParams)) {
+    const [varName, ...nested] = key.split('.');
+    visit(varName, value, nested.map(normalizeSegment));
+  }
+  return entries;
+}
+
+function startsWithSegments(path: readonly PathSegment[], prefix: readonly PathSegment[]) {
+  return prefix.every((segment, index) => path[index] === segment);
+}
 
 /**
- * 预取：构建“同记录”的字段/关联并集，一次查询写入 ctx.state.__varResolveBatchCache，供后续解析复用
+ * Merge record selects for one resolve request and populate the request cache once per target.
  */
 export async function prefetchRecordsForResolve(
   koaCtx: ResourcerContext,
-  items: Array<{ template: JSONValue; contextParams?: Record<string, unknown> }>,
+  items: Array<{ usage: VarUsage; contextParams?: Record<string, unknown> }>,
 ) {
+  const log = koaCtx.app?.logger?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' });
   try {
-    const log = koaCtx.app?.logger?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' });
-    const groupMap = new Map<
-      string,
-      {
-        dataSourceKey: string;
-        collection: string;
-        filterByTk: unknown;
-        strictSelects: boolean;
-        fields: Set<string>;
-        appends: Set<string>;
-      }
-    >();
+    const groups = new Map<string, PrefetchGroup>();
+    for (const item of items) {
+      for (const entry of collectRecordUsageEntries(item.contextParams || {})) {
+        const refs = item.usage[entry.varName] || [];
+        const relativePaths = refs
+          .map((ref) => ref.runtimeSegments)
+          .filter((path) => startsWithSegments(path, entry.prefix))
+          .map((path) => path.slice(entry.prefix.length));
+        if (!relativePaths.length) continue;
 
-    const ensureGroup = (
-      dataSourceKey: string,
-      collection: string,
-      filterByTk: unknown,
-      strictSelects: boolean,
-      opts?: { fields?: string[]; appends?: string[] },
-    ) => {
-      const groupKey = JSON.stringify({
-        ds: dataSourceKey,
-        collection,
-        tk: filterByTk,
-        f: Array.isArray(opts?.fields) ? [...opts.fields].sort() : undefined,
-        a: Array.isArray(opts?.appends) ? [...opts.appends].sort() : undefined,
-      });
-      let group = groupMap.get(groupKey);
-      if (!group) {
-        group = {
-          dataSourceKey,
-          collection,
-          filterByTk,
-          strictSelects,
-          fields: new Set<string>(),
-          appends: new Set<string>(),
-        };
-        groupMap.set(groupKey, group);
-      }
-      return group;
-    };
-
-    const normalizeNestedSeg = (segment: string): string => (/^\d+$/.test(segment) ? `[${segment}]` : segment);
-
-    for (const it of items) {
-      const template = it?.template ?? {};
-      const contextParams = (it?.contextParams || {}) as Record<string, any>;
-      const usage = variables.extractUsage(template);
-      for (const [cpKey, recordParams] of Object.entries(contextParams)) {
-        const parts = String(cpKey).split('.');
-        const varName = parts[0];
-        const nestedSeg = parts.slice(1).join('.');
-        const paths = usage?.[varName] || [];
-        if (!paths.length) continue;
-        const segNorm = nestedSeg ? normalizeNestedSeg(nestedSeg) : '';
-        const remainders: string[] = [];
-        for (const p of paths) {
-          if (!segNorm) remainders.push(p);
-          else if (p === segNorm) remainders.push('');
-          else if (p.startsWith(`${segNorm}.`) || p.startsWith(`${segNorm}[`))
-            remainders.push(p.slice(segNorm.length + 1));
-        }
-        if (!remainders.length) continue;
-        const dataSourceKey = (recordParams as any)?.dataSourceKey || 'main';
-        const collection = (recordParams as any)?.collection;
-        const filterByTk = (recordParams as any)?.filterByTk;
-        if (!collection || typeof filterByTk === 'undefined') continue;
-        const explicitFields = (recordParams as any)?.fields as string[] | undefined;
-        const explicitAppends = (recordParams as any)?.appends as string[] | undefined;
-        const hasExplicit = Array.isArray(explicitFields) || Array.isArray(explicitAppends);
-        const group = ensureGroup(dataSourceKey, collection, filterByTk, hasExplicit, {
-          fields: hasExplicit ? explicitFields : undefined,
-          appends: hasExplicit ? explicitAppends : undefined,
+        const target = resolveRecordTarget(koaCtx, entry.params);
+        if (!target) continue;
+        const strictSelects = Array.isArray(entry.params.fields) || Array.isArray(entry.params.appends);
+        const key = JSON.stringify({
+          ...target.cacheIdentity,
+          tk: entry.params.filterByTk,
+          strict: strictSelects,
+          f: strictSelects && entry.params.fields ? entry.params.fields.slice().sort() : undefined,
+          a: strictSelects && entry.params.appends ? entry.params.appends.slice().sort() : undefined,
         });
-
-        // 若显式传入了 fields/appends，则认为 selects 被“锁定”，不再基于模板 usage 扩展，
-        // 避免在同一批解析中预取超出选择范围的字段，导致占位符被意外解析/覆盖。
-        if (hasExplicit) {
-          const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, explicitFields, explicitAppends);
-          fixed.fields?.forEach((f) => group.fields.add(f));
-          fixed.appends?.forEach((a) => group.appends.add(a));
-          continue;
+        let group = groups.get(key);
+        if (!group) {
+          group = {
+            appends: new Set(),
+            fields: new Set(),
+            filterByTk: entry.params.filterByTk,
+            preferFullRecord: false,
+            strictSelects,
+            target,
+          };
+          groups.set(key, group);
         }
-
-        let { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
-        const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, generatedFields, generatedAppends);
-        generatedFields = fixed.fields;
-        generatedAppends = fixed.appends;
-        if (generatedFields?.length) generatedFields.forEach((f) => group.fields.add(f));
-        if (generatedAppends?.length) generatedAppends.forEach((a) => group.appends.add(a));
-      }
-    }
-
-    if (!groupMap.size) return;
-
-    // 确保请求级缓存存在
-    const stateObj = (koaCtx as any).state as Record<string, any>;
-    if (stateObj && !stateObj['__varResolveBatchCache']) {
-      stateObj['__varResolveBatchCache'] = new Map<string, unknown>();
-    }
-    const cache: Map<string, unknown> | undefined = (koaCtx as any).state?.['__varResolveBatchCache'];
-
-    for (const { dataSourceKey, collection, filterByTk, strictSelects, fields, appends } of groupMap.values()) {
-      try {
-        const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-        const cm = ds.collectionManager as SequelizeCollectionManager;
-        if (!cm?.db) continue;
-        const repo = cm.db.getRepository(collection);
-
-        const collectionInfo = (repo as unknown as { collection?: { filterTargetKey?: string | string[] } })
-          ?.collection;
-        const filterTargetKey = collectionInfo?.filterTargetKey;
-        const modelInfo = (
-          repo as unknown as {
-            collection?: { model?: { primaryKeyAttribute?: string; rawAttributes?: Record<string, unknown> } };
-          }
-        ).collection?.model;
-        const pkAttr = modelInfo?.primaryKeyAttribute;
-        const rawAttributes = (modelInfo?.rawAttributes as Record<string, unknown>) || undefined;
-        const pkIsValid = !!(
-          pkAttr &&
-          rawAttributes &&
-          Object.prototype.hasOwnProperty.call(rawAttributes, pkAttr as string)
+        const activeGroup = group;
+        activeGroup.preferFullRecord ||= relativePaths.some(
+          (path) => path.length === 0 || path.some((segment) => typeof segment === 'string' && segment.includes('.')),
         );
+        const selects = strictSelects
+          ? { generatedFields: entry.params.fields, generatedAppends: entry.params.appends }
+          : inferSelectsFromUsage(relativePaths);
+        selects.generatedFields?.forEach((field) => activeGroup.fields.add(field));
+        selects.generatedAppends?.forEach((append) => activeGroup.appends.add(append));
+      }
+    }
 
-        const fldBase = fields.size ? Array.from(fields).sort() : undefined;
-        const extraKeys = getExtraKeyFieldsForSelect(filterByTk, {
-          filterTargetKey,
-          pkAttr,
-          pkIsValid,
-          rawAttributes,
-        });
-        const effectiveExtras =
-          strictSelects && Array.isArray(extraKeys) && extraKeys.length
-            ? extraKeys.filter((k) => k === pkAttr)
-            : extraKeys;
-        const fld = mergeFieldsWithExtras(fldBase, effectiveExtras);
-
-        const app = appends.size ? Array.from(appends).sort() : undefined;
-        const json = await fetchRecordOrRecordsJson(repo, {
-          filterByTk,
-          fields: fld,
-          appends: app,
-          filterTargetKey,
-          pkAttr,
-          pkIsValid,
-        });
-        if (cache) {
-          const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
-          cache.set(key, json);
-        }
-      } catch (e: any) {
-        // 忽略预取失败，但记录为 debug
+    const cache = getRecordRequestCache(koaCtx);
+    for (const group of groups.values()) {
+      try {
+        const query = prepareRecordQuery(
+          koaCtx,
+          group.target,
+          group.filterByTk,
+          group.fields.size ? [...group.fields] : undefined,
+          group.appends.size ? [...group.appends] : undefined,
+          group.strictSelects,
+          group.preferFullRecord,
+        );
+        if (cache.has(query.cacheKey)) continue;
+        cache.set(query.cacheKey, await fetchRecordOrRecordsJson(query.repository, query));
+      } catch (error) {
         log?.debug('[variables.resolve] prefetch query error', {
-          ds: dataSourceKey,
-          collection,
-          tk: filterByTk,
-          error: e?.message || String(e),
+          ...group.target.cacheIdentity,
+          tk: group.filterByTk,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
-  } catch (e: any) {
-    koaCtx.app?.logger
-      ?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' })
-      ?.debug('[variables.resolve] prefetch fatal error', { error: e?.message || String(e) });
+  } catch (error) {
+    log?.debug('[variables.resolve] prefetch fatal error', {
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
