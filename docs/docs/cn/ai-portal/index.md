@@ -6,17 +6,20 @@ keywords: "AI 搭建,AI Portal,NocoBase AI,NocoBase 基座,前端开发,React,sh
 
 # AI 搭建快速开始
 
-**AI 自由发挥，NocoBase 负责可靠性。**
 
-AI 搭建的做法是：你描述想要什么，AI Agent 写业务系统代码，NocoBase 在后面提供认证、数据库、API 和权限。不需要学配置规则，页面想做成什么样就做成什么样。
+AI Agent 时代，我们经常能听到 Vibe coding 的说法。Vibe coding 是你用自然语言描述需求，AI Agent 通过代码快速帮你实现你所需要的功能、应用。但是我们发现，它可能能够写出一个很好看的页面，但是不容易把实际业务系统对接起来，或者需要从头实现一个系统的认证、权限、数据表设计等基础能力。
 
-NocoBase 提供了一个叫做 **AI Portal** 的访问入口，源码放在本地，专门留给 AI Agent 写代码。`nb init` 完成后就会生成一个默认的 AI Portal 入口，名字是 `main`，访问路径 `/x/main/`。
+NocoBase 作为一个低代码/无代码平台，已经提供了这些基础能力的实现。你可以把它当作一个系统内核的基座，让 AI Agent 专注于写业务逻辑，而 NocoBase 负责提供可靠的认证、数据库、API 和权限等基础设施。
+
+我们提供了一个叫做 **AI Portal** 的访问入口，源码可以放在本地，专门留给 AI Agent 写代码。AI Agent 在这个入口里写的代码可以直接访问 NocoBase 提供的基础能力，构建后的页面就可以直接访问。
 
 下文出现 Portal 的地方，指的都是这个入口。
 
+> 想要体验 AI 搭建的效果，可以申请一个 Demo 环境体验：https://demo.nocobase.com/new
+
 ## NocoBase 作为基座
 
-写一个业务系统，真正花时间的往往不是页面，而是页面背后的那些东西——用户登录、权限校验、数据表设计、增删改查接口、文件上传、消息通知。这些每个系统都要有，每次都从头做一遍并不划算。
+写一个业务系统，真正花时间的往往不是页面，而是页面背后的那些东西——用户登录、权限校验、数据表设计、增删改查接口、文件上传下载等。这些每个系统都要有，每次都从头做一遍并不划算。
 
 这些能力 NocoBase 都已经提供了：
 
@@ -25,17 +28,17 @@ NocoBase 提供了一个叫做 **AI Portal** 的访问入口，源码放在本�
 - **REST API** — 数据表建好，增删改查接口自动就有了，支持过滤、排序、分页和关联字段
 - **权限控制** — 基于角色的 ACL，能细到字段和记录级别，前端可以直接读取当前用户的权限来决定显示什么
 - **工作流** — 业务流程自动化，前端触发或者数据变更触发
-- **文件存储和通知** — 上传下载、邮件短信站内信
+- **文件存储** — 上传下载
 
-这些能力通过 API 、标准组件等方式暴露出来，AI Agent 直接调用即可。同时， NocoBase 提供了[数据建模](../ai-builder/data-modeling.md)、[权限配置](../ai-builder/acl.md)等一系列 skills 能力，能够让你在描述自己业务需求后，AI Agent 不仅生成前端页面，还能帮你生成数据表、配置权限等操作，完成一个完整的业务系统。
+同时，我们基于上述能力，封装了标准的[系统模板代码](https://github.com/nocobase/portal-template-default)，AI Agent 直接复制就能运行一个基本的应用。同时， NocoBase 提供了[数据建模](../ai-builder/data-modeling.md)、[权限配置](../ai-builder/acl.md)等一系列 skills 能力，能够让你在描述自己业务需求后，AI Agent 不仅生成前端页面，还能帮你生成数据表、配置权限等操作，完成一个完整的业务系统。
 
 ### 为什么是让 AI 写代码搭建
 
-早期我们的实现是引导 AI 使用 NocoBase 内部的区块进行可视化搭建。这条路能走通，不过 AI 需要学习的上下文太多——区块类型、配置结构、联动规则，每一样都得先理解才能动手，调试成本也不低。
-
-后来我们换了个思路：**写前端代码是 AI 最擅长的事情**，可以让它做最擅长的事。NocoBase 作为系统内核的基座，前端交给 AI 自由发挥。同样的需求，速度更快，效果也更好。
+早期我们的实现是引导 AI 使用 NocoBase 内部的区块进行可视化搭建，是可行的。不过 AI 需要学习的上下文太多——区块类型、配置结构、联动规则等，对于需要复杂搭建的业务系统而言，搭建效率、可维护性和多人协作都不够理想。于是我们换了个思路：**写前端代码是 AI 最擅长的事情**，可以让它做最擅长的事。NocoBase 作为系统内核的基座，前端交给 AI 自由发挥。同样的需求，速度更快，效果也更好。
 
 AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码的应用入口。目前这个入口暂时只支持写 Portal 的前端代码，后续我们也会支持让 AI Agent 写 Portal 的后端代码，让你的业务系统完全由 AI Agent 搭建。
+
+**AI 自由发挥，NocoBase 负责可靠性。**
 
 ### 两种入口怎么选
 
@@ -61,7 +64,7 @@ AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码
 | 迭代方式 | 在界面里点，或让 AI 改配置 | 改代码，`dev` → `deploy` |
 | 版本管理 | 通过[版本控制](../ai-builder/version-control.md)保存快照 | Git，或 NocoBase source storage |
 | 界面自由度 | 受区块能力约束，布局和交互有既定范式 | 想做成什么样就可以做成什么样 |
-| 现成能力 | 数据看板、日历、看板视图等区块开箱即用 | 需要自己写，或从扩展里装 |
+| 现成能力 | 数据看板、日历、看板视图等区块开箱即用 | 参考我们提供的标准模板代码，或者 AI Agent 自己实现 |
 | 上手门槛 | 需要了解 NocoBase 的区块、字段等知识 | 需要对 AI Agent 使用有一定了解 |
 | 适合 | 标准增删改查、内部管理后台 | 定制交互、复杂业务系统、特殊视觉要求 |
 
@@ -69,25 +72,19 @@ AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码
 
 - 页面结构非常标准，就是常规的表格加表单，配置一下比写代码更快
 - 需要让不写代码的业务人员自己调整页面
-- 想用 NocoBase 内置的区块能力，比如数据看板、日历视图、看板视图
+- 只想用 NocoBase 内置的区块能力，比如数据看板、日历视图、看板视图
 
 而非上述场景，我们会更推荐用 AI Portal 的方式来搭建应用。当然，两种也可以混用：内部管理后台用无代码 Portal 快速配好，对外的客户门户用 AI Portal 精细定制——它们在同一个应用里，共用一套数据和用户体系。
 
 ## 前置条件
 
-- NocoBase >= 3.0.0-alpha.3
+- NocoBase >= 3.0.0-alpha.4
 - Node.js >= 22
-- pnpm——Portal 模板用它安装依赖和启动开发服务
+- [pnpm](https://pnpm.io/installation)——Portal 模板用它安装依赖和启动开发服务
 - 安装了 `nocobase cli` 的 alpha 版本（**注意：目前只支持 alpha 版本**）
   - `npm install -g @nocobase/cli@alpha`
   - 并且已经通过 `nb init --ui` 完成初始化的 NocoBase 应用，详见 [AI Agent 接入指南](../ai/quick-start.md)
 - 一个 AI Agent，比如 Claude Code、Codex、Cursor
-
-:::tip 提示
-
-NocoBase CLI 在初始化过程中会自动安装 NocoBase Skills，其中的 `nocobase-portal-manage` 负责 Portal 相关的操作，不需要手动安装。
-
-:::
 
 ## 第一步：确认你已经有一个 AI Portal
 
@@ -169,8 +166,6 @@ nb portal create customer
 
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写 Portal 页面
 - [项目结构与技术栈](./project-structure.md) — 模板的目录约定和常用命令
-- [数据与 API](./data-api.md) — 通过 REST API 读写业务数据
-- [认证与权限](./auth-acl.md) — 复用 NocoBase 的认证体系和 ACL
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
 - [部署与源码管理](./deploy.md) — 开发、推送、部署的完整流程
 - [AI Agent 接入指南](../ai/quick-start.md) — 安装 NocoBase CLI 并完成初始化

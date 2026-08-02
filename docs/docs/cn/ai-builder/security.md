@@ -14,8 +14,6 @@ keywords: 'AI 搭建,安全,权限,认证,Token,OAuth,操作记录,审计'
 
 当用户通过 [NocoBase CLI](../ai/quick-start.md) 使用 AI Agent 操作 NocoBase 时，需要重点关注认证、权限控制和审计追溯，以确保操作边界清晰、过程可追踪。
 
-本页讲的是 AI Agent 操作 NocoBase 时的鉴权。如果你要控制的是终端用户访问 Portal 时的登录和权限，请参阅 [认证与权限](../ai-portal/auth-acl.md)。
-
 ## 认证
 
 AI Agent 连接 NocoBase，主要有两种认证方式：
@@ -226,7 +224,6 @@ storage/logs/<appName>/request_YYYY-MM-DD.log
 ## 相关链接
 
 - [AI 无代码搭建快速开始](./index.md) — 安装和环境准备
-- [认证与权限](../ai-portal/auth-acl.md) — 终端用户访问 Portal 时的登录方式和权限控制
 - [环境管理](./env-bootstrap) — 环境检查、添加环境和故障诊断
 - [权限配置](./acl.md) — 配置角色、权限策略和风险评估
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具

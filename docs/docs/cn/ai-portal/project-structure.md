@@ -129,8 +129,6 @@ nb portal info main
 
 - [AI 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
-- [数据与 API](./data-api.md) — data provider 和 REST API 的对接方式
-- [认证与权限](./auth-acl.md) — 认证流程和 ACL 组件
 - [部署与源码管理](./deploy.md) — 构建部署流程和 source storage
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写页面
 - [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的本地源码目录位置

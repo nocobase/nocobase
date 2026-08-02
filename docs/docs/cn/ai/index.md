@@ -36,12 +36,6 @@ features:
       - title: 项目结构与技术栈
         details: React、Vite、Refine、Tailwind CSS 和 shadcn/ui——了解模板的目录约定和常用命令。
         link: /ai-portal/project-structure
-      - title: 数据与 API
-        details: 通过 REST API 读写业务数据，对接多数据源。
-        link: /ai-portal/data-api
-      - title: 认证与权限
-        details: 复用 NocoBase 的认证体系和 ACL，控制终端用户能看到什么。
-        link: /ai-portal/auth-acl
       - title: 标准组件与扩展
         details: 基于 shadcn/ui 的组件基座，以及装完即用的扩展机制。
         link: /ai-portal/components

@@ -66,7 +66,7 @@ src/extensions/
 | `Provider` | 包裹整个应用的 Provider |
 | `AuthRuntimeProvider` | 认证运行时 Provider，在登录前就生效 |
 | `UserMenuItems` | 往用户菜单里加条目 |
-| `authAdapters` | 认证方式适配器，详见[认证与权限](./auth-acl.md) |
+| `authAdapters` | 认证方式适配器 |
 | `dev` | 只在开发模式下生效的资源和路由 |
 
 一个最小的扩展长这样：
@@ -102,7 +102,7 @@ export default productsExtension;
 
 **`nocobase-users-example`** — 基于 NocoBase 标准 `users` 表的完整增删改查模块，列表、创建、编辑、详情都有。做新页面时让 AI 照着它写。
 
-**`nocobase-acl`** — 权限组件，`CanAccess`、`AclPage`、`AclRegion`、`AclField`、`RoleSwitcher` 都在这里。详见[认证与权限](./auth-acl.md)。
+**`nocobase-acl`** — 权限组件，`CanAccess`、`AclPage`、`AclRegion`、`AclField`、`RoleSwitcher` 都在这里。
 
 **`nocobase-route-surfaces`** — 三种路由载体：整页、抽屉和弹窗。同一个内容既能作为独立页面打开，也能在列表页里以抽屉形式弹出，路由状态会正确同步。
 
@@ -137,6 +137,4 @@ pnpm test:i18n
 
 - [AI 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [项目结构与技术栈](./project-structure.md) — 完整的目录约定和常用命令
-- [数据与 API](./data-api.md) — 扩展里怎么取数据
-- [认证与权限](./auth-acl.md) — 权限组件和认证适配器
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 让 AI 照着内置扩展写新模块
