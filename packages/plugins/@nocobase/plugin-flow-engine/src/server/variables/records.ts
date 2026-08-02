@@ -53,8 +53,147 @@ export type RecordQuery = RecordTarget & {
 };
 
 type RequestCacheContext = ResourcerContext & {
-  state?: Record<string, unknown> & { __varResolveRecordTargets?: Map<string, RecordTarget | undefined> };
+  state?: Record<string, unknown> & {
+    __varResolveBatchCache?: Map<string, unknown>;
+    __varResolveRecordTargets?: Map<string, RecordTarget | undefined>;
+  };
 };
+
+type RecordCacheMetadata = {
+  appends?: ReadonlySet<string>;
+  baseIdentityKey: string;
+  cacheIdentity: Readonly<{
+    assoc?: string;
+    c?: string;
+    ds?: string;
+    sid?: unknown;
+    tk?: unknown;
+  }>;
+  fields?: ReadonlySet<string>;
+  full: boolean;
+};
+
+type SerializedRecordQuery = {
+  a?: string[];
+  assoc?: string;
+  c?: string;
+  ds?: string;
+  f?: string[];
+  full?: boolean;
+  sid?: unknown;
+  tk?: unknown;
+};
+
+function sortIdentityValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortIdentityValue);
+  if (!_.isPlainObject(value)) return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, child]) => [key, sortIdentityValue(child)]),
+  );
+}
+
+function getBaseIdentityKey(identity: { assoc?: string; c?: string; ds?: string; sid?: unknown; tk?: unknown }) {
+  return JSON.stringify(sortIdentityValue(identity));
+}
+
+function createCacheMetadata(query: SerializedRecordQuery): RecordCacheMetadata {
+  const cacheIdentity = {
+    ds: query.ds,
+    c: query.c,
+    assoc: query.assoc,
+    sid: query.sid,
+    tk: query.tk,
+  };
+  return {
+    appends: query.a ? new Set(query.a) : undefined,
+    baseIdentityKey: getBaseIdentityKey(cacheIdentity),
+    cacheIdentity,
+    fields: query.f ? new Set(query.f) : undefined,
+    full: query.full === true,
+  };
+}
+
+class RecordRequestCache extends Map<string, unknown> {
+  private readonly keysByBaseIdentity = new Map<string, Set<string>>();
+  private readonly metadataByKey = new Map<string, RecordCacheMetadata>();
+
+  constructor(entries?: Map<string, unknown>) {
+    super();
+    entries?.forEach((value, key) => this.set(key, value));
+  }
+
+  set(cacheKey: string, value: unknown): this {
+    let metadata: RecordCacheMetadata | undefined;
+    try {
+      metadata = createCacheMetadata(JSON.parse(cacheKey) as SerializedRecordQuery);
+    } catch (_) {
+      // Preserve Map compatibility for legacy or non-record entries without indexing them.
+    }
+    return this.setWithMetadata(cacheKey, value, metadata);
+  }
+
+  setQuery(query: RecordQuery, value: unknown): this {
+    return this.setWithMetadata(
+      query.cacheKey,
+      value,
+      createCacheMetadata({
+        ...query.cacheIdentity,
+        tk: query.filterByTk,
+        f: query.fields,
+        a: query.appends,
+        full: query.preferFullRecord,
+      }),
+    );
+  }
+
+  delete(cacheKey: string): boolean {
+    this.removeFromIndex(cacheKey);
+    return super.delete(cacheKey);
+  }
+
+  clear(): void {
+    super.clear();
+    this.keysByBaseIdentity.clear();
+    this.metadataByKey.clear();
+  }
+
+  *candidates(query: RecordQuery): IterableIterator<[RecordCacheMetadata, unknown]> {
+    const baseIdentityKey = getBaseIdentityKey({
+      ...query.cacheIdentity,
+      tk: query.filterByTk,
+    });
+    for (const cacheKey of this.keysByBaseIdentity.get(baseIdentityKey) || []) {
+      const metadata = this.metadataByKey.get(cacheKey);
+      if (metadata && super.has(cacheKey)) yield [metadata, super.get(cacheKey)];
+    }
+  }
+
+  private setWithMetadata(cacheKey: string, value: unknown, metadata?: RecordCacheMetadata): this {
+    this.removeFromIndex(cacheKey);
+    super.set(cacheKey, value);
+    if (!metadata) return this;
+
+    this.metadataByKey.set(cacheKey, metadata);
+    let keys = this.keysByBaseIdentity.get(metadata.baseIdentityKey);
+    if (!keys) {
+      keys = new Set();
+      this.keysByBaseIdentity.set(metadata.baseIdentityKey, keys);
+    }
+    keys.add(cacheKey);
+    return this;
+  }
+
+  private removeFromIndex(cacheKey: string) {
+    const metadata = this.metadataByKey.get(cacheKey);
+    if (!metadata) return;
+    const keys = this.keysByBaseIdentity.get(metadata.baseIdentityKey);
+    keys?.delete(cacheKey);
+    if (!keys?.size) this.keysByBaseIdentity.delete(metadata.baseIdentityKey);
+    this.metadataByKey.delete(cacheKey);
+  }
+}
 
 export function isRecordParams(value: unknown): value is RecordParams {
   return (
@@ -167,48 +306,38 @@ export function getRecordRequestCache(koaCtx: ResourcerContext): Map<string, unk
   const context = koaCtx as RequestCacheContext;
   if (!context.state) context.state = {};
   const existing = context.state.__varResolveBatchCache;
-  if (existing instanceof Map) return existing as Map<string, unknown>;
-  const cache = new Map<string, unknown>();
+  if (existing instanceof RecordRequestCache) return existing;
+  const cache = new RecordRequestCache(existing instanceof Map ? existing : undefined);
   context.state.__varResolveBatchCache = cache;
   return cache;
 }
 
-function cachedQueryCovers(query: RecordQuery, cacheKey: string) {
-  try {
-    const cached = JSON.parse(cacheKey) as {
-      ds?: string;
-      c?: string;
-      assoc?: string;
-      sid?: unknown;
-      tk?: unknown;
-      f?: string[];
-      a?: string[];
-      full?: boolean;
-    };
-    if (
-      cached.ds !== query.cacheIdentity.ds ||
-      cached.c !== query.cacheIdentity.c ||
-      cached.assoc !== query.cacheIdentity.assoc ||
-      !_.isEqual(cached.sid, query.cacheIdentity.sid) ||
-      !_.isEqual(cached.tk, query.filterByTk)
-    ) {
-      return false;
-    }
-    if (cached.full) return true;
-    if (query.preferFullRecord) return false;
+export function setRecordRequestCache(cache: Map<string, unknown>, query: RecordQuery, value: unknown) {
+  if (cache instanceof RecordRequestCache) return cache.setQuery(query, value);
+  return cache.set(query.cacheKey, value);
+}
 
-    const cachedFields = new Set(cached.f || []);
-    const cachedAppends = new Set(cached.a || []);
-    const fieldCovered = (field: string) =>
-      cachedFields.has(field) ||
-      [...cachedAppends].some((append) => field === append || field.startsWith(`${append}.`));
-    return (
-      (query.fields ? query.fields.every(fieldCovered) : cached.f === undefined) &&
-      (!query.appends || query.appends.every((append) => cachedAppends.has(append)))
-    );
-  } catch (_) {
+function cachedQueryCovers(query: RecordQuery, cached: RecordCacheMetadata) {
+  if (
+    cached.cacheIdentity.ds !== query.cacheIdentity.ds ||
+    cached.cacheIdentity.c !== query.cacheIdentity.c ||
+    cached.cacheIdentity.assoc !== query.cacheIdentity.assoc ||
+    !_.isEqual(cached.cacheIdentity.sid, query.cacheIdentity.sid) ||
+    !_.isEqual(cached.cacheIdentity.tk, query.filterByTk)
+  ) {
     return false;
   }
+  if (cached.full) return true;
+  if (query.preferFullRecord) return false;
+
+  const cachedFields = cached.fields || new Set<string>();
+  const cachedAppends = cached.appends || new Set<string>();
+  const fieldCovered = (field: string) =>
+    cachedFields.has(field) || [...cachedAppends].some((append) => field === append || field.startsWith(`${append}.`));
+  return (
+    (query.fields ? query.fields.every(fieldCovered) : cached.fields === undefined) &&
+    (!query.appends || query.appends.every((append) => cachedAppends.has(append)))
+  );
 }
 
 export async function fetchRecordWithRequestCache(
@@ -233,14 +362,14 @@ export async function fetchRecordWithRequestCache(
     );
     const cache = getRecordRequestCache(koaCtx);
     if (cache.has(query.cacheKey)) return cache.get(query.cacheKey);
-    if (!strictSelects) {
-      for (const [cacheKey, value] of cache) {
-        if (cachedQueryCovers(query, cacheKey)) return value;
+    if (!strictSelects && cache instanceof RecordRequestCache) {
+      for (const [metadata, value] of cache.candidates(query)) {
+        if (cachedQueryCovers(query, metadata)) return value;
       }
     }
 
     const value = await fetchRecordOrRecordsJson(query.repository, query);
-    cache.set(query.cacheKey, value);
+    setRecordRequestCache(cache, query, value);
     return value;
   } catch (error) {
     koaCtx.app?.logger

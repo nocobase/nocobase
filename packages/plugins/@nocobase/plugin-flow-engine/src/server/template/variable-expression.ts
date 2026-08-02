@@ -48,6 +48,7 @@ export type VariableExpressionError = Readonly<{
 export type AnalyzedExpression = Readonly<{
   source: string;
   compiled: string;
+  helperIdentifier: string;
   expressionSpan: SourceSpan;
   placeholderSpan: SourceSpan;
   paths: readonly VariablePathRef[];
@@ -110,10 +111,11 @@ export function analyzeVariableTemplate(
   const mode = options.mode ?? 'request';
   const paths: VariablePathRef[] = [];
   const errors: VariableExpressionError[] = [];
+  const helperIdentifiers = new Set<string>();
 
   const visit = (value: unknown, templatePath: readonly TemplatePathSegment[]): AnalyzedTemplateNode => {
     if (typeof value === 'string') {
-      const expressions = analyzeString(value, templatePath, paths, errors);
+      const expressions = analyzeString(value, templatePath, paths, errors, helperIdentifiers);
       return { kind: 'string', source: value, expressions };
     }
     if (Array.isArray(value)) {
@@ -128,10 +130,11 @@ export function analyzeVariableTemplate(
   };
 
   const value = visit(template, []);
-  const usage: Record<string, VariablePathRef[]> = {};
-  const seenRuntimeKeys: Record<string, Set<string>> = {};
+  const usage: Record<string, VariablePathRef[]> = Object.create(null);
+  const seenRuntimeKeys = new Map<string, Set<string>>();
   for (const path of paths) {
-    const seen = (seenRuntimeKeys[path.varName] ??= new Set());
+    const seen = seenRuntimeKeys.get(path.varName) ?? new Set<string>();
+    seenRuntimeKeys.set(path.varName, seen);
     if (seen.has(path.runtimeKey)) continue;
     seen.add(path.runtimeKey);
     (usage[path.varName] ??= []).push(path);
@@ -151,6 +154,7 @@ function analyzeString(
   templatePath: readonly TemplatePathSegment[],
   allPaths: VariablePathRef[],
   allErrors: VariableExpressionError[],
+  helperIdentifiers: Set<string>,
 ) {
   const expressions: AnalyzedExpression[] = [];
   let cursor = 0;
@@ -183,6 +187,7 @@ function analyzeString(
 
     const expressionEnd = placeholderEnd;
     const expressionErrors: VariableExpressionError[] = [];
+    const helperIdentifier = createHelperIdentifier(ast, helperIdentifiers);
     let expressionPaths = analyzeAst(ast, templatePath, expressionErrors);
     const dashedPath = parseDashedCtxPath(source.slice(ast.start, ast.end));
     if (dashedPath && expressionPaths.length === 1 && expressionErrors.length === 0) {
@@ -196,7 +201,8 @@ function analyzeString(
 
     expressions.push({
       source: source.slice(parseStart, expressionEnd),
-      compiled: compileExpression(source, parseStart, expressionEnd, retainedPaths),
+      compiled: compileExpression(source, parseStart, expressionEnd, retainedPaths, helperIdentifier),
+      helperIdentifier,
       expressionSpan: { start: parseStart, end: expressionEnd },
       placeholderSpan: { start: placeholderStart, end: placeholderEnd + 2 },
       paths: retainedPaths,
@@ -243,7 +249,11 @@ function analyzeAst(ast: AstNode, templatePath: readonly TemplatePathSegment[], 
       return;
     }
     if (node.type === 'WithStatement') addError('unreliable-scope', node);
-    if (node.type === 'CallExpression' && identifierName(asNode(node.callee)) === 'eval') {
+    if (
+      node.type === 'CallExpression' &&
+      identifierName(unwrapChain(asNode(node.callee) ?? node)) === 'eval' &&
+      !hasBinding(scope, 'eval')
+    ) {
       addError('unreliable-scope', node);
     }
     if (node.type === 'ForStatement' || node.type === 'ForInStatement' || node.type === 'ForOfStatement') {
@@ -555,10 +565,35 @@ function createPathRef(
   };
 }
 
-function compileExpression(source: string, start: number, end: number, paths: readonly VariablePathRef[]) {
+function createHelperIdentifier(ast: AstNode, used: Set<string>) {
+  const identifiers = new Set<string>();
+  const collect = (node: AstNode) => {
+    const name = identifierName(node);
+    if (name) identifiers.add(name);
+    for (const value of Object.values(node)) {
+      if (isNode(value)) collect(value);
+      else if (Array.isArray(value)) for (const item of value) if (isNode(item)) collect(item);
+    }
+  };
+  collect(ast);
+
+  let index = used.size;
+  let candidate = `__resolveVariablePath${index}`;
+  while (identifiers.has(candidate) || used.has(candidate)) candidate = `__resolveVariablePath${++index}`;
+  used.add(candidate);
+  return candidate;
+}
+
+function compileExpression(
+  source: string,
+  start: number,
+  end: number,
+  paths: readonly VariablePathRef[],
+  helperIdentifier: string,
+) {
   let compiled = source.slice(start, end);
   for (const path of [...paths].sort((left, right) => right.span.start - left.span.start)) {
-    const replacement = `(await __resolveVariablePath(${JSON.stringify(path.varName)}, ${JSON.stringify(
+    const replacement = `(await ${helperIdentifier}(${JSON.stringify(path.varName)}, ${JSON.stringify(
       path.runtimeSegments,
     )}))`;
     compiled = `${compiled.slice(0, path.span.start - start)}${replacement}${compiled.slice(path.span.end - start)}`;

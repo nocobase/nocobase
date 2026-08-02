@@ -16,6 +16,7 @@ import {
   isRecordParams,
   prepareRecordQuery,
   resolveRecordTarget,
+  setRecordRequestCache,
   type RecordParams,
   type RecordTarget,
 } from './records';
@@ -126,7 +127,7 @@ export async function prefetchRecordsForResolve(
           group.preferFullRecord,
         );
         if (cache.has(query.cacheKey)) continue;
-        cache.set(query.cacheKey, await fetchRecordOrRecordsJson(query.repository, query));
+        setRecordRequestCache(cache, query, await fetchRecordOrRecordsJson(query.repository, query));
       } catch (error) {
         log?.debug('[variables.resolve] prefetch query error', {
           ...group.target.cacheIdentity,

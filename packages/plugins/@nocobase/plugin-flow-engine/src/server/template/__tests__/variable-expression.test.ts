@@ -40,10 +40,25 @@ describe('server variable expression analyzer', () => {
 
     expect(analysis.paths).toHaveLength(3);
     expect(analysis.paths.map((path) => path.templatePath)).toEqual([['a'], ['nested', 0], ['nested', 1]]);
+    expect(Object.getPrototypeOf(analysis.usage)).toBeNull();
     expect(analysis.usage.user).toHaveLength(2);
     expect(analysis.usage.user[0]).toBe(analysis.paths[0]);
     expect(analysis.usage.user[1]).toBe(analysis.paths[2]);
   });
+
+  it.each(['__proto__', 'constructor', 'toString', 'hasOwnProperty'])(
+    'keeps prototype root %s safe in request and flow-model analyses',
+    (varName) => {
+      for (const mode of ['request', 'flow-model'] as const) {
+        const analysis = analyzeVariableTemplate(`{{ctx.${varName}.id}}`, { mode });
+
+        expect(analysis.supported).toBe(true);
+        expect(Object.getPrototypeOf(analysis.usage)).toBeNull();
+        expect(Object.keys(analysis.usage)).toEqual([varName]);
+        expect(analysis.usage[varName]).toEqual([analysis.paths[0]]);
+      }
+    },
+  );
 
   it('normalizes dot, bracket, optional, comments, and escaped ctx identifiers', () => {
     const analysis = analyzeVariableTemplate([
@@ -87,9 +102,44 @@ describe('server variable expression analyzer', () => {
     const expression = analysis.value.kind === 'string' ? analysis.value.expressions[0] : undefined;
 
     expect(analysis.paths.map((path) => path.runtimeSegments)).toEqual([['profile', 'name'], ['id']]);
-    expect(expression?.compiled.match(/__resolveVariablePath/g)).toHaveLength(2);
+    expect(expression?.compiled.match(new RegExp(expression.helperIdentifier, 'g'))).toHaveLength(2);
     expect(expression?.compiled).not.toContain('ctx.user');
     expect(expression?.compiled).not.toContain('ctx.record');
+  });
+
+  it.each([
+    ['reference', '{{ typeof __resolveVariablePath0 + ctx.user.id }}'],
+    ['parameter', '{{ ((__resolveVariablePath0) => ctx.user.id)(0) }}'],
+    ['local variable', '{{ (() => { const __resolveVariablePath0 = 0; return ctx.user.id; })() }}'],
+    ['catch binding', '{{ (() => { try { throw 0; } catch (__resolveVariablePath0) { return ctx.user.id; } })() }}'],
+    ['class name', '{{ (class __resolveVariablePath0 { static value = ctx.user.id }).value }}'],
+    ['function name', '{{ (function __resolveVariablePath0() { return ctx.user.id; })() }}'],
+    ['destructuring', '{{ (({ __resolveVariablePath0 }) => ctx.user.id)({}) }}'],
+    ['rest parameter', '{{ ((...__resolveVariablePath0) => ctx.user.id)() }}'],
+    ['default parameter', '{{ ((__resolveVariablePath0 = 0) => ctx.user.id)() }}'],
+    ['Unicode escaped identifier', '{{ ((...__resolveVariablePat\\u00680) => ctx.user.id)() }}'],
+  ])('avoids helper collisions with an AST %s', (_kind, template) => {
+    const analysis = analyzeVariableTemplate(template);
+    const expression = analysis.value.kind === 'string' ? analysis.value.expressions[0] : undefined;
+
+    expect(analysis.supported).toBe(true);
+    expect(expression?.helperIdentifier).not.toBe('__resolveVariablePath0');
+    expect(expression?.compiled).toContain(`await ${expression?.helperIdentifier}(`);
+  });
+
+  it('generates deterministic, analysis-local helper identifiers per expression', () => {
+    const getIdentifiers = () => {
+      const analysis = analyzeVariableTemplate(['{{ctx.user.id}}', '{{ctx.user.name}}', '{{ctx.record.id}}']);
+      return analysis.value.kind === 'array'
+        ? analysis.value.items
+            .flatMap((item) => (item.kind === 'string' ? item.expressions : []))
+            .map((item) => item.helperIdentifier)
+        : [];
+    };
+
+    const identifiers = getIdentifiers();
+    expect(new Set(identifiers).size).toBe(identifiers.length);
+    expect(getIdentifiers()).toEqual(identifiers);
   });
 
   it('includes parenthesized expressions in the placeholder boundary', () => {
@@ -188,6 +238,27 @@ describe('server variable expression analyzer', () => {
     expect(request.paths).toEqual([]);
     expect(model.supported).toBe(true);
     expect(model.paths.map((path) => [path.varName, path.runtimeSegments])).toEqual([['record', ['id']]]);
+  });
+
+  it.each(['{{ eval("ctx.user.id") }}', '{{ (eval)("ctx.user.id") }}'])(
+    'rejects direct eval in strict analysis: %s',
+    (template) => {
+      const analysis = analyzeVariableTemplate(template);
+
+      expect(analysis.supported).toBe(false);
+      expect(analysis.errors.map((error) => error.code)).toContain('unreliable-scope');
+      expect(analysis.paths).toEqual([]);
+    },
+  );
+
+  it('does not classify bound or indirect eval calls as direct eval', () => {
+    const analysis = analyzeVariableTemplate([
+      '{{ ((eval) => eval("value"))(() => 1) }}',
+      '{{ (0, eval)("value") }}',
+      '{{ globalThis.eval("value") }}',
+    ]);
+
+    expect(analysis.supported).toBe(true);
   });
 
   it('applies the deterministic dashed-key compatibility rule', () => {
