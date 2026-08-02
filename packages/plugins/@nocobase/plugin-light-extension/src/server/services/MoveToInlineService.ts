@@ -240,7 +240,7 @@ export class MoveToInlineService {
     }
 
     const entryPath = relocateEntryPath(input.entryPath);
-    const compileResult = await this.workspaceCompilerBridge.compileEntry({
+    const sourcePreparation = this.workspaceCompilerBridge.prepareEntry({
       repoId: input.repoId,
       entryId: input.entryId,
       operation: 'runtimeCompile',
@@ -250,25 +250,26 @@ export class MoveToInlineService {
       runtimeVersion: input.version,
       files: relocatedFiles,
     });
-    if (!compileResult.accepted) {
+    if (!sourcePreparation.accepted) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Inline source could not be compiled', {
         status: 422,
         details: {
           repoId: input.repoId,
           entryId: input.entryId,
-          diagnostics: compileResult.diagnostics,
-          failureCode: compileResult.failureCode,
+          diagnostics: sourcePreparation.diagnostics,
+          failureCode: sourcePreparation.failureCode,
         },
       });
     }
 
+    const sourceInputFiles = sourcePreparation.files;
     const desiredFiles = withRunJSManifest(
-      relocatedFiles,
+      sourceInputFiles,
       entryPath,
-      compileResult.artifact.version,
+      sourcePreparation.runtimeVersion,
       legacy.surfaceStyle,
     );
-    const currentFiles = repository
+    const targetBaseFiles = repository
       ? (
           await vscFileService.pull(
             {
@@ -279,12 +280,13 @@ export class MoveToInlineService {
           )
         ).files
       : [];
-    const canonicalFiles = canonicalizeRunJSCompileFiles(desiredFiles, currentFiles || []);
-    assertRunJSCompileInputLimits(canonicalFiles);
-    const canonicalCompileResult = await compileRunJSSourceWorkspace({
-      files: canonicalFiles,
+    const candidateWorkspaceFiles = canonicalizeRunJSCompileFiles(desiredFiles, targetBaseFiles || []);
+    assertRunJSCompileInputLimits(candidateWorkspaceFiles);
+    const compilerInputFiles = candidateWorkspaceFiles;
+    const compileResult = await compileRunJSSourceWorkspace({
+      files: compilerInputFiles,
       entry: entryPath,
-      runtimeVersion: compileResult.artifact.version,
+      runtimeVersion: sourcePreparation.runtimeVersion,
       surfaceStyle: legacy.surfaceStyle,
       locator,
       legacy: {
@@ -294,29 +296,26 @@ export class MoveToInlineService {
         metadata: legacy.metadata,
       },
     });
-    const canonicalCompileErrors = canonicalCompileResult.artifact.diagnostics.filter(
-      (diagnostic) => diagnostic.severity === 'error',
-    );
-    if (canonicalCompileErrors.length > 0) {
+    const compileErrors = compileResult.artifact.diagnostics.filter((diagnostic) => diagnostic.severity === 'error');
+    if (compileErrors.length > 0) {
       throw new LightExtensionError('LIGHT_EXTENSION_VALIDATION_FAILED', 'Inline source could not be compiled', {
         status: 422,
         details: {
           repoId: input.repoId,
           entryId: input.entryId,
-          diagnostics: canonicalCompileErrors,
-          failureCode: canonicalCompileResult.failureCode,
+          diagnostics: compileErrors,
+          failureCode: compileResult.failureCode,
         },
       });
     }
-    const changes = buildOverwriteChanges(currentFiles || [], canonicalFiles);
-    const artifact = {
+    const commitChanges = buildOverwriteChanges(targetBaseFiles || [], candidateWorkspaceFiles);
+    const artifact: RunJSRuntimeArtifact = {
       ...compileResult.artifact,
-      ...canonicalCompileResult.artifact,
       entryPath,
       metadata: {
-        ...canonicalCompileResult.artifact.metadata,
         ...compileResult.artifact.metadata,
-        runtimeCodeHash: buildRunJSRuntimeCodeHash(canonicalCompileResult.artifact.code),
+        ...sourcePreparation.metadata,
+        runtimeCodeHash: buildRunJSRuntimeCodeHash(compileResult.artifact.code),
       },
     };
     const runtimeCodeHash = buildRunJSRuntimeCodeHash(artifact.code);
@@ -338,7 +337,7 @@ export class MoveToInlineService {
       commitMetadata,
       repositoryIdentity: identity,
       expectedRepository: repository,
-      changes,
+      changes: commitChanges,
     };
   }
 

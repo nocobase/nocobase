@@ -29,13 +29,18 @@ import {
 import { MoveOperationStore } from '../services/MoveOperationStore';
 import { isMoveToInlineHostSupported, MoveToInlineService } from '../services/MoveToInlineService';
 import {
+  LightExtensionWorkspaceCompilerBridge,
+  type LightExtensionWorkspaceCompileInput,
+} from '../services/LightExtensionWorkspaceCompilerBridge';
+import {
   buildRunJSFilesHash,
   type RunJSSourceAdapterRegistry,
   VscError,
   type VscFileChange,
   type VscFileService,
+  type VscRepositoryRecord,
 } from '../vsc-file';
-import { buildRunJSSourceRepositoryIdentity } from '../vsc-file/public-api';
+import { buildRunJSSourceRepositoryIdentity, canonicalizeRunJSCompileFiles } from '../vsc-file/public-api';
 
 const locator = {
   kind: 'flowModel.step',
@@ -1361,6 +1366,8 @@ describe('move to inline integration', () => {
       entry?: LightExtensionEntryRecord;
       entryError?: Error;
       compileAccepted?: boolean;
+      targetRepository?: VscRepositoryRecord;
+      ensureError?: Error;
     } = {},
   ) {
     const operationModel = createMoveOperationModel();
@@ -1400,45 +1407,39 @@ describe('move to inline integration', () => {
       }
       return options.entry || entry;
     });
-    const compileEntry = vi.fn(async () =>
-      options.compileAccepted === false
-        ? {
-            accepted: false,
-            diagnostics: [{ code: 'LIGHT_EXTENSION_COMPILE_FAILED', severity: 'error', message: 'compile failed' }],
-            failureCode: 'LIGHT_EXTENSION_COMPILE_FAILED',
-          }
-        : {
-            accepted: true,
-            diagnostics: [],
-            surface: {
-              surface: 'js-block',
-              surfaceStyle: 'render',
-              compilerSurfaceStyle: 'render',
-              modelUse: 'JSBlockModel',
-            },
-            artifact: {
-              code: 'ctx.render("inline");',
-              version: 'v2',
-              entryPath: 'src/client/index.tsx',
-              filesHash: 'light_extension_files_hash',
-              diagnostics: [],
-              metadata: {},
-            },
-          },
-    );
-    const findRepositoryByIdentity = vi.fn(async () => null);
+    const compilerBridge = new LightExtensionWorkspaceCompilerBridge();
+    const prepareEntry = vi.fn((compileInput: LightExtensionWorkspaceCompileInput) => {
+      const preparation = compilerBridge.prepareEntry(compileInput);
+      if (options.compileAccepted === false) {
+        return {
+          ...preparation,
+          accepted: false,
+          diagnostics: [
+            { code: 'LIGHT_EXTENSION_COMPILE_FAILED', severity: 'error' as const, message: 'compile failed' },
+          ],
+          failureCode: 'LIGHT_EXTENSION_COMPILE_FAILED',
+        };
+      }
+      return preparation;
+    });
+    const findRepositoryByIdentity = vi.fn(async () => options.targetRepository || null);
+    const pull = vi.fn(async () => ({ files: [] }));
     const ensureAndPush = vi.fn(async () => {
+      if (options.ensureError) {
+        throw options.ensureError;
+      }
       throw new Error('unexpected repository publish');
     });
     const service = new MoveToInlineService(
       db,
       { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
       { getEntry } as never,
-      { compileEntry } as never,
+      { prepareEntry } as never,
       { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
       () =>
         ({
           findRepositoryByIdentity,
+          pull,
           ensureAndPush,
         }) as unknown as VscFileService,
       () =>
@@ -1463,7 +1464,9 @@ describe('move to inline integration', () => {
       service,
       transaction,
       findRepositoryByIdentity,
+      pull,
       ensureAndPush,
+      prepareEntry,
     };
   }
 
@@ -1607,24 +1610,9 @@ describe('move to inline integration', () => {
       { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
       { getEntry: vi.fn(async () => entry) } as never,
       {
-        compileEntry: vi.fn(async () => ({
-          accepted: true,
-          diagnostics: [],
-          surface: {
-            surface: 'js-block',
-            surfaceStyle: 'render',
-            compilerSurfaceStyle: 'render',
-            modelUse: 'JSBlockModel',
-          },
-          artifact: {
-            code: 'ctx.render("inline");',
-            version: 'v2',
-            entryPath: 'src/client/index.ts',
-            filesHash: 'light_extension_files_hash',
-            diagnostics: [],
-            metadata: {},
-          },
-        })),
+        prepareEntry: vi.fn((compileInput: LightExtensionWorkspaceCompileInput) =>
+          new LightExtensionWorkspaceCompilerBridge().prepareEntry(compileInput),
+        ),
       } as never,
       { syncFlowModelReferencesForNodeTree } as never,
       () =>
@@ -1777,6 +1765,51 @@ describe('move to inline integration', () => {
       expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
 
+    it('rejects an existing target repository whose Head changes after preparation', async () => {
+      const identity = buildRunJSSourceRepositoryIdentity(locator);
+      const targetRepository: VscRepositoryRecord = {
+        id: 'runjs_repo_existing',
+        ...identity,
+        status: 'active',
+        defaultRef: 'head',
+        headCommitId: 'runjs_head_before',
+        headSeq: 1,
+      };
+      const fixture = createMoveToInlinePreflightFixture({
+        targetRepository,
+        ensureError: new VscError('BASE_COMMIT_OUTDATED', 'Target repository Head changed'),
+      });
+
+      await expect(
+        fixture.service.moveToInline(
+          {
+            idempotencyKey: 'move-inline-target-head-changed',
+            locator,
+            repoId: binding.repoId,
+            entryId: binding.entryId,
+            entryPath: entry.entryPath,
+            kind: 'js-block',
+            version: 'v2',
+            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({
+        code: 'LIGHT_EXTENSION_SOURCE_ERROR',
+        details: { sourceCode: 'BASE_COMMIT_OUTDATED' },
+      });
+
+      expect(fixture.pull).toHaveBeenCalledWith(
+        { repoId: targetRepository.id, includeContent: 'none' },
+        expect.not.objectContaining({ transaction: expect.anything() }),
+      );
+      expect(fixture.ensureAndPush).toHaveBeenCalledWith(
+        expect.objectContaining({ expectedRepository: targetRepository }),
+        expect.objectContaining({ transaction: expect.anything() }),
+      );
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+    });
+
     it('moves a JS Page inline with its snapshot and settings while removing the active reference', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       const operationModel = createMoveOperationModel();
@@ -1845,24 +1878,9 @@ describe('move to inline integration', () => {
         getRepository: (name: string) =>
           name === 'lightExtensionMoveOperations' ? { model: operationModel.model } : { update: updateCommit },
       } as unknown as Database;
-      const compileEntry = vi.fn(async () => ({
-        accepted: true,
-        diagnostics: [],
-        surface: {
-          surface: 'js-page',
-          surfaceStyle: 'render',
-          compilerSurfaceStyle: 'render',
-          modelUse: 'JSPageModel',
-        },
-        artifact: {
-          code: 'ctx.render("inline");',
-          version: 'v2',
-          entryPath: 'src/client/index.tsx',
-          filesHash: 'compiled_files_hash',
-          diagnostics: [],
-          metadata: {},
-        },
-      }));
+      const compilerBridge = new LightExtensionWorkspaceCompilerBridge();
+      const prepareEntry = vi.spyOn(compilerBridge, 'prepareEntry');
+      const compileEntry = vi.spyOn(compilerBridge, 'compileEntry');
       const syncReferences = vi.fn(async () => undefined);
       const writeRuntime = vi.fn(
         async (input: {
@@ -1911,21 +1929,66 @@ describe('move to inline integration', () => {
         ...runJSRepo,
         ownerId: input.ownerId,
       }));
-      const ensureAndPush = vi.fn(async () => ({
-        repository: runJSRepo,
-        commit: {
-          id: 'runjs_new_commit',
-          repoId: runJSRepo.id,
-          seq: 2,
-          parentCommitId: runJSRepo.headCommitId,
-          treeHash: 'tree_hash',
-          hash: 'commit_hash',
-          message: 'Move to inline',
-          authorId: '1',
-          metadata: {},
+      const targetBaseWorkspaceFiles = [
+        { path: 'src/client/entry.json', content: '{"schemaVersion":0}\n', language: 'json', mode: '100644' },
+        {
+          path: 'src/client/index.tsx',
+          content: 'ctx.render("old");\n',
+          language: 'tsx',
+          mode: '100755',
         },
-        tree: { hash: 'tree_hash', entryCount: 2, byteSize: 100 },
-      }));
+        { path: 'src/client/old.ts', content: 'export const stale = true;\n', language: 'typescript', mode: '100644' },
+        { path: 'src/shared/used.ts', content: 'export const used = true;\n', language: 'typescript', mode: '100644' },
+      ];
+      const committedWorkspaceFiles = new Map<
+        string,
+        { path: string; content: string; language?: string; mode?: string }
+      >(targetBaseWorkspaceFiles.map((file) => [file.path, { ...file }]));
+      let committedHead = runJSRepo.headCommitId;
+      const ensureAndPush = vi.fn(async (pushInput: { files: VscFileChange[]; metadata: Record<string, unknown> }) => {
+        for (const file of pushInput.files) {
+          if (file.operation === 'delete') {
+            committedWorkspaceFiles.delete(file.path);
+          } else if (typeof file.content === 'string') {
+            committedWorkspaceFiles.set(file.path, {
+              path: file.path,
+              content: file.content,
+              ...(file.language ? { language: file.language } : {}),
+              ...(file.mode ? { mode: file.mode } : {}),
+            });
+          }
+        }
+        committedHead = 'runjs_new_commit';
+        return {
+          repository: { ...runJSRepo, headCommitId: committedHead, headSeq: 2 },
+          commit: {
+            id: committedHead,
+            repoId: runJSRepo.id,
+            seq: 2,
+            parentCommitId: runJSRepo.headCommitId,
+            treeHash: 'tree_hash',
+            hash: 'commit_hash',
+            message: 'Move to inline',
+            authorId: '1',
+            metadata: pushInput.metadata,
+          },
+          tree: { hash: 'tree_hash', entryCount: committedWorkspaceFiles.size, byteSize: 100 },
+        };
+      });
+      const pullCommit = vi.fn(async (pullInput: { repoId: string; commitId: string }) => {
+        if (pullInput.repoId !== runJSRepo.id || pullInput.commitId !== committedHead) {
+          throw new Error('Unexpected committed workspace read');
+        }
+        return {
+          repository: { ...runJSRepo, headCommitId: committedHead, headSeq: 2 },
+          commit: { id: committedHead, repoId: runJSRepo.id },
+          tree: { hash: 'tree_hash', entryCount: committedWorkspaceFiles.size, byteSize: 100 },
+          unchanged: false,
+          files: Array.from(committedWorkspaceFiles.values()).sort((left, right) =>
+            left.path.localeCompare(right.path),
+          ),
+        };
+      });
       const vscFileService = {
         findRepositoryByIdentity,
         getRepository: vi.fn(async () => runJSRepo),
@@ -1934,12 +1997,9 @@ describe('move to inline integration', () => {
           commit: null,
           tree: null,
           unchanged: false,
-          files: [
-            { path: 'src/client/entry.json', language: 'json', mode: '100644' },
-            { path: 'src/client/index.tsx', language: 'tsx', mode: '100755' },
-            { path: 'src/client/old.ts', language: 'typescript', mode: '100644' },
-          ],
+          files: targetBaseWorkspaceFiles.map(({ path, language, mode }) => ({ path, language, mode })),
         })),
+        pullCommit,
         ensureAndPush,
       } as unknown as VscFileService;
       const getVscFileService = vi.fn(() => vscFileService);
@@ -1950,7 +2010,7 @@ describe('move to inline integration', () => {
         db,
         { assertApplicationOwnership } as never,
         { getEntry } as never,
-        { compileEntry } as never,
+        compilerBridge,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         getVscFileService,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
@@ -1999,7 +2059,7 @@ describe('move to inline integration', () => {
       assertCanWrite.mockRejectedValueOnce(new Error('replay host permission denied'));
       await expect(service.moveToInline(input, serviceContext)).rejects.toThrow('replay host permission denied');
 
-      expect(compileEntry).toHaveBeenCalledWith(
+      expect(prepareEntry).toHaveBeenCalledWith(
         expect.objectContaining({
           entryPath: 'src/client/index.tsx',
           files: expect.arrayContaining([
@@ -2009,7 +2069,9 @@ describe('move to inline integration', () => {
           ]),
         }),
       );
-      expect(JSON.stringify(compileEntry.mock.calls)).not.toContain('src/shared/unused.ts');
+      expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/shared/unused.ts');
+      expect(prepareEntry).toHaveBeenCalledOnce();
+      expect(compileEntry).not.toHaveBeenCalled();
       expect(ensureAndPush).toHaveBeenCalledWith(
         expect.objectContaining({
           allowEmptyCommit: true,
@@ -2035,9 +2097,50 @@ describe('move to inline integration', () => {
       );
       const pushedFiles = ensureAndPush.mock.calls[0][0].files as VscFileChange[];
       const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
+      const committed = await pullCommit({ repoId: result.runJSRepoId, commitId: result.commitId });
+      const materializedCommittedFiles = canonicalizeRunJSCompileFiles(
+        (committed.files || []).map((file) => {
+          if (typeof file.content !== 'string') {
+            throw new Error(`Committed file "${file.path}" has no content`);
+          }
+          return { ...file, content: file.content };
+        }),
+      );
+      expect(materializedCommittedFiles).toEqual(canonicalFiles);
+      expect(materializedCommittedFiles.some((file) => file.path === 'src/client/old.ts')).toBe(false);
+      expect(materializedCommittedFiles).toContainEqual(
+        expect.objectContaining({
+          path: 'src/shared/used.ts',
+          content: 'export const used = true;\n',
+          mode: '100644',
+        }),
+      );
+      expect(materializedCommittedFiles).toContainEqual(
+        expect.objectContaining({
+          path: 'src/client/entry.json',
+          content: canonicalDescriptorContent,
+          language: 'json',
+          mode: '100644',
+        }),
+      );
+      expect(
+        JSON.parse(
+          materializedCommittedFiles.find((file) => file.path === '.nocobase/runjs-source.json')?.content || '{}',
+        ),
+      ).toEqual({
+        schemaVersion: 1,
+        entry: 'src/client/index.tsx',
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
+        compiler: { module: 'virtual-esm', jsx: true },
+      });
       expect(result.filesHash).toBe(buildRunJSFilesHash(canonicalFiles));
+      expect(buildRunJSFilesHash(materializedCommittedFiles)).toBe(result.filesHash);
       const sourceId = createHash('sha256').update(result.filesHash).digest('hex').slice(0, 16);
       expect(result.code).toContain(`nocobase-runjs://bundle/${sourceId}.js`);
+      const pushMetadata = ensureAndPush.mock.calls[0][0].metadata as Record<string, unknown>;
+      expect(pushMetadata.filesHash).toBe(result.filesHash);
+      expect(pushMetadata.runtimeCodeHash).toBe(createHash('sha256').update(result.code).digest('hex'));
       expect(findRepositoryByIdentity).toHaveBeenCalledWith(
         expect.any(Object),
         expect.objectContaining({
@@ -2058,7 +2161,7 @@ describe('move to inline integration', () => {
       expect(writeRuntime).toHaveBeenCalledOnce();
       expect(patch).toHaveBeenCalledOnce();
       expect(syncReferences).toHaveBeenCalledOnce();
-      expect(compileEntry.mock.calls[0][1]?.transaction).toBeUndefined();
+      expect(prepareEntry.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
       expect(assertCanWrite).toHaveBeenCalledTimes(5);
       expect(assertCanWrite.mock.calls[0][0].ctx.transaction).toBeUndefined();
       expect(readLegacy).toHaveBeenCalledTimes(2);
@@ -2088,7 +2191,20 @@ describe('move to inline integration', () => {
           artifact: expect.objectContaining({
             filesHash: result.filesHash,
             code: expect.stringContaining(`nocobase-runjs://bundle/${sourceId}.js`),
-            metadata: expect.objectContaining({ repoId: 'runjs_repo' }),
+            metadata: {
+              entry: 'src/client/index.tsx',
+              runtimeVersion: 'v2',
+              surfaceStyle: 'render',
+              target: 'client',
+              repoId: 'runjs_repo',
+              entryId: pageBinding.entryId,
+              kind: 'js-page',
+              entryName: 'page',
+              modelUse: 'JSPageModel',
+              surface: 'js-model.render',
+              compilerSurfaceStyle: 'render',
+              runtimeCodeHash: createHash('sha256').update(result.code).digest('hex'),
+            },
           }),
         }),
       );
@@ -2296,24 +2412,9 @@ describe('move to inline integration', () => {
         { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getEntry: vi.fn(async () => entry) } as never,
         {
-          compileEntry: vi.fn(async () => ({
-            accepted: true,
-            diagnostics: [],
-            surface: {
-              surface: 'js-block',
-              surfaceStyle: 'render',
-              compilerSurfaceStyle: 'render',
-              modelUse: 'JSBlockModel',
-            },
-            artifact: {
-              code: 'ctx.render("inline");',
-              version: 'v2',
-              entryPath: 'src/client/index.ts',
-              filesHash: 'light_extension_files_hash',
-              diagnostics: [],
-              metadata: {},
-            },
-          })),
+          prepareEntry: vi.fn((compileInput: LightExtensionWorkspaceCompileInput) =>
+            new LightExtensionWorkspaceCompilerBridge().prepareEntry(compileInput),
+          ),
         } as never,
         { syncFlowModelReferencesForNodeTree: vi.fn(async () => undefined) } as never,
         () =>
@@ -2510,24 +2611,9 @@ describe('move to inline integration', () => {
         { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getEntry: vi.fn(async () => entry) } as never,
         {
-          compileEntry: vi.fn(async () => ({
-            accepted: true,
-            diagnostics: [],
-            surface: {
-              surface: 'js-block',
-              surfaceStyle: 'render',
-              compilerSurfaceStyle: 'render',
-              modelUse: 'JSBlockModel',
-            },
-            artifact: {
-              code: 'ctx.render("inline after move");',
-              version: 'v2',
-              entryPath: 'src/client/index.tsx',
-              filesHash: 'compiled_files_hash',
-              diagnostics: [],
-              metadata: {},
-            },
-          })),
+          prepareEntry: vi.fn((compileInput: LightExtensionWorkspaceCompileInput) =>
+            new LightExtensionWorkspaceCompilerBridge().prepareEntry(compileInput),
+          ),
         } as never,
         { syncFlowModelReferencesForNodeTree: syncReferences } as never,
         () => vscFileService,
@@ -2601,7 +2687,7 @@ describe('move to inline integration', () => {
         db,
         { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getEntry: vi.fn() } as never,
-        { compileEntry: vi.fn() } as never,
+        { prepareEntry: vi.fn() } as never,
         { syncFlowModelReferencesForNodeTree: vi.fn() } as never,
         () => ({}) as VscFileService,
         () =>

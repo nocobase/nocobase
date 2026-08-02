@@ -66,6 +66,28 @@ export interface LightExtensionWorkspaceCompileResult {
   surface: LightExtensionAuthoringSurfaceSpec;
 }
 
+export interface LightExtensionWorkspaceCompileMetadata {
+  target: 'client';
+  repoId?: string;
+  entryId?: string;
+  kind: LightExtensionKind;
+  entryName: string;
+  modelUse: string;
+  surface: string;
+  surfaceStyle: LightExtensionSurfaceStyle;
+  compilerSurfaceStyle: LightExtensionAuthoringSurfaceSpec['compilerSurfaceStyle'];
+}
+
+export interface LightExtensionWorkspaceCompilePreparation {
+  accepted: boolean;
+  diagnostics: LightExtensionDiagnostic[];
+  failureCode?: string;
+  surface: LightExtensionAuthoringSurfaceSpec;
+  files: LightExtensionWorkspaceCompileFileInput[];
+  runtimeVersion: string;
+  metadata: LightExtensionWorkspaceCompileMetadata;
+}
+
 export interface LightExtensionWorkspaceCompileOptions {
   sourceInspector?: RunJSSourceWorkspaceInspector;
 }
@@ -75,39 +97,44 @@ export class LightExtensionWorkspaceCompilerBridge {
     return LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY;
   }
 
+  prepareEntry(input: LightExtensionWorkspaceCompileInput): LightExtensionWorkspaceCompilePreparation {
+    const surface = getSurfaceSpec(input.kind);
+    const diagnostics = this.validateCompileInput(input, surface);
+    return {
+      accepted: !hasErrorDiagnostic(diagnostics),
+      diagnostics,
+      failureCode: diagnostics.length > 0 ? 'LIGHT_EXTENSION_COMPILE_DENIED' : undefined,
+      surface,
+      files: prepareLightExtensionCompileFiles(input.files, input.kind),
+      runtimeVersion: input.runtimeVersion || 'v2',
+      metadata: buildCompileMetadata(input, surface),
+    };
+  }
+
   async compileEntry(
     input: LightExtensionWorkspaceCompileInput,
     options: LightExtensionWorkspaceCompileOptions = {},
   ): Promise<LightExtensionWorkspaceCompileResult> {
-    const surface = getSurfaceSpec(input.kind);
-
-    const preflightDiagnostics = this.validateCompileInput(input, surface);
-    if (preflightDiagnostics.length > 0) {
-      return this.buildBlockedResult(input, surface, preflightDiagnostics, 'LIGHT_EXTENSION_COMPILE_DENIED');
+    const preparation = this.prepareEntry(input);
+    if (!preparation.accepted) {
+      return this.buildBlockedResult(input, preparation);
     }
-    const compilerSurfaceStyle = surface.compilerSurfaceStyle;
-    const runtimeFiles = filterCurrentEntryDescriptor(input);
+    const runtimeFiles = filterCurrentEntryDescriptor({ entryPath: input.entryPath, files: preparation.files });
     const { compileRunJSSourceWorkspace } = await loadRunJSCompiler();
     const compiled = await compileRunJSSourceWorkspace({
-      files: prepareLightExtensionCompileFiles(runtimeFiles, input.kind),
+      files: runtimeFiles,
       entry: input.entryPath,
-      runtimeVersion: input.runtimeVersion || 'v2',
-      surfaceStyle: compilerSurfaceStyle,
+      runtimeVersion: preparation.runtimeVersion,
+      surfaceStyle: preparation.surface.compilerSurfaceStyle,
       legacy: {
-        version: input.runtimeVersion || 'v2',
-        surfaceStyle: compilerSurfaceStyle,
+        version: preparation.runtimeVersion,
+        surfaceStyle: preparation.surface.compilerSurfaceStyle,
         language: inferRunJSLanguage(input.entryPath),
-        metadata: {
-          target: 'client',
-          kind: input.kind,
-          entryName: input.entryName || inferEntryName(input.entryPath),
-          modelUse: surface.modelUse,
-          surface: surface.surface,
-        },
+        metadata: preparation.metadata,
       },
       sourceInspector: options.sourceInspector,
     });
-    return this.buildCompileResult(input, surface, compiled);
+    return this.buildCompileResult(preparation, compiled);
   }
 
   private validateCompileInput(
@@ -146,8 +173,7 @@ export class LightExtensionWorkspaceCompilerBridge {
   }
 
   private buildCompileResult(
-    input: LightExtensionWorkspaceCompileInput,
-    surface: LightExtensionAuthoringSurfaceSpec,
+    preparation: LightExtensionWorkspaceCompilePreparation,
     compiled: CompileRunJSSourceWorkspaceResult,
   ): LightExtensionWorkspaceCompileResult {
     const diagnostics = sortDiagnostics(compiled.artifact.diagnostics.map((item) => toLightExtensionDiagnostic(item)));
@@ -155,15 +181,7 @@ export class LightExtensionWorkspaceCompilerBridge {
       ...compiled.artifact,
       metadata: {
         ...compiled.artifact.metadata,
-        target: 'client',
-        repoId: input.repoId,
-        entryId: input.entryId || undefined,
-        kind: input.kind,
-        entryName: input.entryName || inferEntryName(input.entryPath),
-        modelUse: surface.modelUse,
-        surface: surface.surface,
-        surfaceStyle: surface.surfaceStyle,
-        compilerSurfaceStyle: surface.compilerSurfaceStyle,
+        ...preparation.metadata,
       },
     };
 
@@ -172,41 +190,46 @@ export class LightExtensionWorkspaceCompilerBridge {
       artifact,
       diagnostics,
       failureCode: compiled.failureCode,
-      surface,
+      surface: preparation.surface,
     };
   }
 
   private buildBlockedResult(
     input: LightExtensionWorkspaceCompileInput,
-    surface: LightExtensionAuthoringSurfaceSpec,
-    diagnostics: LightExtensionDiagnostic[],
-    failureCode: string,
+    preparation: LightExtensionWorkspaceCompilePreparation,
   ): LightExtensionWorkspaceCompileResult {
     return {
       accepted: false,
       artifact: {
         code: '',
-        version: input.runtimeVersion || 'v2',
-        diagnostics,
+        version: preparation.runtimeVersion,
+        diagnostics: preparation.diagnostics,
         filesHash: buildRunJSFilesHash(filterCurrentEntryDescriptor(input)),
         entryPath: input.entryPath,
-        metadata: {
-          target: 'client',
-          repoId: input.repoId,
-          entryId: input.entryId || undefined,
-          kind: input.kind,
-          entryName: input.entryName || inferEntryName(input.entryPath),
-          modelUse: surface.modelUse,
-          surface: surface.surface,
-          surfaceStyle: surface.surfaceStyle,
-          compilerSurfaceStyle: surface.compilerSurfaceStyle,
-        },
+        metadata: preparation.metadata,
       },
-      diagnostics,
-      failureCode,
-      surface,
+      diagnostics: preparation.diagnostics,
+      failureCode: preparation.failureCode,
+      surface: preparation.surface,
     };
   }
+}
+
+function buildCompileMetadata(
+  input: LightExtensionWorkspaceCompileInput,
+  surface: LightExtensionAuthoringSurfaceSpec,
+): LightExtensionWorkspaceCompileMetadata {
+  return {
+    target: 'client',
+    repoId: input.repoId,
+    entryId: input.entryId || undefined,
+    kind: input.kind,
+    entryName: input.entryName || inferEntryName(input.entryPath),
+    modelUse: surface.modelUse,
+    surface: surface.surface,
+    surfaceStyle: surface.surfaceStyle,
+    compilerSurfaceStyle: surface.compilerSurfaceStyle,
+  };
 }
 
 function getSurfaceSpec(kind: LightExtensionKind): LightExtensionAuthoringSurfaceSpec {

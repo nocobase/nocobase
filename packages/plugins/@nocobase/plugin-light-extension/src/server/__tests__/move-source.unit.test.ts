@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import { relocateRunJSWorkspace } from '../services/MoveSourceService';
 import { collectAndRelocateInlineFiles } from '../services/MoveToInlineService';
+import { LightExtensionWorkspaceCompilerBridge } from '../services/LightExtensionWorkspaceCompilerBridge';
 
 // Old case -> new owner:
 // move-to-inline / copies the entry descriptor together with runtime-reachable entry and shared modules -> this suite.
@@ -20,6 +21,56 @@ const entryPath = 'src/client/js-blocks/sales/index.tsx';
 const descriptorPath = 'src/client/js-blocks/sales/entry.json';
 
 describe('move source relocation', () => {
+  it('prepares Light Extension compiler input and metadata without producing a runtime artifact', () => {
+    const preparation = new LightExtensionWorkspaceCompilerBridge().prepareEntry({
+      repoId: 'ler_sales',
+      entryId: 'lee_sales',
+      operation: 'runtimeCompile',
+      kind: 'js-page',
+      entryName: 'sales',
+      entryPath: 'src/client/index.tsx',
+      runtimeVersion: 'v2',
+      files: [
+        {
+          path: 'src/client/index.tsx',
+          content:
+            'import { defineSettings } from "@nocobase/light-extension-sdk/client";\n' +
+            'import type { Settings } from "light-extension:settings/client/js-page/sales";\n' +
+            'const settings = defineSettings({ enabled: true });\n' +
+            'ctx.render(<div>{settings.enabled as Settings}</div>);\n',
+        },
+        { path: 'src/client/entry.json', content: '{"schemaVersion":1}', language: 'json' },
+      ],
+    });
+
+    expect(preparation).not.toHaveProperty('artifact');
+    expect(preparation).toMatchObject({
+      accepted: true,
+      diagnostics: [],
+      runtimeVersion: 'v2',
+      metadata: {
+        target: 'client',
+        repoId: 'ler_sales',
+        entryId: 'lee_sales',
+        kind: 'js-page',
+        entryName: 'sales',
+        modelUse: 'JSPageModel',
+        surface: 'js-model.render',
+        surfaceStyle: 'render',
+        compilerSurfaceStyle: 'render',
+      },
+    });
+    expect(preparation.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/client/entry.json', content: '{"schemaVersion":1}' }),
+        expect.objectContaining({
+          path: 'src/client/index.tsx',
+          content: expect.stringContaining('function defineSettings(value) { return value; }'),
+        }),
+      ]),
+    );
+  });
+
   it.each([
     {
       label: 'extensionless local import',
