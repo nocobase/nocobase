@@ -21,7 +21,7 @@ export default class extends Migration {
     let updated = 0;
 
     for (const row of rows) {
-      if (row.get('portalName') === ADMIN_PORTAL_NAME) {
+      if (row.get('portalName')) {
         continue;
       }
       await row.update({ portalName: ADMIN_PORTAL_NAME });
