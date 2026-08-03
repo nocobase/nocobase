@@ -48,6 +48,10 @@ _Avoid_: hybrid modern-only, redirect-all
 An **App client entry mode** where legacy client document entries hand off to the **Modern client public path**; in production this is mainly a browser-side handoff, while dev additionally avoids running the legacy client dev server and redirects non-`/v/` entries into `/v/`.
 _Avoid_: compatible modern-only, route-mapped modern-only
 
+**Settings-default**:
+An **App client entry mode** where the app root hands off to the standalone Settings application at `${APP_PUBLIC_PATH}settings/`, while the **Modern client** and legacy deep links remain available at their own paths.
+_Avoid_: settings-only, no-portal mode
+
 **Client document entry request**:
 An HTTP request whose job is to load a client HTML entry, not an API, websocket, upload, dist, or plugin-static resource.
 _Avoid_: all frontend request, browser request
@@ -58,9 +62,9 @@ _Avoid_: all frontend request, browser request
 - The **Legacy client** is served at the **App public path**; the **Modern client** is served at the **Modern client public path** nested inside it
 - **App public path** and **Modern client prefix** vary independently; both default such that the modern client lands at `/v/`
 - The **Site root** is not always the **App public path**
-- The **App client entry mode** chooses the default entry behavior independently from the concrete route trees owned by the **Legacy client** and the **Modern client**
+- The **App client entry mode** chooses the default entry behavior independently from the concrete route trees owned by the **Legacy client**, the **Modern client**, and the standalone Settings application
 - A **Legacy client** deep link is not assumed to have a one-to-one **Modern client** deep link
-- In production, the **Legacy client** shell is the main place where **App client entry mode** hands off document entries to the **Modern client**
+- In production, the **Legacy client** shell is the main place where **App client entry mode** hands off document entries to the configured default client
 - In dev, only **Modern-only** adds extra runtime handling so the legacy dev server is not started and non-`/v/` entries are redirected into the modern dev entry
 
 ## Example dialogue

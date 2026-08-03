@@ -87,6 +87,20 @@ describe('cli-v1 buildIndexHtml', () => {
     fs.removeSync(appRoot);
   });
 
+  test('injects settings-default as a valid client entry mode', () => {
+    const appRoot = createAppPackageRoot();
+    process.argv = ['node', 'nocobase-v1', 'start'];
+    process.env.APP_PACKAGE_ROOT = appRoot;
+    process.env.APP_PUBLIC_PATH = '/';
+    process.env.APP_CLIENT_ENTRY_MODE = 'settings-default';
+
+    buildIndexHtml();
+
+    const html = fs.readFileSync(path.join(appRoot, 'dist/client/index.html'), 'utf-8');
+    expect(html).toContain("window['__nocobase_app_client_entry_mode__'] = 'settings-default';");
+    fs.removeSync(appRoot);
+  });
+
   test('refreshes cached tpl when new runtime placeholders are missing', () => {
     const appRoot = createAppPackageRoot();
     const tplPath = path.join(appRoot, 'dist/client/index.html.tpl');

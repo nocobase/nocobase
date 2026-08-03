@@ -147,12 +147,36 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
       expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/v/');
     });
 
+    it.each(['/', '/index.html'])('redirects app root entry %s to Settings for settings-default', (pathname) => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname,
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'settings-default',
+        search: '?from=entry',
+        hash: '#panel',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/settings/?from=entry#panel');
+    });
+
     it('does not redirect legacy deep links for modern-default', () => {
       const replace = executeBrowserChecker(scriptPath, {
         pathname: '/admin',
         publicPath: '/',
         modernClientPrefix: 'v',
         appClientEntryMode: 'modern-default',
+      });
+
+      expect(replace).not.toHaveBeenCalled();
+    });
+
+    it('does not redirect legacy deep links for settings-default', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/admin',
+        publicPath: '/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'settings-default',
       });
 
       expect(replace).not.toHaveBeenCalled();
@@ -178,6 +202,19 @@ describe.each(browserCheckerCases)('$label', ({ scriptPath }) => {
       });
 
       expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/v/');
+    });
+
+    it('redirects a sub-path app root directly to Settings for settings-default', () => {
+      const replace = executeBrowserChecker(scriptPath, {
+        pathname: '/nocobase/',
+        publicPath: '/nocobase/',
+        modernClientPrefix: 'v',
+        appClientEntryMode: 'settings-default',
+        search: '?from=entry',
+        hash: '#panel',
+      });
+
+      expect(replace).toHaveBeenCalledWith('http://c.local.nocobase.com/nocobase/settings/?from=entry#panel');
     });
 
     it('rewrites sub-app legacy deep links for modern-only without collapsing the sub-app segment', () => {

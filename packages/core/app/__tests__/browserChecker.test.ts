@@ -75,7 +75,7 @@ function runBrowserChecker(options: RunBrowserCheckerOptions) {
 }
 
 describe('v2 browser checker', () => {
-  it.each([undefined, 'modern-default', 'modern-only'] as const)(
+  it.each([undefined, 'modern-default', 'modern-only', 'settings-default'] as const)(
     'lets the modern client handle its root for entry mode %s',
     (appClientEntryMode) => {
       expect(
@@ -87,7 +87,7 @@ describe('v2 browser checker', () => {
     },
   );
 
-  it.each([undefined, 'modern-default', 'modern-only'] as const)(
+  it.each([undefined, 'modern-default', 'modern-only', 'settings-default'] as const)(
     'lets scoped modern clients handle their roots for entry mode %s',
     (appClientEntryMode) => {
       expect(

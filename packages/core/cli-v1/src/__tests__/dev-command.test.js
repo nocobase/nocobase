@@ -67,6 +67,16 @@ describe('cli-v1 dev command', () => {
     });
   });
 
+  test('resolveDevRuntimeMode keeps all clients in settings-default', () => {
+    expect(resolveDevRuntimeMode({ appClientEntryMode: 'settings-default' })).toMatchObject({
+      useModernOnlyEntryMode: false,
+      shouldRunClient: true,
+      shouldRunClientV2: true,
+      shouldRunSettings: true,
+      shouldRunServer: true,
+    });
+  });
+
   test('resolveDevRuntimeMode preserves explicit client-v2-only flag behavior', () => {
     expect(resolveDevRuntimeMode({ clientV2Only: true, appClientEntryMode: 'legacy-default' })).toMatchObject({
       useModernOnlyEntryMode: false,
