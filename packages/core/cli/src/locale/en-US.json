@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
+  "apiClient": {
+    "authRequiredHint": "Authentication failed or the saved session has expired. Run `{{command}}` to sign in again."
+  },
   "commands": {
     "envAdd": {
       "prompts": {

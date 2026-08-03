@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "当 MySQL 的 lower_case_table_names=1 时，必须设置 DB_UNDERSCORED=true。"
     }
   },
+  "apiClient": {
+    "authRequiredHint": "认证失败或已保存的登录状态已过期。请运行 `{{command}}` 重新认证。"
+  },
   "commands": {
     "envAdd": {
       "prompts": {
