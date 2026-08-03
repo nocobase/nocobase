@@ -12,6 +12,7 @@ import type { Database, Filter, Model } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionReferenceOwnerLocator,
@@ -487,11 +488,11 @@ export class ReferenceService {
 
     if (references.length > 0) {
       const [repo, entries] = await Promise.all([
-        this.db.getRepository('lightExtensionRepos').findOne({
+        this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
           filterByTk: normalizedRepoId,
           transaction: ctx.transaction,
         }),
-        this.db.getRepository('lightExtensionEntries').find({
+        this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).find({
           filter:
             normalizedPlan.mode === 'entries'
               ? { repoId: normalizedRepoId, id: { $in: targetEntryIds } }
@@ -699,11 +700,11 @@ export class ReferenceService {
         conflictReason: 'kind_mismatch',
       };
     }
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+    const repo = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filterByTk: sourceBinding.repoId,
       transaction: ctx.transaction,
     });
-    const entry = await this.db.getRepository('lightExtensionEntries').findOne({
+    const entry = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).findOne({
       filterByTk: sourceBinding.entryId,
       transaction: ctx.transaction,
     });
@@ -870,7 +871,7 @@ export class ReferenceService {
     action: ReferenceSyncAction;
     ctx: ReferenceServiceContext;
   }): Promise<void> {
-    const repository = this.db.getRepository('lightExtensionReferences');
+    const repository = this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references);
     const values = {
       repoId: input.repoId,
       entryId: input.entryId,
@@ -952,7 +953,7 @@ export class ReferenceService {
         removed += 1;
         continue;
       }
-      await this.db.getRepository('lightExtensionReferences').destroy({
+      await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).destroy({
         filterByTk: reference.get('id'),
         transaction: ctx.transaction,
       });
@@ -989,7 +990,7 @@ export class ReferenceService {
         });
         continue;
       }
-      await this.db.getRepository('lightExtensionReferences').destroy({
+      await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).destroy({
         filterByTk: reference.get('id'),
         transaction: ctx.transaction,
       });
@@ -1367,7 +1368,7 @@ export class ReferenceService {
   }
 
   private async findReferenceModels(filter: Record<string, unknown>, ctx: ReferenceServiceContext): Promise<Model[]> {
-    return this.db.getRepository('lightExtensionReferences').find({
+    return this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).find({
       filter,
       sort: ['repoId', 'entryId', 'ownerLocatorHash'],
       transaction: ctx.transaction,

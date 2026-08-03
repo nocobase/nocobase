@@ -9,8 +9,10 @@
 
 import { defineCollection } from '@nocobase/database';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
+
 export default defineCollection({
-  name: 'lightExtensionEntries',
+  name: LIGHT_EXTENSION_COLLECTIONS.entries,
   dataCategory: 'system',
   autoGenId: false,
   timestamps: true,
@@ -62,7 +64,7 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'repo',
-      target: 'lightExtensionRepos',
+      target: LIGHT_EXTENSION_COLLECTIONS.repos,
       targetKey: 'id',
       foreignKey: 'repoId',
       constraints: false,

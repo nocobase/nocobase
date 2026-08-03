@@ -9,8 +9,10 @@
 
 import { defineCollection } from '@nocobase/database';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
+
 export default defineCollection({
-  name: 'lightExtensionRuntimeArtifacts',
+  name: LIGHT_EXTENSION_COLLECTIONS.runtimeArtifacts,
   dataCategory: 'system',
   autoGenId: false,
   timestamps: true,

@@ -11,7 +11,7 @@ import type { Database, Transaction } from '@nocobase/database';
 import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '../vsc-file/public-api';
 import { createHash, randomUUID } from 'crypto';
 
-import { LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
+import { LIGHT_EXTENSION_COLLECTIONS, LIGHT_EXTENSION_OWNER_TYPE } from '../../constants';
 import type { LightExtensionCreateSourceType, LightExtensionDiagnostic } from '../../shared/types';
 import { sortDiagnostics } from './LightExtensionValidator';
 
@@ -149,7 +149,7 @@ export class LightExtensionAuditService {
   async recordRawResourceDenied(input: LightExtensionRawResourceDeniedAuditInput): Promise<void> {
     const payload = this.buildRawResourceDeniedPayload(input);
 
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: payload.repoId,
         level: payload.level,
@@ -168,7 +168,7 @@ export class LightExtensionAuditService {
   }
 
   async recordLifecycleEvent(input: LightExtensionLifecycleAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: input.repoId,
         level: input.result === 'blocked' ? 'warn' : 'info',
@@ -190,7 +190,7 @@ export class LightExtensionAuditService {
   }
 
   async recordCompileEvent(input: LightExtensionCompileAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: input.repoId,
         entryId: input.entryId || undefined,
@@ -221,7 +221,7 @@ export class LightExtensionAuditService {
   }
 
   async recordReferenceEvent(input: LightExtensionReferenceAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: sanitizeText(input.repoId),
         entryId: sanitizeText(input.entryId),
@@ -247,7 +247,7 @@ export class LightExtensionAuditService {
   }
 
   async recordSyncEvent(input: LightExtensionSyncAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: input.repoId,
         level: input.result === 'blocked' ? 'warn' : 'info',
@@ -273,7 +273,7 @@ export class LightExtensionAuditService {
   }
 
   async recordCreateJobEvent(input: LightExtensionCreateJobAuditInput): Promise<void> {
-    await this.db.getRepository('lightExtensionLogs').create({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.logs).create({
       values: {
         repoId: input.action === 'createJobSucceed' ? input.targetRepoId : undefined,
         level: input.result === 'blocked' ? 'warn' : 'info',

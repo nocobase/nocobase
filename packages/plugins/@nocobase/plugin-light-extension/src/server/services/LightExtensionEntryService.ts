@@ -13,6 +13,7 @@ import { sha256Hex } from '@nocobase/runjs/server';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 import { uid } from '@nocobase/utils';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionDiagnostic,
@@ -197,7 +198,7 @@ export class LightExtensionEntryService {
 
   async listEntries(repoId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionEntryRecord[]> {
     await this.repoService.getRepo(repoId, ctx);
-    const records = await this.db.getRepository('lightExtensionEntries').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).find({
       filter: { repoId },
       sort: ['kind', 'entryName'],
       transaction: ctx.transaction,
@@ -207,7 +208,7 @@ export class LightExtensionEntryService {
   }
 
   async getEntry(entryId: string, ctx: LightExtensionServiceContext = {}): Promise<LightExtensionEntryRecord> {
-    const record = await this.db.getRepository('lightExtensionEntries').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).findOne({
       filterByTk: entryId,
       transaction: ctx.transaction,
     });
@@ -227,7 +228,7 @@ export class LightExtensionEntryService {
     sourceEntries: LightExtensionEntryValidationResult[],
     baseHeadCommitId: string | null,
   ): Promise<LightExtensionEntryReconcilePlan> {
-    const repository = this.db.getRepository('lightExtensionEntries');
+    const repository = this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries);
     const existingRecords: Model[] = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],
@@ -317,7 +318,7 @@ export class LightExtensionEntryService {
         'Entry reconcile plan must be created by this entry service instance',
       );
     }
-    const repository = this.db.getRepository('lightExtensionEntries');
+    const repository = this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries);
     const records: Model[] = await repository.find({ filter: { repoId: plan.repoId }, transaction });
     if (createExistingEntriesFingerprint(records) !== plan.existingEntriesFingerprint) {
       throw new LightExtensionError(
@@ -356,7 +357,7 @@ export class LightExtensionEntryService {
     repoHeadCommitId: string | null,
     transaction: Transaction,
   ): Promise<EntryReconcileResult> {
-    const repository = this.db.getRepository('lightExtensionEntries');
+    const repository = this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries);
     const existingRecords: Model[] = await repository.find({
       filter: { repoId },
       sort: ['target', 'kind', 'entryName'],

@@ -18,21 +18,37 @@ export const JS_TEMPLATES_CANONICAL_PRODUCT_NAME = 'JS templates';
 export const JS_TEMPLATES_CANONICAL_PRODUCT_NAME_ZH_CN = 'JS 模板';
 
 /**
+ * Canonical physical collection identities. These names are intentionally independent from product naming and must
+ * continue to address the existing tables in fresh installs, upgrades, and plugin disable/re-enable cycles.
+ */
+export const LIGHT_EXTENSION_COLLECTIONS = {
+  repos: 'lightExtensionRepos',
+  entries: 'lightExtensionEntries',
+  references: 'lightExtensionReferences',
+  runtimeArtifacts: 'lightExtensionRuntimeArtifacts',
+  logs: 'lightExtensionLogs',
+  moveOperations: 'lightExtensionMoveOperations',
+  createJobs: 'lightExtensionCreateJobs',
+} as const;
+
+export const LIGHT_EXTENSION_COLLECTION_NAMES = [
+  LIGHT_EXTENSION_COLLECTIONS.repos,
+  LIGHT_EXTENSION_COLLECTIONS.entries,
+  LIGHT_EXTENSION_COLLECTIONS.references,
+  LIGHT_EXTENSION_COLLECTIONS.runtimeArtifacts,
+  LIGHT_EXTENSION_COLLECTIONS.logs,
+  LIGHT_EXTENSION_COLLECTIONS.moveOperations,
+  LIGHT_EXTENSION_COLLECTIONS.createJobs,
+] as const;
+
+/**
  * Compatibility baseline for the product now named JS templates. These legacy values remain canonical persisted
  * tokens. Do not rename them or rewrite saved FlowModels and repositories as part of product-copy migrations.
  */
 export const LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT = {
   sourceMode: 'light-extension',
   sourceBindingType: 'light-extension-entry',
-  collectionNames: [
-    'lightExtensionRepos',
-    'lightExtensionEntries',
-    'lightExtensionReferences',
-    'lightExtensionRuntimeArtifacts',
-    'lightExtensionLogs',
-    'lightExtensionMoveOperations',
-    'lightExtensionCreateJobs',
-  ],
+  collectionNames: LIGHT_EXTENSION_COLLECTION_NAMES,
   // Duplicated intentionally to keep shared client constants free of the server-capable runjs-workspace barrel.
   // The migration contract test asserts equality with LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE.
   vscOwnerType: 'light-extension',

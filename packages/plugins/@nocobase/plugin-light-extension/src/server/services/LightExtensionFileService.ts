@@ -22,7 +22,7 @@ import { VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-ap
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
-import type { LightExtensionAclAction } from '../../constants';
+import { LIGHT_EXTENSION_COLLECTIONS, type LightExtensionAclAction } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCommitRecord,
@@ -404,7 +404,7 @@ export class LightExtensionFileService {
         }),
       ),
     );
-    const repoModel = this.db.getModel<Model>('lightExtensionRepos');
+    const repoModel = this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.repos);
     const [updatedCount] = await repoModel.update(
       { headCommitId: result.commit.id },
       {
@@ -500,7 +500,7 @@ export class LightExtensionFileService {
           );
         }
 
-        await this.db.getRepository('lightExtensionRepos').update({
+        await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).update({
           filterByTk: repo.id,
           values: {
             headCommitId: result.repository.headCommitId || null,

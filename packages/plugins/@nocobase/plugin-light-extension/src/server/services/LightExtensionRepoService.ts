@@ -14,6 +14,7 @@ import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
 import {
+  LIGHT_EXTENSION_COLLECTIONS,
   LIGHT_EXTENSION_OWNER_TYPE,
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
   type LightExtensionAclAction,
@@ -248,14 +249,14 @@ export class LightExtensionRepoService {
   async listRepos(ctx: LightExtensionServiceContext = {}): Promise<LightExtensionRepoRecord[]> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.claimLegacyApplicationRepos(transaction);
-      const records = await this.db.getRepository('lightExtensionRepos').find({
+      const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).find({
         filter: { applicationName: this.requireApplicationName() },
         sort: ['name'],
         transaction,
       });
       const repoIds = records.map((record) => String(record.get('id')));
       const entryRecords = repoIds.length
-        ? await this.db.getRepository('lightExtensionEntries').find({
+        ? await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).find({
             filter: { repoId: { $in: repoIds } },
             fields: ['repoId', 'kind', 'healthStatus'],
             transaction,
@@ -316,7 +317,7 @@ export class LightExtensionRepoService {
       if (current.title === title && current.description === description) {
         return stripInternalRepo(current);
       }
-      const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
+      const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>(LIGHT_EXTENSION_COLLECTIONS.repos);
       await repoModel.update(
         {
           title,
@@ -353,7 +354,7 @@ export class LightExtensionRepoService {
     repoId: string,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoInternalRecord> {
-    const record = await this.db.getRepository('lightExtensionRepos').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filterByTk: repoId,
       transaction: ctx.transaction,
     });
@@ -423,7 +424,7 @@ export class LightExtensionRepoService {
           return stripInternalRepo(current);
         }
 
-        const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
+        const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>(LIGHT_EXTENSION_COLLECTIONS.repos);
         await repoModel.update(
           {
             lifecycleStatus: input.lifecycleStatus,
@@ -543,7 +544,7 @@ export class LightExtensionRepoService {
             }),
           ),
         );
-        await this.db.getRepository('lightExtensionEntries').destroy({
+        await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).destroy({
           filter: {
             repoId: input.repoId,
           },
@@ -554,7 +555,7 @@ export class LightExtensionRepoService {
           throw referenceExistsError(input.repoId, finalReferenceCount);
         }
 
-        await this.db.getRepository('lightExtensionRepos').destroy({
+        await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).destroy({
           filterByTk: input.repoId,
           transaction,
         });
@@ -597,7 +598,7 @@ export class LightExtensionRepoService {
   }
 
   private async assertRepoNameAvailable(name: string, normalizedName: string, transaction: Transaction): Promise<void> {
-    const conflict = await this.db.getRepository('lightExtensionRepos').findOne({
+    const conflict = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filter: {
         applicationName: this.requireApplicationName(),
         $or: [{ name }, { normalizedName }],
@@ -626,7 +627,7 @@ export class LightExtensionRepoService {
     transaction: Transaction,
   ): Promise<Model> {
     try {
-      return await this.db.getRepository('lightExtensionRepos').create({
+      return await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).create({
         values,
         transaction,
       });
@@ -643,7 +644,7 @@ export class LightExtensionRepoService {
     repoId: string,
     ctx: LightExtensionServiceContext = {},
   ): Promise<LightExtensionRepoInternalRecord | null> {
-    const record = await this.db.getRepository('lightExtensionRepos').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filterByTk: repoId,
       transaction: ctx.transaction,
     });
@@ -658,7 +659,7 @@ export class LightExtensionRepoService {
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionRepoInternalRecord> {
     const transaction = ctx.transaction;
-    const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>('lightExtensionRepos');
+    const repoModel = this.db.getModel<Model<LightExtensionRepoInternalRecord>>(LIGHT_EXTENSION_COLLECTIONS.repos);
     const record = await repoModel.findByPk(repoId, {
       transaction,
       lock: transaction?.LOCK.UPDATE,
@@ -694,7 +695,7 @@ export class LightExtensionRepoService {
 
   private async claimLegacyApplicationRepos(transaction: Transaction): Promise<void> {
     // Repositories created before application scoping are claimed on first scoped access; removal requires a data migration.
-    await this.db.getModel<Model>('lightExtensionRepos').update(
+    await this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.repos).update(
       { applicationName: this.requireApplicationName() },
       {
         where: { applicationName: null },
@@ -725,7 +726,7 @@ export class LightExtensionRepoService {
   }
 
   private async countRepoReferences(repoId: string, transaction?: Transaction): Promise<number> {
-    return this.db.getRepository('lightExtensionReferences').count({
+    return this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).count({
       filter: {
         repoId,
       },

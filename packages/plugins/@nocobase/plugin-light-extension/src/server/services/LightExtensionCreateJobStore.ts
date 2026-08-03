@@ -12,6 +12,7 @@ import { createHash } from 'crypto';
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCreateJobRecord,
@@ -69,7 +70,7 @@ export class LightExtensionCreateJobStore {
     transaction?: Transaction,
   ): Promise<LightExtensionCreateJobRecord> {
     try {
-      const record = await this.db.getRepository('lightExtensionCreateJobs').create({
+      const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.createJobs).create({
         values: {
           applicationName: input.applicationName,
           targetRepoId: input.targetRepoId,
@@ -146,7 +147,7 @@ export class LightExtensionCreateJobStore {
   ): Promise<LightExtensionCreateJobRecord[]> {
     validateTimeout(timeouts.pendingTimeoutMs);
     validateTimeout(timeouts.runningTimeoutMs);
-    const records = await this.db.getRepository('lightExtensionCreateJobs').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.createJobs).find({
       filter: { applicationName, status: { $in: ['pending', 'running'] } },
       fields: ['id'],
     });
@@ -166,7 +167,7 @@ export class LightExtensionCreateJobStore {
     actorUserId: string,
     transaction?: Transaction,
   ): Promise<LightExtensionCreateJobRecord> {
-    const record = await this.db.getRepository('lightExtensionCreateJobs').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.createJobs).findOne({
       filter: { id: jobId, applicationName, actorUserId },
       transaction,
     });
@@ -190,7 +191,7 @@ export class LightExtensionCreateJobStore {
   }
 
   async listOwnVisibleJobs(applicationName: string, actorUserId: string): Promise<LightExtensionCreateJobSummary[]> {
-    const records = await this.db.getRepository('lightExtensionCreateJobs').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.createJobs).find({
       filter: { applicationName, actorUserId, status: { $in: ['pending', 'running', 'failed'] } },
       sort: ['-createdAt'],
     });
@@ -237,7 +238,7 @@ export class LightExtensionCreateJobStore {
     for (let attempt = 0; ; attempt += 1) {
       try {
         return await this.db.sequelize.transaction(async (transaction) => {
-          const model = this.db.getModel<Model>('lightExtensionCreateJobs');
+          const model = this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.createJobs);
           const record = await model.findByPk(jobId, { transaction, lock: transaction.LOCK.UPDATE });
           return run(record, transaction);
         });

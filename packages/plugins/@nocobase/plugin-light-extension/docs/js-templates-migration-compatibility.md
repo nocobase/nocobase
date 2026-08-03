@@ -26,6 +26,11 @@ The following legacy values remain canonical for persistence. New JS templates U
 Do not create renamed tables, bulk-update saved FlowModels, or change VSC owner types as part of the product rename. New
 logical names must resolve to the existing records.
 
+The collection definitions and all production database lookups resolve through the frozen
+`LIGHT_EXTENSION_COLLECTIONS` constants. VSC access continues to use `LIGHT_EXTENSION_OWNER_TYPE`, which is asserted
+against the RunJS Workspace `LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE`. Contract tests pin the physical fields,
+indexes, associations, lifecycle reuse behavior, and absence of table-rename migrations.
+
 ## Stable legacy protocol values
 
 The following contracts remain supported. Canonical JS templates names may be added later as aliases, but must not

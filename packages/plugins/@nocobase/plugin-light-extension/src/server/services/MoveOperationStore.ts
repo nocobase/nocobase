@@ -12,6 +12,7 @@ import { isVscError } from '../vsc-file/public-api';
 import { uid } from '@nocobase/utils';
 import { createHash, randomUUID } from 'crypto';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
 
 const MOVE_OPERATION_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -44,7 +45,7 @@ export class MoveOperationStore {
     if (!identity) {
       return {};
     }
-    const record = await this.db.getRepository('lightExtensionMoveOperations').model.findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.moveOperations).model.findOne({
       where: { identityHash: identity.identityHash },
     });
     if (!record) {
@@ -67,7 +68,7 @@ export class MoveOperationStore {
       return {};
     }
     const attemptId = randomUUID();
-    const operationRepository = this.db.getRepository('lightExtensionMoveOperations');
+    const operationRepository = this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.moveOperations);
     const [record, created] = await operationRepository.model.findOrCreate({
       where: { identityHash: identity.identityHash },
       defaults: {
@@ -122,7 +123,7 @@ export class MoveOperationStore {
     if (!operation) {
       return;
     }
-    const [completed] = await this.db.getRepository('lightExtensionMoveOperations').model.update(
+    const [completed] = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.moveOperations).model.update(
       {
         status: 'completed',
         result,
@@ -150,7 +151,7 @@ export class MoveOperationStore {
       return;
     }
     try {
-      await this.db.getRepository('lightExtensionMoveOperations').model.update(
+      await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.moveOperations).model.update(
         {
           status: 'failed',
           errorCode: getMoveOperationErrorCode(error),

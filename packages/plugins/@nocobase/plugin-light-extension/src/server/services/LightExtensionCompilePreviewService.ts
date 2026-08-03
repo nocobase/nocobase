@@ -11,6 +11,7 @@ import type { Database, Model } from '@nocobase/database';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import { LightExtensionError, isLightExtensionError } from '../../shared/errors';
 import type {
   LightExtensionCompilePreviewArtifactSummary,
@@ -195,7 +196,7 @@ export class LightExtensionCompilePreviewService {
     }
 
     if (typeof input.expectedHeadCommitId !== 'undefined') {
-      const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+      const repo = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
         filter: { id: input.repoId },
         fields: ['id', 'headCommitId'],
         transaction: previewContext.transaction,
@@ -419,7 +420,7 @@ export class LightExtensionCompilePreviewService {
     repoId: string,
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionEntryRecord[]> {
-    const records = await this.db.getRepository('lightExtensionEntries').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).find({
       filter: {
         repoId,
       },

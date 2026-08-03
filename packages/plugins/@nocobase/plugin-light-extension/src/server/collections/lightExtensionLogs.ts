@@ -9,12 +9,14 @@
 
 import { defineCollection } from '@nocobase/database';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
+
 export default defineCollection({
   dumpRules: {
     group: 'log',
   },
   migrationRules: ['schema-only', 'skip'],
-  name: 'lightExtensionLogs',
+  name: LIGHT_EXTENSION_COLLECTIONS.logs,
   createdBy: false,
   updatedBy: false,
   updatedAt: false,

@@ -12,6 +12,7 @@ import { stableSerialize, type RunJSRuntimeArtifact } from '@nocobase/runjs';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
 import { Buffer } from 'node:buffer';
 
+import { LIGHT_EXTENSION_COLLECTIONS } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import {
@@ -155,7 +156,7 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
   }
 
   async loadEntries(entryIds: string[], transaction: Transaction): Promise<Array<Record<string, unknown>>> {
-    const rows = await this.db.getModel<Model>('lightExtensionEntries').findAll({
+    const rows = await this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.entries).findAll({
       where: { id: entryIds },
       transaction,
     });
@@ -166,7 +167,7 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
     if (rows.length === 0) {
       return;
     }
-    await this.db.getModel<Model>('lightExtensionRuntimeArtifacts').bulkCreate(rows, {
+    await this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.runtimeArtifacts).bulkCreate(rows, {
       updateOnDuplicate: [...artifactUpdateFields],
       transaction,
     });
@@ -176,7 +177,7 @@ export class SequelizeCompiledEntriesPublishStore implements CompiledEntriesPubl
     if (rows.length === 0) {
       return;
     }
-    await this.db.getModel<Model>('lightExtensionEntries').bulkCreate(rows, {
+    await this.db.getModel<Model>(LIGHT_EXTENSION_COLLECTIONS.entries).bulkCreate(rows, {
       conflictAttributes: ['id'],
       updateOnDuplicate: [...entryUpdateFields],
       transaction,

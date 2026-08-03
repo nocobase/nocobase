@@ -23,7 +23,7 @@ import { LightExtensionRemoteSyncModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 
-import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
+import { LIGHT_EXTENSION_ACL_ACTIONS, LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_COLLECTIONS } from '../constants';
 import { LightExtensionError } from '../shared/errors';
 import { registerLightExtensionDomainAvailabilityGuard } from './domainAvailability';
 import { lightExtensionExternalizationCapabilities } from './externalizationCapabilities';
@@ -241,7 +241,7 @@ export class PluginLightExtensionServer extends Plugin {
 
     await this.requireRunJSWorkspaceServerModule().beforeLoad();
 
-    if (this.options.packageName || db.hasCollection('lightExtensionRepos')) {
+    if (this.options.packageName || db.hasCollection(LIGHT_EXTENSION_COLLECTIONS.repos)) {
       return;
     }
 
@@ -606,7 +606,7 @@ export class PluginLightExtensionServer extends Plugin {
   }
 
   private async startCreateJobRunner(): Promise<void> {
-    if (!this.db?.hasCollection?.('lightExtensionCreateJobs')) {
+    if (!this.db?.hasCollection?.(LIGHT_EXTENSION_COLLECTIONS.createJobs)) {
       return;
     }
     await this.createJobRunner?.start();
@@ -815,7 +815,7 @@ export class PluginLightExtensionServer extends Plugin {
           continue;
         }
         const remote = await runtime.getRemoteById(job.remoteId);
-        const repoRecord = await this.db.getRepository('lightExtensionRepos').findOne({
+        const repoRecord = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
           filter: { vscRepoId: remote.repoId },
         });
         if (!repoRecord) {

@@ -7,11 +7,190 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Collection } from '@nocobase/database';
+import type { Collection, CollectionOptions } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
-import { LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT } from '../../constants';
+import { LIGHT_EXTENSION_COLLECTIONS, LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT } from '../../constants';
+import lightExtensionCreateJobs from '../collections/lightExtensionCreateJobs';
+import lightExtensionEntries from '../collections/lightExtensionEntries';
+import lightExtensionLogs from '../collections/lightExtensionLogs';
+import lightExtensionMoveOperations from '../collections/lightExtensionMoveOperations';
+import lightExtensionReferences from '../collections/lightExtensionReferences';
+import lightExtensionRepos from '../collections/lightExtensionRepos';
+import lightExtensionRuntimeArtifacts from '../collections/lightExtensionRuntimeArtifacts';
 import PluginLightExtensionServer from '../plugin';
+
+const collectionDefinitions = [
+  lightExtensionRepos,
+  lightExtensionEntries,
+  lightExtensionReferences,
+  lightExtensionRuntimeArtifacts,
+  lightExtensionLogs,
+  lightExtensionMoveOperations,
+  lightExtensionCreateJobs,
+] as const;
+
+const expectedFields: Record<string, string[]> = {
+  lightExtensionRepos: [
+    'id',
+    'vscRepoId',
+    'applicationName',
+    'name',
+    'normalizedName',
+    'title',
+    'description',
+    'lifecycleStatus',
+    'healthStatus',
+    'headCommitId',
+    'lastCompiledAt',
+  ],
+  lightExtensionEntries: [
+    'id',
+    'repoId',
+    'repo',
+    'target',
+    'kind',
+    'entryName',
+    'entryPath',
+    'descriptorPath',
+    'title',
+    'description',
+    'category',
+    'icon',
+    'tags',
+    'sort',
+    'settingsSchema',
+    'settingsSchemaHash',
+    'compiledCommitId',
+    'compiledInputKey',
+    'compilerBuildId',
+    'runtimeArtifact',
+    'runtimeVersion',
+    'surfaceStyle',
+    'runtimeCodeHash',
+    'artifactHash',
+    'filesHash',
+    'settingsDefaultsHash',
+    'compiledAt',
+    'healthStatus',
+    'diagnostics',
+  ],
+  lightExtensionReferences: [
+    'id',
+    'repoId',
+    'entryId',
+    'kind',
+    'ownerKind',
+    'ownerLocator',
+    'ownerLocatorHash',
+    'settingsHash',
+    'resolvedStatus',
+    'repo',
+    'entry',
+  ],
+  lightExtensionRuntimeArtifacts: [
+    'artifactHash',
+    'runtimeCodeHash',
+    'code',
+    'sourceMap',
+    'version',
+    'entryPath',
+    'runtimeContract',
+    'byteSize',
+  ],
+  lightExtensionLogs: [
+    'id',
+    'repoId',
+    'entryId',
+    'level',
+    'target',
+    'kind',
+    'name',
+    'action',
+    'result',
+    'requestId',
+    'actorUserId',
+    'rawResource',
+    'rawResourceAction',
+    'denyReason',
+    'reasonCode',
+    'message',
+    'details',
+    'createdAt',
+  ],
+  lightExtensionMoveOperations: [
+    'id',
+    'identityHash',
+    'applicationName',
+    'idempotencyKey',
+    'requestHash',
+    'attemptId',
+    'status',
+    'result',
+    'errorCode',
+  ],
+  lightExtensionCreateJobs: [
+    'id',
+    'applicationName',
+    'targetRepoId',
+    'name',
+    'normalizedName',
+    'title',
+    'description',
+    'sourceType',
+    'status',
+    'payload',
+    'errorCode',
+    'errorReasonCode',
+    'errorMessage',
+    'reservationKey',
+    'actorUserId',
+    'requestId',
+    'startedAt',
+    'finishedAt',
+  ],
+};
+
+const expectedIndexes: Record<string, Array<{ name: string; fields: string[]; unique: boolean }>> = {
+  lightExtensionRepos: [
+    { name: 'le_repo_name_uq', fields: ['name'], unique: true },
+    { name: 'le_repo_normalized_uq', fields: ['normalizedName'], unique: true },
+    { name: 'le_repo_vsc_uq', fields: ['vscRepoId'], unique: true },
+    { name: 'le_repo_health_idx', fields: ['lifecycleStatus', 'healthStatus'], unique: false },
+    { name: 'le_repo_application_idx', fields: ['applicationName'], unique: false },
+    { name: 'le_repo_head_idx', fields: ['headCommitId'], unique: false },
+  ],
+  lightExtensionEntries: [
+    { name: 'le_entry_name_uq', fields: ['repoId', 'target', 'kind', 'entryName'], unique: true },
+    { name: 'le_entry_path_uq', fields: ['repoId', 'target', 'kind', 'entryPath'], unique: true },
+    { name: 'le_entry_health_idx', fields: ['repoId', 'healthStatus'], unique: false },
+    { name: 'le_entry_commit_idx', fields: ['compiledCommitId'], unique: false },
+    { name: 'le_entry_code_idx', fields: ['runtimeCodeHash'], unique: false },
+    { name: 'le_entry_artifact_idx', fields: ['artifactHash'], unique: false },
+    { name: 'le_entry_input_idx', fields: ['compiledInputKey'], unique: false },
+  ],
+  lightExtensionReferences: [
+    { name: 'le_ref_owner_uq', fields: ['ownerLocatorHash', 'repoId', 'entryId'], unique: true },
+    { name: 'le_ref_status_idx', fields: ['repoId', 'entryId', 'resolvedStatus'], unique: false },
+    { name: 'le_ref_owner_kind_idx', fields: ['ownerKind'], unique: false },
+    { name: 'le_ref_kind_status_idx', fields: ['kind', 'resolvedStatus'], unique: false },
+  ],
+  lightExtensionRuntimeArtifacts: [],
+  lightExtensionLogs: [
+    { name: 'le_log_repo_idx', fields: ['repoId', 'createdAt'], unique: false },
+    { name: 'le_log_entry_idx', fields: ['entryId', 'createdAt'], unique: false },
+    { name: 'le_log_request_idx', fields: ['requestId'], unique: false },
+    { name: 'le_log_action_idx', fields: ['action', 'createdAt'], unique: false },
+    { name: 'le_log_repo_action_idx', fields: ['repoId', 'action', 'createdAt'], unique: false },
+    { name: 'le_log_resource_idx', fields: ['rawResourceAction'], unique: false },
+  ],
+  lightExtensionMoveOperations: [{ name: 'le_move_operation_identity_uq', fields: ['identityHash'], unique: true }],
+  lightExtensionCreateJobs: [
+    { name: 'le_cjob_reservation_uq', fields: ['applicationName', 'reservationKey'], unique: true },
+    { name: 'le_cjob_status_idx', fields: ['applicationName', 'status'], unique: false },
+    { name: 'le_cjob_actor_idx', fields: ['applicationName', 'actorUserId', 'status'], unique: false },
+  ],
+};
 
 interface ConstraintDescription {
   constraintName?: string;
@@ -68,6 +247,38 @@ describe('plugin-light-extension collections', () => {
     expect(entry.get('healthStatus')).toBe('missing');
   });
 
+  it('pins physical collection, field, index, and association identities', () => {
+    expect(collectionDefinitions.map((definition) => definition.name)).toEqual([
+      ...LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT.collectionNames,
+    ]);
+
+    for (const definition of collectionDefinitions) {
+      expect(definition.tableName, definition.name).toBeUndefined();
+      expect(definition.fields?.map((field) => field.name), `${definition.name} fields`).toEqual(
+        expectedFields[definition.name],
+      );
+      expect(normalizeIndexes(definition), `${definition.name} indexes`).toEqual(expectedIndexes[definition.name]);
+    }
+
+    expect(getFieldOptions(lightExtensionEntries, 'repo')).toMatchObject({
+      target: LIGHT_EXTENSION_COLLECTIONS.repos,
+      foreignKey: 'repoId',
+    });
+    expect(getFieldOptions(lightExtensionReferences, 'repo')).toMatchObject({
+      target: LIGHT_EXTENSION_COLLECTIONS.repos,
+      foreignKey: 'repoId',
+    });
+    expect(getFieldOptions(lightExtensionReferences, 'entry')).toMatchObject({
+      target: LIGHT_EXTENSION_COLLECTIONS.entries,
+      foreignKey: 'entryId',
+    });
+    expect(getUniqueFieldNames(lightExtensionRepos)).toEqual(['vscRepoId', 'name', 'normalizedName']);
+    expect(getUniqueFieldNames(lightExtensionMoveOperations)).toEqual(['identityHash']);
+    expect(getUniqueFieldNames(lightExtensionCreateJobs)).toEqual(['targetRepoId']);
+    expect(lightExtensionLogs.migrationRules).toEqual(['schema-only', 'skip']);
+    expect(lightExtensionMoveOperations.migrationRules).toEqual(['overwrite', 'schema-only']);
+  });
+
   it('creates the repo reference foreign key from the final collection schema', async () => {
     const repoConstraint = await findReferenceRepoForeignKey(app);
 
@@ -121,3 +332,19 @@ describe('plugin-light-extension collections', () => {
     );
   }
 });
+
+function normalizeIndexes(definition: CollectionOptions) {
+  return (definition.indexes || []).map((index) => ({
+    name: String(index.name),
+    fields: (index.fields || []).map(String),
+    unique: Boolean(index.unique),
+  }));
+}
+
+function getFieldOptions(definition: CollectionOptions, fieldName: string) {
+  return definition.fields?.find((field) => field.name === fieldName);
+}
+
+function getUniqueFieldNames(definition: CollectionOptions): string[] {
+  return (definition.fields || []).filter((field) => field.unique).map((field) => String(field.name));
+}

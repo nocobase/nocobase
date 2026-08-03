@@ -13,6 +13,7 @@ import { stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
 
 import {
+  LIGHT_EXTENSION_COLLECTIONS,
   LIGHT_EXTENSION_SOURCE_BINDING_TYPE,
   LIGHT_EXTENSION_SOURCE_MODE,
   LIGHT_EXTENSION_SUPPORTED_KINDS,
@@ -72,7 +73,7 @@ export class RuntimeResolveService {
       filter.kind = kind;
     }
 
-    const records = await this.db.getRepository('lightExtensionEntries').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).find({
       filter,
       fields: [
         'id',
@@ -154,7 +155,7 @@ export class RuntimeResolveService {
     if (typeof artifactHash !== 'string' || !/^[a-f0-9]{64}$/u.test(artifactHash)) {
       throw invalidInput('artifactHash must be a SHA-256 hash');
     }
-    const record = await this.db.getRepository('lightExtensionRuntimeArtifacts').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.runtimeArtifacts).findOne({
       filterByTk: artifactHash,
       transaction: ctx.transaction,
     });
@@ -187,7 +188,7 @@ export class RuntimeResolveService {
     entryId: string,
     ctx: LightExtensionServiceContext,
   ): Promise<LightExtensionEntryRecord> {
-    const record = await this.db.getRepository('lightExtensionEntries').findOne({
+    const record = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.entries).findOne({
       filterByTk: entryId,
       except: ['runtimeArtifact', 'diagnostics'],
       transaction: ctx.transaction,
@@ -212,7 +213,7 @@ export class RuntimeResolveService {
     repoIds: string[],
     ctx: LightExtensionServiceContext,
   ): Promise<Map<string, string>> {
-    const repos = await this.db.getRepository('lightExtensionRepos').find({
+    const repos = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).find({
       filter: { id: { $in: repoIds } },
       fields: ['id', 'lifecycleStatus', 'headCommitId'],
       transaction: ctx.transaction,
@@ -247,7 +248,7 @@ export class RuntimeResolveService {
       return new Map();
     }
     const permissionFilter = await this.parseRepoLabelFilter(params?.filter, ctx);
-    const records = await this.db.getRepository('lightExtensionRepos').find({
+    const records = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).find({
       filter: permissionFilter ? { $and: [{ id: { $in: repoIds } }, permissionFilter] } : { id: { $in: repoIds } },
       fields: ['id', ...fields],
       transaction: ctx.transaction,
@@ -268,7 +269,7 @@ export class RuntimeResolveService {
       return undefined;
     }
     try {
-      checkFilterParams(this.db.getCollection('lightExtensionRepos'), filter);
+      checkFilterParams(this.db.getCollection(LIGHT_EXTENSION_COLLECTIONS.repos), filter);
       return ((await parseJsonTemplate(filter, {
         state: ctx.state || {},
         timezone: ctx.timezone,
@@ -286,7 +287,7 @@ export class RuntimeResolveService {
     entry: LightExtensionEntryRecord,
     ctx: LightExtensionServiceContext,
   ): Promise<void> {
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+    const repo = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filterByTk: entry.repoId,
       transaction: ctx.transaction,
     });

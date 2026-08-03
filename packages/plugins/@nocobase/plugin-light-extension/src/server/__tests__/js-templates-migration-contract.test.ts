@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import type { Database } from '@nocobase/database';
@@ -19,6 +19,7 @@ import {
   JS_TEMPLATES_CANONICAL_PRODUCT_NAME,
   JS_TEMPLATES_CANONICAL_PRODUCT_NAME_ZH_CN,
   LIGHT_EXTENSION_ACL_SNIPPET,
+  LIGHT_EXTENSION_COLLECTIONS,
   LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT,
   LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT,
   LIGHT_EXTENSION_OWNER_TYPE,
@@ -50,6 +51,45 @@ describe('JS templates migration compatibility contract', () => {
     });
     expect(LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE).toBe('light-extension');
     expect(LIGHT_EXTENSION_OWNER_TYPE).toBe(LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE);
+    expect(LIGHT_EXTENSION_COLLECTIONS).toEqual({
+      repos: 'lightExtensionRepos',
+      entries: 'lightExtensionEntries',
+      references: 'lightExtensionReferences',
+      runtimeArtifacts: 'lightExtensionRuntimeArtifacts',
+      logs: 'lightExtensionLogs',
+      moveOperations: 'lightExtensionMoveOperations',
+      createJobs: 'lightExtensionCreateJobs',
+    });
+  });
+
+  it('routes production database lookups through the frozen collection identities', () => {
+    const serverRoot = path.resolve(__dirname, '..');
+    const persistenceFiles = [
+      path.join(serverRoot, 'plugin.ts'),
+      ...listSourceFiles(path.join(serverRoot, 'collections')),
+      ...listSourceFiles(path.join(serverRoot, 'services')),
+    ];
+
+    for (const filePath of persistenceFiles) {
+      const source = readFileSync(filePath, 'utf8');
+      for (const collectionName of LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT.collectionNames) {
+        const directLookup = new RegExp(
+          `(?:getRepository|getModel|getCollection|hasCollection)(?:<[^\\n]*>)?\\(\\s*['"]${collectionName}['"]`,
+          'u',
+        );
+        expect(source, path.relative(repositoryRoot, filePath)).not.toMatch(directLookup);
+      }
+    }
+  });
+
+  it('ships no physical collection rename migration for the product rename', () => {
+    const migrationRoot = path.resolve(__dirname, '../migrations');
+    for (const filePath of listSourceFiles(migrationRoot)) {
+      const source = readFileSync(filePath, 'utf8');
+      expect(source, path.relative(repositoryRoot, filePath)).not.toMatch(/\b(?:renameTable|renameColumn)\s*\(/u);
+      expect(source, path.relative(repositoryRoot, filePath)).not.toMatch(/\bALTER\s+TABLE\b[\s\S]*\bRENAME\b/iu);
+      expect(source, path.relative(repositoryRoot, filePath)).not.toMatch(/\bjsTemplates?[A-Z]/u);
+    }
   });
 
   it('pins legacy runtime, HTTP, ACL, CLI, and SDK protocol names', () => {
@@ -215,4 +255,18 @@ function requireObject(value: unknown, label: string): Record<string, unknown> {
     throw new TypeError(`${label} must be an object`);
   }
   return value as Record<string, unknown>;
+}
+
+function listSourceFiles(directory: string): string[] {
+  if (!existsSync(directory)) {
+    return [];
+  }
+
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === '__tests__' ? [] : listSourceFiles(entryPath);
+    }
+    return /\.(?:js|ts)$/u.test(entry.name) ? [entryPath] : [];
+  });
 }

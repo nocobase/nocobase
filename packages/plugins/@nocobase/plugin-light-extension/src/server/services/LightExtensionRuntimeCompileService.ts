@@ -15,6 +15,7 @@ import { serialize } from 'node:v8';
 import { posix as pathPosix } from 'path';
 
 import {
+  LIGHT_EXTENSION_COLLECTIONS,
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
   LIGHT_EXTENSION_SUPPORTED_KINDS,
   type LightExtensionKind,
@@ -370,7 +371,7 @@ export class LightExtensionRuntimeCompileService {
       },
       transaction,
     );
-    await this.db.getRepository('lightExtensionRepos').update({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).update({
       filterByTk: candidate.repo.id,
       values: {
         healthStatus: 'ready',
@@ -380,8 +381,10 @@ export class LightExtensionRuntimeCompileService {
     });
     await this.referenceService?.refreshReferencesForRepo(candidate.repo.id, ctx, 'source_published');
     const [repo, entryModels] = await Promise.all([
-      this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: candidate.repo.id, transaction }),
-      this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: candidate.repo.id }, transaction }),
+      this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({ filterByTk: candidate.repo.id, transaction }),
+      this.db
+        .getRepository(LIGHT_EXTENSION_COLLECTIONS.entries)
+        .find({ filter: { repoId: candidate.repo.id }, transaction }),
     ]);
     const entries = entryModels.map(entryFromModel);
     return {
@@ -415,7 +418,7 @@ export class LightExtensionRuntimeCompileService {
       );
     }
     this.assertPreparedCompileFingerprint(prepared);
-    const repo = await this.db.getRepository('lightExtensionRepos').findOne({
+    const repo = await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
       filterByTk: prepared.repoId,
       transaction,
     });
@@ -434,7 +437,7 @@ export class LightExtensionRuntimeCompileService {
       },
       transaction,
     );
-    await this.db.getRepository('lightExtensionRepos').update({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).update({
       filterByTk: prepared.repoId,
       values: {
         healthStatus: 'ready',
@@ -444,8 +447,10 @@ export class LightExtensionRuntimeCompileService {
     });
     await this.referenceService?.refreshReferencesForRepo(prepared.repoId, ctx, 'source_published');
     const [updatedRepo, entryModels] = await Promise.all([
-      this.db.getRepository('lightExtensionRepos').findOne({ filterByTk: prepared.repoId, transaction }),
-      this.db.getRepository('lightExtensionEntries').find({ filter: { repoId: prepared.repoId }, transaction }),
+      this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({ filterByTk: prepared.repoId, transaction }),
+      this.db
+        .getRepository(LIGHT_EXTENSION_COLLECTIONS.entries)
+        .find({ filter: { repoId: prepared.repoId }, transaction }),
     ]);
     if (!updatedRepo) {
       throw new LightExtensionError('LIGHT_EXTENSION_REPO_NOT_FOUND', 'Light extension repository was not found');
@@ -765,7 +770,7 @@ export class LightExtensionRuntimeCompileService {
     const compileEntries = successfulResults.map((result) =>
       toSuccessfulCompileEntryResult(result, compiledEntryIds.has(result.entryId)),
     );
-    await this.db.getRepository('lightExtensionRepos').update({
+    await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).update({
       filterByTk: repoId,
       values: {
         healthStatus: 'ready',
@@ -775,11 +780,13 @@ export class LightExtensionRuntimeCompileService {
     });
 
     const [repo, entryModels] = await Promise.all([
-      this.db.getRepository('lightExtensionRepos').findOne({
+      this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
         filterByTk: repoId,
         transaction: ctx.transaction,
       }),
-      this.db.getRepository('lightExtensionEntries').find({ filter: { repoId }, transaction: ctx.transaction }),
+      this.db
+        .getRepository(LIGHT_EXTENSION_COLLECTIONS.entries)
+        .find({ filter: { repoId }, transaction: ctx.transaction }),
     ]);
 
     return {

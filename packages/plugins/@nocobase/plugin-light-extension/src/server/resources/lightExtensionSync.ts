@@ -18,7 +18,7 @@ import type {
 import { RemoteSyncError } from '../vsc-file/public-api';
 import { uid } from '@nocobase/utils';
 
-import type { LightExtensionAclAction } from '../../constants';
+import { LIGHT_EXTENSION_COLLECTIONS, type LightExtensionAclAction } from '../../constants';
 import { LightExtensionError, isLightExtensionError, mapRemoteSyncErrorToLightExtension } from '../../shared/errors';
 import type {
   LightExtensionSyncConfigureResult,
@@ -568,7 +568,7 @@ async function permissionIncludesRepo(db: Database, permission: unknown, repoId:
   if (!filter) {
     return true;
   }
-  const record = await db.getRepository('lightExtensionRepos').findOne({
+  const record = await db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).findOne({
     filter: {
       $and: [{ id: repoId }, filter],
     },
