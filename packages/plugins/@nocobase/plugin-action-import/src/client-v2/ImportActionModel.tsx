@@ -549,6 +549,7 @@ ImportActionModel.registerFlow({
                         },
                         changeOnSelect: false,
                         options: data,
+                        showSearch: true,
                       },
                     },
                     title: {
