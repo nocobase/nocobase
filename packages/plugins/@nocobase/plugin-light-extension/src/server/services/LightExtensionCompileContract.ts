@@ -18,6 +18,7 @@ import { posix as pathPosix } from 'path';
 
 import {
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
+  LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT,
   LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
   type LightExtensionKind,
 } from '../../constants';
@@ -88,7 +89,8 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
 export const LIGHT_EXTENSION_COMPILER_BRIDGE_CONTRACT_VERSION = 'light-extension.compiler-bridge.v1';
 export const LIGHT_EXTENSION_IMPORT_REWRITE_POLICY_VERSION = 'light-extension.import-rewrite.v1';
 export const LIGHT_EXTENSION_IMPORT_SECURITY_POLICY_VERSION = 'light-extension.import-security.v1';
-export const LIGHT_EXTENSION_RUNTIME_SURFACE_CONTRACT_VERSION = 'light-extension.runtime-surface.v1';
+export const LIGHT_EXTENSION_RUNTIME_SURFACE_CONTRACT_VERSION =
+  LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.runtimeSurfaceContract;
 
 export interface LightExtensionCompilerBuildIdentityComponents {
   runjsCompilerBuildId: string;

@@ -46,6 +46,8 @@ import {
 import { RunJSEditorField, RunJSEditorRegistry, type RunJSSourceLocator } from '../../components/runjs-studio';
 
 export const INLINE_SOURCE_MODE = 'inline';
+
+/** Canonical persisted source mode for the product now named JS templates. */
 export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 
 export type LightExtensionSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;

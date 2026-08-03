@@ -12,6 +12,8 @@ import type {
   LIGHT_EXTENSION_REPO_HEALTH_STATUSES,
   LIGHT_EXTENSION_REPO_LIFECYCLE_STATUSES,
   LIGHT_EXTENSION_REFERENCE_RESOLVED_STATUSES,
+  LIGHT_EXTENSION_SOURCE_BINDING_TYPE,
+  LIGHT_EXTENSION_SOURCE_MODE,
   LightExtensionKind,
 } from '../constants';
 import type {
@@ -456,7 +458,7 @@ export interface LightExtensionSelectableEntriesInput {
 }
 
 export interface LightExtensionRuntimeSourceBinding extends Record<string, unknown> {
-  type: 'light-extension-entry';
+  type: typeof LIGHT_EXTENSION_SOURCE_BINDING_TYPE;
   repoId: string;
   repoName?: string | null;
   repoTitle?: string | null;
@@ -541,7 +543,7 @@ export interface LightExtensionMoveToInlineResult {
 }
 
 export interface LightExtensionRuntimeResolveInput {
-  sourceMode: 'light-extension';
+  sourceMode: typeof LIGHT_EXTENSION_SOURCE_MODE;
   sourceBinding: LightExtensionRuntimeSourceBinding;
   settings?: Record<string, unknown> | null;
 }

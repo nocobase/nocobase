@@ -18,7 +18,11 @@ import {
 } from '@nocobase/client-v2';
 import { extractRunJSSettingsDefaults, normalizeLightExtensionEntrySelection } from '@nocobase/runjs/settings';
 
-import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import {
+  LIGHT_EXTENSION_SOURCE_BINDING_TYPE,
+  LIGHT_EXTENSION_SOURCE_MODE,
+  LIGHT_EXTENSION_SUPPORTED_KINDS,
+} from '../../constants';
 import type {
   LightExtensionKind,
   LightExtensionRuntimeArtifactRecord,
@@ -59,7 +63,7 @@ export function createLightExtensionRunJSResolver(api: ApiClientLike): LightExte
   const settingsDescriptorCache = getLightExtensionSettingsDescriptorCache(api);
 
   return {
-    sourceMode: 'light-extension',
+    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
     invalidateCache(repoId) {
       invalidateLightExtensionRuntimeCache(api, repoId);
       if (repoId) {
@@ -331,7 +335,7 @@ export async function resolveLightExtensionRuntimeSource(
   if (!isLightExtensionRuntimeSourceBinding(input.sourceBinding)) {
     throw new RunJSSourceResolverError("RunJS source 'light-extension' requires a valid sourceBinding", {
       code: 'RUNJS_SOURCE_BINDING_REQUIRED',
-      sourceMode: 'light-extension',
+      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
     });
   }
   return runtimeCache.resolve(api, input, input.sourceBinding);
@@ -343,7 +347,7 @@ async function requestRuntimeResolve(
   sourceBinding: LightExtensionRuntimeSourceBinding,
 ): Promise<LightExtensionRuntimeResolveResult> {
   const payload: LightExtensionRuntimeResolveInput = {
-    sourceMode: 'light-extension',
+    sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
     sourceBinding,
     settings: input.settings || {},
   };
@@ -368,7 +372,7 @@ async function requestRuntimeArtifact(
   if (!artifact?.code || artifact.artifactHash !== response.artifactHash) {
     throw new RunJSSourceResolverError(`Light extension artifact '${response.artifactHash}' is invalid`, {
       code: 'RUNJS_SOURCE_CODE_REQUIRED',
-      sourceMode: 'light-extension',
+      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
     });
   }
   return artifact;
@@ -497,7 +501,7 @@ function createEntryMenuItem(
       .filter(Boolean)
       .join(' '),
     selected:
-      input.sourceMode === 'light-extension' &&
+      input.sourceMode === LIGHT_EXTENSION_SOURCE_MODE &&
       currentBinding?.repoId === entry.repoId &&
       currentBinding.entryId === entry.id &&
       currentBinding.kind === entry.kind,
@@ -505,7 +509,7 @@ function createEntryMenuItem(
       return {
         ...defaultParams,
         ...params,
-        sourceMode: 'light-extension',
+        sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
         sourceBinding: createRuntimeSourceBinding(entry),
         settings: normalizeLightExtensionEntrySelection({
           currentBinding: params.sourceBinding,
@@ -525,7 +529,7 @@ function createEntryMenuItem(
 
 function createRuntimeSourceBinding(entry: LightExtensionSelectableEntrySummary): LightExtensionRuntimeSourceBinding {
   return {
-    type: 'light-extension-entry',
+    type: LIGHT_EXTENSION_SOURCE_BINDING_TYPE,
     repoId: entry.repoId,
     ...(typeof entry.repoName !== 'undefined' ? { repoName: entry.repoName } : {}),
     ...(typeof entry.repoTitle !== 'undefined' ? { repoTitle: entry.repoTitle } : {}),
@@ -575,7 +579,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function isLightExtensionRuntimeSourceBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
   return (
     isRecord(value) &&
-    value.type === 'light-extension-entry' &&
+    value.type === LIGHT_EXTENSION_SOURCE_BINDING_TYPE &&
     typeof value.repoId === 'string' &&
     value.repoId.trim().length > 0 &&
     typeof value.entryId === 'string' &&

@@ -1,0 +1,55 @@
+# JS templates migration compatibility baseline
+
+## Decision
+
+`JS templates` is the canonical English product and UI name. `JS 模板` is the canonical Simplified Chinese name.
+
+`light-extension` remains the legacy technical identity. Existing stored values and public contracts can be present in
+databases, saved FlowModels, source repositories, CLI workspaces, deployed clients, and downstream packages. Product
+copy changes must not rename or rewrite those values.
+
+The executable baseline is declared by `LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT` and
+`LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT` in `src/constants.ts`. Contract tests intentionally compare those manifests
+with literal expected values and with the current database, RunJS, CLI, SDK, runtime, resource, and ACL surfaces.
+
+## Canonical persisted values
+
+The following legacy values remain canonical for persistence. New JS templates UI and APIs must continue writing them:
+
+| Boundary | Canonical persisted value | Compatibility reason |
+| --- | --- | --- |
+| RunJS source mode | `light-extension` | Stored in FlowModel step parameters and used to select the runtime resolver |
+| RunJS source binding type | `light-extension-entry` | Stored with repository and Entry identity in FlowModels |
+| VSC repository owner type | `light-extension` | Stored in `vscFileRepositories` and enforced as a protected permission boundary |
+| Business collections/tables | `lightExtensionRepos`, `lightExtensionEntries`, `lightExtensionReferences`, `lightExtensionRuntimeArtifacts`, `lightExtensionLogs`, `lightExtensionMoveOperations`, `lightExtensionCreateJobs` | Existing foreign keys, repository history, artifacts, references, and jobs depend on these identities |
+
+Do not create renamed tables, bulk-update saved FlowModels, or change VSC owner types as part of the product rename. New
+logical names must resolve to the existing records.
+
+## Stable legacy protocol values
+
+The following contracts remain supported. Canonical JS templates names may be added later as aliases, but must not
+replace these values without a separate compatibility review and an upgrade-and-rollback plan:
+
+- Runtime contracts: `light-extension.runtime-artifact.v1` and `light-extension.runtime-surface.v1`
+- Public error codes: the complete `LIGHT_EXTENSION_ERROR_CODES` set and its `LIGHT_EXTENSION_` prefix
+- ACL and settings identities: `pm.light-extension` and `light-extension`
+- HTTP resources: all `lightExtensions` and `lightExtension*` resources listed in the protocol manifest
+- Documented HTTP paths under `/light-extensions` and `/light-extension-runtime`
+- CLI topic and module: `nb light ...` and `light-extension`
+- SDK package and subpaths: `@nocobase/light-extension-sdk`, including `/client`, `/shared`, `/schema`, `/schema/server`,
+  `/schema/entry-v1.schema.json`, and `/typegen`
+- Source-workspace contracts: the legacy schema URI, `light-extension:settings/`, `.light-extension/types`, and
+  `light-extension.json`
+- Plugin package identity: `@nocobase/plugin-light-extension`
+
+Unknown private registries, deployed artifacts, and downstream consumers are treated as compatibility requirements.
+A public-registry or repository search that finds no consumer is not sufficient evidence to remove a legacy contract.
+
+## Scope of later migration goals
+
+Later goals may change display names, translated copy, menus, internal TypeScript symbols, and preferred aliases. They
+must preserve the persisted and protocol contracts above. If a later change needs a new serialized token, it must use
+dual-read behavior, retain legacy writes for rollback, and include upgrade fixtures before changing this baseline.
+
+This baseline itself creates no database migration and performs no data rewrite.

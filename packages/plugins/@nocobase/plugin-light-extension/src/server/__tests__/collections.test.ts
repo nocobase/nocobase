@@ -10,6 +10,7 @@
 import type { Collection } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
+import { LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT } from '../../constants';
 import PluginLightExtensionServer from '../plugin';
 
 interface ConstraintDescription {
@@ -38,15 +39,10 @@ describe('plugin-light-extension collections', () => {
   });
 
   it('loads the stable collections and persists repository and entry defaults', async () => {
-    for (const collectionName of [
-      'lightExtensionRepos',
-      'lightExtensionCreateJobs',
-      'lightExtensionEntries',
-      'lightExtensionRuntimeArtifacts',
-      'lightExtensionReferences',
-      'lightExtensionLogs',
-    ]) {
-      expect(app.db.getCollection(collectionName), collectionName).toBeTruthy();
+    for (const collectionName of LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT.collectionNames) {
+      const collection = app.db.getCollection(collectionName);
+      expect(collection, collectionName).toBeTruthy();
+      expect(collection?.tableNameAsString({ ignorePublicSchema: true }), collectionName).toBe(collectionName);
     }
 
     const repo = await app.db.getRepository('lightExtensionRepos').create({

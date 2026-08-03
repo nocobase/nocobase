@@ -27,3 +27,9 @@ export const defaultVscFileLimits = {
   commitHistoryMaxLimit,
 } as const;
 export const VSC_FILE_NAMESPACE = '@nocobase/plugin-vsc-file';
+
+/**
+ * Canonical persisted owner type for repositories created by the product now named JS templates.
+ * This legacy value is part of the VSC permission boundary and must remain readable and writable.
+ */
+export const LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE = 'light-extension';
