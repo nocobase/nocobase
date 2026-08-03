@@ -36,7 +36,9 @@ nb portal pull customer        # 拉取源码到本地
 nb portal dev customer         # 开始开发
 ```
 
-`pull` 拉完会自动执行 `pnpm install`。在 CI 里或者你想自己装依赖，可以加 `--no-install` 跳过。
+`pull` 会把源码下载并展开到开发工作区，默认位置是 `./<portal>`，用 `--path` 可以指定到别处。拉完自动执行 `pnpm install`，在 CI 里或者你想自己装依赖，加 `--no-install` 跳过。
+
+拉取成功后，开发工作区的位置会记到 CLI env config 里，后续 `dev`、`push`、`deploy` 都从这个位置读源码，不用每次重复指定。
 
 ## 新增一个 Portal
 
@@ -46,7 +48,7 @@ nb portal dev customer         # 开始开发
 nb portal create customer
 ```
 
-创建时会基于 `@nocobase/portal-template-default` 模板在当前目录下生成 `./customer` 作为开发工作区，写入 `.env`、`.env.local` 和 `portal.config.json`，然后自动安装依赖。想放到别处用 `--path` 指定。
+创建时会基于 `@nocobase/portal-template-default` 模板在当前目录下生成 `./customer` 作为开发工作区，写入 `.env` 和 `.env.local`，然后自动安装依赖。想放到别处用 `--path` 指定。
 
 <!-- 需要一张 nb portal create 执行完成后的终端输出截图 -->
 
@@ -54,7 +56,7 @@ Portal 名称只能用小写字母、数字、下划线和连字符，并且以�
 
 ## source storage
 
-创建 Portal 时可以选择源码保存在哪里：
+Portal 的源码可以保存在两个地方：
 
 | 方式 | 说明 | 什么时候用 |
 | --- | --- | --- |
@@ -63,19 +65,9 @@ Portal 名称只能用小写字母、数字、下划线和连字符，并且以�
 
 默认的 `nocobase` 起步最快，不用先准备仓库。不过它没有版本历史，改错了只能整个覆盖回退。**如果这个 Portal 会长期迭代，建议早点切到 Git。**
 
-### 创建时就用 Git
+### 切换到 Git
 
-```bash
-nb portal create customer \
-  --source-storage git \
-  --git-repo git@github.com:nocobase/customer-portal.git
-```
-
-`--git-branch` 省略时用 `main`，`--git-path` 省略时用仓库根目录。
-
-### 后续切换到 Git
-
-已经在用默认存储的 Portal 也可以随时切换：
+`create` 只负责生成开发工作区，source storage 的配置统一交给 `config`。创建完成后随时可以切：
 
 ```bash
 nb portal config customer \
@@ -85,12 +77,28 @@ nb portal config customer \
 nb portal push customer --message "Move customer portal source to Git"
 ```
 
-`config` 会更新本地的 `portal.config.json` 并同步到远端 Portal 记录，之后的 `push` 就会走 Git 了。
+`config` 会把 source storage 配置同步到远端 Portal 记录，之后的 `push` 就会走 Git 了。
 
 一个仓库放一个 Portal 时，`--git-path` 用默认的仓库根目录就行。只有当你想把多个 Portal 放进同一个仓库，才需要指定子目录：
 
 ```bash
 nb portal config customer --git-path portals/customer
+```
+
+### 临时从别的仓库拉一份
+
+想拿另一个仓库的源码试一下，又不想动 Portal 的配置，`pull` 支持临时指定：
+
+```bash
+nb portal pull customer --git-repo git@github.com:nocobase/another-portal.git
+```
+
+这种方式不会修改远端 Portal 记录，`--git-branch` 和 `--git-path` 只能跟 `--git-repo` 一起用。要长期改成 Git 存储，还是用上面的 `config`。
+
+`config` 也能改开发工作区的位置——比如把源码挪到别的目录之后，用 `--path` 告诉 CLI 新位置：
+
+```bash
+nb portal config customer --path ./workspaces/customer
 ```
 
 ## env 类型的差异
@@ -99,8 +107,8 @@ nb portal config customer --git-path portals/customer
 
 | env 类型 | 说明 |
 | --- | --- |
-| `local` | 开发工作区和应用 storage 在同一台机器上，用默认 `nocobase` 存储时 `pull` / `push` 通常不需要额外同步 |
-| `docker` | 通过 Docker volume 共享，同上 |
+| `local` | 应用在当前机器上，`pull` 把源码拉到开发工作区，`deploy` 从开发工作区构建并同步部署产物 |
+| `docker` | 应用跑在 Docker 里，通过 volume 共享，行为同上 |
 | `http` | 通过 API 同步，`pull` / `push` 会下载或上传源码归档 |
 
 `ssh` env 当前还不支持 Portal 管理。
@@ -149,8 +157,8 @@ nb portal destroy customer
 - [发布管理](../ai-builder/publish.md) — 跨环境发布数据表结构和配置
 - [`nb portal` 命令参考](../api/cli/portal/index.md) — 所有 Portal 命令的完整参数说明
 - [`nb portal create`](../api/cli/portal/create.md) — 创建 Portal 的全部参数
-- [`nb portal config`](../api/cli/portal/config.md) — 调整 source storage 配置
+- [`nb portal config`](../api/cli/portal/config.md) — 调整 source storage 和开发工作区路径
 - [`nb portal push`](../api/cli/portal/push.md) — 推送源码到 source storage
 - [`nb portal deploy`](../api/cli/portal/deploy.md) — 构建并部署 Portal
 - [`nb portal pull`](../api/cli/portal/pull.md) — 从 source storage 拉取源码
-- [`nb portal destroy`](../api/cli/portal/destroy.md) — 删除 Portal 记录
+- [`nb portal destroy`](../api/cli/portal/destroy.md) — 删除 Portal 记录和已部署文件

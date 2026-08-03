@@ -98,9 +98,9 @@ nb portal list
 
 ![nb portal list](https://static-docs.nocobase.com/20260803163517.png)
 
-输出里会列出 Portal 名称、访问 URL、Portal 类型、source storage、本地路径和同步状态。
+输出里会列出 Portal 名称、访问 URL、Portal 类型、source storage、开发路径、启用状态和默认状态。
 
-如果你想看得更细，比如开发工作区到底在哪：
+拉取源码之后，还可以用 `info` 看得更细，比如开发路径和部署路径分别在哪：
 
 ```bash
 nb portal info main
@@ -123,7 +123,7 @@ nb portal dev main
 
 ## 第三步：让 AI 改一个页面
 
-进到 Portal 的开发工作区（位置就是上一步 `nb portal info` 输出里的开发路径），在那里打开 AI Agent，比如 Claude Code、Codex、Cursor，然后输入提示词：
+进到 Portal 的开发工作区（`pull` 默认拉到 `./main`，不确定的话用 `nb portal info main` 查开发路径），在那里打开 AI Agent，比如 Claude Code、Codex、Cursor，然后输入提示词：
 
 ```
 加一个客户管理页面，
@@ -144,8 +144,6 @@ AI 会读一遍现有的页面和扩展，照着模板的约定写新页面，�
 nb portal push main --message "Add customer management page"
 nb portal deploy main
 ```
-
-<!-- 需要一张部署完成后访问 /x/main/ 看到新页面的截图 -->
 
 部署完成后访问 `/x/main/`，就能看到刚才的改动了。
 

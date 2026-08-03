@@ -66,7 +66,6 @@ src/
 | --- | --- |
 | `AGENTS.md` | 给 AI Agent 的开发约定，你也可以往里补自己项目的规则 |
 | `components.json` | shadcn/ui 配置，包括样式风格、图标库和路径别名 |
-| `portal.config.json` | source storage 和 Git 配置，由 `nb portal` 维护 |
 | `.env` / `.env.local` | 环境变量，`nb portal dev` 和 `deploy` 会自动刷新 |
 | `vite.config.ts` | 构建配置，包含开发时的 API 代理 |
 

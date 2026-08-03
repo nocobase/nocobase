@@ -24,7 +24,7 @@ AI Portal 的日常开发就是跟 AI Agent 说话——你描述要什么页面
 nb portal info main
 ```
 
-输出里的本地路径就是 Portal 源码所在的位置。`cd` 过去，然后打开你的 AI Agent：
+输出里的开发路径就是 Portal 源码所在的位置。`cd` 过去，然后打开你的 AI Agent：
 
 ```bash
 cd <开发工作区目录>
