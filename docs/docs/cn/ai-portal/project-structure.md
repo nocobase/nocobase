@@ -8,7 +8,7 @@ keywords: "AI Portal,项目结构,技术栈,React,Vite,Refine,Tailwind CSS,shadc
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -127,7 +127,7 @@ nb portal info main
 
 ## 相关链接
 
-- [AI 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
 - [部署与源码管理](./deploy.md) — 构建部署流程和 source storage
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写页面

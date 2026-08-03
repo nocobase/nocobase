@@ -8,7 +8,7 @@ keywords: "AI 搭建,发布管理,跨环境发布,备份还原,迁移"
 
 :::tip 前置条件
 
-- 阅读本页前，请先按照 [AI 无代码搭建快速开始](./index.md) 安装 NocoBase CLI 并完成初始化
+- 阅读本页前，请先按照 [AI + 无代码模式开发快速开始](./index.md) 安装 NocoBase CLI 并完成初始化
 - 需要获得专业版及以上授权，详见 [NocoBase 商业版](https://www.nocobase.com/cn/commercial)
 - 需要启用「备份管理」和「迁移管理」两个插件，并升级到最新版本
 
@@ -91,5 +91,5 @@ Skill 会在 dev 环境创建迁移包，再用这个迁移包更新 test 环境
 
 ## 相关链接
 
-- [AI 无代码搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [AI + 无代码模式开发概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [环境管理](./env-bootstrap) — 环境检查、安装部署和故障诊断

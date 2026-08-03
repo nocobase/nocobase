@@ -12,7 +12,7 @@ keywords: "nb portal,NocoBase CLI,Portal,多入口,本地源码目录,源码同�
 
 :::tip 提示
 
-这里是命令参数的完整参考。如果你想先了解 AI Portal 是什么、怎么让 AI Agent 帮你写前端，请看 [AI 搭建快速开始](../../../ai-portal/index.md)。
+这里是命令参数的完整参考。如果你想先了解 AI Portal 是什么、怎么让 AI Agent 帮你写前端，请看 [AI 模式开发快速开始](../../../ai-portal/index.md)。
 
 :::
 

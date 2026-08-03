@@ -1,10 +1,10 @@
 ---
-title: "AI 无代码搭建快速开始"
+title: "AI + 无代码模式开发快速开始"
 description: "AI 无代码搭建是 NocoBase 的 AI 辅助搭建能力，通过自然语言完成数据建模、界面配置、工作流编排等操作，不需要写代码。"
-keywords: "AI 搭建,AI 无代码搭建,AI Builder,NocoBase AI,Agent Skills,自然语言搭建,低代码 AI,快速开始"
+keywords: "AI + 无代码模式开发,AI 无代码搭建,AI 搭建,AI Builder,NocoBase AI,Agent Skills,自然语言搭建,低代码 AI,快速开始"
 ---
 
-# AI 无代码搭建快速开始
+# AI + 无代码模式开发快速开始
 
 AI 无代码搭建是 NocoBase 提供的 AI 辅助搭建能力——你可以用自然语言描述需求，AI 会自动完成数据建模、页面配置、权限设置等操作。整个过程不需要写代码，产出的是保存在数据库里的配置。
 
@@ -13,7 +13,7 @@ NocoBase 提供两种 AI 搭建方式，你可以按场景选择：
 - **AI 无代码搭建**（本页）——AI 帮你调整 NocoBase 的配置，适合标准的增删改查和内部管理后台
 - **[AI Portal](../ai-portal/index.md)**——AI Agent 直接写 React 代码，适合定制交互、复杂业务系统和有特殊视觉要求的场景
 
-两者可以在同一个应用里混用。详细的选型建议请参阅 [AI 搭建快速开始](../ai-portal/index.md#两种入口怎么选)。
+两者可以在同一个应用里混用。详细的选型建议请参阅 [AI 模式开发快速开始](../ai-portal/index.md#两种入口怎么选)。
 
 本页介绍的数据建模、权限配置等 Skill，在 AI Portal 场景下同样有用——AI Agent 写页面的同时，也能顺手帮你把数据表建好、把权限配上，一次对话完成一个完整的业务系统。
 

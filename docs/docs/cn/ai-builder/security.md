@@ -8,7 +8,7 @@ keywords: 'AI 搭建,安全,权限,认证,Token,OAuth,操作记录,审计'
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 无代码搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+阅读本页前，请确保你已按照 [AI + 无代码模式开发快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
 
 :::
 
@@ -223,7 +223,7 @@ storage/logs/<appName>/request_YYYY-MM-DD.log
 
 ## 相关链接
 
-- [AI 无代码搭建快速开始](./index.md) — 安装和环境准备
+- [AI + 无代码模式开发快速开始](./index.md) — 安装和环境准备
 - [环境管理](./env-bootstrap) — 环境检查、添加环境和故障诊断
 - [权限配置](./acl.md) — 配置角色、权限策略和风险评估
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具

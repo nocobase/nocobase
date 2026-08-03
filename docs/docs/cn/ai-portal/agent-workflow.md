@@ -8,7 +8,7 @@ keywords: "AI Portal,AI Agent,协作搭建,提示词,nocobase-portal-manage,Skil
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -162,7 +162,7 @@ TypeScript 类型错误和依赖缺失是最常见的两类，把报错贴给 AI
 
 ## 相关链接
 
-- [AI 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [部署与源码管理](./deploy.md) — 把 Portal 源码纳入 Git，以及部署流程
 - [项目结构与技术栈](./project-structure.md) — 模板的目录约定，帮你判断 AI 写得对不对
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制

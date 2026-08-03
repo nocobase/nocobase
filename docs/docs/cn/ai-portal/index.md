@@ -1,10 +1,10 @@
 ---
-title: "AI 搭建快速开始"
+title: "AI 模式开发快速开始"
 description: "AI 搭建是让 AI Agent 写业务系统代码，NocoBase 提供认证、数据库、API 和权限作为基座，代码写在 AI Portal 这个应用入口里。"
-keywords: "AI 搭建,AI Portal,NocoBase AI,NocoBase 基座,前端开发,React,shadcn/ui,AI Agent,快速开始"
+keywords: "AI 模式开发,AI 搭建,AI Portal,NocoBase AI,NocoBase 基座,前端开发,React,shadcn/ui,AI Agent,快速开始"
 ---
 
-# AI 搭建快速开始
+# AI 模式开发快速开始
 
 
 AI Agent 时代，我们经常能听到 Vibe coding 的说法。Vibe coding 是你用自然语言描述需求，AI Agent 通过代码快速帮你实现你所需要的功能、应用。但是我们发现，它可能能够写出一个很好看的页面，但是不容易把实际业务系统对接起来，或者需要从头实现一个系统的认证、权限、数据表设计等基础能力。
@@ -172,6 +172,6 @@ nb portal create customer
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
 - [部署与源码管理](./deploy.md) — 开发、推送、部署的完整流程
 - [AI Agent 接入指南](../ai/quick-start.md) — 安装 NocoBase CLI 并完成初始化
-- [AI 无代码搭建快速开始](../ai-builder/index.md) — 不写代码的另一种搭建方式
+- [AI + 无代码模式开发快速开始](../ai-builder/index.md) — 不写代码的另一种搭建方式
 - [版本控制](../ai-builder/version-control.md) — 无代码搭建的版本快照
 - [`nb portal` 命令参考](../api/cli/portal/index.md) — 所有 Portal 命令的完整参数说明

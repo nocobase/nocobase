@@ -8,7 +8,7 @@ keywords: "AI Portal,部署,source storage,Git,nb portal deploy,nb portal push,�
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -143,7 +143,7 @@ nb portal destroy customer
 
 ## 相关链接
 
-- [AI 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写页面
 - [项目结构与技术栈](./project-structure.md) — 构建命令和环境变量说明
 - [发布管理](../ai-builder/publish.md) — 跨环境发布数据表结构和配置

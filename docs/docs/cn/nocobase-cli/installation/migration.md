@@ -69,7 +69,7 @@ nb init --yes --env app1 \
 nb env auth app1
 ```
 
-如果你接下来只是想开始用 AI 搭建能力，继续看 [AI 无代码搭建快速开始](/ai-builder/) 就行。
+如果你接下来只是想开始用 AI 搭建能力，继续看 [AI + 无代码模式开发快速开始](/ai-builder/) 就行。
 
 ## 方式二：迁移到 CLI
 
