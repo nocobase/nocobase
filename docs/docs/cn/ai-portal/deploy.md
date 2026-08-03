@@ -36,7 +36,7 @@ nb portal pull customer        # 拉取源码到本地
 nb portal dev customer         # 开始开发
 ```
 
-`pull` 会把源码下载并展开到开发工作区，默认位置是 `./<portal>`，用 `--path` 可以指定到别处。拉完自动执行 `pnpm install`，在 CI 里或者你想自己装依赖，加 `--no-install` 跳过。
+`pull` 会把源码下载并展开到开发工作区，默认位置是 `./<portal>`，用 `--path` 可以指定到别处。依赖会自动装好；在 CI 里或者你想自己装，加 `--no-install` 跳过。
 
 拉取成功后，开发工作区的位置会记到 CLI env config 里，后续 `dev`、`push`、`deploy` 都从这个位置读源码，不用每次重复指定。
 

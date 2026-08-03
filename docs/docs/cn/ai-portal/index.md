@@ -115,7 +115,7 @@ nb portal pull main
 nb portal dev main
 ```
 
-开发服务默认跑在 `http://localhost:5173`。这一步会先刷新开发工作区里的 `.env` 和 `.env.local`，再执行 `pnpm dev`。
+开发服务默认跑在 `http://localhost:5173`。
 
 模板自带了一个基于 NocoBase `users` 数据表的用户管理页面，可以直接登录进去看看效果——它同时也是你让 AI 参考的一个很好的初始样例。
 

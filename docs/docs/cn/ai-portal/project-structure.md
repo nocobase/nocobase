@@ -87,28 +87,21 @@ src/
 
 ## 常用命令
 
-模板自带这些脚本：
+日常开发用得上的就这几个，依赖安装、环境变量刷新、构建这些都由 CLI 在背后处理：
 
-```bash
-pnpm dev          # 启动开发服务，默认 http://localhost:5173
-pnpm build        # 构建生产产物
-pnpm start        # 本地预览构建结果
-pnpm build:html   # 构建独立的 HTML 产物
-pnpm test:auth    # 认证回归测试
-pnpm test:acl     # 权限回归测试
-pnpm test:i18n    # 国际化回归测试
-```
-
-平时用 `nb portal` 就够了，它会在背后调用这些脚本：
-
-| CLI 命令 | 实际执行 |
+| 命令 | 作用 |
 | --- | --- |
-| `nb portal dev <portal>` | 刷新 `.env`，然后 `pnpm dev` |
-| `nb portal deploy <portal>` | 刷新 `.env`，然后 `pnpm build`，再同步产物 |
-| `nb portal create <portal>` | 复制模板，然后 `pnpm install` |
-| `nb portal pull <portal>` | 拉取源码，然后 `pnpm install` |
+| `nb portal list` | 看看当前应用有哪些 Portal |
+| `nb portal info <portal>` | 查 Portal 的开发路径、部署路径和访问地址 |
+| `nb portal create <portal>` | 基于模板创建一个新 Portal 的开发工作区 |
+| `nb portal pull <portal>` | 把远端的 Portal 源码拉到本地开发工作区 |
+| `nb portal dev <portal>` | 启动本地开发服务，改代码实时看效果 |
+| `nb portal push <portal>` | 把本地源码变更推送到远端 |
+| `nb portal deploy <portal>` | 构建并部署，让改动对用户生效 |
+| `nb portal config <portal>` | 调整 source storage、Git 配置和开发工作区路径 |
+| `nb portal destroy <portal>` | 删除 Portal 记录和已部署的文件 |
 
-三个测试脚本需要自己跑，改动涉及认证、权限或国际化时建议执行一下。
+每个命令的完整参数见 [`nb portal` 命令参考](../api/cli/portal/index.md)。
 
 ## 开发工作区在哪
 
