@@ -230,7 +230,7 @@ async function getFlowModelVariableContract(
     }
 
     const ancestorModels: Record<string, unknown>[] = [];
-    if (result.analysis.paths.some((path) => path.varName === 'formValues')) {
+    if (result.analysis.paths.some((path) => path.varName === 'formValues' || path.varName === 'item')) {
       const seen = new Set([flowModelUid]);
       let parentId = getFlowModelParentId(model);
       while (parentId && !seen.has(parentId)) {

@@ -3,8 +3,8 @@
 ## GO/NO-GO
 
 **GO。** 服务器可以按 RD 对应持久化 FlowModel 中的每条 canonical variable path，编译唯一的 exact Provider
-Slot。普通 Form 的运行时歧义已通过固定客户端生成语义消除；`item.parentItem` 的瞬时输入只决定是否生成
-descriptor，不改变 descriptor 一旦生成时的挂载位置。
+Slot。普通 Form 的运行时歧义已通过固定客户端生成语义消除；`item` slot 还必须由持久化 owner 与服务器
+collection metadata 证明对应字段为 association。
 
 Task 02–06 可以继续，但不得退回变量级 matcher、客户端自报 slot 或 generic strict-prefix fallback。
 
@@ -34,7 +34,7 @@ slot 是相对变量根的 exact segment 数组。表中的 `*` 只描述 canoni
 | 普通 Form 已配置 association `formValues.<association>.<descendant>` | `["<association>"]` | 持久化 Form host、grid fieldPath 与 collection association metadata | Task 05 |
 | EditForm/PopupSubTableForm 未配置字段 `formValues.<field>...` | `[]` | 持久化 Form host 与 grid fieldPath | Task 05 |
 | FilterForm `formValues.<fieldName>.<descendant>` | `fieldName` 的完整 segments | 持久化 item `props.name`，或 `fieldPath + uid` fallback | Task 05 |
-| `item.(parentItem.)*.value.<association>.<descendant>` | 到 association 为止的完整 segments | canonical path 固定结构 | Task 05 |
+| `item.(parentItem.)*.value.<association>.<descendant>` | 到 association 为止的完整 segments | 持久化 item owner、owner fieldPath 与 collection association metadata | Task 05 |
 
 whole-record path 使用同一 exact slot。`item.index`、`item.length`、`item.value`、
 `item.value.<association>` 以及不符合上述形状的 path 不产生 slot policy。
@@ -63,8 +63,19 @@ fallback。只有该 item 对应 association field 且 canonical runtime segment
 后面仍有 descendant 时，才编译该 exact slot；多段 field name 不得缩短。
 
 item 按每条 canonical path 逐条编译：去掉零个或多个 `parentItem` 后，必须严格匹配
-`value -> association -> descendant`，slot 为 `parentItem* -> value -> association`。parent meta/resolver 和本地值
-只决定本次是否生成 descriptor；不会把已生成 descriptor 移到另一 prefix，因此不需要变量级 family matcher。
+`value -> association -> descendant`。item 深度只由真实建立新 item 的持久化边界增加：`SubFormFieldModel`、
+`SubFormListFieldModel` 本身，`PopupSubTableFormModel` 与其外层 `PopupSubTableFieldModel`，以及
+`SubTableColumnModel` 与其外层 `SubTableFieldModel`。association field owner 本身不增加深度；
+`RecordPickerFieldModel`、`PopupSubTableFieldModel`、`SubTableFieldModel`、`SubFormListFieldModel` 的直接子级若为
+`subKey=grid-block` 的持久化 `BlockGridModel`，则先增加一个禁用 value 的 picker 边界；`SubFormListFieldModel`
+随后仍增加自身的正常 item 边界。
+field metadata 优先取 owner 自身，否则只取通过 `parentId` 或 `subModels.field.uid` 验证的直接 wrapper。
+服务器从该 metadata 的 source collection 沿其 fieldPath 到达 item collection，再确认 path 中的字段确为 association；
+最外层 `parentItem` root 则使用最外层 owner 的 source collection。owner、collection、field 缺失，或 scalar/JSON
+字段伪装成 association 时均不产生 policy。所有被 path 跨过的 item owner 都必须由服务器 metadata 证明为
+association；无效 owner 保留其深度并使该 path fail closed，不得通过忽略边界把 descriptor 移到外层 slot。
+合法 slot 为 `parentItem* -> value -> association`；parent meta/resolver
+和本地值只决定本次是否生成 descriptor，不改变 slot。
 
 ## authorization 行为
 
@@ -83,5 +94,5 @@ item 按每条 canonical path 逐条编译：去掉零个或多个 `parentItem` 
   `serverOnlyWhenContextParams` 和 `buildVariablesParams`；未知插件变量默认拒绝。
 - Task 06 重放 `view.record.department`、`popup.record.roles` 与 `formValues` root/association 移动攻击，所有数据库
   入口调用计数必须为 0。
-- 独立 reviewer 已确认普通 Form 与 `item.parentItem` 的 exact-slot 推导为 GO；最终分支仍须等待 Task 02–06 的
-  tests、SQLite/Postgres/frontend CI 与集成复核。
+- 独立 reviewer 的首轮集成复核发现 item scalar/JSON 形状伪装；Task 06 修复后必须重放攻击并重新复核。最终
+  分支仍须等待 tests、SQLite/Postgres/frontend CI 与集成复核。

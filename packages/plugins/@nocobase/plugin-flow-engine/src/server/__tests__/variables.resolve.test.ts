@@ -98,6 +98,37 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     props: template,
   });
 
+  const popupSubTableModel = (uid: string, template: unknown) => ({
+    uid: `${uid}-wrapper`,
+    use: 'FormItemModel',
+    stepParams: {
+      fieldSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
+      },
+    },
+    subModels: {
+      field: {
+        uid: `${uid}-field`,
+        use: 'PopupSubTableFieldModel',
+        subModels: {
+          popup: {
+            uid: `${uid}-popup-grid`,
+            use: 'BlockGridModel',
+            subModels: {
+              blocks: [
+                {
+                  uid,
+                  use: 'PopupSubTableFormModel',
+                  props: template,
+                },
+              ],
+            },
+          },
+        },
+      },
+    },
+  });
+
   beforeEach(async () => {
     app = await createFlowEngineMockServer({
       plugins: [
@@ -414,6 +445,66 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(find).toHaveBeenCalledWith({ fields: ['name', 'allowConfigure'], filter: { name: ['member'] } });
     expect(getRepository).toHaveBeenCalledTimes(1);
     expect(getRepository).toHaveBeenCalledWith('roles');
+  });
+
+  it.each([
+    ['scalar', '{{ ctx.item.value.title.name }}', 'item.value.title'],
+    ['JSON', '{{ ctx.item.value.strategy.actions }}', 'item.value.strategy'],
+  ])('rejects an item descriptor on a %s field before any target-record lookup', async (_kind, expression, slot) => {
+    const flowModelUid = `item-${_kind.toLowerCase()}-record-slot`;
+    const session = createTokenSession(1);
+    const template = { value: expression };
+    await insertFlowModel(popupSubTableModel(flowModelUid, template));
+    const users = app.db.getRepository('users');
+    const roles = app.db.getRepository('roles');
+    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
+    const getRepository = vi.spyOn(app.db, 'getRepository');
+    const usersFind = vi.spyOn(users, 'find');
+    const usersFindOne = vi.spyOn(users, 'findOne');
+    const rolesFind = vi.spyOn(roles, 'find');
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { [slot]: { collection: 'users', dataSourceKey: 'attack_source', filterByTk: 1 } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(response.body).toEqual(template);
+    expect(dataSourceGet).not.toHaveBeenCalled();
+    expect(getRepository).not.toHaveBeenCalledWith('users');
+    expect(usersFind).not.toHaveBeenCalled();
+    expect(usersFindOne).not.toHaveBeenCalled();
+    expect(rolesFind).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves item associations confirmed by the persisted owner and collection metadata', async () => {
+    const flowModelUid = 'item-confirmed-association-slots';
+    const session = createTokenSession(1);
+    const template = {
+      user: '{{ ctx.item.value.users.nickname }}',
+      role: '{{ ctx.item.parentItem.value.roles.title }}',
+    };
+    await insertFlowModel(popupSubTableModel(flowModelUid, template));
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: {
+          'item.value.users': { collection: 'users', dataSourceKey: 'main', filterByTk: 1 },
+          'item.parentItem.value.roles': { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' },
+        },
+      },
+      1,
+      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+    );
+
+    expect(response.body.user).not.toBe(template.user);
+    expect(response.body.role).not.toBe(template.role);
   });
 
   it('rejects a view association slot move before any record lookup', async () => {

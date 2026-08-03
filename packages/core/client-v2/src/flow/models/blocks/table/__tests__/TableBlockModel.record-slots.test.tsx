@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import '@nocobase/client';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
 import { defineClickedRowRecordVariable, TableBlockModel } from '../TableBlockModel';

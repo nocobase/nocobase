@@ -40,6 +40,7 @@ type FlowModelNode = Readonly<{
   parentId?: unknown;
   props?: Readonly<Record<string, unknown>>;
   stepParams?: Readonly<Record<string, unknown>>;
+  subKey?: unknown;
   subModels?: Readonly<Record<string, unknown>>;
   uid?: unknown;
   use?: unknown;
@@ -59,6 +60,13 @@ const NORMAL_FORM_USES = new Set([
   'PopupSubTableFormModel',
 ]);
 const FORM_RECORD_USES = new Set(['EditFormModel', 'PopupSubTableFormModel']);
+const DIRECT_ITEM_CONTEXT_USES = new Set(['SubFormFieldModel', 'SubFormListFieldModel']);
+const RECORD_PICKER_OWNER_USES = new Set([
+  'PopupSubTableFieldModel',
+  'RecordPickerFieldModel',
+  'SubFormListFieldModel',
+  'SubTableFieldModel',
+]);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -76,23 +84,22 @@ function startsWithSegments(path: readonly PathSegment[], prefix: readonly PathS
   return prefix.length <= path.length && prefix.every((segment, index) => segment === path[index]);
 }
 
-function getValueAtPath(value: unknown, path: readonly (string | number)[]) {
-  let current = value;
-  for (const segment of path) {
-    if (Array.isArray(current) && typeof segment === 'number') current = current[segment];
-    else if (isObject(current)) current = current[String(segment)];
-    else return undefined;
-  }
-  return current;
-}
-
 function getLocalHosts(flowModel: unknown, path: VariablePathRef) {
   const hosts: FlowModelNode[] = [];
-  const root = asFlowModelNode(flowModel);
-  if (root) hosts.push(root);
-  for (let index = 1; index <= path.templatePath.length; index++) {
-    const candidate = asFlowModelNode(getValueAtPath(flowModel, path.templatePath.slice(0, index)));
-    if (candidate && candidate !== hosts[hosts.length - 1]) hosts.push(candidate);
+  let host = asFlowModelNode(flowModel);
+  if (!host) return hosts;
+  hosts.push(host);
+  let index = 0;
+  while (path.templatePath[index] === 'subModels' && typeof path.templatePath[index + 1] === 'string') {
+    const child = host.subModels?.[path.templatePath[index + 1]];
+    const arrayIndex = path.templatePath[index + 2];
+    const candidate = asFlowModelNode(
+      Array.isArray(child) && typeof arrayIndex === 'number' ? child[arrayIndex] : child,
+    );
+    if (!candidate) break;
+    hosts.push(candidate);
+    host = candidate;
+    index += Array.isArray(child) ? 3 : 2;
   }
   return hosts;
 }
@@ -107,6 +114,13 @@ function findHost(
     if (predicate(localHosts[index])) return localHosts[index];
   }
   return options.ancestorModels?.map(asFlowModelNode).find((node) => !!node && predicate(node));
+}
+
+function getHosts(path: VariablePathRef, options: CompileRecordSlotPoliciesOptions) {
+  return [
+    ...getLocalHosts(options.flowModel, path).reverse(),
+    ...(options.ancestorModels?.map(asFlowModelNode).filter((node): node is FlowModelNode => !!node) || []),
+  ];
 }
 
 function getResource(host: FlowModelNode) {
@@ -127,6 +141,71 @@ function getFieldPath(item: FlowModelNode) {
   const fieldSettings = isObject(item.stepParams?.fieldSettings) ? item.stepParams.fieldSettings : undefined;
   const init = isObject(fieldSettings?.init) ? fieldSettings.init : undefined;
   return typeof init?.fieldPath === 'string' && init.fieldPath ? init.fieldPath : undefined;
+}
+
+function getItemOwnerField(owner: FlowModelNode | undefined, hosts: readonly FlowModelNode[]) {
+  if (!owner) return undefined;
+  const wrapper = hosts.find((host) => {
+    if (host === owner) return false;
+    const field = asFlowModelNode(host.subModels?.field);
+    return (
+      (typeof owner.parentId === 'string' && owner.parentId === host.uid) ||
+      (typeof owner.uid === 'string' && field?.uid === owner.uid)
+    );
+  });
+  for (const host of [owner, wrapper]) {
+    const fieldSettings = isObject(host?.stepParams?.fieldSettings) ? host.stepParams.fieldSettings : undefined;
+    const init = isObject(fieldSettings?.init) ? fieldSettings.init : undefined;
+    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName : '';
+    const rawFieldPath = typeof init?.fieldPath === 'string' ? init.fieldPath : '';
+    const associationPathName = typeof init?.associationPathName === 'string' ? init.associationPathName : '';
+    const fieldPath =
+      associationPathName && rawFieldPath && !rawFieldPath.includes('.')
+        ? `${associationPathName}.${rawFieldPath}`
+        : rawFieldPath;
+    if (collectionName && fieldPath) {
+      return {
+        collectionName,
+        dataSourceKey: typeof init?.dataSourceKey === 'string' ? init.dataSourceKey : 'main',
+        fieldPath,
+      };
+    }
+  }
+  return undefined;
+}
+
+function getItemContexts(hosts: readonly FlowModelNode[]) {
+  const contexts: Array<{ owner: FlowModelNode; valueEnabled: boolean }> = [];
+  for (let index = 0; index < hosts.length; index++) {
+    const host = hosts[index];
+    const use = String(host.use);
+    const child = hosts[index - 1];
+    if (
+      RECORD_PICKER_OWNER_USES.has(use) &&
+      child?.use === 'BlockGridModel' &&
+      child.subKey === 'grid-block' &&
+      typeof host.uid === 'string' &&
+      child.parentId === host.uid
+    ) {
+      contexts.push({ owner: host, valueEnabled: false });
+    }
+    if (DIRECT_ITEM_CONTEXT_USES.has(use)) {
+      contexts.push({ owner: host, valueEnabled: true });
+      continue;
+    }
+    const ownerUse =
+      use === 'PopupSubTableFormModel'
+        ? 'PopupSubTableFieldModel'
+        : use === 'SubTableColumnModel'
+          ? 'SubTableFieldModel'
+          : undefined;
+    if (ownerUse) {
+      const owner = hosts.slice(index + 1).find((candidate) => candidate.use === ownerUse);
+      if (owner) contexts.push({ owner, valueEnabled: true });
+      continue;
+    }
+  }
+  return contexts;
 }
 
 function compileFixedSlot(
@@ -150,9 +229,38 @@ function compileFixedSlot(
   if (path.varName === 'item' && options.flowModel) {
     let index = 0;
     while (segments[index] === 'parentItem') index += 1;
-    if (segments[index] === 'value' && typeof segments[index + 1] === 'string' && segments.length > index + 2) {
-      return { slot: Object.freeze(segments.slice(0, index + 2)), source: 'item-association' };
+    const itemFieldPath = segments[index + 1];
+    if (segments[index] !== 'value' || typeof itemFieldPath !== 'string' || segments.length <= index + 2) {
+      return undefined;
     }
+    const hosts = getHosts(path, options);
+    const contexts = getItemContexts(hosts);
+    const context = contexts[index];
+    if (context && !context.valueEnabled) return undefined;
+    const crossedContexts = contexts.slice(0, Math.min(index + 1, contexts.length));
+    if (
+      crossedContexts.some(({ owner }) => {
+        const field = getItemOwnerField(owner, hosts);
+        return (
+          !field ||
+          options.resolveFieldKind?.(field.dataSourceKey, field.collectionName, field.fieldPath) !== 'association'
+        );
+      })
+    ) {
+      return undefined;
+    }
+    const ownerField = getItemOwnerField(context?.owner, hosts);
+    const source =
+      ownerField ||
+      (index === contexts.length ? getItemOwnerField(contexts[contexts.length - 1]?.owner, hosts) : undefined);
+    const fieldPath = ownerField ? `${ownerField.fieldPath}.${itemFieldPath}` : itemFieldPath;
+    if (
+      !source ||
+      options.resolveFieldKind?.(source.dataSourceKey, source.collectionName, fieldPath) !== 'association'
+    ) {
+      return undefined;
+    }
+    return { slot: Object.freeze(segments.slice(0, index + 2)), source: 'item-association' };
   }
   return undefined;
 }
