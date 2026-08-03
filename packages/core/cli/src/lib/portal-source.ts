@@ -804,7 +804,10 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
 }
 
 export async function pushPortalSource(options: PortalSourceOptions): Promise<PortalSourceResult> {
-  const context = await resolvePortalSourceContext(options);
+  const context = await resolvePortalSourceContext({
+    ...options,
+    defaultSourcePath: true,
+  });
   if (!(await pathExists(context.portalDir))) {
     throw new Error(
       portalSourceText(

@@ -161,6 +161,36 @@ test('keeps the development path by default', async () => {
   await expect(fsp.access(deploymentPath)).rejects.toThrow();
 });
 
+test('reports development path deleted when it matches the deployment path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  await expect(
+    destroyPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        portals: {
+          customer: {
+            path: deploymentPath,
+          },
+        },
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    developmentPath: deploymentPath,
+    deploymentPath,
+    recordDeleted: true,
+    developmentPathDeleted: true,
+    deploymentPathDeleted: true,
+  });
+
+  await expect(fsp.access(deploymentPath)).rejects.toThrow();
+});
+
 test('deletes the development path when requested', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const developmentPath = await makeTempDir('nocobase-cli-portal-destroy-dev-');

@@ -192,7 +192,7 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
     mode: destroyMode,
     recordDeleted,
     developmentPathDeleted:
-      developmentPathExists || (Boolean(options.deleteDevPath) && developmentPathIsDeploymentPath && deploymentPathExists),
+      developmentPathExists || (developmentPathIsDeploymentPath && deploymentPathExists),
     deploymentPathDeleted: deploymentPathExists,
   };
 }

@@ -390,7 +390,13 @@ test('push uploads NocoBase-managed source for http envs and excludes dist', asy
     pushPortalSource({
       portal: 'customer',
       envName: 'prod',
-      env: createEnv({ storagePath, kind: 'http' }),
+      env: createEnv({
+        storagePath,
+        kind: 'http',
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
       apiRequest,
     }),
   ).resolves.toMatchObject({
@@ -625,7 +631,7 @@ test('docker NocoBase-managed source push uploads through the API', async () => 
   expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toContain('/multiPortals:pushSource');
 });
 
-test('docker NocoBase-managed source push uploads when the workspace is already the storage path', async () => {
+test('docker NocoBase-managed source push uploads from the saved storage path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
@@ -641,7 +647,14 @@ test('docker NocoBase-managed source push uploads when the workspace is already 
   await expect(
     pushPortalSource({
       portal: 'customer',
-      env: createEnv({ storagePath, kind: 'docker', apiBaseUrl: 'http://localhost:13000/api' }),
+      env: createEnv({
+        storagePath,
+        kind: 'docker',
+        apiBaseUrl: 'http://localhost:13000/api',
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
       apiRequest,
     }),
   ).resolves.toMatchObject({
@@ -650,6 +663,51 @@ test('docker NocoBase-managed source push uploads when the workspace is already 
     sourceRevision: 'src_storage',
   });
   expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toContain('/multiPortals:pushSource');
+});
+
+test('push defaults to the cwd portal workspace instead of the deployment path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const workspaceRoot = await makeTempDir('nocobase-cli-portal-source-workspace-');
+  const portalDir = path.join(workspaceRoot, 'customer');
+  const deploymentDir = path.join(storagePath, 'portals', 'main', 'customer');
+  await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
+  await fsp.mkdir(path.join(deploymentDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "workspace";\n');
+  await fsp.writeFile(path.join(deploymentDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.writeFile(path.join(deploymentDir, 'src', 'index.tsx'), 'export default "deployment";\n');
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(workspaceRoot);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+
+    const extractDir = await makeTempDir('nocobase-cli-portal-source-upload-');
+    await tar.extract({ cwd: extractDir, file: String(options.flags.file) });
+    await expect(fsp.readFile(path.join(extractDir, 'src', 'index.tsx'), 'utf-8')).resolves.toBe(
+      'export default "workspace";\n',
+    );
+    return { ok: true, status: 200, data: { data: { sourceRevision: 'src_workspace' } } };
+  });
+
+  try {
+    await expect(
+      pushPortalSource({
+        portal: 'customer',
+        env: createEnv({ storagePath, kind: 'http' }),
+        apiRequest,
+      }),
+    ).resolves.toMatchObject({
+      portalDir,
+      changed: true,
+      sourceRevision: 'src_workspace',
+    });
+  } finally {
+    cwdSpy.mockRestore();
+  }
 });
 
 test('pull can skip dependency installation', async () => {
@@ -920,7 +978,13 @@ test('push creates configured Git branch and uses repository root by default', a
   await expect(
     pushPortalSource({
       portal: 'customer',
-      env: createEnv({ storagePath, kind: 'http' }),
+      env: createEnv({
+        storagePath,
+        kind: 'http',
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
       message: 'Initial portal source',
       apiRequest,
     }),
