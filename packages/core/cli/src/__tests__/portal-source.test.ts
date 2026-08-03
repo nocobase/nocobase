@@ -100,7 +100,7 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
   await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default null;\n');
-  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
   await fsp.mkdir(path.join(sourceDir, 'scripts'), { recursive: true });
   await fsp.writeFile(
     path.join(sourceDir, 'scripts', 'build-html.mjs'),
@@ -192,6 +192,41 @@ test('pull downloads NocoBase-managed source for http envs', async () => {
   );
 });
 
+test('pull with force refuses to replace a non-portal directory', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = path.join(storagePath, 'customer');
+  const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
+  await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default null;\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'notes.txt'), 'not a portal');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+
+    expect(options.operation.pathTemplate).toBe('/multiPortals:pullSource');
+    await tar.create({ cwd: sourceDir, file: String(options.flags.output), gzip: true }, await fsp.readdir(sourceDir));
+    return { ok: true, status: 200, data: { output: options.flags.output } };
+  });
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      envName: 'prod',
+      env: createEnv({ storagePath, kind: 'http' }),
+      sourcePath: portalDir,
+      force: true,
+      apiRequest,
+    }),
+  ).rejects.toThrow(`Refusing to replace a non-portal directory: ${portalDir}`);
+  await expect(fsp.readFile(path.join(portalDir, 'notes.txt'), 'utf-8')).resolves.toBe('not a portal');
+});
+
 test('pull uses app:getInfo app name for custom-domain http envs', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'crm');
@@ -274,7 +309,7 @@ test('pull completes when dependency installation fails', async () => {
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-install-failure-');
   await fsp.mkdir(path.join(sourceDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(sourceDir, 'src', 'index.tsx'), 'export default "install failed";\n');
-  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
   const runCommand = vi.fn(async () => {
     throw new Error('pnpm install exited with code 1');
   });
@@ -377,7 +412,7 @@ test('local NocoBase-managed source pull downloads into the workspace path', asy
   const workspaceRoot = await makeTempDir('nocobase-cli-portal-source-workspace-');
   const portalDir = path.join(workspaceRoot, 'customer');
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
-  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
@@ -434,7 +469,7 @@ test('pull can skip dependency installation', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'customer');
   const sourceDir = await makeTempDir('nocobase-cli-portal-source-archive-');
-  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer"}\n');
+  await fsp.writeFile(path.join(sourceDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
@@ -479,6 +514,7 @@ test('pull and push Git-managed source through the configured repository path', 
   await runGit(['config', 'user.email', 'test@example.com'], seedRepo);
   await fsp.mkdir(path.join(seedRepo, 'customer', 'src'), { recursive: true });
   await fsp.writeFile(path.join(seedRepo, 'customer', 'src', 'index.tsx'), 'export default "remote";\n');
+  await fsp.writeFile(path.join(seedRepo, 'customer', 'package.json'), '{"name":"customer","nocobase":{}}\n');
   await runGit(['add', 'customer'], seedRepo);
   await runGit(['commit', '-m', 'seed'], seedRepo);
   await runGit(['remote', 'add', 'origin', remoteRepo], seedRepo);
@@ -590,7 +626,7 @@ test('pull Git-managed source at the repository root as a local Git checkout', a
   await runGit(['config', 'user.email', 'test@example.com'], seedRepo);
   await fsp.mkdir(path.join(seedRepo, 'src'), { recursive: true });
   await fsp.writeFile(path.join(seedRepo, 'src', 'index.tsx'), 'export default "remote root";\n');
-  await fsp.writeFile(path.join(seedRepo, 'package.json'), '{"name":"customer"}\n');
+  await fsp.writeFile(path.join(seedRepo, 'package.json'), '{"name":"customer","nocobase":{}}\n');
   await runGit(['add', 'src', 'package.json'], seedRepo);
   await runGit(['commit', '-m', 'seed root'], seedRepo);
   await runGit(['remote', 'add', 'origin', remoteRepo], seedRepo);

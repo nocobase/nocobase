@@ -23,7 +23,7 @@ import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
 import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
-import { isUnsafePortalDeletePath } from './portal-path-safety.js';
+import { canReplacePortalDirectory } from './portal-path-safety.js';
 import {
   buildPortalConfig,
   mergePortalConfigIntoOptions,
@@ -651,12 +651,12 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
       ),
     );
   }
-  if (targetExists && options.force && (await isUnsafePortalDeletePath(portalDir))) {
+  if (targetExists && options.force && !(await canReplacePortalDirectory(portalDir))) {
     throw new Error(
       portalCreateText(
-        'errors.unsafeWorkspacePath',
+        'errors.workspaceNotReplaceable',
         { portalDir },
-        `Refusing to delete an unsafe portal workspace path: ${portalDir}`,
+        `Refusing to replace a non-portal directory: ${portalDir}`,
       ),
     );
   }

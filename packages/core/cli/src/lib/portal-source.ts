@@ -23,7 +23,7 @@ import {
   type PortalConfig,
 } from './portal-config.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
-import { isUnsafePortalDeletePath } from './portal-path-safety.js';
+import { canReplacePortalDirectory } from './portal-path-safety.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import {
   buildPortalBasePath,
@@ -300,12 +300,12 @@ async function assertPortalDirectoryCanBeReplaced(params: { portalDir: string; f
       ),
     );
   }
-  if (targetExists && params.force && (await isUnsafePortalDeletePath(params.portalDir))) {
+  if (targetExists && params.force && !(await canReplacePortalDirectory(params.portalDir))) {
     throw new Error(
       portalSourceText(
-        'errors.unsafeWorkspacePath',
+        'errors.workspaceNotReplaceable',
         { portalDir: params.portalDir },
-        `Refusing to delete an unsafe portal workspace path: ${params.portalDir}`,
+        `Refusing to replace a non-portal directory: ${params.portalDir}`,
       ),
     );
   }

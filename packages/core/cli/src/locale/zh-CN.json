@@ -186,7 +186,7 @@
         "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
         "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
         "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。",
-        "unsafeWorkspacePath": "拒绝删除不安全的 Portal 工作区路径：{{portalDir}}"
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
       },
       "messages": {
         "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
@@ -274,7 +274,7 @@
     },
     "portalSource": {
       "errors": {
-        "unsafeWorkspacePath": "拒绝删除不安全的 Portal 工作区路径：{{portalDir}}"
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
       }
     },
     "swagger": {

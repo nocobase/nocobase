@@ -49,7 +49,7 @@ async function writeTemplate(
   options: { packageJson?: boolean; pnpmLock?: boolean } = { packageJson: true },
 ) {
   if (options.packageJson !== false) {
-    await fsp.writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template"}\n');
+    await fsp.writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template","nocobase":{}}\n');
   }
   if (options.pnpmLock) {
     await fsp.writeFile(path.join(templateDir, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
@@ -446,23 +446,50 @@ test('fails when the target directory exists without force', async () => {
   ).rejects.toThrow(/Portal already exists/);
 });
 
-test('refuses to delete the current working directory with force', async () => {
+test('creates in an empty current working directory with force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const cwd = await makeTempDir('nocobase-cli-portal-create-cwd-');
+  await writeTemplate(templatePath);
   const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
   try {
     await expect(
       createPortalWorkspace({
         portal: 'customer',
+        template: templatePath,
         sourcePath: '.',
         force: true,
         env: createEnv({ storagePath }),
+        runCommand: vi.fn().mockResolvedValue(undefined),
       }),
-    ).rejects.toThrow(`Refusing to delete an unsafe portal workspace path: ${cwd}`);
-    await expect(fsp.access(cwd)).resolves.toBeUndefined();
+    ).resolves.toMatchObject({
+      portalDir: cwd,
+    });
+    await expect(fsp.access(path.join(cwd, 'src', 'index.tsx'))).resolves.toBeUndefined();
   } finally {
     cwdSpy.mockRestore();
   }
+});
+
+test('refuses to replace a non-portal directory with force', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
+  await writeTemplate(templatePath);
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'customer',
+      template: templatePath,
+      sourcePath: portalDir,
+      env: createEnv({ storagePath }),
+      force: true,
+      runCommand: vi.fn().mockResolvedValue(undefined),
+    }),
+  ).rejects.toThrow(`Refusing to replace a non-portal directory: ${portalDir}`);
+  expect(await fsp.readFile(path.join(portalDir, 'old.txt'), 'utf-8')).toBe('old');
 });
 
 test('fails before resolving the template when the target directory exists without force', async () => {
@@ -490,6 +517,7 @@ test('deletes and recreates an existing target directory with force', async () =
   await writeTemplate(templatePath);
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"old-portal","nocobase":{}}\n');
 
   await createPortalWorkspace({
     portal: 'customer',
@@ -509,6 +537,7 @@ test('force keeps an existing target directory when template resolution fails', 
   const portalDir = portalWorkspacePath(storagePath, 'customer');
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"old-portal","nocobase":{}}\n');
 
   await expect(
     createPortalWorkspace({

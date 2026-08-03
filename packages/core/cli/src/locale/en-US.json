@@ -186,7 +186,7 @@
         "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
         "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
         "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal.",
-        "unsafeWorkspacePath": "Refusing to delete an unsafe portal workspace path: {{portalDir}}"
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
       },
       "messages": {
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
@@ -274,7 +274,7 @@
     },
     "portalSource": {
       "errors": {
-        "unsafeWorkspacePath": "Refusing to delete an unsafe portal workspace path: {{portalDir}}"
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
       }
     },
     "swagger": {
