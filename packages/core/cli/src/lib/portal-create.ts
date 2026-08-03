@@ -23,6 +23,7 @@ import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
 import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { isUnsafePortalDeletePath } from './portal-path-safety.js';
 import {
   buildPortalConfig,
   mergePortalConfigIntoOptions,
@@ -634,7 +635,6 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
   });
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
-  resolvePortalStoragePath(options.env);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalDir = resolvePortalSourcePath(portal, options.sourcePath);
@@ -648,6 +648,15 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
         'errors.workspaceExists',
         { portalDir },
         `Portal already exists: ${portalDir}\nPass --force to delete it and create a new portal.`,
+      ),
+    );
+  }
+  if (targetExists && options.force && (await isUnsafePortalDeletePath(portalDir))) {
+    throw new Error(
+      portalCreateText(
+        'errors.unsafeWorkspacePath',
+        { portalDir },
+        `Refusing to delete an unsafe portal workspace path: ${portalDir}`,
       ),
     );
   }

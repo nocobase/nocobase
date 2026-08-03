@@ -446,6 +446,25 @@ test('fails when the target directory exists without force', async () => {
   ).rejects.toThrow(/Portal already exists/);
 });
 
+test('refuses to delete the current working directory with force', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const cwd = await makeTempDir('nocobase-cli-portal-create-cwd-');
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  try {
+    await expect(
+      createPortalWorkspace({
+        portal: 'customer',
+        sourcePath: '.',
+        force: true,
+        env: createEnv({ storagePath }),
+      }),
+    ).rejects.toThrow(`Refusing to delete an unsafe portal workspace path: ${cwd}`);
+    await expect(fsp.access(cwd)).resolves.toBeUndefined();
+  } finally {
+    cwdSpy.mockRestore();
+  }
+});
+
 test('fails before resolving the template when the target directory exists without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const portalDir = portalWorkspacePath(storagePath, 'customer');

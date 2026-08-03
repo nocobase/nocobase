@@ -195,6 +195,37 @@ test('deletes the development path when requested', async () => {
   await expect(fsp.access(deploymentPath)).rejects.toThrow();
 });
 
+test('refuses to delete the current working directory as the development path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const developmentPath = await makeTempDir('nocobase-cli-portal-destroy-dev-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(developmentPath);
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  try {
+    await expect(
+      destroyPortalWorkspace({
+        portal: 'customer',
+        env: createEnv({
+          storagePath,
+          portals: {
+            customer: {
+              path: developmentPath,
+            },
+          },
+        }),
+        deleteDevPath: true,
+        apiRequest,
+      }),
+    ).rejects.toThrow(`Refusing to delete an unsafe portal development path: ${developmentPath}`);
+    expect(apiRequest).not.toHaveBeenCalled();
+    await expect(fsp.access(developmentPath)).resolves.toBeUndefined();
+    await expect(fsp.access(deploymentPath)).resolves.toBeUndefined();
+  } finally {
+    cwdSpy.mockRestore();
+  }
+});
+
 test('force destroy ignores a missing portal record and deployment path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const apiRequest = vi.fn(async () => ({ ok: false, status: 404, data: { errors: [{ message: 'Not Found' }] } }));

@@ -122,11 +122,29 @@ test('updates remote Portal source options when the remote record exists', async
   ]);
 });
 
-test('updates only the development path without touching the remote record', async () => {
+test('updates only the development path after verifying the remote record exists', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-config-storage-');
   const portalDir = path.join(await makeTempDir('nocobase-cli-portal-config-source-'), 'customer');
-  const apiRequest = vi.fn(async () => {
-    throw new Error('remote API should not be called for path-only updates');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    expect(options.operation.pathTemplate).toBe('/multiPortals:list');
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        data: [
+          {
+            uid: 'customer',
+            portalName: 'customer',
+            routePath: '/customer',
+            portalType: 'ai',
+            enabled: true,
+          },
+        ],
+      },
+    };
   });
 
   await expect(
@@ -143,7 +161,10 @@ test('updates only the development path without touching the remote record', asy
     pathUpdated: true,
     config: undefined,
   });
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
+    '/multiPortals:list',
+  ]);
 });
 
 test('defaults Git path to the repository root', async () => {
@@ -211,6 +232,26 @@ test('fails when updating source options for a missing remote record', async () 
       portal: 'customer',
       env: createEnv({ storagePath }),
       sourceStorage: 'nocobase',
+      apiRequest,
+    }),
+  ).rejects.toThrow('Portal "customer" was not found.');
+});
+
+test('fails when updating the development path for a missing remote record', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-config-storage-');
+  const portalDir = path.join(await makeTempDir('nocobase-cli-portal-config-source-'), 'customer');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    return { ok: true, status: 200, data: { data: [] } };
+  });
+
+  await expect(
+    configurePortalWorkspace({
+      portal: 'customer',
+      env: createEnv({ storagePath }),
+      sourcePath: portalDir,
       apiRequest,
     }),
   ).rejects.toThrow('Portal "customer" was not found.');

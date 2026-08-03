@@ -185,7 +185,8 @@
         "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
         "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
         "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
-        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal."
+        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal.",
+        "unsafeWorkspacePath": "Refusing to delete an unsafe portal workspace path: {{portalDir}}"
       },
       "messages": {
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
@@ -271,6 +272,11 @@
         "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
       }
     },
+    "portalSource": {
+      "errors": {
+        "unsafeWorkspacePath": "Refusing to delete an unsafe portal workspace path: {{portalDir}}"
+      }
+    },
     "swagger": {
       "errors": {
         "pluginDisabled": "The API documentation plugin is not enabled. Enable it before requesting Swagger documents.",
@@ -320,6 +326,7 @@
         "outsideParent": "Refusing to delete a portal outside {{parentDir}}: {{portalDir}}",
         "workspaceMissing": "Portal deployment path does not exist: {{portalDir}}\nPass --force to ignore missing deployment files.",
         "unsupportedEnvKind": "Cannot destroy a portal for {{kind}} envs in the first version.",
+        "unsafeDevelopmentPath": "Refusing to delete an unsafe portal development path: {{portalDir}}",
         "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
       },
       "prompts": {

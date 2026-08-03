@@ -112,16 +112,6 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
   const portalDir = hasPathChange
     ? resolvePortalSourcePath(portal, options.sourcePath)
     : resolveSavedPortalSourcePath(options.env, portal) ?? '';
-  if (!hasSourceChange) {
-    return {
-      app: '',
-      portal,
-      portalDir,
-      config: undefined,
-      remoteSynced: false,
-      pathUpdated: hasPathChange,
-    };
-  }
 
   const appContext = await resolvePortalAppContext(options);
   const { app } = appContext;
@@ -144,6 +134,16 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
         `Portal "${portal}" was not found. Run \`nb portal list\` to see available portals.`,
       ),
     );
+  }
+  if (!hasSourceChange) {
+    return {
+      app,
+      portal,
+      portalDir,
+      config: undefined,
+      remoteSynced: false,
+      pathUpdated: hasPathChange,
+    };
   }
   const existingConfig = buildConfigFromRemoteOptions({
     portal,

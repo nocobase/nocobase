@@ -185,7 +185,8 @@
         "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
         "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
         "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
-        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
+        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。",
+        "unsafeWorkspacePath": "拒绝删除不安全的 Portal 工作区路径：{{portalDir}}"
       },
       "messages": {
         "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
@@ -271,6 +272,11 @@
         "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
       }
     },
+    "portalSource": {
+      "errors": {
+        "unsafeWorkspacePath": "拒绝删除不安全的 Portal 工作区路径：{{portalDir}}"
+      }
+    },
     "swagger": {
       "errors": {
         "pluginDisabled": "API 文档插件尚未启用。请先启用该插件，再获取 Swagger 文档。",
@@ -320,6 +326,7 @@
         "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal：{{portalDir}}",
         "workspaceMissing": "Portal 部署路径不存在：{{portalDir}}\n如需忽略部署文件缺失，请追加 --force。",
         "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal。",
+        "unsafeDevelopmentPath": "拒绝删除不安全的 Portal 开发路径：{{portalDir}}",
         "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
       },
       "prompts": {

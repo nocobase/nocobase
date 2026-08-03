@@ -11,6 +11,7 @@ import { rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
+import { isUnsafePortalDeletePath } from './portal-path-safety.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
@@ -157,6 +158,15 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
     options.deleteDevPath && portalDevDir && !developmentPathIsDeploymentPath
       ? await pathExists(portalDevDir)
       : false;
+  if (developmentPathExists && (await isUnsafePortalDeletePath(portalDevDir))) {
+    throw new Error(
+      portalDestroyText(
+        'errors.unsafeDevelopmentPath',
+        { portalDir: portalDevDir },
+        `Refusing to delete an unsafe portal development path: ${portalDevDir}`,
+      ),
+    );
+  }
 
   const recordDeleted = await destroyMultiPortalRecord({
     portal,

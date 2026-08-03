@@ -23,6 +23,7 @@ import {
   type PortalConfig,
 } from './portal-config.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { isUnsafePortalDeletePath } from './portal-path-safety.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import {
   buildPortalBasePath,
@@ -229,16 +230,10 @@ async function replacePortalSourceFromArchive(params: {
   portalDir: string;
   force?: boolean;
 }): Promise<void> {
-  const targetExists = await pathExists(params.portalDir);
-  if (targetExists && !params.force) {
-    throw new Error(
-      portalSourceText(
-        'errors.workspaceExists',
-        { portalDir: params.portalDir },
-        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
-      ),
-    );
-  }
+  const targetExists = await assertPortalDirectoryCanBeReplaced({
+    portalDir: params.portalDir,
+    force: params.force,
+  });
 
   const parentDir = path.dirname(params.portalDir);
   const tempDir = await mkdtemp(path.join(parentDir, `.${path.basename(params.portalDir)}-pull-`));
@@ -268,16 +263,10 @@ async function replacePortalSourceFromDirectory(params: {
   portalDir: string;
   force?: boolean;
 }): Promise<void> {
-  const targetExists = await pathExists(params.portalDir);
-  if (targetExists && !params.force) {
-    throw new Error(
-      portalSourceText(
-        'errors.workspaceExists',
-        { portalDir: params.portalDir },
-        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
-      ),
-    );
-  }
+  const targetExists = await assertPortalDirectoryCanBeReplaced({
+    portalDir: params.portalDir,
+    force: params.force,
+  });
 
   const parentDir = path.dirname(params.portalDir);
   const tempDir = await mkdtemp(path.join(parentDir, `.${path.basename(params.portalDir)}-pull-`));
@@ -308,6 +297,15 @@ async function assertPortalDirectoryCanBeReplaced(params: { portalDir: string; f
         'errors.workspaceExists',
         { portalDir: params.portalDir },
         `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
+      ),
+    );
+  }
+  if (targetExists && params.force && (await isUnsafePortalDeletePath(params.portalDir))) {
+    throw new Error(
+      portalSourceText(
+        'errors.unsafeWorkspacePath',
+        { portalDir: params.portalDir },
+        `Refusing to delete an unsafe portal workspace path: ${params.portalDir}`,
       ),
     );
   }
