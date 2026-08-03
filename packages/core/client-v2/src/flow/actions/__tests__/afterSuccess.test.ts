@@ -45,6 +45,40 @@ describe('afterSuccess response record variable', () => {
     expect(properties.responseRecord.get()).toBe(record);
   });
 
+  it('builds responseRecord at the variable root', async () => {
+    const engine = new FlowEngine();
+    const dataSource = engine.dataSourceManager.getDataSource('main');
+    dataSource.addCollection({
+      name: 'departments',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'name', type: 'string', interface: 'input' },
+      ],
+    });
+    dataSource.addCollection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'department', type: 'belongsTo', target: 'departments', interface: 'm2o' },
+      ],
+    });
+    const collection = dataSource.getCollection('users');
+    const ctx = {
+      collection,
+      steps: { saveResource: { params: {}, result: { id: 7 } } },
+      t: (value: string) => value,
+    };
+    const properties = await afterSuccess.defineProperties(ctx as FlowRuntimeContext);
+    const meta = await properties.responseRecord.meta();
+    const recordRef = await meta.buildVariablesParams(ctx);
+
+    expect(engine.context.buildServerContextParams({ responseRecord: recordRef })).toEqual({
+      responseRecord: { collection: 'users', dataSourceKey: 'main', filterByTk: 7 },
+    });
+    expect(properties.responseRecord.resolveOnServer('department.name')).toBe(true);
+  });
+
   it('shows responseRecord in the variable picker for settings context', () => {
     const engine = new FlowEngine();
     class SubmitActionModel extends FlowModel {}

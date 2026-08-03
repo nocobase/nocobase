@@ -2103,21 +2103,31 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const api = {
       request: vi.fn(async (config: any) => {
         const cp = config?.data?.values?.batch?.[0]?.contextParams || {};
-        // Only 'view.record' should be present
-        expect(Object.keys(cp)).toContain('view.record');
+        expect(Object.keys(cp)).toEqual(['view.record']);
+        expect(cp['view.record']).toEqual({
+          collection: 'users',
+          dataSourceKey: 'analytics',
+          filterByTk: 1,
+          associationName: 'accounts.users',
+          sourceId: 4,
+        });
         return { data: { id: 1 } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
 
     engine.context.defineProperty('view', {
-      get: () => ({ type: 'dialog' }),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-      meta: async () => ({
-        type: 'object',
-        title: 'View',
-        buildVariablesParams: () => ({ record: { collection: 'users', filterByTk: 1, dataSourceKey: 'main' } }),
+      get: () => ({
+        type: 'dialog',
+        inputArgs: {
+          collectionName: 'users',
+          dataSourceKey: 'analytics',
+          filterByTk: 1,
+          associationName: 'accounts.users',
+          sourceId: 4,
+        },
       }),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
     });
 
     const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;

@@ -10,7 +10,12 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import * as variableExpression from '../template/variable-expression';
-import { resolveVariablesBatch, resolveVariablesTemplate } from '../variables/resolve';
+import { authorizeVariablesResolve } from '../variables/allow-list';
+import {
+  resolveAnalyzedVariablesTemplate,
+  resolveVariablesBatch,
+  resolveVariablesTemplate,
+} from '../variables/resolve';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables:resolve external data source records', () => {
@@ -45,19 +50,28 @@ describe('variables:resolve external data source records', () => {
         environment: { getVariables: () => ({}) },
         logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
       },
-      state: {},
+      db: { getRepository: vi.fn() },
+      state: { currentRole: 'root', currentRoles: ['root'] },
     } as unknown as ResourcerContext;
 
-    const result = await resolveVariablesTemplate(
-      koaContext,
-      { value: '{{ ctx.popup.record.email }}' },
-      {
+    const template = { value: '{{ ctx.popup.record.email }}' };
+    const authorization = await authorizeVariablesResolve(koaContext, {
+      template,
+      contextParams: {
         'popup.record': {
           dataSourceKey: 'crm_external',
           collection: 'leads',
           filterByTk: 'lead-1',
         },
       },
+    });
+    expect(authorization.allowed).toBe(true);
+    if (!authorization.allowed) return;
+    const result = await resolveAnalyzedVariablesTemplate(
+      koaContext,
+      authorization.analysis,
+      authorization.policy,
+      authorization.bindingPlan,
     );
 
     expect(result).toEqual({ value: 'acme@example.test' });
@@ -69,6 +83,70 @@ describe('variables:resolve external data source records', () => {
     });
     expect(analyze).toHaveBeenCalledTimes(1);
     analyze.mockRestore();
+  });
+
+  it('keeps external association repository runtime fields independent from the slot', async () => {
+    const targetCollection = {
+      name: 'contacts',
+      filterTargetKey: 'id',
+      model: {
+        primaryKeyAttribute: 'id',
+        rawAttributes: { email: {}, id: {} },
+        associations: {},
+      },
+    };
+    const findOne = vi.fn(async () => ({ email: 'owner@example.test', id: 'contact-3' }));
+    const getRepository = vi.fn((associationName: string, sourceId: unknown) => {
+      expect(associationName).toBe('accounts.contacts');
+      expect(sourceId).toBe('account-9');
+      return { collection: targetCollection, findOne, targetCollection };
+    });
+    const getDataSource = vi.fn((key: string) => {
+      expect(key).toBe('crm_external');
+      return {
+        collectionManager: {
+          db: {
+            getCollection: () => targetCollection,
+            getRepository,
+          },
+        },
+      };
+    });
+    const context = {
+      app: {
+        dataSourceManager: { get: getDataSource },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      db: { getRepository: vi.fn() },
+      state: { currentRole: 'root', currentRoles: ['root'] },
+    } as unknown as ResourcerContext;
+    const template = { value: '{{ ctx.popup.record.email }}' };
+    const authorization = await authorizeVariablesResolve(context, {
+      template,
+      contextParams: {
+        'popup.record': {
+          associationName: 'accounts.contacts',
+          collection: 'runtime-placeholder',
+          dataSourceKey: 'crm_external',
+          filterByTk: 'contact-3',
+          sourceId: 'account-9',
+        },
+      },
+    });
+    expect(authorization.allowed).toBe(true);
+    if (!authorization.allowed) return;
+
+    await expect(
+      resolveAnalyzedVariablesTemplate(
+        context,
+        authorization.analysis,
+        authorization.policy,
+        authorization.bindingPlan,
+      ),
+    ).resolves.toEqual({ value: 'owner@example.test' });
+    expect(getRepository).toHaveBeenCalledWith('accounts.contacts', 'account-9');
+    expect(findOne).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'contact-3' }));
   });
 
   it('keeps a declared multi-level popup record as a whole object', async () => {

@@ -14,6 +14,7 @@ import {
 } from '../template/context-keys';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
 import { isRecordParams, type RecordParams } from './records';
+import type { RecordSlotPolicies } from './record-slot-policy';
 
 export type RecordBindingPlannerMode = 'strict' | 'trusted';
 
@@ -21,8 +22,6 @@ export type RecordContextPolicy = Readonly<{
   allowGenericStrictPrefix?: boolean;
   exactWholeRecordPaths?: readonly (readonly PathSegment[])[];
 }>;
-
-export type RecordBindingPolicies = Readonly<Record<string, RecordContextPolicy | undefined>>;
 
 export type AuthorizedRecordBinding = Readonly<{
   params: RecordParams;
@@ -37,8 +36,8 @@ export type AuthorizedRecordBinding = Readonly<{
 export type RecordBindingRejectionReason =
   | 'protected-context-root'
   | 'protected-context-key'
-  | 'generic-strict-prefix-not-allowed'
-  | 'exact-whole-record-not-allowed';
+  | 'missing-record-slot-policy'
+  | 'record-slot-mismatch';
 
 export type RecordBindingRejection = Readonly<{
   reason: RecordBindingRejectionReason;
@@ -59,7 +58,7 @@ export type RecordBindingUsage = Readonly<Record<string, readonly VariablePathRe
 export type PlanRecordBindingsOptions = Readonly<{
   contextParams?: Readonly<Record<string, unknown>>;
   mode?: RecordBindingPlannerMode;
-  policies?: RecordBindingPolicies;
+  policies?: RecordSlotPolicies;
   usage: RecordBindingUsage;
 }>;
 
@@ -147,10 +146,6 @@ function collectDescriptorsAndContextParams(contextParams: Readonly<Record<strin
   return { contextParams: Object.freeze(Object.fromEntries(cleaned)), descriptors };
 }
 
-function exactPathAllowed(prefix: readonly PathSegment[], policy?: RecordContextPolicy) {
-  return policy?.exactWholeRecordPaths?.some((path) => sameSegments(path, prefix)) === true;
-}
-
 export function planRecordBindings(options: PlanRecordBindingsOptions): RecordBindingPlan {
   const mode = options.mode ?? 'strict';
   const { contextParams, descriptors } = collectDescriptorsAndContextParams(options.contextParams ?? {});
@@ -158,8 +153,9 @@ export function planRecordBindings(options: PlanRecordBindingsOptions): RecordBi
   const rejections: RecordBindingRejection[] = [];
 
   for (const descriptor of descriptors) {
-    const usedPaths = (options.usage[descriptor.varName] ?? []).map((ref) => ref.runtimeSegments);
-    const matchedPaths = usedPaths.filter((path) => startsWithSegments(path, descriptor.prefix));
+    const matchedPaths = (options.usage[descriptor.varName] ?? []).filter((ref) =>
+      startsWithSegments(ref.runtimeSegments, descriptor.prefix),
+    );
     if (!matchedPaths.length) continue;
 
     const reject = (reason: RecordBindingRejectionReason) => {
@@ -183,18 +179,22 @@ export function planRecordBindings(options: PlanRecordBindingsOptions): RecordBi
       continue;
     }
 
-    const exactMatch = matchedPaths.some((path) => path.length === descriptor.prefix.length);
-    const policy = options.policies?.[descriptor.varName];
-    if (mode === 'strict' && exactMatch && !exactPathAllowed(descriptor.prefix, policy)) {
-      reject('exact-whole-record-not-allowed');
-      continue;
-    }
-    if (mode === 'strict' && !exactMatch && policy?.allowGenericStrictPrefix === false) {
-      reject('generic-strict-prefix-not-allowed');
+    const authorizedPaths =
+      mode === 'trusted'
+        ? matchedPaths
+        : matchedPaths.filter((ref) => {
+            const policy = options.policies?.get(ref.canonicalKey);
+            return !!policy && sameSegments(policy.slot, descriptor.prefix);
+          });
+    if (!authorizedPaths.length) {
+      const hasPolicy = matchedPaths.some((ref) => options.policies?.has(ref.canonicalKey));
+      reject(hasPolicy ? 'record-slot-mismatch' : 'missing-record-slot-policy');
       continue;
     }
 
-    const relativePaths = matchedPaths.map((path) => Object.freeze(path.slice(descriptor.prefix.length)));
+    const authorizedRuntimePaths = authorizedPaths.map((path) => path.runtimeSegments);
+    const exactMatch = authorizedRuntimePaths.some((path) => path.length === descriptor.prefix.length);
+    const relativePaths = authorizedRuntimePaths.map((path) => Object.freeze(path.slice(descriptor.prefix.length)));
     bindings.push(
       Object.freeze({
         params: descriptor.params,

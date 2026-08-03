@@ -14,6 +14,8 @@ import {
   AddSubModelButton,
   autorun,
   createCurrentRecordMetaFactory,
+  createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   DndProvider,
   DragHandler,
   Droppable,
@@ -1201,13 +1203,28 @@ TableBlockModel.registerEvents({
   },
 });
 
-function defineClickedRowRecordVariable(model: TableBlockModel, value: any) {
-  const recordMeta = createCurrentRecordMetaFactory(model.context, () => model.collection, {
-    title: tExpr('Clicked row record'),
-  });
+export function defineClickedRowRecordVariable(model: TableBlockModel, value: unknown) {
+  const recordMeta = createRecordMetaFactory(
+    () => model.collection,
+    tExpr('Clicked row record'),
+    () => {
+      const filterByTk = model.collection.getFilterByTK(value);
+      if (filterByTk == null) return undefined;
+      return {
+        collection: model.collection.name,
+        dataSourceKey: model.collection.dataSourceKey,
+        filterByTk,
+      };
+    },
+  );
   model.context.defineProperty('clickedRowRecord', {
     get: () => value,
     meta: recordMeta,
+    resolveOnServer: createRecordResolveOnServerWithLocal(
+      () => model.collection,
+      () => value,
+    ),
+    serverOnlyWhenContextParams: true,
   });
 }
 

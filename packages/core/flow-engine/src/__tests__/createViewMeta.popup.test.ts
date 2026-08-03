@@ -10,10 +10,17 @@
 import { describe, it, expect, vi } from 'vitest';
 import { FlowContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
+import { buildServerContextParams, type RecordRef } from '../utils/serverContextParams';
 import type { FlowView } from '../views/FlowView';
-import { buildPopupRuntime, createPopupMeta } from '../views/createViewMeta';
+import { buildPopupRuntime, createPopupMeta, registerPopupVariable } from '../views/createViewMeta';
 
 describe('createPopupMeta - popup variables', () => {
+  type PopupVariablesParams = {
+    parent?: PopupVariablesParams;
+    record?: RecordRef;
+    sourceRecord?: RecordRef;
+  };
+
   function makeCtx() {
     const engine = new FlowEngine();
     const ctx = new FlowContext();
@@ -147,10 +154,10 @@ describe('createPopupMeta - popup variables', () => {
     getModelSpy.mockImplementation((uid: string) => (uid === 'popup-uid' ? popupModel : settingsModel));
 
     const metaFactory = createPopupMeta(ctx, anchorView);
-    const meta = (await metaFactory())!;
+    const meta = await metaFactory();
 
     // record 应来自锚定视图的 openView 配置
-    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+    const vars = (await meta?.buildVariablesParams?.(ctx)) as PopupVariablesParams;
     expect(vars).toBeTruthy();
     expect(vars.record).toEqual({
       collection: 'posts',
@@ -186,8 +193,8 @@ describe('createPopupMeta - popup variables', () => {
     const parentView = makeNestedPopupView('parent-popup-uid', 13);
     mockNestedPopupModels(engine);
 
-    const meta = (await createPopupMeta(ctx, parentView)())!;
-    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+    const meta = await createPopupMeta(ctx, parentView)();
+    const vars = (await meta?.buildVariablesParams?.(ctx)) as PopupVariablesParams;
 
     expect(vars.record).toEqual({
       collection: 'users',
@@ -203,8 +210,8 @@ describe('createPopupMeta - popup variables', () => {
     const childView = makeNestedPopupView('child-popup-uid', 24);
     mockNestedPopupModels(engine);
 
-    const meta = (await createPopupMeta(ctx, childView)())!;
-    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+    const meta = await createPopupMeta(ctx, childView)();
+    const vars = (await meta?.buildVariablesParams?.(ctx)) as PopupVariablesParams;
 
     expect(vars.record).toEqual({
       collection: 'orgs',
@@ -220,6 +227,92 @@ describe('createPopupMeta - popup variables', () => {
       sourceId: 13,
       associationName: 'users.orgs',
     });
+  });
+
+  it('builds record and sourceRecord slots for every popup parent', async () => {
+    const { engine, ctx } = makeCtx();
+    const view: FlowView = {
+      type: 'drawer',
+      inputArgs: {
+        viewUid: 'child-popup-uid',
+        filterByTk: 24,
+        sourceId: 13,
+        associationName: 'users.tasks',
+        dataSourceKey: 'main',
+      },
+      navigation: {
+        viewStack: [
+          { viewUid: 'base-page-uid' },
+          { viewUid: 'grandparent-popup-uid', filterByTk: 3, sourceId: 1 },
+          { viewUid: 'parent-popup-uid', filterByTk: 13, sourceId: 3 },
+          { viewUid: 'child-popup-uid', filterByTk: 24, sourceId: 13 },
+        ],
+      },
+      Header: null,
+      Footer: null,
+      close: () => undefined,
+      update: () => undefined,
+    };
+    const openViewParams: Record<string, { collectionName: string; dataSourceKey: string; associationName: string }> = {
+      'grandparent-popup-uid': {
+        collectionName: 'teams',
+        dataSourceKey: 'main',
+        associationName: 'companies.teams',
+      },
+      'parent-popup-uid': {
+        collectionName: 'users',
+        dataSourceKey: 'main',
+        associationName: 'teams.users',
+      },
+      'child-popup-uid': {
+        collectionName: 'tasks',
+        dataSourceKey: 'main',
+        associationName: 'users.tasks',
+      },
+    };
+    vi.spyOn(engine, 'getModel').mockImplementation(
+      (uid: string) =>
+        ({
+          getStepParams: (_flowKey: string, stepKey: string) =>
+            stepKey === 'openView' ? openViewParams[uid] : undefined,
+        }) as never,
+    );
+
+    const meta = await createPopupMeta(ctx, view)();
+    const variablesParams = await meta?.buildVariablesParams?.(ctx);
+    const contextParams = buildServerContextParams(ctx, { popup: variablesParams });
+
+    expect(Object.keys(contextParams || {}).sort()).toEqual([
+      'popup.parent.parent.record',
+      'popup.parent.parent.sourceRecord',
+      'popup.parent.record',
+      'popup.parent.sourceRecord',
+      'popup.record',
+      'popup.sourceRecord',
+    ]);
+    expect(contextParams?.['popup.parent.parent.sourceRecord']).toEqual({
+      collection: 'companies',
+      dataSourceKey: 'main',
+      filterByTk: 1,
+    });
+    expect(contextParams?.['popup.parent.sourceRecord']).toEqual({
+      collection: 'teams',
+      dataSourceKey: 'main',
+      filterByTk: 3,
+    });
+    expect(contextParams?.['popup.sourceRecord']).toEqual({
+      collection: 'users',
+      dataSourceKey: 'main',
+      filterByTk: 13,
+    });
+
+    registerPopupVariable(ctx, view);
+    const resolveOnServer = ctx.getPropertyOptions('popup').resolveOnServer as (path: string) => boolean;
+    expect(resolveOnServer('record')).toBe(true);
+    expect(resolveOnServer('sourceRecord')).toBe(true);
+    expect(resolveOnServer('parent.record')).toBe(true);
+    expect(resolveOnServer('parent.parent.sourceRecord')).toBe(true);
+    expect(resolveOnServer('parent.resource')).toBe(false);
   });
 
   it('properties() provides a record factory node (lazy) with title', async () => {
@@ -246,8 +339,8 @@ describe('createPopupMeta - popup variables', () => {
     } as any;
     vi.spyOn(engine as any, 'getModel').mockImplementation(() => popupModel);
 
-    const meta = (await createPopupMeta(ctx, anchorView)())!;
-    const props = typeof meta.properties === 'function' ? await (meta.properties as any)() : meta.properties || {};
+    const meta = await createPopupMeta(ctx, anchorView)();
+    const props = typeof meta?.properties === 'function' ? await meta.properties() : meta?.properties || {};
     // 断言存在 record 节点工厂，且有标题（懒加载，不触发集合访问）
     expect(typeof props.record).toBe('function');
     expect((props.record as any).title).toBe('Current popup record');
@@ -273,13 +366,17 @@ describe('createPopupMeta - popup variables', () => {
       update: () => void 0,
     } as any;
 
-    const meta = (await createPopupMeta(ctx, anchorView)())!;
-    expect(typeof meta.hidden).toBe('function');
-    expect((meta.hidden as any)()).toBe(false);
-    expect(typeof meta.disabled).toBe('function');
-    expect((meta.disabled as any)()).toBe(false);
+    const meta = await createPopupMeta(ctx, anchorView)();
+    expect(typeof meta?.hidden).toBe('function');
+    const hidden = meta?.hidden;
+    if (typeof hidden !== 'function') throw new Error('Expected popup hidden predicate');
+    expect(await hidden()).toBe(false);
+    expect(typeof meta?.disabled).toBe('function');
+    const disabled = meta?.disabled;
+    if (typeof disabled !== 'function') throw new Error('Expected popup disabled predicate');
+    expect(await disabled()).toBe(false);
 
-    const vars = (await meta.buildVariablesParams!(ctx)) as any;
+    const vars = (await meta?.buildVariablesParams?.(ctx)) as PopupVariablesParams;
     expect(vars).toBeTruthy();
     expect(vars.record).toEqual({
       collection: 'posts',
@@ -310,8 +407,8 @@ describe('createPopupMeta - popup variables', () => {
 
     ctx.defineProperty('view', { value: anchorView });
 
-    const meta = (await createPopupMeta(ctx, anchorView)())!;
-    const props = typeof meta.properties === 'function' ? await (meta.properties as any)() : meta.properties || {};
+    const meta = await createPopupMeta(ctx, anchorView)();
+    const props = typeof meta?.properties === 'function' ? await meta.properties() : meta?.properties || {};
     expect(props.record).toBeUndefined();
   });
 });

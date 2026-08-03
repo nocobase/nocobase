@@ -54,7 +54,7 @@ import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } f
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { getDirtyAwareApiClient } from './utils/dirtyAwareApiClient';
-import { inferRecordRef } from './utils/variablesParams';
+import { inferRecordRef, inferViewRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
@@ -3315,6 +3315,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         const inputFromMeta = await collectFromMeta();
         const autoInput = { ...inputFromMeta } as Record<string, any>;
+
+        const viewPaths = serverVarPaths.view || [];
+        if (
+          !autoInput.view &&
+          viewPaths.some((path) => path === 'record' || path.startsWith('record.') || path.startsWith('record['))
+        ) {
+          const recordRef = inferViewRecordRef(this);
+          if (recordRef) autoInput.view = { record: recordRef };
+        }
 
         // Special-case: formValues
         // If server needs to resolve some formValues paths but meta params only cover association anchors

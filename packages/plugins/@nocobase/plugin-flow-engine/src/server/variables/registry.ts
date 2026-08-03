@@ -17,10 +17,10 @@ import {
   planRecordBindings,
   type AuthorizedRecordBinding,
   type RecordBindingPlan,
-  type RecordBindingPolicies,
   type RecordContextPolicy,
 } from './record-bindings';
 import { fetchRecordWithRequestCache } from './records';
+import { compileRecordSlotPolicies, type RecordSlotPolicies } from './record-slot-policy';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -122,7 +122,6 @@ class VariableRegistry {
     const plan = planRecordBindings({
       contextParams,
       mode: 'trusted',
-      policies: getRecordBindingPolicies(usage, this),
       usage,
     });
     return this.attachUsedVariablesFromPlan(ctx, koaCtx, usage, plan);
@@ -193,33 +192,8 @@ export function sanitizeRegisteredVariableContextParams(
   return next;
 }
 
-function isPopupWholeRecordPath(path: readonly PathSegment[]) {
-  if (!path.length || !['record', 'sourceRecord'].includes(String(path[path.length - 1]))) return false;
-  return path.slice(0, -1).every((segment) => segment === 'parent');
-}
-
-export function getRecordBindingPolicies(
-  usage: VarUsage,
-  registry: { list: () => VariableDef[] } = variables,
-): RecordBindingPolicies {
-  return Object.fromEntries(
-    registry.list().map((def) => {
-      const policy = def.recordContextPolicy;
-      const exactWholeRecordPaths = [
-        ...(policy?.exactWholeRecordPaths || []),
-        ...(def.name === 'popup'
-          ? (usage.popup || []).map((ref) => ref.runtimeSegments).filter(isPopupWholeRecordPath)
-          : []),
-      ];
-      return [
-        def.name,
-        {
-          allowGenericStrictPrefix: policy?.allowGenericStrictPrefix ?? false,
-          ...(exactWholeRecordPaths.length ? { exactWholeRecordPaths } : {}),
-        },
-      ];
-    }),
-  );
+export function getRecordBindingPolicies(usage: VarUsage): RecordSlotPolicies {
+  return compileRecordSlotPolicies({ paths: Object.values(usage).flat() });
 }
 
 /**
@@ -446,10 +420,6 @@ export function registerBuiltInVariables(reg: VariableRegistry) {
   reg.register({
     name: 'popup',
     scope: 'request',
-    recordContextPolicy: {
-      allowGenericStrictPrefix: true,
-      exactWholeRecordPaths: [['record'], ['sourceRecord']],
-    },
     attach: () => {
       // Generic record-like contextParams attach popup.record,
       // popup.sourceRecord and popup.parent.* records.

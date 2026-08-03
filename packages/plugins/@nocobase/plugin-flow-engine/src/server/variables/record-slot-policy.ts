@@ -58,6 +58,7 @@ const NORMAL_FORM_USES = new Set([
   'FormModel',
   'PopupSubTableFormModel',
 ]);
+const FORM_RECORD_USES = new Set(['EditFormModel', 'PopupSubTableFormModel']);
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -169,7 +170,9 @@ function compileFormSlot(
   const fieldKind = options.resolveFieldKind(resource.dataSourceKey, resource.collectionName, top);
   if (!fieldKind) return undefined;
   const configured = getGridItems(host).some((item) => getFieldPath(item)?.split('.')[0] === top);
-  if (!configured) return { slot: Object.freeze([]), source: 'form-record' };
+  if (!configured && FORM_RECORD_USES.has(String(host.use))) {
+    return { slot: Object.freeze([]), source: 'form-record' };
+  }
   if (fieldKind === 'association' && path.runtimeSegments.length > 1) {
     return { slot: Object.freeze([top]), source: 'form-association' };
   }

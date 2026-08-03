@@ -191,8 +191,11 @@ async function getFlowModel(ctx: ResourcerContext, flowModelUid: string): Promis
 
 function createFieldKindResolver(ctx: ResourcerContext): ResolveFlowModelFieldKind {
   return (dataSourceKey, collectionName, fieldPath) => {
-    const dataSource = ctx.app.dataSourceManager.get(dataSourceKey);
-    let collection = dataSource?.collectionManager?.getCollection?.(collectionName) as RecordSlotCollection | undefined;
+    let collection = (
+      dataSourceKey === 'main'
+        ? ctx.db.getCollection(collectionName)
+        : ctx.app.dataSourceManager.get(dataSourceKey)?.collectionManager?.getCollection?.(collectionName)
+    ) as RecordSlotCollection | undefined;
     const segments = fieldPath.split('.').filter(Boolean);
     for (let index = 0; index < segments.length; index++) {
       const field = collection?.getField?.(segments[index]) ?? collection?.fields?.get?.(segments[index]);
@@ -351,8 +354,9 @@ function denied(
 function createRecordBindingPlan(
   contextParams: Readonly<Record<string, unknown>>,
   usage: RecordBindingUsage,
+  recordSlotPolicies: RecordSlotPolicies = getRecordBindingPolicies(usage),
 ): RecordBindingPlan {
-  return planRecordBindings({ contextParams, policies: getRecordBindingPolicies(usage), usage });
+  return planRecordBindings({ contextParams, policies: recordSlotPolicies, usage });
 }
 
 function recordBindingPlanAllowed(plan: RecordBindingPlan) {
@@ -424,7 +428,7 @@ export async function authorizeVariablesResolve(
   }
 
   contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
-  const bindingPlan = createRecordBindingPlan(contextParams, analysis.usage);
+  let bindingPlan = createRecordBindingPlan(contextParams, analysis.usage);
 
   if (await currentRoleAllowsConfigure(ctx)) {
     policy = createPolicy(true, new Set(), unrestrictedVariables);
@@ -435,6 +439,7 @@ export async function authorizeVariablesResolve(
     } else {
       recordSlotPolicies = fixedRequestSlots;
     }
+    bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, recordSlotPolicies);
     return recordBindingPlanAllowed(bindingPlan)
       ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy, recordSlotPolicies }
       : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
@@ -459,6 +464,7 @@ export async function authorizeVariablesResolve(
     }
   }
 
+  bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, recordSlotPolicies);
   return recordBindingPlanAllowed(bindingPlan)
     ? {
         allowed: true,

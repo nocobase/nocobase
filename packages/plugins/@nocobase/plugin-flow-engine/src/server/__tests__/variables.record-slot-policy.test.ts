@@ -111,6 +111,12 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(model, '{{ ctx.formValues.status }}')).toMatchObject({ slot: [], source: 'form-record' });
   });
 
+  it('does not invent an unconfigured record anchor for CreateForm', () => {
+    const model = formModel('CreateFormModel', '{{ ctx.formValues.status }}');
+
+    expect(getPolicy(model, '{{ ctx.formValues.status }}')).toBeUndefined();
+  });
+
   it('compiles the complete persisted FilterForm field name', () => {
     const model = {
       uid: 'filter-form',
@@ -231,7 +237,10 @@ function createFakeCtx(
       },
     },
     db: {
-      getCollection: () => ({ repository: { findModelById: options.findModelById || (async () => null) } }),
+      getCollection: (name: string) =>
+        name === 'flowModels'
+          ? { repository: { findModelById: options.findModelById || (async () => null) } }
+          : collection,
       getRepository: () => ({ find: async () => [] }),
     },
     get: (name: string) => headers[name.toLowerCase() as keyof typeof headers],

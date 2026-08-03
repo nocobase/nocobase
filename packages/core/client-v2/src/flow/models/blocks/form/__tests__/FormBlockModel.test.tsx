@@ -569,6 +569,31 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(api.request).not.toHaveBeenCalled();
   });
 
+  it('does not restore a configured association after the form clears it', async () => {
+    const model = await setupFormModel();
+    const api = { request: vi.fn(async () => ({ data: {} })) };
+    model.flowEngine.context.defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    model.context.resource?.setMeta?.({ currentFilterByTk: 1 });
+    const fakeForm = {
+      getFieldsValue: () => ({ customer: null }),
+      getFieldValue: (key: string) => (key === 'customer' ? null : undefined),
+    };
+    model.context.defineProperty('form', { value: fakeForm });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const out = await model.context.resolveJsonTemplate({ who: '{{ ctx.formValues.customer.level.name }}' });
+
+    expect(out).toEqual({ who: undefined });
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
   it('configured toMany dot aggregation path uses local value and skips server', async () => {
     const model = await setupFormModel();
 
@@ -695,6 +720,43 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const out = await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
     expect(out).toEqual({ status: 'PAID', note: 'LOCAL_NOTE' });
+  });
+
+  it('keeps configured association and unconfigured record anchors in their exact slots', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(
+        async (config: {
+          data?: { values?: { batch?: Array<{ contextParams?: Record<string, unknown>; id?: string | number }> } };
+        }) => {
+          const item = config?.data?.values?.batch?.[0] || {};
+          expect(Object.keys(item.contextParams || {}).sort()).toEqual(['formValues', 'formValues.customer']);
+          return { data: { data: { results: [{ id: item.id, data: { status: 'PAID' } }] } } };
+        },
+      ),
+    };
+    model.flowEngine.context.defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    model.context.resource?.setMeta?.({ currentFilterByTk: 1 });
+    const fakeForm = {
+      getFieldsValue: () => ({ customer: { id: 9 } }),
+      getFieldValue: (key: string) => (key === 'customer' ? { id: 9 } : undefined),
+    };
+    model.context.defineProperty('form', { value: fakeForm });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    await model.context.resolveJsonTemplate({
+      customer: '{{ ctx.formValues.customer.level.name }}',
+      status: '{{ ctx.formValues.status }}',
+    });
+
+    expect(api.request).toHaveBeenCalledTimes(1);
   });
 
   it('unconfigured association subpath (edit record): injects top-level formValues record ref with appends/fields', async () => {

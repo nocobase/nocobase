@@ -247,10 +247,14 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     }
   });
 
-  it('isolates a rejected batch item while resolving a legal strict-prefix binding', async () => {
-    const repository = app.db.getRepository('users');
-    const findOne = vi.spyOn(repository, 'findOne');
-    const template = { value: '{{ ctx.view.record.nickname }}' };
+  it('keeps a moved-slot attack out of prefetch while resolving its legal sibling', async () => {
+    const users = app.db.getRepository('users');
+    const roles = app.db.getRepository('roles');
+    const usersFindOne = vi.spyOn(users, 'findOne');
+    const rolesFind = vi.spyOn(roles, 'find');
+    const rolesFindOne = vi.spyOn(roles, 'findOne');
+    const attackTemplate = { value: '{{ ctx.popup.record.roles.title }}' };
+    const legalTemplate = { value: '{{ ctx.view.record.nickname }}' };
 
     try {
       const response = await execResolve(
@@ -258,12 +262,12 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
           batch: [
             {
               id: 'attack',
-              template,
-              contextParams: { 'view.record.nickname': { collection: 'users', filterByTk: 1 } },
+              template: attackTemplate,
+              contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
             },
             {
               id: 'legal',
-              template,
+              template: legalTemplate,
               contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
             },
           ],
@@ -271,11 +275,17 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         1,
       );
 
-      expect(response.body.results[0]).toEqual({ id: 'attack', data: template });
-      expect(response.body.results[1].data.value).not.toBe(template.value);
-      expect(findOne).toHaveBeenCalledTimes(1);
+      expect(response.body.results).toHaveLength(2);
+      expect(response.body.results[0]).toEqual({ id: 'attack', data: attackTemplate });
+      expect(response.body.results[1].id).toBe('legal');
+      expect(response.body.results[1].data.value).not.toBe(legalTemplate.value);
+      expect(usersFindOne).toHaveBeenCalledTimes(1);
+      expect(rolesFind).not.toHaveBeenCalled();
+      expect(rolesFindOne).not.toHaveBeenCalled();
     } finally {
-      findOne.mockRestore();
+      usersFindOne.mockRestore();
+      rolesFind.mockRestore();
+      rolesFindOne.mockRestore();
     }
   });
 });

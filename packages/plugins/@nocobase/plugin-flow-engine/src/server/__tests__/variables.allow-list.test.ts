@@ -18,6 +18,7 @@ import { resetVariablesRegistryForTest } from './test-utils';
 type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
+  fieldKinds?: Record<string, 'association' | 'field'>;
   findModelById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
@@ -37,9 +38,18 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
   const currentRole = options.currentRole || 'member';
   const models = options.models || {};
   const headers = options.token ? { authorization: `Bearer ${options.token}` } : {};
+  const fields = Object.fromEntries(
+    Object.entries(options.fieldKinds || {}).map(([name, kind]) => [
+      name,
+      {
+        isAssociationField: () => kind === 'association',
+        isRelationField: () => kind === 'association',
+      },
+    ]),
+  );
   const collection = {
-    fields: { get: () => undefined },
-    getField: () => undefined,
+    fields: { get: (name: string) => fields[name] },
+    getField: (name: string) => fields[name],
   };
 
   return {
@@ -90,6 +100,32 @@ function createFlowModel(uid: string, template: unknown) {
     stepParams: {
       resourceSettings: {
         init: { dataSourceKey: 'main', collectionName: 'users' },
+      },
+    },
+    props: template,
+  };
+}
+
+function createEditFormModel(uid: string, template: unknown, configuredFields: string[]) {
+  return {
+    uid,
+    use: 'EditFormModel',
+    stepParams: {
+      resourceSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'users' },
+      },
+    },
+    subModels: {
+      grid: {
+        uid: `${uid}-grid`,
+        use: 'FormGridModel',
+        subModels: {
+          items: configuredFields.map((fieldPath, index) => ({
+            uid: `${uid}-field-${index}`,
+            use: 'FormItemModel',
+            stepParams: { fieldSettings: { init: { fieldPath } } },
+          })),
+        },
       },
     },
     props: template,
@@ -285,7 +321,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(true);
   });
 
-  it('does not reintroduce source checks after validators mutate contextParams', async () => {
+  it('fails closed when a validator injects a descriptor without a server slot policy', async () => {
     variables.register({
       name: 'evil',
       scope: 'request',
@@ -312,15 +348,8 @@ describe('variables:resolve allow-list authorization', () => {
       contextParams: {},
     });
 
-    expect(result.allowed).toBe(true);
-    if (!result.allowed) return;
-    expect(result.bindingPlan.bindings[0].params).toEqual({
-      associationName: undefined,
-      collection: 'roles',
-      dataSourceKey: 'main',
-      filterByTk: 'root',
-      sourceId: undefined,
-    });
+    expect(result.allowed).toBe(false);
+    expect(result.contextParams).toEqual({});
   });
 
   it('still requires popup requested keys to exist in the flow model allow-list', async () => {
@@ -608,6 +637,99 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(false);
     expect(result.contextParams).toEqual({});
+  });
+
+  it.each([
+    ['member', { currentRole: 'member' }],
+    ['root', { currentRole: 'root' }],
+    ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
+  ] as const)('enforces the popup exact slot for %s', async (_lane, roleOptions) => {
+    const session = createTokenSession();
+    const modelUid = `popup-slot-${_lane}`;
+    const model = createFlowModel(modelUid, '{{ ctx.popup.record.roles.title }}');
+    const request = {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.roles.title }}',
+    };
+    const options = { ...roleOptions, models: { [modelUid]: model }, token: session.token };
+    const attack = await authorizeVariablesResolve(createFakeCtx(options), {
+      ...request,
+      contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
+    });
+    const legal = await authorizeVariablesResolve(createFakeCtx(options), {
+      ...request,
+      contextParams: { 'popup.record': { collection: 'users', filterByTk: 1 } },
+    });
+
+    expect(attack.allowed).toBe(false);
+    expect(attack.contextParams).toEqual({});
+    expect(legal.allowed).toBe(true);
+  });
+
+  it.each([
+    ['dot', '{{ ctx.popup.record.roles.title }}', 'popup.record.roles'],
+    ['static bracket', '{{ ctx["popup"]["record"]["roles"]["title"] }}', 'popup.record.roles'],
+    ['numeric index', '{{ ctx.popup.record.roles[0].title }}', 'popup.record.roles.0'],
+    ['dashed key', '{{ ctx.popup.record["role-list"].title }}', 'popup.record.role-list'],
+  ])('canonicalizes %s syntax before the slot check', async (_syntax, template, movedSlot) => {
+    const descriptor = { collection: 'roles', filterByTk: 'root' };
+    const attack = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template,
+      contextParams: { [movedSlot]: descriptor },
+    });
+    const legal = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template,
+      contextParams: { 'popup.record': descriptor },
+    });
+
+    expect(attack.allowed).toBe(false);
+    expect(legal.allowed).toBe(true);
+  });
+
+  it.each([
+    ['member', { currentRole: 'member' }],
+    ['root', { currentRole: 'root' }],
+    ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
+  ] as const)('keeps configured Form associations off the root slot for %s', async (_lane, roleOptions) => {
+    const session = createTokenSession();
+    const modelUid = `form-association-slot-${_lane}`;
+    const model = createEditFormModel(modelUid, '{{ ctx.formValues.roles.title }}', ['roles']);
+    const options = {
+      ...roleOptions,
+      fieldKinds: { roles: 'association' as const },
+      models: { [modelUid]: model },
+      token: session.token,
+    };
+    const request = {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.formValues.roles.title }}',
+    };
+    const attack = await authorizeVariablesResolve(createFakeCtx(options), {
+      ...request,
+      contextParams: { formValues: { collection: 'users', filterByTk: 1 } },
+    });
+    const legal = await authorizeVariablesResolve(createFakeCtx(options), {
+      ...request,
+      contextParams: { 'formValues.roles': { collection: 'roles', filterByTk: 'root' } },
+    });
+
+    expect(attack.allowed).toBe(false);
+    expect(legal.allowed).toBe(true);
+  });
+
+  it('fails closed for descriptors without a registered or persisted slot policy', async () => {
+    const descriptor = { collection: 'roles', filterByTk: 'root' };
+    const unknown = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template: '{{ ctx.unregistered.record.name }}',
+      contextParams: { 'unregistered.record': descriptor },
+    });
+    const dynamicWithoutRd = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template: '{{ ctx.formValues.roles.title }}',
+      contextParams: { 'formValues.roles': descriptor },
+    });
+
+    expect(unknown.allowed).toBe(false);
+    expect(dynamicWithoutRd.allowed).toBe(false);
   });
 
   it.each(['query.page', 'headers.authorization', 'locale', 'now', 'env.PUBLIC_VALUE', 'defineProperty.value'])(

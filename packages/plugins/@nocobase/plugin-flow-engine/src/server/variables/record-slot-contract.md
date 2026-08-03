@@ -32,15 +32,15 @@ slot 是相对变量根的 exact segment 数组。表中的 `*` 只描述 canoni
 | `view.sourceRecord.*` | 不授权 | 当前 checkout 无生产生成器 | 发布门禁 |
 | `popup.(parent.)*.(record\|sourceRecord).*` | 到 `record`/`sourceRecord` 为止的完整 segments | popup 固定结构 | Task 05 |
 | 普通 Form 已配置 association `formValues.<association>.<descendant>` | `["<association>"]` | 持久化 Form host、grid fieldPath 与 collection association metadata | Task 05 |
-| 普通 Form 未配置字段 `formValues.<field>...` | `[]` | 持久化 Form host 与 grid fieldPath | Task 05 |
+| EditForm/PopupSubTableForm 未配置字段 `formValues.<field>...` | `[]` | 持久化 Form host 与 grid fieldPath | Task 05 |
 | FilterForm `formValues.<fieldName>.<descendant>` | `fieldName` 的完整 segments | 持久化 item `props.name`，或 `fieldPath + uid` fallback | Task 05 |
 | `item.(parentItem.)*.value.<association>.<descendant>` | 到 association 为止的完整 segments | canonical path 固定结构 | Task 05 |
 
 whole-record path 使用同一 exact slot。`item.index`、`item.length`、`item.value`、
 `item.value.<association>` 以及不符合上述形状的 path 不产生 slot policy。
 
-`popup.parent.sourceRecord` 的 resolver/兼容矩阵已存在，但当前 builder 只生成顶层 `sourceRecord`；Task 05 必须
-补齐 parent-chain 生成器与行为测试，Task 06 在两者一致前保持 NO-GO。`view.sourceRecord` 没有相同证据，不授权。
+`popup.parent.sourceRecord` 的 resolver 与 builder 均覆盖完整 parent chain，并由 Task 05 行为测试冻结。
+`view.sourceRecord` 没有相同生产证据，不授权。
 
 ## 普通 Form 唯一化规则
 
@@ -78,7 +78,7 @@ item 按每条 canonical path 逐条编译：去掉零个或多个 `parentItem` 
 
 ## 发布门禁
 
-- Task 05 补齐并冻结 `popup.parent.sourceRecord` builder；不得用 resolver regex 代替生产 descriptor 证据。
+- Task 05 已补齐并冻结 `popup.parent.sourceRecord` builder；Task 06 必须验证 resolver 与生产 descriptor 一致。
 - 启用 strict 默认拒绝前，扫描全部发布商业/第三方插件的 `resolveOnServer`、
   `serverOnlyWhenContextParams` 和 `buildVariablesParams`；未知插件变量默认拒绝。
 - Task 06 重放 `view.record.department`、`popup.record.roles` 与 `formValues` root/association 移动攻击，所有数据库
