@@ -225,13 +225,14 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         { id: 'query', path: 'query.page' },
         { id: 'headers', path: 'headers.authorization' },
         { id: 'internal', path: 'defineProperty.value' },
+        { descriptorPath: 'view.then.record', id: 'nested-internal', path: 'view.then.record.name' },
       ];
       const batch = await execResolve(
         {
-          batch: protectedTemplates.map(({ id, path }) => ({
+          batch: protectedTemplates.map(({ id, path, descriptorPath = path }) => ({
             id,
             template: { value: `{{ ctx.${path} }}` },
-            contextParams: { [path]: { collection: 'users', filterByTk: 1 } },
+            contextParams: { [descriptorPath]: { collection: 'users', filterByTk: 1 } },
           })),
         },
         1,

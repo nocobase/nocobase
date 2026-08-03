@@ -95,6 +95,20 @@ describe('record binding planner', () => {
     },
   );
 
+  it.each(['view.then.record', 'view.constructor.record', 'view.defineProperty.record'])(
+    'rejects protected nested binding segment %s in trusted mode',
+    (path) => {
+      const plan = planRecordBindings({
+        usage: usageOf(`{{ ctx.${path}.name }}`),
+        contextParams: { [path]: recordParams() },
+        mode: 'trusted',
+      });
+
+      expect(plan.bindings).toEqual([]);
+      expect(plan.rejections[0]?.reason).toBe('protected-context-key');
+    },
+  );
+
   it('keeps flat numeric indices structured', () => {
     const plan = planRecordBindings({
       usage: usageOf('{{ ctx.list[0].name }}'),

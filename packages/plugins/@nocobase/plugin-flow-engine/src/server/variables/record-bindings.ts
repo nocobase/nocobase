@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isProtectedServerContextKey } from '../template/context-keys';
+import {
+  isProtectedServerContextKey,
+  SERVER_CONTEXT_INTERNAL_KEYS,
+  SERVER_CONTEXT_PROTOTYPE_KEYS,
+} from '../template/context-keys';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
 import { isRecordParams, type RecordParams } from './records';
 
@@ -32,6 +36,7 @@ export type AuthorizedRecordBinding = Readonly<{
 
 export type RecordBindingRejectionReason =
   | 'protected-context-root'
+  | 'protected-context-key'
   | 'generic-strict-prefix-not-allowed'
   | 'exact-whole-record-not-allowed';
 
@@ -67,6 +72,7 @@ type RecordDescriptor = Readonly<{
 }>;
 
 const removedRecordParams = Symbol('removed-record-params');
+const blockedBindingSegments = new Set<string>([...SERVER_CONTEXT_PROTOTYPE_KEYS, ...SERVER_CONTEXT_INTERNAL_KEYS]);
 
 function normalizeFlatSegment(segment: string): PathSegment {
   return /^\d+$/.test(segment) ? Number(segment) : segment;
@@ -170,6 +176,10 @@ export function planRecordBindings(options: PlanRecordBindingsOptions): RecordBi
 
     if (isProtectedServerContextKey(descriptor.varName)) {
       reject('protected-context-root');
+      continue;
+    }
+    if (descriptor.prefix.some((segment) => typeof segment === 'string' && blockedBindingSegments.has(segment))) {
+      reject('protected-context-key');
       continue;
     }
 
