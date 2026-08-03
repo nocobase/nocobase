@@ -6,14 +6,14 @@ both names resolve to the same `light-extension` plugin runtime and enable-state
 
 ## Domain boundaries
 
-- A light extension repository is not a NocoBase plugin package and has no plugin lifecycle hooks
+- A JS Template repository is not a NocoBase plugin package and has no plugin lifecycle hooks
 - Entries cannot define collections, migrations, server resources, middleware, ACL rules, app providers, or package dependencies
 - The local repository is the source of truth for source files, Entry metadata, runtime artifacts, settings, and references
 - Repository creation and source changes are compile-gated and atomic
 - Runtime resolution is available to logged-in page users; authoring and repository management require `pm.light-extension`
 - The legacy admin shell only provides the settings-page bridge needed during the client-v2 transition
 
-Light Extension does not create repositories or move inline code automatically. Both operations require an explicit authoring action.
+JS Templates does not create repositories or move inline code automatically. Both operations require an explicit authoring action.
 
 ## Entry and UI contract
 
@@ -67,17 +67,19 @@ Save materializes the complete candidate before validating and compiling it. The
 | Empty delta | Returns the VSC `NO_CHANGES` error |
 | Archived repository | Returns `LIGHT_EXTENSION_REPO_ARCHIVED` |
 
-The CLI follows the same pull, Check, and delta Save contract:
+The canonical CLI follows the same pull, Check, and delta Save contract:
 
 ```bash
-nb light pull --repo <repo-id> --entry <entry-id> --dir ./workspace
-nb light check --dir ./workspace --json-output
-nb light save --dir ./workspace --yes --json-output
+nb js-template pull --repo <repo-id> --entry <entry-id> --dir ./workspace
+nb js-template check --dir ./workspace --json-output
+nb js-template save --dir ./workspace --yes --json-output
 ```
+
+The historical `nb light pull|check|save` commands remain supported for older servers and rollback.
 
 ## Move RunJS source
 
-**Move to light extension** moves the complete current workspace, including unsaved files, into a new or existing repository. The server derives the Entry kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
+**Move to JS Template** moves the complete current workspace, including unsaved files, into a new or existing repository. The server derives the Entry kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
 
 **Move to inline** copies the current reachable Entry files back to the owner and clears the external binding. It copies current repository source; it does not silently restore the older fallback snapshot.
 
@@ -122,8 +124,11 @@ The UI closes the creation dialog after acceptance and shows the job in a separa
 
 ## Compatibility, rollback, and rollout
 
+Follow the [JS Templates migration, upgrade, rollback, and final acceptance guide](./docs/js-templates-migration-compatibility.md)
+before changing package or preset versions.
+
 - Existing inline JS surfaces require no migration
-- Enable `plugin-light-extension` before using repository or workspace APIs
+- Enable `@nocobase/plugin-js-template` before using repository or workspace APIs; the legacy package name remains supported
 - Keep persisted `sourceBinding` data during rollback so disabling and re-enabling the plugin does not destroy bindings
 - Failed saves and moves roll back transactionally
 - Revert a successful source version by saving the desired historical source as a new commit

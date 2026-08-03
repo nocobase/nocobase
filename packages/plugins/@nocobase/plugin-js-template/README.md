@@ -7,3 +7,7 @@ persistent RunJS and VSC identities.
 The canonical package ships server, client, and client-v2 facade entries and installs
 `@nocobase/plugin-light-extension` as its compatible runtime implementation. The legacy package remains independently
 buildable, installable, and publishable for existing deployments, cached artifacts, and rollback.
+
+See the
+[migration, upgrade, rollback, and final acceptance guide](../plugin-light-extension/docs/js-templates-migration-compatibility.md)
+before changing packages in an existing application.

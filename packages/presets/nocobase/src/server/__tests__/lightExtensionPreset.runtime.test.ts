@@ -363,6 +363,70 @@ async function expectLegacyWorkspaceReadWriteInPlace(app: MockServer, snapshot: 
   }
 }
 
+async function expectCanonicalAndLegacyRuntimeParity(app: MockServer, snapshot: ExternalizedWorkspaceSnapshot) {
+  const agent = await getRootAgent(app);
+  const values = {
+    sourceMode: 'light-extension',
+    sourceBinding: snapshot.binding,
+    settings: {},
+  };
+  const legacyResolve = await agent.resource('lightExtensionRuntime').resolve({ values });
+  const canonicalResolve = await agent.resource('jsTemplateRuntime').resolve({ values });
+
+  expect(legacyResolve.status, JSON.stringify(legacyResolve.body)).toBe(200);
+  expect(canonicalResolve.status, JSON.stringify(canonicalResolve.body)).toBe(legacyResolve.status);
+  expect(canonicalResolve.body).toEqual(legacyResolve.body);
+
+  const artifactHash = String(legacyResolve.body.data.artifactHash);
+  const legacyArtifact = await agent.resource('lightExtensionRuntime').getArtifact({ values: { artifactHash } });
+  const canonicalArtifact = await agent.resource('jsTemplateRuntime').getArtifact({ values: { artifactHash } });
+  expect(canonicalArtifact.status, JSON.stringify(canonicalArtifact.body)).toBe(legacyArtifact.status);
+  expect(canonicalArtifact.body).toEqual(legacyArtifact.body);
+  expect(canonicalArtifact.body).toMatchObject({
+    artifactHash,
+    runtimeContract: 'light-extension.runtime-artifact.v1',
+  });
+}
+
+async function applyLegacyPresetRollback(app: MockServer) {
+  const before = await getLightExtensionRecord(app);
+  expect(before).toBeTruthy();
+  const preserved = {
+    id: before?.get('id'),
+    enabled: before?.get('enabled'),
+    installed: before?.get('installed'),
+  };
+  const rollbackPreset = new PresetNocoBase(app, { name: 'preset-nocobase-legacy-rollback' });
+  rollbackPreset.getPluginToBeUpgraded = async () => [
+    {
+      name: LIGHT_EXTENSION_NAME,
+      packageName: LIGHT_EXTENSION_PACKAGE,
+      version: String(before?.get('version')),
+      enabled: true,
+      builtIn: true,
+    },
+  ];
+
+  await rollbackPreset.updateOrCreatePlugins();
+
+  const records = await app.db.getRepository('applicationPlugins').find({
+    filter: {
+      $or: [
+        { name: LIGHT_EXTENSION_NAME },
+        { name: 'js-template' },
+        { packageName: LIGHT_EXTENSION_PACKAGE },
+        { packageName: JS_TEMPLATE_PACKAGE },
+      ],
+    },
+  });
+  expect(records).toHaveLength(1);
+  expect(records[0].get('id')).toBe(preserved.id);
+  expect(records[0].get('name')).toBe(LIGHT_EXTENSION_NAME);
+  expect(records[0].get('packageName')).toBe(LIGHT_EXTENSION_PACKAGE);
+  expect(records[0].get('enabled')).toBe(preserved.enabled);
+  expect(records[0].get('installed')).toBe(preserved.installed);
+}
+
 describe('Light Extension preset runtime', () => {
   let app: MockServer;
 
@@ -464,5 +528,26 @@ describe('Light Extension preset runtime', () => {
     expect(records[0].get('packageName')).toBe(LIGHT_EXTENSION_PACKAGE);
     expect(records[0].get('enabled')).toBe(false);
     expect(records[0].get('installed')).toBe(true);
+  }, 120000);
+
+  it('rolls back to the legacy package and preset without duplicating state or stored workspaces', async () => {
+    app = await createMockServer({
+      acl: true,
+      plugins: [PresetNocoBase],
+      registerActions: true,
+      skipSupervisor: true,
+    });
+
+    const externalizedWorkspace = await externalizeInlineJSPage(app, 'legacy-preset-rollback');
+    await expectCanonicalAndLegacyRuntimeParity(app, externalizedWorkspace);
+
+    await app.pm.disable(LIGHT_EXTENSION_NAME);
+    await expectLightExtensionUnavailable(app);
+    await applyLegacyPresetRollback(app);
+
+    await app.pm.enable(LIGHT_EXTENSION_NAME);
+    await expectExternalizedWorkspaceRestored(app, externalizedWorkspace);
+    await expectCanonicalAndLegacyRuntimeParity(app, externalizedWorkspace);
+    await expectLegacyWorkspaceReadWriteInPlace(app, externalizedWorkspace);
   }, 120000);
 });

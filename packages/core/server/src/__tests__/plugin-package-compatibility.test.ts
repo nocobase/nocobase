@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'fs-extra';
+import os from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY, parsePluginName } from '../../../utils/plugin-package';
+import {
+  discoverPluginPackages,
+  JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY,
+  parsePluginName,
+} from '../../../utils/plugin-package';
 
 const nodeModulesPath = path.resolve(__dirname, '../../../../../node_modules');
 const expectedIdentity = {
@@ -45,5 +51,54 @@ describe('JS Template plugin package compatibility', () => {
       name: 'users',
       packageName: '@nocobase/plugin-users',
     });
+  });
+
+  it('discovers a legacy-only preset after rollback without requiring the canonical facade', async () => {
+    const rollbackRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'nocobase-js-template-rollback-'));
+    const rollbackNodeModulesPath = path.join(rollbackRoot, 'node_modules');
+    const rollbackStoragePath = path.join(rollbackRoot, 'storage', 'plugins');
+    const legacyPackagePath = path.join(rollbackNodeModulesPath, '@nocobase', 'plugin-light-extension');
+    const cwd = vi.spyOn(process, 'cwd').mockReturnValue(rollbackRoot);
+
+    try {
+      await fs.outputJson(path.join(legacyPackagePath, 'package.json'), {
+        name: '@nocobase/plugin-light-extension',
+        version: '2.2.0-rollback-test',
+      });
+      await fs.outputJson(path.join(rollbackRoot, 'packages', 'presets', 'nocobase', 'package.json'), {
+        dependencies: {
+          '@nocobase/plugin-light-extension': '2.2.0-rollback-test',
+        },
+        builtIn: ['@nocobase/plugin-light-extension'],
+      });
+      await fs.ensureDir(rollbackStoragePath);
+
+      await expect(
+        discoverPluginPackages({
+          cwd: rollbackRoot,
+          nodeModulesPath: rollbackNodeModulesPath,
+          storagePluginsPath: rollbackStoragePath,
+        }),
+      ).resolves.toEqual([
+        {
+          name: 'light-extension',
+          packageName: '@nocobase/plugin-light-extension',
+          origins: ['preset-dependency'],
+          resolvedPath: legacyPackagePath,
+        },
+      ]);
+      await expect(
+        parsePluginName('@nocobase/plugin-light-extension', { nodeModulesPath: rollbackNodeModulesPath }),
+      ).resolves.toEqual(expectedIdentity);
+      await expect(
+        parsePluginName('@nocobase/plugin-js-template', { nodeModulesPath: rollbackNodeModulesPath }),
+      ).resolves.toEqual({
+        name: 'js-template',
+        packageName: '@nocobase/plugin-js-template',
+      });
+    } finally {
+      cwd.mockRestore();
+      await fs.remove(rollbackRoot);
+    }
   });
 });

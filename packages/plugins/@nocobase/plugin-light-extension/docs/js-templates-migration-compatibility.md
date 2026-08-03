@@ -1,8 +1,8 @@
-# JS templates migration compatibility baseline
+# JS Templates migration, upgrade, and rollback guide
 
 ## Decision
 
-`JS templates` is the canonical English product and UI name. `JS 模板` is the canonical Simplified Chinese name.
+`JS Templates` is the canonical English product and UI name. `JS 模板` is the canonical Simplified Chinese name.
 
 `light-extension` remains the legacy technical identity. Existing stored values and public contracts can be present in
 databases, saved FlowModels, source repositories, CLI workspaces, deployed clients, and downstream packages. Product
@@ -12,9 +12,118 @@ The executable baseline is declared by `LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTR
 `LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT` in `src/constants.ts`. Contract tests intentionally compare those manifests
 with literal expected values and with the current database, RunJS, CLI, SDK, runtime, resource, and ACL surfaces.
 
+## Supported deployment paths
+
+Use `@nocobase/plugin-js-template` for new installations and upgrades. It is the canonical package and is included by
+`@nocobase/preset-nocobase`. Keep `@nocobase/plugin-light-extension` installed at the same version because it remains
+the runtime implementation and the rollback package.
+
+| Operation | Recommended package or entry | Retained fallback | Persisted runtime identity |
+| --- | --- | --- | --- |
+| Install or upgrade | `@nocobase/plugin-js-template` through `@nocobase/preset-nocobase` | `@nocobase/plugin-light-extension` | `light-extension` |
+| Plugin enable or disable | `@nocobase/plugin-js-template` | `@nocobase/plugin-light-extension` | One `applicationPlugins` row named `light-extension` |
+| SDK imports | `@nocobase/js-template-sdk` | `@nocobase/light-extension-sdk` | Legacy schema and virtual-import tokens |
+| HTTP resources | `jsTemplate*` and `jsTemplates` aliases | `lightExtension*` and `lightExtensions` | Legacy resource and ACL identity |
+| Local workspace CLI | `nb js-template ...` | `nb light ...` | Existing `.light-extension` workspace files |
+| Settings route | `/admin/settings/js-templates` | `/admin/settings/light-extension` | `pm.light-extension` |
+
+The canonical package is a facade, not a second runtime plugin. A healthy installation has one matching
+`applicationPlugins` row. Its `name` is `light-extension`, its runtime `packageName` is
+`@nocobase/plugin-light-extension`, and its primary key and lifecycle state survive upgrades and rollbacks.
+
+## Before changing packages
+
+Back up the application database and persistent storage before an install, upgrade, or rollback. Record the existing
+JS Templates plugin row, including its primary key, `enabled`, `installed`, `builtIn`, `packageName`, and `version`.
+Also record representative repository, Entry, reference, runtime artifact, and VSC repository identifiers.
+
+Do not prepare the upgrade by renaming rows, tables, FlowModel values, VSC owners, routes, or ACL resources. The upgrade
+logic matches both package names and reuses the existing record. A pre-upgrade rewrite removes the identity that the
+compatibility layer expects to find.
+
+All packages in the JS Templates publication chain must use the same NocoBase release version. This includes both
+plugin packages, both SDK packages, `@nocobase/runjs`, `@nocobase/runjs-workspace`, and the preset.
+
+## Fresh installation
+
+The normal application or Docker installation path installs `@nocobase/app`, which installs
+`@nocobase/preset-nocobase`. The preset includes both JS Templates package names and advertises only the canonical
+package as built in.
+
+1. Install the application dependencies from the canonical preset or image
+2. Run `yarn nocobase install` for a new application
+3. If the plugin was explicitly disabled, run `yarn nocobase pm enable @nocobase/plugin-js-template --yes`
+4. Open `/admin/settings/js-templates` and create or open a JS Template
+5. Check, save, and execute one representative RunJS surface
+
+After installation, verify that there is one `applicationPlugins` row named `light-extension`. Creating a separate
+`js-template` row is a compatibility failure. The first JS Template repository is created only by an explicit
+authoring action; installation itself must not create business repositories.
+
+## Upgrade an existing Light Extension installation
+
+Upgrade the complete application dependency set so the canonical facade and legacy implementation have the same
+version, then run:
+
+```bash
+yarn nocobase upgrade
+```
+
+The upgrade must update the existing plugin row in place. Verify the following before enabling new authoring work:
+
+- The `applicationPlugins` primary key is unchanged
+- The `enabled` and `installed` values are unchanged
+- There is no additional `js-template` row
+- All `lightExtension*` collection counts are unchanged
+- The existing VSC repository keeps `ownerType: "light-extension"` and the same repository, commit, ref, and blob identities
+- Existing FlowModels still contain `sourceMode: "light-extension"` and `sourceBinding.type: "light-extension-entry"`
+- Existing runtime artifacts retain their hashes and `light-extension.runtime-artifact.v1` contract
+- Both `/admin/settings/js-templates` and the old `/admin/settings/light-extension` deep link load the same page
+
+An upgrade does not need a database rename migration. If a deployment tool proposes table renames or bulk FlowModel
+updates, stop the rollout and restore the pre-upgrade backup before continuing.
+
+## Disable and re-enable
+
+Use the canonical package name for normal administration:
+
+```bash
+yarn nocobase pm disable @nocobase/plugin-js-template --yes
+yarn nocobase pm enable @nocobase/plugin-js-template --yes
+```
+
+While disabled, repository-backed JS Templates APIs return HTTP 503 with
+`LIGHT_EXTENSION_RUNTIME_UNAVAILABLE`. Inline RunJS workspaces remain available because they are owned by the RunJS
+Workspace provider. Disabling the plugin must not delete its business collections, VSC history, bindings, references,
+or artifacts.
+
+After re-enabling, verify the canonical and legacy settings routes, list an existing repository, read its history,
+resolve a bound runtime artifact, and save a new source commit. The repository ID, VSC owner, historical commits,
+references, artifact hashes, and saved FlowModel binding must remain in place.
+
+## Roll back to the legacy package or preset
+
+The rollback path uses `@nocobase/plugin-light-extension` directly. Keep the database and persistent storage from the
+current deployment; do not restore an older database merely to change the package name.
+
+1. Stop application processes and back up the current database and storage
+2. Restore the earlier application image, package manifest, and lockfile that contain `@nocobase/plugin-light-extension`
+3. Install that dependency set and run `yarn nocobase upgrade`
+4. If needed, run `yarn nocobase pm enable @nocobase/plugin-light-extension --yes`
+5. Verify the old settings deep link, `lightExtension*` APIs, `nb light ...` commands, and a bound runtime surface
+
+The legacy-only preset discovers and loads the existing `light-extension` runtime without the canonical facade. It
+reuses the same `applicationPlugins` primary key and lifecycle state. If the rollback dependency set does not include
+`@nocobase/plugin-js-template`, use the legacy package name in plugin-manager commands; a missing canonical package is
+not synthesized.
+
+Rollback keeps current JS Template data. Do not delete canonical-looking records automatically if an earlier failed
+deployment created duplicates. Back up the database, identify which row owns the established `light-extension`
+runtime and data, and resolve the duplicate separately.
+
 ## Canonical persisted values
 
-The following legacy values remain canonical for persistence. New JS templates UI and APIs must continue writing them:
+The following legacy values remain canonical for persistence. New JS Templates UI and APIs must continue writing them:
 
 | Boundary | Canonical persisted value | Compatibility reason |
 | --- | --- | --- |
@@ -33,7 +142,7 @@ indexes, associations, lifecycle reuse behavior, and absence of table-rename mig
 
 ## Stable legacy protocol values
 
-The following contracts remain supported. Canonical JS templates names may be added later as aliases, but must not
+The following contracts remain supported. Canonical JS Templates names may be added later as aliases, but must not
 replace these values without a separate compatibility review and an upgrade-and-rollback plan:
 
 - Runtime contracts: `light-extension.runtime-artifact.v1` and `light-extension.runtime-surface.v1`
@@ -184,10 +293,66 @@ packages, advertises only `@nocobase/plugin-js-template` as built in, and keeps 
 the deprecated compatibility list. Both packages normalize to the existing `light-extension` runtime record, so image
 upgrades and rollbacks reuse the same enable state and persisted data.
 
-## Scope of later migration goals
+## Troubleshooting
 
-Later goals may change display names, translated copy, menus, internal TypeScript symbols, and preferred aliases. They
-must preserve the persisted and protocol contracts above. If a later change needs a new serialized token, it must use
-dual-read behavior, retain legacy writes for rollback, and include upgrade fixtures before changing this baseline.
+### A second plugin record appears
+
+Stop the rollout before enabling either record. A compatible installation has one `applicationPlugins` row with the
+runtime name `light-extension`. Preserve the database, compare both rows with the pre-upgrade snapshot, and do not
+guess which row can be deleted.
+
+### Repository APIs return HTTP 503 after enable
+
+Check the plugin list and server logs first. Confirm that `@nocobase/plugin-light-extension` is installed at the same
+version as `@nocobase/plugin-js-template`, then enable either recognized package name. The error code must remain
+`LIGHT_EXTENSION_RUNTIME_UNAVAILABLE`; a new `JS_TEMPLATE_*` error code indicates protocol drift.
+
+### Canonical CLI commands fail against an older server
+
+Use `nb light pull`, `nb light check`, or `nb light save`. The legacy commands call the historical HTTP resources and
+work with servers that predate the `jsTemplate*` aliases. They use the same local workspace metadata and do not need a
+source conversion.
+
+### Existing templates or history appear missing
+
+Do not create replacement repositories. Check the `lightExtension*` collections and the associated
+`vscFileRepositories` row with `ownerType: "light-extension"`. Confirm that the FlowModel still points to the original
+repository and Entry IDs. Renamed tables, a `js-template` VSC owner, or rewritten binding tokens are unsupported states.
+
+### A package builds but its facade cannot be imported
+
+Build the canonical SDK before the legacy SDK facade, then build the legacy plugin implementation before the canonical
+plugin facade. Verify the published package with `npm pack --dry-run --json`; source-checkout links and generated local
+manifests are not publication evidence.
+
+## Final acceptance matrix
+
+Run server test files one at a time. Set `DB_DIALECT=sqlite` for the focused server suite. If the SQLite driver is
+installed outside the workspace, also set `NODE_PATH` to the directory that contains it.
+
+| Boundary | Required acceptance | Automated evidence |
+| --- | --- | --- |
+| Fresh install | Canonical preset installs one enabled legacy runtime record and creates no JS Template repository implicitly | `packages/presets/nocobase/src/server/__tests__/lightExtensionPreset.runtime.test.ts` |
+| Legacy upgrade | Primary key, `enabled`, `installed`, data, VSC history, references, and artifacts remain in place | `packages/presets/nocobase/src/server/__tests__/lightExtensionPreset.runtime.test.ts` |
+| Disable and re-enable | Disabled APIs return the legacy 503 error; re-enable restores read, write, resolve, and history access | `packages/presets/nocobase/src/server/__tests__/lightExtensionPreset.runtime.test.ts` and `js-template-api-aliases.integration.test.ts` |
+| Legacy rollback | A legacy-only preset discovers the old package; rollback reuses the row and stored workspace | `packages/core/server/src/__tests__/plugin-package-compatibility.test.ts` and the preset runtime test |
+| Database and VSC | Physical collections, fields, indexes, relations, owner type, versions, refs, and history remain unchanged | `collections.test.ts` and `js-templates-migration-contract.test.ts` |
+| RunJS persistence | Historical source modes, bindings, descriptors, locators, hashes, artifacts, references, ZIP/Git/jobs, and errors round-trip unchanged | `js-template-runjs-compatibility.test.ts` |
+| HTTP and ACL | Every canonical resource maps to one legacy handler and grant identity with happy/error/denied parity | `js-template-server-contract.test.ts` and `js-template-api-aliases.integration.test.ts` |
+| SDK | Canonical SDK owns the implementation; every legacy root and subpath remains importable with legacy schema tokens | `packages/core/js-template-sdk/src/__tests__` and `packages/core/light-extension-sdk/src/__tests__/facade-contract.test.ts` |
+| CLI and generated API | Canonical and legacy commands share handlers, flags, output, exit codes, HTTP compatibility, and help discovery | `packages/core/cli/src/__tests__/command-discovery.test.ts`, `light-extension-commands.test.ts`, and `light-extension-runtime-commands.test.ts` |
+| v2 UI and Flow Surfaces | Canonical copy/routes/exports work while historical FlowModels, registry keys, settings, surfaces, and disabled paths remain readable | `js-template-v2-ui-contract.test.ts` and `js-template-runjs-flow-surfaces-integration.test.ts` |
+| v1 bridge | The v1 shell points to the v2 page and integration while retaining old routes, exports, ACL, and registry entries | `legacy-client-boundary.test.ts` and `legacy-light-extension-runtime.integration.test.tsx` |
+| Build and release | Both plugins and SDKs share one version, build, pack, and remain discoverable and publishable; Docker installs the canonical preset chain | `packages/core/build/src/__tests__/js-template-release-boundary.test.ts` and both package facade tests |
+
+The final local verification runs the matrix above, focused builds for both plugins and SDKs, NocoBase plugin tar
+generation, `npm pack --dry-run --json`, and Lerna workspace discovery. It verifies package contents and names without
+claiming that a registry publish, Docker daemon build, browser session, or production database upgrade occurred.
+
+## Change control after migration
+
+Future changes may update display copy or preferred TypeScript aliases. They must preserve the persisted and protocol
+contracts above. A new serialized token requires a separate migration design with dual-read behavior, retained legacy
+writes for rollback, historical fixtures, and explicit upgrade and rollback acceptance before this baseline changes.
 
 This baseline itself creates no database migration and performs no data rewrite.
