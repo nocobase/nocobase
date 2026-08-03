@@ -543,6 +543,32 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(api.request).toHaveBeenCalledTimes(1);
   });
 
+  it('does not move a configured association path to the formValues record anchor', async () => {
+    const model = await setupFormModel();
+    const api = { request: vi.fn(async () => ({ data: {} }) as any) } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    (model.context as any).resource?.setMeta?.({ currentFilterByTk: 1 });
+    const customer = { label: 'Unsaved customer' };
+    const fakeForm = {
+      getFieldsValue: () => ({ customer }),
+      getFieldValue: (key: string) => (key === 'customer' ? customer : undefined),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    mockFormGridEnabledFields(model, ['customer']);
+
+    const out = await (model.context as any).resolveJsonTemplate({ who: '{{ ctx.formValues.customer.level.name }}' });
+
+    expect(out).toEqual({ who: undefined });
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
   it('configured toMany dot aggregation path uses local value and skips server', async () => {
     const model = await setupFormModel();
 
@@ -608,7 +634,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     (model.context as any).defineProperty('form', { value: fakeForm });
     // 仅配置 customer / assignees，不包含 status
     mockFormGridEnabledFields(model, ['customer', 'assignees', 'note']);
-    fakeForm.setFieldsValue({ note: 'hello' });
+    fakeForm.setFieldsValue({ note: 'hello', customer: { id: 9 } });
 
     const tpl = { status: '{{ ctx.formValues.status }}' } as any;
     const out = await (model.context as any).resolveJsonTemplate(tpl);
@@ -711,7 +737,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     (model.context as any).defineProperty('form', { value: fakeForm });
     // customer 未配置在表单中：只能基于当前记录（DB）解析 customer.level.name
     mockFormGridEnabledFields(model, ['note']);
-    fakeForm.setFieldsValue({ note: 'hello' });
+    fakeForm.setFieldsValue({ note: 'hello', customer: { id: 9 } });
 
     const tpl = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
     const out = await (model.context as any).resolveJsonTemplate(tpl);

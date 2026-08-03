@@ -48,7 +48,11 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
 export { createCollectionContextMeta } from './createCollectionContextMeta';
-export { createAssociationAwareObjectMetaFactory, createAssociationSubpathResolver } from './associationObjectVariable';
+export {
+  createAssociationAwareObjectMetaFactory,
+  createAssociationSubpathResolver,
+  getAssociationFilterByTk,
+} from './associationObjectVariable';
 export {
   buildRecordMeta,
   collectContextParamsForTemplate,
