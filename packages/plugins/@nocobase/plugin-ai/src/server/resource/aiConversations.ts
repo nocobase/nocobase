@@ -17,6 +17,11 @@ import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { findCurrentFrontendTool } from '../frontend-tools';
 
+const DEFAULT_PORTAL_NAME = '/v/admin';
+
+function getPortalName(ctx: Context) {
+  return ctx.get('x-portal') || DEFAULT_PORTAL_NAME;
+}
 async function getAIEmployee(ctx: Context, username: string) {
   const filter = {
     username,
@@ -126,7 +131,7 @@ export default {
   actions: {
     async list(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      const portalName = ctx.get('x-portal') || undefined;
+      const portalName = getPortalName(ctx);
       const filter = ctx.action.params.filter || {};
       const scope = ctx.action.params.scope;
       ctx.action.mergeParams({
@@ -135,7 +140,7 @@ export default {
           userId,
           from: filter.from ?? 'main-agent',
           category: 'chat',
-          ...(portalName !== undefined ? { portalName } : {}),
+          portalName,
           ...(typeof scope === 'string' && scope ? { scope } : {}),
         },
       });
@@ -144,6 +149,7 @@ export default {
 
     async unreadCount(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
+      const portalName = getPortalName(ctx);
 
       const count = await ctx.db.getModel('aiConversations').count({
         where: {
@@ -151,6 +157,7 @@ export default {
           read: false,
           from: 'main-agent',
           category: 'chat',
+          portalName,
         },
       });
 
@@ -163,6 +170,7 @@ export default {
 
     async unreadCounts(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
+      const portalName = getPortalName(ctx);
 
       const [conversationUnreadCount, workflowTaskUnreadCount] = await Promise.all([
         ctx.db.getModel('aiConversations').count({
@@ -171,6 +179,7 @@ export default {
             read: false,
             from: 'main-agent',
             category: 'chat',
+            portalName,
           },
         }),
         ctx.db.getModel('usersAiWorkflowTasks').count({
@@ -194,7 +203,7 @@ export default {
       const userId = ctx.auth?.user.id;
       const { aiEmployee, systemMessage, skillSettings, conversationSettings, modelSettings, scope } =
         ctx.action.params.values || {};
-      const portalName = ctx.get('x-portal') || undefined;
+      const portalName = getPortalName(ctx);
       const normalizedScope = typeof scope === 'string' ? scope : undefined;
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {

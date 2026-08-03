@@ -89,6 +89,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: '/v/admin',
         scope: 'chat-box-1',
       },
     });
@@ -100,6 +101,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: '/v/admin',
       },
     });
     expect(mergedParams[2]).toEqual({
@@ -110,6 +112,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: '/v/admin',
       },
     });
     expect(mocks.list).toHaveBeenCalledTimes(3);
@@ -144,7 +147,79 @@ describe('aiConversations scope', () => {
     });
   });
 
-  it('passes portalName and scope from resource create to the conversations manager', async () => {
+  it('defaults conversation unread counts to the admin portal when x-portal is absent', async () => {
+    const conversationCount = vi.fn().mockResolvedValue(3);
+    const workflowTaskCount = vi.fn().mockResolvedValue(2);
+    const ctx = {
+      auth: {
+        user: {
+          id: 7,
+        },
+      },
+      db: {
+        getModel: vi.fn((name: string) => ({
+          count: name === 'aiConversations' ? conversationCount : workflowTaskCount,
+        })),
+      },
+      get: () => undefined,
+    } as unknown as Context;
+    const next = vi.fn();
+
+    await getAction('unreadCounts')(ctx, next);
+
+    expect(conversationCount).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+        from: 'main-agent',
+        category: 'chat',
+        portalName: '/v/admin',
+      },
+    });
+    expect(workflowTaskCount).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+      },
+    });
+    expect(ctx.body).toEqual({
+      conversationUnreadCount: 3,
+      workflowTaskUnreadCount: 2,
+    });
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults the unread count to the admin portal when x-portal is absent', async () => {
+    const count = vi.fn().mockResolvedValue(3);
+    const ctx = {
+      auth: {
+        user: {
+          id: 7,
+        },
+      },
+      db: {
+        getModel: vi.fn(() => ({ count })),
+      },
+      get: () => undefined,
+    } as unknown as Context;
+    const next = vi.fn();
+
+    await getAction('unreadCount')(ctx, next);
+
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+        from: 'main-agent',
+        category: 'chat',
+        portalName: '/v/admin',
+      },
+    });
+    expect(ctx.body).toEqual({ count: 3 });
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults new conversations to the admin portal when x-portal is absent', async () => {
     const createConversation = vi.fn().mockResolvedValue({ sessionId: 'session-1', scope: 'chat-box-1' });
     const findEmployee = vi.fn().mockResolvedValue({ username: 'sales' });
     const ctx = {
@@ -170,7 +245,7 @@ describe('aiConversations scope', () => {
           findOne: findEmployee,
         })),
       },
-      get: (name: string) => (name === 'x-portal' ? 'sales-portal' : ''),
+      get: () => undefined,
       action: {
         params: {
           values: {
@@ -192,7 +267,7 @@ describe('aiConversations scope', () => {
       aiEmployee: {
         username: 'sales',
       },
-      portalName: 'sales-portal',
+      portalName: '/v/admin',
       scope: 'chat-box-1',
       options: {
         systemMessage: 'Use sales tone',

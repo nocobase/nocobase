@@ -6712,10 +6712,10 @@
     "@nocobase/license-kit-win32-ia32-msvc" "0.3.8"
     "@nocobase/license-kit-win32-x64-msvc" "0.3.8"
 
-"@nocobase/portal-template-default@^1.0.12":
-  version "1.0.22"
-  resolved "https://registry.yarnpkg.com/@nocobase/portal-template-default/-/portal-template-default-1.0.22.tgz#e6b09fcbfaf7c3eec4df5cfa1ad48a0bab73aa91"
-  integrity sha512-0KehLz3VyF2vMkxQZy9kywOPs9jK8gO0mjvKi9PJfqA7YnaZmghW5QncqRdbyqzitx4akN5ATZ/zvZfvNRD/GA==
+"@nocobase/portal-template-default@^3.0.3":
+  version "3.0.4"
+  resolved "https://registry.npmmirror.com/@nocobase/portal-template-default/-/portal-template-default-3.0.4.tgz#d256960f13607e3c9db45a3f7f9ddd754b576b6c"
+  integrity sha512-sy+MB8zVHhwvrXy0GTkjfxQYv9mHph14GZTmvIYHIYwTxtWD9VCIU5G9CFwblVGdYPNAB+Ku6P6GckgbaDeKkw==
 
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
