@@ -38,8 +38,7 @@
     },
     "./package.json": "./package.json"
   },
-  "devDependencies": {
-    "ajv": "^6.12.6",
-    "typescript": "^5.x"
+  "dependencies": {
+    "@nocobase/js-template-sdk": "2.2.0-beta.15"
   }
 }

@@ -337,7 +337,7 @@ function buildEntryTypes(entry: LightExtensionSettingsTypegenEntry): string {
   const contextType = contextTypes[entry.kind];
   return [
     generatedHeader(),
-    `import type { ${contextType} } from "@nocobase/light-extension-sdk/client";`,
+    `import type { ${contextType} } from "@nocobase/js-template-sdk/client";`,
     '',
     'export type SettingsSchemaSummary = {',
     '  target: "client";',
@@ -378,7 +378,7 @@ function buildIndexTypes(entries: LightExtensionSettingsTypegenEntry[]): string 
 
 function buildSdkDeclarations(): string {
   return `${generatedHeader()}
-declare module "@nocobase/light-extension-sdk/shared" {
+declare module "@nocobase/js-template-sdk/shared" {
   export interface LightExtensionSettingsContext<TSettings = unknown> { settings: TSettings; }
   export type LightExtensionRecord = Record<string, unknown>;
   export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
@@ -393,10 +393,10 @@ declare module "@nocobase/light-extension-sdk/shared" {
   export function assertSettings<TSettings>(settings: TSettings): TSettings;
 }
 
-declare module "@nocobase/light-extension-sdk/client" {
-  import type { LightExtensionDataContext, LightExtensionRecord } from "@nocobase/light-extension-sdk/shared";
-  export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";
-  export { assertSettings, defineSettings } from "@nocobase/light-extension-sdk/shared";
+declare module "@nocobase/js-template-sdk/client" {
+  import type { LightExtensionDataContext, LightExtensionRecord } from "@nocobase/js-template-sdk/shared";
+  export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from "@nocobase/js-template-sdk/shared";
+  export { assertSettings, defineSettings } from "@nocobase/js-template-sdk/shared";
   export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
     element?: HTMLElement | null;
     render?: (node: unknown) => void;
@@ -408,6 +408,14 @@ declare module "@nocobase/light-extension-sdk/client" {
   export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> { event?: unknown; formValues?: LightExtensionRecord; }
   export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }
   export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> { input?: TInput; event?: unknown; formValues?: LightExtensionRecord; }
+}
+
+declare module "@nocobase/light-extension-sdk/shared" {
+  export * from "@nocobase/js-template-sdk/shared";
+}
+
+declare module "@nocobase/light-extension-sdk/client" {
+  export * from "@nocobase/js-template-sdk/client";
 }
 `;
 }

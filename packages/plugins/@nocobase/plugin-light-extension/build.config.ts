@@ -12,6 +12,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 
 const sourceDependencies = [
+  '@nocobase/js-template-sdk',
   '@nocobase/light-extension-sdk',
   '@nocobase/runjs',
   '@nocobase/client-v2',

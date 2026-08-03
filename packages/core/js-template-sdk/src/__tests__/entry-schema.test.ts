@@ -27,7 +27,7 @@ import {
 } from '../schema';
 import { lightExtensionEntryV1SchemaFileContent, lightExtensionEntryV1SchemaSha256 } from '../schema/server';
 
-describe('@nocobase/light-extension-sdk entry.json schema', () => {
+describe('@nocobase/js-template-sdk entry.json schema', () => {
   const ajv = new Ajv({ allErrors: true, jsonPointers: true });
   const validate = ajv.compile(lightExtensionEntryV1Schema);
 

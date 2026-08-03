@@ -8,7 +8,7 @@
  */
 
 import { describe, expectTypeOf, it } from 'vitest';
-import type { JSBlockContext, JSPageContext, JSPageRuntimeFacade } from '@nocobase/light-extension-sdk/client';
+import type { JSBlockContext, JSPageContext, JSPageRuntimeFacade } from '@nocobase/js-template-sdk/client';
 
 describe('JS Page public context', () => {
   it('extends the render context with a settings-aware page facade', () => {

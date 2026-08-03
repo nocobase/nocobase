@@ -63,6 +63,8 @@ const LIGHT_EXTENSION_SHARED_ROOT = 'src/shared';
 const LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE = 'entry.json';
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 const LIGHT_EXTENSION_SDK_TYPE_MODULES = new Set([
+  '@nocobase/js-template-sdk/client',
+  '@nocobase/js-template-sdk/shared',
   '@nocobase/light-extension-sdk/client',
   '@nocobase/light-extension-sdk/shared',
 ]);

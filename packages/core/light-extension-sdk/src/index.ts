@@ -7,6 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './schema';
-export * from './shared';
-export * from './typegen';
+export * from '@nocobase/js-template-sdk';

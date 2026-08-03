@@ -8,7 +8,7 @@
  */
 
 import type { RunJSWorkspaceTypeScriptContextResolver } from '@nocobase/client-v2';
-import { createActiveEntryContextType, generateInlineClientSettingsTypes } from '@nocobase/light-extension-sdk/typegen';
+import { createActiveEntryContextType, generateInlineClientSettingsTypes } from '@nocobase/js-template-sdk/typegen';
 
 import type { LightExtensionKind } from '../../constants';
 

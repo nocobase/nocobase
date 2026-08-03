@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI, lightExtensionEntryV1Schema } from '@nocobase/light-extension-sdk/schema';
+import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI, lightExtensionEntryV1Schema } from '@nocobase/js-template-sdk/schema';
 import type { CodeEditorJsonSchema } from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_ENTRY_DESCRIPTOR_FILE } from '../../constants';

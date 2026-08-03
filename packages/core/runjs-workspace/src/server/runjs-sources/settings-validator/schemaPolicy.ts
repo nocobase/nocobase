@@ -12,7 +12,7 @@ import {
   LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
   LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN,
-} from '@nocobase/light-extension-sdk/schema';
+} from '@nocobase/js-template-sdk/schema';
 
 import type { RunJSWorkspaceDiagnostic } from '../../../shared/runjs-source-contracts';
 import { diagnostic, isPlainRecord } from './diagnostics';

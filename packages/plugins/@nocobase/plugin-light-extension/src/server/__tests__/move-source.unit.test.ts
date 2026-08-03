@@ -34,7 +34,7 @@ describe('move source relocation', () => {
         {
           path: 'src/client/index.tsx',
           content:
-            'import { defineSettings } from "@nocobase/light-extension-sdk/client";\n' +
+            'import { defineSettings } from "@nocobase/js-template-sdk/client";\n' +
             'import type { Settings } from "light-extension:settings/client/js-page/sales";\n' +
             'const settings = defineSettings({ enabled: true });\n' +
             'ctx.render(<div>{settings.enabled as Settings}</div>);\n',
@@ -68,6 +68,9 @@ describe('move source relocation', () => {
           content: expect.stringContaining('function defineSettings(value) { return value; }'),
         }),
       ]),
+    );
+    expect(preparation.files.find((file) => file.path === 'src/client/index.tsx')?.content).not.toContain(
+      '@nocobase/js-template-sdk/client',
     );
   });
 

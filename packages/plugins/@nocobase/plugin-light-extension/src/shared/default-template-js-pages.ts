@@ -12,7 +12,7 @@ import type { LightExtensionTreeEntryInput } from './types';
 export const DEFAULT_JS_PAGE_TEMPLATE_FILES: readonly LightExtensionTreeEntryInput[] = [
   {
     path: 'src/client/js-pages/hello-page/index.tsx',
-    content: `import type { JSPageContext, RunJSContext } from '@nocobase/light-extension-sdk/client';
+    content: `import type { JSPageContext, RunJSContext } from '@nocobase/js-template-sdk/client';
 import type { Settings } from 'light-extension:settings/client/js-page/hello-page';
 import { getPageDetails } from './page-details';
 

@@ -8,7 +8,7 @@
  */
 
 import { posix as pathPosix } from 'path';
-import { parseSettingsTypeImport } from '@nocobase/light-extension-sdk/typegen';
+import { parseSettingsTypeImport } from '@nocobase/js-template-sdk/typegen';
 import ts from 'typescript';
 
 import {
@@ -22,6 +22,8 @@ import type { DiagnosticTarget } from './types';
 import { getEntryRootPath, normalizeSourcePath, sharedSourceRoot } from './workspacePolicy';
 
 const allowedClientSdkImports = new Set([
+  '@nocobase/js-template-sdk/client',
+  '@nocobase/js-template-sdk/shared',
   '@nocobase/light-extension-sdk/client',
   '@nocobase/light-extension-sdk/shared',
 ]);

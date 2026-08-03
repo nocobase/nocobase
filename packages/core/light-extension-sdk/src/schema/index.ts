@@ -7,9 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import entryV1Schema from './entry-v1.schema.json';
-
-export * from './contracts';
-
-export const lightExtensionEntryV1Schema = entryV1Schema;
-export const lightExtensionEntryV1SchemaJson = `${JSON.stringify(entryV1Schema, null, 2)}\n`;
+export * from '@nocobase/js-template-sdk/schema';

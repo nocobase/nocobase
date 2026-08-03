@@ -8,7 +8,7 @@
  */
 
 import { resetRunJSRuntimeElement } from '@nocobase/flow-engine';
-import type { JSPageRuntimeFacade } from '@nocobase/light-extension-sdk/client';
+import type { JSPageRuntimeFacade } from '@nocobase/js-template-sdk/client';
 import { readRunJSRuntimeError, type RunJSRuntimeError } from '../../../components/runjs-source';
 
 export interface JSPageRuntimeState {

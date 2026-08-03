@@ -13,7 +13,7 @@ import {
   type RunJSCompilerBuildIdentity,
 } from '@nocobase/runjs/compiler/build-identity';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
-import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
 import { posix as pathPosix } from 'path';
 
 import {

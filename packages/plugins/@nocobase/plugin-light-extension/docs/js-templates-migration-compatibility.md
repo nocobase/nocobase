@@ -46,6 +46,16 @@ replace these values without a separate compatibility review and an upgrade-and-
 Unknown private registries, deployed artifacts, and downstream consumers are treated as compatibility requirements.
 A public-registry or repository search that finds no consumer is not sufficient evidence to remove a legacy contract.
 
+## Canonical SDK and compatibility facade
+
+New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,
+schema, type generation, and public implementation. `@nocobase/light-extension-sdk` is a long-term compatibility
+facade that re-exports the canonical implementation through every historical subpath.
+
+The package rename does not rename the schema URI, `light-extension:settings/*` virtual imports,
+`.light-extension/types`, or any saved source contract. The compatibility facade depends on the canonical package;
+the canonical package must never depend on the facade.
+
 ## Scope of later migration goals
 
 Later goals may change display names, translated copy, menus, internal TypeScript symbols, and preferred aliases. They

@@ -23,7 +23,7 @@ Put each reusable entry in its own directory:
 
 Every entry root must include \`entry.json\` with \`schemaVersion\` and a stable \`key\`. Entry settings are available through \`ctx.settings\`; use \`ctx.t()\` for runtime-visible strings.
 
-Use \`@nocobase/light-extension-sdk/client\` and \`@nocobase/light-extension-sdk/shared\` for authoring types. Modules may import other files inside their entry directory or shared modules from \`src/shared/\`.
+Use \`@nocobase/js-template-sdk/client\` and \`@nocobase/js-template-sdk/shared\` for authoring types. The legacy \`@nocobase/light-extension-sdk\` facade remains supported. Modules may import other files inside their entry directory or shared modules from \`src/shared/\`.
 `;
 
 export const LIGHT_EXTENSION_TSCONFIG_CONTENT =

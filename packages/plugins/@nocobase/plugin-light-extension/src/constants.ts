@@ -11,8 +11,7 @@ import {
   LIGHT_EXTENSION_ENTRY_KEY_PATTERN as LIGHT_EXTENSION_ENTRY_KEY_PATTERN_SOURCE,
   LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
   LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
-} from '@nocobase/light-extension-sdk/schema';
-import { LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE } from '@nocobase/runjs-workspace/shared';
+} from '@nocobase/js-template-sdk/schema';
 
 /** Product metadata only. User-visible text must still use the i18n layer. */
 export const JS_TEMPLATES_CANONICAL_PRODUCT_NAME = 'JS templates';
@@ -34,7 +33,9 @@ export const LIGHT_EXTENSION_LEGACY_PERSISTENCE_CONTRACT = {
     'lightExtensionMoveOperations',
     'lightExtensionCreateJobs',
   ],
-  vscOwnerType: LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE,
+  // Duplicated intentionally to keep shared client constants free of the server-capable runjs-workspace barrel.
+  // The migration contract test asserts equality with LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE.
+  vscOwnerType: 'light-extension',
 } as const;
 
 /**

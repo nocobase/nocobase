@@ -7,12 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash } from 'crypto';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-
-export const lightExtensionEntryV1SchemaFilePath = resolve(__dirname, 'entry-v1.schema.json');
-export const lightExtensionEntryV1SchemaFileContent = readFileSync(lightExtensionEntryV1SchemaFilePath, 'utf8');
-export const lightExtensionEntryV1SchemaSha256 = createHash('sha256')
-  .update(lightExtensionEntryV1SchemaFileContent)
-  .digest('hex');
+export * from '@nocobase/js-template-sdk/schema/server';

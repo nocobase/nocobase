@@ -11,7 +11,7 @@ import {
   createActiveEntryContextType,
   generateClientSettingsTypes,
   type LightExtensionSettingsTypegenResult,
-} from '@nocobase/light-extension-sdk/typegen';
+} from '@nocobase/js-template-sdk/typegen';
 import {
   type CodeAuthoringDiagnostic,
   type EmbeddedRunJSEditorSaveResult,

@@ -17,8 +17,8 @@ import {
   LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
   LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
-} from '@nocobase/light-extension-sdk/schema';
-import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+} from '@nocobase/js-template-sdk/schema';
+import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
 import {
   createRunJSWorkspaceDiagnostic as diagnostic,
   getRunJSWorkspaceDiagnosticDetailsKey as stableDetailsKey,
@@ -371,7 +371,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       limits: { ...LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS },
     },
     sdk: {
-      packageName: sdkPackageJson.name,
+      packageName: '@nocobase/light-extension-sdk',
       version: sdkPackageJson.version,
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
       entrySchemaSha256: lightExtensionEntryV1SchemaSha256,

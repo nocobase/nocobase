@@ -18,8 +18,8 @@ import {
   LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
   lightExtensionEntryV1Schema,
-} from '@nocobase/light-extension-sdk/schema';
-import sdkPackageJson from '@nocobase/light-extension-sdk/package.json';
+} from '@nocobase/js-template-sdk/schema';
+import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
 import type { Database } from '@nocobase/database';
 import {
   RUNJS_SETTINGS_CONDITION_LIMITS,

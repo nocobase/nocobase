@@ -10,4 +10,4 @@
 export {
   lightExtensionEntryV1SchemaFileContent,
   lightExtensionEntryV1SchemaSha256,
-} from '@nocobase/light-extension-sdk/schema/server';
+} from '@nocobase/js-template-sdk/schema/server';

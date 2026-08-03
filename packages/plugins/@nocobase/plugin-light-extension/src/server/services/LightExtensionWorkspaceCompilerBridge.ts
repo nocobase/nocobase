@@ -27,6 +27,8 @@ import {
 import { hasErrorDiagnostic, sortDiagnostics } from './LightExtensionValidator';
 
 const allowedCompileSdkImports = new Set([
+  '@nocobase/js-template-sdk/client',
+  '@nocobase/js-template-sdk/shared',
   '@nocobase/light-extension-sdk/client',
   '@nocobase/light-extension-sdk/shared',
 ]);

@@ -69,29 +69,30 @@ describe('path', () => {
     expect(result.diagnostics.filter((item) => item.code === 'path_extension_not_allowed')).toEqual([]);
   });
 
-  it('allows SDK types and helpers through a shared helper in a JS Field entry', () => {
-    const result = new LightExtensionValidator().validateWorkspace({
-      files: [
-        {
-          path: 'src/shared/format.ts',
-          content:
-            'import type { LightExtensionSettingsContext } from "@nocobase/light-extension-sdk/shared";\nexport function formatValue(ctx: LightExtensionSettingsContext) { return String(ctx.settings ?? ""); }\n',
-        },
-        {
-          path: 'src/client/js-fields/phone-link/index.tsx',
-          content:
-            'import { type LightExtensionSettingsContext, defineSettings } from "@nocobase/light-extension-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) { return formatValue(ctx); }\n',
-        },
-        {
-          path: 'src/client/js-fields/phone-link/entry.json',
-          content: '{"schemaVersion":1,"key":"phone-link"}',
-        },
-      ],
-    });
+  it.each(['@nocobase/js-template-sdk', '@nocobase/light-extension-sdk'])(
+    'allows %s types and helpers through a shared helper in a JS Field entry',
+    (sdkPackageName) => {
+      const result = new LightExtensionValidator().validateWorkspace({
+        files: [
+          {
+            path: 'src/shared/format.ts',
+            content: `import type { LightExtensionSettingsContext } from "${sdkPackageName}/shared";\nexport function formatValue(ctx: LightExtensionSettingsContext) { return String(ctx.settings ?? ""); }\n`,
+          },
+          {
+            path: 'src/client/js-fields/phone-link/index.tsx',
+            content: `import { type LightExtensionSettingsContext, defineSettings } from "${sdkPackageName}/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function PhoneLink(ctx: LightExtensionSettingsContext) { return formatValue(ctx); }\n`,
+          },
+          {
+            path: 'src/client/js-fields/phone-link/entry.json',
+            content: '{"schemaVersion":1,"key":"phone-link"}',
+          },
+        ],
+      });
 
-    expect(result.accepted).toBe(true);
-    expect(result.diagnostics).toEqual([]);
-  });
+      expect(result.accepted).toBe(true);
+      expect(result.diagnostics).toEqual([]);
+    },
+  );
 
   it('accepts JS Page entry modules without allowing page-specific assets', () => {
     const validator = new LightExtensionValidator();

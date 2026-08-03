@@ -245,6 +245,12 @@ describe('light extension settings typegen', () => {
     expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
       'export interface JSPageContext',
     );
+    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
+      'declare module "@nocobase/js-template-sdk/client"',
+    );
+    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
+      'declare module "@nocobase/light-extension-sdk/client"',
+    );
   });
 });
 

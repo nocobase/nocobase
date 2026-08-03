@@ -14,7 +14,7 @@ import {
   LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
   LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
   LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
-} from '@nocobase/light-extension-sdk/schema';
+} from '@nocobase/js-template-sdk/schema';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
 
 import { sha256Hex } from '../../shared/hash';

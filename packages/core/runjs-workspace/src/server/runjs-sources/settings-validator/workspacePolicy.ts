@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN } from '@nocobase/light-extension-sdk/schema';
+import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN } from '@nocobase/js-template-sdk/schema';
 
 const entryKeyPattern = new RegExp(LIGHT_EXTENSION_ENTRY_KEY_PATTERN);
 

@@ -18,7 +18,7 @@ import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { defineSettings } from '@nocobase/light-extension-sdk/client';
+import { defineSettings } from '@nocobase/js-template-sdk/client';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Modal } from 'antd';
 import fs from 'fs';
@@ -98,7 +98,7 @@ function registerRuntimeBoundaryTests() {
       expect(defineSettings(settings)).toBe(settings);
 
       const sdkSource = fs.readFileSync(
-        path.resolve(__dirname, '../../../../../../core/light-extension-sdk/src/client/index.ts'),
+        path.resolve(__dirname, '../../../../../../core/js-template-sdk/src/client/index.ts'),
         'utf8',
       );
       expect(sdkSource).not.toMatch(
@@ -110,7 +110,7 @@ function registerRuntimeBoundaryTests() {
 
     it('uses the standalone SDK package instead of plugin-local SDK shims', () => {
       const pluginRoot = path.resolve(__dirname, '../../..');
-      const sdkRoot = path.resolve(pluginRoot, '../../../core/light-extension-sdk');
+      const sdkRoot = path.resolve(pluginRoot, '../../../core/js-template-sdk');
       const rootSource = fs.readFileSync(path.resolve(__dirname, '../../index.ts'), 'utf8');
       const packageJson = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'package.json'), 'utf8')) as {
         exports: Record<string, { import?: string; types?: string } | string>;
@@ -131,7 +131,7 @@ function registerRuntimeBoundaryTests() {
       });
       expect(packageJson.exports['./sdk/client']).toBeUndefined();
       expect(packageJson.exports['./sdk/shared']).toBeUndefined();
-      expect(packageJson.dependencies['@nocobase/light-extension-sdk']).toBeDefined();
+      expect(packageJson.dependencies['@nocobase/js-template-sdk']).toBeDefined();
       expect(sdkPackageJson.exports['./client']).toBeDefined();
       expect(sdkPackageJson.exports['./shared']).toBeDefined();
       expect(sdkPackageJson.exports['./typegen']).toBeDefined();
