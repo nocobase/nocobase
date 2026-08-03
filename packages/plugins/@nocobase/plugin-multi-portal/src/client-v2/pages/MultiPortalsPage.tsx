@@ -44,7 +44,7 @@ import {
   Typography,
   theme,
 } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ADMIN_UI_LAYOUT_UID,
   isDefaultLayoutMultiPortalUid,
