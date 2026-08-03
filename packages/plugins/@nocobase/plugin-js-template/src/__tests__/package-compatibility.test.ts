@@ -22,12 +22,18 @@ describe('@nocobase/plugin-js-template package facade', () => {
       displayName: 'JS Templates',
       'displayName.zh-CN': 'JS 模板',
     });
-    expect(canonicalPackageJson.peerDependencies).toEqual({
-      '@nocobase/plugin-light-extension': '2.x',
-    });
-    expect(canonicalPackageJson.devDependencies).toEqual({
+    expect(canonicalPackageJson.dependencies).toEqual({
       '@nocobase/plugin-light-extension': legacyPackageJson.version,
     });
+    expect(canonicalPackageJson.version).toBe(legacyPackageJson.version);
+    expect(canonicalPackageJson.files).toEqual([
+      'client.cjs',
+      'client.d.ts',
+      'client-v2.cjs',
+      'client-v2.d.ts',
+      'server.js',
+      'server.d.ts',
+    ]);
     expect(legacyPackageJson).toMatchObject({
       name: '@nocobase/plugin-light-extension',
       displayName: 'JS Templates',

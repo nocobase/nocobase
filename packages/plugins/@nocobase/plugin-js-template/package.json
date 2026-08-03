@@ -6,6 +6,14 @@
   "description.zh-CN": "组织并复用 JS 模板仓库中的多文件 RunJS Entry。",
   "version": "2.2.0-beta.16",
   "license": "Apache-2.0",
+  "files": [
+    "client.cjs",
+    "client.d.ts",
+    "client-v2.cjs",
+    "client-v2.d.ts",
+    "server.js",
+    "server.d.ts"
+  ],
   "main": "./server.js",
   "exports": {
     ".": {
@@ -35,10 +43,7 @@
   "keywords": [
     "Developer tools"
   ],
-  "peerDependencies": {
-    "@nocobase/plugin-light-extension": "2.x"
-  },
-  "devDependencies": {
-    "@nocobase/plugin-light-extension": "2.2.0-beta.15"
+  "dependencies": {
+    "@nocobase/plugin-light-extension": "2.2.0-beta.16"
   }
 }

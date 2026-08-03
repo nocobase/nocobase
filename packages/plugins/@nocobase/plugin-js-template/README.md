@@ -4,5 +4,6 @@
 `light-extension` plugin runtime so existing installations keep one plugin record, one enable state, and the same
 persistent RunJS and VSC identities.
 
-`@nocobase/plugin-light-extension` remains supported as the legacy implementation package and exposes the same server,
-client, and client-v2 entry points.
+The canonical package ships server, client, and client-v2 facade entries and installs
+`@nocobase/plugin-light-extension` as its compatible runtime implementation. The legacy package remains independently
+buildable, installable, and publishable for existing deployments, cached artifacts, and rollback.

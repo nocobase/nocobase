@@ -146,9 +146,9 @@ the canonical package must never depend on the facade.
 ## Plugin package and preset identity
 
 `@nocobase/plugin-js-template` is the canonical package and the preset's built-in identity. The preset retains the
-legacy package as a compatibility dependency, and the canonical package declares it as its runtime peer. The canonical
-package is a thin facade over `@nocobase/plugin-light-extension`, so the complete legacy server, client, client-v2,
-Swagger, and programmatic exports remain installed and resolvable during the package transition.
+legacy package as a compatibility dependency, and the canonical package installs it as its runtime implementation.
+The canonical package is a thin facade over `@nocobase/plugin-light-extension`, so the complete legacy server, client,
+client-v2, Swagger, and programmatic exports remain installed and resolvable during the package transition.
 
 Package resolution normalizes `js-template`, `@nocobase/plugin-js-template`, `light-extension`, and
 `@nocobase/plugin-light-extension` to one runtime identity: name `light-extension` and runtime package
@@ -164,6 +164,25 @@ pre-upgrade records and cached clients load the same implementation.
 
 This package-level normalization is not a persisted RunJS migration. It does not rename collections, VSC owners,
 FlowModel keys, source bindings, artifacts, routes, HTTP/ACL/CLI/SDK tokens, or any other frozen wire identity.
+
+## Build, version, Docker, and release boundary
+
+The canonical plugin, legacy implementation, canonical SDK, legacy SDK facade, RunJS packages, and preset use the same
+repository release version. Exact internal dependencies use that version as well, so Lerna version updates keep the
+publication chain synchronized without creating a second plugin runtime.
+
+The canonical package explicitly includes its root facade entries in npm and NocoBase tar artifacts. The SDK packages
+explicitly include their compiled `lib` output. Canonical artifacts use the `@nocobase/plugin-js-template` package name;
+legacy artifacts keep the `@nocobase/plugin-light-extension` name for older installers, caches, and rollback.
+
+All release packages remain public Lerna workspaces. The normal unfiltered `lerna publish` and forced `from-package`
+paths therefore publish both plugin names and both SDK names. There is no JS Templates-only release allowlist that can
+drop a compatibility package.
+
+Docker images install `@nocobase/app`, which installs `@nocobase/preset-nocobase`. The preset installs both plugin
+packages, advertises only `@nocobase/plugin-js-template` as built in, and keeps `@nocobase/plugin-light-extension` in
+the deprecated compatibility list. Both packages normalize to the existing `light-extension` runtime record, so image
+upgrades and rollbacks reuse the same enable state and persisted data.
 
 ## Scope of later migration goals
 
