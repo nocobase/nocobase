@@ -15,12 +15,20 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import LightCheck from '../commands/light/check.js';
 import LightPull from '../commands/light/pull.js';
 import LightSave from '../commands/light/save.js';
+import JsTemplateCheck from '../commands/js-template/check.js';
+import JsTemplatePull from '../commands/js-template/pull.js';
+import JsTemplateSave from '../commands/js-template/save.js';
 import {
   LIGHT_EXTENSION_BASELINE_PATH,
   LIGHT_EXTENSION_EXIT_CODES,
   LIGHT_EXTENSION_STATE_PATH,
   type LightExtensionWorkspaceFile,
 } from '../lib/light-extension-workspace.js';
+import {
+  JS_TEMPLATE_WORKSPACE_API_PATHS,
+  LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS,
+  type JsTemplateWorkspaceApiPaths,
+} from '../lib/js-template-command-contract.js';
 
 interface RecordedRequest {
   path: string;
@@ -47,8 +55,12 @@ class CommandExit extends Error {
   }
 }
 
-function createCommandHarness(flags: Record<string, unknown>) {
+function createCommandHarness(
+  flags: Record<string, unknown>,
+  apiPaths: JsTemplateWorkspaceApiPaths = LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS,
+) {
   return {
+    apiPaths,
     parse: vi.fn(async () => ({ args: {}, flags })),
     log: vi.fn(),
     logToStderr: vi.fn(),
@@ -148,20 +160,34 @@ function commandFlags(workspace: string) {
   };
 }
 
-async function runPull(workspace: string, headCommitId: string | null = null) {
-  fakeHandlers['/api/lightExtensionEntries:get'] = () => ({ body: entryEnvelope() });
-  fakeHandlers['/api/lightExtensionFiles:pull'] = () => ({ body: pullEnvelope(headCommitId) });
-  const command = createCommandHarness({
-    ...commandFlags(workspace),
-    repo: 'ler_demo',
-    entry: 'lee_demo',
-  });
-  await LightPull.prototype.run.call(command as never);
+async function runPull(
+  workspace: string,
+  headCommitId: string | null = null,
+  commandName: 'canonical' | 'legacy' = 'legacy',
+) {
+  const entryPath = commandName === 'canonical' ? '/api/jsTemplateEntries:get' : '/api/lightExtensionEntries:get';
+  const pullPath = commandName === 'canonical' ? '/api/jsTemplateFiles:pull' : '/api/lightExtensionFiles:pull';
+  fakeHandlers[entryPath] = () => ({ body: entryEnvelope() });
+  fakeHandlers[pullPath] = () => ({ body: pullEnvelope(headCommitId) });
+  const command = createCommandHarness(
+    {
+      ...commandFlags(workspace),
+      repo: 'ler_demo',
+      entry: 'lee_demo',
+    },
+    commandName === 'canonical' ? JS_TEMPLATE_WORKSPACE_API_PATHS : LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS,
+  );
+  const CommandClass = commandName === 'canonical' ? JsTemplatePull : LightPull;
+  await CommandClass.prototype.run.call(command as never);
   return command;
 }
 
-async function runAcceptedCheck(workspace: string) {
-  fakeHandlers['/api/lightExtensions:compileWorkspacePreview'] = () => ({
+async function runAcceptedCheck(workspace: string, commandName: 'canonical' | 'legacy' = 'legacy') {
+  const checkPath =
+    commandName === 'canonical'
+      ? '/api/jsTemplates:compileWorkspacePreview'
+      : '/api/lightExtensions:compileWorkspacePreview';
+  fakeHandlers[checkPath] = () => ({
     body: {
       data: {
         accepted: true,
@@ -183,8 +209,12 @@ async function runAcceptedCheck(workspace: string) {
       },
     },
   });
-  const command = createCommandHarness(commandFlags(workspace));
-  await LightCheck.prototype.run.call(command as never);
+  const command = createCommandHarness(
+    commandFlags(workspace),
+    commandName === 'canonical' ? JS_TEMPLATE_WORKSPACE_API_PATHS : LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS,
+  );
+  const CommandClass = commandName === 'canonical' ? JsTemplateCheck : LightCheck;
+  await CommandClass.prototype.run.call(command as never);
   return command;
 }
 
@@ -202,6 +232,62 @@ afterEach(async () => {
 });
 
 describe('nb light pull/check/save', () => {
+  test('keeps canonical command copy synchronized in English and Simplified Chinese', async () => {
+    const enUS = await readFile(join(process.cwd(), 'packages/core/cli/src/locale/en-US.json'), 'utf8');
+    const zhCN = await readFile(join(process.cwd(), 'packages/core/cli/src/locale/zh-CN.json'), 'utf8');
+
+    expect(enUS).toContain('JS Template workspace');
+    expect(enUS).not.toContain('Light Extension');
+    expect(zhCN).toContain('JS 模板 Workspace');
+    expect(zhCN).not.toContain('Light Extension');
+    expect(JsTemplateCheck.summary).toContain('JS Template');
+    expect(JsTemplateSave.summary).toContain('JS Template');
+  });
+
+  test('keeps the legacy commands as facades while canonical commands use the jsTemplate HTTP aliases', async () => {
+    expect(LightPull.prototype.run).toBe(JsTemplatePull.prototype.run);
+    expect(LightCheck.prototype.run).toBe(JsTemplateCheck.prototype.run);
+    expect(LightSave.prototype.run).toBe(JsTemplateSave.prototype.run);
+    expect(LightPull.flags).toBe(JsTemplatePull.flags);
+    expect(LightCheck.flags).toBe(JsTemplateCheck.flags);
+    expect(LightSave.flags).toBe(JsTemplateSave.flags);
+
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, null, 'canonical');
+    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default "canonical";\n', 'utf8');
+    await runAcceptedCheck(workspace, 'canonical');
+    fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
+      body: {
+        data: {
+          repo: { id: 'ler_demo', name: 'demo', lifecycleStatus: 'active', headCommitId: 'commit_canonical' },
+          commit: { id: 'commit_canonical', treeHash: 'tree_canonical' },
+          tree: { hash: 'tree_canonical', entryCount: 2, byteSize: 130 },
+          compile: { status: 'success', entries: [] },
+          diagnostics: [],
+        },
+      },
+    });
+    const saveCommand = createCommandHarness(
+      {
+        ...commandFlags(workspace),
+        message: 'Update canonical workspace',
+        yes: true,
+      },
+      JS_TEMPLATE_WORKSPACE_API_PATHS,
+    );
+    await JsTemplateSave.prototype.run.call(saveCommand as never);
+
+    expect(requests.map((request) => request.path)).toEqual([
+      '/api/jsTemplateEntries:get',
+      '/api/jsTemplateFiles:pull',
+      '/api/jsTemplates:compileWorkspacePreview',
+      '/api/jsTemplateFiles:saveSource',
+    ]);
+    expect(JSON.parse(String(saveCommand.log.mock.calls.at(-1)?.[0]))).toEqual(
+      expect.objectContaining({ ok: true, newHeadCommitId: 'commit_canonical' }),
+    );
+  });
+
   test('pulls, checks, and saves a UTF-8 delta without persisting credentials', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
@@ -249,36 +335,46 @@ describe('nb light pull/check/save', () => {
     ]);
   });
 
-  test('returns diagnostics from a rejected check with the stable exit code', async () => {
-    const workspace = await createTempWorkspace();
-    await runPull(workspace);
-    fakeHandlers['/api/lightExtensions:compileWorkspacePreview'] = () => ({
-      status: 422,
-      body: {
-        data: {
-          accepted: false,
-          httpStatus: 422,
-          diagnostics: [
-            {
-              code: 'typescript_error',
-              severity: 'error',
-              message: 'Cannot find name missingValue',
-              path: 'src/client/demo/index.tsx',
-              line: 2,
-              column: 10,
-            },
-          ],
+  test.each(['canonical', 'legacy'] as const)(
+    'returns diagnostics from a rejected check with the stable exit code for the %s command',
+    async (commandName) => {
+      const workspace = await createTempWorkspace();
+      await runPull(workspace, null, commandName);
+      const checkPath =
+        commandName === 'canonical'
+          ? '/api/jsTemplates:compileWorkspacePreview'
+          : '/api/lightExtensions:compileWorkspacePreview';
+      fakeHandlers[checkPath] = () => ({
+        status: 422,
+        body: {
+          data: {
+            accepted: false,
+            httpStatus: 422,
+            diagnostics: [
+              {
+                code: 'typescript_error',
+                severity: 'error',
+                message: 'Cannot find name missingValue',
+                path: 'src/client/demo/index.tsx',
+                line: 2,
+                column: 10,
+              },
+            ],
+          },
         },
-      },
-    });
-    const command = createCommandHarness(commandFlags(workspace));
-    await expect(LightCheck.prototype.run.call(command as never)).rejects.toMatchObject({
-      exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
-    });
-    const failure = JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]));
-    expect(failure.exitCode).toBe(LIGHT_EXTENSION_EXIT_CODES.rejected);
-    expect(failure.check.diagnostics[0].line).toBe(2);
-  });
+      });
+      const apiPaths =
+        commandName === 'canonical' ? JS_TEMPLATE_WORKSPACE_API_PATHS : LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS;
+      const command = createCommandHarness(commandFlags(workspace), apiPaths);
+      const CommandClass = commandName === 'canonical' ? JsTemplateCheck : LightCheck;
+      await expect(CommandClass.prototype.run.call(command as never)).rejects.toMatchObject({
+        exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+      });
+      const failure = JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]));
+      expect(failure.exitCode).toBe(LIGHT_EXTENSION_EXIT_CODES.rejected);
+      expect(failure.check.diagnostics[0].line).toBe(2);
+    },
+  );
 
   test('keeps local files and baseline unchanged after a stale-Head save conflict', async () => {
     const workspace = await createTempWorkspace();

@@ -18,9 +18,9 @@ import { generateRuntime } from '../lib/runtime-generator.js';
 
 const configFile = resolve('packages/core/cli/nocobase-ctl.config.json');
 
-async function generateLightExtensionCommands() {
+async function generateLightExtensionCommands(moduleName: 'js-template' | 'light-extension' = 'light-extension') {
   const runtime = await generateRuntime(swaggerDocument as unknown as OpenApiDocument, configFile);
-  return runtime.commands.filter((command) => command.moduleName === 'light-extension');
+  return runtime.commands.filter((command) => command.moduleName === moduleName);
 }
 
 async function generateRunJSCommands() {
@@ -73,6 +73,75 @@ describe('Light Extension runtime commands', () => {
         '/lightExtensionFiles:saveSource',
       ]),
     );
+  });
+
+  it('generates the canonical JS Template API commands with the same operation contract as every legacy alias', async () => {
+    const canonicalCommands = await generateLightExtensionCommands('js-template');
+    const legacyCommands = await generateLightExtensionCommands();
+
+    expect(canonicalCommands.map((command) => command.commandId)).toEqual([
+      'js-template-entries get',
+      'js-template-entries list-selectable',
+      'js-template-files get-file',
+      'js-template-files pull',
+      'js-template-files save-source',
+      'js-template-references read-references',
+      'js-template-repos get',
+      'js-template-repos list',
+      'js-templates compile-workspace-preview',
+      'js-templates move-source',
+      'js-templates move-to-inline',
+    ]);
+    expect(canonicalCommands).toHaveLength(legacyCommands.length);
+
+    for (const canonical of canonicalCommands) {
+      const legacyCommandId = canonical.commandId
+        .replace(/^js-template-/u, 'light-extension-')
+        .replace(/^js-templates /u, 'light-extensions ');
+      const legacy = findCommand(legacyCommands, legacyCommandId);
+      expect(canonical.pathTemplate).toBe(
+        legacy.pathTemplate
+          .replace('/lightExtensionRepos:', '/jsTemplateRepos:')
+          .replace('/lightExtensionEntries:', '/jsTemplateEntries:')
+          .replace('/lightExtensionReferences:', '/jsTemplateReferences:')
+          .replace('/lightExtensionFiles:', '/jsTemplateFiles:')
+          .replace('/lightExtensions:', '/jsTemplates:'),
+      );
+      expect(canonical).toMatchObject({
+        method: legacy.method,
+        actionName: legacy.actionName,
+        hasBody: legacy.hasBody,
+        bodyRequired: legacy.bodyRequired,
+        requestContentType: legacy.requestContentType,
+        responseType: legacy.responseType,
+      });
+      expect(
+        canonical.parameters.map(({ name, flagName, in: location, required, type, format, isArray, isFile }) => ({
+          name,
+          flagName,
+          location,
+          required,
+          type,
+          format,
+          isArray,
+          isFile,
+        })),
+      ).toEqual(
+        legacy.parameters.map(({ name, flagName, in: location, required, type, format, isArray, isFile }) => ({
+          name,
+          flagName,
+          location,
+          required,
+          type,
+          format,
+          isArray,
+          isFile,
+        })),
+      );
+      expect(canonical.summary).not.toMatch(/light[ -]extension/iu);
+      expect(canonical.description).not.toMatch(/light[ -]extension/iu);
+      expect(canonical.examples.every((example) => example.startsWith(`nb api ${canonical.commandId}`))).toBe(true);
+    }
   });
 
   it('generates action help for externalization with explicit destinations, idempotency, and body-file examples', async () => {

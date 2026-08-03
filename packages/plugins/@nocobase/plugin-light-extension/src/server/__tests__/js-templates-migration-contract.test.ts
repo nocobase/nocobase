@@ -235,10 +235,16 @@ describe('JS templates migration compatibility contract', () => {
 
     expect(cliTopics).toHaveProperty(LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.cli.topic);
     expect(apiModules).toHaveProperty(LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.cli.apiModule);
+    expect(cliTopics).toHaveProperty('js-template');
+    expect(apiModules).toHaveProperty('js-template');
     for (const command of LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.cli.commands) {
       expect(
         existsSync(path.join(repositoryRoot, `packages/core/cli/src/commands/light/${command}.ts`)),
         `nb light ${command}`,
+      ).toBe(true);
+      expect(
+        existsSync(path.join(repositoryRoot, `packages/core/cli/src/commands/js-template/${command}.ts`)),
+        `nb js-template ${command}`,
       ).toBe(true);
     }
     expect(sdkPackage.name).toBe(LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.sdk.packageName);

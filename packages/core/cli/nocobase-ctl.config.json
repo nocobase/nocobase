@@ -355,9 +355,60 @@
         }
       }
     },
+    "js-template": {
+      "name": "js-template",
+      "description": "Discover, author, compile, and migrate JS Templates source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": ["jsTemplateRepos", "jsTemplateEntries", "jsTemplateReferences", "jsTemplateFiles", "jsTemplates"],
+        "excludes": [],
+        "overrides": {
+          "jsTemplateRepos": {
+            "name": "js-template-repos",
+            "description": "Discover JS Template source repositories.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateRepos:list", "jsTemplateRepos:get"]
+            }
+          },
+          "jsTemplateEntries": {
+            "name": "js-template-entries",
+            "description": "Inspect and discover reusable JS Template entries.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateEntries:get", "jsTemplateEntries:listSelectable"]
+            }
+          },
+          "jsTemplateReferences": {
+            "name": "js-template-references",
+            "description": "Inspect visible JS Template usage references.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateReferences:readReferences"]
+            }
+          },
+          "jsTemplateFiles": {
+            "name": "js-template-files",
+            "description": "Pull, read, and save JS Template source workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateFiles:pull", "jsTemplateFiles:getFile", "jsTemplateFiles:saveSource"]
+            }
+          },
+          "jsTemplates": {
+            "name": "js-templates",
+            "description": "Compile and migrate JS Template source workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplates:compileWorkspacePreview", "jsTemplates:moveSource", "jsTemplates:moveToInline"]
+            }
+          }
+        }
+      }
+    },
     "light-extension": {
       "name": "light-extension",
-      "description": "Discover, author, compile, and migrate Light Extension source workspaces.",
+      "description": "Legacy API command aliases for JS Templates source workspaces.",
       "include": true,
       "resources": {
         "includes": [

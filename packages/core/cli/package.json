@@ -77,8 +77,12 @@
       "revision": {
         "description": "Manage restorable revisions during NocoBase app building."
       },
+      "js-template": {
+        "description": "Pull, check, and save local JS Templates source workspaces."
+      },
       "light": {
-        "description": "Pull, check, and save local JS Block and JS Page source workspaces."
+        "description": "Legacy alias for JS Templates workspace commands.",
+        "hidden": true
       },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",

@@ -51,6 +51,20 @@ replace these values without a separate compatibility review and an upgrade-and-
 Unknown private registries, deployed artifacts, and downstream consumers are treated as compatibility requirements.
 A public-registry or repository search that finds no consumer is not sufficient evidence to remove a legacy contract.
 
+## CLI and generated API command aliases
+
+`nb js-template pull|check|save` is the canonical local-workspace command tree. The historical
+`nb light pull|check|save` tree remains a thin facade over the same command classes and keeps calling the legacy HTTP
+resources so it also works with servers that predate the canonical aliases. Both trees retain the existing flags,
+environment lookup, `.nocobase/light-extension-*` workspace state, `.light-extension/types`, output formats, and exit
+codes.
+
+Generated API commands expose canonical `js-template-repos`, `js-template-entries`, `js-template-references`,
+`js-template-files`, and `js-templates` topics. Every canonical operation is documented from the same Swagger request
+and response contract as its retained `light-extension-*` or `light-extensions` alias, and calls the `jsTemplate*`
+HTTP facade that resolves to the existing legacy handler and ACL identity. The `light-extension` API command module,
+all legacy paths, and their output and error contracts remain available.
+
 ## Canonical server API aliases
 
 New server consumers use the `JsTemplate*` facade exports and the `jsTemplate*` HTTP resource aliases. The centralized

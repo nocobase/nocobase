@@ -381,7 +381,7 @@ export function extractEntryRecord(value: unknown): LightExtensionEntryRecord {
   if (target !== 'client') {
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.clientEntriesOnly', undefined, {
-        fallback: 'The local Light Extension workflow only supports client entries.',
+        fallback: 'The local JS Template workflow only supports client entries.',
       }),
     );
   }
@@ -393,7 +393,7 @@ export function extractEntryRecord(value: unknown): LightExtensionEntryRecord {
         { kind },
         {
           fallback:
-            'The local Light Extension workflow only supports JS Block and JS Page entries; received "{{kind}}". Use the raw API command for other kinds.',
+            'The local JS Template workflow only supports JS Block and JS Page entries; received "{{kind}}". Use the raw API command for other kinds.',
         },
       ),
     );
@@ -538,7 +538,7 @@ async function assertWorkspacePathHasNoSymlinks(workspaceRoot: string, workspace
       if (stats.isSymbolicLink()) {
         throw new LightExtensionCliError(
           translateCli('commands.light.errors.symlinkUnsupported', { path: candidate.workspacePath }, {
-            fallback: 'Symbolic links are not supported in a Light Extension workspace: {{path}}',
+            fallback: 'Symbolic links are not supported in a JS Template workspace: {{path}}',
           }),
         );
       }
@@ -562,7 +562,7 @@ async function walkWorkspaceFiles(root: string): Promise<string[]> {
       if (entry.isSymbolicLink()) {
         throw new LightExtensionCliError(
           translateCli('commands.light.errors.symlinkUnsupported', { path: workspacePath }, {
-            fallback: 'Symbolic links are not supported in a Light Extension workspace: {{path}}',
+            fallback: 'Symbolic links are not supported in a JS Template workspace: {{path}}',
           }),
         );
       }
@@ -623,13 +623,13 @@ function stateFileFromWorkspaceFile(file: LightExtensionWorkspaceFile): LightExt
 }
 
 function parseWorkspaceState(value: unknown): LightExtensionWorkspaceState {
-  const record = requireRecord(value, 'Light Extension workspace state');
+  const record = requireRecord(value, 'JS Template workspace state');
   if (record.version !== LIGHT_EXTENSION_STATE_VERSION) {
     throw new LightExtensionCliError(
       translateCli(
         'commands.light.errors.stateVersion',
         { version: String(record.version) },
-        { fallback: 'Unsupported Light Extension workspace state version: {{version}}. Pull the workspace again.' },
+        { fallback: 'Unsupported JS Template workspace state version: {{version}}. Pull the workspace again.' },
       ),
     );
   }
@@ -689,7 +689,7 @@ export async function loadWorkspaceState(workspaceRoot: string): Promise<LightEx
         translateCli(
           'commands.light.errors.stateMissing',
           { statePath },
-          { fallback: 'No Light Extension workspace state was found at {{statePath}}. Run `nb light pull` first.' },
+          { fallback: 'No JS Template workspace state was found at {{statePath}}. Run `nb js-template pull` first.' },
         ),
       );
     }
@@ -701,7 +701,7 @@ export async function loadWorkspaceState(workspaceRoot: string): Promise<LightEx
     if (error instanceof LightExtensionCliError) throw error;
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.stateInvalid', { statePath }, {
-        fallback: 'The Light Extension workspace state at {{statePath}} is invalid.',
+        fallback: 'The JS Template workspace state at {{statePath}} is invalid.',
       }),
       { cause: error },
     );
@@ -857,7 +857,7 @@ export async function materializePulledWorkspace(options: {
   if (options.pull.repo.lifecycleStatus === 'archived') {
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.archivedRepository', undefined, {
-        fallback: 'Archived Light Extension repositories cannot enter the local Agent workflow.',
+        fallback: 'Archived JS Template repositories cannot enter the local Agent workflow.',
       }),
     );
   }
@@ -1076,7 +1076,7 @@ export function assertWorkspaceReadyToSave(
     throw new LightExtensionCliError(
       translateCli('commands.light.errors.checkRequired', undefined, {
         fallback:
-          'The current local snapshot has not passed the authoritative workspace check. Run `nb light check` after the latest file change.',
+          'The current local snapshot has not passed the authoritative workspace check. Run `nb js-template check` after the latest file change.',
       }),
       {
         details: {

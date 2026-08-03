@@ -483,3 +483,65 @@ export const lightExtensionPaths = {
     },
   },
 };
+
+export const JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES = {
+  lightExtensionRepos: 'jsTemplateRepos',
+  lightExtensionEntries: 'jsTemplateEntries',
+  lightExtensionReferences: 'jsTemplateReferences',
+  lightExtensionFiles: 'jsTemplateFiles',
+  lightExtensions: 'jsTemplates',
+} as const;
+
+function canonicalizeJsTemplateText(value: string): string {
+  return value
+    .replaceAll('lightExtensionRepos', 'jsTemplateRepos')
+    .replaceAll('lightExtensionEntries', 'jsTemplateEntries')
+    .replaceAll('lightExtensionReferences', 'jsTemplateReferences')
+    .replaceAll('lightExtensionFiles', 'jsTemplateFiles')
+    .replaceAll('lightExtensions', 'jsTemplates')
+    .replaceAll('Light Extension', 'JS Template')
+    .replaceAll('Light-extension', 'JS Template')
+    .replaceAll('light-extension', 'JS Template')
+    .replaceAll('light extension', 'JS Template');
+}
+
+function canonicalizeJsTemplateDocs<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => canonicalizeJsTemplateDocs(item)) as T;
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => {
+      if ((key === 'summary' || key === 'description') && typeof item === 'string') {
+        return [key, canonicalizeJsTemplateText(item)];
+      }
+      if (key === 'tags' && Array.isArray(item)) {
+        return [
+          key,
+          item.map((tag) =>
+            typeof tag === 'string'
+              ? JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES[tag as keyof typeof JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES] ?? tag
+              : tag,
+          ),
+        ];
+      }
+      return [key, canonicalizeJsTemplateDocs(item)];
+    }),
+  ) as T;
+}
+
+/** Canonical API documentation facades. Runtime requests are mapped to the same legacy handlers and ACL identities. */
+export const jsTemplatePaths = Object.fromEntries(
+  Object.entries(lightExtensionPaths).map(([path, operation]) => {
+    const separatorIndex = path.indexOf(':');
+    const legacyResource = path.slice(1, separatorIndex) as keyof typeof JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES;
+    const canonicalResource = JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES[legacyResource];
+    return [`/${canonicalResource}${path.slice(separatorIndex)}`, canonicalizeJsTemplateDocs(operation)];
+  }),
+) as Record<
+  `/${(typeof JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES)[keyof typeof JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES]}:${string}`,
+  (typeof lightExtensionPaths)[keyof typeof lightExtensionPaths]
+>;

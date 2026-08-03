@@ -7,28 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { lightExtensionPaths } from './paths';
+import { jsTemplatePaths, lightExtensionPaths } from './paths';
 import { lightExtensionSchemas } from './schemas';
 import vscFileSwagger from './vsc-file';
 
 export default {
   openapi: '3.0.2',
   info: {
-    title: 'NocoBase API - Light extension plugin',
+    title: 'NocoBase API - JS Templates plugin',
     version: '1.0.0',
   },
   tags: [
-    { name: 'lightExtensionRepos', description: 'Discover existing light-extension source repositories.' },
-    { name: 'lightExtensionEntries', description: 'Inspect and discover reusable light-extension entries.' },
-    { name: 'lightExtensionReferences', description: 'Inspect visible light-extension usage references.' },
-    { name: 'lightExtensionFiles', description: 'Read and save light-extension source files.' },
+    { name: 'jsTemplateRepos', description: 'Discover existing JS Template source repositories.' },
+    { name: 'jsTemplateEntries', description: 'Inspect and discover reusable JS Template entries.' },
+    { name: 'jsTemplateReferences', description: 'Inspect visible JS Template usage references.' },
+    { name: 'jsTemplateFiles', description: 'Read and save JS Template source files.' },
     {
-      name: 'lightExtensions',
+      name: 'jsTemplates',
       description: 'Preview compilation and move source between inline and Entry workspaces.',
     },
+    { name: 'lightExtensionRepos', description: 'Legacy alias for JS Template source repositories.' },
+    { name: 'lightExtensionEntries', description: 'Legacy alias for reusable JS Template entries.' },
+    { name: 'lightExtensionReferences', description: 'Legacy alias for JS Template usage references.' },
+    { name: 'lightExtensionFiles', description: 'Legacy alias for JS Template source files.' },
+    { name: 'lightExtensions', description: 'Legacy aliases for JS Template compilation and source moves.' },
     ...vscFileSwagger.tags,
   ],
   paths: {
+    ...jsTemplatePaths,
     ...lightExtensionPaths,
     ...vscFileSwagger.paths,
   },

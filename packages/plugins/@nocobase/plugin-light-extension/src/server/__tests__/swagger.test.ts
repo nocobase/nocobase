@@ -14,8 +14,9 @@ import { lightExtensionFileActionNames } from '../resources/lightExtensionFiles'
 import { lightExtensionReferenceActionNames } from '../resources/lightExtensionReferences';
 import { lightExtensionRepoActionNames } from '../resources/lightExtensionRepos';
 import { lightExtensionActionNames } from '../resources/lightExtensions';
+import { JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES } from '../../swagger/paths';
 
-const publicActions = {
+const legacyPublicActions = {
   lightExtensionRepos: ['list', 'get'],
   lightExtensionEntries: ['get', 'listSelectable'],
   lightExtensionReferences: ['readReferences'],
@@ -40,6 +41,14 @@ const publicActions = {
   ],
 } as const;
 
+const canonicalPublicActions = {
+  jsTemplateRepos: ['list', 'get'],
+  jsTemplateEntries: ['get', 'listSelectable'],
+  jsTemplateReferences: ['readReferences'],
+  jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
+  jsTemplates: ['compileWorkspacePreview', 'moveSource', 'moveToInline'],
+} as const;
+
 describe('light-extension swagger', () => {
   it('exports only the public authoring action allowlist and keeps it aligned with registered resource actions', () => {
     const registeredActions = {
@@ -51,16 +60,31 @@ describe('light-extension swagger', () => {
       runJSSources: runJSSourceActionNames,
       vscFile: vscFileActionNames,
     };
-    const expectedPaths = Object.entries(publicActions)
+    const expectedPaths = Object.entries({ ...legacyPublicActions, ...canonicalPublicActions })
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))
       .sort();
 
     expect(Object.keys(swaggerDocument.paths).sort()).toEqual(expectedPaths);
 
-    for (const [resource, actions] of Object.entries(publicActions)) {
+    for (const [resource, actions] of Object.entries(legacyPublicActions)) {
       for (const action of actions) {
         expect(registeredActions[resource as keyof typeof registeredActions]).toContain(action);
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
+      }
+    }
+  });
+
+  it('documents canonical JS Template paths as facades of every legacy authoring operation', () => {
+    for (const [legacyResource, canonicalResource] of Object.entries(JS_TEMPLATE_SWAGGER_RESOURCE_ALIASES)) {
+      const actions = legacyPublicActions[legacyResource as keyof typeof legacyPublicActions];
+      for (const action of actions) {
+        const legacy = swaggerDocument.paths[`/${legacyResource}:${action}`].post;
+        const canonical = swaggerDocument.paths[`/${canonicalResource}:${action}`].post;
+
+        expect(stripSwaggerDocumentation(canonical.requestBody)).toEqual(stripSwaggerDocumentation(legacy.requestBody));
+        expect(stripSwaggerDocumentation(canonical.responses)).toEqual(stripSwaggerDocumentation(legacy.responses));
+        expect(canonical.tags).toEqual([canonicalResource]);
+        expect(`${canonical.summary}\n${canonical.description ?? ''}`).not.toMatch(/light[ -]extension/iu);
       }
     }
   });
@@ -153,3 +177,18 @@ describe('light-extension swagger', () => {
     expect(listSelectable.responses).toHaveProperty('200');
   });
 });
+
+function stripSwaggerDocumentation(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(stripSwaggerDocumentation);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => !['description', 'summary', 'tags'].includes(key))
+      .map(([key, item]) => [key, stripSwaggerDocumentation(item)]),
+  );
+}
