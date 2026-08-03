@@ -17,7 +17,7 @@ import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { EXECUTE_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
 import { findCurrentFrontendTool } from '../frontend-tools';
 
-const DEFAULT_PORTAL_NAME = '/v/admin';
+const DEFAULT_PORTAL_NAME = 'admin';
 
 function getPortalName(ctx: Context) {
   return ctx.get('x-portal') || DEFAULT_PORTAL_NAME;

@@ -9,7 +9,7 @@
 
 import { Migration } from '@nocobase/server';
 
-const ADMIN_PORTAL_NAME = '/v/admin';
+const ADMIN_PORTAL_NAME = 'admin';
 
 export default class extends Migration {
   on = 'afterLoad';

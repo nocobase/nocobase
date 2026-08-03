@@ -56,7 +56,7 @@ export function installMultiPortalRequestInterceptor(
   apiClient.axios.interceptors.request.use((config) => {
     const portalName = getPortalNameForPathname(getPathname(), records);
     if (portalName && !hasHeaderValue(config.headers, 'x-portal')) {
-      config.headers.set('x-portal', `/v/${portalName}`);
+      config.headers.set('x-portal', portalName);
     }
     return config;
   });

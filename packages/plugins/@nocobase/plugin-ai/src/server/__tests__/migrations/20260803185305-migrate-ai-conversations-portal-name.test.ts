@@ -11,13 +11,13 @@ import { describe, expect, it, vi } from 'vitest';
 import Migration from '../../migrations/20260803185305-migrate-ai-conversations-portal-name';
 
 describe('20260803185305-migrate-ai-conversations-portal-name', () => {
-  it('updates only conversations without a portal name to the admin portal path', async () => {
+  it('updates only conversations without a portal name to the default admin portal', async () => {
     const legacyRow = {
       get: vi.fn(() => undefined),
       update: vi.fn().mockResolvedValue(undefined),
     };
     const currentRow = {
-      get: vi.fn(() => '/v/sales-portal'),
+      get: vi.fn(() => 'sales-portal'),
       update: vi.fn().mockResolvedValue(undefined),
     };
     const find = vi.fn().mockResolvedValue([legacyRow, currentRow]);
@@ -34,8 +34,8 @@ describe('20260803185305-migrate-ai-conversations-portal-name', () => {
     await migration.up();
 
     expect(find).toHaveBeenCalledWith({});
-    expect(legacyRow.update).toHaveBeenCalledWith({ portalName: '/v/admin' });
+    expect(legacyRow.update).toHaveBeenCalledWith({ portalName: 'admin' });
     expect(currentRow.update).not.toHaveBeenCalled();
-    expect(info).toHaveBeenCalledWith('Migrated aiConversations.portalName to /v/admin (1)');
+    expect(info).toHaveBeenCalledWith('Migrated aiConversations.portalName to admin (1)');
   });
 });

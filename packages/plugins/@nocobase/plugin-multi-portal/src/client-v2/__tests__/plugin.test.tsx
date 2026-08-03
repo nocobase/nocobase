@@ -189,7 +189,7 @@ describe('PluginMultiPortalClientV2', () => {
     app.apiMock.onGet('orders:list').reply(200, { data: [] });
 
     await app.apiClient.request({ url: 'orders:list', method: 'get' });
-    expect(app.apiMock.history.get[0].headers?.get('x-portal')).toBe('/v/portalDesktop');
+    expect(app.apiMock.history.get[0].headers?.get('x-portal')).toBe('portalDesktop');
 
     pathname = '/nocobase/v/admin';
     await app.apiClient.request({ url: 'orders:list', method: 'get' });

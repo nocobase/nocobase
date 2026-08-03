@@ -89,7 +89,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
-        portalName: '/v/admin',
+        portalName: 'admin',
         scope: 'chat-box-1',
       },
     });
@@ -101,7 +101,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
-        portalName: '/v/admin',
+        portalName: 'admin',
       },
     });
     expect(mergedParams[2]).toEqual({
@@ -112,7 +112,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
-        portalName: '/v/admin',
+        portalName: 'admin',
       },
     });
     expect(mocks.list).toHaveBeenCalledTimes(3);
@@ -173,7 +173,7 @@ describe('aiConversations scope', () => {
         read: false,
         from: 'main-agent',
         category: 'chat',
-        portalName: '/v/admin',
+        portalName: 'admin',
       },
     });
     expect(workflowTaskCount).toHaveBeenCalledWith({
@@ -212,7 +212,7 @@ describe('aiConversations scope', () => {
         read: false,
         from: 'main-agent',
         category: 'chat',
-        portalName: '/v/admin',
+        portalName: 'admin',
       },
     });
     expect(ctx.body).toEqual({ count: 3 });
@@ -267,7 +267,7 @@ describe('aiConversations scope', () => {
       aiEmployee: {
         username: 'sales',
       },
-      portalName: '/v/admin',
+      portalName: 'admin',
       scope: 'chat-box-1',
       options: {
         systemMessage: 'Use sales tone',
