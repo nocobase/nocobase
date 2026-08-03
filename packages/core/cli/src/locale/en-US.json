@@ -189,7 +189,7 @@
       },
       "messages": {
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
-        "created": "Portal \"{{portal}}\" created at {{portalDir}}.",
+        "created": "Portal \"{{portal}}\" created at {{portalDir}}",
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
         "sourceStorage": "Source storage: {{sourceStorage}}",

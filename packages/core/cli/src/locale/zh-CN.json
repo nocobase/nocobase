@@ -189,7 +189,7 @@
       },
       "messages": {
         "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
-        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}。",
+        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}",
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
         "sourceStorage": "源码存储：{{sourceStorage}}",

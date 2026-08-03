@@ -110,7 +110,7 @@ export default class PortalCreate extends Command {
       portalCreateText(
         'messages.created',
         { portal: result.portal, portalDir: result.portalDir },
-        `Portal "${result.portal}" created at ${result.portalDir}.`,
+        `Portal "${result.portal}" created at ${result.portalDir}`,
       ),
     );
     printInfo(portalCreateText('messages.app', { app: result.app }, `App: ${result.app}`));
