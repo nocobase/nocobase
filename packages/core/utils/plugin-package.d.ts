@@ -17,6 +17,14 @@ export interface PresetPackageJsonLike {
 }
 
 export declare const DEFAULT_PLUGIN_PACKAGE_PREFIXES: string[];
+export declare const JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY: Readonly<{
+  canonicalName: 'js-template';
+  canonicalPackageName: '@nocobase/plugin-js-template';
+  legacyName: 'light-extension';
+  legacyPackageName: '@nocobase/plugin-light-extension';
+  runtimeName: 'light-extension';
+  runtimePackageName: '@nocobase/plugin-light-extension';
+}>;
 export declare function splitPluginNames(value?: string): string[];
 export declare function getPluginPackagePrefixes(): string[];
 export declare function getPluginNameFromPackageName(packageName: string, prefixes?: string[]): string;

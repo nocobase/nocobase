@@ -1,0 +1,44 @@
+{
+  "name": "@nocobase/plugin-js-template",
+  "displayName": "JS Templates",
+  "displayName.zh-CN": "JS 模板",
+  "description": "Organize and reuse multi-file RunJS entries from JS Template repositories.",
+  "description.zh-CN": "组织并复用 JS 模板仓库中的多文件 RunJS Entry。",
+  "version": "2.2.0-beta.16",
+  "license": "Apache-2.0",
+  "main": "./server.js",
+  "exports": {
+    ".": {
+      "types": "./server.d.ts",
+      "import": "./server.js",
+      "require": "./server.js"
+    },
+    "./client": {
+      "types": "./client.d.ts",
+      "import": "./client.cjs",
+      "require": "./client.cjs"
+    },
+    "./client-v2": {
+      "types": "./client-v2.d.ts",
+      "import": "./client-v2.cjs",
+      "require": "./client-v2.cjs"
+    },
+    "./server": {
+      "types": "./server.d.ts",
+      "import": "./server.js",
+      "require": "./server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "homepage": "https://docs.nocobase.com",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com",
+  "keywords": [
+    "Developer tools"
+  ],
+  "peerDependencies": {
+    "@nocobase/plugin-light-extension": "2.x"
+  },
+  "devDependencies": {
+    "@nocobase/plugin-light-extension": "2.2.0-beta.15"
+  }
+}

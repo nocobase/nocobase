@@ -11,6 +11,7 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { PresetNocoBase } from '../index';
 
 const LIGHT_EXTENSION_NAME = 'light-extension';
+const JS_TEMPLATE_PACKAGE = '@nocobase/plugin-js-template';
 const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
 
 type RunJSLocator = Record<string, unknown>;
@@ -35,7 +36,7 @@ interface ExternalizedWorkspaceSnapshot {
 async function getLightExtensionRecord(app: MockServer) {
   return await app.db.getRepository('applicationPlugins').findOne({
     filter: {
-      packageName: LIGHT_EXTENSION_PACKAGE,
+      name: LIGHT_EXTENSION_NAME,
     },
   });
 }
@@ -392,7 +393,7 @@ describe('Light Extension preset runtime', () => {
 
     await app.db.getRepository('applicationPlugins').destroy({
       filter: {
-        packageName: LIGHT_EXTENSION_PACKAGE,
+        name: LIGHT_EXTENSION_NAME,
       },
     });
     expect(await getLightExtensionRecord(app)).toBeNull();
@@ -426,5 +427,42 @@ describe('Light Extension preset runtime', () => {
     );
     await expectExternalizedWorkspaceRestored(app, externalizedWorkspace);
     await expectLegacyWorkspaceReadWriteInPlace(app, externalizedWorkspace);
+  }, 120000);
+
+  it('upgrades the legacy package record in place without changing its enable state', async () => {
+    app = await createMockServer({
+      acl: true,
+      plugins: [PresetNocoBase],
+      registerActions: true,
+      skipSupervisor: true,
+    });
+
+    const legacyRecord = await getLightExtensionRecord(app);
+    expect(legacyRecord).toBeTruthy();
+    const recordId = legacyRecord?.get('id');
+    await legacyRecord?.update({
+      packageName: LIGHT_EXTENSION_PACKAGE,
+      enabled: false,
+      installed: true,
+    });
+
+    await app.upgrade();
+
+    const records = await app.db.getRepository('applicationPlugins').find({
+      filter: {
+        $or: [
+          { name: LIGHT_EXTENSION_NAME },
+          { name: 'js-template' },
+          { packageName: LIGHT_EXTENSION_PACKAGE },
+          { packageName: JS_TEMPLATE_PACKAGE },
+        ],
+      },
+    });
+    expect(records).toHaveLength(1);
+    expect(records[0].get('id')).toBe(recordId);
+    expect(records[0].get('name')).toBe(LIGHT_EXTENSION_NAME);
+    expect(records[0].get('packageName')).toBe(LIGHT_EXTENSION_PACKAGE);
+    expect(records[0].get('enabled')).toBe(false);
+    expect(records[0].get('installed')).toBe(true);
   }, 120000);
 });

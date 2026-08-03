@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+const JS_TEMPLATE_PACKAGE = '@nocobase/plugin-js-template';
 const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
 const FLOW_ENGINE_PACKAGE = '@nocobase/plugin-flow-engine';
 const RUNJS_WORKSPACE_PACKAGE = '@nocobase/runjs-workspace';
@@ -52,8 +53,8 @@ function generateClientV2PackageMap(): { flowEngineManifest: string; packageMap:
   }
 }
 
-describe('Light Extension preset boundary', () => {
-  it('ships the built-in Workspace provider and no standalone VSC package metadata', () => {
+describe('JS Template preset boundary', () => {
+  it('ships the canonical plugin package, retains the legacy facade, and has no standalone VSC metadata', () => {
     const preset = readJson('packages/presets/nocobase/package.json');
     const flowEngine = readJson('packages/plugins/@nocobase/plugin-flow-engine/package.json');
     const workflowJavaScript = readJson('packages/plugins/@nocobase/plugin-workflow-javascript/package.json');
@@ -61,10 +62,13 @@ describe('Light Extension preset boundary', () => {
     const { flowEngineManifest, packageMap: clientV2Map } = generateClientV2PackageMap();
     const tsconfigPaths = readJson('tsconfig.paths.json').compilerOptions.paths;
 
+    expect(preset.dependencies).toHaveProperty(JS_TEMPLATE_PACKAGE);
     expect(preset.dependencies).toHaveProperty(LIGHT_EXTENSION_PACKAGE);
     expect(preset.dependencies).toHaveProperty(RUNJS_WORKSPACE_PACKAGE);
     expect(preset.dependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
-    expect(preset.builtIn).toContain(LIGHT_EXTENSION_PACKAGE);
+    expect(preset.builtIn).toContain(JS_TEMPLATE_PACKAGE);
+    expect(preset.builtIn).not.toContain(LIGHT_EXTENSION_PACKAGE);
+    expect(preset.deprecated).toContain(LIGHT_EXTENSION_PACKAGE);
     expect(preset.builtIn).not.toContain(VSC_FILE_PACKAGE);
     expect(flowEngine.devDependencies).not.toHaveProperty(VSC_FILE_PACKAGE);
     expect(flowEngine.dependencies).toHaveProperty(RUNJS_WORKSPACE_PACKAGE);

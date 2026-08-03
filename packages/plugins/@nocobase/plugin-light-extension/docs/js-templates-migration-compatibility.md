@@ -143,6 +143,28 @@ The package rename does not rename the schema URI, `light-extension:settings/*` 
 `.light-extension/types`, or any saved source contract. The compatibility facade depends on the canonical package;
 the canonical package must never depend on the facade.
 
+## Plugin package and preset identity
+
+`@nocobase/plugin-js-template` is the canonical package and the preset's built-in identity. The preset retains the
+legacy package as a compatibility dependency, and the canonical package declares it as its runtime peer. The canonical
+package is a thin facade over `@nocobase/plugin-light-extension`, so the complete legacy server, client, client-v2,
+Swagger, and programmatic exports remain installed and resolvable during the package transition.
+
+Package resolution normalizes `js-template`, `@nocobase/plugin-js-template`, `light-extension`, and
+`@nocobase/plugin-light-extension` to one runtime identity: name `light-extension` and runtime package
+`@nocobase/plugin-light-extension`. The runtime identity remains legacy because plugin collection loading, the
+existing plugin-manager enable state, ACL snippet, settings keys, and plugin lifecycle already depend on it. The
+canonical package and preset identity are therefore discoverable without creating a second runtime plugin. When the
+canonical package is not installed, the legacy package continues to resolve on its own for rollback and older presets.
+
+Fresh preset installs create one `applicationPlugins` record with the established `light-extension` name and package.
+Preset upgrades reuse that record in place, retaining its primary key, `enabled`, and `installed` values; they never
+create a second `js-template` record. Both client package maps keep canonical and legacy module aliases, so
+pre-upgrade records and cached clients load the same implementation.
+
+This package-level normalization is not a persisted RunJS migration. It does not rename collections, VSC owners,
+FlowModel keys, source bindings, artifacts, routes, HTTP/ACL/CLI/SDK tokens, or any other frozen wire identity.
+
 ## Scope of later migration goals
 
 Later goals may change display names, translated copy, menus, internal TypeScript symbols, and preferred aliases. They

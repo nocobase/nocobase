@@ -7,12 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { registerLightExtensionDomainAvailabilityGuard } from '@nocobase/plugin-light-extension/server';
+import { registerLightExtensionDomainAvailabilityGuard } from '@nocobase/plugin-js-template/server';
 import { findBuiltInPlugins, findLocalPlugins, packageNameTrim, Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 
+const JS_TEMPLATE_PACKAGE = '@nocobase/plugin-js-template';
 const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
 const LIGHT_EXTENSION_NAME = 'light-extension';
+const JS_TEMPLATE_NAME = 'js-template';
+
+const jsTemplatePluginRecordFilter = {
+  $or: [
+    { name: LIGHT_EXTENSION_NAME },
+    { name: JS_TEMPLATE_NAME },
+    { packageName: JS_TEMPLATE_PACKAGE },
+    { packageName: LIGHT_EXTENSION_PACKAGE },
+  ],
+};
 
 export class PresetNocoBase extends Plugin {
   async load() {
@@ -23,9 +34,7 @@ export class PresetNocoBase extends Plugin {
           return true;
         }
         const record = await this.pm.repository.findOne({
-          filter: {
-            packageName: LIGHT_EXTENSION_PACKAGE,
-          },
+          filter: jsTemplatePluginRecordFilter,
         });
         return record ? Boolean(record.get('enabled')) : true;
       },
@@ -83,9 +92,8 @@ export class PresetNocoBase extends Plugin {
     const packageJson = require(`${packageName}/package.json`);
     const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
     const instance = await repository.findOne({
-      filter: {
-        packageName: packageJson.name,
-      },
+      filter:
+        packageJson.name === JS_TEMPLATE_PACKAGE ? jsTemplatePluginRecordFilter : { packageName: packageJson.name },
     });
     const langMap = {
       'zh-CN': 'cn/',
@@ -189,16 +197,36 @@ export class PresetNocoBase extends Plugin {
   async updateOrCreatePlugins() {
     const repository = this.pm.repository;
     const plugins = await this.getPluginToBeUpgraded();
-    await this.db.sequelize.transaction((transaction) => {
-      return Promise.all(
-        plugins.map((values) =>
-          repository.updateOrCreate({
+    await this.db.sequelize.transaction(async (transaction) => {
+      for (const values of plugins) {
+        if (
+          values.name === LIGHT_EXTENSION_NAME &&
+          [JS_TEMPLATE_PACKAGE, LIGHT_EXTENSION_PACKAGE].includes(values.packageName)
+        ) {
+          const existing = await repository.findOne({
             transaction,
-            values,
-            filterKeys: ['name'],
-          }),
-        ),
-      );
+            filter: jsTemplatePluginRecordFilter,
+          });
+          if (existing) {
+            await repository.update({
+              transaction,
+              filterByTk: existing.get('id'),
+              values: {
+                name: LIGHT_EXTENSION_NAME,
+                packageName: LIGHT_EXTENSION_PACKAGE,
+                version: values.version,
+                builtIn: true,
+              },
+            });
+            continue;
+          }
+        }
+        await repository.updateOrCreate({
+          transaction,
+          values,
+          filterKeys: ['name'],
+        });
+      }
     });
   }
 

@@ -63,6 +63,7 @@
     "@nocobase/plugin-idp-oauth": "2.2.0-beta.16",
     "@nocobase/plugin-kanban": "2.2.0-beta.16",
     "@nocobase/plugin-license": "2.2.0-beta.16",
+    "@nocobase/plugin-js-template": "2.2.0-beta.16",
     "@nocobase/plugin-light-extension": "2.2.0-beta.16",
     "@nocobase/plugin-locale-tester": "2.2.0-beta.16",
     "@nocobase/plugin-localization": "2.2.0-beta.16",
@@ -116,7 +117,8 @@
     "@nocobase/plugin-charts",
     "@nocobase/plugin-comments",
     "@nocobase/plugin-mobile-client",
-    "@nocobase/plugin-snapshot-field"
+    "@nocobase/plugin-snapshot-field",
+    "@nocobase/plugin-light-extension"
   ],
   "builtIn": [
     "@nocobase/plugin-acl",
@@ -160,7 +162,7 @@
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-file-previewer-office",
     "@nocobase/plugin-flow-engine",
-    "@nocobase/plugin-light-extension",
+    "@nocobase/plugin-js-template",
     "@nocobase/plugin-logger",
     "@nocobase/plugin-notification-manager",
     "@nocobase/plugin-notification-in-app-message",

@@ -1,6 +1,8 @@
-# Light Extension
+# JS Templates
 
-`@nocobase/plugin-light-extension` adds repository-backed, multi-file RunJS authoring to NocoBase. It keeps source management separate from plugin packages while reusing the shared RunJS compiler, artifact format, runtime, and standard client-v2 JS models.
+`@nocobase/plugin-js-template` is the canonical package for repository-backed, multi-file RunJS authoring in NocoBase.
+The historical `@nocobase/plugin-light-extension` package remains available as the compatible implementation package;
+both names resolve to the same `light-extension` plugin runtime and enable-state record.
 
 ## Domain boundaries
 

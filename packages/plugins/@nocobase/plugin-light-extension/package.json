@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-light-extension",
-  "displayName": "Light extensions",
-  "displayName.zh-CN": "轻插件",
-  "description": "Organize and reuse multi-file RunJS entries from light extension repositories.",
-  "description.zh-CN": "组织并复用轻插件仓库中的多文件 RunJS Entry。",
+  "displayName": "JS Templates",
+  "displayName.zh-CN": "JS 模板",
+  "description": "Organize and reuse multi-file RunJS entries from JS Template repositories.",
+  "description.zh-CN": "组织并复用 JS 模板仓库中的多文件 RunJS Entry。",
   "version": "2.2.0-beta.15",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
