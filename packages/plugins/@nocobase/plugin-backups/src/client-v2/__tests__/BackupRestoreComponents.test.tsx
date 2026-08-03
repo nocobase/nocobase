@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   flowContext: {
     api: {
       request: vi.fn(),
+      toErrMessages: vi.fn((error: Error) => [{ message: error.message }]),
     },
   },
   restoreTaskId: {
@@ -156,6 +157,41 @@ describe('backup restore components', () => {
     expect(mocks.flowContext.api.request).not.toHaveBeenCalled();
   });
 
+  it('blocks repeated restore actions while the request is pending', async () => {
+    let resolveRequest: ((value: { data: { data: { task: string } } }) => void) | undefined;
+    mocks.flowContext.api.request.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      }),
+    );
+
+    render(
+      <RestoreFromBackup
+        backup={{
+          name: 'backup.zip',
+          fileSize: '10KB',
+          createdAt: '2026-07-03T00:00:00.000Z',
+          inProgress: false,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Restore'));
+    fireEvent.click(screen.getByText('Submit'));
+
+    await waitFor(() => expect(mocks.flowContext.api.request).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Submit/ })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(screen.getByRole('button', { name: /Submit/ }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(mocks.flowContext.api.request).toHaveBeenCalledTimes(1);
+
+    resolveRequest?.({ data: { data: { task: 'restore-task-1' } } });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
   it('hides database schema confirmation for non-postgres restore targets', () => {
     mocks.appInfo = {
       database: {
@@ -199,6 +235,20 @@ describe('backup restore components', () => {
     );
     expect(mocks.restoreTaskId.current).toBe('restore-task-1');
     expect(mocks.showCheckBackupMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the local restore dialog blocked when the request is interrupted', async () => {
+    mocks.flowContext.api.request.mockRejectedValue(new Error('Network Error'));
+
+    render(<RestoreFromLocal />);
+    fireEvent.click(screen.getByText('Restore backup from local'));
+    fireEvent.click(screen.getByText('select-file'));
+    fireEvent.click(screen.getByText('Submit'));
+
+    await waitFor(() => expect(mocks.notification.error).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Submit/ })).toBeDisabled();
   });
 
   it('allows removing the selected local backup before submitting', () => {
