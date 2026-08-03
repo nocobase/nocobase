@@ -13,10 +13,7 @@ import { toPortalOutputItem, type PortalListItem } from './portal-list.js';
 const portalInfoText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalInfo.${key}`, values, { fallback });
 
-function formatBoolean(value: boolean | null): string {
-  if (value === null) {
-    return '';
-  }
+function formatBoolean(value: boolean): string {
   return value ? 'yes' : 'no';
 }
 
@@ -31,8 +28,8 @@ export function formatPortalInfo(item: PortalListItem): string {
     `${portalInfoText('fields.name', undefined, 'Name')}: ${outputItem.name}`,
     `${portalInfoText('fields.url', undefined, 'URL')}: ${outputItem.url}`,
     `${portalInfoText('fields.portalType', undefined, 'Portal type')}: ${outputItem.portalType}`,
-    `${portalInfoText('fields.path', undefined, 'Local path')}: ${outputItem.localPath}`,
+    `${portalInfoText('fields.developmentPath', undefined, 'Development path')}: ${outputItem.developmentPath}`,
+    `${portalInfoText('fields.deploymentPath', undefined, 'Deployment path')}: ${outputItem.deploymentPath}`,
     `${portalInfoText('fields.enabled', undefined, 'Enabled')}: ${formatBoolean(outputItem.enabled)}`,
-    `${portalInfoText('fields.localSynced', undefined, 'Local synced')}: ${formatBoolean(outputItem.localSynced)}`,
   ].join('\n');
 }

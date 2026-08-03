@@ -1,12 +1,12 @@
 ---
 title: "nb portal info"
-description: "nb portal info 命令参考：查看指定 Portal 记录和本地工作区详情。"
+description: "nb portal info 命令参考：查看指定 Portal 记录、开发路径和部署路径。"
 keywords: "nb portal info,NocoBase CLI,Portal,工作区详情,json-output"
 ---
 
 # nb portal info
 
-查看指定 Portal 记录和本地工作区详情。遇到本地状态和远端记录不一致时，可以先用这个命令确认当前 Portal 的来源、路径和同步状态。
+查看指定 Portal 记录、开发路径和部署路径。遇到路径或远端记录不一致时，可以先用这个命令确认当前 Portal 的来源和路径。
 
 ## 用法
 
@@ -47,7 +47,7 @@ nb portal info customer --json-output
 
 `--json-output` 更适合脚本和 agent 链路继续消费。如果只是人工查看，默认表格或文本输出通常更直观。
 
-文本输出会显示名称、访问 URL、Portal 类型、本地路径、启用状态和本地同步状态。`--json-output` 输出的字段包括 `name`、`url`、`portalType`、`localPath`、`enabled`、`sourceStorage` 和 `localSynced`。
+文本输出会显示名称、访问 URL、Portal 类型、开发路径、部署路径和启用状态。`--json-output` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled` 和 `sourceStorage`。
 
 可以传入 Portal 的 `routeName` 或 `uid` 查询。
 

@@ -40,11 +40,11 @@ nb portal deploy customer --env dev --yes
 
 ## 说明
 
-`deploy` 面向已经存在的 Portal 工作区。如果本地还没有工作区，先使用 [`nb portal create`](./create.md) 创建，或者使用 [`nb portal pull`](./pull.md) 从 source storage 拉取。
+`deploy` 面向已经存在的 Portal 开发工作区。如果本地还没有工作区，先使用 [`nb portal create`](./create.md) 创建，或者使用 [`nb portal pull`](./pull.md) 从 source storage 拉取。
 
-对于 `local` 和 `docker` env，部署会同步 Portal 记录，并直接使用本地或 volume 中的 `dist` 目录。对于 `http` env，CLI 会把 `dist` 打包上传到目标 NocoBase，再同步 Portal 记录。
+部署会从 CLI env config 中记录的开发路径构建 Portal，并把构建产物同步到目标应用 storage 下的部署目录。
 
-部署时会读取本地工作区的 `portal.config.json`，并把源码配置同步到远端 Portal 记录。
+部署不会修改 source storage 或 Git 配置；这些配置由 [`nb portal config`](./config.md) 更新到远端 Portal 记录。
 
 ## 相关命令
 

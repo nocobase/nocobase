@@ -31,7 +31,7 @@ nb portal deploy customer --env dev --yes
 
 ## Notes
 
-The command refreshes `.env` and `.env.local`, runs `pnpm build`, and expects `dist/index.html`. For `local` and `docker` envs, it syncs the portal record and uses the local or volume-mounted `dist`; for `http` envs, it uploads the packed `dist` through the API.
+The command refreshes `.env` and `.env.local`, builds from the development path stored in the selected CLI env config, and syncs deployment output to the target app storage. Source storage and Git settings are managed by `nb portal config` in the remote portal record.
 
 ## Related Commands
 

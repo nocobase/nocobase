@@ -12,6 +12,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
+  unsetEnvPortalPath: vi.fn(),
   destroyPortalWorkspace: vi.fn(),
   printInfo: vi.fn(),
   printSuccess: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/auth-store.js', () => ({
   getCurrentEnvName: mocks.getCurrentEnvName,
   getEnv: mocks.getEnv,
+  unsetEnvPortalPath: mocks.unsetEnvPortalPath,
 }));
 
 vi.mock('../lib/portal-destroy.js', () => ({
@@ -96,6 +98,7 @@ test('portal destroy resolves the current env name before destroying', async () 
       },
     ],
   ]);
+  expect(mocks.unsetEnvPortalPath.mock.calls).toEqual([['remote1', 'cba', { scope: 'global' }]]);
   expect(mocks.printSuccess.mock.calls).toEqual([['Portal "cba" destroyed.']]);
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Mode: http'],

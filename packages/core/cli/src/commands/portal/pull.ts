@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, setEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -24,6 +24,7 @@ export default class PortalPull extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env prod --yes',
+    '<%= config.bin %> <%= command.id %> customer --path ./portals/customer',
     '<%= config.bin %> <%= command.id %> customer --force',
     '<%= config.bin %> <%= command.id %> customer --no-install',
   ];
@@ -48,6 +49,9 @@ export default class PortalPull extends Command {
     force: Flags.boolean({
       description: 'Delete the existing local files and pull them again',
       default: false,
+    }),
+    path: Flags.string({
+      description: 'Portal workspace directory; defaults to the saved path, then ./<portal>',
     }),
     install: Flags.boolean({
       description: 'Run pnpm install after pulling the portal source',
@@ -90,18 +94,21 @@ export default class PortalPull extends Command {
       cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
       installDependencies: flags.install,
+      sourcePath: flags.path,
+      defaultSourcePath: true,
     });
 
     if (!result.changed) {
       printInfo(result.noopReason ?? portalPullText('messages.noop', undefined, 'No pull is needed.'));
       return;
     }
+    await setEnvPortalPath(envName, result.portal, result.portalDir, { scope });
 
     printSuccess(
       portalPullText(
         'messages.pulled',
         { portal: result.portal, portalDir: result.portalDir },
-        `Pulled portal source "${result.portal}" into ${result.portalDir}.`,
+        `Pulled portal source "${result.portal}" into ${result.portalDir}`,
       ),
     );
     if (result.installFailed) {

@@ -14,6 +14,8 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolvePortalDeployPath,
+  resolveSavedPortalSourcePath,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -124,8 +126,8 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
-  const portalParentDir = path.join(storagePath, 'portals', app);
-  const portalDir = path.join(portalParentDir, portal);
+  const portalDeployDir = resolvePortalDeployPath({ storagePath, app, portal });
+  const portalDir = resolveSavedPortalSourcePath(options.env, portal) ?? portalDeployDir;
   const mode = options.env.kind;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
@@ -139,9 +141,11 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   }
   const destroyMode: PortalDestroyMode = mode;
 
-  assertPortalDirIsInsideParent(portalParentDir, portalDir);
+  assertPortalDirIsInsideParent(path.dirname(portalDir), portalDir);
+  assertPortalDirIsInsideParent(path.dirname(portalDeployDir), portalDeployDir);
 
   const workspaceExists = await pathExists(portalDir);
+  const deployWorkspaceExists = path.resolve(portalDeployDir) === path.resolve(portalDir) ? false : await pathExists(portalDeployDir);
 
   const recordDeleted = await destroyMultiPortalRecord({
     portal,
@@ -154,6 +158,9 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   if (workspaceExists) {
     await rm(portalDir, { recursive: true, force: true });
   }
+  if (deployWorkspaceExists) {
+    await rm(portalDeployDir, { recursive: true, force: true });
+  }
 
   return {
     app,
@@ -162,6 +169,6 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
     portalBase,
     mode: destroyMode,
     recordDeleted,
-    workspaceDeleted: workspaceExists,
+    workspaceDeleted: workspaceExists || deployWorkspaceExists,
   };
 }

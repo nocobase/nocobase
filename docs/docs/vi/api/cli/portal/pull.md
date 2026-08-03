@@ -22,6 +22,7 @@ nb portal pull <portal> [flags]
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
 | `--force` | boolean | Delete the existing local workspace and pull it again. |
+| `--path` | string | Portal workspace directory. Defaults to the saved path, then `./<portal>`. |
 | `--install` / `--no-install` | boolean | Run `pnpm install` after pulling source. Enabled by default. |
 
 ## Ví dụ
@@ -29,13 +30,14 @@ nb portal pull <portal> [flags]
 ```bash
 nb portal pull customer
 nb portal pull customer --env prod --yes
+nb portal pull customer --path ./portals/customer
 nb portal pull customer --force
 nb portal pull customer --no-install
 ```
 
 ## Ghi chú
 
-When the pulled workspace contains `package.json`, `pnpm install` runs by default. Use `--no-install` to skip it. Git source storage clones the configured repo and branch, then copies `--git-path`. With default `nocobase` storage, `local` and `docker` envs are usually no-op; `http` envs download a source archive through the API.
+When the pulled workspace contains `package.json`, `pnpm install` runs by default. Use `--no-install` to skip it. Git source storage clones the configured repo and branch, then copies `--git-path`. With default `nocobase` storage, `pull` downloads a source archive through the API and writes it to the development workspace.
 
 ## Lệnh liên quan
 

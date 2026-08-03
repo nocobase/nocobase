@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, unsetEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -125,6 +125,7 @@ export default class PortalDestroy extends Command {
       cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
     });
+    await unsetEnvPortalPath(envName, result.portal, { scope });
 
     printSuccess(
       portalDestroyText('messages.destroyed', { portal: result.portal }, `Portal "${result.portal}" destroyed.`),

@@ -33,7 +33,7 @@ nb portal info customer --json-output
 
 ## Notas
 
-Text output includes name, URL, development mode, local path, enabled status, and local sync status. `--json-output` prints `name`, `url`, `portalType`, `localPath`, `enabled`, `sourceStorage`, and `localSynced`. You can query by `routeName` or `uid`.
+Text output includes name, URL, portal type, development path, deployment path, and enabled status. `--json-output` prints `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`. You can query by `routeName` or `uid`.
 
 ## Comandos relacionados
 

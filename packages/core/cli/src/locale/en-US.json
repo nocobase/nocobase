@@ -210,11 +210,12 @@
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "noChanges": "No portal configuration changes were provided. Pass --source-storage or a --git-* flag.",
-        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` or `nb portal pull {{portal}}` first."
+        "noChanges": "No portal configuration changes were provided. Pass --path, --source-storage, or a --git-* flag.",
+        "notFound": "Portal \"{{portal}}\" was not found. Run `nb portal list` to see available portals."
       },
       "messages": {
-        "updated": "Portal \"{{portal}}\" configuration updated at {{portalDir}}/portal.config.json.",
+        "updated": "Portal \"{{portal}}\" configuration updated.",
+        "pathUpdated": "Development path: {{portalDir}}",
         "remoteSynced": "Remote portal record: synced",
         "remoteSkipped": "Remote portal record: not found; local config only"
       }
@@ -255,9 +256,8 @@
         "name": "Name",
         "url": "URL",
         "portalType": "Portal type",
-        "path": "Local path",
-        "enabled": "Enabled",
-        "localSynced": "Local synced"
+        "path": "Development path",
+        "enabled": "Enabled"
       }
     },
     "portalPull": {
@@ -267,7 +267,7 @@
       },
       "messages": {
         "noop": "No pull is needed.",
-        "pulled": "Pulled portal source \"{{portal}}\" into {{portalDir}}.",
+        "pulled": "Pulled portal source \"{{portal}}\" into {{portalDir}}",
         "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
       }
     },
@@ -307,9 +307,9 @@
         "name": "Name",
         "url": "URL",
         "portalType": "Portal type",
-        "path": "Local path",
-        "enabled": "Enabled",
-        "localSynced": "Local synced"
+        "developmentPath": "Development path",
+        "deploymentPath": "Deployment path",
+        "enabled": "Enabled"
       }
     },
     "portalDestroy": {

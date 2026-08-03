@@ -27,15 +27,17 @@ vi.mock('../lib/portal-list.js', () => ({
     portalUrl: string;
     portalType: string;
     portalDir: string;
+    deployDir: string;
     enabled: boolean;
-    localSynced: boolean | null;
+    sourceStorage: string;
   }) => ({
     name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
-    localPath: item.localSynced === true ? item.portalDir : '',
+    developmentPath: item.portalDir,
+    deploymentPath: item.deployDir,
     enabled: item.enabled,
-    localSynced: item.localSynced,
+    sourceStorage: item.sourceStorage,
   }),
 }));
 
@@ -90,9 +92,10 @@ test('portal info prints AI portal details', async () => {
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
+        sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/customer/',
-        portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
-        localSynced: true,
+        portalDir: '/Users/chen/test6/customer',
+        deployDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
       },
     ],
   });
@@ -117,15 +120,15 @@ test('portal info prints AI portal details', async () => {
         'Name: customer',
         'URL: http://localhost:56187/x/customer/',
         'Portal type: ai',
-        'Local path: /Users/chen/test6/remote1/source/storage/portals/main/customer',
+        'Development path: /Users/chen/test6/customer',
+        'Deployment path: /Users/chen/test6/remote1/source/storage/portals/main/customer',
         'Enabled: yes',
-        'Local synced: yes',
       ].join('\n'),
     ],
   ]);
 });
 
-test('portal info leaves local fields empty for no-code portals', async () => {
+test('portal info leaves development and deployment fields empty for no-code portals', async () => {
   const { default: PortalInfo } = await import('../commands/portal/info.js');
   const env = {
     name: 'remote1',
@@ -149,9 +152,10 @@ test('portal info leaves local fields empty for no-code portals', async () => {
         routePath: '/admin',
         portalType: 'no-code',
         enabled: true,
+        sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/v/admin',
         portalDir: '',
-        localSynced: null,
+        deployDir: '',
       },
     ],
   });
@@ -165,9 +169,9 @@ test('portal info leaves local fields empty for no-code portals', async () => {
         'Name: admin',
         'URL: http://localhost:56187/v/admin',
         'Portal type: no-code',
-        'Local path: ',
+        'Development path: ',
+        'Deployment path: ',
         'Enabled: yes',
-        'Local synced: ',
       ].join('\n'),
     ],
   ]);
@@ -197,9 +201,10 @@ test('portal info prints JSON output when requested', async () => {
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
+        sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/customer/',
-        portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
-        localSynced: true,
+        portalDir: '/Users/chen/test6/customer',
+        deployDir: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
       },
     ],
   });
@@ -211,9 +216,10 @@ test('portal info prints JSON output when requested', async () => {
     name: 'customer',
     url: 'http://localhost:56187/x/customer/',
     portalType: 'ai',
-    localPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
+    developmentPath: '/Users/chen/test6/customer',
+    deploymentPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
     enabled: true,
-    localSynced: true,
+    sourceStorage: 'nocobase',
   });
 });
 
