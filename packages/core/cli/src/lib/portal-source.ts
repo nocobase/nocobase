@@ -812,17 +812,6 @@ export async function pushPortalSource(options: PortalSourceOptions): Promise<Po
     );
   }
 
-  if (sourceContext.mode === 'local' || sourceContext.mode === 'docker') {
-    return {
-      ...sourceContext,
-      changed: false,
-      noopReason:
-        sourceContext.mode === 'local'
-          ? portalSourceText('messages.localPushNoop', undefined, 'Portal source is already local.')
-          : portalSourceText('messages.dockerPushNoop', undefined, 'Portal source is already available through the Docker volume.'),
-    };
-  }
-
   const archive = await packPortalSource(sourceContext.portalDir);
   const apiRequest = options.apiRequest ?? executeApiRequest;
   try {

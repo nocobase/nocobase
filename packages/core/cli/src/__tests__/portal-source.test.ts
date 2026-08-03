@@ -447,11 +447,128 @@ test('local NocoBase-managed source pull downloads into the workspace path', asy
   ]);
 });
 
-test('docker NocoBase-managed source push remains a no-op', async () => {
+test('local NocoBase-managed source push uploads through the API', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = await makeTempDir('nocobase-cli-portal-source-workspace-');
+  await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
+  await fsp.mkdir(path.join(portalDir, 'dist'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "workspace";\n');
+  await fsp.writeFile(path.join(portalDir, 'dist', 'index.html'), '<div>dist</div>');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+
+    expect(options.operation).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        pathTemplate: '/multiPortals:pushSource',
+        requestContentType: 'multipart/form-data',
+      }),
+    );
+    const entries: string[] = [];
+    await tar.list({
+      file: String(options.flags.file),
+      onentry: (entry) => entries.push(entry.path),
+    });
+    expect(entries).toEqual(expect.arrayContaining(['package.json', 'src/index.tsx']));
+    expect(entries).not.toContain('dist/index.html');
+    return { ok: true, status: 200, data: { data: { sourceRevision: 'src_local' } } };
+  });
+
+  await expect(
+    pushPortalSource({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        kind: 'local',
+        apiBaseUrl: 'http://localhost:13000/api',
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    mode: 'local',
+    portalDir,
+    changed: true,
+    sourceRevision: 'src_local',
+  });
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toContain('/multiPortals:pushSource');
+});
+
+test('docker NocoBase-managed source push uploads through the API', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const portalDir = await makeTempDir('nocobase-cli-portal-source-workspace-');
+  await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
+  await fsp.mkdir(path.join(portalDir, 'dist'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "workspace";\n');
+  await fsp.writeFile(path.join(portalDir, 'dist', 'index.html'), '<div>dist</div>');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+
+    expect(options.operation).toEqual(
+      expect.objectContaining({
+        method: 'POST',
+        pathTemplate: '/multiPortals:pushSource',
+        requestContentType: 'multipart/form-data',
+      }),
+    );
+    const entries: string[] = [];
+    await tar.list({
+      file: String(options.flags.file),
+      onentry: (entry) => entries.push(entry.path),
+    });
+    expect(entries).toEqual(expect.arrayContaining(['package.json', 'src/index.tsx']));
+    expect(entries).not.toContain('dist/index.html');
+    return { ok: true, status: 200, data: { data: { sourceRevision: 'src_docker' } } };
+  });
+
+  await expect(
+    pushPortalSource({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        kind: 'docker',
+        apiBaseUrl: 'http://localhost:13000/api',
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    mode: 'docker',
+    portalDir,
+    changed: true,
+    sourceRevision: 'src_docker',
+  });
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toContain('/multiPortals:pushSource');
+});
+
+test('docker NocoBase-managed source push uploads when the workspace is already the storage path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
-  await fsp.mkdir(portalDir, { recursive: true });
-  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: portalListData() }));
+  await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "storage";\n');
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/multiPortals:list') {
+      return { ok: true, status: 200, data: portalListData() };
+    }
+    return { ok: true, status: 200, data: { data: { sourceRevision: 'src_storage' } } };
+  });
 
   await expect(
     pushPortalSource({
@@ -461,8 +578,10 @@ test('docker NocoBase-managed source push remains a no-op', async () => {
     }),
   ).resolves.toMatchObject({
     mode: 'docker',
-    changed: false,
+    changed: true,
+    sourceRevision: 'src_storage',
   });
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toContain('/multiPortals:pushSource');
 });
 
 test('pull can skip dependency installation', async () => {
