@@ -162,7 +162,7 @@ describe('JSBlockModel light extension source', () => {
       type: 'cascadeMenu',
       key: 'sourceMode',
       props: {
-        searchPlaceholder: 'Search light extensions',
+        searchPlaceholder: 'Search JS Templates',
       },
     });
     expect(sourceModeStep?.uiMode?.props?.loadItems).toBeTypeOf('function');
@@ -252,7 +252,7 @@ describe('JSBlockModel light extension source', () => {
     const listSourceMenuItems = vi.fn(async () => [
       {
         key: 'light-extension',
-        label: 'Light extension',
+        label: 'JS Template',
       },
     ]);
     RunJSSourceResolverRegistry.registerResolver({
@@ -322,7 +322,7 @@ describe('JSBlockModel light extension source', () => {
     };
 
     const uiMode = await runJsStep.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
-    expect(uiMode?.props?.title).toBe('Write JavaScript (Light extension: Sales KPI)');
+    expect(uiMode?.props?.title).toBe('Write JavaScript (JS Template: Sales KPI)');
   });
 
   it('resolves legacy light extension names through the RunJS source resolver', async () => {
@@ -356,7 +356,7 @@ describe('JSBlockModel light extension source', () => {
 
     const uiMode = await runJsStep.uiMode?.(new FlowRuntimeContext(model, 'jsSettings', 'settings'));
 
-    expect(uiMode?.props?.title).toBe('Write JavaScript (Light extension: Sales KPI)');
+    expect(uiMode?.props?.title).toBe('Write JavaScript (JS Template: Sales KPI)');
     expect(getBindingTitle).toHaveBeenCalledWith(
       expect.objectContaining({
         sourceMode: 'light-extension',
@@ -904,8 +904,8 @@ describe('JSBlockModel light extension source', () => {
     });
 
     const alert = await screen.findByTestId('js-block-runtime-error');
-    expect(alert).toHaveTextContent('Light extension settings are invalid');
-    expect(alert).toHaveTextContent('Open the block settings and fix the light extension settings.');
+    expect(alert).toHaveTextContent('JS Template settings are invalid');
+    expect(alert).toHaveTextContent('Open the block settings and fix the JS Template settings.');
     expect(alert).toHaveTextContent('Fields: pageSize');
   });
 

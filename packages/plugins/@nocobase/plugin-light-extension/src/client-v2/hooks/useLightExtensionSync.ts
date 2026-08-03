@@ -124,7 +124,7 @@ export function useLightExtensionSync(): UseLightExtensionSyncResult {
       try {
         return await requestLightExtensionSync(ctx.api, operation, input);
       } catch (error) {
-        throw normalizeLightExtensionSyncError(operation, error, t('Light extension request failed'));
+        throw normalizeLightExtensionSyncError(operation, error, t('JS Template request failed'));
       }
     },
     [ctx.api, t],

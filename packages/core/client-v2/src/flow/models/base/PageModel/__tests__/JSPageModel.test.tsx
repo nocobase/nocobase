@@ -232,8 +232,8 @@ describe('JSPageModel', () => {
     renderModel(engine, model);
 
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Light extension settings are invalid');
-    expect(alert).toHaveTextContent('Open the page settings and fix the light extension settings.');
+    expect(alert).toHaveTextContent('JS Template settings are invalid');
+    expect(alert).toHaveTextContent('Open the page settings and fix the JS Template settings.');
     expect(alert).toHaveTextContent('Fields: count');
   });
 

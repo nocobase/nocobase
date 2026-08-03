@@ -42,7 +42,8 @@ import {
   JSItemLightExtensionSourceField,
   JSPageLightExtensionSourceField,
 } from '../components/JSBlockLightExtensionSourceField';
-import PluginLightExtensionClientV2 from '../plugin';
+import { JS_TEMPLATE_LEGACY_SETTINGS_KEY, JS_TEMPLATE_SETTINGS_KEY } from '../jsTemplateV2UIContract';
+import PluginLightExtensionClientV2, { PluginJsTemplateClientV2 } from '../plugin';
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
@@ -109,15 +110,42 @@ describe('PluginLightExtensionClientV2', () => {
     await app.load();
     const plugin = app.pm.get(PluginLightExtensionClientV2) as PluginLightExtensionClientV2;
 
-    expect(app.pluginSettingsManager.get(LIGHT_EXTENSION_SETTINGS_KEY, false)).toMatchObject({
-      key: LIGHT_EXTENSION_SETTINGS_KEY,
+    expect(PluginLightExtensionClientV2).toBe(PluginJsTemplateClientV2);
+    const canonicalMenu = app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
+    const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
+    const legacyMenu = app.pluginSettingsManager.get(JS_TEMPLATE_LEGACY_SETTINGS_KEY, false);
+    const legacyPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_LEGACY_SETTINGS_KEY}.index`, false);
+    expect(canonicalMenu).toMatchObject({
+      key: JS_TEMPLATE_SETTINGS_KEY,
+      title: 'JS Templates',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      path: '/admin/settings/js-templates',
     });
-    expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false)).toMatchObject({
+    expect(canonicalPage).toMatchObject({
+      menuKey: JS_TEMPLATE_SETTINGS_KEY,
+      pageKey: 'index',
+      componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      path: '/admin/settings/js-templates',
+    });
+    expect(canonicalMenu?.hidden).toBeUndefined();
+    expect(canonicalPage?.hidden).toBeUndefined();
+    expect(legacyMenu).toMatchObject({
+      key: LIGHT_EXTENSION_SETTINGS_KEY,
+      title: 'JS Templates',
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      hidden: true,
+      path: '/admin/settings/light-extension',
+    });
+    expect(legacyPage).toMatchObject({
       menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
       pageKey: 'index',
       componentLoader: expect.any(Function),
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      hidden: true,
+      path: '/admin/settings/light-extension',
     });
+    expect(canonicalPage?.componentLoader).toBe(legacyPage?.componentLoader);
     expect(app.flowEngine.flowSettings.components).toMatchObject({
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: expect.any(Function),
@@ -349,7 +377,7 @@ describe('PluginLightExtensionClientV2', () => {
     expect(screen.getByRole('button', { name: 'Expand files' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'src/client/index.tsx' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Move to light extension' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move to JS Template' })).toBeInTheDocument();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'runJSSources:open',

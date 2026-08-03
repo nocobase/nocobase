@@ -345,7 +345,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   }
 
   if (!currentBinding || !workspaceScope) {
-    return <Alert message={props.t?.('Selected light extension entry is unavailable')} showIcon type="error" />;
+    return <Alert message={props.t?.('Selected JS Template entry is unavailable')} showIcon type="error" />;
   }
 
   return (

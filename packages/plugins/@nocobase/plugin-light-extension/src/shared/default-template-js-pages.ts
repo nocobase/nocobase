@@ -39,7 +39,7 @@ ctx.render(
     content: `import type { Settings } from 'light-extension:settings/client/js-page/hello-page';
 
 export function getPageDetails(settings: Settings): string {
-  return String(settings.details || 'This page is rendered by a light extension.');
+  return String(settings.details || 'This page is rendered by a JS Template.');
 }
 `,
     language: 'typescript',
@@ -57,7 +57,7 @@ export function getPageDetails(settings: Settings): string {
   "settings": {
     "title": { "type": "string", "title": "Page title", "default": "Hello from a JS Page", "required": true, "x-component": "Input" },
     "showDetails": { "type": "boolean", "title": "Show details", "default": true, "x-component": "Switch" },
-    "details": { "type": "string", "title": "Details", "default": "This page is rendered by a light extension.", "x-component": "Input.TextArea", "x-visible-when": { "path": "showDetails", "operator": "$eq", "value": true } }
+    "details": { "type": "string", "title": "Details", "default": "This page is rendered by a JS Template.", "x-component": "Input.TextArea", "x-visible-when": { "path": "showDetails", "operator": "$eq", "value": true } }
   }
 }
 `,

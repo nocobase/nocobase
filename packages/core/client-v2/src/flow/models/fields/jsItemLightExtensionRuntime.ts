@@ -384,7 +384,7 @@ function normalizeRuntimeError(error: unknown): JSItemRuntimeError {
     defaultHint: 'Check the JavaScript item configuration and retry.',
     defaultMessage: 'Failed to run JavaScript item',
     outdatedHint: 'Refresh the item settings and choose the current entry.',
-    invalidSettingsHint: 'Open the item settings and fix the light extension settings.',
+    invalidSettingsHint: 'Open the item settings and fix the JS Template settings.',
   });
 }
 

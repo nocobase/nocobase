@@ -179,7 +179,7 @@ function registerModelMenuProviderTests() {
       const root = await getRootItem(api, options);
 
       expect(root.key).toBe('light-extension');
-      expect(root.label).toBe('Light extension');
+      expect(root.label).toBe('JS Template');
       expect(root.useModel).toBe(options.target === 'action' ? expectedUse : undefined);
       const leaf = await findLeaf(root, entryId);
       const runJs = leaf.createModelOptions?.stepParams?.[flowKey]?.runJs;
@@ -614,7 +614,7 @@ function registerSourceMenuItemTests() {
         method: 'post',
       });
       expect(request).toHaveBeenCalledTimes(1);
-      expect(lightExtensionItem?.label).toBe('Light extensions');
+      expect(lightExtensionItem?.label).toBe('JS Templates');
       expect(lightExtensionItem?.disabled).toBe(true);
       expect(lightExtensionItem?.children).toBeUndefined();
       expect(repoItem?.label).toBe('Orders');
@@ -685,7 +685,7 @@ function registerSourceMenuItemTests() {
       });
       const repoItem = items?.[1];
 
-      expect(items?.[0]?.label).toBe('Light extensions');
+      expect(items?.[0]?.label).toBe('JS Templates');
       expect(repoItem?.label).toBe('Orders');
       expect(repoItem?.children?.map((item) => item.label)).toEqual(['order-total', 'order-chart']);
       expect(repoItem?.searchText).toContain('order-chart');

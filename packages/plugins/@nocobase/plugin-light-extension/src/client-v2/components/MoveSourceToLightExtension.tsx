@@ -161,10 +161,10 @@ export const MoveSourceToLightExtension: React.FC<{
         idempotencyKey: createMoveSourceIdempotencyKey(moveInput),
       });
       setOpen(false);
-      message.success(t('Moved to light extension'));
+      message.success(t('Moved to JS Template'));
       await context.onExternalBindingPersisted(serializeJsTemplateRunJSPersistence(result.binding));
     } catch (error) {
-      message.error(formatError(error, t('Failed to move source to light extension')));
+      message.error(formatError(error, t('Failed to move source to JS Template')));
     } finally {
       setMoving(false);
     }
@@ -176,8 +176,8 @@ export const MoveSourceToLightExtension: React.FC<{
 
   return (
     <>
-      <Tooltip title={t('Move to light extension')}>
-        <Button aria-label={t('Move to light extension')} icon={<ExportOutlined />} onClick={showModal} size="small" />
+      <Tooltip title={t('Move to JS Template')}>
+        <Button aria-label={t('Move to JS Template')} icon={<ExportOutlined />} onClick={showModal} size="small" />
       </Tooltip>
       <Modal
         destroyOnClose
@@ -187,20 +187,20 @@ export const MoveSourceToLightExtension: React.FC<{
         onCancel={() => setOpen(false)}
         onOk={submit}
         open={open}
-        title={t('Move to light extension')}
+        title={t('Move to JS Template')}
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item label={t('Destination')} name="destinationType">
             <Radio.Group>
-              <Radio value="existing">{t('Existing light extension')}</Radio>
-              <Radio value="new">{t('Create new light extension')}</Radio>
+              <Radio value="existing">{t('Existing JS Template')}</Radio>
+              <Radio value="new">{t('Create new JS Template')}</Radio>
             </Radio.Group>
           </Form.Item>
           {destinationType === 'existing' ? (
             <Form.Item
-              label={t('Light extension')}
+              label={t('JS Template')}
               name="repoId"
-              rules={[{ required: true, message: t('Select a light extension') }]}
+              rules={[{ required: true, message: t('Select a JS Template') }]}
             >
               <Select
                 loading={loadingRepos}
@@ -208,16 +208,16 @@ export const MoveSourceToLightExtension: React.FC<{
                   label: repo.title || repo.name,
                   value: repo.id,
                 }))}
-                placeholder={t('Select a light extension')}
+                placeholder={t('Select a JS Template')}
                 showSearch
                 optionFilterProp="label"
               />
             </Form.Item>
           ) : destinationType === 'new' ? (
             <Form.Item
-              label={t('Light extension name')}
+              label={t('JS Template name')}
               name="repoTitle"
-              rules={displayNameRules(t, t('Light extension name'))}
+              rules={displayNameRules(t, t('JS Template name'))}
             >
               <Input autoComplete="off" />
             </Form.Item>

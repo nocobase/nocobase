@@ -338,7 +338,7 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
             {loadState === 'ready' && plan?.state === 'unconfigured' ? (
               <>
                 <Alert
-                  description={t('Connect this light extension to a Git repository to sync its code.')}
+                  description={t('Connect this JS Template to a Git repository to sync its code.')}
                   message={t('Sync source is not configured')}
                   role="alert"
                   showIcon
@@ -425,7 +425,7 @@ export function LightExtensionSyncDrawer(props: LightExtensionSyncDrawerProps) {
                   </Button>
                   <Popconfirm
                     cancelText={t('Cancel')}
-                    description={t('The saved sync source will be removed from this light extension.')}
+                    description={t('The saved sync source will be removed from this JS Template.')}
                     disabled={actionsDisabled}
                     okText={t('Disconnect')}
                     onConfirm={runDisconnect}
@@ -483,7 +483,7 @@ function getStatusContent(plan: LightExtensionSyncPlan, t: ReturnType<typeof use
   if (plan.state === 'remote-ahead') {
     return {
       message: t('Remote changes'),
-      description: t('Remote code can be pulled into this light extension.'),
+      description: t('Remote code can be pulled into this JS Template.'),
       type: 'info',
     };
   }
@@ -504,7 +504,7 @@ function getStatusContent(plan: LightExtensionSyncPlan, t: ReturnType<typeof use
   }
   return {
     message: t('Sync source is not configured'),
-    description: t('Connect this light extension to a Git repository to sync its code.'),
+    description: t('Connect this JS Template to a Git repository to sync its code.'),
     type: 'info',
   };
 }

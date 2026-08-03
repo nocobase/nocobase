@@ -466,7 +466,7 @@ async function requestLightExtensionRuntimeArtifact(
   });
   const artifact = unwrapResourceResponse(artifactResponse);
   if (!artifact?.code || artifact.artifactHash !== response.artifactHash) {
-    throw new RunJSSourceResolverError(`Light extension artifact '${response.artifactHash}' is invalid`, {
+    throw new RunJSSourceResolverError(`JS Template artifact '${response.artifactHash}' is invalid`, {
       code: 'RUNJS_SOURCE_CODE_REQUIRED',
       sourceMode: JS_TEMPLATE_SOURCE_MODE,
     });
@@ -485,7 +485,7 @@ async function requestJsTemplateRuntimeArtifact(
   });
   const artifact = unwrapResourceResponse(artifactResponse);
   if (!artifact?.code || artifact.artifactHash !== response.artifactHash) {
-    throw new RunJSSourceResolverError(`Light extension artifact '${response.artifactHash}' is invalid`, {
+    throw new RunJSSourceResolverError(`JS Template artifact '${response.artifactHash}' is invalid`, {
       code: 'RUNJS_SOURCE_CODE_REQUIRED',
       sourceMode: JS_TEMPLATE_SOURCE_MODE,
     });
@@ -585,8 +585,8 @@ async function listSourceMenuItems(
   return [
     {
       key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMenuGroupKey,
-      label: t('Light extensions'),
-      searchText: [t('Light extensions'), ...selectableEntries.map((entry) => getEntryLabel(entry))].join(' '),
+      label: t('JS Templates'),
+      searchText: [t('JS Templates'), ...selectableEntries.map((entry) => getEntryLabel(entry))].join(' '),
       disabled: true,
     },
     ...sourceItems,

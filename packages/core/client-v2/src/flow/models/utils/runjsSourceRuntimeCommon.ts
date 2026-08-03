@@ -156,7 +156,7 @@ export class LightExtensionSettingsConditionRuntimeError extends Error {
     const reason = options.cause instanceof Error ? options.cause.message : String(options.cause);
     super(
       options.message ||
-        `Light extension entry "${options.entryId}" setting "${options.propertyPath}" has an invalid x-visible-when condition: ${reason}`,
+        `JS Template entry "${options.entryId}" setting "${options.propertyPath}" has an invalid x-visible-when condition: ${reason}`,
     );
     this.name = 'LightExtensionSettingsConditionRuntimeError';
     this.entryId = options.entryId;
@@ -226,7 +226,7 @@ export function createLightExtensionSourcePlumbing<TModel extends FlowModel>(
       const sourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
       const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
       if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
-        ctx.model.context?.message?.error?.(ctx.model.context.t('Select a light extension entry'));
+        ctx.model.context?.message?.error?.(ctx.model.context.t('Select a JS Template entry'));
         throw new FlowCancelSaveException('Light extension source binding is required.');
       }
       const descriptor =
@@ -265,8 +265,8 @@ export function createLightExtensionSourcePlumbing<TModel extends FlowModel>(
       }
       const sourceTitle = await resolveBindingTitle(model, params);
       return sourceTitle
-        ? `${baseTitle} (${translate('Light extension')}: ${sourceTitle})`
-        : `${baseTitle} (${translate('Light extension')})`;
+        ? `${baseTitle} (${translate('JS Template')}: ${sourceTitle})`
+        : `${baseTitle} (${translate('JS Template')})`;
     },
   };
 }
@@ -317,7 +317,7 @@ export function createLightExtensionSourceBindingStep(options: {
   hooks: SourceStepHooks;
 }): StepDefinition {
   return {
-    title: '{{t("Light extension source")}}',
+    title: '{{t("JS Template source")}}',
     hideInSettings: true,
     persistParams: false,
     useRawParams: true,
@@ -566,7 +566,7 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
                   propertyPath: fieldName,
                   cause: error,
                   message: translate(
-                    'Light extension entry "{{entryId}}" setting "{{propertyPath}}" has an invalid x-visible-when condition: {{reason}}',
+                    'JS Template entry "{{entryId}}" setting "{{propertyPath}}" has an invalid x-visible-when condition: {{reason}}',
                     {
                       entryId: options.entryId,
                       propertyPath: fieldName,
@@ -905,7 +905,7 @@ export async function showPendingLightExtensionRequiredSettings(model: FlowModel
   const content = React.createElement(
     'span',
     null,
-    `${translate('Configure required light extension settings')}: `,
+    `${translate('Configure required JS Template settings')}: `,
     ...menuEntries.flatMap((entry, index) => [
       index > 0 ? ', ' : '',
       React.createElement(
@@ -988,19 +988,19 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
   let title = labels.defaultTitle;
   let hint = labels.defaultHint;
   if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
-    title = 'Light extension access denied';
-    hint = 'Ask an administrator for permission to use this light extension.';
+    title = 'JS Template access denied';
+    hint = 'Ask an administrator for permission to use this JS Template.';
   } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
-    title = 'Light extension entry missing';
+    title = 'JS Template entry missing';
     hint = 'Choose an available entry or restore this entry.';
   } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
-    title = 'Light extension binding is outdated';
+    title = 'JS Template binding is outdated';
     hint = labels.outdatedHint;
   } else if (normalizedCode.includes('settings_invalid') || normalizedReasonCode.includes('settings_invalid')) {
-    title = 'Light extension settings are invalid';
+    title = 'JS Template settings are invalid';
     hint = labels.invalidSettingsHint;
   } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
-    title = 'Light extension repository is archived';
+    title = 'JS Template repository is archived';
     hint = 'Restore the repository or choose an entry from another repository.';
   }
   return {

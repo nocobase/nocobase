@@ -108,7 +108,7 @@ function RunJSSourceBindingDisplayLabel(props: {
     };
   }, [fallback, input.sourceMode, settingsKey, sourceBindingKey]);
 
-  return label || t('Light extension');
+  return label || t('JS Template');
 }
 
 function getMenuInput(
@@ -146,10 +146,10 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
     type: 'cascadeMenu' as const,
     key: 'sourceMode',
     props: {
-      searchPlaceholder: 'Search light extensions',
-      loadingLabel: 'Loading light extensions',
-      emptyLabel: 'No light extension entries',
-      errorLabel: 'Failed to load light extensions',
+      searchPlaceholder: 'Search JS Templates',
+      loadingLabel: 'Loading JS Templates',
+      emptyLabel: 'No JS Template entries',
+      errorLabel: 'Failed to load JS Templates',
       getDisplayLabel({ model, flowKey, params, t }) {
         const runJsParams = model?.getStepParams(options.sourceFlowKey || flowKey || '', 'runJs');
         const displayParams = params.sourceMode ? params : isRecord(runJsParams) ? runJsParams : params;

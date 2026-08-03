@@ -45,28 +45,33 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@nocobase/client-v2', () => ({
-  useApp: () => ({
-    aiManager: {
-      authoringSurfaces: {
-        register: () => vi.fn(),
-      },
-    },
-  }),
-  useFullscreenOverlay: () => {
-    const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
 
-    return {
-      isFullscreen: false,
-      toggleFullscreen: () => {},
-      enterFullscreen: () => {},
-      exitFullscreen: () => {},
-      placeholderRef: setPlaceholderEl,
-      placeholderStyle: {},
-      container: placeholderEl,
-    };
-  },
-}));
+  return {
+    ...actual,
+    useApp: () => ({
+      aiManager: {
+        authoringSurfaces: {
+          register: () => vi.fn(),
+        },
+      },
+    }),
+    useFullscreenOverlay: () => {
+      const [placeholderEl, setPlaceholderEl] = React.useState<HTMLDivElement | null>(null);
+
+      return {
+        isFullscreen: false,
+        toggleFullscreen: () => {},
+        enterFullscreen: () => {},
+        exitFullscreen: () => {},
+        placeholderRef: setPlaceholderEl,
+        placeholderStyle: {},
+        container: placeholderEl,
+      };
+    },
+  };
+});
 
 vi.mock('../workspace/lightExtensionWorkspaceArchive', () => ({
   buildLightExtensionWorkspaceArchiveFileName: mocks.archive.buildLightExtensionWorkspaceArchiveFileName,
@@ -868,7 +873,7 @@ describe('LightExtensionWorkspacePage', () => {
     expect(screen.getByText('src/client/js-blocks/sales-kpi')).toHaveAttribute('data-reason', '');
     expect(screen.getByText('src/client/js-blocks/other')).toHaveAttribute(
       'data-reason',
-      'Other light extension entries are read-only here',
+      'Other JS Template entries are read-only here',
     );
     expect(screen.getByLabelText('Edit file content')).not.toHaveAttribute('readonly');
     expect(screen.getByRole('button', { name: 'Restore v1' })).toBeEnabled();

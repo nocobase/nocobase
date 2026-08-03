@@ -200,7 +200,7 @@ export function useLightExtensionRepo(): UseLightExtensionRepoResult {
 
         return unwrapResourceResponse(response);
       } catch (error) {
-        throw normalizeLightExtensionError(operation, error, t('Light extension request failed'));
+        throw normalizeLightExtensionError(operation, error, t('JS Template request failed'));
       }
     },
     [ctx.api, t],

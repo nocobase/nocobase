@@ -97,6 +97,17 @@ Reference synchronization exposes canonical provider methods and retains the old
 aliases as facades. Disabling or temporarily removing the plugin therefore leaves historical FlowModels loadable and
 does not create a second registry or reference identity.
 
+## Client v2 UI and route aliases
+
+Client v2 presents `JS Templates` (`JS 模板`) as the product name. Its visible settings route is
+`/admin/settings/js-templates`; `/admin/settings/light-extension` remains a hidden, routable compatibility entry for
+bookmarks and deployed links. Both routes use the same page loader and the existing `pm.light-extension` ACL snippet.
+Canonical `JsTemplate*` component, hook, provider, registry, and plugin exports are aliases of the existing
+implementation, while legacy exports and registry keys remain available.
+
+User-visible product copy may use the canonical name, but route compatibility does not authorize any persisted token
+rewrite. Saved FlowModels continue to use the source, binding, provider, registry, and flow keys frozen above.
+
 ## Canonical SDK and compatibility facade
 
 New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,

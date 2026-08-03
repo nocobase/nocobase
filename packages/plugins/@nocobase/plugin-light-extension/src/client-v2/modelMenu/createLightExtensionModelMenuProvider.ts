@@ -101,7 +101,7 @@ export function createJsTemplateModelMenuProvider(
   return (ctx) => [
     {
       key: 'light-extension',
-      label: translate(ctx, 'Light extension'),
+      label: translate(ctx, 'JS Template'),
       sort: options.target === 'field' ? 111 : undefined,
       useModel: options.target === 'action' ? getModelUse(options) : undefined,
       searchable: true,

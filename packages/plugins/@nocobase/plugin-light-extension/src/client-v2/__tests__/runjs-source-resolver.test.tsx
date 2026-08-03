@@ -599,7 +599,7 @@ function registerSourceModeErrorTests() {
       renderSourceField(form);
 
       await waitFor(() => {
-        expect(getSelfErrors(form.query('sourceMode').take())).toContain('Select a light extension entry');
+        expect(getSelfErrors(form.query('sourceMode').take())).toContain('Select a JS Template entry');
       });
     });
 
@@ -618,7 +618,7 @@ function registerSourceModeErrorTests() {
         expect(screen.getByText('Settings are available in separate menus')).toBeTruthy();
         expect(screen.getByText('Required settings are complete')).toBeTruthy();
         expect(screen.queryByText('plan')).not.toBeInTheDocument();
-        expect(getSelfErrors(form.query('sourceMode').take())).not.toContain('Select a light extension entry');
+        expect(getSelfErrors(form.query('sourceMode').take())).not.toContain('Select a JS Template entry');
       });
     });
 
@@ -670,8 +670,8 @@ function registerSourceModeErrorTests() {
 
       renderSourceField(form);
 
-      expect(screen.getByText('Copy selected light extension code').closest('button')).toHaveProperty('disabled', true);
-      fireEvent.click(screen.getByText('Copy selected light extension code'));
+      expect(screen.getByText('Copy selected JS Template code').closest('button')).toHaveProperty('disabled', true);
+      fireEvent.click(screen.getByText('Copy selected JS Template code'));
 
       expect(mocks.request).not.toHaveBeenCalledWith(
         expect.objectContaining({
@@ -718,7 +718,7 @@ function registerSourceModeErrorTests() {
       expect(await screen.findByText('Failed to load entries')).toBeInTheDocument();
       expect(screen.queryByText('private binding source text')).not.toBeInTheDocument();
       fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
-      expect(await screen.findByText('No light extension entries')).toBeInTheDocument();
+      expect(await screen.findByText('No JS Template entries')).toBeInTheDocument();
     });
   });
 

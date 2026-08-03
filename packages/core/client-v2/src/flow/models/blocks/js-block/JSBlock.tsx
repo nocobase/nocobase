@@ -103,7 +103,7 @@ function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
     defaultHint: 'Check the JavaScript block configuration and retry.',
     defaultMessage: 'Failed to run JavaScript block',
     outdatedHint: 'Refresh the block settings and choose the current entry.',
-    invalidSettingsHint: 'Open the block settings and fix the light extension settings.',
+    invalidSettingsHint: 'Open the block settings and fix the JS Template settings.',
   });
 }
 

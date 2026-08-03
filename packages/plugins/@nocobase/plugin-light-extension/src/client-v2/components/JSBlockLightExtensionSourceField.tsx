@@ -307,9 +307,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
   React.useEffect(() => {
     setFieldErrors(
       field,
-      sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !hasSourceBinding
-        ? [String(t('Select a light extension entry'))]
-        : [],
+      sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !hasSourceBinding ? [String(t('Select a JS Template entry'))] : [],
     );
   }, [field, hasSourceBinding, sourceMode, t]);
 
@@ -336,7 +334,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     Modal.confirm({
       title: t('Switch to inline code?'),
       content: t(
-        'You can copy the selected light extension code into the inline editor, or keep the existing inline code.',
+        'You can copy the selected JS Template code into the inline editor, or keep the existing inline code.',
       ),
       okText: t('Copy code'),
       cancelText: t('Keep existing code'),
@@ -422,7 +420,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         return {
           label,
           value: getEntrySelectValue(entry),
-          searchText: [label, entry.entryName, entry.entryPath, entry.repoId, t('Light extension')]
+          searchText: [label, entry.entryName, entry.entryPath, entry.repoId, t('JS Template')]
             .filter(Boolean)
             .join(' '),
         };
@@ -437,7 +435,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
       options.push({
         label,
         value: getBindingSelectValue(sourceBinding),
-        searchText: [label, sourceBinding.entryName, sourceBinding.entryId, sourceBinding.repoId, t('Light extension')]
+        searchText: [label, sourceBinding.entryName, sourceBinding.entryId, sourceBinding.repoId, t('JS Template')]
           .filter(Boolean)
           .join(' '),
       });
@@ -449,7 +447,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
     <Space direction="vertical" style={{ width: '100%' }} size={16}>
       {sourceBinding ? (
         <Typography.Text strong>
-          {getBindingDisplayLabel(sourceBinding, selectedEntry, t('Light extension'))}
+          {getBindingDisplayLabel(sourceBinding, selectedEntry, t('JS Template'))}
         </Typography.Text>
       ) : null}
       {sourceBinding && selectedEntry ? (
@@ -472,15 +470,13 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
           type={sourceEntriesLoading ? 'info' : 'warning'}
           showIcon
           message={
-            sourceEntriesLoading
-              ? t('Loading light extension entry')
-              : t('Selected light extension entry is unavailable')
+            sourceEntriesLoading ? t('Loading JS Template entry') : t('Selected JS Template entry is unavailable')
           }
         />
       ) : (
-        <Alert type="info" showIcon message={t('Select a light extension entry to configure settings')} />
+        <Alert type="info" showIcon message={t('Select a JS Template entry to configure settings')} />
       )}
-      {copying ? <Typography.Text type="secondary">{t('Copying light extension code')}</Typography.Text> : null}
+      {copying ? <Typography.Text type="secondary">{t('Copying JS Template code')}</Typography.Text> : null}
     </Space>
   );
 
@@ -500,8 +496,8 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
           optionFilterProp="searchText"
           options={sourceSelectOptions.filter((option) => option.value !== INLINE_SOURCE_SELECT_VALUE)}
           onChange={handleSourceSelectChange}
-          notFoundContent={t('No light extension entries')}
-          placeholder={t('Select a light extension entry')}
+          notFoundContent={t('No JS Template entries')}
+          placeholder={t('Select a JS Template entry')}
         />
         <div id={descriptionId}>
           {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
@@ -523,8 +519,8 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
         optionFilterProp="searchText"
         options={sourceSelectOptions}
         onChange={handleSourceSelectChange}
-        notFoundContent={t('No light extension entries')}
-        placeholder={t('Select a light extension entry')}
+        notFoundContent={t('No JS Template entries')}
+        placeholder={t('Select a JS Template entry')}
       />
       <div id={descriptionId}>
         {sourceEntriesError ? <Alert type="error" showIcon message={sourceEntriesError} /> : null}
@@ -537,7 +533,7 @@ export const JSBlockLightExtensionSourceField: React.FC<JSBlockLightExtensionSou
             onClick={copyLightExtensionToInline}
             style={{ width: 'fit-content' }}
           >
-            {t('Copy selected light extension code')}
+            {t('Copy selected JS Template code')}
           </Button>
         )}
       </div>

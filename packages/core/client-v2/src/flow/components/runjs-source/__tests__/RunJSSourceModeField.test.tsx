@@ -33,7 +33,7 @@ describe('RunJSSourceModeField', () => {
       </FormProvider>,
     );
 
-    expect(screen.getByText('Light extension source is unavailable')).toBeInTheDocument();
+    expect(screen.getByText('JS Template source is unavailable')).toBeInTheDocument();
     await waitFor(() => {
       expect(onChange).not.toHaveBeenCalled();
       expect(form.values.sourceMode).toBeUndefined();

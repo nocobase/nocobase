@@ -84,7 +84,7 @@ describe('light extension binding producers', () => {
       </FlowEngineProvider>,
     );
 
-    await waitFor(() => expect(screen.getByText('Light extension / repo-sales / sales-dashboard')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('JS Template / repo-sales / sales-dashboard')).toBeInTheDocument());
     expect(screen.queryByText(/Secret repository title/)).not.toBeInTheDocument();
   });
 });

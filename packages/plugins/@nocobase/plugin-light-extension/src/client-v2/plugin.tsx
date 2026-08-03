@@ -10,21 +10,28 @@
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 
-import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY } from '../constants';
+import { LIGHT_EXTENSION_ACL_SNIPPET } from '../constants';
 import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from './jsTemplateRunJSIntegration';
+import {
+  JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+  JS_TEMPLATE_SETTINGS_KEY,
+  JS_TEMPLATE_V2_UI_CONTRACT,
+} from './jsTemplateV2UIContract';
 import { registerLightExtensionRuntimeAuthSession } from './resolvers/LightExtensionRuntimeCacheRegistry';
 
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
-let activeLightExtensionClientV2Instance: PluginLightExtensionClientV2 | null = null;
+let activeJsTemplateClientV2Instance: PluginJsTemplateClientV2 | null = null;
 
-export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, Application> {
+const loadJsTemplateListPage = () => import('./pages/LightExtensionListPage');
+
+export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Application> {
   private readonly disposers: Array<() => void> = [];
 
   async beforeLoad() {
-    activeLightExtensionClientV2Instance?.dispose();
+    activeJsTemplateClientV2Instance?.dispose();
     this.dispose();
   }
 
@@ -33,12 +40,12 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
 
     this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
     this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient));
-    activeLightExtensionClientV2Instance = this;
+    activeJsTemplateClientV2Instance = this;
 
-    const title = this.t('Light extensions');
+    const title = this.t(JS_TEMPLATE_V2_UI_CONTRACT.productNameKey);
 
     this.pluginSettingsManager.addMenuItem({
-      key: LIGHT_EXTENSION_SETTINGS_KEY,
+      key: JS_TEMPLATE_SETTINGS_KEY,
       title,
       icon: 'CodeOutlined',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
@@ -46,11 +53,29 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     });
 
     this.pluginSettingsManager.addPageTabItem({
-      menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      menuKey: JS_TEMPLATE_SETTINGS_KEY,
       key: 'index',
       title,
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
-      componentLoader: () => import('./pages/LightExtensionListPage'),
+      componentLoader: loadJsTemplateListPage,
+    });
+
+    this.pluginSettingsManager.addMenuItem({
+      key: JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+      title,
+      icon: 'CodeOutlined',
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      hidden: true,
+      showTabs: false,
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+      key: 'index',
+      title,
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      componentLoader: loadJsTemplateListPage,
+      hidden: true,
     });
   }
 
@@ -58,10 +83,12 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     while (this.disposers.length) {
       this.disposers.pop()?.();
     }
-    if (activeLightExtensionClientV2Instance === this) {
-      activeLightExtensionClientV2Instance = null;
+    if (activeJsTemplateClientV2Instance === this) {
+      activeJsTemplateClientV2Instance = null;
     }
   }
 }
 
-export default PluginLightExtensionClientV2;
+export { PluginJsTemplateClientV2 as PluginLightExtensionClientV2 };
+
+export default PluginJsTemplateClientV2;

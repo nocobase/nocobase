@@ -13,6 +13,7 @@ import {
   JSBlockLightExtensionSourceField,
   JSPageLightExtensionSourceField,
 } from '../components/JSBlockLightExtensionSourceField';
+import { JS_TEMPLATE_SETTINGS_KEY } from '../jsTemplateV2UIContract';
 import PluginLightExtensionClientV2 from '../plugin';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
@@ -44,7 +45,7 @@ vi.mock('react-i18next', async () => {
 // Consolidated from runjs-source-resolver-runtime-boundary.cases.tsx.
 function registerRuntimeBoundaryTests() {
   describe('plugin-light-extension client-v2 boundary', () => {
-    it('registers a v2 settings entry for light extensions', async () => {
+    it('registers canonical and legacy v2 settings routes with one implementation and ACL', async () => {
       const app = createMockClient({
         plugins: [
           [
@@ -59,18 +60,35 @@ function registerRuntimeBoundaryTests() {
 
       await app.load();
 
-      expect(app.pluginSettingsManager.get(LIGHT_EXTENSION_SETTINGS_KEY, false)).toMatchObject({
-        key: LIGHT_EXTENSION_SETTINGS_KEY,
-        title: 'Light extensions',
+      const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
+      const legacyPage = app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false);
+      expect(app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false)).toMatchObject({
+        key: JS_TEMPLATE_SETTINGS_KEY,
+        title: 'JS Templates',
         aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
         showTabs: false,
       });
-      expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.index`, false)).toMatchObject({
-        menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+      expect(canonicalPage).toMatchObject({
+        menuKey: JS_TEMPLATE_SETTINGS_KEY,
         pageKey: 'index',
         componentLoader: expect.any(Function),
         aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
       });
+      expect(app.pluginSettingsManager.get(LIGHT_EXTENSION_SETTINGS_KEY, false)).toMatchObject({
+        key: LIGHT_EXTENSION_SETTINGS_KEY,
+        title: 'JS Templates',
+        aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+        hidden: true,
+        showTabs: false,
+      });
+      expect(legacyPage).toMatchObject({
+        menuKey: LIGHT_EXTENSION_SETTINGS_KEY,
+        pageKey: 'index',
+        componentLoader: expect.any(Function),
+        aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+        hidden: true,
+      });
+      expect(canonicalPage?.componentLoader).toBe(legacyPage?.componentLoader);
       expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.source`, false)).toBeNull();
       expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.entries`, false)).toBeNull();
       expect(app.pluginSettingsManager.get(`${LIGHT_EXTENSION_SETTINGS_KEY}.references`, false)).toBeNull();
@@ -327,7 +345,7 @@ function registerSourceModeRoundTripTests() {
       await waitFor(() => expect(screen.getByText('Required settings are complete')).toBeTruthy());
       expect(screen.queryByText('title')).toBeNull();
       expect(screen.queryByText('Inline code')).toBeNull();
-      expect(screen.queryByText('Copy selected light extension code')).toBeNull();
+      expect(screen.queryByText('Copy selected JS Template code')).toBeNull();
       expect(form.values).toEqual(originalValues);
     });
 
@@ -350,7 +368,7 @@ function registerSourceModeRoundTripTests() {
       await waitFor(() => expect(screen.getByText('Required settings are complete')).toBeTruthy());
       expect(screen.queryByText('title')).toBeNull();
       expect(screen.queryByText('Inline code')).toBeNull();
-      expect(screen.queryByText('Copy selected light extension code')).toBeNull();
+      expect(screen.queryByText('Copy selected JS Template code')).toBeNull();
       expect(form.values).toEqual(originalValues);
     });
 

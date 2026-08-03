@@ -220,7 +220,7 @@ export function LightExtensionListTable({
       dataSource={rows}
       loading={loading}
       locale={{
-        emptyText: <Empty description={t('No light extensions yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+        emptyText: <Empty description={t('No JS Templates yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
       }}
       pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
       rowKey={(row) => (row.rowType === 'repo' ? row.repo.id : `create-job:${row.job.id}`)}

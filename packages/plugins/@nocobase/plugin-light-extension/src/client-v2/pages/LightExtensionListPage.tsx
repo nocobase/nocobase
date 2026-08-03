@@ -259,7 +259,7 @@ function LightExtensionListPageInner() {
       setNotice({
         type: 'error',
         message: `${t('Creation failed: {{name}}').replace('{{name}}', lastFailed.title || lastFailed.name)}: ${
-          errorKey ? t(errorKey) : lastFailed.errorMessage || t('Light extension creation failed')
+          errorKey ? t(errorKey) : lastFailed.errorMessage || t('JS Template creation failed')
         }`,
       });
     }

@@ -73,15 +73,15 @@ const InlineRunJSSourceModeField: React.FC<RunJSSourceModeFieldProps> = ({ value
         onChange={(event) => handleModeChange(event.target.value)}
         options={[
           { label: t('Inline code'), value: INLINE_SOURCE_MODE },
-          { label: t('Light extension'), value: LIGHT_EXTENSION_SOURCE_MODE, disabled: true },
+          { label: t('JS Template'), value: LIGHT_EXTENSION_SOURCE_MODE, disabled: true },
         ]}
       />
       {sourceMode !== INLINE_SOURCE_MODE ? (
         <Alert
           type="warning"
           showIcon
-          message={t('Light extension source is unavailable')}
-          description={t('Enable the Light extension plugin to edit this source binding.')}
+          message={t('JS Template source is unavailable')}
+          description={t('Enable the JS Templates plugin to edit this source binding.')}
         />
       ) : null}
     </Space>

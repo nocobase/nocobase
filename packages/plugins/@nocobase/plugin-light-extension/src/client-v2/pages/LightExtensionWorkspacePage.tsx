@@ -215,7 +215,7 @@ function LightExtensionWorkspacePage({
   const authoringWorkspaceScopeRef = useRef(workspaceScope);
   const entryRoot = getLightExtensionEntryRoot(workspaceScope);
   const entryScoped = workspaceScope.mode === 'entry';
-  const pathRestrictionReason = t('Other light extension entries are read-only here');
+  const pathRestrictionReason = t('Other JS Template entries are read-only here');
   const resolveWorkspacePathAccess = useCallback(
     (path: string, pathType: RunJSWorkspacePathType): RunJSWorkspacePathAccess => {
       const access = getLightExtensionWorkspacePathAccess(workspaceScope, path, pathType);
@@ -1016,7 +1016,7 @@ function LightExtensionWorkspacePage({
     Modal.confirm({
       title: t('Move to inline code?'),
       content: t(
-        'The current working copy of this entry and its referenced files will be copied to inline code. The light extension will remain unchanged.',
+        'The current working copy of this entry and its referenced files will be copied to inline code. The JS Template will remain unchanged.',
       ),
       okText: t('Move to inline code'),
       cancelText: t('Cancel'),
@@ -1126,7 +1126,7 @@ function LightExtensionWorkspacePage({
   if (!repoId) {
     return (
       <MissingRepositoryState
-        description={t('Select a repository from the light extension list')}
+        description={t('Select a repository from the JS Templates list')}
         embedded={embedded}
         title={t('Source workspace')}
       />
@@ -1292,7 +1292,7 @@ function LightExtensionWorkspacePage({
           versionMessage,
         }}
         saving={{
-          compilingLabel: t('Compiling light extension'),
+          compilingLabel: t('Compiling JS Template'),
           open: saving,
           savingLabel: t('Saving source files'),
           title: t('Saving changes'),

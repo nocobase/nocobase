@@ -294,7 +294,7 @@ function normalizeRuntimeError(error: unknown): JSFieldRuntimeError {
     defaultHint: 'Check the JavaScript field configuration and retry.',
     defaultMessage: 'Failed to run JavaScript field',
     outdatedHint: 'Refresh the field settings and choose the current entry.',
-    invalidSettingsHint: 'Open the field settings and fix the light extension settings.',
+    invalidSettingsHint: 'Open the field settings and fix the JS Template settings.',
   });
 }
 

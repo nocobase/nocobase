@@ -131,7 +131,7 @@ describe('runjsSourceRuntimeCommon', () => {
         context: expect.objectContaining({ ownerKind: 'flowModel.blockSettings' }),
       }),
     );
-    await expect(plumbing.getEditorTitle(model)).resolves.toBe('Write JavaScript (Light extension: Shared entry)');
+    await expect(plumbing.getEditorTitle(model)).resolves.toBe('Write JavaScript (JS Template: Shared entry)');
     expect(getBindingTitle).toHaveBeenCalledOnce();
 
     await plumbing.afterSourceParamsSave(ctx);
@@ -667,33 +667,28 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it.each([
-    ['LIGHT_EXTENSION_BINDING_OUTDATED', 409, 'Light extension binding is outdated', 'Refresh this surface'],
-    ['LIGHT_EXTENSION_SETTINGS_INVALID', 422, 'Light extension settings are invalid', 'Fix settings'],
+    ['LIGHT_EXTENSION_BINDING_OUTDATED', 409, 'JS Template binding is outdated', 'Refresh this surface'],
+    ['LIGHT_EXTENSION_SETTINGS_INVALID', 422, 'JS Template settings are invalid', 'Fix settings'],
     [
       'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
       404,
-      'Light extension entry missing',
+      'JS Template entry missing',
       'Choose an available entry or restore this entry.',
     ],
     [
       'LIGHT_EXTENSION_FORBIDDEN',
       403,
-      'Light extension access denied',
-      'Ask an administrator for permission to use this light extension.',
+      'JS Template access denied',
+      'Ask an administrator for permission to use this JS Template.',
     ],
     [
       'LIGHT_EXTENSION_REPO_ARCHIVED',
       409,
-      'Light extension repository is archived',
+      'JS Template repository is archived',
       'Restore the repository or choose an entry from another repository.',
     ],
-    [
-      undefined,
-      403,
-      'Light extension access denied',
-      'Ask an administrator for permission to use this light extension.',
-    ],
-    [undefined, 404, 'Light extension entry missing', 'Choose an available entry or restore this entry.'],
+    [undefined, 403, 'JS Template access denied', 'Ask an administrator for permission to use this JS Template.'],
+    [undefined, 404, 'JS Template entry missing', 'Choose an available entry or restore this entry.'],
   ])('normalizes %s server errors into the shared UI state', (code, status, title, hint) => {
     const message = code || 'Request failed';
     const result = normalizeLightExtensionRuntimeError(

@@ -192,7 +192,7 @@ export class JSPageModel extends RootPageModel {
           defaultHint: 'Check the JavaScript page configuration and retry.',
           defaultMessage: 'Failed to run JavaScript page',
           outdatedHint: 'Refresh the page settings and choose the current entry.',
-          invalidSettingsHint: 'Open the page settings and fix the light extension settings.',
+          invalidSettingsHint: 'Open the page settings and fix the JS Template settings.',
         })
       : null;
 

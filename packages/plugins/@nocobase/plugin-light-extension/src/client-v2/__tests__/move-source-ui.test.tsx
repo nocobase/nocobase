@@ -44,7 +44,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
@@ -62,7 +62,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
@@ -83,7 +83,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
   });
 
   it('does not render Move Source for non-step locators', () => {
@@ -97,7 +97,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
   });
 
   it('does not render Move Source for generic flow steps', () => {
@@ -106,7 +106,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to light extension' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
   });
 
   it('only contributes the Move action for writable JS Page sources', () => {
@@ -135,9 +135,9 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
     expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual(['existing', 'new']);
-    fireEvent.click(await screen.findByRole('radio', { name: 'Existing light extension' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing JS Template' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     expect(await screen.findByText('enabled-repo')).toBeTruthy();
     expect(screen.queryByText('disabled-repo')).toBeNull();
@@ -149,7 +149,7 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => expect(screen.queryByLabelText('JS Block name')).toBeNull());
@@ -230,9 +230,9 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
     await waitFor(() => expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplateRepos:list' })));
-    fireEvent.click(screen.getByRole('radio', { name: 'Existing light extension' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Existing JS Template' }));
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(await screen.findByText('Shared tools'));
@@ -302,13 +302,13 @@ describe('MoveSourceToLightExtension', () => {
     context.workspace.source.label = 'JavaScript page / Write JavaScript';
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
-    fireEvent.click(await screen.findByRole('radio', { name: 'Create new light extension' }));
-    await screen.findByLabelText('Light extension name');
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Create new JS Template' }));
+    await screen.findByLabelText('JS Template name');
     expect(screen.queryByLabelText('Light extension title')).toBeNull();
     expect(screen.queryByLabelText('Entry name')).toBeNull();
     expect(screen.queryByLabelText('Entry title')).toBeNull();
-    fireEvent.change(screen.getByLabelText('Light extension name'), { target: { value: '销售工具' } });
+    fireEvent.change(screen.getByLabelText('JS Template name'), { target: { value: '销售工具' } });
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: '销售页面' } });
     fireEvent.click(screen.getByRole('button', { name: 'Move' }));
 
@@ -361,8 +361,8 @@ describe('MoveSourceToLightExtension', () => {
 
     render(<MoveSourceToLightExtension api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
-    fireEvent.click(await screen.findByRole('radio', { name: 'Existing light extension' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing JS Template' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     fireEvent.click(await screen.findByText('shared-tools'));
     fireEvent.click(screen.getByRole('button', { name: 'Move' }));

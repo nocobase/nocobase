@@ -324,7 +324,7 @@ describe('LightExtensionListPage', () => {
   it('opens the create dialog from the query parameter', async () => {
     renderListPage('/admin/settings/light-extension?create=1');
 
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Browser smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
@@ -345,7 +345,7 @@ describe('LightExtensionListPage', () => {
     expect(creationCells[3]).toBeEmptyDOMElement();
     expect(creationCells[4]).toBeEmptyDOMElement();
     expect(creationCells[5]).toBeEmptyDOMElement();
-    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create JS Template' })).not.toBeInTheDocument();
     expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
 
@@ -368,7 +368,7 @@ describe('LightExtensionListPage', () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     await userEvent.click(within(dialog).getByText('ZIP file'));
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['zip-source'], 'imported-smoke.zip', { type: 'application/zip' });
@@ -389,14 +389,14 @@ describe('LightExtensionListPage', () => {
       }),
     );
     expect(await screen.findByText('Creating')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Create light extension' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create JS Template' })).not.toBeInTheDocument();
   });
 
   it('creates from Git with an exclusive safe source payload and updates the URL', async () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -431,7 +431,7 @@ describe('LightExtensionListPage', () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
     await userEvent.click(within(dialog).getByText('Git source'));
     const repositoryInput = within(dialog).getByRole('textbox', { name: 'Git repository URL' });
@@ -440,7 +440,7 @@ describe('LightExtensionListPage', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('Git source could not be created')).toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Create light extension' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Create JS Template' })).toBeInTheDocument();
     expect(repositoryInput).toHaveValue('https://git.example.com/nocobase/example.git');
   });
 
@@ -456,7 +456,7 @@ describe('LightExtensionListPage', () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git remote error');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -474,7 +474,7 @@ describe('LightExtensionListPage', () => {
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create light extension' });
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Empty Git remote');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -692,7 +692,7 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
     const titleInput = within(drawer).getByLabelText('Title');
     const descriptionInput = within(drawer).getByLabelText('Description');
     expect(titleInput).toHaveValue('Sales widgets');
@@ -731,7 +731,7 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
     await userEvent.clear(within(drawer).getByLabelText('Title'));
     await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
 
@@ -766,7 +766,7 @@ describe('LightExtensionListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit light extension' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
     await userEvent.clear(within(drawer).getByLabelText('Description'));
     await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
 

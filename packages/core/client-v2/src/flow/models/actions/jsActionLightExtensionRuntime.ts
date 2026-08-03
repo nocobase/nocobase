@@ -276,7 +276,7 @@ function normalizeRuntimeError(error: unknown): JSActionRuntimeError {
     defaultHint: 'Check the JavaScript action configuration and retry.',
     defaultMessage: 'Failed to run JavaScript action',
     outdatedHint: 'Refresh the action settings and choose the current entry.',
-    invalidSettingsHint: 'Open the action settings and fix the light extension settings.',
+    invalidSettingsHint: 'Open the action settings and fix the JS Template settings.',
   });
 }
 

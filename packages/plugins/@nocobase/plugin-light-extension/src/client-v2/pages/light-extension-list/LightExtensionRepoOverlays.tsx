@@ -70,7 +70,7 @@ export function LightExtensionRepoOverlays({
           onCancel={onCancelCreate}
           onOk={onConfirmCreate}
           open
-          title={t('Create light extension')}
+          title={t('Create JS Template')}
         >
           <Form form={createForm} layout="vertical">
             <Form.Item
@@ -104,7 +104,7 @@ export function LightExtensionRepoOverlays({
       ) : null}
 
       <Drawer
-        aria-label={t('Edit light extension')}
+        aria-label={t('Edit JS Template')}
         destroyOnClose
         footer={
           <Flex justify="flex-end">
@@ -121,7 +121,7 @@ export function LightExtensionRepoOverlays({
         maskClosable={!editing}
         onClose={onCancelEdit}
         open={Boolean(editTarget)}
-        title={t('Edit light extension')}
+        title={t('Edit JS Template')}
       >
         <Form form={editForm} id="light-extension-edit-form" layout="vertical" onFinish={onUpdateRepo}>
           <Form.Item
