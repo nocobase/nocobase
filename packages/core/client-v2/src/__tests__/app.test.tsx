@@ -406,6 +406,116 @@ describe('app', () => {
     expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
   });
 
+  it('should keep current content without a dialog while app upgrading', async () => {
+    const CurrentPage = () => <div>Current page</div>;
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: CurrentPage });
+      }
+    }
+
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+
+    act(() => {
+      app.maintained = true;
+      app.maintaining = true;
+      app.error = Object.assign(new Error('Loading data sources...'), {
+        code: 'APP_COMMANDING',
+        command: { name: 'upgrade' },
+      });
+    });
+
+    expect(screen.getByText('Current page')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('should not show Try again for an app upgrade error state', async () => {
+    class PluginHelloClient extends Plugin {}
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    app.error = Object.assign(new Error('Loading data sources...'), {
+      code: 'APP_COMMANDING',
+      command: { name: 'upgrade' },
+    });
+
+    await renderApp(app);
+
+    expect(screen.getByText('App upgrading')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+
+  it('should clear upgrade feedback after an existing page error', async () => {
+    const BrokenPage = () => {
+      throw new Error('page error');
+    };
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: BrokenPage });
+      }
+    }
+
+    const app = createMockClient({
+      plugins: [PluginHelloClient],
+      ws: { url: 'ws://localhost:3000/ws' },
+    });
+    app.maintained = true;
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await renderApp(app);
+      expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+
+      act(() => {
+        app.ws.emit('message', {
+          type: 'maintaining',
+          payload: {
+            code: 'APP_COMMANDING',
+            command: { name: 'upgrade' },
+            message: 'Loading data sources...',
+          },
+        });
+      });
+
+      expect(screen.getByText('App upgrading')).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it('should keep a custom maintaining dialog while app upgrading', async () => {
+    class PluginHelloClient extends Plugin {}
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    app.addComponents({
+      CustomUpgradeStatus: () => <div>Custom upgrade status</div>,
+    });
+    app.maintained = true;
+    app.maintaining = true;
+    app.error = Object.assign(new Error('Loading data sources...'), {
+      code: 'APP_COMMANDING',
+      command: {
+        name: 'upgrade',
+        components: { maintainingDialog: 'CustomUpgradeStatus' },
+      },
+    });
+
+    await renderApp(app);
+
+    expect(screen.getByText('Custom upgrade status')).toBeInTheDocument();
+  });
+
+  it('should keep Try again for recoverable app errors', async () => {
+    class PluginHelloClient extends Plugin {}
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    app.error = Object.assign(new Error('load error'), { code: 'LOAD_ERROR' });
+
+    await renderApp(app);
+
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+  });
+
   it('should handle long loading state gracefully', async () => {
     class PluginHelloClient extends Plugin {
       async load() {
