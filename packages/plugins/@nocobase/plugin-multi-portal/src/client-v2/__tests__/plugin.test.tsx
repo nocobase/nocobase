@@ -20,6 +20,7 @@ import {
   type MultiPortalRuntimeRecord,
 } from '../layoutRegistration';
 import PluginMultiPortalClientV2 from '../plugin';
+import { getPortalPathname, installMultiPortalRequestInterceptor } from '../portalApiClient';
 import { installMultiPortalRouteRepositoryScope, type MultiPortalRouteScopeDescriptor } from '../routeRepositoryScope';
 import packageJson from '../../../package.json';
 
@@ -179,6 +180,29 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
+  it('should attach the current portal name to API requests', async () => {
+    const app = createMockClient();
+    let pathname = '/nocobase/v/portal-desktop/orders';
+    installMultiPortalRequestInterceptor(app.apiClient, [desktopPortal], () =>
+      getPortalPathname(pathname, '/nocobase/v/'),
+    );
+    app.apiMock.onGet('orders:list').reply(200, { data: [] });
+
+    await app.apiClient.request({ url: 'orders:list', method: 'get' });
+    expect(app.apiMock.history.get[0].headers?.get('x-portal')).toBe('/v/portalDesktop');
+
+    pathname = '/nocobase/v/admin';
+    await app.apiClient.request({ url: 'orders:list', method: 'get' });
+    expect(app.apiMock.history.get[1].headers?.get('x-portal')).toBeUndefined();
+
+    pathname = '/nocobase/v/portal-desktop';
+    await app.apiClient.request({
+      url: 'orders:list',
+      method: 'get',
+      headers: { 'X-Portal': 'requestPortal' },
+    });
+    expect(app.apiMock.history.get[2].headers?.get('x-portal')).toBe('requestPortal');
+  });
   it('should reject an invalid public Portal list response', async () => {
     const request = vi.fn().mockResolvedValue({
       data: {
@@ -309,6 +333,13 @@ describe('PluginMultiPortalClientV2', () => {
         ),
       },
       apiClient: {
+        axios: {
+          interceptors: {
+            request: {
+              use: vi.fn(),
+            },
+          },
+        },
         request: vi.fn().mockResolvedValue({
           data: {
             data: [
