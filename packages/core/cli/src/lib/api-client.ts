@@ -22,6 +22,7 @@ import { basename, dirname } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { AuthStoreOptions } from './auth-store.js';
+import { translateCli } from './cli-locale.js';
 import { resolveServerRequestTarget } from './env-auth.js';
 import { fetchWithPreservedAuthRedirect } from './http-request.js';
 
@@ -95,7 +96,37 @@ function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.replace(/\/+$/, '');
 }
 
-async function parseResponse(response: Response) {
+function buildAuthFailureCommand(envName?: string) {
+  const normalizedEnvName = String(envName ?? '').trim();
+  return normalizedEnvName ? `nb env auth ${normalizedEnvName}` : 'nb env auth';
+}
+
+function decorateAuthFailureResponse(data: unknown, status: number, envName?: string) {
+  if (status !== 401) {
+    return data;
+  }
+
+  const cliCommand = buildAuthFailureCommand(envName);
+  const cliHint = translateCli('apiClient.authRequiredHint', { command: cliCommand }, {
+    fallback: 'Authentication failed or the saved session has expired. Run `{{command}}` to sign in again.',
+  });
+
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return {
+      ...data,
+      cliHint,
+      cliCommand,
+    };
+  }
+
+  return {
+    error: data,
+    cliHint,
+    cliCommand,
+  };
+}
+
+async function parseResponse(response: Response, envName?: string) {
   const text = await response.text();
   let data: unknown = text;
 
@@ -110,11 +141,11 @@ async function parseResponse(response: Response) {
   return {
     ok: response.ok,
     status: response.status,
-    data,
+    data: decorateAuthFailureResponse(data, response.status, envName),
   };
 }
 
-async function parseBinaryResponse(response: Response, outputPath: string) {
+async function parseBinaryResponse(response: Response, outputPath: string, envName?: string) {
   if (response.ok && response.body) {
     await fs.mkdir(dirname(outputPath), { recursive: true }).catch(() => undefined);
     await pipeline(Readable.fromWeb(response.body as any), createWriteStream(outputPath));
@@ -127,7 +158,7 @@ async function parseBinaryResponse(response: Response, outputPath: string) {
     };
   }
 
-  return parseResponse(response);
+  return parseResponse(response, envName);
 }
 
 function parseScalarValue(value: any, type?: string) {
@@ -315,7 +346,7 @@ async function createMultipartBody(flags: Record<string, any>, operation: Reques
 }
 
 export async function executeApiRequest(options: RequestOptions) {
-  const { baseUrl, token } = await resolveServerRequestTarget(options);
+  const { baseUrl, token, envName } = await resolveServerRequestTarget(options);
 
   const headers = new Headers();
   headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
@@ -395,14 +426,14 @@ export async function executeApiRequest(options: RequestOptions) {
     if (!outputPath) {
       throw new Error('Missing required output path --output');
     }
-    return parseBinaryResponse(response, outputPath);
+    return parseBinaryResponse(response, outputPath, envName);
   }
 
-  return parseResponse(response);
+  return parseResponse(response, envName);
 }
 
 export async function executeRawApiRequest(options: RawRequestOptions) {
-  const { baseUrl, token } = await resolveServerRequestTarget(options);
+  const { baseUrl, token, envName } = await resolveServerRequestTarget(options);
 
   const headers = new Headers();
   headers.set(CLI_REQUEST_SOURCE_HEADER, CLI_REQUEST_SOURCE_VALUE);
@@ -456,7 +487,7 @@ export async function executeRawApiRequest(options: RawRequestOptions) {
       signal: controller?.signal,
     });
 
-    return parseResponse(response);
+    return parseResponse(response, envName);
   } finally {
     if (timeout) {
       clearTimeout(timeout);

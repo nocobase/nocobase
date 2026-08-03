@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, FieldOptions } from '@nocobase/database';
+import { Database, FieldOptions, Model } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 describe('Should update sequence collection`s current base on business collections', () => {
@@ -114,6 +114,190 @@ describe('Should update sequence collection`s current base on business collectio
       });
       expect(sequences).toBeDefined();
       expect(sequences.current).toBe(5);
+    });
+
+    it('Should repair to the maximum sequence when records created at the same time are out of sequence order', async () => {
+      db.collection({
+        name: 'tests',
+        fields: [
+          ...presetField,
+          {
+            type: 'sequence',
+            name: 'sequence',
+            inputable: true,
+            patterns: [
+              {
+                type: 'integer',
+                options: {
+                  digits: 4,
+                  start: 1,
+                  cycle: null,
+                  key: 1,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      await db.sync();
+
+      const testModel = db.getModel('tests');
+      const createdAt = new Date('2026-01-01T00:00:00.000Z');
+      const records: Model[] = [];
+      for (const sequence of ['0001', '0003', '0002']) {
+        records.push(
+          await testModel.create({
+            sequence,
+            createdAt,
+          }),
+        );
+      }
+
+      const sequencesRepository = db.getRepository('sequences');
+      const sequences = await sequencesRepository.findOne({
+        filter: {
+          collection: 'tests',
+          field: 'sequence',
+          key: 1,
+        },
+      });
+      expect(sequences).toBeDefined();
+      expect(sequences.current).toBe(3);
+
+      await sequencesRepository.update({
+        filterByTk: sequences.id,
+        values: {
+          current: 0,
+        },
+      });
+
+      await app.runCommand('repair');
+
+      records.push(await testModel.create());
+      const values = records.map((record) => record.get('sequence'));
+      expect(values).toEqual(['0001', '0003', '0002', '0004']);
+      expect(new Set(values).size).toBe(values.length);
+    });
+
+    it('Should use createdAt instead of a string primary key to locate the latest batch', async () => {
+      db.collection({
+        name: 'tests',
+        fields: [
+          {
+            type: 'string',
+            name: 'id',
+            primaryKey: true,
+          },
+          ...presetField.slice(1),
+          {
+            type: 'sequence',
+            name: 'sequence',
+            inputable: true,
+            patterns: [
+              {
+                type: 'integer',
+                options: {
+                  digits: 4,
+                  start: 1,
+                  cycle: null,
+                  key: 1,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      await db.sync();
+
+      const testModel = db.getModel('tests');
+      const previousSecond = new Date('2026-01-01T00:00:00.900Z');
+      const latestSecond = new Date('2026-01-01T00:00:01.100Z');
+      const records = [
+        { id: 'z', sequence: '0001', createdAt: previousSecond },
+        { id: 'a', sequence: '0002', createdAt: latestSecond },
+        { id: 'b', sequence: '0004', createdAt: latestSecond },
+        { id: 'c', sequence: '0003', createdAt: latestSecond },
+      ];
+      for (const values of records) {
+        await testModel.create(values);
+      }
+
+      const sequencesRepository = db.getRepository('sequences');
+      const sequences = await sequencesRepository.findOne({
+        filter: {
+          collection: 'tests',
+          field: 'sequence',
+          key: 1,
+        },
+      });
+      await sequencesRepository.update({
+        filterByTk: sequences.id,
+        values: {
+          current: 0,
+        },
+      });
+
+      await app.runCommand('repair');
+
+      const record = await testModel.create({ id: 'next', createdAt: latestSecond });
+      expect(record.get('sequence')).toBe('0005');
+    });
+
+    it('Should repair when the sequence field is also the primary key', async () => {
+      db.collection({
+        name: 'tests',
+        autoGenId: false,
+        fields: [
+          ...presetField.slice(1),
+          {
+            type: 'sequence',
+            name: 'sequence',
+            primaryKey: true,
+            inputable: true,
+            patterns: [
+              {
+                type: 'integer',
+                options: {
+                  digits: 4,
+                  start: 1,
+                  cycle: null,
+                  key: 1,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      await db.sync();
+
+      const testModel = db.getModel('tests');
+      const createdAt = new Date('2026-01-01T00:00:00.000Z');
+      for (const sequence of ['0001', '0003', '0002']) {
+        await testModel.create({ sequence, createdAt });
+      }
+
+      const sequencesRepository = db.getRepository('sequences');
+      const sequences = await sequencesRepository.findOne({
+        filter: {
+          collection: 'tests',
+          field: 'sequence',
+          key: 1,
+        },
+      });
+      await sequencesRepository.update({
+        filterByTk: sequences.id,
+        values: {
+          current: 0,
+        },
+      });
+
+      await app.runCommand('repair');
+
+      const repairedSequence = await sequencesRepository.findOne({ filterByTk: sequences.id });
+      expect(repairedSequence.current).toBe(3);
+
+      const record = await testModel.create({ createdAt });
+      expect(record.get('sequence')).toBe('0004');
     });
 
     it('Single integer with cycle in sequences field', async () => {
@@ -376,6 +560,129 @@ describe('Should update sequence collection`s current base on business collectio
         });
         expect(sequences['lastGeneratedAt']).toStrictEqual(record['createdAt']);
       }
+    });
+  });
+
+  describe('Date pattern with daily cycle', () => {
+    beforeEach(async () => {
+      db.collection({
+        name: 'tests',
+        fields: [
+          ...presetField,
+          {
+            type: 'sequence',
+            name: 'sequence',
+            inputable: true,
+            patterns: [
+              {
+                type: 'date',
+                options: {
+                  format: 'YYYYMMDD',
+                },
+              },
+              {
+                type: 'integer',
+                options: {
+                  digits: 4,
+                  start: 1,
+                  cycle: '0 0 * * *',
+                  key: 1,
+                },
+              },
+            ],
+          },
+        ],
+      });
+      await db.sync();
+    });
+
+    it('Should repair from the restarted counter on the next day', async () => {
+      const testModel = db.getModel('tests');
+      const firstDay = new Date('2026-01-01T00:00:00.000Z');
+      const secondDay = new Date('2026-01-02T00:00:00.000Z');
+      const existingRecords = [
+        { sequence: '202601010001', createdAt: firstDay },
+        { sequence: '202601010002', createdAt: firstDay },
+        { sequence: '202601010003', createdAt: firstDay },
+        { sequence: '202601020001', createdAt: secondDay },
+      ];
+      for (const values of existingRecords) {
+        await testModel.create(values);
+      }
+
+      const sequencesRepository = db.getRepository('sequences');
+      const sequences = await sequencesRepository.findOne({
+        filter: {
+          collection: 'tests',
+          field: 'sequence',
+          key: 1,
+        },
+      });
+      expect(sequences).toBeDefined();
+      expect(sequences.current).toBe(1);
+
+      await sequencesRepository.update({
+        filterByTk: sequences.id,
+        values: {
+          current: 0,
+        },
+      });
+
+      await app.runCommand('repair');
+
+      const record = await testModel.create({ createdAt: secondDay });
+      expect(record.get('sequence')).toBe('202601020002');
+    });
+
+    it('Should repair to the maximum sequence in the latest daily cycle when records are out of order', async () => {
+      const testModel = db.getModel('tests');
+      const firstDay = new Date('2026-01-01T00:00:00.000Z');
+      const secondDay = new Date('2026-01-02T00:00:00.000Z');
+      const existingRecords = [
+        { sequence: '202601010001', createdAt: firstDay },
+        { sequence: '202601010002', createdAt: firstDay },
+        { sequence: '202601010003', createdAt: firstDay },
+        { sequence: '202601020001', createdAt: secondDay },
+        { sequence: '202601020003', createdAt: secondDay },
+        { sequence: '202601020002', createdAt: secondDay },
+      ];
+      for (const values of existingRecords) {
+        await testModel.create(values);
+      }
+
+      const sequencesRepository = db.getRepository('sequences');
+      const sequences = await sequencesRepository.findOne({
+        filter: {
+          collection: 'tests',
+          field: 'sequence',
+          key: 1,
+        },
+      });
+      expect(sequences).toBeDefined();
+      expect(sequences.current).toBe(3);
+
+      await sequencesRepository.update({
+        filterByTk: sequences.id,
+        values: {
+          current: 0,
+        },
+      });
+
+      await app.runCommand('repair');
+
+      await testModel.create({ createdAt: secondDay });
+      const records = await testModel.findAll({ order: [['id', 'ASC']] });
+      const values = records.map((record) => record.get('sequence'));
+      expect(values).toEqual([
+        '202601010001',
+        '202601010002',
+        '202601010003',
+        '202601020001',
+        '202601020003',
+        '202601020002',
+        '202601020004',
+      ]);
+      expect(new Set(values).size).toBe(values.length);
     });
   });
 

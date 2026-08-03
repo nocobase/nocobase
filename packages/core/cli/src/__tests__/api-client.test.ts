@@ -22,9 +22,10 @@ import { join } from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 
 vi.mock('../lib/env-auth.js', () => ({
-  resolveServerRequestTarget: vi.fn(async () => ({
+  resolveServerRequestTarget: vi.fn(async (options?: { envName?: string }) => ({
     baseUrl: 'http://localhost:13000/api',
     token: 'test-token',
+    envName: options?.envName ?? 'local',
   })),
 }));
 
@@ -89,6 +90,72 @@ test('executeRawApiRequest preserves custom headers and adds the CLI request sou
   expect(requestHeaders?.get('x-request-source')).toBe('cli');
   expect(requestHeaders?.get('x-data-source')).toBe('test');
   expect(requestHeaders?.get('content-type')).toBe('application/json');
+});
+
+test('executeApiRequest adds env auth guidance to 401 JSON responses', async () => {
+  globalThis.fetch = (async () => {
+    return new Response(
+      JSON.stringify({
+        errors: [
+          {
+            message: 'Your session has expired. Please sign in again.',
+            code: 'EXPIRED_SESSION',
+          },
+        ],
+      }),
+      {
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+      },
+    );
+  }) as typeof fetch;
+
+  const response = await executeApiRequest({
+    cliVersion: '2.1.0-beta.37',
+    envName: 'prod',
+    flags: {},
+    operation: {
+      method: 'get',
+      pathTemplate: '/users:list',
+      parameters: [],
+    },
+  });
+
+  expect(response.ok).toBe(false);
+  expect(response.status).toBe(401);
+  expect(response.data).toMatchObject({
+    errors: [
+      {
+        message: 'Your session has expired. Please sign in again.',
+        code: 'EXPIRED_SESSION',
+      },
+    ],
+    cliHint: expect.stringContaining('nb env auth prod'),
+    cliCommand: 'nb env auth prod',
+  });
+});
+
+test('executeRawApiRequest adds env auth guidance to 401 responses', async () => {
+  globalThis.fetch = (async () => {
+    return new Response('Unauthorized', {
+      status: 401,
+      headers: { 'content-type': 'text/plain' },
+    });
+  }) as typeof fetch;
+
+  const response = await executeRawApiRequest({
+    envName: 'prod',
+    method: 'get',
+    path: '/auth:check',
+  });
+
+  expect(response.ok).toBe(false);
+  expect(response.status).toBe(401);
+  expect(response.data).toEqual({
+    error: 'Unauthorized',
+    cliHint: expect.stringContaining('nb env auth prod'),
+    cliCommand: 'nb env auth prod',
+  });
 });
 
 test('executeApiRequest sends bracketed array query parameters with raw JSON body', async () => {

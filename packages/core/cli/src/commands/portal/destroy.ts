@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, unsetEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -18,6 +18,12 @@ import { isInteractiveTerminal, printInfo, printSuccess } from '../../lib/ui.js'
 
 const portalDestroyText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalDestroy.${key}`, values, { fallback });
+
+type DestroyPathStatus = 'deleted' | 'missing' | 'retained';
+
+function portalDestroyStatus(status: DestroyPathStatus): string {
+  return portalDestroyText(`statuses.${status}`, undefined, status);
+}
 
 async function ensureDestroyConfirmed(options: { command: Command; portal: string; yes?: boolean }): Promise<boolean> {
   if (options.yes) {
@@ -40,7 +46,7 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
         message: portalDestroyText(
           'prompts.confirm',
           { portal: options.portal },
-          `Destroy portal "${options.portal}" and delete its storage directory?`,
+          `Destroy portal "${options.portal}" and delete its deployment directory?`,
         ),
         default: false,
       }),
@@ -51,10 +57,11 @@ async function ensureDestroyConfirmed(options: { command: Command; portal: strin
 }
 
 export default class PortalDestroy extends Command {
-  static override summary = 'Destroy a portal record and local files';
+  static override summary = 'Destroy a portal record and deployed files';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer --yes',
+    '<%= config.bin %> <%= command.id %> customer --delete-dev-path --yes',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
     '<%= config.bin %> <%= command.id %> customer --force --yes',
   ];
@@ -77,7 +84,12 @@ export default class PortalDestroy extends Command {
       default: false,
     }),
     force: Flags.boolean({
-      description: 'Ignore missing portal records or local files',
+      description: 'Ignore missing portal records or deployment files',
+      default: false,
+    }),
+    'delete-dev-path': Flags.boolean({
+      char: 'D',
+      description: 'Delete the portal development directory in addition to the deployed portal',
       default: false,
     }),
   };
@@ -124,7 +136,9 @@ export default class PortalDestroy extends Command {
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
+      deleteDevPath: flags['delete-dev-path'],
     });
+    await unsetEnvPortalPath(envName, result.portal, { scope });
 
     printSuccess(
       portalDestroyText('messages.destroyed', { portal: result.portal }, `Portal "${result.portal}" destroyed.`),
@@ -135,15 +149,32 @@ export default class PortalDestroy extends Command {
     printInfo(
       portalDestroyText(
         'messages.record',
-        { status: result.recordDeleted ? 'deleted' : 'missing' },
+        { status: portalDestroyStatus(result.recordDeleted ? 'deleted' : 'missing') },
         `Record: ${result.recordDeleted ? 'deleted' : 'missing'}`,
       ),
     );
+    const deploymentPathStatus = result.deploymentPathDeleted ? 'deleted' : 'missing';
     printInfo(
       portalDestroyText(
-        'messages.workspace',
-        { dir: result.portalDir, status: result.workspaceDeleted ? 'deleted' : 'missing' },
-        `Portal files: ${result.workspaceDeleted ? 'deleted' : 'missing'} (${result.portalDir})`,
+        'messages.deploymentPath',
+        { dir: result.deploymentPath, status: portalDestroyStatus(deploymentPathStatus) },
+        `Deployment path: ${deploymentPathStatus} (${result.deploymentPath})`,
+      ),
+    );
+    let developmentPathStatus: DestroyPathStatus = 'missing';
+    if (result.developmentPath) {
+      developmentPathStatus = result.developmentPathDeleted ? 'deleted' : 'retained';
+    }
+    printInfo(
+      portalDestroyText(
+        result.developmentPath ? 'messages.developmentPath' : 'messages.developmentPathMissing',
+        {
+          dir: result.developmentPath,
+          status: portalDestroyStatus(developmentPathStatus),
+        },
+        result.developmentPath
+          ? `Development path: ${developmentPathStatus} (${result.developmentPath})`
+          : 'Development path: missing',
       ),
     );
   }

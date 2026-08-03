@@ -33,7 +33,7 @@ nb portal push customer --message "Update customer portal"
 
 ## Notes
 
-The command reads `portal.config.json` and syncs that configuration to the remote Portal record first. Git source storage clones the configured repo, copies the local workspace into `--git-path`, commits, and pushes. With default `nocobase` storage, `local` and `docker` envs are usually no-op; `http` envs upload a source archive through the API.
+The command reads source storage and Git settings from the remote portal record, then reads local source from the development path stored in the selected CLI env config. Git source storage clones the configured repo, copies the local workspace into `--git-path`, commits, and pushes. With default `nocobase` storage, `local` and `docker` envs are usually no-op; `http` envs upload a source archive through the API.
 
 ## Commandes liées
 

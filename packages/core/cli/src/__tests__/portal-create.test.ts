@@ -49,7 +49,7 @@ async function writeTemplate(
   options: { packageJson?: boolean; pnpmLock?: boolean } = { packageJson: true },
 ) {
   if (options.packageJson !== false) {
-    await fsp.writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template"}\n');
+    await fsp.writeFile(path.join(templateDir, 'package.json'), '{"name":"portal-template","nocobase":{}}\n');
   }
   if (options.pnpmLock) {
     await fsp.writeFile(path.join(templateDir, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n');
@@ -110,6 +110,10 @@ function createEnv(params: {
       npmRegistry: params.npmRegistry,
     },
   };
+}
+
+function portalWorkspacePath(storagePath: string, portal: string): string {
+  return path.join(storagePath, 'workspaces', portal);
 }
 
 afterEach(async () => {
@@ -177,15 +181,40 @@ test('builds Portal base paths for main app and sub apps', () => {
   );
 });
 
+test('creates a portal in cwd by default', async () => {
+  const cwd = await makeTempDir('nocobase-cli-portal-create-cwd-');
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const runCommand = vi.fn().mockResolvedValue(undefined);
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  await writeTemplate(templatePath);
+
+  try {
+    const result = await createPortalWorkspace({
+      portal: 'customer',
+      template: templatePath,
+      env: createEnv({ storagePath }),
+      runCommand,
+    });
+
+    expect(result.portalDir).toBe(path.join(cwd, 'customer'));
+    await expect(fsp.access(path.join(cwd, 'customer', 'src', 'index.tsx'))).resolves.toBe(undefined);
+  } finally {
+    cwdSpy.mockRestore();
+  }
+});
+
 test('creates a portal from a local template', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await writeTemplate(templatePath);
 
   const result = await createPortalWorkspace({
     portal: 'customer',
     template: templatePath,
+    sourcePath: portalDir,
     env: createEnv({
       storagePath,
       apiBaseUrl: 'http://localhost:13000/console/api/__app/crm',
@@ -193,7 +222,6 @@ test('creates a portal from a local template', async () => {
     runCommand,
   });
 
-  const portalDir = path.join(storagePath, 'portals', 'crm', 'customer');
   expect(result).toMatchObject({
     portalDir,
     app: 'crm',
@@ -222,9 +250,7 @@ test('creates a portal from a local template', async () => {
   const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
   expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
   expect(buildHtmlScript).not.toContain('.env.local');
-  expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
-    sourceStorage: 'nocobase',
-  });
+  await expect(fsp.access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
     cwd: portalDir,
     env: expect.any(Object),
@@ -239,16 +265,17 @@ test('creates a portal with frozen pnpm install when the template includes a loc
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await writeTemplate(templatePath, { pnpmLock: true });
 
   await createPortalWorkspace({
     portal: 'customer',
     template: templatePath,
+    sourcePath: portalDir,
     env: createEnv({ storagePath }),
     runCommand,
   });
 
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.access(path.join(portalDir, 'pnpm-lock.yaml'))).resolves.toBe(undefined);
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install', '--frozen-lockfile', '--trust-lockfile'], {
     cwd: portalDir,
@@ -262,6 +289,7 @@ test('creates a custom-domain sub-app portal with a root portal base', async () 
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
+  const portalDir = portalWorkspacePath(storagePath, 'crm');
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
       return { ok: true, status: 200, data: { data: { name: 'demo6' } } };
@@ -274,6 +302,7 @@ test('creates a custom-domain sub-app portal with a root portal base', async () 
     createPortalWorkspace({
       portal: 'crm',
       template: templatePath,
+      sourcePath: portalDir,
       envName: 'prod',
       env: createEnv({
         kind: 'http',
@@ -286,11 +315,10 @@ test('creates a custom-domain sub-app portal with a root portal base', async () 
   ).resolves.toMatchObject({
     app: 'demo6',
     portal: 'crm',
-    portalDir: path.join(storagePath, 'portals', 'demo6', 'crm'),
+    portalDir,
     portalBase: '/x/crm/',
   });
 
-  const portalDir = path.join(storagePath, 'portals', 'demo6', 'crm');
   expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
     'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
   );
@@ -302,6 +330,7 @@ test('creates a custom-domain sub-app portal with a root portal base', async () 
 test('creates a portal even when pnpm install fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   const runCommand = vi.fn(async () => {
     throw new Error('pnpm install exited with code 1');
   });
@@ -311,6 +340,7 @@ test('creates a portal even when pnpm install fails', async () => {
     createPortalWorkspace({
       portal: 'customer',
       template: templatePath,
+      sourcePath: portalDir,
       env: createEnv({ storagePath }),
       runCommand,
     }),
@@ -321,7 +351,6 @@ test('creates a portal even when pnpm install fails', async () => {
     installFailed: true,
   });
 
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
 });
 
@@ -330,11 +359,13 @@ test('skips pnpm install when package.json is missing', async () => {
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
   const runCommand = vi.fn().mockResolvedValue(undefined);
   const onSkipInstall = vi.fn();
+  const portalDir = portalWorkspacePath(storagePath, 'no_package');
   await writeTemplate(templatePath, { packageJson: false });
 
   const result = await createPortalWorkspace({
     portal: 'no_package',
     template: templatePath,
+    sourcePath: portalDir,
     env: createEnv({ storagePath }),
     runCommand,
     onSkipInstall,
@@ -343,18 +374,14 @@ test('skips pnpm install when package.json is missing', async () => {
   expect(result.installSkipped).toBe(true);
   expect(runCommand).not.toHaveBeenCalled();
   expect(onSkipInstall).toHaveBeenCalledWith(
-    `Skipped pnpm install because package.json was not found in ${path.join(
-      storagePath,
-      'portals',
-      'main',
-      'no_package',
-    )}.`,
+    `Skipped pnpm install because package.json was not found in ${portalDir}.`,
   );
 });
 
 test('downloads npm package templates with npm pack when not installed locally', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   const runCommand = vi.fn(async (name: string, args: string[], options?: PortalCreateRunOptions): Promise<void> => {
     if (name === 'npm') {
       expect(args).toEqual([
@@ -376,6 +403,7 @@ test('downloads npm package templates with npm pack when not installed locally',
   await createPortalWorkspace({
     portal: 'customer',
     template: '@nocobase/missing-portal-template',
+    sourcePath: portalDir,
     env: createEnv({
       storagePath,
       configuredStoragePath: storagePath,
@@ -385,11 +413,8 @@ test('downloads npm package templates with npm pack when not installed locally',
     runCommand,
   });
 
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
-  expect(JSON.parse(await fsp.readFile(path.join(portalDir, 'portal.config.json'), 'utf-8'))).toEqual({
-    sourceStorage: 'nocobase',
-  });
+  await expect(fsp.access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
   expect(runCommand).toHaveBeenNthCalledWith(
     2,
     'pnpm',
@@ -406,22 +431,70 @@ test('downloads npm package templates with npm pack when not installed locally',
 test('fails when the target directory exists without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await writeTemplate(templatePath);
-  await fsp.mkdir(path.join(storagePath, 'portals', 'main', 'customer'), { recursive: true });
+  await fsp.mkdir(portalDir, { recursive: true });
 
   await expect(
     createPortalWorkspace({
       portal: 'customer',
       template: templatePath,
+      sourcePath: portalDir,
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
     }),
   ).rejects.toThrow(/Portal already exists/);
 });
 
+test('creates in an empty current working directory with force', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const cwd = await makeTempDir('nocobase-cli-portal-create-cwd-');
+  await writeTemplate(templatePath);
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
+  try {
+    await expect(
+      createPortalWorkspace({
+        portal: 'customer',
+        template: templatePath,
+        sourcePath: '.',
+        force: true,
+        env: createEnv({ storagePath }),
+        runCommand: vi.fn().mockResolvedValue(undefined),
+      }),
+    ).resolves.toMatchObject({
+      portalDir: cwd,
+    });
+    await expect(fsp.access(path.join(cwd, 'src', 'index.tsx'))).resolves.toBeUndefined();
+  } finally {
+    cwdSpy.mockRestore();
+  }
+});
+
+test('refuses to replace a non-portal directory with force', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
+  const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
+  await writeTemplate(templatePath);
+  await fsp.mkdir(portalDir, { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+
+  await expect(
+    createPortalWorkspace({
+      portal: 'customer',
+      template: templatePath,
+      sourcePath: portalDir,
+      env: createEnv({ storagePath }),
+      force: true,
+      runCommand: vi.fn().mockResolvedValue(undefined),
+    }),
+  ).rejects.toThrow(`Refusing to replace a non-portal directory: ${portalDir}`);
+  expect(await fsp.readFile(path.join(portalDir, 'old.txt'), 'utf-8')).toBe('old');
+});
+
 test('fails before resolving the template when the target directory exists without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
 
@@ -429,6 +502,7 @@ test('fails before resolving the template when the target directory exists witho
     createPortalWorkspace({
       portal: 'customer',
       template: path.join(storagePath, 'missing-template'),
+      sourcePath: portalDir,
       env: createEnv({ storagePath }),
       runCommand: vi.fn().mockResolvedValue(undefined),
     }),
@@ -439,14 +513,16 @@ test('fails before resolving the template when the target directory exists witho
 test('deletes and recreates an existing target directory with force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
   const templatePath = await makeTempDir('nocobase-cli-portal-create-template-');
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await writeTemplate(templatePath);
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"old-portal","nocobase":{}}\n');
 
   await createPortalWorkspace({
     portal: 'customer',
     template: templatePath,
+    sourcePath: portalDir,
     env: createEnv({ storagePath }),
     force: true,
     runCommand: vi.fn().mockResolvedValue(undefined),
@@ -458,14 +534,16 @@ test('deletes and recreates an existing target directory with force', async () =
 
 test('force keeps an existing target directory when template resolution fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-create-storage-');
-  const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
+  const portalDir = portalWorkspacePath(storagePath, 'customer');
   await fsp.mkdir(portalDir, { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'old.txt'), 'old');
+  await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"old-portal","nocobase":{}}\n');
 
   await expect(
     createPortalWorkspace({
       portal: 'customer',
       template: path.join(storagePath, 'missing-template'),
+      sourcePath: portalDir,
       env: createEnv({ storagePath }),
       force: true,
       runCommand: vi.fn().mockResolvedValue(undefined),

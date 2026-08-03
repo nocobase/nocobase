@@ -8,7 +8,7 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -257,6 +257,7 @@ async function clickCardMenuItem(user: ReturnType<typeof userEvent.setup>, card:
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   flowContext.current = undefined;
   window.__nocobase_modern_client_prefix__ = undefined;
 });
@@ -636,10 +637,12 @@ describe('plugin-multi-portal settings page', () => {
     const customerMenu = await openCardMenu(user, customerPortalCard);
     expect(customerMenu.getByRole('menuitem', { name: /Routes/ })).toBeInTheDocument();
     expect(customerMenu.getByRole('menuitem', { name: /Set as default/ })).toBeInTheDocument();
+    expect(customerMenu.queryByRole('menuitem', { name: /Source management/ })).not.toBeInTheDocument();
     expect(customerMenu.queryByRole('menuitem', { name: /View/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
     const developerMenu = await openCardMenu(user, developerPortalCard);
+    expect(developerMenu.getByRole('menuitem', { name: /Source management/ })).toBeInTheDocument();
     expect(developerMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
@@ -670,9 +673,12 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
     expect(screen.getByText('No-code')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
-    // The device icon is mapped directly from the fixed uiLayoutUid, with its wording in the aria-label.
+    expect(screen.getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(screen.getByText('Build business systems through visual configuration.')).toBeInTheDocument();
+    // No-code portals keep the device icon mapped from uiLayoutUid; AI portals do not expose a device layout.
     expect(within(customerPortalCard).getByLabelText('Mobile')).toHaveClass('anticon-mobile');
-    expect(within(developerPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
+    expect(within(developerPortalCard).queryByLabelText('Desktop')).not.toBeInTheDocument();
+    expect(within(developerPortalCard).queryByLabelText('Mobile')).not.toBeInTheDocument();
     expect(within(disabledPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
@@ -680,6 +686,96 @@ describe('plugin-multi-portal settings page', () => {
       page: 1,
       pageSize: 20,
       sort: ['createdAt'],
+    });
+  });
+
+  it('should show the complete portal title when an ellipsized title is hovered', async () => {
+    const longTitle = 'Customer service and partner collaboration portal';
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ ...portalValues, title: longTitle }],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(longTitle);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 200 });
+
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent(longTitle);
+    expect(title).toBeVisible();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+  });
+
+  it('should not show a tooltip when the portal title is not ellipsized', async () => {
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [portalValues],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(portalValues.title);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 100 });
+
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
     });
   });
 
@@ -847,7 +943,9 @@ describe('plugin-multi-portal settings page', () => {
     // 新建默认就是 AI mode，源码位置不再单独选，改由 git 地址填没填决定。
     expect(within(dialog).getByRole('radio', { name: /AI mode/ })).toBeChecked();
     expect(within(dialog).getByRole('radio', { name: /No-code mode/ })).not.toBeChecked();
-    expect(within(dialog).getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText('Build complete business systems with AI agents and code.'),
+    ).not.toBeInTheDocument();
     expect(
       within(dialog).getByText(
         'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
@@ -858,20 +956,13 @@ describe('plugin-multi-portal settings page', () => {
         .getByRole('radio', { name: /No-code mode/ })
         .closest('label'),
     ).toHaveStyle('align-items: flex-start');
-    // 源码管理默认 NocoBase，git 字段要选中 Git 才出现；AI mode 不暴露设备选择。
-    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
-    expect(
-      within(dialog).getByText('Select how the application source code is stored and managed.'),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText('Store and manage application source code in NocoBase.')).toBeInTheDocument();
-    expect(
-      within(dialog).getByText('Store and manage application source code in a Git repository.'),
-    ).toBeInTheDocument();
+    // AI mode 不再暴露源码管理和设备选择。
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     expect(within(dialog).getByText('Example: /v/<name>')).toBeInTheDocument();
-    expect(within(dialog).getByText('Build business systems through visual configuration.')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Build business systems through visual configuration.')).not.toBeInTheDocument();
     expect(
       within(dialog).getByText(
         'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
@@ -1022,9 +1113,8 @@ describe('plugin-multi-portal settings page', () => {
 
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
-    // 源码存储默认 NocoBase，git 相关字段要选中 Git 之后才出现。
-    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
-    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    // 源码管理不再通过 Add portal 表单填写，提交仍保留默认 NocoBase 配置。
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -1042,62 +1132,6 @@ describe('plugin-multi-portal settings page', () => {
         }),
       });
     });
-  });
-
-  it('should submit git source storage options when creating an AI portal', async () => {
-    const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
-
-    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
-    await user.clear(within(dialog).getByLabelText('Git branch'));
-    await user.clear(within(dialog).getByLabelText('Git path'));
-    await user.clear(within(dialog).getByLabelText('Title'));
-    await user.type(within(dialog).getByLabelText('Title'), 'Git portal');
-    await user.clear(within(dialog).getByLabelText('Portal name'));
-    await user.type(within(dialog).getByLabelText('Portal name'), 'git-portal');
-    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
-
-    await waitFor(() => {
-      expect(resource.create).toHaveBeenCalledWith({
-        values: expect.objectContaining({
-          portalType: 'ai',
-          portalName: 'git-portal',
-          routePath: '/git-portal',
-          title: 'Git portal',
-          options: {
-            cover: null,
-            sourceStorage: 'git',
-            git: {
-              repo: 'git@github.com:nocobase/customer.git',
-              branch: 'main',
-              path: '',
-            },
-          },
-        }),
-      });
-    });
-  });
-
-  it('should fill the title and portal name from the git repository URL', async () => {
-    const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
-
-    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/customer-portal.git');
-
-    await waitFor(() => {
-      expect(within(dialog).getByLabelText('Title')).toHaveValue('Customer Portal');
-    });
-    expect(within(dialog).getByLabelText('Portal name')).toHaveValue('customer-portal');
-
-    // 用户改过的名称不再被后续的地址变更覆盖。
-    await user.clear(within(dialog).getByLabelText('Portal name'));
-    await user.type(within(dialog).getByLabelText('Portal name'), 'my-portal');
-    await user.clear(within(dialog).getByLabelText('Git repository URL'));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/other.git');
-
-    expect(within(dialog).getByLabelText('Portal name')).toHaveValue('my-portal');
   });
 
   it.each([['中文'], ['foo bar'], ['foo.bar'], ['Foo'], ['foo/bar']])(
@@ -1376,7 +1410,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should populate and preserve AI portal git source storage options when editing', async () => {
+  it('should preserve hidden AI portal git source storage options when editing', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1442,10 +1476,10 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByRole('radio', { name: /^Git/ })).toBeChecked();
-    expect(within(dialog).getByLabelText('Git repository URL')).toHaveValue('git@github.com:nocobase/customer.git');
-    expect(within(dialog).getByLabelText('Git branch')).toHaveValue('develop');
-    expect(within(dialog).getByLabelText('Git path')).toHaveValue('portals/customer');
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git branch')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git path')).not.toBeInTheDocument();
     expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
@@ -1458,6 +1492,100 @@ describe('plugin-multi-portal settings page', () => {
           uiLayoutUid: 'mobile-layout-model',
           options: {
             cover: null,
+            sourceStorage: 'git',
+            git: {
+              repo: 'git@github.com:nocobase/customer.git',
+              branch: 'develop',
+              path: 'portals/customer',
+            },
+          },
+        }),
+      });
+    });
+  });
+
+  it('should configure AI portal source management from the card menu', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              portalType: 'ai',
+              uiLayoutUid: 'admin-layout-model',
+              options: {
+                cover: {
+                  id: 1,
+                  url: 'https://example.com/cover.png',
+                },
+                sourceStorage: 'nocobase',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const targetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, targetCard, 'Source management');
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Source management' });
+    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
+    await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
+    await user.clear(within(dialog).getByLabelText('Git branch'));
+    await user.type(within(dialog).getByLabelText('Git branch'), 'develop');
+    await user.type(within(dialog).getByLabelText('Git path'), 'portals/customer');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Customer portal',
+          uid: 'customer-portal',
+          portalName: 'customer-portal',
+          routePath: '/customer-portal',
+          portalType: 'ai',
+          options: {
+            cover: {
+              id: 1,
+              url: 'https://example.com/cover.png',
+            },
             sourceStorage: 'git',
             git: {
               repo: 'git@github.com:nocobase/customer.git',
@@ -1529,7 +1657,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
 
     await user.clear(within(dialog).getByLabelText('Title'));

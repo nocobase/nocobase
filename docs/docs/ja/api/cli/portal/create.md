@@ -23,24 +23,21 @@ nb portal create <portal> [flags]
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
 | `--title` | string | Portal display title. |
+| `--path` | string | Portal workspace directory. Default: `./<portal>`. |
 | `--force` | boolean | Delete the existing workspace and recreate it. |
-| `--source-storage` | `nocobase` \| `git` | Where Portal source code is managed. Default: `nocobase`. |
-| `--git-repo` | string | Git repository URL used with `--source-storage=git`. |
-| `--git-branch` | string | Git branch used with `--source-storage=git`. |
-| `--git-path` | string | Directory inside the Git repository; defaults to the repository root (`.`). |
 
 ## 例
 
 ```bash
 nb portal create customer
+nb portal create customer --path ./portals/customer
 nb portal create customer --template @nocobase/portal-template-default
 nb portal create customer --env dev --yes
-nb portal create customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
 ```
 
 ## 補足
 
-The command writes `.env`, `.env.local`, and `portal.config.json`. If the template contains `package.json`, it runs `pnpm install`. Portal names must use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.
+The command writes `.env` and `.env.local`, stores the workspace path in the selected CLI env config, and runs `pnpm install` when the template contains `package.json`. Portal names must use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.
 
 ## 関連コマンド
 
