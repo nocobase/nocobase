@@ -33,7 +33,7 @@ nb portal info customer --json
 
 ## 補足
 
-Text output includes name, URL, portal type, development path, deployment path, and enabled status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`. You can query by `routeName` or `uid`.
+Text output includes name, URL, portal type, development path, deployment path, and enabled status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, `isDefault`, and `sourceStorage`. You can query by `routeName` or `uid`.
 
 ## 関連コマンド
 

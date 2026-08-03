@@ -32,7 +32,7 @@ nb portal list --json
 
 ## Notas
 
-The list shows name, URL, portal type, source storage, development path, and enabled status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`.
+The list shows name, URL, portal type, source storage, development path, enabled status, and default status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, `isDefault`, and `sourceStorage`.
 
 ## Comandos relacionados
 

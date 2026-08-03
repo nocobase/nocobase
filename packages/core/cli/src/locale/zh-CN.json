@@ -261,7 +261,8 @@
         "url": "访问 URL",
         "portalType": "Portal 类型",
         "path": "开发路径",
-        "enabled": "启用"
+        "enabled": "启用",
+        "default": "默认"
       }
     },
     "portalPull": {

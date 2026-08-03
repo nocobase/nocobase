@@ -30,6 +30,7 @@ vi.mock('../lib/portal-list.js', () => ({
     portalDir: string;
     deployDir: string;
     enabled: boolean;
+    isDefault: boolean;
     sourceStorage: string;
   }) => ({
     name: item.portalName,
@@ -38,6 +39,7 @@ vi.mock('../lib/portal-list.js', () => ({
     developmentPath: item.portalDir,
     deploymentPath: item.deployDir,
     enabled: item.enabled,
+    isDefault: item.isDefault,
     sourceStorage: item.sourceStorage,
   }),
 }));
@@ -79,6 +81,7 @@ test('portal list resolves the current env name and prints development paths', a
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
+        isDefault: true,
         sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/customer',
@@ -90,6 +93,7 @@ test('portal list resolves the current env name and prints development paths', a
         routePath: '/partner',
         portalType: 'ai',
         enabled: true,
+        isDefault: false,
         sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/partner/',
         portalDir: '/Users/chen/test6/partner',
@@ -101,6 +105,7 @@ test('portal list resolves the current env name and prints development paths', a
         routePath: '/admin',
         portalType: 'no-code',
         enabled: true,
+        isDefault: false,
         sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/v/admin',
         portalDir: '',
@@ -146,6 +151,7 @@ test('portal list resolves the current env name and prints development paths', a
   expect(log.mock.calls[0][0]).toContain('Development path');
   expect(log.mock.calls[0][0]).not.toContain('Local path');
   expect(log.mock.calls[0][0]).not.toContain('Local synced');
+  expect(log.mock.calls[0][0]).toContain('Default');
   expect(log.mock.calls[0][0]).toContain('customer');
   expect(log.mock.calls[0][0]).toContain('partner');
   expect(log.mock.calls[0][0]).toContain('admin');
@@ -158,6 +164,7 @@ test('portal list resolves the current env name and prints development paths', a
   expect(log.mock.calls[0][0]).toContain('/Users/chen/test6/partner');
   expect(log.mock.calls[0][0]).not.toContain('/Users/chen/test6/admin');
   expect(log.mock.calls[0][0]).toContain('yes');
+  expect(log.mock.calls[0][0]).toContain('no');
 });
 
 test('portal list prints an empty message when no portals exist', async () => {
@@ -228,6 +235,7 @@ test('portal list prints JSON output when requested', async () => {
         routePath: '/customer',
         portalType: 'ai',
         enabled: true,
+        isDefault: true,
         sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/customer/',
         portalDir: '/Users/chen/test6/customer',
@@ -239,6 +247,7 @@ test('portal list prints JSON output when requested', async () => {
         routePath: '/admin',
         portalType: 'no-code',
         enabled: false,
+        isDefault: false,
         sourceStorage: 'nocobase',
         portalUrl: '',
         portalDir: '',
@@ -275,6 +284,7 @@ test('portal list prints JSON output when requested', async () => {
       developmentPath: '/Users/chen/test6/customer',
       deploymentPath: '/Users/chen/test6/remote1/source/storage/portals/main/customer',
       enabled: true,
+      isDefault: true,
       sourceStorage: 'nocobase',
     },
     {
@@ -284,6 +294,7 @@ test('portal list prints JSON output when requested', async () => {
       developmentPath: '',
       deploymentPath: '',
       enabled: false,
+      isDefault: false,
       sourceStorage: 'nocobase',
     },
   ]);

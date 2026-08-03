@@ -47,7 +47,7 @@ nb portal info customer --json
 
 `--json-output` 及其别名 `--json` 更适合脚本和 agent 链路继续消费。如果只是人工查看，默认表格或文本输出通常更直观。
 
-文本输出会显示名称、访问 URL、Portal 类型、开发路径、部署路径和启用状态。`--json-output` 和 `--json` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled` 和 `sourceStorage`。
+文本输出会显示名称、访问 URL、Portal 类型、开发路径、部署路径和启用状态。`--json-output` 和 `--json` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled`、`isDefault` 和 `sourceStorage`。
 
 可以传入 Portal 的 `routeName` 或 `uid` 查询。
 

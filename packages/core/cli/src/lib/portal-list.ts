@@ -40,6 +40,7 @@ export type PortalListItem = {
   routePath: string;
   portalType: string;
   enabled: boolean;
+  isDefault: boolean;
   sourceStorage: string;
   gitRepo: string;
   gitBranch: string;
@@ -58,6 +59,7 @@ export type PortalOutputItem = {
   developmentPath: string;
   deploymentPath: string;
   enabled: boolean;
+  isDefault: boolean;
   sourceStorage: string;
 };
 
@@ -203,6 +205,7 @@ export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
     developmentPath: item.portalDir,
     deploymentPath: item.deployDir,
     enabled: item.enabled,
+    isDefault: item.isDefault,
     sourceStorage: item.sourceStorage,
   };
 }
@@ -265,6 +268,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
     const routePath = readRecordString(record, 'routePath') || `/${portalName}`;
     const portalType = readRecordString(record, 'portalType');
     const enabled = readRecordBoolean(record, 'enabled');
+    const isDefault = readRecordBoolean(record, 'isDefault');
     const recordOptions = readRecordObject(record, 'options');
     const git = readRecordObject(recordOptions, 'git');
     const sourceStorage = trimValue(recordOptions.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
@@ -278,6 +282,7 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
       routePath,
       portalType,
       enabled,
+      isDefault,
       sourceStorage,
       gitRepo: trimValue(git.repo) || readRecordString(record, 'gitRepo'),
       gitBranch: trimValue(git.branch) || readRecordString(record, 'gitBranch'),

@@ -46,9 +46,9 @@ nb portal list --json
 
 如果列表里存在远端记录但开发路径还没有源码，可以使用 [`nb portal pull`](./pull.md) 拉取源码。如果本地工作区已经存在但需要重新生成，可以根据情况使用 [`nb portal create --force`](./create.md) 或 [`nb portal pull --force`](./pull.md)。
 
-列表会显示名称、访问 URL、Portal 类型、source storage、开发路径和启用状态。
+列表会显示名称、访问 URL、Portal 类型、source storage、开发路径、启用状态和默认状态。
 
-`--json-output` 及其别名 `--json` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled` 和 `sourceStorage`。
+`--json-output` 及其别名 `--json` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled`、`isDefault` 和 `sourceStorage`。
 
 ## 相关命令
 

@@ -105,6 +105,7 @@ export default class PortalList extends Command {
           portalListText('table.sourceStorage', undefined, 'Source storage'),
           portalListText('table.path', undefined, 'Development path'),
           portalListText('table.enabled', undefined, 'Enabled'),
+          portalListText('table.default', undefined, 'Default'),
         ],
         outputItems.map((item) => [
           item.name,
@@ -113,6 +114,7 @@ export default class PortalList extends Command {
           item.sourceStorage,
           item.developmentPath,
           formatBoolean(item.enabled),
+          formatBoolean(item.isDefault),
         ]),
       ),
     );

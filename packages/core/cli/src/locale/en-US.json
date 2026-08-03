@@ -261,7 +261,8 @@
         "url": "URL",
         "portalType": "Portal type",
         "path": "Development path",
-        "enabled": "Enabled"
+        "enabled": "Enabled",
+        "default": "Default"
       }
     },
     "portalPull": {
