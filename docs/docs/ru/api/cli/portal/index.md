@@ -20,7 +20,7 @@ nb portal <command>
 
 | Команда | Описание |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
+| [`nb portal config`](./config.md) | Update portal source configuration |
 | [`nb portal create`](./create.md) | Создаёт локальное рабочее пространство Portal из шаблона и создаёт или обновляет запись Portal |
 | [`nb portal deploy`](./deploy.md) | Собирает и развёртывает указанное рабочее пространство Portal |
 | [`nb portal destroy`](./destroy.md) | Удаляет запись Portal и локальное рабочее пространство |

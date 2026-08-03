@@ -20,7 +20,7 @@ nb portal <command>
 
 | Comando | Descrição |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
+| [`nb portal config`](./config.md) | Update portal source configuration |
 | [`nb portal create`](./create.md) | Cria um workspace Portal local a partir de um template e cria ou atualiza o registro do Portal |
 | [`nb portal deploy`](./deploy.md) | Compila e faz deploy do workspace Portal especificado |
 | [`nb portal destroy`](./destroy.md) | Exclui o registro do Portal e o workspace local |

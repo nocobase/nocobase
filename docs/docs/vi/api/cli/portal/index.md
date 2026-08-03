@@ -20,7 +20,7 @@ nb portal <command>
 
 | Lệnh | Mô tả |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
+| [`nb portal config`](./config.md) | Update portal source configuration |
 | [`nb portal create`](./create.md) | Tạo workspace Portal cục bộ từ template và tạo hoặc cập nhật bản ghi Portal |
 | [`nb portal deploy`](./deploy.md) | Build và triển khai workspace Portal đã chỉ định |
 | [`nb portal destroy`](./destroy.md) | Xóa bản ghi Portal và workspace cục bộ |

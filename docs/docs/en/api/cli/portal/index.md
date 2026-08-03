@@ -20,14 +20,14 @@ nb portal <command>
 
 | Command | Description |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
-| [`nb portal create`](./create.md) | Create a local portal from a template and create or update the portal record |
-| [`nb portal deploy`](./deploy.md) | Build and deploy the specified portal |
-| [`nb portal destroy`](./destroy.md) | Delete the portal record and local workspace |
+| [`nb portal config`](./config.md) | Update portal source configuration |
+| [`nb portal create`](./create.md) | Create a local AI portal from a template |
+| [`nb portal deploy`](./deploy.md) | Build and deploy a portal |
+| [`nb portal destroy`](./destroy.md) | Destroy a portal record and deployed files |
 | [`nb portal dev`](./dev.md) | Start development mode for the specified portal |
-| [`nb portal info`](./info.md) | Show details for the specified portal record and local workspace |
+| [`nb portal info`](./info.md) | Show portal record and local file details |
 | [`nb portal list`](./list.md) | List portal records and development paths |
-| [`nb portal pull`](./pull.md) | Pull portal source from source storage into the local workspace |
+| [`nb portal pull`](./pull.md) | Pull portal source into local files |
 | [`nb portal push`](./push.md) | Push local portal source changes to source storage |
 
 ## Typical Flow

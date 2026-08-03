@@ -20,7 +20,7 @@ nb portal <command>
 
 | コマンド | 説明 |
 | --- | --- |
-| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
+| [`nb portal config`](./config.md) | Update portal source configuration |
 | [`nb portal create`](./create.md) | テンプレートからローカル Portal ワークスペースを作成し、Portal レコードを作成または更新します |
 | [`nb portal deploy`](./deploy.md) | 指定した Portal ワークスペースをビルドしてデプロイします |
 | [`nb portal destroy`](./destroy.md) | Portal レコードとローカルワークスペースを削除します |

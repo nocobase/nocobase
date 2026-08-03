@@ -1,14 +1,14 @@
 ---
 title: "nb portal destroy"
-description: "nb portal destroy 命令参考：删除 Portal 记录和对应的部署目录。"
+description: "nb portal destroy 命令参考：删除 Portal 记录和对应的已部署文件。"
 keywords: "nb portal destroy,NocoBase CLI,Portal,删除部署目录,删除记录"
 ---
 
 # nb portal destroy
 
-删除 Portal 记录和对应的部署目录。
+删除 Portal 记录和对应的已部署文件。
 
-这个命令会影响远端 Portal 记录，也会清理部署目录。开发目录默认保留，只有传入 `--delete-dev-path` 时才会删除。
+这个命令会影响远端 Portal 记录，也会清理已部署文件。开发目录默认保留，只有传入 `--delete-dev-path` 时才会删除。
 
 ## 用法
 

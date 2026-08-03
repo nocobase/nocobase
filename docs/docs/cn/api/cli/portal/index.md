@@ -20,14 +20,14 @@ nb portal <command>
 
 | 命令 | 说明 |
 | --- | --- |
-| [`nb portal config`](./config.md) | 更新 Portal 的开发路径、source storage 和 Git 源码配置 |
-| [`nb portal create`](./create.md) | 基于模板创建本地 Portal 工作区，并创建或更新 Portal 记录 |
-| [`nb portal deploy`](./deploy.md) | 构建并部署指定 Portal 工作区 |
-| [`nb portal destroy`](./destroy.md) | 删除 Portal 记录和本地工作区 |
-| [`nb portal dev`](./dev.md) | 启动指定 Portal 工作区的开发模式 |
-| [`nb portal info`](./info.md) | 查看指定 Portal 记录和本地工作区详情 |
+| [`nb portal config`](./config.md) | 更新 Portal 源码配置 |
+| [`nb portal create`](./create.md) | 基于模板创建本地 AI Portal |
+| [`nb portal deploy`](./deploy.md) | 构建并部署 Portal |
+| [`nb portal destroy`](./destroy.md) | 销毁 Portal 记录和已部署文件 |
+| [`nb portal dev`](./dev.md) | 启动 Portal 开发模式 |
+| [`nb portal info`](./info.md) | 查看 Portal 记录和本地文件详情 |
 | [`nb portal list`](./list.md) | 列出 Portal 记录和开发路径 |
-| [`nb portal pull`](./pull.md) | 从 source storage 拉取 Portal 源码到本地工作区 |
+| [`nb portal pull`](./pull.md) | 拉取 Portal 源码到本地文件 |
 | [`nb portal push`](./push.md) | 把本地 Portal 源码变更推送到 source storage |
 
 ## 典型流程

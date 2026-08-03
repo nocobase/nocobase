@@ -20,19 +20,19 @@ nb portal list [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
-| `--json-output`, `-j` | boolean | Print Portal records as JSON. |
+| `--json-output`, `--json`, `-j` | boolean | Print Portal records as JSON. |
 
 ## Exemples
 
 ```bash
 nb portal list
 nb portal list --env dev --yes
-nb portal list --json-output
+nb portal list --json
 ```
 
 ## Notes
 
-The list shows name, URL, portal type, source storage, development path, and enabled status. `--json-output` prints `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`.
+The list shows name, URL, portal type, source storage, development path, and enabled status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`.
 
 ## Commandes liées
 

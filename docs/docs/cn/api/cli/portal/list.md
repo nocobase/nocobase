@@ -20,7 +20,7 @@ nb portal list [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
-| `--json-output`, `-j` | boolean | 以 JSON 输出 Portal 记录 |
+| `--json-output`, `--json`, `-j` | boolean | 以 JSON 输出 Portal 记录 |
 
 ## 示例
 
@@ -39,7 +39,7 @@ nb portal list --env dev --yes
 以 JSON 输出：
 
 ```bash
-nb portal list --json-output
+nb portal list --json
 ```
 
 ## 说明
@@ -48,7 +48,7 @@ nb portal list --json-output
 
 列表会显示名称、访问 URL、Portal 类型、source storage、开发路径和启用状态。
 
-`--json-output` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled` 和 `sourceStorage`。
+`--json-output` 及其别名 `--json` 输出的字段包括 `name`、`url`、`portalType`、`developmentPath`、`deploymentPath`、`enabled` 和 `sourceStorage`。
 
 ## 相关命令
 

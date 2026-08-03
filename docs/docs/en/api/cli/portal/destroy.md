@@ -1,12 +1,12 @@
 ---
 title: "nb portal destroy"
-description: "nb portal destroy command reference: delete a portal record and its deployment directory."
+description: "nb portal destroy command reference: delete a portal record and its deployed files."
 keywords: "nb portal destroy,NocoBase CLI,Portal"
 ---
 
 # nb portal destroy
 
-Delete the portal record and deployment directory.
+Delete the portal record and deployed files.
 
 ## Usage
 
@@ -35,7 +35,7 @@ nb portal destroy customer --force --yes
 
 ## Notes
 
-This command deletes the remote portal record and deployment directory. The development directory is retained by default; pass `--delete-dev-path` to delete it as well. In non-interactive mode, pass `--yes`. Use `--force` to ignore missing records or deployment files.
+This command deletes the remote portal record and deployed files. The development directory is retained by default; pass `--delete-dev-path` to delete it as well. In non-interactive mode, pass `--yes`. Use `--force` to ignore missing records or deployment files.
 
 ## Related Commands
 
