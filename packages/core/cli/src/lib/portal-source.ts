@@ -68,6 +68,9 @@ export type PortalSourceOptions = {
   installDependencies?: boolean;
   sourcePath?: string;
   defaultSourcePath?: boolean;
+  gitRepo?: string;
+  gitBranch?: string;
+  gitPath?: string;
   runCommand?: RunCommand;
   apiRequest?: ApiRequest;
 };
@@ -456,6 +459,33 @@ function applyPortalConfigToContext(context: PortalSourceContext, config: Portal
   };
 }
 
+function getTemporaryGitPortalConfig(options: PortalSourceOptions): PortalConfig | undefined {
+  const gitRepo = trimValue(options.gitRepo);
+  if (!gitRepo) {
+    if (trimValue(options.gitBranch) || trimValue(options.gitPath)) {
+      throw new Error(
+        portalSourceText(
+          'errors.gitRepoRequiredForTemporaryPull',
+          undefined,
+          [
+            '--git-branch and --git-path require --git-repo for a temporary Git pull.',
+            'To update the portal configuration, use `nb portal config`.',
+          ].join(' '),
+        ),
+      );
+    }
+    return undefined;
+  }
+
+  return buildPortalConfig({
+    portal: options.portal,
+    sourceStorage: 'git',
+    gitRepo,
+    gitBranch: options.gitBranch,
+    gitPath: options.gitPath,
+  });
+}
+
 function assertGitSourceConfig(context: PortalSourceContext): {
   repo: string;
   branch: string;
@@ -686,7 +716,7 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
     ...options,
     defaultSourcePath: true,
   });
-  const portalConfig = buildPortalConfigFromContext(context);
+  const portalConfig = getTemporaryGitPortalConfig(options) ?? buildPortalConfigFromContext(context);
   const sourceContext = applyPortalConfigToContext(context, portalConfig);
   if (sourceContext.sourceStorage === 'git') {
     await pullGitPortalSource({

@@ -447,6 +447,74 @@ test('local NocoBase-managed source pull downloads into the workspace path', asy
   ]);
 });
 
+test('pull can temporarily use Git source options without updating portal configuration', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+  const workspaceRoot = await makeTempDir('nocobase-cli-portal-source-workspace-');
+  const portalDir = path.join(workspaceRoot, 'customer');
+  const remoteRepo = await makeTempDir('nocobase-cli-portal-temp-git-remote-');
+  const remoteRepoUrl = toFileUrl(remoteRepo);
+  const seedRepo = await makeTempDir('nocobase-cli-portal-temp-git-seed-');
+  await runGit(['init', '--bare'], remoteRepo);
+  await runGit(['init', '--initial-branch=develop'], seedRepo);
+  await runGit(['config', 'user.name', 'NocoBase Test'], seedRepo);
+  await runGit(['config', 'user.email', 'test@example.com'], seedRepo);
+  await fsp.mkdir(path.join(seedRepo, 'portal-main', 'src'), { recursive: true });
+  await fsp.writeFile(path.join(seedRepo, 'portal-main', 'src', 'index.tsx'), 'export default "temporary";\n');
+  await fsp.writeFile(path.join(seedRepo, 'portal-main', 'package.json'), '{"name":"customer","nocobase":{}}\n');
+  await runGit(['add', 'portal-main'], seedRepo);
+  await runGit(['commit', '-m', 'seed temporary source'], seedRepo);
+  await runGit(['remote', 'add', 'origin', remoteRepo], seedRepo);
+  await runGit(['push', 'origin', 'develop'], seedRepo);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/app:getInfo') {
+      return { ok: true, status: 200, data: appInfoData() };
+    }
+    return { ok: true, status: 200, data: portalListData('nocobase') };
+  });
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      sourcePath: portalDir,
+      gitRepo: remoteRepoUrl,
+      gitBranch: 'develop',
+      gitPath: 'portal-main',
+      installDependencies: false,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    sourceStorage: 'git',
+    portalDir,
+    changed: true,
+    installSkipped: true,
+  });
+
+  expect(apiRequest.mock.calls.map((call) => call[0].operation.pathTemplate)).toEqual([
+    '/app:getInfo',
+    '/multiPortals:list',
+  ]);
+  expect(normalizeLineEndings(await fsp.readFile(path.join(portalDir, 'src', 'index.tsx'), 'utf-8'))).toBe(
+    'export default "temporary";\n',
+  );
+  await expect(fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).resolves.toBe(
+    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/customer/\n',
+  );
+});
+
+test('temporary Git pull options require gitRepo', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
+
+  await expect(
+    pullPortalSource({
+      portal: 'customer',
+      env: createEnv({ storagePath, kind: 'http' }),
+      gitBranch: 'develop',
+      apiRequest: vi.fn(async () => ({ ok: true, status: 200, data: portalListData('nocobase') })),
+    }),
+  ).rejects.toThrow(/--git-branch and --git-path require --git-repo/);
+});
+
 test('local NocoBase-managed source push uploads through the API', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-source-storage-');
   const portalDir = await makeTempDir('nocobase-cli-portal-source-workspace-');

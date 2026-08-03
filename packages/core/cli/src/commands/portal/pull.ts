@@ -25,6 +25,7 @@ export default class PortalPull extends Command {
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env prod --yes',
     '<%= config.bin %> <%= command.id %> customer --path ./portals/customer',
+    '<%= config.bin %> <%= command.id %> customer --git-repo git@github.com:nocobase/customer.git',
     '<%= config.bin %> <%= command.id %> customer --force',
     '<%= config.bin %> <%= command.id %> customer --no-install',
   ];
@@ -53,6 +54,15 @@ export default class PortalPull extends Command {
     path: Flags.string({
       description: 'Portal workspace directory; defaults to the saved path, then ./<portal>',
     }),
+    'git-repo': Flags.string({
+      description: 'Temporarily pull source from this Git repository without updating the portal source configuration',
+    }),
+    'git-branch': Flags.string({
+      description: 'Git branch for the temporary --git-repo pull; defaults to main',
+    }),
+    'git-path': Flags.string({
+      description: 'Directory inside the temporary Git repository; defaults to the repository root',
+    }),
     install: Flags.boolean({
       description: 'Run pnpm install after pulling the portal source',
       default: true,
@@ -62,6 +72,18 @@ export default class PortalPull extends Command {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(PortalPull);
+    if ((flags['git-branch'] || flags['git-path']) && !flags['git-repo']) {
+      this.error(
+        portalPullText(
+          'errors.gitRepoRequiredForTemporaryPull',
+          undefined,
+          [
+            '--git-branch and --git-path require --git-repo for a temporary Git pull.',
+            'To update the portal configuration, use `nb portal config`.',
+          ].join(' '),
+        ),
+      );
+    }
     const requestedEnv = hasExplicitEnvSelection(this.argv) ? flags.env : undefined;
     const confirmed = await ensureCrossEnvConfirmed({
       command: this,
@@ -96,6 +118,9 @@ export default class PortalPull extends Command {
       installDependencies: flags.install,
       sourcePath: flags.path,
       defaultSourcePath: true,
+      gitRepo: flags['git-repo'],
+      gitBranch: flags['git-branch'],
+      gitPath: flags['git-path'],
     });
 
     if (!result.changed) {

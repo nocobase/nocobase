@@ -267,7 +267,8 @@
     "portalPull": {
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
-        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first."
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "gitRepoRequiredForTemporaryPull": "--git-branch and --git-path require --git-repo for a temporary Git pull. To update the portal configuration, use `nb portal config`."
       },
       "messages": {
         "noop": "No pull is needed.",
