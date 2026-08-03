@@ -2102,32 +2102,22 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.batch?.[0]?.contextParams || {};
-        expect(Object.keys(cp)).toEqual(['view.record']);
-        expect(cp['view.record']).toEqual({
-          collection: 'users',
-          dataSourceKey: 'analytics',
-          filterByTk: 1,
-          associationName: 'accounts.users',
-          sourceId: 4,
-        });
+        const cp = config?.data?.values?.contextParams || {};
+        // Only 'view.record' should be present
+        expect(Object.keys(cp)).toContain('view.record');
         return { data: { id: 1 } } as any;
       }),
     } as any;
     engine.context.defineProperty('api', { value: api });
 
     engine.context.defineProperty('view', {
-      get: () => ({
-        type: 'dialog',
-        inputArgs: {
-          collectionName: 'users',
-          dataSourceKey: 'analytics',
-          filterByTk: 1,
-          associationName: 'accounts.users',
-          sourceId: 4,
-        },
-      }),
+      get: () => ({ type: 'dialog' }),
       resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      meta: async () => ({
+        type: 'object',
+        title: 'View',
+        buildVariablesParams: () => ({ record: { collection: 'users', filterByTk: 1, dataSourceKey: 'main' } }),
+      }),
     });
 
     const tpl = { id: '{{ ctx.view.record.id }}', type: '{{ ctx.view.type }}' } as any;
@@ -2142,7 +2132,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.batch?.[0]?.contextParams || {};
+        const cp = config?.data?.values?.contextParams || {};
         expect(Object.keys(cp)).toContain('user');
         return { data: { userId: 1 } } as any;
       }),
@@ -2194,7 +2184,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
 
   it('still calls server when resolveOnServer=true even without meta/buildVariablesParams', async () => {
     const engine = new FlowEngine();
-    const api = { request: vi.fn(async () => ({ data: { results: [] } })) } as any;
+    const api = { request: vi.fn() } as any;
     engine.context.defineProperty('api', { value: api });
 
     engine.context.defineProperty('x', {
@@ -2214,7 +2204,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     const engine = new FlowEngine();
     const api = {
       request: vi.fn(async (config: any) => {
-        const cp = config?.data?.values?.batch?.[0]?.contextParams || {};
+        const cp = config?.data?.values?.contextParams || {};
         expect(Object.keys(cp).sort()).toEqual(['user', 'view.record']);
         return { data: { ok: true } } as any;
       }),

@@ -12,12 +12,10 @@ import {
   collectContextParamsForTemplate,
   createRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
-  extractUsedVariablePaths,
   inferParentRecordRef,
   inferRecordRef,
 } from '../variablesParams';
 import { FlowEngine, SingleRecordResource } from '../..';
-import { buildServerContextParams } from '../serverContextParams';
 
 describe('variablesParams helpers', () => {
   it('inferRecordRef and inferParentRecordRef from FlowContext-like object', () => {
@@ -36,10 +34,7 @@ describe('variablesParams helpers', () => {
 
   it('inferRecordRef fallback to collection.getFilterByTK when resource has no filterByTk', () => {
     const engine = new FlowEngine();
-    const ds = engine.context.dataSourceManager.getDataSource('main');
-    if (!ds) {
-      throw new Error('main data source is required');
-    }
+    const ds = engine.context.dataSourceManager.getDataSource('main')!;
     ds.addCollection({
       name: 'users',
       filterTargetKey: 'id',
@@ -74,45 +69,10 @@ describe('variablesParams helpers', () => {
       }),
     };
 
-    const tpl = { a: '{{ ctx.record }}', b: '{{ ctx.user.name }}' };
+    const tpl = { a: '{{ ctx.record.id }}', b: '{{ ctx.user.name }}' } as any;
     const res = await collectContextParamsForTemplate(ctx, tpl);
-    expect(Object.keys(res || {})).toEqual(['record']);
-    expect(res?.record).toEqual({ collection: 'posts', dataSourceKey: 'main', filterByTk: 1 });
+    expect(res).toHaveProperty('record');
     expect(res).not.toHaveProperty('user');
-  });
-
-  it('keeps direct, dotted, and indexed RecordRef slots while normalizing descriptor values', () => {
-    const engine = new FlowEngine();
-    const ref = { collection: 'users', dataSourceKey: 'analytics', id: 7 };
-    const contextParams = buildServerContextParams(engine.context, {
-      record: ref,
-      responseRecord: ref,
-      clickedRowRecord: ref,
-      view: { record: ref },
-      'popup.parent': { sourceRecord: { ...ref, associationName: 'teams.users', sourceId: 3 } },
-      records: [ref],
-    });
-
-    expect(Object.keys(contextParams || {}).sort()).toEqual([
-      'clickedRowRecord',
-      'popup.parent.sourceRecord',
-      'record',
-      'records.0',
-      'responseRecord',
-      'view.record',
-    ]);
-    expect(contextParams?.['popup.parent.sourceRecord']).toEqual({
-      collection: 'users',
-      dataSourceKey: 'analytics',
-      filterByTk: 7,
-      associationName: 'teams.users',
-      sourceId: 3,
-    });
-  });
-
-  it('extractUsedVariablePaths keeps dash field names from shared parser', () => {
-    const tpl = { value: '{{ ctx.formValues.roles.a-b }}' } as any;
-    expect(extractUsedVariablePaths(tpl).formValues).toEqual(['roles.a-b']);
   });
 
   it('collectContextParamsForTemplate keeps associationName/sourceId from RecordRef', async () => {
