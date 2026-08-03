@@ -291,9 +291,9 @@ export class EagerLoadingTree {
 
           const group = [`${node.model.name}.${primaryKeyField}`];
 
-          if (this.db.inDialect('mssql')) {
-            // Association filters group root IDs before pagination. MSSQL rejects root ORDER BY fields that are not
-            // grouped, so include direct root order fields without changing the root row cardinality.
+          if (this.db.inDialect('mssql') || this.db.isMySQLCompatibleDialect()) {
+            // Strict GROUP BY dialects reject root ORDER BY fields that are not grouped. Include direct root order
+            // fields without changing the root row cardinality; to-many association order fields stay excluded.
             group.push(...getRootModelOrderFields(node).map((field) => `${node.model.name}.${field}`));
           }
 
