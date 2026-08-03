@@ -12,6 +12,7 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE } from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionMoveSourceInput,
   LightExtensionMoveToInlineInput,
@@ -158,11 +159,11 @@ function normalizeMoveSourceOriginBinding(value: unknown): LightExtensionMoveSou
     return undefined;
   }
   const binding = toRecord(value);
-  if (binding.type !== 'light-extension-entry') {
+  if (binding.type !== JS_TEMPLATE_SOURCE_BINDING_TYPE) {
     throw invalidInput('originBinding.type must be "light-extension-entry"');
   }
   return {
-    type: 'light-extension-entry',
+    type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
     repoId: requireString(binding, 'repoId', 'originBinding.repoId'),
     entryId: requireString(binding, 'entryId', 'originBinding.entryId'),
     kind: requireLightExtensionKind(binding, 'kind'),

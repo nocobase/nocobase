@@ -28,6 +28,10 @@ import {
 } from '../../constants';
 import { createLightExtensionBaseTemplate } from '../../shared/default-template';
 import { isLightExtensionError, LightExtensionError } from '../../shared/errors';
+import {
+  createJsTemplateRuntimeSourceBinding,
+  serializeJsTemplateRunJSPersistence,
+} from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionEntryRecord,
   LightExtensionFileChange,
@@ -318,7 +322,7 @@ export class MoveSourceService {
     const binding = buildSourceBinding(saved.repo, entry, kind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
-      binding: { sourceMode: 'light-extension', sourceBinding: { ...binding } },
+      binding: serializeJsTemplateRunJSPersistence(binding),
       baseOwnerFingerprint: input.expectedOwnerFingerprint,
       ctx: adapterContext,
     });
@@ -471,7 +475,7 @@ export class MoveSourceService {
     const binding = buildSourceBinding(compiled.repo, entry, preparedKind);
     const writeResult = await adapter.writeExternalBinding({
       locator: input.locator,
-      binding: { sourceMode: 'light-extension', sourceBinding: { ...binding } },
+      binding: serializeJsTemplateRunJSPersistence(binding),
       baseOwnerFingerprint: input.expectedOwnerFingerprint,
       ctx: adapterContext,
     });
@@ -693,8 +697,7 @@ function buildSourceBinding(
   entry: LightExtensionEntryRecord,
   kind: LightExtensionKind,
 ): LightExtensionRuntimeSourceBinding {
-  return {
-    type: 'light-extension-entry',
+  return createJsTemplateRuntimeSourceBinding({
     repoId: repo.id,
     repoTitle: repo.title || repo.name,
     entryId: entry.id,
@@ -702,7 +705,7 @@ function buildSourceBinding(
     entryName: entry.entryName,
     entryPath: entry.entryPath,
     kind,
-  };
+  });
 }
 
 function getEntryRoot(kind: LightExtensionKind, entryName: string): string {

@@ -61,6 +61,18 @@ transaction, audit, throttling, raw-resource guard, and VSC owner protection. Ex
 `lightExtensionLogs` and `lightExtensionMoveOperations` remain protected physical collections, not public custom HTTP
 resources. The rename does not create `jsTemplateLogs` or `jsTemplateMoveOperations` APIs that could expose them.
 
+## RunJS persistence and runtime aliases
+
+`JS_TEMPLATE_RUNJS_PERSISTENCE_RUNTIME_CONTRACT` is the canonical TypeScript contract for new server code. Its values
+remain the legacy wire identities: `light-extension`, `light-extension-entry`, the existing `lightExtension*`
+collections, VSC owner type `light-extension`, the established runtime artifact/surface contracts, legacy schema URI,
+and `LIGHT_EXTENSION_*` error prefix. Canonical helpers serialize those values and reject invented `js-template`
+persisted tokens.
+
+Move, reference indexing, runtime resolution, compile keys, artifact hashing, ZIP/Git import, and creation jobs continue
+through the existing implementation. Reading and saving a historical FlowModel or entry descriptor must not rewrite
+its source mode, binding type, schema URI, entry key, locator, or settings structure.
+
 ## Canonical SDK and compatibility facade
 
 New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,

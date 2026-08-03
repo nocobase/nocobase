@@ -37,6 +37,7 @@ import type {
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import { LightExtensionError } from '../../shared/errors';
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionEntryService } from './LightExtensionEntryService';
 import { getReferenceOwnerAdapterByUse } from './ReferenceOwnerRegistry';
@@ -823,7 +824,7 @@ function assertCurrentLightExtensionBinding(
     locator.stepKey,
     ...locator.paramPath.slice(0, -1),
   ]);
-  if (!isRecord(sourceRoot) || sourceRoot.sourceMode !== 'light-extension') {
+  if (!isRecord(sourceRoot) || sourceRoot.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
     throw bindingOutdated(input);
   }
   const sourceBinding = sourceRoot.sourceBinding;
@@ -968,7 +969,7 @@ function isRecord(value: unknown): value is JsonRecord {
 function isLightExtensionBinding(value: unknown): value is LightExtensionRuntimeSourceBinding {
   return (
     isRecord(value) &&
-    value.type === 'light-extension-entry' &&
+    value.type === JS_TEMPLATE_SOURCE_BINDING_TYPE &&
     typeof value.repoId === 'string' &&
     typeof value.entryId === 'string' &&
     typeof value.kind === 'string'

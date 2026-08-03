@@ -16,12 +16,11 @@ import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@n
 import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
 import { posix as pathPosix } from 'path';
 
+import { LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION, type LightExtensionKind } from '../../constants';
 import {
-  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
-  LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT,
-  LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
-  type LightExtensionKind,
-} from '../../constants';
+  JS_TEMPLATE_RUNTIME_ARTIFACT_CONTRACT,
+  JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT,
+} from '../../shared/jsTemplateRunJSPersistence';
 import type { LightExtensionDiagnostic } from '../../shared/types';
 import { lightExtensionEntryV1SchemaSha256 } from '../lightExtensionEntrySchema';
 import type { CompileInputManifest } from './LightExtensionCompileKey';
@@ -89,8 +88,7 @@ export const LIGHT_EXTENSION_AUTHORING_SURFACES: Record<LightExtensionKind, Ligh
 export const LIGHT_EXTENSION_COMPILER_BRIDGE_CONTRACT_VERSION = 'light-extension.compiler-bridge.v1';
 export const LIGHT_EXTENSION_IMPORT_REWRITE_POLICY_VERSION = 'light-extension.import-rewrite.v1';
 export const LIGHT_EXTENSION_IMPORT_SECURITY_POLICY_VERSION = 'light-extension.import-security.v1';
-export const LIGHT_EXTENSION_RUNTIME_SURFACE_CONTRACT_VERSION =
-  LIGHT_EXTENSION_LEGACY_PROTOCOL_CONTRACT.runtimeSurfaceContract;
+export const LIGHT_EXTENSION_RUNTIME_SURFACE_CONTRACT_VERSION = JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT;
 
 export interface LightExtensionCompilerBuildIdentityComponents {
   runjsCompilerBuildId: string;
@@ -119,7 +117,7 @@ export const LIGHT_EXTENSION_COMPILER_BUILD_IDENTITY_COMPONENTS: Readonly<LightE
     compilerBridgeContract: LIGHT_EXTENSION_COMPILER_BRIDGE_CONTRACT_VERSION,
     importRewritePolicy: LIGHT_EXTENSION_IMPORT_REWRITE_POLICY_VERSION,
     importSecurityPolicy: LIGHT_EXTENSION_IMPORT_SECURITY_POLICY_VERSION,
-    runtimeArtifactContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+    runtimeArtifactContract: JS_TEMPLATE_RUNTIME_ARTIFACT_CONTRACT,
     runtimeSurfaceContract: LIGHT_EXTENSION_RUNTIME_SURFACE_CONTRACT_VERSION,
     authoringSurfaceFingerprint: sha256Hex(stableSerialize(LIGHT_EXTENSION_AUTHORING_SURFACES)),
     validatorVersion: LIGHT_EXTENSION_VALIDATOR_VERSION,

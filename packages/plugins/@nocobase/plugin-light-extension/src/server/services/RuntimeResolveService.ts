@@ -12,14 +12,9 @@ import type { Database, Filter, Model } from '@nocobase/database';
 import { stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
 
-import {
-  LIGHT_EXTENSION_COLLECTIONS,
-  LIGHT_EXTENSION_SOURCE_BINDING_TYPE,
-  LIGHT_EXTENSION_SOURCE_MODE,
-  LIGHT_EXTENSION_SUPPORTED_KINDS,
-  type LightExtensionKind,
-} from '../../constants';
+import { LIGHT_EXTENSION_COLLECTIONS, LIGHT_EXTENSION_SUPPORTED_KINDS, type LightExtensionKind } from '../../constants';
 import { LightExtensionError } from '../../shared/errors';
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionEntryRecord,
   LightExtensionRuntimeArtifactRecord,
@@ -368,7 +363,7 @@ function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): vo
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw invalidInput('Runtime resolve input must be an object');
   }
-  if (input.sourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
+  if (input.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
     throw invalidInput('sourceMode must be "light-extension"');
   }
 
@@ -376,7 +371,7 @@ function assertRuntimeResolveInput(input: LightExtensionRuntimeResolveInput): vo
   if (!sourceBinding || typeof sourceBinding !== 'object' || Array.isArray(sourceBinding)) {
     throw invalidInput('sourceBinding is required');
   }
-  if (sourceBinding.type !== LIGHT_EXTENSION_SOURCE_BINDING_TYPE) {
+  if (sourceBinding.type !== JS_TEMPLATE_SOURCE_BINDING_TYPE) {
     throw invalidInput('sourceBinding.type must be "light-extension-entry"');
   }
   const allowedSourceBindingKeys = new Set([

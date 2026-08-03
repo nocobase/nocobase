@@ -19,7 +19,10 @@ interface ApiResponse {
 type TestAgent = ReturnType<MockServer['agent']>;
 
 const repoId = 'ler_js_template_alias';
+const entryId = 'lee_js_template_alias';
+const headCommitId = 'vscc_js_template_alias';
 const artifactHash = 'a'.repeat(64);
+const runtimeCodeHash = 'runtime-code-hash';
 
 describe('JS Template HTTP aliases', () => {
   let app: MockServer;
@@ -54,6 +57,21 @@ describe('JS Template HTTP aliases', () => {
       ['lightExtensionRepos', 'jsTemplateRepos', 'get', { repoId }],
       ['lightExtensionEntries', 'jsTemplateEntries', 'list', { repoId }],
       ['lightExtensionReferences', 'jsTemplateReferences', 'readReferences', { repoId }],
+      [
+        'lightExtensionRuntime',
+        'jsTemplateRuntime',
+        'resolve',
+        {
+          sourceMode: 'light-extension',
+          sourceBinding: {
+            type: 'light-extension-entry',
+            repoId,
+            entryId,
+            kind: 'js-block',
+          },
+          settings: {},
+        },
+      ],
       ['lightExtensionRuntime', 'jsTemplateRuntime', 'getArtifact', { artifactHash }],
       ['lightExtensionSync', 'jsTemplateSync', 'get', { repoId }],
       ['lightExtensionCreateJobs', 'jsTemplateCreateJobs', 'list', undefined],
@@ -179,13 +197,35 @@ describe('JS Template HTTP aliases', () => {
         title: 'JS Template alias',
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',
-        headCommitId: null,
+        headCommitId,
+      },
+    });
+    await app.db.getRepository('lightExtensionEntries').create({
+      values: {
+        id: entryId,
+        repoId,
+        target: 'client',
+        kind: 'js-block',
+        entryName: 'alias',
+        entryPath: 'src/client/js-blocks/alias/index.tsx',
+        descriptorPath: 'src/client/js-blocks/alias/entry.json',
+        settingsSchema: null,
+        settingsSchemaHash: null,
+        settingsDefaultsHash: null,
+        compiledCommitId: headCommitId,
+        runtimeVersion: 'v2',
+        surfaceStyle: 'render',
+        runtimeCodeHash,
+        artifactHash,
+        filesHash: 'files-hash',
+        healthStatus: 'ready',
+        diagnostics: [],
       },
     });
     await app.db.getRepository('lightExtensionRuntimeArtifacts').create({
       values: {
         artifactHash,
-        runtimeCodeHash: 'runtime-code-hash',
+        runtimeCodeHash,
         code: 'ctx.render("JS Template alias");',
         sourceMap: null,
         version: 'v2',

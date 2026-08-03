@@ -11,7 +11,8 @@ import { normalizePath, stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
 import { posix as pathPosix } from 'path';
 
-import { LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT, type LightExtensionKind } from '../../constants';
+import type { LightExtensionKind } from '../../constants';
+import { JS_TEMPLATE_RUNTIME_ARTIFACT_CONTRACT } from '../../shared/jsTemplateRunJSPersistence';
 import type { LightExtensionEntryRecord } from '../../shared/types';
 import {
   LIGHT_EXTENSION_AUTHORING_SURFACES,
@@ -69,7 +70,7 @@ export function buildLightExtensionCompileKey(input: {
   const files = normalizeManifestFiles(input.files, entryRootPath, descriptorPath);
   const inputManifest: CompileInputManifest = {
     compilerBuildId: compilerBuildIdentity.compilerBuildId,
-    runtimeContract: LIGHT_EXTENSION_RUNTIME_ARTIFACT_CONTRACT,
+    runtimeContract: JS_TEMPLATE_RUNTIME_ARTIFACT_CONTRACT,
     target: 'client',
     kind: input.entry.kind,
     entryPath,

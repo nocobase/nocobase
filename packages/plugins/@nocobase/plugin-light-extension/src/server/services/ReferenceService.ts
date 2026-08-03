@@ -24,6 +24,11 @@ import type {
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
 import { isLightExtensionError } from '../../shared/errors';
+import {
+  createJsTemplateRuntimeSourceBinding,
+  isJsTemplateRuntimeSourceBinding,
+  JS_TEMPLATE_SOURCE_MODE,
+} from '../../shared/jsTemplateRunJSPersistence';
 import { LightExtensionAuditService } from './LightExtensionAuditService';
 import { LightExtensionPermissionService } from './LightExtensionPermissionService';
 import type { LightExtensionCanFunction } from './LightExtensionPermissionService';
@@ -590,7 +595,7 @@ export class ReferenceService {
     const ownerLocatorHash = hashOwnerLocator(ownerLocator);
     const source = owner.source || readRunJsSource(node, adapter);
     const scopeRepoId = normalizeString(limitRepoId);
-    if (source.sourceMode !== 'light-extension') {
+    if (source.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
       const removed = await this.removeReferencesForOwner(ownerLocatorHash, action, requestId, ctx, {
         repoId: scopeRepoId,
       });
@@ -836,7 +841,7 @@ export class ReferenceService {
     const source = readReferenceOwnerSource(owner, adapter);
     const binding = source.sourceBinding;
     if (
-      source.sourceMode !== 'light-extension' ||
+      source.sourceMode !== JS_TEMPLATE_SOURCE_MODE ||
       !binding ||
       binding.repoId !== reference.repoId ||
       binding.entryId !== reference.entryId ||
@@ -1518,22 +1523,20 @@ function readReferenceOwnerSource(
 }
 
 function normalizeSourceBinding(value: unknown): LightExtensionRuntimeSourceBinding | undefined {
-  if (!isPlainRecord(value)) {
+  if (!isJsTemplateRuntimeSourceBinding(value)) {
     return undefined;
   }
-  const type = normalizeString(value.type);
   const repoId = normalizeString(value.repoId);
   const entryId = normalizeString(value.entryId);
   const kind = normalizeString(value.kind);
-  if (type !== 'light-extension-entry' || !repoId || !entryId || !kind) {
+  if (!repoId || !entryId || !kind) {
     return undefined;
   }
-  return {
-    type,
+  return createJsTemplateRuntimeSourceBinding({
     repoId,
     entryId,
     kind,
-  };
+  });
 }
 
 function normalizeSettings(value: unknown): Record<string, unknown> {
