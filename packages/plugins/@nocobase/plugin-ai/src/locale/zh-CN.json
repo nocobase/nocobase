@@ -173,6 +173,7 @@
   "Knowledge Base Prompt placeholder": "",
   "KnowledgeBase": "知识库",
   "LLM service": "LLM 服务",
+  "LLM service \"{{name}}\" was not found": "未找到 LLM 服务 \"{{name}}\"",
   "LLM service not configured": "LLM 服务未配置",
   "LLM services": "LLM 服务",
   "LLM service test failed. Please check the service configuration.": "LLM 服务测试失败，请检查服务配置。",
@@ -583,5 +584,6 @@
   "confirmed": "已确认",
   "success": "成功",
   "error": "错误",
-  "GigaChat by Sber": "Sber 的 GigaChat 模型"
+  "GigaChat by Sber": "Sber 的 GigaChat 模型",
+  "Settings": "设置"
 }

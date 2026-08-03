@@ -81,7 +81,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(
     cors({
       credentials: isWhitelistedCorsOrigin,
-      exposeHeaders: ['content-disposition'],
+      exposeHeaders: ['content-disposition', 'x-new-token'],
       origin: resolveCorsOrigin,
       ...options.cors,
     }),
@@ -118,7 +118,10 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
         ctx.state.pendingAuthTokenSource = 'query';
         return ctx.query.token;
       }
-      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', app.name));
+      // Browser-driven permanent file requests cannot set Authorization headers. Keep cookie authentication scoped to
+      // the file access middleware so regular APIs never silently fall back from bearer authentication to cookies.
+      const canUseAuthCookie = Boolean(ctx.state?.fileAccess) && ['GET', 'HEAD'].includes(ctx.method);
+      const cookieToken = canUseAuthCookie ? ctx.cookies.get(getAuthCookieName('authToken', app.name)) : undefined;
       ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
       return cookieToken;
     };

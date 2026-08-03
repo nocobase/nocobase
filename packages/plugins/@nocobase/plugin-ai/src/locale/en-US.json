@@ -172,6 +172,7 @@
   "Knowledge Base Prompt placeholder": "Knowledge Base Prompt placeholder",
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "LLM service",
+  "LLM service \"{{name}}\" was not found": "LLM service \"{{name}}\" was not found",
   "LLM service not configured": "LLM service not configured",
   "LLM services": "LLM services",
   "LLM service test failed. Please check the service configuration.": "LLM service test failed. Please check the service configuration.",
@@ -577,5 +578,6 @@
   "confirmed": "Confirmed",
   "success": "Success",
   "error": "Error",
-  "GigaChat by Sber": "GigaChat by Sber"
+  "GigaChat by Sber": "GigaChat by Sber",
+  "Settings": "Settings"
 }
