@@ -9,17 +9,26 @@
 
 import type { Application } from '@nocobase/server';
 
+import { resolveJsTemplateApiAliasPath } from './jsTemplateApiAliases';
+
 const LIGHT_EXTENSION_DOMAIN_ROUTE =
-  /\/(?:light-extensions(?:\/|$)|lightExtension(?:s|Runtime|References|Repos|Files|Entries|Capabilities|Sync):)/u;
+  /\/(?:light-extensions(?:\/|$)|lightExtension(?:s|Runtime|References|Repos|Files|Entries|Capabilities|Sync|CreateJobs):)/u;
 
 export function registerLightExtensionDomainAvailabilityGuard(
   app: Application,
   isAvailable: () => boolean | Promise<boolean>,
   tag: string,
 ) {
+  const resourcePrefix = (
+    app.resourceManager as typeof app.resourceManager & {
+      options?: { prefix?: string };
+    }
+  ).options?.prefix;
   app.use(
     async (ctx, next) => {
-      if (!LIGHT_EXTENSION_DOMAIN_ROUTE.test(ctx.path) || (await isAvailable())) {
+      const isDomainRoute =
+        LIGHT_EXTENSION_DOMAIN_ROUTE.test(ctx.path) || Boolean(resolveJsTemplateApiAliasPath(ctx.path, resourcePrefix));
+      if (!isDomainRoute || (await isAvailable())) {
         await next();
         return;
       }

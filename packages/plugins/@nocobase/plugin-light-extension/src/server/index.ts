@@ -8,6 +8,8 @@
  */
 
 export { PluginLightExtensionServer } from './plugin';
+export * from './jsTemplateApiAliases';
+export * from './jsTemplateDomain';
 export * from './domainAvailability';
 export * from './externalizationCapabilities';
 export * from './services/LightExtensionAuditService';

@@ -28,6 +28,7 @@ import { LightExtensionError } from '../shared/errors';
 import { registerLightExtensionDomainAvailabilityGuard } from './domainAvailability';
 import { lightExtensionExternalizationCapabilities } from './externalizationCapabilities';
 import { lightExtensionEntryV1SchemaFileContent } from './lightExtensionEntrySchema';
+import { resolveJsTemplateApiAliasPath } from './jsTemplateApiAliases';
 import {
   createLightExtensionCapabilitiesResource,
   lightExtensionCapabilitiesActionNames,
@@ -127,7 +128,7 @@ type LightExtensionRouteContext = {
 };
 
 type ResourceAlias = {
-  method: 'GET' | 'POST';
+  method?: 'GET' | 'POST';
   tag: string;
   resolveResourcePath: (path: string, resourcePrefix?: string) => string | null;
   prepare?: (ctx: LightExtensionRouteContext) => void;
@@ -414,6 +415,10 @@ export class PluginLightExtensionServer extends Plugin {
       }),
     );
     this.registerResourceAlias({
+      tag: 'js-template-api-aliases',
+      resolveResourcePath: resolveJsTemplateApiAliasPath,
+    });
+    this.registerResourceAlias({
       method: 'GET',
       tag: 'light-extension-capabilities',
       resolveResourcePath: (path, prefix) =>
@@ -682,7 +687,7 @@ export class PluginLightExtensionServer extends Plugin {
     const app = this.app as unknown as AppWithPluginEvents;
     app.use?.(
       async (ctx, next) => {
-        if (ctx.method !== alias.method) {
+        if (alias.method && ctx.method !== alias.method) {
           await next();
           return;
         }

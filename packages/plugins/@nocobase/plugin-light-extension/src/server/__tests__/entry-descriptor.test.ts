@@ -77,7 +77,7 @@ describe('entry descriptor schema', () => {
     expect(capabilities.conditions.logic).toEqual(RUNJS_SETTINGS_CONDITION_LOGICS);
     expect(capabilities.conditions.limits).toEqual(RUNJS_SETTINGS_CONDITION_LIMITS);
     expect(capabilities.sdk).toEqual({
-      packageName: '@nocobase/light-extension-sdk',
+      packageName: '@nocobase/js-template-sdk',
       version: sdkPackageJson.version,
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
       entrySchemaSha256: lightExtensionEntryV1SchemaSha256,

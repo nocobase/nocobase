@@ -371,7 +371,7 @@ export function buildCapabilities(limits: LightExtensionValidationLimits): Light
       limits: { ...LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS },
     },
     sdk: {
-      packageName: '@nocobase/light-extension-sdk',
+      packageName: sdkPackageJson.name,
       version: sdkPackageJson.version,
       entrySchemaUri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
       entrySchemaSha256: lightExtensionEntryV1SchemaSha256,

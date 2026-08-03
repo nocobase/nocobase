@@ -51,6 +51,16 @@ replace these values without a separate compatibility review and an upgrade-and-
 Unknown private registries, deployed artifacts, and downstream consumers are treated as compatibility requirements.
 A public-registry or repository search that finds no consumer is not sufficient evidence to remove a legacy contract.
 
+## Canonical server API aliases
+
+New server consumers use the `JsTemplate*` facade exports and the `jsTemplate*` HTTP resource aliases. The centralized
+`JS_TEMPLATE_SERVER_API_ALIASES` contract rewrites every canonical resource/action to its existing `lightExtension*`
+resource before resource parsing and ACL evaluation. Both names therefore use the same handler, legacy grant identity,
+transaction, audit, throttling, raw-resource guard, and VSC owner protection. Existing ACL rows require no rewrite.
+
+`lightExtensionLogs` and `lightExtensionMoveOperations` remain protected physical collections, not public custom HTTP
+resources. The rename does not create `jsTemplateLogs` or `jsTemplateMoveOperations` APIs that could expose them.
+
 ## Canonical SDK and compatibility facade
 
 New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,
