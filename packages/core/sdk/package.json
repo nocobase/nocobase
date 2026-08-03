@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/sdk",
-  "version": "1.9.69",
+  "version": "1.9.70",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
