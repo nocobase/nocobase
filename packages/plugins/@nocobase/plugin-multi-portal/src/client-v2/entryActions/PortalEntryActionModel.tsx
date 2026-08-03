@@ -51,8 +51,8 @@ function getQualifiedEntryPortalTitle(
   entryPortal?: AppPortalItem,
   entryPortalApp?: AppPortalAppItem,
   t?: (key: string) => string,
+  title = getEntryPortalTitle(entryPortal),
 ) {
-  const title = getEntryPortalTitle(entryPortal);
   const appTitle = getEntryPortalAppTitle(entryPortal, entryPortalApp, t);
   return appTitle && title ? `${appTitle} / ${title}` : title;
 }
@@ -61,8 +61,8 @@ function getQualifiedEntryPortalTargetTitle(
   entryPortal?: AppPortalItem,
   entryPortalApp?: AppPortalAppItem,
   t?: (key: string) => string,
+  title = getEntryPortalTitle(entryPortal),
 ) {
-  const title = getEntryPortalTitle(entryPortal);
   const appTitle = getEntryPortalAppTitle(entryPortal, entryPortalApp, t);
   return appTitle && title ? `${appTitle} / ${title}` : title;
 }
@@ -111,6 +111,27 @@ function uniqueStrings(values: Array<string | undefined>) {
 
 function shouldUseQualifiedDisplayTitle(payload: AppPortalsPayload) {
   return payload.apps.length > 0 || uniqueStrings(payload.portals.map((portal) => portal.appName)).length > 1;
+}
+
+function getEntryPortalSelectionTitle(
+  portal: AppPortalItem | undefined,
+  payload: AppPortalsPayload,
+  t: (key: string) => string,
+) {
+  const title = getEntryPortalTitle(portal);
+  if (!portal || !title) {
+    return title;
+  }
+  const hasSameAppTitleInAnotherLayout = payload.portals.some(
+    (candidate) =>
+      candidate.appName === portal.appName &&
+      getEntryPortalTitle(candidate) === title &&
+      candidate.layout !== portal.layout,
+  );
+  if (!hasSameAppTitleInAnotherLayout) {
+    return title;
+  }
+  return `${title} (${t(portal.layout === 'mobile' ? 'Mobile' : 'Desktop')})`;
 }
 
 function getAppStatusValues(status: AppPortalAppItem['status']): AppPortalAppStatus[] {
@@ -312,14 +333,26 @@ export class PortalEntryActionModel extends ActionModel {
     const previousApp = this.props.entryPortalApp;
     const previousDisplayTitle = getEntryPortalDisplayTitle(this.props);
     const previousTargetTitle = getEntryPortalTargetTitle(this.props, this.t);
-    const previousQualifiedTitle = getQualifiedEntryPortalTitle(previousPortal, previousApp, this.t);
+    const previousPortalTitle = getEntryPortalSelectionTitle(previousPortal, payload, this.t);
+    const previousQualifiedTitle = getQualifiedEntryPortalTitle(
+      previousPortal,
+      previousApp,
+      this.t,
+      previousPortalTitle,
+    );
     const useQualifiedDisplayTitle = previousDisplayTitle === previousQualifiedTitle;
     const currentApp = payload.apps.find((item) => item.name === currentPortal.appName) || previousApp;
+    const currentPortalTitle = getEntryPortalSelectionTitle(currentPortal, payload, this.t);
     const currentDisplayTitle =
       shouldUseQualifiedDisplayTitle(payload) || useQualifiedDisplayTitle
-        ? getQualifiedEntryPortalTitle(currentPortal, currentApp, this.t)
-        : getEntryPortalTitle(currentPortal);
-    const currentTargetTitle = getQualifiedEntryPortalTargetTitle(currentPortal, currentApp, this.t);
+        ? getQualifiedEntryPortalTitle(currentPortal, currentApp, this.t, currentPortalTitle)
+        : currentPortalTitle;
+    const currentTargetTitle = getQualifiedEntryPortalTargetTitle(
+      currentPortal,
+      currentApp,
+      this.t,
+      currentPortalTitle,
+    );
 
     super.setProps({
       entryPortal: currentPortal,

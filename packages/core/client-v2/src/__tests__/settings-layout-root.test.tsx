@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ACLRolesCheckProvider } from '../acl';
+import { ACLRolesCheckProvider, useRoleRecheck } from '../acl';
 import { Plugin } from '../Plugin';
 import { SettingsApplication } from '../settings-app/SettingsApplication';
 import { SettingsBuildInPlugin } from '../settings-app/SettingsBuildInPlugin';
@@ -69,11 +69,32 @@ class PrimarySettingsPlugin extends Plugin {
   }
 }
 
+let recheckRole: (() => Promise<void>) | null = null;
+
+const RoleRecheckPage = () => {
+  recheckRole = useRoleRecheck();
+  return <div>Role recheck page</div>;
+};
+
+class RoleRecheckSettingsPlugin extends Plugin {
+  async load() {
+    this.pluginSettingsManager.addMenuItem({ key: 'role-recheck', title: 'Role recheck' });
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: 'role-recheck',
+      key: 'index',
+      title: 'Role recheck',
+      Component: RoleRecheckPage,
+    });
+  }
+}
+
 describe('standalone settings layout root', () => {
   const originalLocation = window.location;
   const originalModernClientPrefix = window.__nocobase_modern_client_prefix__;
 
   afterEach(() => {
+    recheckRole = null;
+    vi.restoreAllMocks();
     Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
     if (originalModernClientPrefix === undefined) {
       delete window.__nocobase_modern_client_prefix__;
@@ -163,7 +184,7 @@ describe('standalone settings layout root', () => {
     });
   });
 
-  it('keeps ordinary negative-sort settings in the active Settings group sidebar', async () => {
+  it('keeps ordinary negative-sort settings reachable in the active Settings group', async () => {
     const app = new SettingsApplication({
       plugins: [SettingsBuildInPlugin, TestAclPlugin, PrimarySettingsPlugin],
       router: { type: 'memory', initialEntries: ['/settings/portal-manager'] },
@@ -188,9 +209,18 @@ describe('standalone settings layout root', () => {
 
     expect(await screen.findByText('Portal manager page')).toBeInTheDocument();
 
-    const portalManagerItem = screen.getByRole('menuitem', { name: 'Portal manager' });
-    expect(portalManagerItem.closest('aside')).toBeInTheDocument();
-    expect(screen.queryByRole('menuitem', { name: /Plugin manager$/ })).not.toBeInTheDocument();
+    // The sidebar is gone: a negative-sort setting no longer gets its own column and
+    // follows whichever group it belongs to. This checks it did not drift into a
+    // different group.
+    expect(document.querySelector('.ant-layout-sider')).toBeNull();
+    const groupNav = document.querySelector('.ant-layout-header .ant-menu') as HTMLElement;
+    expect(groupNav).toBeInTheDocument();
+    // Being an ordinary negative-sort setting, it lands in the catch-all "other
+    // settings" group: never promoted to a top-level entry, never folded into the
+    // plugin manager group.
+    expect(within(groupNav).getByRole('menuitem', { name: 'Other settings' })).toBeInTheDocument();
+    expect(within(groupNav).getByRole('menuitem', { name: /Plugin manager$/ })).toBeInTheDocument();
+    expect(within(groupNav).queryByRole('menuitem', { name: 'Portal manager' })).not.toBeInTheDocument();
   });
 
   it('uses document navigation to the standalone Settings signin page when unauthenticated', async () => {
@@ -256,5 +286,315 @@ describe('standalone settings layout root', () => {
 
     resolveAuthCheck([200, { data: { id: 1 } }]);
     expect(await screen.findByRole('banner')).toBeInTheDocument();
+  });
+
+  it('does not render Settings navigation or search before the initial role check completes', async () => {
+    let resolveRoleCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Role check resolver is not initialized');
+    };
+    const roleCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveRoleCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').reply(() => roleCheckResponse);
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(apiMock.history.get.some((request) => request.url === 'roles:check')).toBe(true);
+    });
+    const header = await screen.findByRole('banner');
+    expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(header).queryByTitle('Search settings')).not.toBeInTheDocument();
+
+    resolveRoleCheck([200, { data: { role: 'root', snippets: ['pm'] } }]);
+    await waitFor(() => {
+      expect(within(header).getByRole('menu')).toBeInTheDocument();
+      expect(within(header).getByTitle('Search settings')).toBeInTheDocument();
+    });
+  });
+
+  it('keeps Settings navigation hidden until the latest overlapping role check completes', async () => {
+    let resolveOlderCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Older role check resolver is not initialized');
+    };
+    let resolveLatestCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Latest role check resolver is not initialized');
+    };
+    const olderCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveOlderCheck = resolve;
+    });
+    const latestCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveLatestCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin, RoleRecheckSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/role-recheck'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').replyOnce(200, { data: { role: 'root', snippets: ['pm'] } });
+    apiMock.onGet('roles:check').replyOnce(() => olderCheckResponse);
+    apiMock.onGet('roles:check').replyOnce(() => latestCheckResponse);
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('Role recheck page')).toBeInTheDocument();
+    const header = await screen.findByRole('banner');
+    expect(within(header).getByRole('menu')).toBeInTheDocument();
+    if (!recheckRole) {
+      throw new Error('Expected the role recheck callback to be available');
+    }
+
+    let olderCheck: Promise<void> = Promise.resolve();
+    let latestCheck: Promise<void> = Promise.resolve();
+    act(() => {
+      olderCheck = recheckRole?.() || Promise.resolve();
+      latestCheck = recheckRole?.() || Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(apiMock.history.get.filter((request) => request.url === 'roles:check')).toHaveLength(3);
+    });
+    expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveOlderCheck([200, { data: { role: 'root', snippets: ['pm'] } }]);
+      await olderCheck;
+    });
+    expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveLatestCheck([200, { data: { role: 'member', snippets: ['!pm.*'] } }]);
+      await latestCheck;
+    });
+    expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(header).getByTitle('Search settings')).toBeInTheDocument();
+  });
+
+  it('ignores a pending role check from an unmounted provider', async () => {
+    let resolveUnmountedCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Unmounted role check resolver is not initialized');
+    };
+    let resolveRemountedCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Remounted role check resolver is not initialized');
+    };
+    const unmountedCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveUnmountedCheck = resolve;
+    });
+    const remountedCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveRemountedCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin, RoleRecheckSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/role-recheck'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').replyOnce(200, { data: { role: 'root', snippets: ['pm'] } });
+    apiMock.onGet('roles:check').replyOnce(() => unmountedCheckResponse);
+    apiMock.onGet('roles:check').replyOnce(() => remountedCheckResponse);
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    const firstRender = render(<Root />);
+
+    expect(await screen.findByText('Role recheck page')).toBeInTheDocument();
+    if (!recheckRole) {
+      throw new Error('Expected the role recheck callback to be available');
+    }
+
+    let unmountedCheck: Promise<void> = Promise.resolve();
+    act(() => {
+      unmountedCheck = recheckRole?.() || Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(apiMock.history.get.filter((request) => request.url === 'roles:check')).toHaveLength(2);
+    });
+
+    firstRender.unmount();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(apiMock.history.get.filter((request) => request.url === 'roles:check')).toHaveLength(3);
+    });
+    const remountedHeader = await screen.findByRole('banner');
+    expect(within(remountedHeader).queryByRole('menu')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveUnmountedCheck([200, { data: { role: 'root', snippets: ['pm'] } }]);
+      await unmountedCheck;
+    });
+    expect(within(remountedHeader).queryByRole('menu')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveRemountedCheck([200, { data: { role: 'member', snippets: ['!pm.*'] } }]);
+    });
+    await waitFor(() => {
+      expect(within(remountedHeader).getByTitle('Search settings')).toBeInTheDocument();
+    });
+  });
+
+  it('does not reopen Settings search after a role recheck', async () => {
+    let resolveRoleCheck: (response: [number, { data: { role: string; snippets: string[] } }]) => void = () => {
+      throw new Error('Role check resolver is not initialized');
+    };
+    const roleCheckResponse = new Promise<[number, { data: { role: string; snippets: string[] } }]>((resolve) => {
+      resolveRoleCheck = resolve;
+    });
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin, RoleRecheckSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/role-recheck'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').replyOnce(200, { data: { role: 'root', snippets: ['pm'] } });
+    apiMock.onGet('roles:check').replyOnce(() => roleCheckResponse);
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('Role recheck page')).toBeInTheDocument();
+    const header = await screen.findByRole('banner');
+    fireEvent.click(within(header).getByTitle('Search settings'));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    if (!recheckRole) {
+      throw new Error('Expected the role recheck callback to be available');
+    }
+
+    let roleCheck: Promise<void> = Promise.resolve();
+    act(() => {
+      roleCheck = recheckRole?.() || Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(apiMock.history.get.filter((request) => request.url === 'roles:check')).toHaveLength(2);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    await act(async () => {
+      resolveRoleCheck([200, { data: { role: 'member', snippets: ['!pm.*'] } }]);
+      await roleCheck;
+    });
+    expect(within(header).getByTitle('Search settings')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('keeps Settings navigation and search unavailable when the initial role check fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').reply(500, { errors: [{ message: 'Temporary failure' }] });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(apiMock.history.get.some((request) => request.url === 'roles:check')).toBe(true);
+    });
+    const header = await screen.findByRole('banner');
+    expect(within(header).queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(header).queryByTitle('Search settings')).not.toBeInTheDocument();
+
+    const isMac = /Mac|iPhone|iPad/.test(window.navigator.platform || '');
+    const shortcutEvent = new KeyboardEvent('keydown', {
+      key: 'f',
+      ctrlKey: !isMac,
+      metaKey: isMac,
+      bubbles: true,
+      cancelable: true,
+    });
+    fireEvent(window, shortcutEvent);
+    expect(shortcutEvent.defaultPrevented).toBe(false);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('restores the last successful Settings readiness after a recheck error', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const app = new SettingsApplication({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, MultiPortalSettingsPlugin, RoleRecheckSettingsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/role-recheck'] },
+      ws: false,
+    });
+    const apiMock = new MockAdapter(app.apiClient.axios);
+    app.dataSourceManager.ensureLoaded = async () => {};
+    apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    apiMock.onGet('/auth:check').reply(200, { data: { id: 1, nickname: 'Admin' } });
+    apiMock.onGet('app:getInfo').reply(200, { data: { id: 'mock-app', version: 'test' } });
+    apiMock.onGet('roles:check').replyOnce(200, { data: { role: 'root', snippets: ['pm'] } });
+    apiMock.onGet('roles:check').replyOnce(500, { errors: [{ message: 'Temporary failure' }] });
+    apiMock.onGet('systemSettings:get').reply(200, {
+      data: { id: 1, title: 'NocoBase', raw_title: 'NocoBase', logo: null },
+    });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    expect(await screen.findByText('Role recheck page')).toBeInTheDocument();
+    const header = await screen.findByRole('banner');
+    expect(within(header).getByRole('menu')).toBeInTheDocument();
+    if (!recheckRole) {
+      throw new Error('Expected the role recheck callback to be available');
+    }
+
+    await act(async () => {
+      await recheckRole?.();
+    });
+    expect(within(header).getByRole('menu')).toBeInTheDocument();
   });
 });

@@ -1073,15 +1073,28 @@ export const DatasourceSettingsPage: React.FC = () => {
   );
 };
 
-const DatasourceDrawerContent: React.FC<{
+type DatasourceDrawerContentProps = {
   record?: AIContextDatasourceRecord;
   manager?: DataSourceManagerLike;
   onSubmitted: () => Promise<void>;
-}> = ({ record, manager, onSubmitted }) => {
+};
+
+const DatasourceDrawerContent: React.FC<DatasourceDrawerContentProps> = (props) => {
+  const { message } = App.useApp();
+
+  return (
+    <App component={false}>
+      <DatasourceDrawerContentInner {...props} message={message} />
+    </App>
+  );
+};
+
+const DatasourceDrawerContentInner: React.FC<
+  DatasourceDrawerContentProps & { message: ReturnType<typeof App.useApp>['message'] }
+> = ({ record, manager, onSubmitted, message }) => {
   const app = useApp();
   const ctx = useFlowContext();
   const t = useT();
-  const { message } = App.useApp();
   const { token: themeToken } = theme.useToken();
   const [form] = Form.useForm<DatasourceFormValues>();
   const [saving, setSaving] = useState(false);

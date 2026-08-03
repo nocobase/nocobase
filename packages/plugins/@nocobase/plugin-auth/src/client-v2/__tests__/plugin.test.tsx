@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockClient } from '@nocobase/client-v2';
+import { createMockClient, Plugin } from '@nocobase/client-v2';
 import PluginAuthClientV2 from '../plugin';
 
 describe('plugin-auth client-v2', () => {
@@ -34,6 +34,105 @@ describe('plugin-auth client-v2', () => {
     }
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  it('should register a scoped signin route under the shared auth layout', async () => {
+    const app = createMockClient({
+      plugins: [PluginAuthClientV2 as unknown as typeof Plugin],
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+
+    const plugin = app.pm.get(PluginAuthClientV2);
+    plugin.registerSignInRoute('customerPortalSignin', '/customer/signin');
+
+    expect(app.router.get('auth.customerPortalSignin')).toMatchObject({
+      path: '/customer/signin',
+      skipAuthCheck: true,
+    });
+    expect(app.router.matchRoutes('/customer/signin')?.map((match) => match.route.id)).toEqual([
+      'auth',
+      'auth.customerPortalSignin',
+    ]);
+  });
+
+  it('should register and resolve scoped signin and signup routes', async () => {
+    const app = createMockClient({
+      plugins: [PluginAuthClientV2 as unknown as typeof Plugin],
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+
+    const plugin = app.pm.get(PluginAuthClientV2);
+    plugin.registerAuthRouteScope('customerPortal', '/customer/');
+    plugin.registerAuthRouteScope('legacyPortal', '/legacy', {
+      signin: 'legacyPortalSignin',
+      signup: 'legacyPortalSignup',
+    });
+
+    expect(app.router.get('auth.customerPortalSignin')).toMatchObject({
+      path: '/customer/signin',
+      skipAuthCheck: true,
+    });
+    expect(app.router.get('auth.customerPortalSignup')).toMatchObject({
+      path: '/customer/signup',
+      skipAuthCheck: true,
+    });
+    expect(app.router.get('auth.legacyPortalSignin')?.path).toBe('/legacy/signin');
+    expect(app.router.get('auth.legacyPortalSignup')?.path).toBe('/legacy/signup');
+    expect(app.router.matchRoutes('/customer/signup')?.map((match) => match.route.id)).toEqual([
+      'auth',
+      'auth.customerPortalSignup',
+    ]);
+    expect(plugin.getAuthRoutePath('/customer/signin', 'auth.signup')).toBe('/customer/signup');
+    expect(plugin.getAuthRoutePath('/customer/signup', 'auth.signin')).toBe('/customer/signin');
+    expect(plugin.getAuthRoutePath('/signin', 'auth.signup')).toBe('/signup');
+    expect(plugin.isScopedAuthRoute('/customer/signin')).toBe(true);
+    expect(plugin.isScopedAuthRoute('/customer/signup')).toBe(true);
+    expect(plugin.isScopedAuthRoute('/signin')).toBe(false);
+    expect(plugin.getAuthRedirectFallbackPath('/customer/signin')).toBe('/customer');
+    expect(plugin.getAuthRedirectFallbackPath('/signin')).toBe('/');
+  });
+
+  it('should keep runtime 401 redirects inside an explicitly registered Portal signin route', async () => {
+    const navigateSpy = vi.fn();
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [PluginAuthClientV2 as unknown as typeof Plugin],
+      router: { type: 'memory', initialEntries: ['/v2/customer/dashboard?tab=overview#panel'] },
+    });
+    app.pluginSettingsManager.addMenuItem({ key: 'security', title: 'Security' });
+    await app.load();
+    app.pm.get(PluginAuthClientV2).registerSignInRoute('customerPortalSignin', '/customer/signin');
+    app.router.add('customerPortal', { path: '/customer/*', authCheck: true });
+    app.router.router = {
+      basename: '/v2',
+      navigate: navigateSpy,
+      state: {
+        location: {
+          pathname: '/v2/customer/dashboard',
+          search: '?tab=overview',
+          hash: '#panel',
+        },
+      },
+    } as unknown as typeof app.router.router;
+
+    const error = {
+      response: { status: 401, data: { errors: [{ code: 'EXPIRED_SESSION' }] } },
+      config: {},
+    };
+
+    // @ts-ignore
+    app.apiClient.axios.interceptors.response.handlers[0].rejected(error);
+
+    await vi.waitFor(() => {
+      expect(navigateSpy).toHaveBeenCalledWith(
+        '/customer/signin?redirect=%2Fv2%2Fcustomer%2Fdashboard%3Ftab%3Doverview%23panel',
+        {
+          replace: true,
+        },
+      );
+    });
   });
 
   it('should navigate to v2 signin on runtime 401 with EXPIRED_SESSION', async () => {

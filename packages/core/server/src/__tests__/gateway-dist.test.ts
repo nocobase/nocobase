@@ -17,6 +17,7 @@ import { Gateway } from '../gateway';
 
 const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
 const originalApiBasePath = process.env.API_BASE_PATH;
+const originalModernClientPrefix = process.env.APP_MODERN_CLIENT_PREFIX;
 const originalStoragePath = process.env.STORAGE_PATH;
 
 const serveHandlerMock = vi.hoisted(() =>
@@ -45,6 +46,12 @@ afterEach(async () => {
     delete process.env.API_BASE_PATH;
   } else {
     process.env.API_BASE_PATH = originalApiBasePath;
+  }
+
+  if (originalModernClientPrefix === undefined) {
+    delete process.env.APP_MODERN_CLIENT_PREFIX;
+  } else {
+    process.env.APP_MODERN_CLIENT_PREFIX = originalModernClientPrefix;
   }
 
   if (originalStoragePath === undefined) {
@@ -80,28 +87,58 @@ test('gateway serves APP_PUBLIC_PATH + /dist/ from storage/dist-client', async (
   );
 });
 
-test('gateway returns 404 for portal root without an explicit portal name', async () => {
-  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
-  process.env.APP_PUBLIC_PATH = '/console/';
-  process.env.API_BASE_PATH = '/api';
-  process.env.STORAGE_PATH = storagePath;
+test.each(['/console/x', '/console/x/'])(
+  'gateway redirects portal root %s to the modern client root',
+  async (requestPath) => {
+    const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'modern';
+    process.env.API_BASE_PATH = '/api';
+    process.env.STORAGE_PATH = storagePath;
 
-  try {
-    const gateway = Gateway.getInstance();
-    const response = await supertest.agent(gateway.getCallback()).get('/console/x/');
+    try {
+      const gateway = Gateway.getInstance();
+      const response = await supertest.agent(gateway.getCallback()).get(`${requestPath}?from=portal`);
 
-    expect(response.status).toBe(404);
-    expect(serveHandlerMock).not.toHaveBeenCalled();
-  } finally {
-    await rm(storagePath, { recursive: true, force: true });
-  }
-});
+      expect(response.status).toBe(302);
+      expect(response.headers.location).toBe('/console/modern/?from=portal');
+      expect(serveHandlerMock).not.toHaveBeenCalled();
+    } finally {
+      await rm(storagePath, { recursive: true, force: true });
+    }
+  },
+);
+
+test.each(['/console/x/apps/crm', '/console/x/apps/crm/'])(
+  'gateway redirects sub-app portal root %s to the scoped modern client root',
+  async (requestPath) => {
+    const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.APP_MODERN_CLIENT_PREFIX = 'modern';
+    process.env.API_BASE_PATH = '/api';
+    process.env.STORAGE_PATH = storagePath;
+
+    try {
+      const gateway = Gateway.getInstance();
+      const response = await supertest.agent(gateway.getCallback()).get(`${requestPath}?from=portal`);
+
+      expect(response.status).toBe(302);
+      expect(response.headers.location).toBe('/console/modern/apps/crm/?from=portal');
+      expect(serveHandlerMock).not.toHaveBeenCalled();
+    } finally {
+      await rm(storagePath, { recursive: true, force: true });
+    }
+  },
+);
 
 test('gateway redirects a portal path without trailing slash', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
+
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
+  await writeFile(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
 
   try {
     const gateway = Gateway.getInstance();
@@ -224,6 +261,9 @@ test('gateway redirects a sub-app portal path without trailing slash', async () 
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
+  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist'), { recursive: true });
+  await writeFile(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
+
   try {
     const gateway = Gateway.getInstance();
     const response = await supertest.agent(gateway.getCallback()).get('/console/x/apps/crm/admin?from=portal');
@@ -236,7 +276,13 @@ test('gateway redirects a sub-app portal path without trailing slash', async () 
   }
 });
 
-test('gateway returns 404 when a portal has not been built', async () => {
+test.each([
+  '/console/x/missing?from=portal',
+  '/console/x/missing/?from=portal',
+  '/console/x/missing/deep/path?from=portal',
+  '/console/x/apps/crm/missing?from=portal',
+  '/console/x/apps/crm/missing/?from=portal',
+])('gateway returns 404 for unavailable portal path %s', async (requestPath) => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
@@ -246,9 +292,10 @@ test('gateway returns 404 when a portal has not been built', async () => {
 
   try {
     const gateway = Gateway.getInstance();
-    const response = await supertest.agent(gateway.getCallback()).get('/console/x/admin/');
+    const response = await supertest.agent(gateway.getCallback()).get(requestPath);
 
     expect(response.status).toBe(404);
+    expect(response.headers.location).toBeUndefined();
     expect(serveHandlerMock).not.toHaveBeenCalled();
   } finally {
     await rm(storagePath, { recursive: true, force: true });

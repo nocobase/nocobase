@@ -10,7 +10,7 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { Layout, Menu, Result, Tabs, theme } from 'antd';
+import { Layout, Result, Tabs, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -21,35 +21,55 @@ import { useSettingsGroups } from './useSettingsGroups';
 import {
   ADMIN_SETTINGS_LAYOUT_MODEL_UID,
   createSettingsPathMap,
-  findSettingsByName,
   getDefaultSettingsPath,
-  getSidebarMenuItems,
-  getSidebarSelectedKey,
   matchSettingsRoute,
 } from './utils';
 
-function SettingsEmpty(props: { type: 'home' | 'route' }) {
+/**
+ * Maximum width of the content area.
+ *
+ * Centers and narrows the content on wide screens: settings pages are mostly forms
+ * and lists, and across 2560px a single line sweeps the whole display, which is
+ * tiring to read and leaves the actions on the right far from the title on the left.
+ */
+const SETTINGS_CONTENT_MAX_WIDTH = 1280;
+
+function SettingsEmpty(props: { type: 'forbidden' | 'home' | 'not-found' }) {
   const { type } = props;
   const { t } = useTranslation();
 
-  if (type === 'route') {
-    return (
-      <Result
-        status="warning"
-        title={t('Current settings page is unavailable')}
-        subTitle={t('The requested settings page does not exist or you do not have permission to access it.')}
-      />
+  let status: '403' | '404' | 'info';
+  let title: string;
+  let subTitle: string;
+
+  if (type === 'forbidden') {
+    status = '403';
+    title = t('Your current role cannot access Settings');
+    subTitle = t('Switch to a role with access, or contact an administrator to request access.');
+  } else if (type === 'not-found') {
+    status = '404';
+    title = t('Settings page not found');
+    subTitle = t('The settings page you requested does not exist or has been removed.');
+  } else {
+    status = 'info';
+    title = t('No settings pages available');
+    subTitle = t(
+      'No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.',
     );
   }
 
   return (
-    <Result
-      status="info"
-      title={t('No settings pages available')}
-      subTitle={t(
-        'No settings pages are currently available in Client V2. Settings registered by migrated plugins will appear here automatically.',
-      )}
-    />
+    <div role="status" aria-atomic="true">
+      <Result
+        status={status}
+        title={
+          <span role="heading" aria-level={1}>
+            {title}
+          </span>
+        }
+        subTitle={subTitle}
+      />
+    </div>
   );
 }
 
@@ -65,7 +85,6 @@ export const InternalAdminSettingsLayout = () => {
   const location = useLocation();
   const { token } = theme.useToken();
   const {
-    activeGroupSettings,
     allSettings,
     currentSetting,
     currentTopLevelSetting,
@@ -87,10 +106,9 @@ export const InternalAdminSettingsLayout = () => {
   const settingsRootPath = app.pluginSettingsManager.getRoutePath('');
   const settingsRootPathWithoutTrailingSlash = settingsRootPath.replace(/\/$/, '');
 
-  const sidebarMenus = useMemo(() => getSidebarMenuItems(activeGroupSettings), [activeGroupSettings]);
-  // 分组里只有一个顶级配置项时不铺左栏：那样整条侧栏只是把顶栏那一项重复一遍。
-  // 它自己的下级（用户和权限的 用户 / 角色和权限 / 同步，AI 员工的几个页面）改用页头下的 Tab。
-  const shouldShowSidebar = activeGroupSettings.length > 1;
+  // No sidebar: single-entry groups never needed one, and multi-entry groups such as
+  // "other settings" now use the hover dropdown in the top bar. Children of a
+  // top-level setting (users / roles / sync) keep using the tabs under the header.
   // 子页面一律走页头下的 Tab：左栏只表达「哪个模块」，模块内部的分页交给 Tab，
   // 和 v1 设置中心保持一致。
   const pageTabs = useMemo(() => {
@@ -108,13 +126,6 @@ export const InternalAdminSettingsLayout = () => {
     );
     return matched?.key ?? pageTabs[0]?.key;
   }, [location.pathname, pageTabs]);
-  // 命中的可能是被折叠掉的子项，要换算成左栏里真实存在的那一级，否则整个左栏都不高亮。
-  const selectedMenuKey = useMemo(
-    () =>
-      getSidebarSelectedKey(activeGroupSettings, currentVisibleSetting?.name) ||
-      getSidebarSelectedKey(activeGroupSettings, currentVisibleTopLevelSetting?.name),
-    [activeGroupSettings, currentVisibleSetting?.name, currentVisibleTopLevelSetting?.name],
-  );
   // 页头只需要补一句「当前在哪个子页」。
   const pageSubTitle =
     currentVisibleSetting && currentVisibleSetting.title !== currentTopLevelSetting?.title
@@ -136,6 +147,18 @@ export const InternalAdminSettingsLayout = () => {
     location.pathname === settingsRootPath ||
     location.pathname === settingsRootPathWithoutTrailingSlash ||
     location.pathname === `${settingsRootPath}index`;
+  const currentPathWithoutTrailingSlash = location.pathname.replace(/\/+$/, '');
+  const currentTopLevelPathWithoutTrailingSlash = currentTopLevelSetting?.path.replace(/\/+$/, '');
+  const isTopLevelSettingsPath =
+    currentPathWithoutTrailingSlash === currentTopLevelPathWithoutTrailingSlash &&
+    !!currentTopLevelSetting?.children?.length;
+  const visibleIndexPath = isTopLevelSettingsPath
+    ? currentVisibleTopLevelSetting?.children?.find((item) => item.pageKey === 'index')?.path
+    : undefined;
+  const firstVisibleChildPath = isTopLevelSettingsPath
+    ? getDefaultSettingsPath(currentVisibleTopLevelSetting?.children as PluginSettingsPageType[])
+    : undefined;
+  const nextVisibleChildPath = visibleIndexPath || firstVisibleChildPath;
 
   if (shouldRedirectToDefault && defaultSettingsPath) {
     return <Navigate replace to={defaultSettingsPath} />;
@@ -146,27 +169,23 @@ export const InternalAdminSettingsLayout = () => {
   }
 
   if (!currentSetting) {
-    return <SettingsEmpty type="route" />;
+    return <SettingsEmpty type="not-found" />;
   }
 
-  if (!currentVisibleSetting && currentSetting.isAllow === false) {
-    return <SettingsEmpty type="route" />;
+  if (currentSetting.isAllow === false) {
+    if (nextVisibleChildPath && nextVisibleChildPath !== location.pathname) {
+      return <Navigate replace to={nextVisibleChildPath} />;
+    }
+
+    return <SettingsEmpty type="forbidden" />;
   }
 
   if (currentSetting.link) {
     return <Navigate replace to={currentSetting.link} />;
   }
 
-  if (location.pathname === currentTopLevelSetting?.path && currentTopLevelSetting?.children?.length) {
-    const visibleIndexPath = currentVisibleTopLevelSetting?.children?.find((item) => item.pageKey === 'index')?.path;
-    const firstVisibleChildPath = getDefaultSettingsPath(
-      currentVisibleTopLevelSetting?.children as PluginSettingsPageType[],
-    );
-    const nextPath = visibleIndexPath || firstVisibleChildPath;
-
-    if (nextPath && nextPath !== location.pathname) {
-      return <Navigate replace to={nextPath} />;
-    }
+  if (nextVisibleChildPath && nextVisibleChildPath !== location.pathname) {
+    return <Navigate replace to={nextVisibleChildPath} />;
   }
 
   return (
@@ -179,43 +198,6 @@ export const InternalAdminSettingsLayout = () => {
         overflow: 'hidden',
       }}
     >
-      {shouldShowSidebar ? (
-        <Layout.Sider
-          width={200}
-          style={{
-            background: token.colorBgContainer,
-            borderInlineEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-            minHeight: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-          }}
-        >
-          <Menu
-            mode="inline"
-            inlineIndent={16}
-            selectedKeys={selectedMenuKey ? [selectedMenuKey] : []}
-            style={{ height: '100%', borderInlineEnd: 'none' }}
-            onClick={({ key }) => {
-              const setting = findSettingsByName(activeGroupSettings, String(key));
-              if (!setting) {
-                return;
-              }
-
-              if (setting.link) {
-                window.open(setting.link, '_blank', 'noopener,noreferrer');
-                return;
-              }
-
-              const targetPath = setting.children?.length ? getDefaultSettingsPath(setting.children) : setting.path;
-
-              if (targetPath && targetPath !== location.pathname) {
-                navigate(targetPath);
-              }
-            }}
-            items={sidebarMenus}
-          />
-        </Layout.Sider>
-      ) : null}
       <Layout.Content
         style={{
           background: token.colorBgLayout,
@@ -239,31 +221,39 @@ export const InternalAdminSettingsLayout = () => {
             overflow: 'auto',
           }}
         >
-          <PageHeader
-            ghost={false}
-            title={currentTopLevelSetting?.title}
-            subTitle={pageTabs.length ? undefined : pageSubTitle}
-            footer={
-              pageTabs.length ? (
-                <Tabs
-                  activeKey={activeTabKey}
-                  items={pageTabs}
-                  tabBarStyle={{ marginBottom: 0 }}
-                  onChange={(key) => {
-                    if (key !== location.pathname) {
-                      navigate(key);
-                    }
-                  }}
-                />
-              ) : undefined
-            }
-            style={{
-              background: token.colorBgContainer,
-              borderBlockEnd: `${token.lineWidth}px solid ${token.colorBorderSecondary}`,
-              paddingBottom: pageTabs.length ? 0 : token.padding,
-            }}
-          />
-          <div style={{ padding: token.paddingLG }}>
+          {/*
+            The header is no longer a full-width white band: title and content share one
+            background and one max width, so the page reads as a single surface rather
+            than a title bar stacked on a content area.
+          */}
+          <div style={{ margin: '0 auto', maxWidth: SETTINGS_CONTENT_MAX_WIDTH, padding: token.paddingLG }}>
+            <PageHeader
+              ghost
+              title={currentTopLevelSetting?.title}
+              subTitle={pageTabs.length ? undefined : pageSubTitle}
+              footer={
+                pageTabs.length ? (
+                  <Tabs
+                    activeKey={activeTabKey}
+                    items={pageTabs}
+                    tabBarStyle={{ marginBottom: 0 }}
+                    onChange={(key) => {
+                      if (key !== location.pathname) {
+                        navigate(key);
+                      }
+                    }}
+                  />
+                ) : undefined
+              }
+              // With the white band gone there is nothing separating header from content,
+              // so spacing does the job the bottom border used to do implicitly.
+              style={{
+                background: 'transparent',
+                marginBottom: token.marginLG,
+                paddingBlock: 0,
+                paddingInline: 0,
+              }}
+            />
             <Outlet />
           </div>
         </div>

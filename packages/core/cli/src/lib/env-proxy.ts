@@ -924,19 +924,32 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
   ].join('\n');
 }
 
-function buildNginxPortalRootPublicPath(appPublicPath: string): string {
+function buildPortalRootPublicPath(appPublicPath: string): string {
   return appPublicPath === DEFAULT_APP_PUBLIC_PATH
     ? `/${PORTAL_CLIENT_PREFIX}/`
     : `${trimTrailingSlash(appPublicPath)}/${PORTAL_CLIENT_PREFIX}/`;
 }
 
 function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): string {
-  const portalBasePath = trimTrailingSlash(buildNginxPortalRootPublicPath(context.appPublicPath));
+  const portalBasePath = trimTrailingSlash(buildPortalRootPublicPath(context.appPublicPath));
   const portalBasePathPattern = escapeRegExp(portalBasePath);
 
   return [
+    `    location = ${portalBasePath} {`,
+    '        absolute_redirect off;',
+    `        return 302 ${context.v2PublicPath}$is_args$args;`,
+    '    }',
+    '',
+    `    location = ${portalBasePath}/ {`,
+    '        absolute_redirect off;',
+    `        return 302 ${context.v2PublicPath}$is_args$args;`,
+    '    }',
+    '',
     `    location ^~ ${portalBasePath}/apps/ {`,
     '        absolute_redirect off;',
+    `        if ($uri ~ ^${portalBasePathPattern}/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {`,
+    `            return 302 ${context.v2PublicPath}apps/$subapp/$is_args$args;`,
+    '        }',
     '',
     `        if ($uri ~ ^${portalBasePathPattern}/apps/(?<subapp>[A-Za-z0-9_-]+)/(?<portal>[A-Za-z0-9_-]+)$) {`,
     `            return 308 ${portalBasePath}/apps/$subapp/$portal/$is_args$args;`,
@@ -961,7 +974,6 @@ function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): str
     '',
     `    location ^~ ${portalBasePath}/ {`,
     '        absolute_redirect off;',
-    '',
     `        if ($uri ~ ^${portalBasePathPattern}/(?<portal>[A-Za-z0-9_-]+)$) {`,
     `            return 308 ${portalBasePath}/$portal/$is_args$args;`,
     '        }',
@@ -1706,6 +1718,7 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
   const apiPathMatcher = toCaddyPathMatcher(context.apiBasePath);
   const appPublicPathNoTrailingSlash = trimTrailingSlash(context.appPublicPath);
   const v2PublicPathNoTrailingSlash = trimTrailingSlash(context.v2PublicPath);
+  const portalBasePath = trimTrailingSlash(buildPortalRootPublicPath(context.appPublicPath));
   const rootRedirectBlock =
     context.appPublicPath === DEFAULT_APP_PUBLIC_PATH
       ? ''
@@ -1799,6 +1812,14 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     '    }',
     '',
     `    handle ${context.wsPath} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    `    handle ${portalBasePath} {`,
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    `    handle ${portalBasePath}/* {`,
     `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
     '    }',
     '',

@@ -12,6 +12,7 @@ import { ConfigProvider, Menu, theme as antdTheme } from 'antd';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useACLCheckReady } from '../acl/aclCheckReadiness';
 import { useApp } from '../hooks/useApp';
 import { useSettingsGroups } from '../settings-center/useSettingsGroups';
 import { buildSettingsHeaderMenuTheme } from './settingsTheme';
@@ -27,8 +28,9 @@ const navStyle: React.CSSProperties = {
 /**
  * 设置中心顶栏的一级导航。
  *
- * 应用、插件管理各自只有一个页面，直接当一级入口；其余全部收在「系统设置」下，
- * 鼠标移上去展开下拉，也可以点进去从左栏走。
+ * Applications and the plugin manager have a single page each and act as top-level
+ * entries; everything else sits under "other settings" and expands on hover — that
+ * group has no sidebar, so the dropdown is the only way into its pages.
  */
 export const SettingsGroupNav: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -37,6 +39,7 @@ export const SettingsGroupNav: React.FC = observer(() => {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const { groups, activeGroupKey, currentTopLevelSetting, getGroupEntryPath } = useSettingsGroups();
+  const isACLReady = useACLCheckReady(app);
   const headerMenuTheme = useMemo(() => buildSettingsHeaderMenuTheme(token), [token]);
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上不该出现设置导航。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
@@ -68,11 +71,8 @@ export const SettingsGroupNav: React.FC = observer(() => {
           };
         }
 
-        // 已经站在这个分组里时不再弹下拉：左栏已经把同一份内容铺开了，再浮一层纯属打扰。
-        if (group.key === activeGroupKey) {
-          return { key: group.key, label: t(group.title) };
-        }
-
+        // The dropdown still opens while standing inside the group: with the sidebar
+        // gone, this is the only way to reach the other pages in it.
         return {
           key: group.key,
           label: t(group.title),
@@ -83,11 +83,11 @@ export const SettingsGroupNav: React.FC = observer(() => {
               label: setting.label ?? setting.title,
               icon: setting.icon,
             })),
-          // 点标题本身也要能进去，而不是只能从下拉里挑。
-          onTitleClick: handleClick,
+          // The group title only expands the dropdown and is not clickable: it is not a
+          // page, so clicking it has no well-defined destination. Pick a page instead.
         };
       }),
-    [activeGroupKey, groups, handleClick, t],
+    [groups, handleClick, t],
   );
 
   // 子菜单标题只有在它的某个子项被选中时才会高亮，所以两个 key 都要给。
@@ -100,7 +100,7 @@ export const SettingsGroupNav: React.FC = observer(() => {
       : [activeGroupKey];
   }, [activeGroupKey, currentTopLevelSetting?.name]);
 
-  if (isAuthRoute || items.length <= 1) {
+  if (isAuthRoute || !isACLReady || items.length <= 1) {
     return <div style={{ flex: 'auto' }} />;
   }
 

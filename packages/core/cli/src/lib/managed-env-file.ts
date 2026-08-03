@@ -26,10 +26,6 @@ function trimValue(value: unknown): string | undefined {
   return text || undefined;
 }
 
-function normalizeEnvFilePath(value: string): string {
-  return value.replace(/\\/g, '/');
-}
-
 function stripWrappingQuotes(value: string) {
   if (value.length >= 2 && value.startsWith('"') && value.endsWith('"')) {
     return value
@@ -78,19 +74,19 @@ export function resolveManagedLocalEnvFilePath(runtime: Extract<ManagedAppRuntim
   const config = runtime.env.config ?? {};
   const explicitEnvFile = trimValue(config.envFile);
   if (explicitEnvFile) {
-    return normalizeEnvFilePath(resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile);
+    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
   }
 
   const configuredAppPath = resolveConfiguredAppPath(config);
   if (configuredAppPath) {
-    return normalizeEnvFilePath(path.join(configuredAppPath, '.env'));
+    return path.join(configuredAppPath, '.env');
   }
 
   if (path.basename(runtime.projectRoot) === 'source') {
-    return normalizeEnvFilePath(path.resolve(runtime.projectRoot, '..', '.env'));
+    return path.resolve(runtime.projectRoot, '..', '.env');
   }
 
-  return normalizeEnvFilePath(path.join(runtime.projectRoot, '.env'));
+  return path.join(runtime.projectRoot, '.env');
 }
 
 export function resolveManagedEnvFilePathFromConfig(
@@ -100,8 +96,7 @@ export function resolveManagedEnvFilePathFromConfig(
   const kind = config?.kind ?? resolveEnvKind(config);
 
   if (kind === 'docker') {
-    const filePath = resolveDockerEnvFilePath(envName, config);
-    return filePath ? normalizeEnvFilePath(filePath) : undefined;
+    return resolveDockerEnvFilePath(envName, config);
   }
 
   if (kind !== 'local') {
@@ -110,20 +105,20 @@ export function resolveManagedEnvFilePathFromConfig(
 
   const explicitEnvFile = trimValue(config?.envFile);
   if (explicitEnvFile) {
-    return normalizeEnvFilePath(resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile);
+    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
   }
 
   const configuredAppPath = resolveConfiguredAppPath(config);
   if (configuredAppPath) {
-    return normalizeEnvFilePath(path.join(configuredAppPath, '.env'));
+    return path.join(configuredAppPath, '.env');
   }
 
   const configuredAppRootPath = trimValue(config?.appRootPath);
   if (configuredAppRootPath) {
     const appRootPath = resolveConfiguredEnvPath(configuredAppRootPath) ?? configuredAppRootPath;
-    return normalizeEnvFilePath(
-      path.basename(appRootPath) === 'source' ? path.resolve(appRootPath, '..', '.env') : path.join(appRootPath, '.env'),
-    );
+    return path.basename(appRootPath) === 'source'
+      ? path.resolve(appRootPath, '..', '.env')
+      : path.join(appRootPath, '.env');
   }
 
   return undefined;

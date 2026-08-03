@@ -100,7 +100,7 @@ nb portal list
 
 输出里会列出 Portal 名称、访问 URL、Portal 类型、source storage、本地路径和同步状态。
 
-如果你想看得更细，比如本地源码目录到底在哪：
+如果你想看得更细，比如开发工作区到底在哪：
 
 ```bash
 nb portal info main
@@ -115,7 +115,7 @@ nb portal pull main
 nb portal dev main
 ```
 
-开发服务默认跑在 `http://localhost:5173`。这一步会先刷新本地源码目录里的 `.env` 和 `.env.local`，再执行 `pnpm dev`。
+开发服务默认跑在 `http://localhost:5173`。这一步会先刷新开发工作区里的 `.env` 和 `.env.local`，再执行 `pnpm dev`。
 
 模板自带了一个基于 NocoBase `users` 数据表的用户管理页面，可以直接登录进去看看效果——它同时也是你让 AI 参考的一个很好的初始样例。
 
@@ -123,7 +123,7 @@ nb portal dev main
 
 ## 第三步：让 AI 改一个页面
 
-进到 Portal 的源码目录（位置就是上一步 `nb portal list` 输出里的本地路径），在那里打开 AI Agent，比如 Claude Code、Codex、Cursor，然后输入提示词：
+进到 Portal 的开发工作区（位置就是上一步 `nb portal info` 输出里的开发路径），在那里打开 AI Agent，比如 Claude Code、Codex、Cursor，然后输入提示词：
 
 ```
 加一个客户管理页面，
@@ -159,7 +159,7 @@ nb portal deploy main
 nb portal create customer
 ```
 
-新建的 Portal 同样通过 `nb portal dev` 开发、`nb portal deploy` 部署。它有自己独立的源码目录，用 `nb portal info customer` 查到位置后进去开 AI Agent 即可。详细说明请参阅 [部署与源码管理](./deploy.md)。
+创建时会在当前目录下生成 `./customer` 作为开发工作区，也可以用 `--path` 指定到别处。新建的 Portal 同样通过 `nb portal dev` 开发、`nb portal deploy` 部署，进到它的工作区打开 AI Agent 即可。详细说明请参阅 [部署与源码管理](./deploy.md)。
 
 ## Demo 体验
 

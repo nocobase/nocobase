@@ -8,16 +8,18 @@
  */
 
 import { App as AntdApp } from 'antd';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MultiPortalsPage, {
   createMultiPortal,
+  setDefaultMultiPortal,
+  updateMultiPortal,
   type MultiPortalFormValues,
   type MultiPortalResource,
 } from '../pages/MultiPortalsPage';
-import { getMultiPortalRouteUrl } from '../routeUrl';
+import { getMultiPortalRouteUrl, getMultiPortalSettingsUrl } from '../routeUrl';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
 
@@ -140,24 +142,12 @@ const portalValues: MultiPortalFormValues = {
   enabled: true,
 };
 
-type UiLayoutTestRecord = {
-  layoutType?: string;
-  title?: string;
-  uid: string;
-};
-
-const defaultUiLayoutOptions: UiLayoutTestRecord[] = [
-  {
-    uid: 'mobile-layout-model',
-    title: 'Mobile layout',
-  },
-];
-
 function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortalResource {
   return {
     create: vi.fn().mockResolvedValue(undefined),
     update: vi.fn().mockResolvedValue(undefined),
     destroy: vi.fn().mockResolvedValue(undefined),
+    setDefault: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue({
       data: {
         data: [],
@@ -170,23 +160,19 @@ function makeResource(overrides: Partial<MultiPortalResource> = {}): MultiPortal
 /**
  * 打开新建表单。
  *
- * 新建默认落在 AI portal 上；需要 no-code 表单（布局选择、/v/ 路径）的用例把 `portalType`
+ * 新建默认落在 AI mode 上；需要 no-code 表单（布局选择、/v/ 路径）的用例把 `portalType`
  * 显式传成 `'no-code'`，helper 替它点一下单选。
  */
 async function openCreatePortalForm(
   resource = makeResource(),
-  uiLayouts = defaultUiLayoutOptions,
   { portalType = 'no-code' }: { portalType?: 'ai' | 'no-code' } = {},
 ) {
   const user = userEvent.setup();
   let drawerContent: React.ReactNode;
+  const request = vi.fn().mockResolvedValue({ data: { data: [] } });
   flowContext.current = {
     api: {
-      request: vi.fn().mockResolvedValue({
-        data: {
-          data: uiLayouts,
-        },
-      }),
+      request,
       resource: vi.fn((name: string) => {
         if (name === 'multiPortals') {
           return resource;
@@ -219,12 +205,13 @@ async function openCreatePortalForm(
   const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
 
   if (portalType === 'no-code') {
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
   }
 
   return {
     container,
     dialog,
+    request,
     resource,
     user,
   };
@@ -232,11 +219,45 @@ async function openCreatePortalForm(
 
 async function selectMobileLayout(container: HTMLElement, user: ReturnType<typeof userEvent.setup>) {
   fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-  await user.click(await screen.findByText('Mobile layout'));
+  await user.click(await screen.findByText('Mobile'));
+}
+
+/**
+ * Open the "more" menu at the top right of a card.
+ *
+ * The card actions (edit / routes / set as default / delete) all live in that menu,
+ * so a test has to expand it first. antd renders the dropdown into a portal under
+ * body, outside the card's DOM, hence the `within(menu)` scope.
+ *
+ * @param {ReturnType<typeof userEvent.setup>} user interaction instance
+ * @param {HTMLElement} card target card
+ * @returns queries scoped to the menu
+ */
+async function openCardMenu(user: ReturnType<typeof userEvent.setup>, card: HTMLElement) {
+  await user.click(within(card).getByRole('button', { name: 'More' }));
+  // Wait for the entries to mount: the role="menu" container shows up first and the
+  // items land a tick later. Every card has "delete", so it anchors the current menu.
+  // Entries carry icons, and antd renders those as <span role="img" aria-label="delete">,
+  // which counts towards the accessible name - hence matching by regex, not equality.
+  const anchor = await screen.findByRole('menuitem', { name: /Delete/ });
+  return within(anchor.closest('[role="menu"]') as HTMLElement);
+}
+
+/**
+ * Expand a card menu and click one of its entries.
+ *
+ * @param {ReturnType<typeof userEvent.setup>} user interaction instance
+ * @param {HTMLElement} card target card
+ * @param {string} name entry name
+ */
+async function clickCardMenuItem(user: ReturnType<typeof userEvent.setup>, card: HTMLElement, name: string) {
+  const menu = await openCardMenu(user, card);
+  await user.click(menu.getByRole('menuitem', { name: new RegExp(name) }));
 }
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   flowContext.current = undefined;
   window.__nocobase_modern_client_prefix__ = undefined;
 });
@@ -257,6 +278,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal')).toBe('/nocobase/v/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/x/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
+    expect(getMultiPortalSettingsUrl(app)).toBe('/nocobase/settings');
   });
 
   it('should build sub-app portal hrefs from the app-scoped basename', () => {
@@ -276,6 +298,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/x/test', 'ai')).toBe(
       '/nocobase/x/apps/a_q7xx6p75d0e/test',
     );
+    expect(getMultiPortalSettingsUrl(app)).toBe('/nocobase/settings/apps/a_q7xx6p75d0e');
   });
 
   it.each([
@@ -336,13 +359,13 @@ describe('plugin-multi-portal settings page', () => {
   );
 
   it('should keep portal wording user-facing translations consistent', () => {
-    expect(enUS['Add portal']).toBe('Add portal');
+    expect(enUS['Add portal']).toBe('Add Portal');
     expect(enUS['Edit portal']).toBe('Edit portal');
     expect(enUS['Delete portal']).toBe('Delete portal');
     expect(enUS.Desktop).toBe('Desktop');
-    expect(enUS['Portal type']).toBe('Portal type');
-    expect(enUS['No-code portal']).toBe('No-code portal');
-    expect(enUS['AI portal']).toBe('AI portal');
+    expect(enUS['Development mode']).toBe('Development mode');
+    expect(enUS['No-code mode']).toBe('No-code mode');
+    expect(enUS['AI mode']).toBe('AI mode');
     expect(enUS.Icon).toBe('Icon');
     expect(enUS.Mobile).toBe('Mobile');
     expect(enUS['Multi-portal']).toBe('Portal manager');
@@ -350,36 +373,70 @@ describe('plugin-multi-portal settings page', () => {
     expect(enUS['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
       'Portal name can only contain lowercase letters, numbers, hyphens, and underscores',
     );
-    expect(enUS['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
-      'Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>',
+    expect(enUS['Build business systems through visual configuration.']).toBe(
+      'Build business systems through visual configuration.',
     );
-    expect(enUS['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
-      'Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>',
+    expect(
+      enUS[
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.'
+      ],
+    ).toBe(
+      'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
     );
-    expect(enUS['Source storage']).toBe('Source storage');
+    expect(enUS['Build complete business systems with AI agents and code.']).toBe(
+      'Build complete business systems with AI agents and code.',
+    );
+    expect(
+      enUS[
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.'
+      ],
+    ).toBe(
+      'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
+    );
+    expect(enUS['Source management']).toBe('Source management');
+    expect(enUS['Select how the application source code is stored and managed.']).toBe(
+      'Select how the application source code is stored and managed.',
+    );
     expect(enUS.NocoBase).toBe('NocoBase');
     expect(enUS.Git).toBe('Git');
     expect(enUS['Git repository URL']).toBe('Git repository URL');
     expect(enUS['Git branch']).toBe('Git branch');
     expect(enUS['Git path']).toBe('Git path');
-    expect(enUS['Manage portal source code in NocoBase.']).toBe('Manage portal source code in NocoBase.');
-    expect(enUS['Manage portal source code in a Git repository.']).toBe(
-      'Manage portal source code in a Git repository.',
+    expect(enUS['Store and manage application source code in NocoBase.']).toBe(
+      'Store and manage application source code in NocoBase.',
     );
+    expect(enUS['Store and manage application source code in a Git repository.']).toBe(
+      'Store and manage application source code in a Git repository.',
+    );
+    expect(enUS['Used to generate the portal URL.']).toBe('Used to generate the portal URL.');
+    expect(enUS['Display name of the portal.']).toBe('Display name of the portal.');
+    expect(enUS['Example:']).toBe('Example:');
     expect(enUS['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
       'Directory inside the Git repository for this portal. Leave empty for the root.',
     );
     expect(enUS['The corresponding portal directory will also be deleted.']).toBe(
       'The corresponding portal directory will also be deleted.',
     );
+    expect(enUS['Set as default']).toBe('Set as default');
+    expect(enUS['Default portal updated successfully']).toBe('Default portal updated successfully');
+    expect(enUS['Use multiPortals:setDefault to update the default Portal']).toBe(
+      'Use multiPortals:setDefault to update the default Portal',
+    );
+    expect(enUS['filterByTk is required']).toBe('filterByTk is required');
+    expect(enUS['Portal not found']).toBe('Portal not found');
+    expect(enUS['Disabled Portal cannot be set as default']).toBe('Disabled Portal cannot be set as default');
+    expect(enUS['Portal device configuration is invalid']).toBe('Portal device configuration is invalid');
+    expect(enUS['Unsupported Portal type cannot be set as default']).toBe(
+      'Unsupported Portal type cannot be set as default',
+    );
 
     expect(zhCN['Add portal']).toBe('新增门户');
     expect(zhCN['Edit portal']).toBe('编辑门户');
     expect(zhCN['Delete portal']).toBe('删除门户');
     expect(zhCN.Desktop).toBe('桌面端');
-    expect(zhCN['Portal type']).toBe('门户类型');
-    expect(zhCN['No-code portal']).toBe('无代码门户');
-    expect(zhCN['AI portal']).toBe('AI 门户');
+    expect(zhCN['Development mode']).toBe('开发模式');
+    expect(zhCN['No-code mode']).toBe('无代码模式');
+    expect(zhCN['AI mode']).toBe('AI 模式');
     expect(zhCN.Icon).toBe('图标');
     expect(zhCN.Mobile).toBe('移动端');
     expect(zhCN['Multi-portal']).toBe('门户管理');
@@ -392,20 +449,36 @@ describe('plugin-multi-portal settings page', () => {
     expect(zhCN['Portal name can only contain lowercase letters, numbers, hyphens, and underscores']).toBe(
       '门户名称只能包含小写英文字母、数字、连字符和下划线',
     );
-    expect(zhCN['Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>']).toBe(
-      '通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>',
+    expect(zhCN['Build business systems through visual configuration.']).toBe('通过可视化界面配置开发业务系统。');
+    expect(
+      zhCN[
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.'
+      ],
+    ).toBe('用户通过拖拽和配置方式创建应用，AI 可以协助创建、调整和优化数据模型、界面、工作流等配置。');
+    expect(zhCN['Build complete business systems with AI agents and code.']).toBe(
+      '使用 AI Agent 和代码能力开发完整业务系统。',
     );
-    expect(zhCN['Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>']).toBe(
-      '通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>',
+    expect(
+      zhCN[
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.'
+      ],
+    ).toBe('用户通过自然语言描述需求，AI Agent 负责创建和修改应用，包括界面、数据模型、业务逻辑、角色权限等。');
+    expect(zhCN['Source management']).toBe('源码管理');
+    expect(zhCN['Select how the application source code is stored and managed.']).toBe(
+      '选择应用源码的存储和管理方式。',
     );
-    expect(zhCN['Source storage']).toBe('源码存储');
     expect(zhCN.NocoBase).toBe('NocoBase');
     expect(zhCN.Git).toBe('Git');
     expect(zhCN['Git repository URL']).toBe('Git 仓库 URL');
     expect(zhCN['Git branch']).toBe('Git 分支');
     expect(zhCN['Git path']).toBe('Git 路径');
-    expect(zhCN['Manage portal source code in NocoBase.']).toBe('在 NocoBase 中管理门户源码。');
-    expect(zhCN['Manage portal source code in a Git repository.']).toBe('在 Git 仓库中管理门户源码。');
+    expect(zhCN['Store and manage application source code in NocoBase.']).toBe('在 NocoBase 中存储和管理应用源码。');
+    expect(zhCN['Store and manage application source code in a Git repository.']).toBe(
+      '在 Git 仓库中存储和管理应用源码。',
+    );
+    expect(zhCN['Used to generate the portal URL.']).toBe('用于生成门户访问地址。');
+    expect(zhCN['Display name of the portal.']).toBe('门户显示名称。');
+    expect(zhCN['Example:']).toBe('示例：');
     expect(zhCN['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
       '该门户在 Git 仓库内的目录，留空表示仓库根目录。',
     );
@@ -413,6 +486,20 @@ describe('plugin-multi-portal settings page', () => {
       '关闭后，该门户将不会注册，也无法访问。',
     );
     expect(zhCN['The corresponding portal directory will also be deleted.']).toBe('对应的门户目录也会被删除。');
+    expect(zhCN['Set as default']).toBe('设为默认');
+    expect(zhCN['Default portal']).toBe('默认门户');
+    expect(zhCN['Default portal updated successfully']).toBe('默认门户更新成功');
+    expect(zhCN['Users enter this portal by default when they open the application without specifying one.']).toBe(
+      '用户未指定门户访问应用时，将默认进入此门户。',
+    );
+    expect(zhCN['Use multiPortals:setDefault to update the default Portal']).toBe(
+      '请使用 multiPortals:setDefault 更新默认门户',
+    );
+    expect(zhCN['filterByTk is required']).toBe('filterByTk 为必填项');
+    expect(zhCN['Portal not found']).toBe('门户不存在');
+    expect(zhCN['Disabled Portal cannot be set as default']).toBe('已禁用的门户不能设为默认');
+    expect(zhCN['Portal device configuration is invalid']).toBe('门户设备配置无效');
+    expect(zhCN['Unsupported Portal type cannot be set as default']).toBe('不支持的门户类型不能设为默认');
   });
 
   it('should fire resource.create with portal fields including uiLayoutUid', async () => {
@@ -425,6 +512,36 @@ describe('plugin-multi-portal settings page', () => {
     expect(onSubmitted).toHaveBeenCalledTimes(1);
   });
 
+  it('should set the explicit default through the dedicated action', async () => {
+    const resource = makeResource();
+    const onSubmitted = vi.fn();
+
+    await setDefaultMultiPortal({ resource, filterByTk: 'customer-portal', onSubmitted });
+
+    expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+  });
+
+  it('should update the portal before setting it as default', async () => {
+    const resource = makeResource();
+    const onSubmitted = vi.fn();
+
+    await updateMultiPortal({
+      resource,
+      filterByTk: 'customer-portal',
+      values: portalValues,
+      setAsDefault: true,
+      onSubmitted,
+    });
+
+    expect(resource.update).toHaveBeenCalledWith({ filterByTk: 'customer-portal', values: portalValues });
+    expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    expect(vi.mocked(resource.update).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(resource.setDefault).mock.invocationCallOrder[0],
+    );
+    expect(onSubmitted).toHaveBeenCalledTimes(1);
+  });
+
   it('should render the portal gallery without permission or UI layout wording', async () => {
     const user = userEvent.setup();
     const multiPortalsResource = makeResource({
@@ -433,11 +550,6 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
-              uiLayout: {
-                layoutType: 'mobile',
-                title: 'Mobile layout',
-                uid: 'mobile-layout-model',
-              },
             },
             {
               ...portalValues,
@@ -446,8 +558,7 @@ describe('plugin-multi-portal settings page', () => {
               portalType: 'ai',
               portalName: 'developer-portal',
               routePath: '/developer-portal',
-              uiLayoutUid: null,
-              uiLayout: null,
+              uiLayoutUid: 'admin-layout-model',
             },
             {
               ...portalValues,
@@ -456,11 +567,7 @@ describe('plugin-multi-portal settings page', () => {
               portalName: 'disabled-portal',
               routePath: '/disabled-portal',
               enabled: false,
-              uiLayout: {
-                layoutType: 'desktop',
-                title: 'Desktop layout',
-                uid: 'desktop-layout-model',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -514,21 +621,40 @@ describe('plugin-multi-portal settings page', () => {
     const customerPortalCard = screen.getByText('Customer portal').closest('.ant-card') as HTMLElement;
     const developerPortalCard = screen.getByText('Developer portal').closest('.ant-card') as HTMLElement;
     const disabledPortalCard = screen.getByText('Disabled portal').closest('.ant-card') as HTMLElement;
-    // 打开按钮和后面四个一样是图标按钮，不是链接（带 href 的按钮尺寸和颜色都对不齐）。
-    expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toBeEnabled();
     expect(within(customerPortalCard).getByRole('switch', { name: 'Enabled' })).toBeChecked();
+    expect(within(developerPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeDisabled();
+    expect(within(disabledPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeDisabled();
     expect(within(disabledPortalCard).getByRole('switch', { name: 'Enabled' })).not.toBeChecked();
 
-    // AI portal 没有可视化路由，禁用的 portal 也不该能点进去。
-    const routesButton = within(customerPortalCard).getByRole('button', { name: 'Routes' });
-    expect(routesButton).toBeEnabled();
-    expect(within(developerPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
-    expect(within(disabledPortalCard).getByRole('button', { name: 'Routes' })).toBeDisabled();
+    // Open no longer takes an action slot: the card itself opens the portal, and the hover overlay on the tile is the same entry, reachable by keyboard.
+    expect(within(customerPortalCard).getByRole('button', { name: 'View' })).toHaveClass('nb-portal-cover-overlay');
+    const openInNewTab = vi.spyOn(window, 'open').mockImplementation(() => null);
+    await user.click(within(customerPortalCard).getByText('Customer portal'));
+    expect(openInNewTab).toHaveBeenCalledWith('/v/customer-portal', '_blank', 'noopener,noreferrer');
+    openInNewTab.mockRestore();
 
-    expect(within(customerPortalCard).getByRole('button', { name: 'Delete' })).not.toHaveClass('ant-btn-dangerous');
+    // AI portals have no visual routes and disabled ones cannot be entered, so the menu omits the entry in both cases.
+    const customerMenu = await openCardMenu(user, customerPortalCard);
+    expect(customerMenu.getByRole('menuitem', { name: /Routes/ })).toBeInTheDocument();
+    expect(customerMenu.getByRole('menuitem', { name: /Set as default/ })).toBeInTheDocument();
+    expect(customerMenu.queryByRole('menuitem', { name: /Source management/ })).not.toBeInTheDocument();
+    expect(customerMenu.queryByRole('menuitem', { name: /View/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    const developerMenu = await openCardMenu(user, developerPortalCard);
+    expect(developerMenu.getByRole('menuitem', { name: /Source management/ })).toBeInTheDocument();
+    expect(developerMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    const disabledMenu = await openCardMenu(user, disabledPortalCard);
+    expect(disabledMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
+    // Making a disabled portal the default would leave users landing on an entry they cannot open, so that is omitted too.
+    expect(disabledMenu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
     expect(screen.queryByRole('button', { name: /Logs/ })).not.toBeInTheDocument();
 
-    await user.click(routesButton);
+    await clickCardMenuItem(user, customerPortalCard, 'Routes');
     expect(flowContext.current?.viewer.drawer).toHaveBeenLastCalledWith(
       expect.objectContaining({
         closable: true,
@@ -536,23 +662,120 @@ describe('plugin-multi-portal settings page', () => {
         width: '80%',
       }),
     );
-    await user.click(within(customerPortalCard).getByRole('button', { name: 'Delete' }));
+    await clickCardMenuItem(user, customerPortalCard, 'Set as default');
+    expect(multiPortalsResource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    await clickCardMenuItem(user, customerPortalCard, 'Delete');
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
 
-    // 卡片上的标签：portal 类型 + 布局名，不出现权限 / UI layout 字样。
-    // 测试里的 t 是恒等函数，渲染出来的是词条 key 而不是译文。
-    expect(within(customerPortalCard).getByText('No-code')).toBeInTheDocument();
-    // 卡片上的设备标签按 layoutType 映射，不直接用布局记录的名字。
-    expect(within(customerPortalCard).getByText('Mobile')).toBeInTheDocument();
-    expect(within(developerPortalCard).getByText('AI')).toBeInTheDocument();
+    // The portal type (AI / no-code) is carried by the group heading; cards no longer
+    // hold a type tag. `t` is the identity function here, so keys render, not translations.
+    expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
+    expect(screen.getByText('No-code')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
+    expect(screen.getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(screen.getByText('Build business systems through visual configuration.')).toBeInTheDocument();
+    // No-code portals keep the device icon mapped from uiLayoutUid; AI portals do not expose a device layout.
+    expect(within(customerPortalCard).getByLabelText('Mobile')).toHaveClass('anticon-mobile');
+    expect(within(developerPortalCard).queryByLabelText('Desktop')).not.toBeInTheDocument();
+    expect(within(developerPortalCard).queryByLabelText('Mobile')).not.toBeInTheDocument();
+    expect(within(disabledPortalCard).getByLabelText('Desktop')).toHaveClass('anticon-desktop');
     expect(screen.queryByText('UI layout')).not.toBeInTheDocument();
     expect(screen.queryByText(/permission/i)).not.toBeInTheDocument();
     expect(multiPortalsResource.list).toHaveBeenCalledWith({
       page: 1,
       pageSize: 20,
       sort: ['createdAt'],
-      appends: ['uiLayout'],
+    });
+  });
+
+  it('should show the complete portal title when an ellipsized title is hovered', async () => {
+    const longTitle = 'Customer service and partner collaboration portal';
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ ...portalValues, title: longTitle }],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(longTitle);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 100 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 200 });
+
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent(longTitle);
+    expect(title).toBeVisible();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+  });
+
+  it('should not show a tooltip when the portal title is not ellipsized', async () => {
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [portalValues],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn(() => resource),
+      },
+      viewer: {
+        drawer: vi.fn(),
+      },
+    };
+
+    render(
+      <AntdApp>
+        <MultiPortalsPage />
+      </AntdApp>,
+    );
+
+    const title = await screen.findByText(portalValues.title);
+    const titleContainer = title.parentElement as HTMLElement;
+    Object.defineProperty(titleContainer, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(titleContainer, 'scrollWidth', { configurable: true, value: 100 });
+
+    vi.useFakeTimers();
+    const trigger = screen.getByTestId('portal-title-tooltip-trigger');
+    await act(async () => {
+      fireEvent.mouseEnter(trigger);
+      await vi.advanceTimersByTimeAsync(200);
+    });
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.mouseLeave(trigger);
+      await vi.advanceTimersByTimeAsync(200);
     });
   });
 
@@ -566,11 +789,10 @@ describe('plugin-multi-portal settings page', () => {
               ...portalValues,
               title: 'Admin',
               uid: '__default_portal__',
+              isDefault: true,
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -599,10 +821,17 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(await screen.findByText('Admin')).toBeInTheDocument();
     const card = screen.getByText('Admin').closest('.ant-card') as HTMLElement;
-    // 默认 portal 也带 Default 标签，但删除入口照常给。
-    expect(within(card).getByText('Default')).toBeInTheDocument();
+    // The default portal gets a ribbon reading "Default". Badge.Ribbon wraps the card
+    // from the outside, so the text lives in the card's parent, not in .ant-card.
+    const cardWrapper = card.parentElement as HTMLElement;
+    expect(within(cardWrapper).getByText('Default')).toBeInTheDocument();
+    // Disabling the default portal would leave the app entry pointing nowhere, so the switch is greyed out.
+    expect(within(card).getByRole('switch', { name: 'Enabled' })).toBeDisabled();
 
-    await user.click(within(card).getByRole('button', { name: 'Delete' }));
+    // Already the default, so the menu drops "set as default"; delete stays available.
+    const menu = await openCardMenu(user, card);
+    expect(menu.queryByRole('menuitem', { name: /Set as default/ })).not.toBeInTheDocument();
+    await user.click(menu.getByRole('menuitem', { name: /Delete/ }));
     expect(await screen.findByText('Are you sure you want to delete it?')).toBeInTheDocument();
     expect(screen.getByText('The corresponding portal directory will also be deleted.')).toBeInTheDocument();
   });
@@ -665,20 +894,11 @@ describe('plugin-multi-portal settings page', () => {
     }
   });
 
-  it('should open create form with portal fields and layout selection', async () => {
+  it('should open create form without requesting enabled UI layouts', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource();
-    const request = vi.fn().mockResolvedValue({
-      data: {
-        data: [
-          {
-            uid: 'mobile-layout-model',
-            title: 'Mobile layout',
-          },
-        ],
-      },
-    });
+    const request = vi.fn().mockResolvedValue({ data: { data: [] } });
     flowContext.current = {
       api: {
         request,
@@ -716,21 +936,39 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).queryByLabelText('UID')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Access path')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Portal name')).toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Portal type')).toBeInTheDocument();
-    // 新建默认就是 AI portal，源码位置不再单独选，改由 git 地址填没填决定。
-    expect(within(dialog).getByRole('radio', { name: /AI portal/ })).toBeChecked();
-    expect(within(dialog).getByRole('radio', { name: /No-code portal/ })).not.toBeChecked();
+    expect(within(dialog).getByText('Used to generate the portal URL.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Example: /x/<name>')).toBeInTheDocument();
+    expect(within(dialog).getByText('Display name of the portal.')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Development mode')).toBeInTheDocument();
+    // 新建默认就是 AI mode，源码位置不再单独选，改由 git 地址填没填决定。
+    expect(within(dialog).getByRole('radio', { name: /AI mode/ })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: /No-code mode/ })).not.toBeChecked();
+    expect(
+      within(dialog).queryByText('Build complete business systems with AI agents and code.'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
+      ),
+    ).toBeInTheDocument();
     expect(
       within(dialog)
-        .getByRole('radio', { name: /No-code portal/ })
+        .getByRole('radio', { name: /No-code mode/ })
         .closest('label'),
     ).toHaveStyle('align-items: flex-start');
-    // 源码存储默认 NocoBase，git 字段要选中 Git 才出现；设备两种类型都要选。
-    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
+    // AI mode 不再暴露源码管理和设备选择。
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
-    expect(within(dialog).queryByLabelText('Source storage')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
+    expect(within(dialog).getByText('Example: /v/<name>')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Build business systems through visual configuration.')).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
+      ),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
     expect(within(dialog).getByText('Cover')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Icon')).not.toBeRequired();
@@ -740,51 +978,22 @@ describe('plugin-multi-portal settings page', () => {
       within(dialog).getByText('When disabled, this portal will not be registered or accessible.'),
     ).toBeInTheDocument();
     expect(within(dialog).queryByText('UI layout')).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/permission/i)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Routes permissions')).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(request).toHaveBeenCalledWith({
-        url: 'uiLayouts:listEnabled',
-        method: 'get',
-        params: {
-          pageSize: 200,
-          sort: ['uid'],
-        },
-        skipNotify: true,
-      });
-    });
+    expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:listEnabled' }));
     expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:list' }));
   });
 
-  it('should simplify layout option labels while preserving selected layout uid', async () => {
+  it('should expose only the two fixed device options and preserve the selected uid', async () => {
     const resource = makeResource();
-    const { container, dialog, user } = await openCreatePortalForm(resource, [
-      {
-        uid: 'desktop-layout-model',
-        title: 'Desktop layout',
-        layoutType: 'desktop',
-      },
-      {
-        uid: 'mobile-layout-model',
-        title: 'Mobile layout',
-        layoutType: 'mobile',
-      },
-      {
-        uid: 'legacy-layout-model',
-        title: 'Legacy layout',
-      },
-      {
-        uid: 'fallback-layout-model',
-      },
-    ]);
+    const { container, dialog, request, user } = await openCreatePortalForm(resource);
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
     expect((await screen.findAllByText('Desktop')).length).toBeGreaterThan(0);
     expect(await screen.findByText('Mobile')).toBeInTheDocument();
-    expect(await screen.findByText('Legacy layout')).toBeInTheDocument();
-    expect(await screen.findByText('fallback-layout-model')).toBeInTheDocument();
-    expect(screen.queryByText('Desktop layout')).not.toBeInTheDocument();
-    expect(screen.queryByText('Mobile layout')).not.toBeInTheDocument();
+    expect(
+      Array.from(document.querySelectorAll('.ant-select-item-option-content'), (node) => node.textContent),
+    ).toEqual(['Desktop', 'Mobile']);
     await user.click(screen.getByText('Mobile'));
 
     await user.type(within(dialog).getByLabelText('Title'), 'Mobile portal');
@@ -801,22 +1010,12 @@ describe('plugin-multi-portal settings page', () => {
         }),
       });
     });
+    expect(request).not.toHaveBeenCalledWith(expect.objectContaining({ url: 'uiLayouts:listEnabled' }));
   });
 
-  it('should select the desktop layout by default when creating a portal', async () => {
+  it('should select the admin layout uid by default when creating a portal', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, [
-      {
-        uid: 'desktop-layout-model',
-        title: 'Desktop layout',
-        layoutType: 'desktop',
-      },
-      {
-        uid: 'mobile-layout-model',
-        title: 'Mobile layout',
-        layoutType: 'mobile',
-      },
-    ]);
+    const { dialog, user } = await openCreatePortalForm(resource);
 
     expect(await within(dialog).findByText('Desktop')).toBeInTheDocument();
 
@@ -830,7 +1029,7 @@ describe('plugin-multi-portal settings page', () => {
           portalName: 'desktop-portal',
           routePath: '/desktop-portal',
           title: 'Desktop portal',
-          uiLayoutUid: 'desktop-layout-model',
+          uiLayoutUid: 'admin-layout-model',
         }),
       });
     });
@@ -882,13 +1081,13 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Admin portal');
     await user.type(within(dialog).getByLabelText('Portal name'), ' admin ');
     await user.type(within(dialog).getByLabelText('Icon'), 'homeoutlined');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
@@ -910,13 +1109,12 @@ describe('plugin-multi-portal settings page', () => {
 
   it('should submit explicit route name and portal type when creating a portal', async () => {
     const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
+    const { dialog, user } = await openCreatePortalForm(resource, { portalType: 'ai' });
 
     await user.type(within(dialog).getByLabelText('Title'), 'Developer portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'developer-portal');
-    // 源码存储默认 NocoBase，git 相关字段要选中 Git 之后才出现。
-    expect(within(dialog).getByLabelText('Source storage')).toBeInTheDocument();
-    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    // 源码管理不再通过 Add portal 表单填写，提交仍保留默认 NocoBase 配置。
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -934,62 +1132,6 @@ describe('plugin-multi-portal settings page', () => {
         }),
       });
     });
-  });
-
-  it('should submit git source storage options when creating an AI portal', async () => {
-    const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
-
-    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
-    await user.clear(within(dialog).getByLabelText('Git branch'));
-    await user.clear(within(dialog).getByLabelText('Git path'));
-    await user.clear(within(dialog).getByLabelText('Title'));
-    await user.type(within(dialog).getByLabelText('Title'), 'Git portal');
-    await user.clear(within(dialog).getByLabelText('Portal name'));
-    await user.type(within(dialog).getByLabelText('Portal name'), 'git-portal');
-    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
-
-    await waitFor(() => {
-      expect(resource.create).toHaveBeenCalledWith({
-        values: expect.objectContaining({
-          portalType: 'ai',
-          portalName: 'git-portal',
-          routePath: '/git-portal',
-          title: 'Git portal',
-          options: {
-            cover: null,
-            sourceStorage: 'git',
-            git: {
-              repo: 'git@github.com:nocobase/customer.git',
-              branch: 'main',
-              path: '',
-            },
-          },
-        }),
-      });
-    });
-  });
-
-  it('should fill the title and portal name from the git repository URL', async () => {
-    const resource = makeResource();
-    const { dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, { portalType: 'ai' });
-
-    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/customer-portal.git');
-
-    await waitFor(() => {
-      expect(within(dialog).getByLabelText('Title')).toHaveValue('Customer Portal');
-    });
-    expect(within(dialog).getByLabelText('Portal name')).toHaveValue('customer-portal');
-
-    // 用户改过的名称不再被后续的地址变更覆盖。
-    await user.clear(within(dialog).getByLabelText('Portal name'));
-    await user.type(within(dialog).getByLabelText('Portal name'), 'my-portal');
-    await user.clear(within(dialog).getByLabelText('Git repository URL'));
-    await user.type(within(dialog).getByLabelText('Git repository URL'), 'git@github.com:nocobase/other.git');
-
-    expect(within(dialog).getByLabelText('Portal name')).toHaveValue('my-portal');
   });
 
   it.each([['中文'], ['foo bar'], ['foo.bar'], ['Foo'], ['foo/bar']])(
@@ -1052,9 +1194,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1093,7 +1232,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1125,6 +1265,80 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
+  it('should expose the default portal setting in the edit form', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              isDefault: false,
+              uiLayoutUid: 'mobile-layout-model',
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn(),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
+    const defaultPortalSwitch = within(dialog).getByRole('switch', { name: 'Default portal' });
+    expect(defaultPortalSwitch).toBeEnabled();
+    expect(defaultPortalSwitch).not.toBeChecked();
+    expect(
+      within(dialog).getByText(
+        'Users enter this portal by default when they open the application without specifying one.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(defaultPortalSwitch);
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Customer portal',
+          enabled: true,
+        }),
+      });
+      expect(resource.setDefault).toHaveBeenCalledWith({ filterByTk: 'customer-portal' });
+    });
+  });
+
   it('should submit null when clearing the portal icon', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
@@ -1135,9 +1349,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1176,7 +1387,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1198,7 +1410,7 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should populate and preserve AI portal git source storage options when editing', async () => {
+  it('should preserve hidden AI portal git source storage options when editing', async () => {
     const user = userEvent.setup();
     let drawerContent: React.ReactNode;
     const resource = makeResource({
@@ -1215,9 +1427,6 @@ describe('plugin-multi-portal settings page', () => {
                   branch: 'develop',
                   path: 'portals/customer',
                 },
-              },
-              uiLayout: {
-                title: 'Mobile layout',
               },
             },
           ],
@@ -1257,7 +1466,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1266,10 +1476,11 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByRole('radio', { name: /^Git/ })).toBeChecked();
-    expect(within(dialog).getByLabelText('Git repository URL')).toHaveValue('git@github.com:nocobase/customer.git');
-    expect(within(dialog).getByLabelText('Git branch')).toHaveValue('develop');
-    expect(within(dialog).getByLabelText('Git path')).toHaveValue('portals/customer');
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git branch')).not.toBeInTheDocument();
+    expect(within(dialog).queryByLabelText('Git path')).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
 
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
@@ -1278,8 +1489,103 @@ describe('plugin-multi-portal settings page', () => {
         filterByTk: 'customer-portal',
         values: expect.objectContaining({
           portalType: 'ai',
+          uiLayoutUid: 'mobile-layout-model',
           options: {
             cover: null,
+            sourceStorage: 'git',
+            git: {
+              repo: 'git@github.com:nocobase/customer.git',
+              branch: 'develop',
+              path: 'portals/customer',
+            },
+          },
+        }),
+      });
+    });
+  });
+
+  it('should configure AI portal source management from the card menu', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              portalType: 'ai',
+              uiLayoutUid: 'admin-layout-model',
+              options: {
+                cover: {
+                  id: 1,
+                  url: 'https://example.com/cover.png',
+                },
+                sourceStorage: 'nocobase',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const targetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, targetCard, 'Source management');
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Source management' });
+    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
+    await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
+    await user.clear(within(dialog).getByLabelText('Git branch'));
+    await user.type(within(dialog).getByLabelText('Git branch'), 'develop');
+    await user.type(within(dialog).getByLabelText('Git path'), 'portals/customer');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Customer portal',
+          uid: 'customer-portal',
+          portalName: 'customer-portal',
+          routePath: '/customer-portal',
+          portalType: 'ai',
+          options: {
+            cover: {
+              id: 1,
+              url: 'https://example.com/cover.png',
+            },
             sourceStorage: 'git',
             git: {
               repo: 'git@github.com:nocobase/customer.git',
@@ -1303,7 +1609,7 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               portalType: 'ai',
-              uiLayoutUid: null,
+              uiLayoutUid: 'admin-layout-model',
               options: {
                 sourceStorage: 'nocobase',
                 git: {
@@ -1319,7 +1625,7 @@ describe('plugin-multi-portal settings page', () => {
     });
     flowContext.current = {
       api: {
-        request: vi.fn().mockResolvedValue({ data: { data: defaultUiLayoutOptions } }),
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
         resource: vi.fn((name: string) => {
           if (name === 'multiPortals') {
             return resource;
@@ -1341,7 +1647,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1350,7 +1657,7 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Source management')).not.toBeInTheDocument();
     expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
 
     await user.clear(within(dialog).getByLabelText('Title'));
@@ -1369,21 +1676,26 @@ describe('plugin-multi-portal settings page', () => {
     });
   });
 
-  it('should submit the device for AI portals as well', async () => {
+  it('should hide the device and submit Desktop when creating an AI portal', async () => {
     const resource = makeResource();
-    // 设备对 AI portal 同样有意义：应用切换器按它归类。
-    const { container, dialog, user } = await openCreatePortalForm(resource, defaultUiLayoutOptions, {
+    const { container, dialog, user } = await openCreatePortalForm(resource, {
       portalType: 'ai',
     });
 
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
+    expect(within(dialog).getByLabelText('Device')).toBeInTheDocument();
+    await selectMobileLayout(container, user);
+    await user.click(within(dialog).getByRole('radio', { name: /AI mode/ }));
+    expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
+
     await user.type(within(dialog).getByLabelText('Title'), 'Agent portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'agent-portal');
-    await selectMobileLayout(container, user);
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     await waitFor(() => {
       expect(resource.create).toHaveBeenCalledWith({
-        values: expect.objectContaining({ portalType: 'ai', uiLayoutUid: 'mobile-layout-model' }),
+        values: expect.objectContaining({ portalType: 'ai', uiLayoutUid: 'admin-layout-model' }),
       });
     });
   });
@@ -1397,9 +1709,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               icon: 'homeoutlined',
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },
@@ -1437,7 +1746,6 @@ describe('plugin-multi-portal settings page', () => {
           uid: 'customer-portal',
           portalName: 'customer-portal',
           routePath: '/customer-portal',
-          uiLayoutUid: 'mobile-layout-model',
           icon: 'homeoutlined',
           portalType: 'no-code',
           enabled: false,
@@ -1455,7 +1763,6 @@ describe('plugin-multi-portal settings page', () => {
             {
               ...portalValues,
               portalType: 'ai',
-              uiLayoutUid: null,
               options: {
                 sourceStorage: 'git',
                 git: {
@@ -1509,6 +1816,7 @@ describe('plugin-multi-portal settings page', () => {
           },
         }),
       });
+      expect(resource.update.mock.calls[0]?.[0].values).not.toHaveProperty('uiLayoutUid');
     });
   });
 
@@ -1524,9 +1832,7 @@ describe('plugin-multi-portal settings page', () => {
               uid: '__default_portal__',
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -1566,7 +1872,6 @@ describe('plugin-multi-portal settings page', () => {
           uid: '__default_portal__',
           portalName: 'admin',
           routePath: '/admin',
-          uiLayoutUid: 'mobile-layout-model',
           icon: null,
           portalType: 'no-code',
           enabled: false,
@@ -1588,9 +1893,7 @@ describe('plugin-multi-portal settings page', () => {
               uid: '__default_portal__',
               portalName: 'admin',
               routePath: '/admin',
-              uiLayout: {
-                title: 'Desktop layout',
-              },
+              uiLayoutUid: 'admin-layout-model',
             },
           ],
         },
@@ -1629,7 +1932,8 @@ describe('plugin-multi-portal settings page', () => {
       </AntdApp>,
     );
 
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
+    const editTargetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, editTargetCard, 'Edit');
     rerender(
       <AntdApp>
         <MultiPortalsPage />
@@ -1641,73 +1945,8 @@ describe('plugin-multi-portal settings page', () => {
     // 门户名和类型建好之后就是身份（名字在访问路径里、类型决定 /v 还是 /x），编辑态一律锁死；
     // legacy default uid 的区别在于其余字段仍然可改。
     expect(within(dialog).getByLabelText('Portal name')).toBeDisabled();
-    expect(within(dialog).getByLabelText('Portal type')).toBeDisabled();
+    expect(within(dialog).getByLabelText('Development mode')).toBeDisabled();
     expect(within(dialog).getByLabelText('Enabled')).not.toBeDisabled();
-    expect(within(dialog).getByLabelText('Device')).toBeDisabled();
-  });
-
-  it('should populate the layout field from the appended uiLayout relation when editing', async () => {
-    const user = userEvent.setup();
-    let drawerContent: React.ReactNode;
-    const resource = makeResource({
-      list: vi.fn().mockResolvedValue({
-        data: {
-          data: [
-            {
-              ...portalValues,
-              uiLayoutUid: undefined,
-              uiLayout: {
-                uid: 'mobile-layout-model',
-                title: 'Mobile layout',
-              },
-            },
-          ],
-        },
-      }),
-    });
-    flowContext.current = {
-      api: {
-        request: vi.fn().mockResolvedValue({
-          data: {
-            data: [
-              {
-                uid: 'mobile-layout-model',
-                title: 'Mobile layout',
-              },
-            ],
-          },
-        }),
-        resource: vi.fn((name: string) => {
-          if (name === 'multiPortals') {
-            return resource;
-          }
-          throw new Error(`Unexpected resource ${name}`);
-        }),
-      },
-      viewer: {
-        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
-          drawerContent = options.content();
-        }),
-      },
-    };
-
-    const { rerender } = render(
-      <AntdApp>
-        <MultiPortalsPage />
-        {drawerContent}
-      </AntdApp>,
-    );
-
-    await user.click(await screen.findByRole('button', { name: /Edit/ }));
-    rerender(
-      <AntdApp>
-        <MultiPortalsPage />
-        {drawerContent}
-      </AntdApp>,
-    );
-
-    const dialog = await screen.findByRole('dialog', { name: 'Edit portal' });
-    expect(await within(dialog).findByText('Mobile layout')).toBeInTheDocument();
     expect(within(dialog).getByLabelText('Device')).toBeDisabled();
   });
 
@@ -1757,12 +1996,12 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Bad portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'foo.bar');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     expect(
@@ -1828,12 +2067,12 @@ describe('plugin-multi-portal settings page', () => {
     );
 
     const dialog = await screen.findByRole('dialog', { name: 'Add portal' });
-    await user.click(within(dialog).getByRole('radio', { name: /No-code portal/ }));
+    await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     await user.type(within(dialog).getByLabelText('Title'), 'Duplicate portal');
     await user.type(within(dialog).getByLabelText('Portal name'), 'duplicate-portal');
 
     fireEvent.mouseDown(container.querySelector('.ant-select-selector') as Element);
-    await user.click(await screen.findByText('Mobile layout'));
+    await user.click(await screen.findByText('Mobile'));
     await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
 
     expect(await screen.findByText(backendMessage)).toBeInTheDocument();
@@ -1849,9 +2088,6 @@ describe('plugin-multi-portal settings page', () => {
           data: [
             {
               ...portalValues,
-              uiLayout: {
-                title: 'Mobile layout',
-              },
             },
           ],
         },

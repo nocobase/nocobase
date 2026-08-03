@@ -33,9 +33,7 @@ const portal = {
   routePath: '/customer',
   authCheck: true,
   enabled: true,
-  uiLayout: {
-    layoutType: 'desktop',
-  },
+  uiLayoutUid: 'admin-layout-model',
 } satisfies MultiPortalRuntimeRecord;
 
 function createLayoutManager() {
@@ -63,23 +61,29 @@ describe('Multi Portal runtime registration failures', () => {
     ).rejects.toBe(error);
   });
 
-  it('rejects unknown layout type, duplicate uid, and duplicate route name before registration', () => {
+  it('rejects an unknown layout uid atomically before registering any portal', () => {
+    const layoutManager = createLayoutManager();
     expect(() =>
-      registerMultiPortalRecords(createLayoutManager(), [
+      registerMultiPortalRecords(layoutManager, [
+        portal,
         {
           ...portal,
-          uiLayout: {
-            layoutType: 'unknown',
-          },
+          uid: 'unknown-layout-portal',
+          portalName: 'unknownLayout',
+          uiLayoutUid: 'unknown-layout-model',
         },
       ]),
-    ).toThrow("Portal 'customer-portal' uses an unknown UI layout type 'unknown'.");
+    ).toThrow("Portal 'unknown-layout-portal' uses an unknown UI layout uid 'unknown-layout-model'.");
+    expect(layoutManager.registerLayout).not.toHaveBeenCalled();
+  });
+
+  it('rejects duplicate uid and duplicate route name before registration', () => {
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [portal, { ...portal, portalName: 'customer-copy' }]),
     ).toThrow("Duplicate portal uid 'customer-portal'.");
     expect(() =>
       registerMultiPortalRecords(createLayoutManager(), [portal, { ...portal, uid: 'customer-copy' }]),
-    ).toThrow("Duplicate portal route name 'customer'.");
+    ).toThrow("Duplicate portal name 'customer'.");
 
     const layoutManager = createLayoutManager();
     layoutManager.listLayouts.mockReturnValue([{ routeName: 'existing', uid: portal.uid }]);

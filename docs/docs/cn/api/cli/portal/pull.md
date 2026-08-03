@@ -1,14 +1,14 @@
 ---
 title: "nb portal pull"
-description: "nb portal pull 命令参考：从 source storage 拉取 Portal 源码到本地源码目录。"
-keywords: "nb portal pull,NocoBase CLI,Portal,拉取源码,source storage,本地源码目录"
+description: "nb portal pull 命令参考：从 source storage 拉取 Portal 源码到本地工作区。"
+keywords: "nb portal pull,NocoBase CLI,Portal,拉取源码,source storage,工作区"
 ---
 
 # nb portal pull
 
-从 source storage 拉取 Portal 源码到本地源码目录。
+从 source storage 拉取 Portal 源码到本地工作区。
 
-这个命令适合接手已有 Portal、换机器开发，或者本地源码目录丢失后重新拉取源码。
+这个命令适合接手已有 Portal、换机器开发，或者本地工作区丢失后重新拉取源码。
 
 ## 用法
 
@@ -23,7 +23,11 @@ nb portal pull <portal> [flags]
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
-| `--force` | boolean | 删除已有本地源码目录并重新拉取 |
+| `--force` | boolean | 删除已有本地工作区并重新拉取 |
+| `--path` | string | Portal 开发工作区目录，默认使用已保存路径，其次是 `./<portal>` |
+| `--git-repo` | string | 临时从指定 Git 仓库拉取源码，不更新远端 Portal 源码配置 |
+| `--git-branch` | string | 临时 `--git-repo` 拉取时使用的 Git 分支，默认是 `main` |
+| `--git-path` | string | 临时 Git 仓库内的源码目录，默认使用仓库根目录（`.`） |
 | `--install` / `--no-install` | boolean | 拉取源码后是否执行 `pnpm install`，默认执行 |
 
 ## 示例
@@ -40,7 +44,19 @@ nb portal pull customer
 nb portal pull customer --env prod --yes
 ```
 
-重新拉取并覆盖本地源码目录：
+指定开发工作区路径：
+
+```bash
+nb portal pull customer --path ./portals/customer
+```
+
+临时从 Git 仓库拉取源码，但不写入 Portal 记录：
+
+```bash
+nb portal pull customer --git-repo git@github.com:nocobase/customer-portal.git --git-branch main --git-path portals/customer
+```
+
+重新拉取并覆盖本地工作区：
 
 ```bash
 nb portal pull customer --force
@@ -54,13 +70,13 @@ nb portal pull customer --no-install
 
 ## 说明
 
-`--force` 会删除已有本地源码目录再重新拉取。使用前确认本地没有未提交或未推送的源码变更。
+`--force` 会删除已有本地工作区再重新拉取。使用前确认本地没有未提交或未推送的源码变更。
 
-如果拉取后的本地源码目录包含 `package.json`，默认会自动执行 `pnpm install`。在 CI、脚本或你准备手动安装依赖时，可以传入 `--no-install` 跳过。
+如果拉取后的工作区包含 `package.json`，默认会自动执行 `pnpm install`。在 CI、脚本或你准备手动安装依赖时，可以传入 `--no-install` 跳过。
 
-如果 Portal 使用 Git source storage，`pull` 会 clone 配置中的仓库和分支，并复制 `--git-path` 对应目录。配置中的分支不存在时，CLI 会尝试基于仓库默认分支创建本地分支；如果配置目录不存在，命令会报错。
+如果 Portal 使用 Git source storage，`pull` 会 clone 配置中的仓库和分支，并复制 `--git-path` 对应目录。也可以通过 `--git-repo` 临时从另一个 Git 仓库拉取源码，这不会修改远端 Portal 记录；`--git-branch` 和 `--git-path` 只能和 `--git-repo` 一起使用。如果要持久保存 Git source storage 配置，请使用 `nb portal config`。配置中的分支不存在时，CLI 会尝试基于仓库默认分支创建本地分支；如果配置目录不存在，命令会报错。
 
-如果 Portal 使用默认的 `nocobase` source storage，`local` 和 `docker` env 下源码通常已经在当前机器或 Docker volume 中，`pull` 会提示不需要拉取。`http` env 会通过 API 下载源码归档，并展开到本地源码目录。
+如果 Portal 使用默认的 `nocobase` source storage，`pull` 会通过 API 下载源码归档，并展开到开发工作区。成功拉取后，开发工作区路径会保存到 CLI env config 的 `portals.<portal>.path`。
 
 ## 相关命令
 

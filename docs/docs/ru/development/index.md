@@ -62,5 +62,5 @@ features:
         link: /file-manager/development
       - title: Расширение базы знаний
         details: Подключайте внешние базы знаний или пользовательские сервисы поиска, чтобы расширять RAG-источники для AI employees.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

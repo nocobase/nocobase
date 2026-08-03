@@ -88,7 +88,7 @@ describe('middleware', () => {
     });
   });
 
-  describe('cookie token fallback', () => {
+  describe('cookie token scope', () => {
     function getCookieValue(cookies: string[], name: string) {
       return cookies
         .find((cookie) => cookie.startsWith(`${name}=`))
@@ -96,7 +96,7 @@ describe('middleware', () => {
         .slice(name.length + 1);
     }
 
-    it('should use auth cookie when authorization header and query token are absent', async () => {
+    it('should not use auth cookie for regular API requests', async () => {
       const user = await db.getRepository('users').findOne();
       await agent.login(user.id);
       const checkRes = await agent.resource('auth').check();
@@ -107,35 +107,8 @@ describe('middleware', () => {
         .get('/auth:check')
         .set('Cookie', [`${getAuthCookieName('authToken', app.name)}=${token}`]);
 
-      expect(res.status).toBe(200);
-      expect(res.body.data.id).toBe(user.id);
-    });
-
-    it('should read auth cookie only from the current app namespace', async () => {
-      const originalName = app.options.name;
-      app.options.name = 'subapp';
-
-      try {
-        const user = await db.getRepository('users').findOne();
-        await agent.login(user.id);
-        const checkRes = await agent.resource('auth').check();
-        const token = checkRes.request.header['Authorization'].replace('Bearer ', '');
-        const visitorAgent = app.agent();
-
-        const wrongAppCookieRes = await visitorAgent
-          .get('/auth:check')
-          .set('Cookie', [`${getAuthCookieName('authToken', 'main')}=${token}`]);
-        expect(wrongAppCookieRes.status).toBe(401);
-        expect(wrongAppCookieRes.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
-
-        const res = await visitorAgent
-          .get('/auth:check')
-          .set('Cookie', [`${getAuthCookieName('authToken', 'subapp')}=${token}`]);
-        expect(res.status).toBe(200);
-        expect(res.body.data.id).toBe(user.id);
-      } finally {
-        app.options.name = originalName;
-      }
+      expect(res.status).toBe(401);
+      expect(res.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
     });
 
     it('should not refresh auth cookies after successful header token check', async () => {
@@ -182,7 +155,7 @@ describe('middleware', () => {
       expect(res.body.errors.some((error) => error.code === AuthErrorCode.INVALID_TOKEN)).toBe(true);
     });
 
-    it('should require csrf token for unsafe cookie-auth requests only', async () => {
+    it('should not use auth cookie for unsafe API requests even when the csrf token matches', async () => {
       const signInRes = await app
         .agent()
         .post('/auth:signIn')
@@ -197,14 +170,12 @@ describe('middleware', () => {
       expect(cookies.join('; ')).toContain(`${getAuthCookieName('role', app.name)}=`);
 
       const blockedRes = await app.agent().post('/auth:check').set('Cookie', cookieHeader);
-      expect(blockedRes.status).toBe(403);
+      expect(blockedRes.status).toBe(401);
+      expect(blockedRes.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
 
-      const passedRes = await app
-        .agent()
-        .post('/auth:check')
-        .set('Cookie', cookieHeader)
-        .set('X-CSRF-Token', csrfToken);
-      expect(passedRes.status).toBe(200);
+      const csrfRes = await app.agent().post('/auth:check').set('Cookie', cookieHeader).set('X-CSRF-Token', csrfToken);
+      expect(csrfRes.status).toBe(401);
+      expect(csrfRes.body.errors.some((error) => error.code === AuthErrorCode.EMPTY_TOKEN)).toBe(true);
 
       const headerTokenRes = await app
         .agent()
@@ -212,29 +183,6 @@ describe('middleware', () => {
         .set('Authorization', `Bearer ${signInRes.body.data.token}`)
         .set('Cookie', cookieHeader);
       expect(headerTokenRes.status).toBe(200);
-    });
-
-    it('should require csrf token when a cookie-auth request renews an expired token', async () => {
-      await app.authManager.tokenController.setConfig({
-        tokenExpirationTime: '1s',
-        sessionExpirationTime: '1d',
-        expiredTokenRenewLimit: '1d',
-      });
-
-      const signInRes = await app
-        .agent()
-        .post('/auth:signIn')
-        .set({ 'X-Authenticator': 'basic' })
-        .send({
-          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
-          password: process.env.INIT_ROOT_PASSWORD,
-        });
-      const cookieHeader = signInRes.headers['set-cookie'].map((cookie) => cookie.split(';')[0]);
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const blockedRes = await app.agent().post('/auth:check').set('Cookie', cookieHeader);
-      expect(blockedRes.status).toBe(403);
     });
 
     it('should not require csrf token for unsafe query-token requests', async () => {
@@ -310,6 +258,9 @@ describe('middleware', () => {
 
         expect(res.headers['access-control-allow-origin']).toBe('https://trusted.example');
         expect(res.headers['access-control-allow-credentials']).toBe('true');
+        expect(res.headers['access-control-expose-headers'].split(',')).toEqual(
+          expect.arrayContaining(['content-disposition', 'x-new-token']),
+        );
       } finally {
         restoreEnv('CORS_ORIGIN_WHITELIST', originalWhitelist);
       }

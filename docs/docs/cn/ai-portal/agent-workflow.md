@@ -27,7 +27,7 @@ nb portal info main
 输出里的本地路径就是 Portal 源码所在的位置。`cd` 过去，然后打开你的 AI Agent：
 
 ```bash
-cd <本地源码目录>
+cd <开发工作区目录>
 ```
 
 之后描述需求就行：
@@ -124,7 +124,7 @@ NocoBase 里已经启用了钉钉登录，帮登录页加上钉钉登录按钮
 nb portal pull main --force
 ```
 
-`--force` 会删掉本地源码目录重新拉取，执行前确认没有想保留的改动。想避免这种取舍，建议早点把源码切到 Git 管理，具体做法见 [部署与源码管理](./deploy.md)。
+`--force` 会删掉开发工作区重新拉取，执行前确认没有想保留的改动。想避免这种取舍，建议早点把源码切到 Git 管理，具体做法见 [部署与源码管理](./deploy.md)。
 
 **构建失败怎么排查？**
 
@@ -147,5 +147,5 @@ TypeScript 类型错误和依赖缺失是最常见的两类，把报错贴给 AI
 - [项目结构与技术栈](./project-structure.md) — 模板的目录约定，帮你判断 AI 写得对不对
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
 - [数据建模](../ai-builder/data-modeling.md) — 让 AI 先设计好数据表再做页面
-- [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的本地源码目录位置
+- [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的开发工作区位置
 - [`nb portal pull`](../api/cli/portal/pull.md) — 从 source storage 重新拉取源码

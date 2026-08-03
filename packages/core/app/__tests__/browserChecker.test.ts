@@ -76,19 +76,19 @@ function runBrowserChecker(options: RunBrowserCheckerOptions) {
 
 describe('v2 browser checker', () => {
   it.each([undefined, 'modern-default', 'modern-only'] as const)(
-    'redirects the modern client root to Settings for entry mode %s',
+    'lets the modern client handle its root for entry mode %s',
     (appClientEntryMode) => {
       expect(
         runBrowserChecker({
           appClientEntryMode,
           pathname: '/v/',
         }).replacements,
-      ).toEqual(['https://example.test/settings']);
+      ).toEqual([]);
     },
   );
 
   it.each([undefined, 'modern-default', 'modern-only'] as const)(
-    'redirects scoped modern client roots to scoped Settings for entry mode %s',
+    'lets scoped modern clients handle their roots for entry mode %s',
     (appClientEntryMode) => {
       expect(
         runBrowserChecker({
@@ -97,7 +97,7 @@ describe('v2 browser checker', () => {
           search: '?from=admin',
           hash: '#portal',
         }).replacements,
-      ).toEqual(['https://example.test/settings/apps/demo?from=admin#portal']);
+      ).toEqual([]);
     },
   );
 

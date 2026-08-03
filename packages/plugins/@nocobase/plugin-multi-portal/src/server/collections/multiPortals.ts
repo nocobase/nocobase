@@ -18,7 +18,11 @@ export default defineCollection({
   indexes: [
     {
       type: 'UNIQUE',
-      fields: ['portalName'],
+      fields: ['routeName'],
+    },
+    {
+      type: 'UNIQUE',
+      fields: ['isDefault'],
     },
   ],
   fields: [
@@ -69,6 +73,12 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'isDefault',
+      type: 'boolean',
+      defaultValue: null,
+      allowNull: true,
+    },
+    {
       name: 'options',
       type: 'json',
       defaultValue: {},
@@ -78,7 +88,6 @@ export default defineCollection({
       name: 'uiLayoutUid',
       type: 'string',
       allowNull: true,
-      hidden: true,
     },
     {
       name: 'createdAt',
@@ -93,14 +102,6 @@ export default defineCollection({
       field: 'updatedAt',
       interface: 'updatedAt',
       allowNull: true,
-    },
-    {
-      type: 'belongsTo',
-      name: 'uiLayout',
-      target: 'uiLayouts',
-      targetKey: 'uid',
-      foreignKey: 'uiLayoutUid',
-      onDelete: 'RESTRICT',
     },
   ],
   filterTargetKey: 'uid',

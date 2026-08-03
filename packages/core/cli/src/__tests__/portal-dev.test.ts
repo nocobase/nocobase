@@ -12,6 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 import { devPortalWorkspace } from '../lib/portal-dev.js';
+import type { RequestOptions } from '../lib/api-client.js';
 import type { PortalCreateEnvLike } from '../lib/portal-create.js';
 
 const tempDirs: string[] = [];
@@ -36,6 +37,7 @@ function createEnv(params: {
   appPublicPath?: string;
   kind?: PortalCreateEnvLike['kind'];
   configuredStoragePath?: string;
+  portals?: PortalCreateEnvLike['config']['portals'];
 }): PortalCreateEnvLike {
   return {
     name: params.name,
@@ -46,6 +48,7 @@ function createEnv(params: {
       apiBaseUrl: params.apiBaseUrl ?? 'http://localhost:13000/api',
       appPublicPath: params.appPublicPath,
       storagePath: params.configuredStoragePath ?? params.storagePath,
+      portals: params.portals,
     },
   };
 }
@@ -71,31 +74,49 @@ async function preparePortalWorkspace(params: {
   return portalDir;
 }
 
+function appInfoData(name = 'main') {
+  return {
+    data: {
+      name,
+    },
+  };
+}
+
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
 test('updates env files and starts portal dev without building or syncing records', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
+  const sourceRoot = await makeTempDir('nocobase-cli-portal-dev-source-');
   const portalDir = await preparePortalWorkspace({
-    storagePath,
+    storagePath: sourceRoot,
     app: 'crm',
     envContent: 'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/old/api\n',
     envLocalContent: 'NOCOBASE_PORTAL_BASE=/old/base/\nLOCAL_ONLY=true\n',
   });
   const onStart = vi.fn();
   const runCommand = vi.fn(async () => undefined);
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    expect(options.operation.pathTemplate).toBe('/app:getInfo');
+    return { ok: true, status: 200, data: appInfoData('crm') };
+  });
 
   await expect(
     devPortalWorkspace({
       portal: 'customer',
+      envName: 'prod',
       env: createEnv({
         kind: 'http',
         storagePath,
         configuredStoragePath: storagePath,
         apiBaseUrl: 'https://example.com/console/api/__app/crm',
+        portals: {
+          customer: { path: portalDir },
+        },
       }),
       runCommand,
+      apiRequest,
       onStart,
     }),
   ).resolves.toEqual({
@@ -135,24 +156,35 @@ test('updates env files and starts portal dev without building or syncing record
 
 test('fails when Portal is missing', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
+  const cwd = await makeTempDir('nocobase-cli-portal-dev-cwd-');
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(cwd);
 
-  await expect(
-    devPortalWorkspace({
-      portal: 'customer',
-      env: createEnv({ storagePath }),
-      runCommand: vi.fn(),
-    }),
-  ).rejects.toThrow(/Portal does not exist/);
+  try {
+    await expect(
+      devPortalWorkspace({
+        portal: 'customer',
+        env: createEnv({ storagePath }),
+        runCommand: vi.fn(),
+      }),
+    ).rejects.toThrow(new RegExp(`Portal does not exist: ${path.join(cwd, 'customer').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+  } finally {
+    cwdSpy.mockRestore();
+  }
 });
 
 test('fails when package.json is missing', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-dev-storage-');
-  await fsp.mkdir(path.join(storagePath, 'portals', 'main', 'customer'), { recursive: true });
+  const portalDir = await makeTempDir('nocobase-cli-portal-dev-source-');
 
   await expect(
     devPortalWorkspace({
       portal: 'customer',
-      env: createEnv({ storagePath }),
+      env: createEnv({
+        storagePath,
+        portals: {
+          customer: { path: portalDir },
+        },
+      }),
       runCommand: vi.fn(),
     }),
   ).rejects.toThrow(/package\.json is missing/);

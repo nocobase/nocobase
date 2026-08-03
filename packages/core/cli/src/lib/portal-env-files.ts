@@ -52,8 +52,9 @@ export async function updatePortalEnvFiles(params: {
   apiBaseUrl: string;
   portalBase: string;
 }): Promise<void> {
+  const envApiUrl = resolvePortalEnvApiUrl(params.apiBaseUrl);
   await upsertPortalEnvFile(path.join(params.portalDir, '.env'), {
-    NOCOBASE_API_URL: resolvePortalEnvApiUrl(params.apiBaseUrl),
+    NOCOBASE_API_URL: envApiUrl,
     NOCOBASE_PORTAL_BASE: params.portalBase,
   });
   await upsertPortalEnvFile(path.join(params.portalDir, '.env.local'), {

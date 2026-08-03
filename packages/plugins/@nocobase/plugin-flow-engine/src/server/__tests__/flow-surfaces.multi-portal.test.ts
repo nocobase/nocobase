@@ -9,7 +9,10 @@
 
 import type { Model } from '@nocobase/database';
 import type { MockServer } from '@nocobase/test';
-import type { FlowSurfaceNavigationTarget } from '../flow-surfaces/navigation-targets';
+import {
+  FlowSurfaceNavigationTargetsService,
+  type FlowSurfaceNavigationTarget,
+} from '../flow-surfaces/navigation-targets';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { getData } from './flow-surfaces.contract.helpers';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
@@ -42,14 +45,6 @@ function registerMultiPortalFixture(app: MockServer) {
       { name: 'authCheck', type: 'boolean', defaultValue: true, allowNull: false },
       { name: 'enabled', type: 'boolean', defaultValue: true, allowNull: false },
       { name: 'uiLayoutUid', type: 'string', allowNull: false },
-      {
-        type: 'belongsTo',
-        name: 'uiLayout',
-        target: 'uiLayouts',
-        targetKey: 'uid',
-        foreignKey: 'uiLayoutUid',
-        onDelete: 'RESTRICT',
-      },
     ],
   });
   app.db.extendCollection({
@@ -198,6 +193,152 @@ function buildMarkdownBlueprint(portalUid: string, groupTitle: string, pageTitle
     })),
   };
 }
+
+describe('flowSurfaces scalar Multi-portal layout identity', () => {
+  it('derives Portal targets and resolution from uiLayoutUid without requiring enabled UI Layout records', async () => {
+    const portals = [
+      {
+        uid: DESKTOP_PORTAL_UID,
+        title: 'Scalar desktop workspace',
+        icon: 'DashboardOutlined',
+        portalType: 'no-code',
+        portalName: 'scalarDesktopWorkspace',
+        routePath: '/scalar-desktop-workspace',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: ADMIN_LAYOUT_UID,
+      },
+      {
+        uid: MOBILE_PORTAL_UID,
+        title: 'Scalar mobile workspace',
+        icon: 'MobileOutlined',
+        portalType: 'no-code',
+        portalName: 'scalarMobileWorkspace',
+        routePath: '/scalar-mobile-workspace',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: MOBILE_LAYOUT_UID,
+      },
+    ];
+    const ordinaryLayoutUid = 'flow-surfaces-ordinary-layout';
+    const ordinaryLayout = {
+      uid: ordinaryLayoutUid,
+      title: 'Ordinary layout',
+      layoutType: 'desktop',
+      routeName: 'flowSurfacesOrdinaryLayout',
+      routePath: '/flow-surfaces-ordinary-layout',
+      authCheck: true,
+      enabled: true,
+    };
+    const disabledAdminLayout = {
+      uid: ADMIN_LAYOUT_UID,
+      title: 'Disabled Admin layout',
+      layoutType: 'desktop',
+      routeName: 'admin',
+      routePath: '/admin',
+      authCheck: true,
+      enabled: false,
+    };
+    const multiPortalsRepository = {
+      find: vi.fn(async () => portals),
+      findOne: vi.fn(async (options: { filter?: Record<string, unknown> }) => {
+        return portals.find((portal) => portal.uid === options.filter?.uid) || null;
+      }),
+    };
+    const uiLayoutsRepository = {
+      find: vi.fn(async () => [ordinaryLayout]),
+      findOne: vi.fn(async (options: { filter?: Record<string, unknown> }) => {
+        if (options.filter?.uid !== ADMIN_LAYOUT_UID) {
+          return null;
+        }
+        return Object.prototype.hasOwnProperty.call(options.filter, 'enabled') ? null : disabledAdminLayout;
+      }),
+    };
+    const db = {
+      getCollection(name: string) {
+        if (name === 'desktopRoutes') {
+          return {
+            getField: (field: string) => (field === 'multiPortals' || field === 'uiLayouts' ? {} : undefined),
+          };
+        }
+        return name === 'multiPortals' || name === 'uiLayouts' ? {} : undefined;
+      },
+      getRepository(name: string) {
+        if (name === 'multiPortals') {
+          return multiPortalsRepository;
+        }
+        if (name === 'uiLayouts') {
+          return uiLayoutsRepository;
+        }
+        throw new Error(`Unexpected repository ${name}`);
+      },
+    };
+
+    const navigationTargets = new FlowSurfaceNavigationTargetsService(db as never);
+    const targets = await navigationTargets.listNavigationTargets(['root']);
+    const [desktopResolution, mobileResolution] = await Promise.allSettled([
+      navigationTargets.resolvePortal(DESKTOP_PORTAL_UID, {
+        actionName: 'testScalarPortalResolution',
+        path: 'values.portalUid',
+        currentRoles: ['root'],
+      }),
+      navigationTargets.resolvePortal(MOBILE_PORTAL_UID, {
+        actionName: 'testScalarPortalResolution',
+        path: 'values.portalUid',
+        currentRoles: ['root'],
+      }),
+    ]);
+
+    // Ordinary UI Layout targets remain driven by enabled uiLayouts records.
+    expect
+      .soft(targets.targets)
+      .toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ kind: 'layout', uid: ordinaryLayoutUid, layoutType: 'desktop' }),
+          expect.objectContaining({ kind: 'layout', uid: ADMIN_LAYOUT_UID, layoutType: 'desktop' }),
+        ]),
+      );
+    expect
+      .soft(targets.targets.some((target) => target.kind === 'layout' && target.uid === MOBILE_LAYOUT_UID))
+      .toBe(false);
+
+    // Portal targets derive their device type from the scalar uid even when the corresponding UI Layout is unavailable.
+    expect.soft(targets.targets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'portal',
+          uid: DESKTOP_PORTAL_UID,
+          layoutUid: ADMIN_LAYOUT_UID,
+          layoutType: 'desktop',
+        }),
+        expect.objectContaining({
+          kind: 'portal',
+          uid: MOBILE_PORTAL_UID,
+          layoutUid: MOBILE_LAYOUT_UID,
+          layoutType: 'mobile',
+        }),
+      ]),
+    );
+    expect.soft(desktopResolution).toEqual({
+      status: 'fulfilled',
+      value: expect.objectContaining({
+        uid: DESKTOP_PORTAL_UID,
+        layoutUid: ADMIN_LAYOUT_UID,
+        layoutType: 'desktop',
+        routeScopeKind: 'portal',
+      }),
+    });
+    expect.soft(mobileResolution).toEqual({
+      status: 'fulfilled',
+      value: expect.objectContaining({
+        uid: MOBILE_PORTAL_UID,
+        layoutUid: MOBILE_LAYOUT_UID,
+        layoutType: 'mobile',
+        routeScopeKind: 'portal',
+      }),
+    });
+  });
+});
 
 describe('flowSurfaces Multi-portal integration', () => {
   let app: MockServer;

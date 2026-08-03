@@ -1,18 +1,65 @@
 {
   "openapi": "3.0.2",
   "info": {
-    "title": "NocoBase API - File manager plugin"
+    "title": "NocoBase API - File manager plugin",
+    "version": "1.0.0",
+    "description": "Configure file storage engines and create records in file-template collections."
   },
-  "tags": [],
+  "tags": [
+    {
+      "name": "storages",
+      "description": "Manage storage backends and file storage settings."
+    },
+    {
+      "name": "$collection",
+      "description": "Upload files and create records in file-template collections."
+    }
+  ],
   "paths": {
     "/{fileCollectionName}:create": {
       "post": {
         "tags": ["$collection"],
-        "description": "",
-        "parameters": [],
+        "summary": "Upload a file or finalize a file record",
+        "description": "Create a record in a collection whose template is `file`. Use `multipart/form-data` for server-side uploads. Use the JSON form only after an external storage workflow, such as S3 Pro direct upload, has already stored the object. Prefer a dedicated file collection and a relation field from the business collection instead of the deprecated attachment field.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FileCollectionName"
+          },
+          {
+            "$ref": "#/components/parameters/AttachmentField"
+          },
+          {
+            "$ref": "#/components/parameters/UploadDataSourceKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/FileUploadRequest"
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FileRecordCreate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The created file record.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileRecordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           }
         }
       }
@@ -20,11 +67,41 @@
     "/storages:list": {
       "get": {
         "tags": ["storages"],
-        "description": "",
-        "parameters": [],
+        "summary": "List storage engines",
+        "description": "List configured storage engines. Secret options are returned by the underlying collection action only when the caller has sufficient permission; callers must redact them from logs and output.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Filter"
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Except"
+          },
+          {
+            "$ref": "#/components/parameters/Sort"
+          },
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Paginate"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Configured storage engines.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageListResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -32,11 +109,31 @@
     "/storages:get": {
       "get": {
         "tags": ["storages"],
-        "description": "",
-        "parameters": [],
+        "summary": "Get a storage engine",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FilterByTkRequired"
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Except"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The requested storage engine.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -44,11 +141,31 @@
     "/storages:create": {
       "post": {
         "tags": ["storages"],
-        "description": "",
-        "parameters": [],
+        "summary": "Create a storage engine",
+        "description": "Create a storage engine. The `options` object depends on `type`; keep access keys and secrets out of command output and shell history.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageCreate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The created storage engine.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           }
         }
       }
@@ -56,11 +173,39 @@
     "/storages:update": {
       "post": {
         "tags": ["storages"],
-        "description": "",
-        "parameters": [],
+        "summary": "Update a storage engine",
+        "description": "Update one storage engine by ID or system name. Read the current record first and send the complete nested `options`, `rules`, or `settings` object when changing it so required existing keys are not lost.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FilterByTkRequired"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageUpdate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "The updated storage engine.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -68,11 +213,701 @@
     "/storages:destroy": {
       "post": {
         "tags": ["storages"],
-        "description": "",
-        "parameters": [],
+        "summary": "Delete storage engines",
+        "description": "Delete storage engines selected by primary key or filter. The built-in default local engine is protected, and a storage referenced by a file collection cannot be deleted. Inspect file collections and file records before deletion.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FilterByTk"
+          },
+          {
+            "$ref": "#/components/parameters/Filter"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "OK"
+            "description": "Deletion result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MutationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/storages:getBasicInfo": {
+      "get": {
+        "tags": ["storages"],
+        "summary": "Get upload-safe storage information",
+        "description": "Return the default storage when `filterByTk` is omitted, or resolve a storage by ID or system name. This action intentionally returns only upload-safe fields and does not expose credentials.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/FilterByTk"
+          },
+          {
+            "$ref": "#/components/parameters/UploadDataSourceKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upload-safe storage information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageBasicInfoResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/storages:check": {
+      "get": {
+        "tags": ["storages"],
+        "summary": "Resolve the storage used by a file collection",
+        "description": "Resolve the explicit storage name, the storage configured on the file collection, or the default storage, in that order. Also reports whether the target file collection exists and supports uploads.",
+        "parameters": [
+          {
+            "name": "fileCollectionName",
+            "in": "query",
+            "description": "File-template collection name. Defaults to `attachments` for backward compatibility.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "storageName",
+            "in": "query",
+            "description": "Optional storage system name that overrides the collection and default choices.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/UploadDataSourceKey"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved upload capability and storage information.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "FileCollectionName": {
+        "name": "fileCollectionName",
+        "in": "path",
+        "required": true,
+        "description": "Name of a collection whose template is `file`.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "AttachmentField": {
+        "name": "attachmentField",
+        "in": "query",
+        "required": false,
+        "deprecated": true,
+        "description": "Legacy `collection.field` attachment selector. New data models should create a file collection and use a normal relation field instead.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "UploadDataSourceKey": {
+        "name": "uploadDataSourceKey",
+        "in": "query",
+        "required": false,
+        "description": "Data source key used to resolve the target file collection for uploads.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "FilterByTk": {
+        "name": "filterByTk",
+        "in": "query",
+        "required": false,
+        "description": "Primary key or storage system name, depending on the action.",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer",
+              "format": "int64"
+            }
+          ]
+        }
+      },
+      "FilterByTkRequired": {
+        "name": "filterByTk",
+        "in": "query",
+        "required": true,
+        "description": "Storage primary key or system name.",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer",
+              "format": "int64"
+            }
+          ]
+        }
+      },
+      "Filter": {
+        "name": "filter",
+        "in": "query",
+        "required": false,
+        "description": "NocoBase filter object.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
+      "Fields": {
+        "name": "fields",
+        "in": "query",
+        "description": "Fields to return.",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "Except": {
+        "name": "except",
+        "in": "query",
+        "description": "Fields to omit. Use this to exclude `options` when credentials are not needed.",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "Sort": {
+        "name": "sort",
+        "in": "query",
+        "description": "Sort fields, for example `-id`.",
+        "schema": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "PageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "Paginate": {
+        "name": "paginate",
+        "in": "query",
+        "schema": {
+          "type": "boolean"
+        }
+      }
+    },
+    "schemas": {
+      "Identifier": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer",
+            "format": "int64"
+          }
+        ]
+      },
+      "StorageRules": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 20971520,
+            "description": "Maximum file size in bytes."
+          },
+          "mimetype": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ],
+            "description": "Allowed MIME patterns, for example `image/*,application/pdf`."
+          }
+        },
+        "additionalProperties": true
+      },
+      "StorageOptions": {
+        "type": "object",
+        "description": "Type-specific storage options. Property names are case-sensitive; Tencent COS uses `Region`, `SecretId`, `SecretKey`, and `Bucket`.",
+        "properties": {
+          "documentRoot": {
+            "type": "string",
+            "description": "Local storage document root. The server restricts submitted paths to trusted roots."
+          },
+          "region": {
+            "type": "string"
+          },
+          "Region": {
+            "type": "string"
+          },
+          "accessKeyId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "secretAccessKey": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "accessKeySecret": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "SecretId": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "SecretKey": {
+            "type": "string",
+            "writeOnly": true
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "Bucket": {
+            "type": "string"
+          },
+          "endpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "baseUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "forcePathStyle": {
+            "type": "string",
+            "enum": ["virtual", "path", "ignore"]
+          },
+          "forcePathStyleForAccess": {
+            "type": "string",
+            "enum": ["virtual", "path", "ignore"]
+          },
+          "disableSignedUrl": {
+            "type": "boolean",
+            "default": false
+          },
+          "signedUrlExpires": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Signed access URL lifetime in seconds."
+          },
+          "presignedPostExpires": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Presigned upload URL lifetime in seconds."
+          },
+          "thumbnailRule": {
+            "type": "string"
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Aliyun OSS request timeout in milliseconds."
+          },
+          "useOriginalUrl": {
+            "type": "boolean",
+            "default": false
+          },
+          "public": {
+            "type": "boolean",
+            "default": false,
+            "description": "Allow access through a NocoBase URL without checking file-record permission. This does not make the storage bucket public."
+          }
+        },
+        "additionalProperties": true
+      },
+      "StorageSettings": {
+        "type": "object",
+        "properties": {
+          "requestOptions": {
+            "type": "object",
+            "description": "Additional server-side HTTP request options used when fetching remote files.",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "StorageWriteFields": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Human-readable storage title."
+          },
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$",
+            "description": "Unique storage system name."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["local", "s3", "ali-oss", "tx-cos", "s3-compatible"]
+          },
+          "options": {
+            "$ref": "#/components/schemas/StorageOptions"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/StorageRules"
+          },
+          "path": {
+            "type": "string",
+            "description": "Relative storage path without leading or trailing slash."
+          },
+          "baseUrl": {
+            "type": "string",
+            "description": "Base URL used by local and built-in cloud storage engines. S3 Pro uses `options.baseUrl` for its access endpoint."
+          },
+          "renameMode": {
+            "type": "string",
+            "enum": ["appendRandomID", "random", "none"],
+            "default": "appendRandomID"
+          },
+          "default": {
+            "type": "boolean",
+            "default": false
+          },
+          "paranoid": {
+            "type": "boolean",
+            "default": false,
+            "description": "Keep the physical object when its file record is deleted."
+          },
+          "settings": {
+            "$ref": "#/components/schemas/StorageSettings"
+          }
+        }
+      },
+      "StorageCreate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StorageWriteFields"
+          },
+          {
+            "type": "object",
+            "required": ["title", "name", "type"]
+          }
+        ]
+      },
+      "StorageUpdate": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StorageWriteFields"
+          }
+        ],
+        "minProperties": 1
+      },
+      "Storage": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StorageWriteFields"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Identifier"
+              }
+            }
+          }
+        ]
+      },
+      "StorageBasicInfo": {
+        "type": "object",
+        "required": ["id", "title", "name", "type", "rules"],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Identifier"
+          },
+          "title": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "rules": {
+            "$ref": "#/components/schemas/StorageRules"
+          },
+          "baseUrl": {
+            "type": "string"
+          },
+          "public": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FileUploadRequest": {
+        "type": "object",
+        "required": ["file"],
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "additionalProperties": true
+      },
+      "FileRecordCreate": {
+        "type": "object",
+        "description": "File metadata written after the object already exists in storage. Do not use this JSON form to pretend that a local file was uploaded.",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "extname": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mimetype": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "storageId": {
+            "$ref": "#/components/schemas/Identifier"
+          }
+        },
+        "required": ["title", "filename", "size", "mimetype", "storageId"],
+        "additionalProperties": true
+      },
+      "FileRecord": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FileRecordCreate"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Identifier"
+              },
+              "preview": {
+                "type": "string",
+                "description": "Preview URL returned by NocoBase."
+              },
+              "local": {
+                "type": "boolean",
+                "description": "Whether the file uses local storage."
+              }
+            }
+          }
+        ]
+      },
+      "StorageCheck": {
+        "type": "object",
+        "required": ["isSupportToUploadFiles", "storage"],
+        "properties": {
+          "isSupportToUploadFiles": {
+            "type": "boolean"
+          },
+          "storage": {
+            "$ref": "#/components/schemas/StorageBasicInfo"
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "totalPage": {
+            "type": "integer"
+          }
+        },
+        "additionalProperties": true
+      },
+      "StorageResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Storage"
+          }
+        }
+      },
+      "StorageListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Storage"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        }
+      },
+      "StorageBasicInfoResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StorageBasicInfo"
+          }
+        }
+      },
+      "StorageCheckResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StorageCheck"
+          }
+        }
+      },
+      "FileRecordResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FileRecord"
+          }
+        }
+      },
+      "MutationResponse": {
+        "type": "object",
+        "properties": {
+          "data": {}
+        },
+        "additionalProperties": true
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid storage configuration, upload, path, or filter.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Storage or file collection not found.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
           }
         }
       }

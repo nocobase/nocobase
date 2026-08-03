@@ -15,12 +15,13 @@ import type { InputRef } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useACLCheckReady } from '../acl/aclCheckReadiness';
 import { useApp } from '../hooks/useApp';
 import { useSettingsSearch, type SettingsSearchItem } from '../settings-center/useSettingsSearch';
 import { getSettingsHeaderColors } from './settingsTheme';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || '');
-const SHORTCUT_LABEL = isMac ? '⌘K' : 'Ctrl K';
+const SHORTCUT_LABEL = isMac ? '⌘F' : 'Ctrl F';
 
 const triggerClassName = css`
   align-items: center;
@@ -54,7 +55,7 @@ const resultItemClassName = css`
  * 设置中心的搜索入口。
  *
  * 顶栏放一个轻量触发器，真正的搜索在弹层里进行；关键词为空时展示最近访问，
- * 这样分组化之后被收进左侧栏的深层页面仍然一步可达。支持 `Cmd/Ctrl + K` 唤起。
+ * 这样分组化之后被收进左侧栏的深层页面仍然一步可达。支持 `Cmd/Ctrl + F` 唤起。
  */
 export const SettingsSearch: React.FC = observer(() => {
   const { t } = useTranslation();
@@ -63,11 +64,15 @@ export const SettingsSearch: React.FC = observer(() => {
   const location = useLocation();
   const { token } = antdTheme.useToken();
   const headerColors = getSettingsHeaderColors(token);
+  const isACLReady = useACLCheckReady(app);
   const { recentItems, search } = useSettingsSearch();
   const [open, setOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<InputRef>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const lastActiveElementRef = useRef<HTMLElement | null>(null);
+  const isPointerDownRef = useRef(false);
 
   // 登录 / 找回密码等免鉴权页面共用同一个 shell，这些页面上没有可搜索的配置项。
   const isAuthRoute = app.router.isSkippedAuthCheckRoute(location.pathname);
@@ -78,10 +83,33 @@ export const SettingsSearch: React.FC = observer(() => {
     setActiveIndex(0);
   }, [keyword]);
 
+  useEffect(() => {
+    if (isAuthRoute || !isACLReady) {
+      setOpen(false);
+      setKeyword('');
+    }
+  }, [isACLReady, isAuthRoute]);
+
+  const restoreLastActiveElement = useCallback(() => {
+    const lastActiveElement = lastActiveElementRef.current;
+    lastActiveElementRef.current = null;
+    if (lastActiveElement?.isConnected) {
+      lastActiveElement.focus({ preventScroll: true });
+    }
+  }, []);
+
   const openPalette = useCallback(() => {
     setKeyword('');
+
+    if (open) {
+      inputRef.current?.focus();
+      return;
+    }
+
+    lastActiveElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    triggerRef.current?.focus();
     setOpen(true);
-  }, []);
+  }, [open]);
 
   const go = useCallback(
     (item?: SettingsSearchItem) => {
@@ -104,29 +132,76 @@ export const SettingsSearch: React.FC = observer(() => {
   );
 
   useEffect(() => {
-    if (isAuthRoute) {
+    if (isAuthRoute || !isACLReady) {
       return;
     }
 
     const onKeyDown = (event: KeyboardEvent) => {
-      // 页面内组件（代码编辑器之类）可能自己就用 Cmd/Ctrl+K；它们 preventDefault 之后
+      // 页面内组件可能自己就用 Cmd/Ctrl+F；它们 preventDefault 之后
       // 这个 window 级监听器不该再抢一次。
       if (event.defaultPrevented) {
         return;
       }
 
-      if (event.key?.toLowerCase() === 'k' && (event.metaKey || event.ctrlKey)) {
+      const hasPlatformModifier = isMac ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+
+      if (event.key?.toLowerCase() === 'f' && hasPlatformModifier && !event.altKey && !event.shiftKey) {
         event.preventDefault();
-        openPalette();
+        if (!event.repeat) {
+          openPalette();
+        }
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isAuthRoute, openPalette]);
+  }, [isACLReady, isAuthRoute, openPalette]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const onEscapeKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.target !== inputRef.current?.input) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+    };
+
+    const onPointerDown = () => {
+      isPointerDownRef.current = true;
+    };
+
+    const onPointerUp = () => {
+      isPointerDownRef.current = false;
+    };
+
+    window.addEventListener('keydown', onEscapeKeyDown, true);
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('pointerup', onPointerUp, true);
+    window.addEventListener('pointercancel', onPointerUp, true);
+    return () => {
+      isPointerDownRef.current = false;
+      window.removeEventListener('keydown', onEscapeKeyDown, true);
+      window.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('pointerup', onPointerUp, true);
+      window.removeEventListener('pointercancel', onPointerUp, true);
+    };
+  }, [open]);
 
   const onInputKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setOpen(false);
+        return;
+      }
+
       if (event.key === 'ArrowDown') {
         event.preventDefault();
         setActiveIndex((index) => (results.length ? (index + 1) % results.length : 0));
@@ -147,13 +222,14 @@ export const SettingsSearch: React.FC = observer(() => {
     [activeIndex, go, results],
   );
 
-  if (isAuthRoute) {
+  if (isAuthRoute || !isACLReady) {
     return null;
   }
 
   return (
     <>
       <div
+        ref={triggerRef}
         className={triggerClassName}
         role="button"
         tabIndex={0}
@@ -161,6 +237,14 @@ export const SettingsSearch: React.FC = observer(() => {
         style={{ color: headerColors.text }}
         onClick={openPalette}
         onKeyDown={(event) => {
+          if (event.key === 'Escape' && open) {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+            restoreLastActiveElement();
+            return;
+          }
+
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             openPalette();
@@ -182,9 +266,17 @@ export const SettingsSearch: React.FC = observer(() => {
         footer={null}
         closable={false}
         destroyOnClose
+        focusTriggerAfterClose={false}
         width={520}
         styles={{ body: { paddingTop: 4 } }}
-        afterOpenChange={(opened) => opened && inputRef.current?.focus()}
+        afterOpenChange={(opened) => {
+          if (opened) {
+            inputRef.current?.focus();
+            return;
+          }
+
+          restoreLastActiveElement();
+        }}
         onCancel={() => setOpen(false)}
       >
         <Input
@@ -196,6 +288,19 @@ export const SettingsSearch: React.FC = observer(() => {
           size="large"
           value={keyword}
           onChange={(event) => setKeyword(event.target.value)}
+          onBlur={(event) => {
+            // Browser keyboard handlers may consume Escape before the page sees keydown and only blur the input.
+            const nextActiveElement = event.relatedTarget;
+            const dialog = event.currentTarget.closest('[role="dialog"]');
+            if (
+              isPointerDownRef.current ||
+              (nextActiveElement instanceof Node && dialog?.contains(nextActiveElement))
+            ) {
+              return;
+            }
+
+            setOpen(false);
+          }}
           onKeyDown={onInputKeyDown}
         />
         <div style={{ borderTop: `${token.lineWidth}px solid ${token.colorSplit}`, margin: '8px -24px 0' }} />

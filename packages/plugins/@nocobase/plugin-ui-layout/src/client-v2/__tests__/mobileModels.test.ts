@@ -379,8 +379,12 @@ describe('plugin-ui-layout mobile models', () => {
       uid: 'mobile-route-parent',
       use: 'RouteModel',
     });
-    routeModel.context.defineProperty('isMobileLayout', {
-      value: true,
+    routeModel.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        rootPageModelClass: 'MobileRootPageModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
     });
 
     const rootPage = engine.createModel({
@@ -439,7 +443,64 @@ describe('plugin-ui-layout mobile models', () => {
     expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
   });
 
-  it('should resolve persisted child pages to mobile page models from mobile view input args', () => {
+  it('should keep admin layout responsive pages on standard page models', () => {
+    registerMobilePageModelResolution();
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      RootPageModel,
+      ChildPageModel,
+      MobileRootPageModel,
+      MobileChildPageModel,
+      RouteModel,
+    });
+    const routeModel = engine.createModel<RouteModel>({
+      uid: 'admin-responsive-route-parent',
+      use: 'RouteModel',
+    });
+    routeModel.context.defineProperty('isMobileLayout', {
+      value: true,
+    });
+    routeModel.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'AdminLayoutModel',
+        rootPageModelClass: 'RootPageModel',
+        childPageModelClass: 'ChildPageModel',
+      },
+    });
+    routeModel.context.defineProperty('layoutContext', {
+      value: {
+        isMobileLayout: true,
+        layout: {
+          layoutModelClass: 'AdminLayoutModel',
+          rootPageModelClass: 'RootPageModel',
+          childPageModelClass: 'ChildPageModel',
+        },
+      },
+    });
+
+    const rootPage = engine.createModel({
+      uid: 'admin-responsive-root-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'RootPageModel',
+    });
+    const childPage = engine.createModel({
+      uid: 'admin-responsive-child-page',
+      parentId: routeModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+    });
+
+    expect(rootPage).toBeInstanceOf(RootPageModel);
+    expect(rootPage).not.toBeInstanceOf(MobileRootPageModel);
+    expect(childPage).toBeInstanceOf(ChildPageModel);
+    expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
+  });
+
+  it('should keep persisted child pages unchanged from mobile view input args without mobile page model class', () => {
     registerMobilePageModelResolution();
 
     const engine = new FlowEngine();
@@ -467,7 +528,8 @@ describe('plugin-ui-layout mobile models', () => {
       use: 'ChildPageModel',
     });
 
-    expect(childPage.constructor).toBe(MobileChildPageModel);
+    expect(childPage).toBeInstanceOf(ChildPageModel);
+    expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
   });
 
   it('should resolve persisted child pages from mobile page model class input args', () => {
@@ -529,6 +591,84 @@ describe('plugin-ui-layout mobile models', () => {
     });
 
     expect(childPage.constructor).toBe(MobileChildPageModel);
+  });
+
+  it('should keep custom child page model classes inside mobile layouts', () => {
+    registerMobilePageModelResolution();
+
+    class CustomChildPageModel extends ChildPageModel {}
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      ChildPageModel,
+      MobileChildPageModel,
+      CustomChildPageModel,
+    });
+    const actionModel = engine.createModel({
+      uid: 'mobile-layout-custom-action-parent',
+      use: 'FlowModel',
+    });
+    actionModel.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
+
+    const childPage = engine.createModel({
+      uid: 'mobile-layout-custom-child-page',
+      parentId: actionModel.uid,
+      subKey: 'page',
+      subType: 'object',
+      use: 'CustomChildPageModel',
+    });
+
+    expect(childPage).toBeInstanceOf(CustomChildPageModel);
+    expect(childPage).not.toBeInstanceOf(MobileChildPageModel);
+  });
+
+  it('should preserve the original page model resolveUse static this binding', () => {
+    const patchSymbol = Symbol.for('nocobase.plugin-ui-layout.mobilePageResolutionPatched');
+    const ChildPageModelClass = ChildPageModel as typeof ChildPageModel & {
+      [key: symbol]: boolean | undefined;
+    };
+    const originalPatched = ChildPageModelClass[patchSymbol];
+    const originalResolveUse = ChildPageModelClass.resolveUse;
+    let resolvedThis: unknown;
+
+    try {
+      ChildPageModelClass[patchSymbol] = false;
+      ChildPageModelClass.resolveUse = function resolveUseWithStaticThis() {
+        resolvedThis = this;
+      };
+      registerMobilePageModelResolution();
+
+      const engine = new FlowEngine();
+      ChildPageModelClass.resolveUse?.call(
+        ChildPageModel,
+        {
+          uid: 'mobile-layout-resolve-use-this-binding',
+          use: 'CustomChildPageModel',
+        },
+        engine,
+      );
+
+      ChildPageModelClass.resolveUse?.call(
+        ChildPageModel,
+        {
+          uid: 'mobile-layout-resolve-base-this-binding',
+          subKey: 'page',
+          subType: 'object',
+          use: 'ChildPageModel',
+        },
+        engine,
+      );
+
+      expect(resolvedThis).toBe(ChildPageModel);
+    } finally {
+      ChildPageModelClass.resolveUse = originalResolveUse;
+      ChildPageModelClass[patchSymbol] = originalPatched;
+    }
   });
 
   it('should resolve persisted child pages from a mobile parent in the view engine stack', () => {

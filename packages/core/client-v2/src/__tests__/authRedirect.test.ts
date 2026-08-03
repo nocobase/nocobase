@@ -347,6 +347,23 @@ describe('auth redirect helpers', () => {
       );
     });
 
+    it('should derive a scoped Portal signin href under the current sub-app basename', () => {
+      const app = {
+        getPublicPath: () => '/nocobase/v2/',
+        router: {
+          getBasename: () => '/nocobase/v2/apps/test-app/',
+        },
+      } satisfies Parameters<typeof buildV2SigninHref>[0];
+
+      expect(
+        buildV2SigninHref(app, '/nocobase/v2/apps/test-app/customer/orders', {
+          signInRoutePath: '/customer/signin',
+        }),
+      ).toBe(
+        '/nocobase/v2/apps/test-app/customer/signin?redirect=%2Fnocobase%2Fv2%2Fapps%2Ftest-app%2Fcustomer%2Forders',
+      );
+    });
+
     it('should redirect to sub-app signin with window.location.replace', () => {
       const replace = vi.fn();
       Object.defineProperty(globalThis.window, 'location', {

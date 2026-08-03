@@ -111,15 +111,17 @@ pnpm test:i18n    # 国际化回归测试
 
 三个测试脚本需要自己跑，改动涉及认证、权限或国际化时建议执行一下。
 
-## 本地源码目录在哪
+## 开发工作区在哪
 
-Portal 的源码放在当前 env 的 storage 下：
+Portal 的开发工作区默认放在你执行 `nb portal create` 或 `nb portal pull` 时所在的目录下：
 
 ```text
-<storagePath>/portals/<app>/<portal>
+./<portal>
 ```
 
-不用自己拼路径，直接查：
+创建或拉取时可以用 `--path` 指定到别处。构建后的部署产物是另一个位置，放在目标应用的 storage 下，由 `nb portal deploy` 负责同步，平时不用管。
+
+不确定当前 Portal 的开发工作区在哪，直接查：
 
 ```bash
 nb portal info main
@@ -131,4 +133,4 @@ nb portal info main
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
 - [部署与源码管理](./deploy.md) — 构建部署流程和 source storage
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写页面
-- [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的本地源码目录位置
+- [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的开发工作区位置

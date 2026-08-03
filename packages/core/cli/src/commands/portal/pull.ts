@@ -8,12 +8,12 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, setEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
 import { pullPortalSource } from '../../lib/portal-source.js';
-import { printInfo, printSuccess } from '../../lib/ui.js';
+import { printInfo, printSuccess, printWarning } from '../../lib/ui.js';
 
 const portalPullText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalPull.${key}`, values, { fallback });
@@ -24,6 +24,8 @@ export default class PortalPull extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env prod --yes',
+    '<%= config.bin %> <%= command.id %> customer --path ./portals/customer',
+    '<%= config.bin %> <%= command.id %> customer --git-repo git@github.com:nocobase/customer.git',
     '<%= config.bin %> <%= command.id %> customer --force',
     '<%= config.bin %> <%= command.id %> customer --no-install',
   ];
@@ -49,6 +51,18 @@ export default class PortalPull extends Command {
       description: 'Delete the existing local files and pull them again',
       default: false,
     }),
+    path: Flags.string({
+      description: 'Portal workspace directory; defaults to the saved path, then ./<portal>',
+    }),
+    'git-repo': Flags.string({
+      description: 'Temporarily pull source from this Git repository without updating the portal source configuration',
+    }),
+    'git-branch': Flags.string({
+      description: 'Git branch for the temporary --git-repo pull; defaults to main',
+    }),
+    'git-path': Flags.string({
+      description: 'Directory inside the temporary Git repository; defaults to the repository root',
+    }),
     install: Flags.boolean({
       description: 'Run pnpm install after pulling the portal source',
       default: true,
@@ -58,6 +72,18 @@ export default class PortalPull extends Command {
 
   async run(): Promise<void> {
     const { args, flags } = await this.parse(PortalPull);
+    if ((flags['git-branch'] || flags['git-path']) && !flags['git-repo']) {
+      this.error(
+        portalPullText(
+          'errors.gitRepoRequiredForTemporaryPull',
+          undefined,
+          [
+            '--git-branch and --git-path require --git-repo for a temporary Git pull.',
+            'To update the portal configuration, use `nb portal config`.',
+          ].join(' '),
+        ),
+      );
+    }
     const requestedEnv = hasExplicitEnvSelection(this.argv) ? flags.env : undefined;
     const confirmed = await ensureCrossEnvConfirmed({
       command: this,
@@ -90,19 +116,34 @@ export default class PortalPull extends Command {
       cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
       installDependencies: flags.install,
+      sourcePath: flags.path,
+      defaultSourcePath: true,
+      gitRepo: flags['git-repo'],
+      gitBranch: flags['git-branch'],
+      gitPath: flags['git-path'],
     });
 
     if (!result.changed) {
       printInfo(result.noopReason ?? portalPullText('messages.noop', undefined, 'No pull is needed.'));
       return;
     }
+    await setEnvPortalPath(envName, result.portal, result.portalDir, { scope });
 
     printSuccess(
       portalPullText(
         'messages.pulled',
         { portal: result.portal, portalDir: result.portalDir },
-        `Pulled portal source "${result.portal}" into ${result.portalDir}.`,
+        `Pulled portal source "${result.portal}" into ${result.portalDir}`,
       ),
     );
+    if (result.installFailed) {
+      printWarning(
+        portalPullText(
+          'messages.installFailed',
+          { portalDir: result.portalDir },
+          `Dependency installation did not finish successfully. Run \`pnpm install\` manually in ${result.portalDir}.`,
+        ),
+      );
+    }
   }
 }

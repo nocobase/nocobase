@@ -181,6 +181,18 @@ const DataSourceBootstrapProvider: FC = ({ children }) => {
   return <>{children}</>;
 };
 
+export function resolveUnauthenticatedSignInRoute(app: Application, pathname: string) {
+  const matchedRoutes = app.router.matchRoutes(pathname) || [];
+  for (let index = matchedRoutes.length - 1; index >= 0; index -= 1) {
+    const pathnameBase = matchedRoutes[index].pathnameBase.replace(/\/+$/g, '');
+    const candidate = `${pathnameBase}/signin`;
+    if (app.router.isSkippedAuthCheckRoute(candidate)) {
+      return candidate;
+    }
+  }
+  return '/signin';
+}
+
 function redirectUnauthenticatedRoute(
   app: Application,
   location: { pathname: string; search?: string; hash?: string },
@@ -191,7 +203,8 @@ function redirectUnauthenticatedRoute(
     redirectToV2Signin(app, redirectPath);
     return;
   }
-  navigate(`/signin?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
+  const signInPath = resolveUnauthenticatedSignInRoute(app, location.pathname);
+  navigate(`${signInPath}?redirect=${encodeURIComponent(redirectPath)}`, { replace: true });
 }
 
 const CurrentUserProvider: FC = ({ children }) => {

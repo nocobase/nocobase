@@ -104,7 +104,7 @@ const MULTI_PORTAL_RUNTIME_FIELDS = [
   'routePath',
   'authCheck',
   'enabled',
-  'uiLayout',
+  'uiLayoutUid',
 ];
 const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'uid',
@@ -115,7 +115,7 @@ const MULTI_PORTAL_ACCESSIBLE_FIELDS = [
   'routePath',
   'authCheck',
   'enabled',
-  'uiLayout',
+  'uiLayoutUid',
 ];
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
@@ -124,6 +124,7 @@ const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:create',
   'multiPortals:update',
   'multiPortals:firstOrCreate',
+  'multiPortals:setDefault',
   'multiPortals:destroy',
   'multiPortals:deploy',
   'multiPortals:pullSource',
@@ -359,7 +360,7 @@ describe('plugin-multi-portal server', () => {
     expect(app.db.getCollection('rolesUiLayoutDesktopRoutes')).toBeUndefined();
   });
 
-  it('should define multiPortals with ui layout fields and relation', async () => {
+  it('should define multiPortals with a visible scalar UI layout UID', async () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
 
@@ -385,6 +386,15 @@ describe('plugin-multi-portal server', () => {
       type: 'string',
       allowNull: false,
     });
+    expect(collection.getField('portalName')?.options.unique).toBeUndefined();
+    expect(collection.options.indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fields: ['routeName'],
+          unique: true,
+        }),
+      ]),
+    );
     expect(collection.getField('routePath')?.options).toMatchObject({
       type: 'string',
       allowNull: false,
@@ -399,12 +409,17 @@ describe('plugin-multi-portal server', () => {
       defaultValue: true,
       allowNull: false,
     });
+    expect(collection.getField('isDefault')?.options).toMatchObject({
+      type: 'boolean',
+      allowNull: true,
+    });
+    expect(collection.getField('isDefault')?.options.hidden).not.toBe(true);
     expect(collection.getField('routePermissionMode')).toBeUndefined();
     expect(collection.getField('uiLayoutUid')?.options).toMatchObject({
       type: 'string',
       allowNull: true,
-      hidden: true,
     });
+    expect(collection.getField('uiLayoutUid')?.options.hidden).toBeUndefined();
     expect(collection.getField('createdAt')?.options).toMatchObject({
       type: 'date',
       interface: 'createdAt',
@@ -416,14 +431,7 @@ describe('plugin-multi-portal server', () => {
       allowNull: true,
     });
     expect(collection.getField('layoutType')).toBeUndefined();
-    expect(collection.getField('uiLayout')?.options).toMatchObject({
-      type: 'belongsTo',
-      target: 'uiLayouts',
-      targetKey: 'uid',
-      foreignKey: 'uiLayoutUid',
-      onDelete: 'RESTRICT',
-    });
-    expect(collection.getField('uiLayout')?.options.constraints).toBeUndefined();
+    expect(collection.getField('uiLayout')).toBeUndefined();
 
     const repository = app.db.getRepository('multiPortals');
     const desktopPortal = await repository.create({
@@ -450,15 +458,13 @@ describe('plugin-multi-portal server', () => {
     });
     const persistedDesktopPortal = await repository.findOne({
       filterByTk: desktopPortal.get('uid'),
-      appends: ['uiLayout'],
     });
     const persistedMobilePortal = await repository.findOne({
       filterByTk: mobilePortal.get('uid'),
-      appends: ['uiLayout'],
     });
 
-    expect(persistedDesktopPortal?.get('uiLayout')?.get('uid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
-    expect(persistedMobilePortal?.get('uiLayout')?.get('uid')).toBe(DEFAULT_MOBILE_UI_LAYOUT.uid);
+    expect(persistedDesktopPortal?.toJSON()).toMatchObject({ uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid });
+    expect(persistedMobilePortal?.toJSON()).toMatchObject({ uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid });
     expect(persistedDesktopPortal?.get('icon')).toBe('desktopoutlined');
     expect(persistedMobilePortal?.get('icon')).toBe('mobileoutlined');
     expect(persistedDesktopPortal?.toJSON()).not.toHaveProperty('layoutType');
@@ -487,27 +493,199 @@ describe('plugin-multi-portal server', () => {
     });
     const persistedApiPortal = await repository.findOne({
       filterByTk: 'api-portal',
-      appends: ['uiLayout'],
+    });
+    const invalidApiCreateResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'invalid-api-portal',
+        title: 'Invalid API portal',
+        portalType: 'no-code',
+        portalName: 'invalid-api-portal',
+        routePath: '/invalid-api-portal',
+        uiLayoutUid: 'missing-ui-layout',
+      },
+    });
+    const missingLayoutApiCreateResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'missing-layout-api-portal',
+        title: 'Missing layout API portal',
+        portalType: 'ai',
+        portalName: 'missing-layout-api-portal',
+        routePath: '/missing-layout-api-portal',
+      },
+    });
+    const invalidFirstOrCreateResponse = await rootAgent.resource('multiPortals').firstOrCreate({
+      filterKeys: ['uid'],
+      values: {
+        uid: 'invalid-first-or-create-portal',
+        title: 'Invalid first or create portal',
+        portalType: 'no-code',
+        portalName: 'invalid-first-or-create-portal',
+        routePath: '/invalid-first-or-create-portal',
+        uiLayoutUid: 'missing-ui-layout',
+      },
+    });
+    const missingLayoutUpdateOrCreateResponse = await rootAgent.resource('multiPortals').updateOrCreate({
+      filterKeys: ['uid'],
+      values: {
+        uid: 'missing-layout-update-or-create-portal',
+        title: 'Missing layout update or create portal',
+        portalType: 'no-code',
+        portalName: 'missing-layout-update-or-create-portal',
+        routePath: '/missing-layout-update-or-create-portal',
+      },
     });
 
     expect(apiCreateResponse.status).toBe(200);
     expect(apiUpdateResponse.status).toBe(400);
-    expect(persistedApiPortal?.get('uiLayout')?.get('uid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
-    const invalidLayoutPortal = await repository.create({
+    expect(invalidApiCreateResponse.status).toBe(400);
+    expect(missingLayoutApiCreateResponse.status).toBe(400);
+    expect(invalidFirstOrCreateResponse.status).toBe(400);
+    expect(missingLayoutUpdateOrCreateResponse.status).toBe(400);
+    expect(persistedApiPortal?.toJSON()).toMatchObject({ uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid });
+  });
+
+  it('should resolve Portal route scope without requiring an enabled UI Layout record', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid,
       values: {
-        uid: 'invalid-layout-portal',
-        title: 'Invalid layout portal',
-        portalType: 'no-code',
-        portalName: 'invalidLayoutPortal',
-        routePath: '/invalid-layout-portal',
-        uiLayoutUid: 'missing-ui-layout',
+        enabled: false,
       },
     });
-    const persistedInvalidLayoutPortal = await repository.findOne({
-      filterByTk: invalidLayoutPortal.get('uid'),
-      appends: ['uiLayout'],
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'mobile-layout-independent-portal',
+        title: 'Mobile layout independent portal',
+        portalType: 'no-code',
+        portalName: 'mobileLayoutIndependentPortal',
+        routePath: '/mobile-layout-independent-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
     });
-    expect(persistedInvalidLayoutPortal?.get('uiLayout')).toBeFalsy();
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const response = await rootAgent.get('/desktopRoutes:list').query({
+      portal: 'mobile-layout-independent-portal',
+      paginate: false,
+    });
+
+    expect(response.status).toBe(200);
+  });
+
+  it('should keep fixed Portal route access independent from the UI Layout enabled state', async () => {
+    app = await createMultiPortalAclMockServer();
+    const portalRepository = app.db.getRepository('multiPortals');
+    await portalRepository.destroy({ filterByTk: '__default_mobile__' });
+    await portalRepository.create({
+      values: {
+        uid: '__default_mobile__',
+        title: 'Mobile layout',
+        portalType: 'no-code',
+        portalName: 'fixed-mobile-layout-independent',
+        routePath: '/fixed-mobile-layout-independent',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const parentRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-FIXED-MOBILE-LAYOUT-PARENT',
+        schemaUid: 'fixed-mobile-layout-parent',
+        hidden: false,
+        sort: 10,
+      },
+    });
+    const childRoute = await app.db.getRepository('desktopRoutes').create({
+      values: {
+        type: 'flowPage',
+        title: 'DATA-FIXED-MOBILE-LAYOUT-CHILD',
+        schemaUid: 'fixed-mobile-layout-child',
+        parentId: parentRoute.get('id'),
+        hidden: false,
+        sort: 1,
+      },
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', parentRoute.get('id')).set({
+      tk: [DEFAULT_MOBILE_UI_LAYOUT.uid],
+    });
+    await app.db.getRepository('desktopRoutes.uiLayouts', childRoute.get('id')).set({
+      tk: [DEFAULT_MOBILE_UI_LAYOUT.uid],
+    });
+    const role = await app.db.getRepository('roles').create({
+      values: {
+        name: 'fixed-mobile-layout-independent-member',
+        snippets: ['pm.acl.roles'],
+      },
+    });
+    await app.db.getRepository('rolesDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        desktopRouteId: parentRoute.get('id'),
+      },
+    });
+    await app.db.getRepository('rolesDesktopRoutes').create({
+      values: {
+        roleName: role.get('name'),
+        desktopRouteId: childRoute.get('id'),
+      },
+    });
+    const memberUser = await app.db.getRepository('users').create({
+      values: {
+        roles: [role.get('name')],
+      },
+    });
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      values: {
+        enabled: false,
+      },
+    });
+    const memberAgent = await app.agent().login(memberUser);
+
+    const [listResponse, getResponse, targetsResponse] = await Promise.all([
+      memberAgent.get('/desktopRoutes:listAccessible').query({
+        portal: '__default_mobile__',
+      }),
+      memberAgent.get('/desktopRoutes:getAccessible').query({
+        filterByTk: parentRoute.get('id'),
+        portal: '__default_mobile__',
+      }),
+      memberAgent.get('/desktopRoutes:listRolePermissionTargets').query({
+        portal: '__default_mobile__',
+      }),
+    ]);
+
+    expect(listResponse.status).toBe(200);
+    expect(getResponse.status).toBe(200);
+    expect(targetsResponse.status).toBe(200);
+    expect(collectRouteTitles(listResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-FIXED-MOBILE-LAYOUT-PARENT',
+      'DATA-FIXED-MOBILE-LAYOUT-CHILD',
+    ]);
+    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data[0].children.map((item: RouteResponseItem) => item.title)).toEqual([
+      'DATA-FIXED-MOBILE-LAYOUT-CHILD',
+    ]);
+    expect(getResponse.body.data.title).toBe('DATA-FIXED-MOBILE-LAYOUT-PARENT');
+    expect(collectRouteTitles(targetsResponse.body.data as RouteResponseItem[])).toEqual([
+      'DATA-FIXED-MOBILE-LAYOUT-PARENT',
+      'DATA-FIXED-MOBILE-LAYOUT-CHILD',
+    ]);
+    expect(targetsResponse.body.data).toHaveLength(1);
+    expect(targetsResponse.body.data[0].children.map((item: RouteResponseItem) => item.title)).toEqual([
+      'DATA-FIXED-MOBILE-LAYOUT-CHILD',
+    ]);
   });
 
   it('should initialize one INIT Portal for a fresh no-code app', async () => {
@@ -522,11 +700,12 @@ describe('plugin-multi-portal server', () => {
     const portals = response.body.data as Array<Record<string, unknown>>;
     const defaultPortal = await app.db.getRepository('multiPortals').findOne({
       filterByTk: '__default_portal__',
-      fields: ['uid', 'uiLayoutUid'],
+      fields: ['uid', 'uiLayoutUid', 'isDefault'],
     });
 
     expect(response.status).toBe(200);
     expect(defaultPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
+    expect(defaultPortal?.get('isDefault')).toBe(true);
     expect(portals).toEqual([
       expect.objectContaining({
         uid: '__default_portal__',
@@ -534,8 +713,153 @@ describe('plugin-multi-portal server', () => {
         portalType: 'no-code',
         portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
         routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
+        isDefault: true,
       }),
     ]);
+  });
+
+  it('should expose and manage one default Portal without inferring a replacement', async () => {
+    app = await createMultiPortalAclMockServer();
+    const repository = app.db.getRepository('multiPortals');
+    const publicAgent = app.agent();
+    const initialResponse = await publicAgent.resource('multiPortals').getDefault();
+
+    expect(initialResponse.status).toBe(200);
+    expect(initialResponse.body.data).toEqual({
+      uid: '__default_portal__',
+      portalType: 'no-code',
+      routePath: '/admin',
+    });
+
+    await repository.create({
+      values: {
+        uid: 'customer-portal',
+        title: 'Customer Portal',
+        portalType: 'no-code',
+        portalName: 'customer-portal',
+        routePath: '/customer-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      values: { enabled: false },
+    });
+    const disabledBackingLayoutResponse = await publicAgent.resource('multiPortals').getDefault();
+    expect(disabledBackingLayoutResponse.body.data).toEqual(initialResponse.body.data);
+
+    const targetFindSpy = vi.spyOn(repository, 'findOne');
+    const uiLayoutFindSpy = vi.spyOn(app.db.getRepository('uiLayouts'), 'findOne');
+    const setResponse = await rootAgent.resource('multiPortals').setDefault({
+      filterByTk: 'customer-portal',
+    });
+
+    expect(setResponse.status).toBe(200);
+    expect(setResponse.body.data).toEqual({
+      uid: 'customer-portal',
+      portalType: 'no-code',
+      routePath: '/customer-portal',
+    });
+    expect(await repository.count({ filter: { isDefault: true } })).toBe(1);
+    expect((await repository.findOne({ filterByTk: '__default_portal__' }))?.get('isDefault')).toBeNull();
+    const targetFindOptions = targetFindSpy.mock.calls
+      .map(([options]) => options)
+      .find((options) => options.filterByTk === 'customer-portal' && options.fields?.includes('enabled'));
+    expect(targetFindOptions).toMatchObject({
+      lock: expect.anything(),
+      transaction: expect.anything(),
+    });
+    expect(uiLayoutFindSpy).not.toHaveBeenCalled();
+
+    const directUpdateResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: '__default_portal__',
+      values: { isDefault: true },
+    });
+    expect(directUpdateResponse.status).toBe(400);
+
+    const disableResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'customer-portal',
+      values: { enabled: false },
+    });
+    expect(disableResponse.status).toBe(200);
+    expect((await repository.findOne({ filterByTk: 'customer-portal' }))?.get('isDefault')).toBeNull();
+    expect(
+      (
+        await rootAgent.resource('multiPortals').setDefault({
+          filterByTk: 'customer-portal',
+        })
+      ).status,
+    ).toBe(400);
+
+    const missingResponse = await publicAgent.resource('multiPortals').getDefault();
+    expect(missingResponse.status).toBe(200);
+    expect(missingResponse.body.data).toBeNull();
+
+    const resetResponse = await rootAgent.resource('multiPortals').setDefault({
+      filterByTk: '__default_portal__',
+    });
+    expect(resetResponse.status).toBe(200);
+    const deleteResponse = await rootAgent.resource('multiPortals').destroy({
+      filterByTk: '__default_portal__',
+    });
+    expect(deleteResponse.status).toBe(200);
+    expect((await publicAgent.resource('multiPortals').getDefault()).body.data).toBeNull();
+  });
+
+  it('should expose a historical Portal with a null portal type as no-code', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.getRepository('multiPortals').update({
+      filterByTk: '__default_portal__',
+      values: { portalType: null },
+    });
+
+    const response = await app.agent().resource('multiPortals').getDefault();
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual({
+      uid: '__default_portal__',
+      portalType: 'no-code',
+      routePath: '/admin',
+    });
+  });
+
+  it('should reject an unsupported default Portal type without clearing the current default', async () => {
+    app = await createMultiPortalAclMockServer();
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'unsupported-portal',
+        title: 'Unsupported Portal',
+        portalType: 'unsupported',
+        portalName: 'unsupported-portal',
+        routePath: '/unsupported-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+
+    const response = await rootAgent.resource('multiPortals').setDefault({
+      filterByTk: 'unsupported-portal',
+    });
+
+    expect(response.status).toBe(400);
+    expect((await repository.findOne({ filterByTk: '__default_portal__' }))?.get('isDefault')).toBe(true);
+    expect((await repository.findOne({ filterByTk: 'unsupported-portal' }))?.get('isDefault')).toBeNull();
   });
 
   it('should allow ordinary portals to use admin and mobile route names', async () => {
@@ -637,6 +961,74 @@ describe('plugin-multi-portal server', () => {
     expect(updatedToMobile?.get('routePath')).toBe('/mobile');
   });
 
+  it('should reject duplicate portal names before collection writes', async () => {
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+
+    const repository = app.db.getRepository('multiPortals');
+    await repository.create({
+      values: {
+        uid: 'existing-portal',
+        title: 'Existing Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/existing-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    await repository.create({
+      values: {
+        uid: 'renamed-portal',
+        title: 'Renamed Portal',
+        portalType: 'no-code',
+        portalName: 'renamed-portal',
+        routePath: '/renamed-portal',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const duplicateCreateResponse = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'duplicate-portal',
+        title: 'Duplicate Portal',
+        portalType: 'no-code',
+        portalName: 'existing-portal',
+        routePath: '/ignored-by-normalization',
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+    const samePortalUpdateResponse = await rootAgent.resource('multiPortals').update({
+      filterByTk: 'existing-portal',
+      values: {
+        title: 'Updated Existing Portal',
+        portalName: 'existing-portal',
+      },
+    });
+    const duplicateUpdateResponse = await rootAgent
+      .set('X-Locale', 'zh-CN')
+      .resource('multiPortals')
+      .update({
+        filterByTk: 'renamed-portal',
+        values: {
+          portalName: 'existing-portal',
+        },
+      });
+
+    expect(duplicateCreateResponse.status).toBe(409);
+    expect(duplicateCreateResponse.body.errors[0].message).toBe('Portal name "existing-portal" already exists');
+    expect(samePortalUpdateResponse.status).toBe(200);
+    expect(duplicateUpdateResponse.status).toBe(409);
+    expect(duplicateUpdateResponse.body.errors[0].message).toBe('门户名称“existing-portal”已存在');
+    expect(await repository.findOne({ filterByTk: 'duplicate-portal' })).toBeNull();
+    expect((await repository.findOne({ filterByTk: 'renamed-portal' }))?.get('portalName')).toBe('renamed-portal');
+  });
+
   it('should apply INIT_PORTAL_NAME to the fresh AI portal', async () => {
     process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'workspace_home';
@@ -708,15 +1100,9 @@ describe('plugin-multi-portal server', () => {
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
-    await expect(readFile(path.join(portalDir, '.env'), 'utf-8')).resolves.toBe(
-      'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/workspace/\n',
-    );
-    await expect(readFile(path.join(portalDir, '.env.local'), 'utf-8')).resolves.toBe(
-      'LOCAL_ONLY=true\nNOCOBASE_PORTAL_BASE=/x/workspace/\nNOCOBASE_API_URL=/api\n',
-    );
-    await expect(readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-      '{\n  "sourceStorage": "nocobase"\n}\n',
-    );
+    await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.git'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
@@ -904,6 +1290,33 @@ describe('plugin-multi-portal server', () => {
         uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
       },
     });
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      values: {
+        enabled: false,
+      },
+    });
+    await app.db.getRepository('multiPortals').create({
+      values: {
+        uid: 'manifest-mobile-portal',
+        title: 'Mobile portal',
+        icon: 'mobileoutlined',
+        portalType: 'ai',
+        portalName: 'manifestMobilePortal',
+        routePath: '/mobile-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      },
+    });
+    const mobileManifestItem = {
+      uid: 'manifest-mobile-portal',
+      title: 'Mobile portal',
+      icon: 'mobileoutlined',
+      portalType: 'ai',
+      routePath: '/mobile-portal',
+      layout: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
+    };
 
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
       defaultManifestItem,
@@ -915,6 +1328,7 @@ describe('plugin-multi-portal server', () => {
         routePath: '/customer-portal',
         layout: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
       },
+      mobileManifestItem,
     ]);
 
     await customerPortal.update({
@@ -922,6 +1336,7 @@ describe('plugin-multi-portal server', () => {
     });
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
       defaultManifestItem,
+      mobileManifestItem,
     ]);
 
     await customerPortal.update({
@@ -930,6 +1345,7 @@ describe('plugin-multi-portal server', () => {
     await customerPortal.destroy();
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
       defaultManifestItem,
+      mobileManifestItem,
     ]);
   });
 
@@ -962,15 +1378,9 @@ describe('plugin-multi-portal server', () => {
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'dist', 'favicon.ico'))).resolves.toBeUndefined();
-    await expect(readFile(path.join(portalDir, '.env'), 'utf-8')).resolves.toBe(
-      'NOCOBASE_API_URL=/console/api\nNOCOBASE_PORTAL_BASE=/console/x/storageTemplatePortal/\n',
-    );
-    await expect(readFile(path.join(portalDir, '.env.local'), 'utf-8')).resolves.toBe(
-      'NOCOBASE_API_URL=/console/api\nNOCOBASE_PORTAL_BASE=/console/x/storageTemplatePortal/\n',
-    );
-    await expect(readFile(path.join(portalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-      '{\n  "sourceStorage": "nocobase"\n}\n',
-    );
+    await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
@@ -1038,9 +1448,7 @@ describe('plugin-multi-portal server', () => {
     });
     const gitPortalDir = path.join(storagePath as string, 'portals', appName, 'storageGitPortal');
     await waitForPath(path.join(gitPortalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(gitPortalDir, 'portal.config.json'), 'utf-8')).resolves.toBe(
-      '{\n  "sourceStorage": "git",\n  "git": {\n    "repo": "git@github.com:nocobase/customer-portal.git",\n    "branch": "release",\n    "path": "portals/customer"\n  }\n}\n',
-    );
+    await expect(access(path.join(gitPortalDir, 'portal.config.json'))).rejects.toThrow();
 
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 
@@ -1052,10 +1460,12 @@ describe('plugin-multi-portal server', () => {
     });
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/storageTemplatePortal/',
+    );
   });
 
-  it('should rebuild storage portal HTML when an AI portal is re-enabled through multiPortals:update', async () => {
+  it('should keep storage portal HTML when an AI portal is disabled through multiPortals:update', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
     app = await createMultiPortalAclMockServer();
@@ -1096,7 +1506,7 @@ describe('plugin-multi-portal server', () => {
     expect(disableResponse.status).toBe(200);
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(access(portalIndex)).rejects.toThrow();
+    await expect(readFile(portalIndex, 'utf-8')).resolves.toBe('/console/x/api-toggle-storage-portal/');
 
     spawnMock.mockClear();
     const enableResponse = await rootAgent.resource('multiPortals').update({
@@ -1109,17 +1519,7 @@ describe('plugin-multi-portal server', () => {
     expect(enableResponse.status).toBe(200);
     await waitForPath(portalIndex);
     await expect(readFile(portalIndex, 'utf-8')).resolves.toBe('/console/x/api-toggle-storage-portal/');
-    expect(spawnMock).toHaveBeenCalledWith(
-      'yarn',
-      ['build:html'],
-      expect.objectContaining({
-        cwd: portalDir,
-        env: expect.objectContaining({
-          NOCOBASE_API_URL: '/console/api',
-          NOCOBASE_PORTAL_BASE: '/console/x/api-toggle-storage-portal/',
-        }),
-      }),
-    );
+    expect(spawnMock).not.toHaveBeenCalledWith('yarn', ['build:html'], expect.any(Object));
   });
 
   it('should build storage portal HTML with the sub-app portal base path', async () => {
@@ -1502,6 +1902,49 @@ describe('plugin-multi-portal server', () => {
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
+  });
+
+  it('should deploy uploaded portal dist into the current sub-app storage for custom-domain requests', async () => {
+    process.env.APP_PUBLIC_PATH = '/';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    app.options.name = 'demo6';
+    await app.db.sync();
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'crm',
+          basePath: '/x/crm/',
+        },
+        file: archivePath,
+      });
+    const data = response.body.data as Record<string, unknown>;
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual(
+      expect.objectContaining({
+        status: 'ok',
+        app: 'demo6',
+        portal: 'crm',
+        basePath: '/x/crm/',
+        distPath: path.join('portals', 'demo6', 'crm', 'dist'),
+      }),
+    );
+    await expect(
+      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'index.html'), 'utf-8'),
+    ).resolves.toBe('<div id="root"></div>');
+    await expect(
+      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'index.html')),
+    ).rejects.toThrow();
   });
 
   it('should reject portal dist deploy when basePath does not match the app and portal', async () => {
@@ -1925,11 +2368,14 @@ describe('plugin-multi-portal server', () => {
     const collection = app.db.getCollection('rolesMultiPortalRoutePolicies');
     expect(collection).toBeTruthy();
     expect(collection.options.autoGenId).toBe(false);
+    const routePolicyIndexFields = ['roleName', 'multiPortalUid'].map(
+      (fieldName) => collection.model.rawAttributes[fieldName].field,
+    );
     expect(collection.options.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           unique: true,
-          fields: ['roleName', 'multiPortalUid'],
+          fields: routePolicyIndexFields,
         }),
       ]),
     );
@@ -3945,6 +4391,12 @@ describe('plugin-multi-portal server', () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
 
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      values: {
+        enabled: false,
+      },
+    });
     await app.db.getRepository('uiLayouts').create({
       values: {
         uid: 'disabled-backing-layout',
@@ -4033,25 +4485,21 @@ describe('plugin-multi-portal server', () => {
       expect(portal.enabled).toBe(true);
       expect(Object.keys(portal).sort()).toEqual([...MULTI_PORTAL_RUNTIME_FIELDS].sort());
       expect(portal).not.toHaveProperty('icon');
-      expect(Object.keys(portal.uiLayout as Record<string, unknown>).sort()).toEqual(['layoutType']);
+      expect(portal).not.toHaveProperty('uiLayout');
     }
     expect(portals.find((portal) => portal.uid === '__default_portal__')).toMatchObject({
       title: 'Admin',
       portalType: 'no-code',
       portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
       routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
-      uiLayout: {
-        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
     expect(portals.find((portal) => portal.uid === 'desktop-runtime-portal')).toMatchObject({
       title: 'Desktop runtime portal',
       portalType: 'no-code',
       portalName: 'desktopRuntimePortal',
       routePath: '/desktop-runtime-portal',
-      uiLayout: {
-        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
     expect(portals.find((portal) => portal.uid === 'mobile-runtime-portal')).toMatchObject({
       title: 'Mobile runtime portal',
@@ -4059,15 +4507,20 @@ describe('plugin-multi-portal server', () => {
       portalName: 'mobileRuntimePortal',
       routePath: '/mobile-runtime-portal',
       authCheck: false,
-      uiLayout: {
-        layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
     });
   });
 
   it('should expose accessible portal manifests for logged-in roles only', async () => {
     app = await createMultiPortalAclMockServer();
     await app.db.sync();
+
+    await app.db.getRepository('uiLayouts').update({
+      filterByTk: DEFAULT_MOBILE_UI_LAYOUT.uid,
+      values: {
+        enabled: false,
+      },
+    });
 
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
@@ -4266,32 +4719,26 @@ describe('plugin-multi-portal server', () => {
     for (const portal of [...rootPortals, ...roleAPortals, ...unionPortals]) {
       expect(portal.enabled).toBe(true);
       expect(Object.keys(portal).sort()).toEqual([...MULTI_PORTAL_ACCESSIBLE_FIELDS].sort());
-      expect(Object.keys(portal.uiLayout as Record<string, unknown>).sort()).toEqual(['layoutType']);
+      expect(portal).not.toHaveProperty('uiLayout');
     }
     expect(rootPortals.find((portal) => portal.uid === 'accessible-alpha-portal')).toMatchObject({
       uid: 'accessible-alpha-portal',
       icon: 'appstoreoutlined',
-      uiLayout: {
-        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
     expect(rootPortals.find((portal) => portal.uid === 'accessible-beta-portal')).toMatchObject({
       uid: 'accessible-beta-portal',
       icon: null,
       portalType: 'ai',
       authCheck: false,
-      uiLayout: {
-        layoutType: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_MOBILE_UI_LAYOUT.uid,
     });
     expect(rootPortals.find((portal) => portal.uid === '__default_portal__')).toMatchObject({
       icon: 'DesktopOutlined',
       portalType: 'no-code',
       portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
       routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
-      uiLayout: {
-        layoutType: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
-      },
+      uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
   });
 
@@ -4485,12 +4932,15 @@ describe('plugin-multi-portal server', () => {
           uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
         },
       }),
+      await noSnippetAgent.resource('multiPortals').setDefault({
+        filterByTk: deniedPortal.get('uid'),
+      }),
       await noSnippetAgent.resource('multiPortals').destroy({
         filterByTk: deniedPortal.get('uid'),
       }),
     ];
 
-    expect(noSnippetResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403, 403, 403]);
+    expect(noSnippetResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
 
     const createResponse = await pmAllAgent.resource('multiPortals').create({
       values: {
@@ -4530,12 +4980,15 @@ describe('plugin-multi-portal server', () => {
           uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
         },
       }),
+      await pmAllAgent.resource('multiPortals').setDefault({
+        filterByTk: createdPortalUid,
+      }),
       await pmAllAgent.resource('multiPortals').destroy({
         filterByTk: createdPortalUid,
       }),
     ];
 
-    expect(managementResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200, 200]);
+    expect(managementResponses.map((response) => response.status)).toEqual([200, 200, 200, 200, 200, 200, 200]);
 
     const negatedResponses = await Promise.all([
       negatedAgent.resource('multiPortals').list(),
@@ -4576,11 +5029,14 @@ describe('plugin-multi-portal server', () => {
           uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
         },
       }),
+      negatedAgent.resource('multiPortals').setDefault({
+        filterByTk: deniedPortal.get('uid'),
+      }),
       negatedAgent.resource('multiPortals').destroy({
         filterByTk: deniedPortal.get('uid'),
       }),
     ]);
 
-    expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403, 403, 403]);
+    expect(negatedResponses.map((response) => response.status)).toEqual([403, 403, 403, 403, 403, 403, 403, 403]);
   });
 });

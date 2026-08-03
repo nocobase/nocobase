@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
+  "apiClient": {
+    "authRequiredHint": "Authentication failed or the saved session has expired. Run `{{command}}` to sign in again."
+  },
   "commands": {
     "envAdd": {
       "prompts": {
@@ -185,14 +188,16 @@
         "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
         "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
         "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
-        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal."
+        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal.",
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
       },
       "messages": {
         "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
-        "created": "Portal \"{{portal}}\" created at {{portalDir}}.",
+        "created": "Portal \"{{portal}}\" created at {{portalDir}}",
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
-        "sourceStorage": "Source storage: {{sourceStorage}}"
+        "sourceStorage": "Source storage: {{sourceStorage}}",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
       }
     },
     "portalConfig": {
@@ -209,11 +214,12 @@
       "errors": {
         "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
-        "noChanges": "No portal configuration changes were provided. Pass --source-storage or a --git-* flag.",
-        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` or `nb portal pull {{portal}}` first."
+        "noChanges": "No portal configuration changes were provided. Pass --path, --source-storage, or a --git-* flag.",
+        "notFound": "Portal \"{{portal}}\" was not found. Run `nb portal list` to see available portals."
       },
       "messages": {
-        "updated": "Portal \"{{portal}}\" configuration updated at {{portalDir}}/portal.config.json.",
+        "updated": "Portal \"{{portal}}\" configuration updated.",
+        "pathUpdated": "Development path: {{portalDir}}",
         "remoteSynced": "Remote portal record: synced",
         "remoteSkipped": "Remote portal record: not found; local config only"
       }
@@ -254,9 +260,26 @@
         "name": "Name",
         "url": "URL",
         "portalType": "Portal type",
-        "path": "Local path",
+        "path": "Development path",
         "enabled": "Enabled",
-        "localSynced": "Local synced"
+        "default": "Default"
+      }
+    },
+    "portalPull": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "gitRepoRequiredForTemporaryPull": "--git-branch and --git-path require --git-repo for a temporary Git pull. To update the portal configuration, use `nb portal config`."
+      },
+      "messages": {
+        "noop": "No pull is needed.",
+        "pulled": "Pulled portal source \"{{portal}}\" into {{portalDir}}",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
       }
     },
     "swagger": {
@@ -295,9 +318,9 @@
         "name": "Name",
         "url": "URL",
         "portalType": "Portal type",
-        "path": "Local path",
-        "enabled": "Enabled",
-        "localSynced": "Local synced"
+        "developmentPath": "Development path",
+        "deploymentPath": "Deployment path",
+        "enabled": "Enabled"
       }
     },
     "portalDestroy": {
@@ -306,12 +329,18 @@
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
         "confirmationRequired": "Refusing to destroy a portal in non-interactive mode without --yes.",
         "outsideParent": "Refusing to delete a portal outside {{parentDir}}: {{portalDir}}",
-        "workspaceMissing": "Portal does not exist: {{portalDir}}\nPass --force to ignore missing local files.",
+        "workspaceMissing": "Portal deployment path does not exist: {{portalDir}}\nPass --force to ignore missing deployment files.",
         "unsupportedEnvKind": "Cannot destroy a portal for {{kind}} envs in the first version.",
+        "unsafeDevelopmentPath": "Refusing to delete an unsafe portal development path: {{portalDir}}",
         "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
       },
       "prompts": {
-        "confirm": "Destroy portal \"{{portal}}\" and delete its storage directory?"
+        "confirm": "Destroy portal \"{{portal}}\" and delete its deployment directory?"
+      },
+      "statuses": {
+        "deleted": "deleted",
+        "missing": "missing",
+        "retained": "retained"
       },
       "messages": {
         "destroyed": "Portal \"{{portal}}\" destroyed.",
@@ -319,7 +348,9 @@
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
         "record": "Record: {{status}}",
-        "workspace": "Portal files: {{status}} ({{dir}})"
+        "deploymentPath": "Deployment path: {{status}} ({{dir}})",
+        "developmentPath": "Development path: {{status}} ({{dir}})",
+        "developmentPathMissing": "Development path: missing"
       }
     },
     "portalDev": {

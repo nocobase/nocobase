@@ -31,6 +31,7 @@ function createEnv(params: {
   appPublicPath?: string;
   kind?: PortalCreateEnvLike['kind'];
   configuredStoragePath?: string;
+  portals?: PortalCreateEnvLike['config']['portals'];
 }): PortalCreateEnvLike {
   return {
     name: params.name,
@@ -41,6 +42,7 @@ function createEnv(params: {
       apiBaseUrl: params.apiBaseUrl ?? 'http://localhost:13000/api',
       appPublicPath: params.appPublicPath,
       storagePath: params.configuredStoragePath ?? params.storagePath,
+      portals: params.portals,
     },
   };
 }
@@ -58,16 +60,19 @@ function expectPortalRecordDestroy(options: RequestOptions, portal = 'customer')
   expect(options).toEqual(
     expect.objectContaining({
       flags: {
-        filterByTk: portal,
+        filter: {
+          portalName: portal,
+        },
       },
       operation: expect.objectContaining({
         method: 'POST',
         pathTemplate: '/multiPortals:destroy',
         parameters: expect.arrayContaining([
           expect.objectContaining({
-            name: 'filterByTk',
-            flagName: 'filterByTk',
+            name: 'filter',
+            flagName: 'filter',
             in: 'query',
+            type: 'object',
             required: true,
           }),
         ]),
@@ -80,7 +85,7 @@ afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
-test('destroys the portal record and local workspace', async () => {
+test('destroys the portal record and deployment path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const portalDir = await preparePortalWorkspace({
     storagePath,
@@ -103,11 +108,13 @@ test('destroys the portal record and local workspace', async () => {
   ).resolves.toEqual({
     app: 'crm',
     portal: 'customer',
-    portalDir,
+    developmentPath: '',
+    deploymentPath: portalDir,
     portalBase: '/console/x/apps/crm/customer/',
     mode: 'local',
     recordDeleted: true,
-    workspaceDeleted: true,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: true,
   });
 
   expect(apiRequest).toHaveBeenCalledTimes(1);
@@ -121,7 +128,135 @@ test('destroys the portal record and local workspace', async () => {
   await expect(fsp.access(portalDir)).rejects.toThrow();
 });
 
-test('force destroy ignores a missing portal record and workspace', async () => {
+test('keeps the development path by default', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const developmentPath = await makeTempDir('nocobase-cli-portal-destroy-dev-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  await fsp.writeFile(path.join(developmentPath, 'package.json'), '{}');
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  await expect(
+    destroyPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        portals: {
+          customer: {
+            path: developmentPath,
+          },
+        },
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    developmentPath,
+    deploymentPath,
+    recordDeleted: true,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: true,
+  });
+
+  await expect(fsp.access(developmentPath)).resolves.toBeUndefined();
+  await expect(fsp.access(deploymentPath)).rejects.toThrow();
+});
+
+test('reports development path deleted when it matches the deployment path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  await expect(
+    destroyPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        portals: {
+          customer: {
+            path: deploymentPath,
+          },
+        },
+      }),
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    developmentPath: deploymentPath,
+    deploymentPath,
+    recordDeleted: true,
+    developmentPathDeleted: true,
+    deploymentPathDeleted: true,
+  });
+
+  await expect(fsp.access(deploymentPath)).rejects.toThrow();
+});
+
+test('deletes the development path when requested', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const developmentPath = await makeTempDir('nocobase-cli-portal-destroy-dev-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  await fsp.writeFile(path.join(developmentPath, 'package.json'), '{}');
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  await expect(
+    destroyPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({
+        storagePath,
+        portals: {
+          customer: {
+            path: developmentPath,
+          },
+        },
+      }),
+      deleteDevPath: true,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    developmentPath,
+    deploymentPath,
+    recordDeleted: true,
+    developmentPathDeleted: true,
+    deploymentPathDeleted: true,
+  });
+
+  await expect(fsp.access(developmentPath)).rejects.toThrow();
+  await expect(fsp.access(deploymentPath)).rejects.toThrow();
+});
+
+test('refuses to delete the current working directory as the development path', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
+  const developmentPath = await makeTempDir('nocobase-cli-portal-destroy-dev-');
+  const deploymentPath = await preparePortalWorkspace({ storagePath });
+  const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(developmentPath);
+  const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
+
+  try {
+    await expect(
+      destroyPortalWorkspace({
+        portal: 'customer',
+        env: createEnv({
+          storagePath,
+          portals: {
+            customer: {
+              path: developmentPath,
+            },
+          },
+        }),
+        deleteDevPath: true,
+        apiRequest,
+      }),
+    ).rejects.toThrow(`Refusing to delete an unsafe portal development path: ${developmentPath}`);
+    expect(apiRequest).not.toHaveBeenCalled();
+    await expect(fsp.access(developmentPath)).resolves.toBeUndefined();
+    await expect(fsp.access(deploymentPath)).resolves.toBeUndefined();
+  } finally {
+    cwdSpy.mockRestore();
+  }
+});
+
+test('force destroy ignores a missing portal record and deployment path', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const apiRequest = vi.fn(async () => ({ ok: false, status: 404, data: { errors: [{ message: 'Not Found' }] } }));
 
@@ -136,7 +271,8 @@ test('force destroy ignores a missing portal record and workspace', async () => 
     portal: 'customer',
     mode: 'local',
     recordDeleted: false,
-    workspaceDeleted: false,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: false,
   });
 
   expect(apiRequest).toHaveBeenCalledTimes(1);
@@ -167,10 +303,10 @@ test('http destroy uses env source storage when no local storagePath is configur
       }),
     ).resolves.toMatchObject({
       app: 'main',
-      portalDir,
+      deploymentPath: portalDir,
       mode: 'http',
       recordDeleted: true,
-      workspaceDeleted: true,
+      deploymentPathDeleted: true,
     });
     await expect(fsp.access(portalDir)).rejects.toThrow();
   } finally {
@@ -182,7 +318,7 @@ test('http destroy uses env source storage when no local storagePath is configur
   }
 });
 
-test('fails before deleting the record when workspace is missing without force', async () => {
+test('destroys the portal record when the deployment path is missing without force', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-destroy-storage-');
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: 1 } }));
 
@@ -192,9 +328,15 @@ test('fails before deleting the record when workspace is missing without force',
       env: createEnv({ storagePath }),
       apiRequest,
     }),
-  ).rejects.toThrow(/Portal does not exist/);
+  ).resolves.toMatchObject({
+    portal: 'customer',
+    recordDeleted: true,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: false,
+  });
 
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest).toHaveBeenCalledTimes(1);
+  expectPortalRecordDestroy(apiRequest.mock.calls[0][0]);
 });
 
 test('fails when portal record destroy fails', async () => {

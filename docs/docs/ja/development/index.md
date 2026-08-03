@@ -62,5 +62,5 @@ features:
         link: /file-manager/development
       - title: ナレッジベース拡張
         details: 外部ナレッジベースやカスタム検索サービスを接続し、AI employees の RAG 検索ソースを拡張します。
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

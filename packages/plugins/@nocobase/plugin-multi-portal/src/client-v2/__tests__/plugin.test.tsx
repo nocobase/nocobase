@@ -23,9 +23,6 @@ import PluginMultiPortalClientV2 from '../plugin';
 import { installMultiPortalRouteRepositoryScope, type MultiPortalRouteScopeDescriptor } from '../routeRepositoryScope';
 import packageJson from '../../../package.json';
 
-const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
-const UI_LAYOUT_TYPE_MOBILE = 'mobile';
-
 function createPortalScope(portalUid: string): MultiPortalRouteScopeDescriptor {
   return {
     cacheKey: getMultiPortalRouteScopeCacheKey(portalUid),
@@ -41,11 +38,7 @@ const desktopPortal: MultiPortalRuntimeRecord = {
   routePath: '/portal-desktop',
   authCheck: true,
   enabled: true,
-  uiLayout: {
-    layoutType: UI_LAYOUT_TYPE_DESKTOP,
-    routeName: 'admin',
-    routePath: '/admin',
-  },
+  uiLayoutUid: 'admin-layout-model',
 };
 
 function createLayoutManager(options: { registeredRouteNames?: string[] } = {}) {
@@ -71,9 +64,7 @@ function makeAccessiblePortal(overrides: Record<string, unknown> = {}) {
     routePath: '/customer-portal',
     authCheck: true,
     enabled: true,
-    uiLayout: {
-      layoutType: UI_LAYOUT_TYPE_DESKTOP,
-    },
+    uiLayoutUid: 'admin-layout-model',
     ...overrides,
   };
 }
@@ -148,6 +139,30 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.pm.get(PluginMultiPortalClientV2)).toBeInstanceOf(PluginMultiPortalClientV2);
   });
 
+  it('should register the root landing when the public Portal list request fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = createMockClient({
+      plugins: [PluginMultiPortalClientV2],
+    });
+    app.apiMock.onGet('multiPortals:listEnabled').reply(500);
+
+    await app.load();
+
+    expect(app.router.get('root')).toMatchObject({
+      path: '/',
+      authCheck: false,
+    });
+    const RootComponent = app.router.get('root')?.Component;
+    expect(RootComponent).toBeTypeOf('function');
+    const rootElement = (RootComponent as React.FC)({});
+    expect(React.isValidElement(rootElement)).toBe(true);
+    expect((rootElement as React.ReactElement<{ runtimeRegistrationFailed?: boolean }>).props).toMatchObject({
+      runtimeRegistrationFailed: true,
+    });
+    expect(errorSpy).toHaveBeenCalledWith('[NocoBase] Failed to register multi-portals.', expect.anything());
+    errorSpy.mockRestore();
+  });
+
   it('should fetch enabled multi portals for runtime registration', async () => {
     const request = vi.fn().mockResolvedValue({
       data: {
@@ -159,13 +174,53 @@ describe('PluginMultiPortalClientV2', () => {
     expect(request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',
+      skipAuth: true,
       skipNotify: true,
     });
   });
 
-  it('should build registerLayout options from portal fields and related layout type', () => {
+  it('should reject an invalid public Portal list response', async () => {
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: null,
+      },
+    });
+
+    await expect(fetchMultiPortals({ request })).rejects.toThrow(
+      'multiPortals:listEnabled returned an invalid response',
+    );
+  });
+
+  it('should keep the root landing available when runtime Portal registration fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const app = createMockClient({
+      plugins: [PluginMultiPortalClientV2],
+    });
+    app.apiMock.onGet('multiPortals:listEnabled').reply(200, {
+      data: [
+        {
+          ...desktopPortal,
+          uiLayoutUid: 'unsupported-layout-model',
+        },
+      ],
+    });
+
+    await expect(app.load()).resolves.toBeUndefined();
+
+    const RootComponent = app.router.get('root')?.Component;
+    expect(RootComponent).toBeTypeOf('function');
+    const rootElement = (RootComponent as React.FC)({});
+    expect(React.isValidElement(rootElement)).toBe(true);
+    expect((rootElement as React.ReactElement<{ runtimeRegistrationFailed?: boolean }>).props).toMatchObject({
+      runtimeRegistrationFailed: true,
+    });
+    expect(errorSpy).toHaveBeenCalledWith('[NocoBase] Failed to register multi-portals.', expect.anything());
+    errorSpy.mockRestore();
+  });
+
+  it('should build registerLayout options from the two fixed layout uids', () => {
     expect(toMultiPortalLayoutRegisterOptions(desktopPortal)).toEqual({
-      routeName: 'portalDesktop',
+      routeName: 'multiPortalLayout_desktop-portal-model',
       routePath: '/portal-desktop',
       uid: 'desktop-portal-model',
       layoutModelClass: 'AdminLayoutModel',
@@ -178,14 +233,10 @@ describe('PluginMultiPortalClientV2', () => {
         portalName: 'portalMobile',
         routePath: '/portal-mobile',
         authCheck: false,
-        uiLayout: {
-          layoutType: UI_LAYOUT_TYPE_MOBILE,
-          routeName: 'mobile',
-          routePath: '/mobile',
-        },
+        uiLayoutUid: 'mobile-layout-model',
       }),
     ).toEqual({
-      routeName: 'portalMobile',
+      routeName: 'multiPortalLayout_mobile-portal-model',
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
       layoutModelClass: 'MultiPortalMobileLayoutModel',
@@ -199,14 +250,10 @@ describe('PluginMultiPortalClientV2', () => {
         uid: '__default_mobile__',
         portalName: 'mobile',
         routePath: '/mobile',
-        uiLayout: {
-          layoutType: UI_LAYOUT_TYPE_MOBILE,
-          routeName: 'mobile',
-          routePath: '/mobile',
-        },
+        uiLayoutUid: 'mobile-layout-model',
       }),
     ).toEqual({
-      routeName: 'mobile',
+      routeName: 'multiPortalLayout___default_mobile__',
       routePath: '/mobile',
       uid: '__default_mobile__',
       layoutModelClass: 'MobileLayoutModel',
@@ -216,7 +263,7 @@ describe('PluginMultiPortalClientV2', () => {
     });
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, enabled: false })).toBeNull();
     expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, portalType: 'ai' })).toBeNull();
-    expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, uiLayout: { layoutType: 'unknown' } })).toBeNull();
+    expect(toMultiPortalLayoutRegisterOptions({ ...desktopPortal, uiLayoutUid: 'unknown-layout-model' })).toBeNull();
   });
 
   it('should register enabled portal routes returned by the API during plugin load', async () => {
@@ -227,11 +274,7 @@ describe('PluginMultiPortalClientV2', () => {
       portalName: 'portalMobile',
       routePath: '/portal-mobile',
       authCheck: false,
-      uiLayout: {
-        layoutType: UI_LAYOUT_TYPE_MOBILE,
-        routeName: 'mobile',
-        routePath: '/mobile',
-      },
+      uiLayoutUid: 'mobile-layout-model',
     };
     const fixedMobilePortal: MultiPortalRuntimeRecord = {
       ...mobilePortal,
@@ -240,6 +283,7 @@ describe('PluginMultiPortalClientV2', () => {
       routePath: '/mobile',
     };
     const addPermissionsTab = vi.fn();
+    const registerAuthRouteScope = vi.fn();
     const app = {
       i18n: {
         t: vi.fn((key: string) => key),
@@ -254,11 +298,15 @@ describe('PluginMultiPortalClientV2', () => {
         registerModelLoaders: vi.fn(),
       },
       pm: {
-        get: vi.fn(() => ({
-          settingsUI: {
-            addPermissionsTab,
-          },
-        })),
+        get: vi.fn((name: string) =>
+          name === '@nocobase/plugin-auth'
+            ? { registerAuthRouteScope }
+            : {
+                settingsUI: {
+                  addPermissionsTab,
+                },
+              },
+        ),
       },
       apiClient: {
         request: vi.fn().mockResolvedValue({
@@ -329,18 +377,19 @@ describe('PluginMultiPortalClientV2', () => {
     expect(app.apiClient.request).toHaveBeenCalledWith({
       url: 'multiPortals:listEnabled',
       method: 'get',
+      skipAuth: true,
       skipNotify: true,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenCalledTimes(3);
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(1, {
-      routeName: 'portalDesktop',
+      routeName: 'multiPortalLayout_desktop-portal-model',
       routePath: '/portal-desktop',
       uid: 'desktop-portal-model',
       layoutModelClass: 'AdminLayoutModel',
       authCheck: true,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(2, {
-      routeName: 'portalMobile',
+      routeName: 'multiPortalLayout_mobile-portal-model',
       routePath: '/portal-mobile',
       uid: 'mobile-portal-model',
       layoutModelClass: 'MultiPortalMobileLayoutModel',
@@ -349,7 +398,7 @@ describe('PluginMultiPortalClientV2', () => {
       authCheck: false,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(3, {
-      routeName: 'mobile',
+      routeName: 'multiPortalLayout___default_mobile__',
       routePath: '/mobile',
       uid: '__default_mobile__',
       layoutModelClass: 'MobileLayoutModel',
@@ -357,10 +406,24 @@ describe('PluginMultiPortalClientV2', () => {
       childPageModelClass: 'MobileChildPageModel',
       authCheck: false,
     });
+    expect(registerAuthRouteScope).toHaveBeenCalledTimes(3);
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(1, 'multiPortal_desktop-portal-model', '/portal-desktop', {
+      signin: 'multiPortalSignin_desktop-portal-model',
+      signup: 'multiPortalSignup_desktop-portal-model',
+    });
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(2, 'multiPortal_mobile-portal-model', '/portal-mobile', {
+      signin: 'multiPortalSignin_mobile-portal-model',
+      signup: 'multiPortalSignup_mobile-portal-model',
+    });
+    expect(registerAuthRouteScope).toHaveBeenNthCalledWith(3, 'multiPortal___default_mobile__', '/mobile', {
+      signin: 'multiPortalSignin___default_mobile__',
+      signup: 'multiPortalSignup___default_mobile__',
+    });
     expect(app.router.add).toHaveBeenCalledWith('root', {
       path: '/',
       Component: expect.any(Function),
-      authCheck: true,
+      authCheck: false,
+      skipAuthCheck: true,
     });
   });
 
@@ -973,11 +1036,6 @@ describe('PluginMultiPortalClientV2', () => {
         {
           ...desktopPortal,
           routePath: '/portal-desktop',
-          uiLayout: {
-            layoutType: UI_LAYOUT_TYPE_DESKTOP,
-            routeName: 'admin',
-            routePath: '/admin',
-          },
         },
         {
           ...desktopPortal,
@@ -985,11 +1043,6 @@ describe('PluginMultiPortalClientV2', () => {
           portalName: 'disabledPortal',
           routePath: '/disabled-portal',
           enabled: false,
-          uiLayout: {
-            layoutType: UI_LAYOUT_TYPE_DESKTOP,
-            routeName: 'admin',
-            routePath: '/admin',
-          },
         },
       ],
     });
@@ -1006,7 +1059,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(disabledMatches.some((match) => match.route.path === '/disabled-portal')).toBe(false);
   });
 
-  it('should abort before registration when a portalName is already registered', async () => {
+  it('should allow a portalName that is already used by another layout route', async () => {
     const layoutManager = createLayoutManager({
       registeredRouteNames: ['portalDesktop'],
     });
@@ -1022,9 +1075,35 @@ describe('PluginMultiPortalClientV2', () => {
         },
         layoutManager,
       }),
-    ).rejects.toThrow("Duplicate portal route name 'portalDesktop'.");
+    ).resolves.toEqual([desktopPortal]);
 
-    expect(layoutManager.hasLayout).toHaveBeenCalledWith('portalDesktop');
+    expect(layoutManager.hasLayout).toHaveBeenCalledWith('multiPortalLayout_desktop-portal-model');
+    expect(layoutManager.registerLayout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        routeName: 'multiPortalLayout_desktop-portal-model',
+        routePath: '/portal-desktop',
+      }),
+    );
+  });
+
+  it('should abort before registration when the internal Portal layout route name is already registered', async () => {
+    const layoutManager = createLayoutManager({
+      registeredRouteNames: ['multiPortalLayout_desktop-portal-model'],
+    });
+
+    await expect(
+      registerMultiPortalsFromApi({
+        apiClient: {
+          request: vi.fn().mockResolvedValue({
+            data: {
+              data: [desktopPortal],
+            },
+          }),
+        },
+        layoutManager,
+      }),
+    ).rejects.toThrow("Duplicate portal layout route name 'multiPortalLayout_desktop-portal-model'.");
+
     expect(layoutManager.registerLayout).not.toHaveBeenCalled();
   });
 
@@ -1042,7 +1121,7 @@ describe('PluginMultiPortalClientV2', () => {
       },
     } as never);
     const layoutManager = {
-      hasLayout: vi.fn((routeName: string) => routeName === 'existingPortal'),
+      hasLayout: vi.fn((routeName: string) => routeName === 'multiPortalLayout_admin-layout-model'),
       listLayouts: vi.fn((): Array<{ routeName: string; uid: string }> => []),
       registerLayout: vi.fn(),
     };
@@ -1082,7 +1161,7 @@ describe('PluginMultiPortalClientV2', () => {
         },
         layoutManager,
       }),
-    ).rejects.toThrow("Duplicate portal route name 'existingPortal'.");
+    ).rejects.toThrow("Duplicate portal layout route name 'multiPortalLayout_admin-layout-model'.");
 
     expect(layoutManager.registerLayout).not.toHaveBeenCalled();
 

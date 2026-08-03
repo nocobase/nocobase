@@ -52,5 +52,5 @@ features:
         link: /file-manager/development
       - title: Knowledge Base Extension
         details: Connect external knowledge bases or custom retrieval services to extend RAG retrieval sources for AI employees.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

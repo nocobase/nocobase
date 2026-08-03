@@ -176,11 +176,6 @@ describe('PortalRoutesDrawer', () => {
       routePath: '/customer-portal',
       uiLayoutUid: 'mobile-layout-model',
       enabled: true,
-      uiLayout: {
-        layoutType: 'mobile',
-        title: 'Mobile layout',
-        uid: 'mobile-layout-model',
-      },
     });
 
     expect(await screen.findByRole('heading', { name: 'Routes' })).toBeInTheDocument();
@@ -232,11 +227,6 @@ describe('PortalRoutesDrawer', () => {
       routePath: '/admin',
       uiLayoutUid: 'admin-layout-model',
       enabled: true,
-      uiLayout: {
-        layoutType: 'desktop',
-        title: 'Desktop layout',
-        uid: 'admin-layout-model',
-      },
     });
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
@@ -266,13 +256,8 @@ describe('PortalRoutesDrawer', () => {
         portalType: 'no-code',
         portalName: 'customer-portal',
         routePath: '/customer-portal',
-        uiLayoutUid: 'desktop-layout-model',
+        uiLayoutUid: 'admin-layout-model',
         enabled: true,
-        uiLayout: {
-          layoutType: 'desktop',
-          title: 'Desktop layout',
-          uid: 'desktop-layout-model',
-        },
       },
       [
         {
@@ -347,11 +332,6 @@ describe('PortalRoutesDrawer', () => {
       routePath: '/mobile-portal',
       uiLayoutUid: 'mobile-layout-model',
       enabled: true,
-      uiLayout: {
-        layoutType: 'mobile',
-        title: 'Mobile layout',
-        uid: 'mobile-layout-model',
-      },
     });
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
@@ -395,11 +375,6 @@ describe('PortalRoutesDrawer', () => {
         routePath: '/admin',
         uiLayoutUid: 'admin-layout-model',
         enabled: true,
-        uiLayout: {
-          layoutType: 'desktop',
-          title: 'Desktop layout',
-          uid: 'admin-layout-model',
-        },
       },
       [
         {

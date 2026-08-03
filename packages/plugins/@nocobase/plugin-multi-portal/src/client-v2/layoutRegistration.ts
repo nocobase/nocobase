@@ -8,7 +8,12 @@
  */
 
 import type { Application, LayoutRegisterOptions } from '@nocobase/client-v2';
-import { DEFAULT_MOBILE_MULTI_PORTAL_UID } from '../constants';
+import {
+  ADMIN_UI_LAYOUT_UID,
+  DEFAULT_MOBILE_MULTI_PORTAL_UID,
+  isMultiPortalUiLayoutUid,
+  MOBILE_UI_LAYOUT_UID,
+} from '../constants';
 import { getMultiPortalRouteScopeCacheKey, installMultiPortalRouteRepositoryScope } from './routeRepositoryScope';
 
 export { getMultiPortalRouteScopeCacheKey };
@@ -21,11 +26,7 @@ export type MultiPortalRuntimeRecord = {
   routePath: string;
   authCheck: boolean;
   enabled: boolean;
-  uiLayout?: {
-    layoutType?: string;
-    routeName?: string;
-    routePath?: string;
-  };
+  uiLayoutUid?: string | null;
 };
 
 type MultiPortalListBody = {
@@ -43,8 +44,6 @@ type MultiPortalRegistrationApp = {
   layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'listLayouts' | 'registerLayout'>;
 };
 
-const UI_LAYOUT_TYPE_DESKTOP = 'desktop';
-const UI_LAYOUT_TYPE_MOBILE = 'mobile';
 const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
 const MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS = 'MultiPortalMobileLayoutModel';
 const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
@@ -52,15 +51,16 @@ const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageMo
 const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
 const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
+const MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX = 'multiPortalLayout_';
 
-const layoutRegisterOptionsByType: Record<
-  string,
+const layoutRegisterOptionsByUid: Record<
+  typeof ADMIN_UI_LAYOUT_UID | typeof MOBILE_UI_LAYOUT_UID,
   Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>
 > = {
-  [UI_LAYOUT_TYPE_DESKTOP]: {
+  [ADMIN_UI_LAYOUT_UID]: {
     layoutModelClass: ADMIN_LAYOUT_MODEL_CLASS,
   },
-  [UI_LAYOUT_TYPE_MOBILE]: {
+  [MOBILE_UI_LAYOUT_UID]: {
     layoutModelClass: MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS,
     rootPageModelClass: MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS,
     childPageModelClass: MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS,
@@ -77,22 +77,31 @@ function isRuntimePortal(record: MultiPortalRuntimeRecord) {
   return (record.portalType || 'no-code') === 'no-code';
 }
 
+function getMultiPortalLayoutRouteName(uid: string) {
+  return `${MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX}${encodeURIComponent(uid).replace(/\./g, '%2E')}`;
+}
+
 export function toMultiPortalLayoutRegisterOptions(record: MultiPortalRuntimeRecord): LayoutRegisterOptions | null {
   if (!record.enabled || !isRuntimePortal(record)) {
     return null;
   }
 
-  const layoutType = record.uiLayout?.layoutType || '';
+  const uiLayoutUid = record.uiLayoutUid || '';
+  if (!isMultiPortalUiLayoutUid(uiLayoutUid)) {
+    return null;
+  }
   const codeDefinedOptions =
-    layoutType === UI_LAYOUT_TYPE_MOBILE && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
+    uiLayoutUid === MOBILE_UI_LAYOUT_UID && record.uid === DEFAULT_MOBILE_MULTI_PORTAL_UID
       ? layoutModeMobileRegisterOptions
-      : layoutRegisterOptionsByType[layoutType];
+      : isMultiPortalUiLayoutUid(uiLayoutUid)
+        ? layoutRegisterOptionsByUid[uiLayoutUid]
+        : undefined;
   if (!codeDefinedOptions) {
     return null;
   }
 
   return {
-    routeName: record.portalName,
+    routeName: getMultiPortalLayoutRouteName(record.uid),
     routePath: record.routePath,
     uid: record.uid,
     ...codeDefinedOptions,
@@ -104,10 +113,14 @@ export async function fetchMultiPortals(apiClient: MultiPortalRegistrationApp['a
   const response = await apiClient.request<MultiPortalListBody>({
     url: 'multiPortals:listEnabled',
     method: 'get',
+    skipAuth: true,
     skipNotify: true,
   });
   const records = response?.data?.data;
-  return Array.isArray(records) ? records : [];
+  if (!Array.isArray(records)) {
+    throw new Error('multiPortals:listEnabled returned an invalid response');
+  }
+  return records;
 }
 
 export function registerMultiPortalRecords(
@@ -117,7 +130,8 @@ export function registerMultiPortalRecords(
   const candidates: Array<{ options: LayoutRegisterOptions; record: MultiPortalRuntimeRecord }> = [];
   const existingPortalUids = new Set(layoutManager.listLayouts().map((layout) => layout.uid));
   const portalUids = new Set<string>();
-  const routeNames = new Set<string>();
+  const portalNames = new Set<string>();
+  const layoutRouteNames = new Set<string>();
 
   for (const record of records) {
     if (!record.enabled || !isRuntimePortal(record)) {
@@ -125,7 +139,7 @@ export function registerMultiPortalRecords(
     }
     const options = toMultiPortalLayoutRegisterOptions(record);
     if (!options) {
-      throw new Error(`Portal '${record.uid}' uses an unknown UI layout type '${record.uiLayout?.layoutType || ''}'.`);
+      throw new Error(`Portal '${record.uid}' uses an unknown UI layout uid '${record.uiLayoutUid || ''}'.`);
     }
     if (portalUids.has(record.uid)) {
       throw new Error(`Duplicate portal uid '${record.uid}'.`);
@@ -133,11 +147,15 @@ export function registerMultiPortalRecords(
     if (existingPortalUids.has(record.uid)) {
       throw new Error(`Duplicate portal uid '${record.uid}'.`);
     }
-    if (routeNames.has(options.routeName) || layoutManager.hasLayout(options.routeName)) {
-      throw new Error(`Duplicate portal route name '${options.routeName}'.`);
+    if (portalNames.has(record.portalName)) {
+      throw new Error(`Duplicate portal name '${record.portalName}'.`);
+    }
+    if (layoutRouteNames.has(options.routeName) || layoutManager.hasLayout(options.routeName)) {
+      throw new Error(`Duplicate portal layout route name '${options.routeName}'.`);
     }
     portalUids.add(record.uid);
-    routeNames.add(options.routeName);
+    portalNames.add(record.portalName);
+    layoutRouteNames.add(options.routeName);
     candidates.push({ options, record });
   }
 
@@ -163,8 +181,7 @@ function getRouteRepository(app: MultiPortalRegistrationApp) {
   return (context as { routeRepository?: unknown }).routeRepository;
 }
 
-export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
-  const records = await fetchMultiPortals(app.apiClient);
+export function registerMultiPortals(app: MultiPortalRegistrationApp, records: MultiPortalRuntimeRecord[]) {
   const registeredPortalUids = registerMultiPortalRecords(app.layoutManager, records);
   const registeredPortalUidSet = new Set(registeredPortalUids);
   const registeredPortalScopes = records
@@ -174,4 +191,9 @@ export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationAp
       portalUid: record.uid,
     }));
   installMultiPortalRouteRepositoryScope(getRouteRepository(app), () => registeredPortalScopes);
+  return records;
+}
+
+export async function registerMultiPortalsFromApi(app: MultiPortalRegistrationApp) {
+  return registerMultiPortals(app, await fetchMultiPortals(app.apiClient));
 }

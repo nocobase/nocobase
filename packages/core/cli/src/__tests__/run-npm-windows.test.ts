@@ -300,6 +300,56 @@ test('runPnpmCommand reports a friendly error for injected pnpm runners', async 
   );
 });
 
+test('runPnpmInstallCommand retries install without trust-lockfile when the trusted attempt fails', async () => {
+  const runCommand = vi
+    .fn()
+    .mockRejectedValueOnce(new Error('pnpm install --frozen-lockfile --trust-lockfile exited with code 1'))
+    .mockResolvedValueOnce(undefined);
+
+  const { runPnpmInstallCommand } = await import('../lib/run-npm.js');
+  await expect(
+    runPnpmInstallCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+      cwd: '/tmp/portal',
+      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    }),
+  ).resolves.toBe(undefined);
+
+  expect(runCommand.mock.calls).toEqual([
+    [
+      'pnpm',
+      ['install', '--frozen-lockfile', '--trust-lockfile'],
+      {
+        cwd: '/tmp/portal',
+        errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+      },
+    ],
+    [
+      'pnpm',
+      ['install', '--frozen-lockfile'],
+      {
+        cwd: '/tmp/portal',
+        errorName: 'pnpm install --frozen-lockfile',
+      },
+    ],
+  ]);
+});
+
+test('runPnpmInstallCommand does not retry when pnpm is missing', async () => {
+  const runCommand = vi.fn(async () => {
+    throw Object.assign(new Error('spawn pnpm ENOENT'), { code: 'ENOENT' });
+  });
+
+  const { runPnpmInstallCommand } = await import('../lib/run-npm.js');
+  await expect(
+    runPnpmInstallCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+      errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
+    }),
+  ).rejects.toThrow(
+    "Couldn't run `pnpm install --frozen-lockfile --trust-lockfile` because the pnpm executable could not be found.",
+  );
+  expect(runCommand).toHaveBeenCalledTimes(1);
+});
+
 test('run reports a friendly error when Nginx is missing', async () => {
   spawnMock.mockReturnValue(erroredChild(Object.assign(new Error('spawn nginx ENOENT'), { code: 'ENOENT' })));
 

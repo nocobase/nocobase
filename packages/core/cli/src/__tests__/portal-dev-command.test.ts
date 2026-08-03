@@ -85,6 +85,7 @@ test('portal dev resolves the current env name before starting dev', async () =>
   expect(mocks.devPortalWorkspace.mock.calls[0][0]).toMatchObject({
     portal: 'cba',
     env,
+    envName: 'remote1',
   });
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Starting portal "cba"...'],

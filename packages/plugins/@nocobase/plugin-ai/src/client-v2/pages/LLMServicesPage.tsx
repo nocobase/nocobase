@@ -31,10 +31,17 @@ import type { ColumnsType } from 'antd/es/table';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, RocketOutlined } from '@ant-design/icons';
 import { arrayMove } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import { EnvVariableInput, Table, useApp } from '@nocobase/client-v2';
-import type { APIClient } from '@nocobase/client-v2';
+import {
+  EnvVariableInput,
+  parseUIOperation,
+  removeUIOperation,
+  Table,
+  UI_OPERATION_QUERY_KEY,
+  useApp,
+} from '@nocobase/client-v2';
+import type { APIClient, UIOperation } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getCustomModelIdIssues, type ModelIdIssue } from '../../common/llm-service-models';
 import { getRecommendedModels, isRecommendedModel } from '../../common/recommended-models';
 import type { LLMProviderOptions } from '../manager/ai-manager';
@@ -144,6 +151,24 @@ const providerSelectPopupClassName = css`
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
+
+export type LLMServiceUIOperation =
+  | UIOperation<'llmServices:create'>
+  | (UIOperation<'llmServices:update', { filterByTk: string }> & { params: { filterByTk: string } });
+
+export const isLLMServiceUIOperation = (operation: UIOperation): operation is LLMServiceUIOperation => {
+  if (operation.operationId === 'llmServices:create') {
+    const provider = operation.params?.provider;
+    return provider === undefined || (typeof provider === 'string' && Boolean(provider));
+  }
+
+  return (
+    operation.operationId === 'llmServices:update' &&
+    isRecord(operation.params) &&
+    typeof operation.params.filterByTk === 'string' &&
+    Boolean(operation.params.filterByTk)
+  );
+};
 
 const isResourceAction = (value: unknown): value is ResourceAction => typeof value === 'function';
 
@@ -367,9 +392,6 @@ export const getInitialLLMServiceFormValues = (): LLMServiceFormValues => ({
     models: [],
   },
 });
-
-export const shouldAutoOpenAddNew = (state: unknown): state is { autoOpenAddNew: true } =>
-  isRecord(state) && state.autoOpenAddNew === true;
 
 const ProviderSelect: React.FC<{
   providers: ProviderOption[];
@@ -756,13 +778,16 @@ export const LLMServicesPage: React.FC = () => {
   const t = useT();
   const { token } = theme.useToken();
   const location = useLocation();
+  const navigate = useNavigate();
   const { message } = App.useApp();
   const repo = useAIConfigRepository();
   const [providers, setProviders] = useState<ProviderOption[]>([]);
+  const [providersLoaded, setProvidersLoaded] = useState(false);
   const [services, setServices] = useState<LLMServiceRecord[]>([]);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const autoOpenHandledRef = useRef(false);
+  const handledUIOperationRef = useRef<string>();
   const tRef = useRef(t);
   const actionLinkStyle = useMemo<React.CSSProperties>(
     () => ({
@@ -782,6 +807,9 @@ export const LLMServicesPage: React.FC = () => {
   useEffect(() => {
     listLLMProviders(app.apiClient, (value) => tRef.current(value))
       .then(setProviders)
+      .finally(() => {
+        setProvidersLoaded(true);
+      })
       .catch((error: unknown) => {
         console.error(error);
       });
@@ -794,6 +822,7 @@ export const LLMServicesPage: React.FC = () => {
       setServices(result.data);
     } finally {
       setLoading(false);
+      setServicesLoaded(true);
     }
   }, [app.apiClient]);
 
@@ -804,49 +833,103 @@ export const LLMServicesPage: React.FC = () => {
     });
   }, [refresh]);
 
-  const openCreateDrawer = useCallback(() => {
-    ctx.viewer.open({
-      type: 'drawer',
-      width: AI_SETTINGS_DRAWER_WIDTH,
-      closable: true,
-      content: (
-        <LLMServiceDrawerContent
-          providers={providers}
-          onSubmitted={async () => {
-            await refresh();
-            await repo.refreshLLMServices();
-          }}
-        />
-      ),
-    });
-  }, [ctx.viewer, providers, refresh, repo]);
+  const openCreateDrawer = useCallback(
+    (provider?: string) => {
+      ctx.viewer.open({
+        type: 'drawer',
+        width: AI_SETTINGS_DRAWER_WIDTH,
+        closable: true,
+        content: (
+          <LLMServiceDrawerContent
+            providers={providers}
+            provider={provider}
+            onSubmitted={async () => {
+              await refresh();
+              await repo.refreshLLMServices();
+            }}
+          />
+        ),
+      });
+    },
+    [ctx.viewer, providers, refresh, repo],
+  );
+
+  const openEditDrawer = useCallback(
+    (record: LLMServiceRecord) => {
+      ctx.viewer.open({
+        type: 'drawer',
+        width: AI_SETTINGS_DRAWER_WIDTH,
+        closable: true,
+        content: (
+          <LLMServiceDrawerContent
+            providers={providers}
+            record={record}
+            onSubmitted={async () => {
+              await refresh();
+              await repo.refreshLLMServices();
+            }}
+          />
+        ),
+      });
+    },
+    [ctx.viewer, providers, refresh, repo],
+  );
+
+  const clearUIOperation = useCallback(() => {
+    navigate(
+      {
+        pathname: location.pathname,
+        search: removeUIOperation(location.search),
+        hash: location.hash,
+      },
+      { replace: true },
+    );
+  }, [location.hash, location.pathname, location.search, navigate]);
 
   useEffect(() => {
-    if (autoOpenHandledRef.current || !shouldAutoOpenAddNew(location.state)) {
+    const encodedOperation = new URLSearchParams(location.search).get(UI_OPERATION_QUERY_KEY);
+    if (!encodedOperation || handledUIOperationRef.current === encodedOperation) {
       return;
     }
-    autoOpenHandledRef.current = true;
-    openCreateDrawer();
-    window.history.replaceState({}, document.title);
-  }, [location.state, openCreateDrawer]);
 
-  const openEditDrawer = (record: LLMServiceRecord) => {
-    ctx.viewer.open({
-      type: 'drawer',
-      width: AI_SETTINGS_DRAWER_WIDTH,
-      closable: true,
-      content: (
-        <LLMServiceDrawerContent
-          providers={providers}
-          record={record}
-          onSubmitted={async () => {
-            await refresh();
-            await repo.refreshLLMServices();
-          }}
-        />
-      ),
-    });
-  };
+    const operation = parseUIOperation(location.search);
+    if (!operation || !isLLMServiceUIOperation(operation)) {
+      handledUIOperationRef.current = encodedOperation;
+      clearUIOperation();
+      return;
+    }
+
+    if (operation.operationId === 'llmServices:create' && !providersLoaded) {
+      return;
+    }
+    if (operation.operationId === 'llmServices:update' && (!providersLoaded || !servicesLoaded)) {
+      return;
+    }
+
+    handledUIOperationRef.current = encodedOperation;
+    if (operation.operationId === 'llmServices:create') {
+      const provider = typeof operation.params?.provider === 'string' ? operation.params.provider : 'openai';
+      openCreateDrawer(provider);
+    } else {
+      const service = services.find((item) => item.name === operation.params.filterByTk);
+      if (service) {
+        openEditDrawer(service);
+      } else {
+        message.error(t('LLM service "{{name}}" was not found', { name: operation.params.filterByTk }));
+      }
+    }
+    clearUIOperation();
+  }, [
+    clearUIOperation,
+    location.search,
+    message,
+    openCreateDrawer,
+    openEditDrawer,
+    providersLoaded,
+    services,
+    servicesLoaded,
+    t,
+  ]);
 
   const handleBulkDelete = async () => {
     const names = selectedRowKeys.filter((key): key is string => typeof key === 'string');
@@ -954,7 +1037,7 @@ export const LLMServicesPage: React.FC = () => {
                 {t('Delete')}
               </Button>
             </Popconfirm>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateDrawer}>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreateDrawer()}>
               {t('Add new')}
             </Button>
           </Space>
@@ -984,15 +1067,29 @@ export const LLMServicesPage: React.FC = () => {
   );
 };
 
-const LLMServiceDrawerContent: React.FC<{
+type LLMServiceDrawerContentProps = {
   providers: ProviderOption[];
+  provider?: string;
   record?: LLMServiceRecord;
   onSubmitted: () => Promise<void>;
-}> = ({ providers, record, onSubmitted }) => {
+};
+
+const LLMServiceDrawerContent: React.FC<LLMServiceDrawerContentProps> = (props) => {
+  const { message } = App.useApp();
+
+  return (
+    <App component={false}>
+      <LLMServiceDrawerContentInner {...props} message={message} />
+    </App>
+  );
+};
+
+const LLMServiceDrawerContentInner: React.FC<
+  LLMServiceDrawerContentProps & { message: ReturnType<typeof App.useApp>['message'] }
+> = ({ providers, provider, record, onSubmitted, message }) => {
   const app = useApp();
   const ctx = useFlowContext();
   const t = useT();
-  const { message } = App.useApp();
   const [form] = Form.useForm<LLMServiceFormValues>();
   const [saving, setSaving] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
@@ -1005,8 +1102,8 @@ const LLMServiceDrawerContent: React.FC<{
             ...record,
             enabledModels: normalizeEnabledModels(record.enabledModels),
           }
-        : getInitialLLMServiceFormValues(),
-    [record],
+        : { ...getInitialLLMServiceFormValues(), ...(provider ? { provider } : {}) },
+    [provider, record],
   );
   const { Header, Footer } = ctx.view;
 

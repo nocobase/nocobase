@@ -75,6 +75,8 @@ export default class PortalDev extends Command {
     await devPortalWorkspace({
       portal: args.portal,
       env,
+      envName,
+      cliVersion: String(this.config?.pjson?.version ?? '').trim(),
       onStart: (result) => {
         printInfo(
           portalDevText('messages.starting', { portal: result.portal }, `Starting portal "${result.portal}"...`),

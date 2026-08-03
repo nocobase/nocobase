@@ -12,7 +12,7 @@ keywords: "AI Portal,部署,source storage,Git,nb portal deploy,nb portal push,�
 
 :::
 
-Portal 的源码有三个位置：本地源码目录、source storage 和已部署的产物。`nb portal` 负责在这三者之间同步。
+Portal 的源码有三个位置：本地开发工作区、source storage 和已部署的产物。`nb portal` 负责在这三者之间同步。
 
 ## 完整生命周期
 
@@ -46,7 +46,7 @@ nb portal dev customer         # 开始开发
 nb portal create customer
 ```
 
-创建时会基于 `@nocobase/portal-template-default` 模板生成源码，写入 `.env`、`.env.local` 和 `portal.config.json`，然后自动安装依赖。
+创建时会基于 `@nocobase/portal-template-default` 模板在当前目录下生成 `./customer` 作为开发工作区，写入 `.env`、`.env.local` 和 `portal.config.json`，然后自动安装依赖。想放到别处用 `--path` 指定。
 
 <!-- 需要一张 nb portal create 执行完成后的终端输出截图 -->
 
@@ -99,7 +99,7 @@ nb portal config customer --git-path portals/customer
 
 | env 类型 | 说明 |
 | --- | --- |
-| `local` | 本地源码目录和应用 storage 在同一台机器上，用默认 `nocobase` 存储时 `pull` / `push` 通常不需要额外同步 |
+| `local` | 开发工作区和应用 storage 在同一台机器上，用默认 `nocobase` 存储时 `pull` / `push` 通常不需要额外同步 |
 | `docker` | 通过 Docker volume 共享，同上 |
 | `http` | 通过 API 同步，`pull` / `push` 会下载或上传源码归档 |
 
@@ -139,7 +139,7 @@ nb portal deploy customer --env prod --yes
 nb portal destroy customer
 ```
 
-这个操作会同时删除 Portal 记录和本地源码目录，执行前确认源码已经推送或者确实不需要了。
+这个操作会删除 Portal 记录和已部署的文件，本地开发工作区默认保留。确实想连开发工作区一起删掉时，加上 `--delete-dev-path`。
 
 ## 相关链接
 
@@ -153,4 +153,4 @@ nb portal destroy customer
 - [`nb portal push`](../api/cli/portal/push.md) — 推送源码到 source storage
 - [`nb portal deploy`](../api/cli/portal/deploy.md) — 构建并部署 Portal
 - [`nb portal pull`](../api/cli/portal/pull.md) — 从 source storage 拉取源码
-- [`nb portal destroy`](../api/cli/portal/destroy.md) — 删除 Portal 记录和本地源码目录
+- [`nb portal destroy`](../api/cli/portal/destroy.md) — 删除 Portal 记录

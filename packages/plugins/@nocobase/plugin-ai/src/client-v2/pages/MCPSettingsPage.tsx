@@ -961,16 +961,30 @@ export const MCPSettingsPage: React.FC = () => {
   );
 };
 
-const MCPSettingsDrawerContent: React.FC<{
+type MCPSettingsDrawerContentProps = {
   record?: MCPRecord;
   rebuilding: boolean;
   rebuildClient: () => Promise<void>;
   onSubmitted: () => Promise<void>;
-}> = ({ record, rebuilding, rebuildClient, onSubmitted }) => {
+};
+
+const MCPSettingsDrawerContent: React.FC<MCPSettingsDrawerContentProps> = (props) => {
+  const { message } = App.useApp();
+
+  return (
+    <App component={false}>
+      <MCPSettingsDrawerContentInner {...props} message={message} />
+    </App>
+  );
+};
+
+const MCPSettingsDrawerContentInner: React.FC<
+  MCPSettingsDrawerContentProps & { message: ReturnType<typeof App.useApp>['message'] }
+> = ({ record, rebuilding, rebuildClient, onSubmitted, message }) => {
   const app = useApp();
   const ctx = useFlowContext();
   const t = useT();
-  const { message, modal } = App.useApp();
+  const { modal } = App.useApp();
   const [form] = Form.useForm<MCPFormValues>();
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);

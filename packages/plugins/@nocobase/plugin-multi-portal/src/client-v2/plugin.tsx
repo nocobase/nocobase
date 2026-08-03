@@ -8,11 +8,46 @@
  */
 
 import { Plugin } from '@nocobase/client-v2';
+import React from 'react';
 import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
-import { registerMultiPortalsFromApi } from './layoutRegistration';
+import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
+
+type AuthRouteScopeRegistrar = {
+  registerAuthRouteScope?: (name: string, basePath: string, routeNames?: { signin?: string; signup?: string }) => void;
+  registerSignInRoute?: (name: string, path: string) => void;
+};
+
+function registerMultiPortalAuthRouteScopes(
+  authPlugin: AuthRouteScopeRegistrar | undefined,
+  records: MultiPortalRuntimeRecord[],
+) {
+  if (
+    !authPlugin ||
+    (typeof authPlugin.registerAuthRouteScope !== 'function' && typeof authPlugin.registerSignInRoute !== 'function')
+  ) {
+    return;
+  }
+
+  for (const record of records) {
+    if (!record.enabled || (record.portalType || 'no-code') !== 'no-code') {
+      continue;
+    }
+    const encodedUid = encodeURIComponent(record.uid).replace(/\./g, '%2E');
+    const routeName = `multiPortal_${encodedUid}`;
+    const signinRouteName = `multiPortalSignin_${encodedUid}`;
+    if (typeof authPlugin.registerAuthRouteScope === 'function') {
+      authPlugin.registerAuthRouteScope(routeName, record.routePath, {
+        signin: signinRouteName,
+        signup: `multiPortalSignup_${encodedUid}`,
+      });
+    } else {
+      authPlugin.registerSignInRoute?.(signinRouteName, `${record.routePath.replace(/\/+$/g, '')}/signin`);
+    }
+  }
+}
 
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
@@ -68,12 +103,22 @@ export class PluginMultiPortalClientV2 extends Plugin {
       return;
     }
 
-    await registerMultiPortalsFromApi(this.app);
+    let runtimeRegistrationFailed = false;
     this.router.add('root', {
       path: '/',
-      Component: RootLanding,
-      authCheck: true,
+      Component: () => <RootLanding runtimeRegistrationFailed={runtimeRegistrationFailed} />,
+      authCheck: false,
+      skipAuthCheck: true,
     });
+
+    try {
+      const records = await fetchMultiPortals(this.app.apiClient);
+      registerMultiPortals(this.app, records);
+      registerMultiPortalAuthRouteScopes(this.app.pm.get<AuthRouteScopeRegistrar>('@nocobase/plugin-auth'), records);
+    } catch (error) {
+      console.error('[NocoBase] Failed to register multi-portals.', error);
+      runtimeRegistrationFailed = true;
+    }
   }
 }
 
