@@ -31,6 +31,7 @@ function createEnv(params: {
   appPublicPath?: string;
   kind?: PortalCreateEnvLike['kind'];
   configuredStoragePath?: string;
+  portals?: PortalCreateEnvLike['config']['portals'];
 }): PortalCreateEnvLike {
   return {
     name: params.name,
@@ -41,14 +42,14 @@ function createEnv(params: {
       apiBaseUrl: params.apiBaseUrl ?? 'http://localhost:13000/api',
       appPublicPath: params.appPublicPath,
       storagePath: params.configuredStoragePath ?? params.storagePath,
+      portals: params.portals,
     },
   };
 }
 
-async function preparePortalWorkspace(params: { storagePath: string; app?: string; portal?: string }): Promise<string> {
-  const app = params.app ?? 'main';
+async function preparePortalSourceWorkspace(params: { rootPath: string; portal?: string }): Promise<string> {
   const portal = params.portal ?? 'customer';
-  const portalDir = path.join(params.storagePath, 'portals', app, portal);
+  const portalDir = path.join(params.rootPath, portal);
   await fsp.mkdir(portalDir, { recursive: true });
   return portalDir;
 }
@@ -90,14 +91,15 @@ function expectPortalRecordList(options: RequestOptions) {
 }
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(tempDirs.splice(0).map((dir) => fsp.rm(dir, { recursive: true, force: true })));
 });
 
-test('lists portal records with local workspace sync status for AI portals', async () => {
+test('lists portal records with development paths for AI portals', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-list-storage-');
-  const customerDir = await preparePortalWorkspace({
-    storagePath,
-    app: 'crm',
+  const sourceRoot = await makeTempDir('nocobase-cli-portal-list-source-');
+  const customerDir = await preparePortalSourceWorkspace({
+    rootPath: sourceRoot,
     portal: 'customer',
   });
   const apiRequest = vi.fn(async () => ({
@@ -133,6 +135,11 @@ test('lists portal records with local workspace sync status for AI portals', asy
         kind: 'local',
         storagePath,
         apiBaseUrl: 'http://localhost:13000/console/api/__app/crm',
+        portals: {
+          customer: {
+            path: customerDir,
+          },
+        },
       }),
       apiRequest,
     }),
@@ -155,7 +162,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
         options: {},
         portalUrl: 'http://localhost:13000/console/x/apps/crm/customer/',
         portalDir: customerDir,
-        localSynced: true,
+        deployDir: path.join(storagePath, 'portals', 'crm', 'customer'),
       },
       {
         uid: 'partner',
@@ -171,7 +178,7 @@ test('lists portal records with local workspace sync status for AI portals', asy
         options: {},
         portalUrl: '',
         portalDir: '',
-        localSynced: null,
+        deployDir: '',
       },
     ],
   });
@@ -186,13 +193,14 @@ test('lists portal records with local workspace sync status for AI portals', asy
   expectPortalRecordList(apiRequest.mock.calls[0][0]);
 });
 
-test('http list uses env source storage when no local storagePath is configured', async () => {
+test('http list uses saved portal source paths from env config', async () => {
   const cliRoot = await makeTempDir('nocobase-cli-portal-list-root-');
+  const sourceRoot = await makeTempDir('nocobase-cli-portal-list-source-');
   const originalCliRoot = process.env[NB_CLI_ROOT_ENV];
   process.env[NB_CLI_ROOT_ENV] = cliRoot;
   try {
     const storagePath = path.join(cliRoot, 'remote1', 'source', 'storage');
-    const portalDir = await preparePortalWorkspace({ storagePath });
+    const portalDir = await preparePortalSourceWorkspace({ rootPath: sourceRoot });
     const apiRequest = vi.fn(async () => ({
       ok: true,
       status: 200,
@@ -203,6 +211,14 @@ test('http list uses env source storage when no local storagePath is configured'
             title: 'Customer',
             portalName: 'customer',
             routePath: '/customer',
+            portalType: 'ai',
+            enabled: true,
+          },
+          {
+            uid: 'missing',
+            title: 'Missing',
+            portalName: 'missing',
+            routePath: '/missing',
             portalType: 'ai',
             enabled: true,
           },
@@ -219,6 +235,11 @@ test('http list uses env source storage when no local storagePath is configured'
           storagePath: '/tmp/fallback',
           configuredStoragePath: '',
           apiBaseUrl: 'https://example.com/api',
+          portals: {
+            customer: {
+              path: portalDir,
+            },
+          },
         }),
         apiRequest,
       }),
@@ -230,7 +251,10 @@ test('http list uses env source storage when no local storagePath is configured'
         expect.objectContaining({
           portalDir,
           portalUrl: 'https://example.com/x/customer/',
-          localSynced: true,
+        }),
+        expect.objectContaining({
+          portalDir: '',
+          portalUrl: 'https://example.com/x/missing/',
         }),
       ],
     });
@@ -243,11 +267,11 @@ test('http list uses env source storage when no local storagePath is configured'
   }
 });
 
-test('http list uses app:getInfo app name for custom-domain local paths', async () => {
+test('http list uses app:getInfo app name for custom-domain access URLs', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-list-storage-');
-  const portalDir = await preparePortalWorkspace({
-    storagePath,
-    app: 'demo6',
+  const sourceRoot = await makeTempDir('nocobase-cli-portal-list-source-');
+  const portalDir = await preparePortalSourceWorkspace({
+    rootPath: sourceRoot,
     portal: 'crm',
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
@@ -281,6 +305,11 @@ test('http list uses app:getInfo app name for custom-domain local paths', async 
         kind: 'http',
         storagePath,
         apiBaseUrl: 'https://demo6.v11.demo.nocobase.com/api',
+        portals: {
+          crm: {
+            path: portalDir,
+          },
+        },
       }),
       apiRequest,
     }),
@@ -293,7 +322,6 @@ test('http list uses app:getInfo app name for custom-domain local paths', async 
         portalName: 'crm',
         portalDir,
         portalUrl: 'https://demo6.v11.demo.nocobase.com/x/crm/',
-        localSynced: true,
       }),
     ],
   });
@@ -338,7 +366,6 @@ test('lists no-code portal records without local workspace fields', async () => 
         enabled: true,
         portalUrl: 'http://localhost:13000/console/v/admin',
         portalDir: '',
-        localSynced: null,
       }),
     ],
   });
@@ -387,14 +414,12 @@ test('lists sub-app no-code portal records with app-scoped access URLs', async (
         portalType: 'no-code',
         portalUrl: 'http://localhost:56187/v/apps/test/admin',
         portalDir: '',
-        localSynced: null,
       }),
       expect.objectContaining({
         portalName: 'legacy-admin',
         portalType: 'no-code',
         portalUrl: 'http://localhost:56187/v/apps/test/admin',
         portalDir: '',
-        localSynced: null,
       }),
     ],
   });

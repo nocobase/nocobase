@@ -1,6 +1,6 @@
 ---
 title: "nb portal list"
-description: "nb portal list command reference: list Portal records and local workspace sync status."
+description: "nb portal list command reference: list portal records and development paths."
 keywords: "nb portal list,NocoBase CLI,Portal"
 ---
 
@@ -32,7 +32,7 @@ nb portal list --json-output
 
 ## Catatan
 
-The list shows name, URL, portal type, source storage, local path, enabled status, and local sync status. Only `ai` portals have local workspace sync checks; other Portal types show an empty sync status.
+The list shows name, URL, portal type, source storage, development path, and enabled status. `--json-output` prints `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, and `sourceStorage`.
 
 ## Perintah terkait
 

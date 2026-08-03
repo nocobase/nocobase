@@ -20,13 +20,13 @@ nb portal <command>
 
 | Comando | Descrição |
 | --- | --- |
-| [`nb portal config`](./config.md) | Atualiza a configuração de source do workspace Portal local e sincroniza com o registro remoto quando possível |
+| [`nb portal config`](./config.md) | Update the portal development path, source storage, and Git source configuration |
 | [`nb portal create`](./create.md) | Cria um workspace Portal local a partir de um template e cria ou atualiza o registro do Portal |
 | [`nb portal deploy`](./deploy.md) | Compila e faz deploy do workspace Portal especificado |
 | [`nb portal destroy`](./destroy.md) | Exclui o registro do Portal e o workspace local |
 | [`nb portal dev`](./dev.md) | Inicia o modo de desenvolvimento para o workspace Portal especificado |
 | [`nb portal info`](./info.md) | Mostra detalhes do registro Portal especificado e do workspace local |
-| [`nb portal list`](./list.md) | Lista registros Portal e o status de sincronização do workspace local |
+| [`nb portal list`](./list.md) | List portal records and development paths |
 | [`nb portal pull`](./pull.md) | Baixa o source do Portal do source storage para o workspace local |
 | [`nb portal push`](./push.md) | Envia alterações locais do source do Portal para o source storage |
 
@@ -84,7 +84,7 @@ Ao criar um Portal, escolha onde o código-fonte será gerenciado:
 
 For quick creation and development, the default `nocobase` storage is usually enough. Use `git` when the Portal source should be reviewed, versioned, or built through an existing team workflow.
 
-Source configuration is written to `portal.config.json` in the local workspace. `create`, `pull`, and `config` maintain this file; `push` and `deploy` read it to sync source or deployment output.
+`nb portal config` updates source storage and Git settings in the remote portal record. The development workspace path is stored separately in the CLI env config as `portals.<portal>.path`, maintained by `create`, `pull --path`, or `config --path`.
 
 ## Env Types
 
@@ -92,15 +92,21 @@ Source configuration is written to `portal.config.json` in the local workspace. 
 
 | Modo | Descrição |
 | --- | --- |
-| `local` | The workspace and app storage are on the current machine. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
-| `docker` | The workspace is shared with the app through a Docker volume. With default `nocobase` storage, `pull`/`push` usually do not need extra sync. |
+| `local` | The workspace and app storage are on the current machine. `pull` writes source to the development path, and `deploy` builds from that path before syncing deployment output. |
+| `docker` | The workspace is shared with the app through a Docker volume. `pull` writes source to the development path, and `deploy` builds from that path before syncing deployment output. |
 | `http` | Source and deployment output are synced through APIs. `pull` downloads a source archive, and `push` uploads one. |
 
 `ssh` envs do not support Portal management in the current version.
 
-## Local Workspace Path
+## Development And Deployment Paths
 
-Portals are stored under the selected env storage:
+Portal development workspaces are created under the current working directory by default:
+
+```text
+./<portal>
+```
+
+Use `--path` with `create`, `pull`, or `config` to choose a different development path. Deployment output is still stored under the target app storage:
 
 ```text
 <storagePath>/portals/<app>/<portal>

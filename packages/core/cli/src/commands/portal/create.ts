@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, setEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -24,9 +24,9 @@ export default class PortalCreate extends Command {
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
+    '<%= config.bin %> <%= command.id %> customer --path ./portals/customer',
     '<%= config.bin %> <%= command.id %> customer --template @nocobase/portal-template-default',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
-    '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
   ];
 
   static override args = {
@@ -53,23 +53,12 @@ export default class PortalCreate extends Command {
     title: Flags.string({
       description: 'Portal display title; defaults to a title generated from the portal slug',
     }),
+    path: Flags.string({
+      description: 'Portal workspace directory; defaults to ./<portal>',
+    }),
     force: Flags.boolean({
       description: 'Delete the existing portal and recreate it',
       default: false,
-    }),
-    'source-storage': Flags.string({
-      description: 'Where portal source code is managed',
-      options: ['nocobase', 'git'],
-      default: 'nocobase',
-    }),
-    'git-repo': Flags.string({
-      description: 'Git repository URL used when --source-storage=git',
-    }),
-    'git-branch': Flags.string({
-      description: 'Git branch used when --source-storage=git',
-    }),
-    'git-path': Flags.string({
-      description: 'Directory inside the Git repository for this portal; defaults to the repository root',
     }),
   };
 
@@ -86,14 +75,15 @@ export default class PortalCreate extends Command {
     }
 
     const scope = resolveDefaultConfigScope();
-    const env = await getEnv(flags.env, { scope });
+    const envName = requestedEnv ?? (await getCurrentEnvName({ scope }));
+    const env = await getEnv(envName, { scope });
     if (!env) {
       this.error(
-        flags.env
+        requestedEnv
           ? portalCreateText(
               'errors.envNotConfigured',
-              { envName: flags.env },
-              `Env "${flags.env}" is not configured. Run \`nb env add ${flags.env} --api-base-url <url>\` first.`,
+              { envName },
+              `Env "${envName}" is not configured. Run \`nb env add ${envName} --api-base-url <url>\` first.`,
             )
           : portalCreateText(
               'errors.noEnvConfigured',
@@ -108,21 +98,19 @@ export default class PortalCreate extends Command {
       title: flags.title,
       template: flags.template,
       env,
-      envName: flags.env,
+      envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
       force: flags.force,
-      sourceStorage: flags['source-storage'] as 'nocobase' | 'git',
-      gitRepo: flags['git-repo'],
-      gitBranch: flags['git-branch'],
-      gitPath: flags['git-path'],
+      sourcePath: flags.path,
       onSkipInstall: (message) => printInfo(message),
     });
+    await setEnvPortalPath(envName, result.portal, result.portalDir, { scope });
 
     printSuccess(
       portalCreateText(
         'messages.created',
         { portal: result.portal, portalDir: result.portalDir },
-        `Portal "${result.portal}" created at ${result.portalDir}.`,
+        `Portal "${result.portal}" created at ${result.portalDir}`,
       ),
     );
     printInfo(portalCreateText('messages.app', { app: result.app }, `App: ${result.app}`));

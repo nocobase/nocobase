@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
@@ -160,24 +159,6 @@ export function mergePortalConfigIntoOptions(config: PortalConfig, currentOption
   }
 
   return nextOptions;
-}
-
-export async function readPortalConfig(portalDir: string): Promise<PortalConfig> {
-  const configPath = path.join(portalDir, 'portal.config.json');
-  const data = JSON.parse(await readFile(configPath, 'utf-8')) as unknown;
-  const config = readObject(data);
-  const git = readObject(config.git);
-  return buildPortalConfig({
-    portal: path.basename(portalDir),
-    sourceStorage: trimValue(config.sourceStorage),
-    gitRepo: trimValue(git.repo),
-    gitBranch: trimValue(git.branch),
-    gitPath: trimValue(git.path),
-  });
-}
-
-export async function writePortalConfig(portalDir: string, config: PortalConfig): Promise<void> {
-  await writeFile(path.join(portalDir, 'portal.config.json'), `${JSON.stringify(config, null, 2)}\n`, 'utf-8');
 }
 
 export async function syncPortalConfigToRemote(options: {

@@ -18,10 +18,13 @@ import {
   loadAuthConfig,
   replaceEnvConfig,
   removeEnv,
+  resolveEnvPortalPath,
   resolveEnvProxyEntry,
   saveAuthConfig,
   setCurrentEnv,
+  setEnvPortalPath,
   setEnvOauthSession,
+  unsetEnvPortalPath,
   setEnvProxyEntry,
   updateEnvConnection,
   upsertEnv,
@@ -209,6 +212,73 @@ test('setEnvProxyEntry keeps shared proxy host and port alongside provider-speci
       host: 'c.local.nocobase.com',
       port: 80,
       ssl: false,
+    });
+  });
+});
+
+test('setEnvPortalPath stores and removes per-env portal workspace paths', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await setEnvPortalPath('test', 'customer', '/tmp/customer', { scope: 'global' });
+
+    let env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.portals).toEqual({
+      customer: {
+        path: '/tmp/customer',
+      },
+    });
+    expect(resolveEnvPortalPath(env?.config, 'customer')).toBe('/tmp/customer');
+
+    await unsetEnvPortalPath('test', 'customer', { scope: 'global' });
+
+    env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.portals).toBeUndefined();
+  });
+});
+
+test('replaceEnvConfig preserves normalized portal workspace paths from its input', async () => {
+  await withTempCliHome(async () => {
+    await saveAuthConfig(
+      {
+        lastEnv: 'test',
+        envs: {
+          test: {
+            baseUrl: 'http://localhost:13000/api',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    await replaceEnvConfig(
+      'test',
+      {
+        apiBaseUrl: 'http://localhost:13000/api',
+        portals: {
+          customer: {
+            path: '/tmp/customer',
+          },
+        },
+      },
+      { scope: 'global' },
+    );
+
+    const env = await getEnv('test', { scope: 'global' });
+    expect(env?.config.portals).toEqual({
+      customer: {
+        path: '/tmp/customer',
+      },
     });
   });
 });

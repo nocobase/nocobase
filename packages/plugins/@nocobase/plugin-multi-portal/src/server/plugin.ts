@@ -184,20 +184,11 @@ type MultiPortalStorageItem = {
   appName: string;
   portalName: string;
   enabled: boolean;
-  config: PortalStorageConfig;
 };
 type UploadedFile = {
   path?: string;
   size?: number;
   originalname?: string;
-};
-type PortalStorageConfig = {
-  sourceStorage: 'nocobase' | 'git';
-  git?: {
-    repo: string;
-    branch: string;
-    path: string;
-  };
 };
 type ModelWithPrevious = Model & {
   previous?: (field: string) => unknown;
@@ -620,7 +611,7 @@ async function resolvePortalTemplate(templateSource: string, logPath: string): P
 }
 
 async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
-  const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store']);
+  const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store', '.env', '.env.local']);
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
@@ -630,83 +621,6 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
         .split(path.sep)
         .some((segment) => segment.startsWith('._') || ignoredSegments.has(segment)),
   });
-}
-
-function getPortalStorageConfig(options: unknown): PortalStorageConfig {
-  const sourceOptions = isRecordLike(options) ? options : {};
-  const sourceStorage = trimString(sourceOptions.sourceStorage);
-  if (sourceStorage !== 'git') {
-    return { sourceStorage: 'nocobase' };
-  }
-
-  const gitOptions = isRecordLike(sourceOptions.git) ? sourceOptions.git : {};
-  return {
-    sourceStorage,
-    git: {
-      repo: trimString(gitOptions.repo),
-      branch: trimString(gitOptions.branch) || 'main',
-      path: trimString(gitOptions.path) || '.',
-    },
-  };
-}
-
-function upsertPortalEnvContent(content: string, values: Record<string, string>) {
-  const nextValues = { ...values };
-  const lines = content ? content.replace(/\r\n/g, '\n').split('\n') : [];
-  const result: string[] = [];
-
-  for (const line of lines) {
-    if (!line && result.length === lines.length - 1) {
-      continue;
-    }
-    const match = line.match(/^(\s*)([A-Za-z_][A-Za-z0-9_]*)\s*=/);
-    const key = match?.[2];
-    if (key && Object.prototype.hasOwnProperty.call(nextValues, key)) {
-      result.push(`${key}=${nextValues[key]}`);
-      delete nextValues[key];
-      continue;
-    }
-    result.push(line);
-  }
-
-  for (const [key, value] of Object.entries(nextValues)) {
-    result.push(`${key}=${value}`);
-  }
-
-  return `${result.join('\n').replace(/\n*$/, '')}\n`;
-}
-
-async function upsertPortalEnvFile(filePath: string, values: Record<string, string>) {
-  let content = '';
-  try {
-    content = await fs.promises.readFile(filePath, 'utf-8');
-  } catch {
-    content = '';
-  }
-  await fs.promises.writeFile(filePath, upsertPortalEnvContent(content, values), 'utf-8');
-}
-
-async function ensurePortalStorageConfigFiles(
-  portalDir: string,
-  item: Pick<MultiPortalStorageItem, 'appName' | 'portalName' | 'config'>,
-) {
-  const apiUrl = getPortalStorageApiUrl(item.appName);
-  const portalBase = getPortalDeployBasePath(item.appName, item.portalName);
-
-  await fs.promises.mkdir(portalDir, { recursive: true });
-  await upsertPortalEnvFile(path.join(portalDir, '.env'), {
-    NOCOBASE_API_URL: resolvePortalStorageEnvApiUrl(apiUrl),
-    NOCOBASE_PORTAL_BASE: portalBase,
-  });
-  await upsertPortalEnvFile(path.join(portalDir, '.env.local'), {
-    NOCOBASE_API_URL: apiUrl,
-    NOCOBASE_PORTAL_BASE: portalBase,
-  });
-  await fs.promises.writeFile(
-    path.join(portalDir, 'portal.config.json'),
-    `${JSON.stringify(item.config, null, 2)}\n`,
-    'utf-8',
-  );
 }
 
 function sanitizePortalStorageNodeOptions(value: unknown) {
@@ -3167,7 +3081,6 @@ export class PluginMultiPortalServer extends Plugin {
       appName: this.getAppName(),
       portalName,
       enabled: readField('enabled') === true,
-      config: getPortalStorageConfig(readField('options')),
     };
   }
 
@@ -3253,9 +3166,6 @@ export class PluginMultiPortalServer extends Plugin {
           await copyPortalTemplate(template.dir, portalDir);
           await appendPortalStorageLog(logPath, `Default portal template copied to ${portalDir}.`);
         }
-        await ensurePortalStorageConfigFiles(portalDir, item);
-        await appendPortalStorageLog(logPath, `Portal configuration files updated in ${portalDir}.`);
-
         if (item.enabled) {
           this.logPortalBuildHtml(item, 'requested', 'storage directory was initialized');
           await buildPortalStorageItem(portalDir, item);
@@ -3297,7 +3207,6 @@ export class PluginMultiPortalServer extends Plugin {
       return;
     }
 
-    await ensurePortalStorageConfigFiles(portalDir, item);
     if (item.enabled) {
       const hasPortalIndex = await pathExists(portalIndex);
       if (options.forceBuild || !hasPortalIndex) {

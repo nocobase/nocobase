@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "当 MySQL 的 lower_case_table_names=1 时，必须设置 DB_UNDERSCORED=true。"
     }
   },
+  "apiClient": {
+    "authRequiredHint": "认证失败或已保存的登录状态已过期。请运行 `{{command}}` 重新认证。"
+  },
   "commands": {
     "envAdd": {
       "prompts": {
@@ -185,11 +188,12 @@
         "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
         "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
         "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
-        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。"
+        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。",
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
       },
       "messages": {
         "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
-        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}。",
+        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}",
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
         "sourceStorage": "源码存储：{{sourceStorage}}",
@@ -210,11 +214,12 @@
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
-        "noChanges": "没有提供 Portal 配置变更。请传入 --source-storage 或 --git-* 参数。",
-        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}` 或 `nb portal pull {{portal}}`。"
+        "noChanges": "没有提供 Portal 配置变更。请传入 --path、--source-storage 或 --git-* 参数。",
+        "notFound": "Portal \"{{portal}}\" 不存在。请运行 `nb portal list` 查看可用 Portal。"
       },
       "messages": {
-        "updated": "Portal \"{{portal}}\" 配置已更新：{{portalDir}}/portal.config.json。",
+        "updated": "Portal \"{{portal}}\" 配置已更新。",
+        "pathUpdated": "开发路径：{{portalDir}}",
         "remoteSynced": "远端 Portal 记录：已同步",
         "remoteSkipped": "远端 Portal 记录：未找到，仅更新本地配置"
       }
@@ -255,20 +260,25 @@
         "name": "名称",
         "url": "访问 URL",
         "portalType": "Portal 类型",
-        "path": "本地路径",
-        "enabled": "启用",
-        "localSynced": "本地已同步"
+        "path": "开发路径",
+        "enabled": "启用"
       }
     },
     "portalPull": {
       "errors": {
         "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
-        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。"
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "gitRepoRequiredForTemporaryPull": "--git-branch 和 --git-path 作为临时 Git pull 参数时必须同时提供 --git-repo。如需更新 Portal 配置，请使用 `nb portal config`。"
       },
       "messages": {
         "noop": "无需执行 pull。",
-        "pulled": "Portal 源码 \"{{portal}}\" 已拉取到 {{portalDir}}。",
+        "pulled": "Portal 源码 \"{{portal}}\" 已拉取到 {{portalDir}}",
         "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
       }
     },
     "swagger": {
@@ -307,9 +317,9 @@
         "name": "名称",
         "url": "访问 URL",
         "portalType": "Portal 类型",
-        "path": "本地路径",
-        "enabled": "启用",
-        "localSynced": "本地已同步"
+        "developmentPath": "开发路径",
+        "deploymentPath": "部署路径",
+        "enabled": "启用"
       }
     },
     "portalDestroy": {
@@ -318,12 +328,18 @@
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
         "confirmationRequired": "非交互模式下拒绝删除 Portal。请追加 --yes 后重试。",
         "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal：{{portalDir}}",
-        "workspaceMissing": "Portal 不存在：{{portalDir}}\n如需忽略本地文件缺失，请追加 --force。",
+        "workspaceMissing": "Portal 部署路径不存在：{{portalDir}}\n如需忽略部署文件缺失，请追加 --force。",
         "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal。",
+        "unsafeDevelopmentPath": "拒绝删除不安全的 Portal 开发路径：{{portalDir}}",
         "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
       },
       "prompts": {
-        "confirm": "删除 Portal \"{{portal}}\" 并移除它的 storage 目录？"
+        "confirm": "删除 Portal \"{{portal}}\" 并移除它的部署目录？"
+      },
+      "statuses": {
+        "deleted": "已删除",
+        "missing": "缺失",
+        "retained": "已保留"
       },
       "messages": {
         "destroyed": "Portal \"{{portal}}\" 已删除。",
@@ -331,7 +347,9 @@
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
         "record": "记录：{{status}}",
-        "workspace": "Portal：{{status}}（{{dir}}）"
+        "deploymentPath": "部署路径：{{status}}（{{dir}}）",
+        "developmentPath": "开发路径：{{status}}（{{dir}}）",
+        "developmentPathMissing": "开发路径：缺失"
       }
     },
     "portalDev": {

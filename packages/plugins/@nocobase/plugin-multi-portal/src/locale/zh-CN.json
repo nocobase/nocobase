@@ -146,6 +146,5 @@
   "Example:": "示例：",
   "Shown on the portal card.": "显示在门户卡片上。",
   "Device": "设备",
-  "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码门户按此选择组件形态；AI 门户用它做归类。",
-  "The title and name below are filled in from the repository name.": "下面的标题和名称会按仓库名自动填写。"
+  "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码门户按此选择组件形态；AI 门户用它做归类。"
 }

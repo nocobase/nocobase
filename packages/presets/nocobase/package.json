@@ -106,7 +106,7 @@
     "@nocobase/plugin-workflow-response-message": "3.0.0-alpha.5",
     "@nocobase/plugin-workflow-sql": "3.0.0-alpha.5",
     "@nocobase/plugin-workflow-variable": "3.0.0-alpha.5",
-    "@nocobase/portal-template-default": "^1.0.12",
+    "@nocobase/portal-template-default": "^3.0.3",
     "@nocobase/server": "3.0.0-alpha.5",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"

@@ -11,9 +11,12 @@ import { rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
+import { isUnsafePortalDeletePath } from './portal-path-safety.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolvePortalDeployPath,
+  resolveSavedPortalSourcePath,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -31,17 +34,20 @@ export type PortalDestroyOptions = {
   envName?: string;
   cliVersion?: string;
   force?: boolean;
+  deleteDevPath?: boolean;
   apiRequest?: ApiRequest;
 };
 
 export type PortalDestroyResult = {
   app: string;
   portal: string;
-  portalDir: string;
+  developmentPath: string;
+  deploymentPath: string;
   portalBase: string;
   mode: PortalDestroyMode;
   recordDeleted: boolean;
-  workspaceDeleted: boolean;
+  developmentPathDeleted: boolean;
+  deploymentPathDeleted: boolean;
 };
 
 const portalDestroyText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
@@ -124,8 +130,8 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
-  const portalParentDir = path.join(storagePath, 'portals', app);
-  const portalDir = path.join(portalParentDir, portal);
+  const portalDeployDir = resolvePortalDeployPath({ storagePath, app, portal });
+  const portalDevDir = resolveSavedPortalSourcePath(options.env, portal) ?? '';
   const mode = options.env.kind;
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
@@ -139,9 +145,28 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
   }
   const destroyMode: PortalDestroyMode = mode;
 
-  assertPortalDirIsInsideParent(portalParentDir, portalDir);
+  if (portalDevDir) {
+    assertPortalDirIsInsideParent(path.dirname(portalDevDir), portalDevDir);
+  }
+  assertPortalDirIsInsideParent(path.dirname(portalDeployDir), portalDeployDir);
 
-  const workspaceExists = await pathExists(portalDir);
+  const developmentPathIsDeploymentPath = portalDevDir
+    ? path.resolve(portalDevDir) === path.resolve(portalDeployDir)
+    : false;
+  const deploymentPathExists = await pathExists(portalDeployDir);
+  const developmentPathExists =
+    options.deleteDevPath && portalDevDir && !developmentPathIsDeploymentPath
+      ? await pathExists(portalDevDir)
+      : false;
+  if (developmentPathExists && (await isUnsafePortalDeletePath(portalDevDir))) {
+    throw new Error(
+      portalDestroyText(
+        'errors.unsafeDevelopmentPath',
+        { portalDir: portalDevDir },
+        `Refusing to delete an unsafe portal development path: ${portalDevDir}`,
+      ),
+    );
+  }
 
   const recordDeleted = await destroyMultiPortalRecord({
     portal,
@@ -151,17 +176,23 @@ export async function destroyPortalWorkspace(options: PortalDestroyOptions): Pro
     apiRequest: options.apiRequest,
   });
 
-  if (workspaceExists) {
-    await rm(portalDir, { recursive: true, force: true });
+  if (deploymentPathExists) {
+    await rm(portalDeployDir, { recursive: true, force: true });
+  }
+  if (developmentPathExists) {
+    await rm(portalDevDir, { recursive: true, force: true });
   }
 
   return {
     app,
     portal,
-    portalDir,
+    developmentPath: portalDevDir,
+    deploymentPath: portalDeployDir,
     portalBase,
     mode: destroyMode,
     recordDeleted,
-    workspaceDeleted: workspaceExists,
+    developmentPathDeleted:
+      developmentPathExists || (developmentPathIsDeploymentPath && deploymentPathExists),
+    deploymentPathDeleted: deploymentPathExists,
   };
 }

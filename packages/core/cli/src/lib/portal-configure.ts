@@ -7,22 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, stat } from 'node:fs/promises';
-import path from 'node:path';
 import { executeApiRequest } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   resolvePortalAppContext,
-  resolvePortalStoragePath,
+  resolvePortalSourcePath,
+  resolveSavedPortalSourcePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 import {
   buildPortalConfig,
   buildPortalConfigFromOptions,
-  readPortalConfig,
   syncPortalConfigToRemote,
-  writePortalConfig,
   type PortalConfig,
   type PortalSourceStorage,
 } from './portal-config.js';
@@ -42,6 +39,7 @@ export type PortalConfigureOptions = {
   gitRepo?: string;
   gitBranch?: string;
   gitPath?: string;
+  sourcePath?: string;
   apiRequest?: ApiRequest;
 };
 
@@ -49,8 +47,9 @@ export type PortalConfigureResult = {
   app: string;
   portal: string;
   portalDir: string;
-  config: PortalConfig;
+  config?: PortalConfig;
   remoteSynced: boolean;
+  pathUpdated: boolean;
 };
 
 const portalConfigureText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
@@ -60,16 +59,7 @@ function trimValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
-async function pathExists(target: string): Promise<boolean> {
-  try {
-    await stat(target);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function hasConfigurationChange(options: PortalConfigureOptions): boolean {
+function hasSourceConfigurationChange(options: PortalConfigureOptions): boolean {
   return Boolean(
     options.sourceStorage !== undefined ||
       trimValue(options.gitRepo) ||
@@ -78,16 +68,8 @@ function hasConfigurationChange(options: PortalConfigureOptions): boolean {
   );
 }
 
-async function readExistingConfig(portalDir: string): Promise<PortalConfig | undefined> {
-  try {
-    return await readPortalConfig(portalDir);
-  } catch (error) {
-    const code = (error as { code?: unknown }).code;
-    if (code === 'ENOENT') {
-      return undefined;
-    }
-    throw error;
-  }
+function hasPathConfigurationChange(options: PortalConfigureOptions): boolean {
+  return Boolean(trimValue(options.sourcePath));
 }
 
 function buildConfigFromRemoteOptions(params: {
@@ -114,31 +96,27 @@ function buildConfigFromRemoteOptions(params: {
 }
 
 export async function configurePortalWorkspace(options: PortalConfigureOptions): Promise<PortalConfigureResult> {
-  if (!hasConfigurationChange(options)) {
+  const hasSourceChange = hasSourceConfigurationChange(options);
+  const hasPathChange = hasPathConfigurationChange(options);
+  if (!hasSourceChange && !hasPathChange) {
     throw new Error(
       portalConfigureText(
         'errors.noChanges',
         undefined,
-        'No portal configuration changes were provided. Pass --source-storage or a --git-* flag.',
+        'No portal configuration changes were provided. Pass --path, --source-storage, or a --git-* flag.',
       ),
     );
   }
 
   const portal = validatePortalSlug(options.portal);
-  const storagePath = resolvePortalStoragePath(options.env);
+  const portalDir = hasPathChange
+    ? resolvePortalSourcePath(portal, options.sourcePath)
+    : resolveSavedPortalSourcePath(options.env, portal) ?? '';
+
   const appContext = await resolvePortalAppContext(options);
   const { app } = appContext;
-  const portalDir = path.join(storagePath, 'portals', app, portal);
-
-  if (!(await pathExists(portalDir))) {
-    throw new Error(
-      portalConfigureText(
-        'errors.workspaceMissing',
-        { portalDir, portal },
-        `Portal does not exist: ${portalDir}\nRun \`nb portal create ${portal}\` or \`nb portal pull ${portal}\` first.`,
-      ),
-    );
-  }
+  let config: PortalConfig | undefined;
+  let remoteSynced = false;
 
   const list = await listPortalWorkspaces({
     env: options.env,
@@ -148,17 +126,34 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
     appContext,
   });
   const remoteItem = findPortalListItem(list.items, portal);
-  const existingConfig =
-    (await readExistingConfig(portalDir)) ??
-    buildConfigFromRemoteOptions({
+  if (!remoteItem) {
+    throw new Error(
+      portalConfigureText(
+        'errors.notFound',
+        { portal },
+        `Portal "${portal}" was not found. Run \`nb portal list\` to see available portals.`,
+      ),
+    );
+  }
+  if (!hasSourceChange) {
+    return {
+      app,
       portal,
-      options: remoteItem?.options,
-      sourceStorage: remoteItem?.sourceStorage,
-      gitRepo: remoteItem?.gitRepo,
-      gitBranch: remoteItem?.gitBranch,
-      gitPath: remoteItem?.gitPath,
-    });
-  const config = buildPortalConfig({
+      portalDir,
+      config: undefined,
+      remoteSynced: false,
+      pathUpdated: hasPathChange,
+    };
+  }
+  const existingConfig = buildConfigFromRemoteOptions({
+    portal,
+    options: remoteItem.options,
+    sourceStorage: remoteItem.sourceStorage,
+    gitRepo: remoteItem.gitRepo,
+    gitBranch: remoteItem.gitBranch,
+    gitPath: remoteItem.gitPath,
+  });
+  config = buildPortalConfig({
     portal,
     sourceStorage: options.sourceStorage,
     gitRepo: options.gitRepo,
@@ -166,26 +161,22 @@ export async function configurePortalWorkspace(options: PortalConfigureOptions):
     gitPath: options.gitPath,
     existingConfig,
   });
-
-  await mkdir(portalDir, { recursive: true });
-  await writePortalConfig(portalDir, config);
-
-  if (remoteItem) {
-    await syncPortalConfigToRemote({
-      portal,
-      config,
-      currentOptions: remoteItem.options,
-      envName: options.envName,
-      cliVersion: options.cliVersion,
-      apiRequest: options.apiRequest,
-    });
-  }
+  await syncPortalConfigToRemote({
+    portal,
+    config,
+    currentOptions: remoteItem.options,
+    envName: options.envName,
+    cliVersion: options.cliVersion,
+    apiRequest: options.apiRequest,
+  });
+  remoteSynced = true;
 
   return {
     app,
     portal,
     portalDir,
     config,
-    remoteSynced: Boolean(remoteItem),
+    remoteSynced,
+    pathUpdated: hasPathChange,
   };
 }

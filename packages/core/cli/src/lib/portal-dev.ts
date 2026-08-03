@@ -14,7 +14,8 @@ import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
-  resolvePortalStoragePath,
+  resolveSavedPortalSourcePath,
+  resolvePortalSourcePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
@@ -86,10 +87,9 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
       ),
     );
   }
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
-  const portalDir = path.join(storagePath, 'portals', app, portal);
+  const portalDir = resolveSavedPortalSourcePath(options.env, portal) ?? resolvePortalSourcePath(portal);
 
   if (!(await pathExists(portalDir))) {
     throw new Error(

@@ -9,6 +9,7 @@
 
 import {
   ApartmentOutlined,
+  CodeOutlined,
   DeleteOutlined,
   DesktopOutlined,
   EditOutlined,
@@ -43,7 +44,7 @@ import {
   Typography,
   theme,
 } from 'antd';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ADMIN_UI_LAYOUT_UID,
   isDefaultLayoutMultiPortalUid,
@@ -346,7 +347,7 @@ function getSourceStorageOptionsFromDraft(values: MultiPortalFormDraftValues): M
     return { ...baseOptions, cover };
   }
 
-  const sourceStorage = normalizePortalSourceStorage(values.sourceStorage);
+  const sourceStorage = normalizePortalSourceStorage(values.sourceStorage ?? baseOptions.sourceStorage);
   if (sourceStorage !== 'git') {
     // 切回 NocoBase 只改存储位置，既有 git 配置留着，再切回 git 时不用重输分支和路径。
     return { ...baseOptions, cover, sourceStorage };
@@ -358,64 +359,11 @@ function getSourceStorageOptionsFromDraft(values: MultiPortalFormDraftValues): M
     sourceStorage,
     git: {
       ...baseOptions.git,
-      repo: normalizeOptionalString(values.gitRepo) || '',
-      branch: normalizeOptionalString(values.gitBranch) || DEFAULT_PORTAL_GIT_BRANCH,
-      path: normalizeOptionalString(values.gitPath) || DEFAULT_PORTAL_GIT_PATH,
+      repo: normalizeOptionalString(values.gitRepo ?? baseOptions.git?.repo) || '',
+      branch: normalizeOptionalString(values.gitBranch ?? baseOptions.git?.branch) || DEFAULT_PORTAL_GIT_BRANCH,
+      path: normalizeOptionalString(values.gitPath ?? baseOptions.git?.path) || DEFAULT_PORTAL_GIT_PATH,
     },
   };
-}
-
-/**
- * 从 git 仓库地址里取出仓库名。
- *
- * 支持 `git@host:org/repo.git`、`https://host/org/repo(.git)`、以及末尾多余的斜杠。
- *
- * @param {string | undefined} repo 仓库地址
- * @returns {string | undefined} 仓库名
- */
-export function getRepoNameFromGitUrl(repo?: string | null) {
-  const trimmed = (repo || '')
-    .trim()
-    .replace(/\.git$/i, '')
-    .replace(/\/+$/, '');
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const lastSegment = trimmed.split(/[/:]/).filter(Boolean).pop();
-  return lastSegment || undefined;
-}
-
-/**
- * 由 git 仓库地址推导 portal 的标题和名称。
- *
- * 只是给用户省一次输入，两个字段推导完仍然可改。
- *
- * @param {string | undefined} repo 仓库地址
- * @returns {{ portalName: string; title: string } | undefined} 推导结果
- */
-export function derivePortalNamingFromGitUrl(repo?: string | null) {
-  const repoName = getRepoNameFromGitUrl(repo);
-  if (!repoName) {
-    return undefined;
-  }
-
-  const portalName = repoName
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  if (!portalName) {
-    return undefined;
-  }
-
-  const title = portalName
-    .split(/[-_]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-  return { portalName, title: title || portalName };
 }
 
 function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): MultiPortalFormValues {
@@ -424,7 +372,7 @@ function completeMultiPortalFormValues(values: MultiPortalFormDraftValues): Mult
   if (portalNameError) {
     throw new Error(portalNameError);
   }
-  // cover / sourceStorage / git* 只是表单里的中间态，最终都收进 options，不能作为顶层列提交。
+  // cover / sourceStorage / git* 是提交前的中间态，最终都收进 options，不能作为顶层列提交。
   const {
     cover: _cover,
     gitBranch: _gitBranch,
@@ -742,6 +690,17 @@ const MultiPortalsPage: React.FC = () => {
     [ctx.viewer],
   );
 
+  const openSourceManagementDrawer = useCallback(
+    (record: MultiPortalRecord) => {
+      ctx.viewer.drawer({
+        width: token.screenSM,
+        closable: true,
+        content: () => <PortalSourceManagementForm record={record} onSubmitted={refreshPortals} />,
+      });
+    },
+    [ctx.viewer, refreshPortals, token.screenSM],
+  );
+
   const handleDelete = useCallback(
     (filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[], options: { isBatch?: boolean } = {}) => {
       modal.confirm({
@@ -898,6 +857,9 @@ const MultiPortalsPage: React.FC = () => {
                   items: [
                     // No open entry here: clicking the card itself opens the portal.
                     { key: 'edit', icon: <EditOutlined />, label: t('Edit') },
+                    ...(isNoCode
+                      ? []
+                      : [{ key: 'sourceManagement', icon: <CodeOutlined />, label: t('Source management') }]),
                     // Routes only mean something for an enabled no-code portal, so the
                     // entry is omitted otherwise. A greyed-out button out in the open at
                     // least hints the feature exists; inside a menu it is just one more
@@ -915,6 +877,8 @@ const MultiPortalsPage: React.FC = () => {
                   onClick: ({ key }) => {
                     if (key === 'edit') {
                       openFormDrawer(record);
+                    } else if (key === 'sourceManagement') {
+                      openSourceManagementDrawer(record);
                     } else if (key === 'routes') {
                       openRoutesDrawer(record);
                     } else if (key === 'default') {
@@ -954,6 +918,7 @@ const MultiPortalsPage: React.FC = () => {
       handleToggleEnabled,
       openFormDrawer,
       openRoutesDrawer,
+      openSourceManagementDrawer,
       t,
       token.fontSizeSM,
       token.colorTextDescription,
@@ -1024,6 +989,117 @@ const MultiPortalsPage: React.FC = () => {
   );
 };
 
+function PortalSourceManagementForm(props: { record: MultiPortalRecord; onSubmitted: () => void }) {
+  const { record, onSubmitted } = props;
+  const t = useT();
+  const ctx = useFlowContext();
+  const { token } = theme.useToken();
+  const { notification } = App.useApp();
+  const [form] = Form.useForm<MultiPortalFormDraftValues>();
+  const [submitting, setSubmitting] = useState(false);
+  const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
+  const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(() => toFormDraftValues(record), [record]);
+
+  const handleSubmit = useCallback(async () => {
+    await form.validateFields();
+    const draftValues = form.getFieldsValue(true) as MultiPortalFormDraftValues;
+    const values = toFormValues(record);
+    values.options = getSourceStorageOptionsFromDraft({
+      ...toFormDraftValues(record),
+      ...draftValues,
+      portalType: 'ai',
+    });
+    setSubmitting(true);
+    try {
+      await updateMultiPortal({
+        resource,
+        filterByTk: record.uid,
+        values,
+        onSubmitted,
+      });
+    } catch (error) {
+      notification.error({
+        message: getErrorMessage(error) || t('Failed to save portal'),
+        role: 'alert',
+      });
+      throw error;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [form, notification, onSubmitted, record, resource, t]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Source management')}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+    >
+      <style>{describedRadioCss}</style>
+      <Form form={form} layout="vertical" initialValues={initialValues}>
+        <Form.Item
+          name="sourceStorage"
+          label={t('Source management')}
+          extra={t('Select how the application source code is stored and managed.')}
+          htmlFor="multi-portal-source-storage-nocobase"
+          rules={[{ required: true, message: t('The field value is required') }]}
+        >
+          <Radio.Group name="multi-portal-source-storage" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Radio
+                className={describedRadioClassName}
+                id="multi-portal-source-storage-nocobase"
+                style={describedRadioStyle}
+                value="nocobase"
+              >
+                <span>{t('NocoBase')}</span>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t('Store and manage application source code in NocoBase.')}
+                </div>
+              </Radio>
+              <Radio className={describedRadioClassName} style={describedRadioStyle} value="git">
+                <span>{t('Git')}</span>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t('Store and manage application source code in a Git repository.')}
+                </div>
+              </Radio>
+            </Space>
+          </Radio.Group>
+        </Form.Item>
+        <Form.Item noStyle shouldUpdate={(prev, next) => prev.sourceStorage !== next.sourceStorage}>
+          {({ getFieldValue }) =>
+            getFieldValue('sourceStorage') === 'git' ? (
+              <>
+                <Form.Item
+                  name="gitRepo"
+                  label={t('Git repository URL')}
+                  rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
+                >
+                  <Input placeholder="git@github.com:nocobase/customer-portal.git" allowClear />
+                </Form.Item>
+                <Space size={token.marginSM} style={{ display: 'flex' }} align="start">
+                  <Form.Item name="gitBranch" label={t('Git branch')} style={{ flex: 1 }}>
+                    <Input placeholder={DEFAULT_PORTAL_GIT_BRANCH} />
+                  </Form.Item>
+                  <Form.Item
+                    name="gitPath"
+                    label={t('Git path')}
+                    style={{ flex: 1 }}
+                    extra={t('Directory inside the Git repository for this portal. Leave empty for the root.')}
+                  >
+                    <Input placeholder="/" />
+                  </Form.Item>
+                </Space>
+              </>
+            ) : null
+          }
+        </Form.Item>
+      </Form>
+    </DrawerFormLayout>
+  );
+}
+
 function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () => void }) {
   const { record, onSubmitted } = props;
   const t = useT();
@@ -1063,44 +1139,18 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
   // 都已经被外部链接和已配好的路由引用，改了等于换一个门户。所以只在新建时可填。
   const identityLocked = fixedDefaultPortal || !!record;
 
-  // 从 git 地址推导出来的标题 / 名称。用户手动改过之后就不再覆盖。
-  const autoFilledRef = useRef<{ portalName?: string; title?: string }>({});
-
   const handleValuesChange = useCallback(
     (changed: Partial<MultiPortalFormDraftValues>) => {
       if (!record && changed.portalType === 'ai') {
         form.setFieldsValue({ uiLayoutUid: ADMIN_UI_LAYOUT_UID });
-      }
-
-      if (!('gitRepo' in changed)) {
-        return;
-      }
-
-      const derived = derivePortalNamingFromGitUrl(changed.gitRepo);
-      if (!derived) {
-        return;
-      }
-
-      const current = form.getFieldsValue(['title', 'portalName']) as Partial<MultiPortalFormDraftValues>;
-      const next: Partial<MultiPortalFormDraftValues> = {};
-
-      if (!current.title?.trim() || current.title === autoFilledRef.current.title) {
-        next.title = derived.title;
-      }
-      if (!current.portalName?.trim() || current.portalName === autoFilledRef.current.portalName) {
-        next.portalName = derived.portalName;
-      }
-
-      if (Object.keys(next).length) {
-        form.setFieldsValue(next);
-        autoFilledRef.current = { ...autoFilledRef.current, ...next };
       }
     },
     [form, record],
   );
 
   const handleSubmit = useCallback(async () => {
-    const draftValues = await form.validateFields();
+    await form.validateFields();
+    const draftValues = form.getFieldsValue(true) as MultiPortalFormDraftValues;
     const values = completeMultiPortalFormValues(draftValues);
     setSubmitting(true);
     try {
@@ -1217,73 +1267,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
               </Radio>
             </Space>
           </Radio.Group>
-        </Form.Item>
-
-        <Form.Item noStyle shouldUpdate={(prev, next) => prev.portalType !== next.portalType}>
-          {({ getFieldValue }) =>
-            getFieldValue('portalType') === 'ai' ? (
-              <>
-                <Form.Item
-                  name="sourceStorage"
-                  label={t('Source management')}
-                  extra={t('Select how the application source code is stored and managed.')}
-                  htmlFor="multi-portal-source-storage-nocobase"
-                  rules={[{ required: true, message: t('The field value is required') }]}
-                >
-                  <Radio.Group name="multi-portal-source-storage" style={{ width: '100%' }}>
-                    <Space direction="vertical" style={{ width: '100%' }}>
-                      <Radio
-                        className={describedRadioClassName}
-                        id="multi-portal-source-storage-nocobase"
-                        style={describedRadioStyle}
-                        value="nocobase"
-                      >
-                        <span>{t('NocoBase')}</span>
-                        <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                          {t('Store and manage application source code in NocoBase.')}
-                        </div>
-                      </Radio>
-                      <Radio className={describedRadioClassName} style={describedRadioStyle} value="git">
-                        <span>{t('Git')}</span>
-                        <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                          {t('Store and manage application source code in a Git repository.')}
-                        </div>
-                      </Radio>
-                    </Space>
-                  </Radio.Group>
-                </Form.Item>
-                <Form.Item noStyle shouldUpdate={(prev, next) => prev.sourceStorage !== next.sourceStorage}>
-                  {({ getFieldValue: getStorageFieldValue }) =>
-                    getStorageFieldValue('sourceStorage') === 'git' ? (
-                      <>
-                        <Form.Item
-                          name="gitRepo"
-                          label={t('Git repository URL')}
-                          extra={t('The title and name below are filled in from the repository name.')}
-                          rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
-                        >
-                          <Input placeholder="git@github.com:nocobase/customer-portal.git" allowClear />
-                        </Form.Item>
-                        <Space size={token.marginSM} style={{ display: 'flex' }} align="start">
-                          <Form.Item name="gitBranch" label={t('Git branch')} style={{ flex: 1 }}>
-                            <Input placeholder={DEFAULT_PORTAL_GIT_BRANCH} />
-                          </Form.Item>
-                          <Form.Item
-                            name="gitPath"
-                            label={t('Git path')}
-                            style={{ flex: 1 }}
-                            extra={t('Directory inside the Git repository for this portal. Leave empty for the root.')}
-                          >
-                            <Input placeholder="/" />
-                          </Form.Item>
-                        </Space>
-                      </>
-                    ) : null
-                  }
-                </Form.Item>
-              </>
-            ) : null
-          }
         </Form.Item>
 
         <Divider style={{ marginBlock: token.marginSM }} />
