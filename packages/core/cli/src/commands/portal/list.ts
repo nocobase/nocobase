@@ -26,7 +26,7 @@ function formatBoolean(value: boolean | null): string {
 }
 
 export default class PortalList extends Command {
-  static override summary = 'List portal records and local sync status';
+  static override summary = 'List portal records and development paths';
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
@@ -103,18 +103,18 @@ export default class PortalList extends Command {
           portalListText('table.url', undefined, 'URL'),
           portalListText('table.portalType', undefined, 'Portal type'),
           portalListText('table.sourceStorage', undefined, 'Source storage'),
-          portalListText('table.path', undefined, 'Local path'),
+          portalListText('table.path', undefined, 'Development path'),
           portalListText('table.enabled', undefined, 'Enabled'),
-          portalListText('table.localSynced', undefined, 'Local synced'),
+          portalListText('table.default', undefined, 'Default'),
         ],
         outputItems.map((item) => [
           item.name,
           item.url,
           item.portalType,
           item.sourceStorage,
-          item.localPath,
+          item.developmentPath,
           formatBoolean(item.enabled),
-          formatBoolean(item.localSynced),
+          formatBoolean(item.isDefault),
         ]),
       ),
     );

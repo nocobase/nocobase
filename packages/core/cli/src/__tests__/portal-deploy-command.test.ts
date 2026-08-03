@@ -34,15 +34,17 @@ vi.mock('../lib/portal-list.js', () => ({
     portalUrl: string;
     portalType: string;
     portalDir: string;
+    deployDir: string;
     enabled: boolean;
-    localSynced: boolean | null;
+    sourceStorage: string;
   }) => ({
     name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
-    localPath: item.localSynced === true ? item.portalDir : '',
+    developmentPath: item.portalDir,
+    deploymentPath: item.deployDir,
     enabled: item.enabled,
-    localSynced: item.localSynced,
+    sourceStorage: item.sourceStorage,
   }),
 }));
 
@@ -75,9 +77,9 @@ test('portal deploy resolves the current env name before deploying', async () =>
   mocks.deployPortalWorkspace.mockResolvedValue({
     app: 'main',
     portal: 'cba',
-    portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+    portalDir: '/Users/chen/test6/cba',
     portalBase: '/x/cba/',
-    distDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba/dist',
+    distDir: '/Users/chen/test6/cba/dist',
     serverDistPath: 'portals/main/cba/dist',
     mode: 'http',
     uploaded: true,
@@ -94,9 +96,10 @@ test('portal deploy resolves the current env name before deploying', async () =>
         routePath: '/cba',
         portalType: 'ai',
         enabled: true,
+        sourceStorage: 'nocobase',
         portalUrl: 'http://localhost:56187/x/cba/',
-        portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
-        localSynced: true,
+        portalDir: '/Users/chen/test6/cba',
+        deployDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
       },
     ],
   });
@@ -148,9 +151,9 @@ test('portal deploy resolves the current env name before deploying', async () =>
         'Name: cba',
         'URL: http://localhost:56187/x/cba/',
         'Portal type: ai',
-        'Local path: /Users/chen/test6/remote1/source/storage/portals/main/cba',
+        'Development path: /Users/chen/test6/cba',
+        'Deployment path: /Users/chen/test6/remote1/source/storage/portals/main/cba',
         'Enabled: yes',
-        'Local synced: yes',
       ].join('\n'),
     ],
   ]);

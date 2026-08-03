@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { chmod, mkdir, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
+import { chmod, mkdtemp, readdir, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
@@ -18,14 +18,14 @@ import {
   buildPortalBasePath,
   resolvePortalAppContext,
   resolvePortalEnvApiUrl,
-  resolvePortalStoragePath,
+  resolveSavedPortalSourcePath,
+  resolvePortalSourcePath,
   titleFromPortalSlug,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
-import { mergePortalConfigIntoOptions, readPortalConfig, type PortalConfig } from './portal-config.js';
 import { resolvePnpmInstallCommand, run, runPnpmCommand, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
 type ApiRequest = typeof executeApiRequest;
@@ -160,18 +160,6 @@ async function chmodPortalDistTree(targetDir: string): Promise<void> {
   );
 }
 
-async function ensurePortalDistPublicReadable(params: {
-  storagePath: string;
-  app: string;
-  portalDir: string;
-  distDir: string;
-}): Promise<void> {
-  await chmod(path.join(params.storagePath, 'portals'), PORTAL_PUBLIC_DIR_MODE);
-  await chmod(path.join(params.storagePath, 'portals', params.app), PORTAL_PUBLIC_DIR_MODE);
-  await chmod(params.portalDir, PORTAL_PUBLIC_DIR_MODE);
-  await chmodPortalDistTree(params.distDir);
-}
-
 async function assertFileExists(filePath: string, message: string): Promise<void> {
   try {
     const fileStat = await stat(filePath);
@@ -243,7 +231,6 @@ async function uploadPortalDist(params: {
 
 async function syncMultiPortalRecord(params: {
   portal: string;
-  config?: PortalConfig;
   envName?: string;
   cliVersion?: string;
   apiRequest?: ApiRequest;
@@ -260,9 +247,6 @@ async function syncMultiPortalRecord(params: {
     uiLayoutUid: DEFAULT_PORTAL_UI_LAYOUT_UID,
     skipCreatePortalDirectory: true,
   };
-  if (params.config) {
-    body.options = mergePortalConfigIntoOptions(params.config);
-  }
   const response = await apiRequest({
     cliVersion: params.cliVersion ?? '',
     envName: params.envName,
@@ -288,11 +272,10 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
   const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
-  const storagePath = resolvePortalStoragePath(options.env);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const deployBase = buildPortalBasePath({ app, appPublicPath, portal });
-  const portalDir = path.join(storagePath, 'portals', app, portal);
+  const portalDir = resolveSavedPortalSourcePath(options.env, portal) ?? resolvePortalSourcePath(portal);
   const distDir = path.join(portalDir, 'dist');
 
   if (!(await pathExists(portalDir))) {
@@ -312,8 +295,6 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       `Portal is invalid: package.json is missing in ${portalDir}.`,
     ),
   );
-  const portalConfig = await readPortalConfig(portalDir);
-
   await updatePortalEnvFiles({
     portalDir,
     apiBaseUrl,
@@ -356,35 +337,9 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
       `Portal build did not produce ${path.join(distDir, 'index.html')}.`,
     ),
   );
-  await ensurePortalDistPublicReadable({
-    storagePath,
-    app,
-    portalDir,
-    distDir,
-  });
+  await chmodPortalDistTree(distDir);
 
-  if (options.env.kind === 'local' || options.env.kind === 'docker') {
-    await syncMultiPortalRecord({
-      portal,
-      config: portalConfig,
-      envName: options.envName,
-      cliVersion: options.cliVersion,
-      apiRequest: options.apiRequest,
-    });
-
-    return {
-      app,
-      portal,
-      portalDir,
-      portalBase,
-      distDir,
-      mode: options.env.kind,
-      uploaded: false,
-      recordSynced: true,
-    };
-  }
-
-  if (options.env.kind !== 'http') {
+  if (options.env.kind !== 'local' && options.env.kind !== 'docker' && options.env.kind !== 'http') {
     throw new Error(
       portalDeployText(
         'errors.unsupportedEnvKind',
@@ -412,7 +367,6 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
 
   await syncMultiPortalRecord({
     portal,
-    config: portalConfig,
     envName: options.envName,
     cliVersion: options.cliVersion,
     apiRequest: options.apiRequest,
@@ -425,7 +379,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
     portalBase,
     distDir,
     serverDistPath: uploadResult.distPath,
-    mode: 'http',
+    mode: options.env.kind,
     uploaded: true,
     recordSynced: true,
   };

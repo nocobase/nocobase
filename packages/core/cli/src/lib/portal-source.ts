@@ -20,15 +20,17 @@ import {
   buildPortalConfig,
   buildPortalConfigFromOptions,
   DEFAULT_PORTAL_GIT_PATH,
-  readPortalConfig,
-  syncPortalConfigToRemote,
-  writePortalConfig,
   type PortalConfig,
 } from './portal-config.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { canReplacePortalDirectory } from './portal-path-safety.js';
+import { updatePortalEnvFiles } from './portal-env-files.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolvePortalDeployPath,
+  resolvePortalSourcePath,
+  resolveSavedPortalSourcePath,
   resolvePortalStoragePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
@@ -45,6 +47,7 @@ type PortalSourceContext = {
   portal: string;
   portalDir: string;
   portalBase: string;
+  apiBaseUrl: string;
   mode: 'local' | 'docker' | 'http';
   sourceStorage: string;
   gitRepo: string;
@@ -63,6 +66,11 @@ export type PortalSourceOptions = {
   force?: boolean;
   message?: string;
   installDependencies?: boolean;
+  sourcePath?: string;
+  defaultSourcePath?: boolean;
+  gitRepo?: string;
+  gitBranch?: string;
+  gitPath?: string;
   runCommand?: RunCommand;
   apiRequest?: ApiRequest;
 };
@@ -225,16 +233,10 @@ async function replacePortalSourceFromArchive(params: {
   portalDir: string;
   force?: boolean;
 }): Promise<void> {
-  const targetExists = await pathExists(params.portalDir);
-  if (targetExists && !params.force) {
-    throw new Error(
-      portalSourceText(
-        'errors.workspaceExists',
-        { portalDir: params.portalDir },
-        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
-      ),
-    );
-  }
+  const targetExists = await assertPortalDirectoryCanBeReplaced({
+    portalDir: params.portalDir,
+    force: params.force,
+  });
 
   const parentDir = path.dirname(params.portalDir);
   const tempDir = await mkdtemp(path.join(parentDir, `.${path.basename(params.portalDir)}-pull-`));
@@ -264,16 +266,10 @@ async function replacePortalSourceFromDirectory(params: {
   portalDir: string;
   force?: boolean;
 }): Promise<void> {
-  const targetExists = await pathExists(params.portalDir);
-  if (targetExists && !params.force) {
-    throw new Error(
-      portalSourceText(
-        'errors.workspaceExists',
-        { portalDir: params.portalDir },
-        `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
-      ),
-    );
-  }
+  const targetExists = await assertPortalDirectoryCanBeReplaced({
+    portalDir: params.portalDir,
+    force: params.force,
+  });
 
   const parentDir = path.dirname(params.portalDir);
   const tempDir = await mkdtemp(path.join(parentDir, `.${path.basename(params.portalDir)}-pull-`));
@@ -304,6 +300,15 @@ async function assertPortalDirectoryCanBeReplaced(params: { portalDir: string; f
         'errors.workspaceExists',
         { portalDir: params.portalDir },
         `Portal already exists: ${params.portalDir}\nPass --force to delete it and pull again.`,
+      ),
+    );
+  }
+  if (targetExists && params.force && !(await canReplacePortalDirectory(params.portalDir))) {
+    throw new Error(
+      portalSourceText(
+        'errors.workspaceNotReplaceable',
+        { portalDir: params.portalDir },
+        `Refusing to replace a non-portal directory: ${params.portalDir}`,
       ),
     );
   }
@@ -380,7 +385,11 @@ async function resolvePortalSourceContext(options: PortalSourceOptions): Promise
   const mode = options.env.kind;
   const appContext = await resolvePortalAppContext(options);
   const { app, appPublicPath, portalBaseApp } = appContext;
-  const portalDir = path.join(storagePath, 'portals', app, portal);
+  const portalDeployDir = resolvePortalDeployPath({ storagePath, app, portal });
+  const portalDir = options.sourcePath
+    ? resolvePortalSourcePath(portal, options.sourcePath)
+    : resolveSavedPortalSourcePath(options.env, portal) ??
+      (options.defaultSourcePath ? resolvePortalSourcePath(portal) : portalDeployDir);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
 
   if (mode !== 'local' && mode !== 'docker' && mode !== 'http') {
@@ -416,6 +425,7 @@ async function resolvePortalSourceContext(options: PortalSourceOptions): Promise
     portal,
     portalDir,
     portalBase,
+    apiBaseUrl,
     mode,
     sourceStorage: item.sourceStorage || 'nocobase',
     gitRepo: item.gitRepo,
@@ -447,6 +457,33 @@ function applyPortalConfigToContext(context: PortalSourceContext, config: Portal
     gitBranch: config.git?.branch ?? 'main',
     gitPath: config.git?.path ?? DEFAULT_PORTAL_GIT_PATH,
   };
+}
+
+function getTemporaryGitPortalConfig(options: PortalSourceOptions): PortalConfig | undefined {
+  const gitRepo = trimValue(options.gitRepo);
+  if (!gitRepo) {
+    if (trimValue(options.gitBranch) || trimValue(options.gitPath)) {
+      throw new Error(
+        portalSourceText(
+          'errors.gitRepoRequiredForTemporaryPull',
+          undefined,
+          [
+            '--git-branch and --git-path require --git-repo for a temporary Git pull.',
+            'To update the portal configuration, use `nb portal config`.',
+          ].join(' '),
+        ),
+      );
+    }
+    return undefined;
+  }
+
+  return buildPortalConfig({
+    portal: options.portal,
+    sourceStorage: 'git',
+    gitRepo,
+    gitBranch: options.gitBranch,
+    gitPath: options.gitPath,
+  });
 }
 
 function assertGitSourceConfig(context: PortalSourceContext): {
@@ -675,8 +712,11 @@ async function pushGitPortalSource(params: {
 }
 
 export async function pullPortalSource(options: PortalSourceOptions): Promise<PortalSourceResult> {
-  const context = await resolvePortalSourceContext(options);
-  const portalConfig = buildPortalConfigFromContext(context);
+  const context = await resolvePortalSourceContext({
+    ...options,
+    defaultSourcePath: true,
+  });
+  const portalConfig = getTemporaryGitPortalConfig(options) ?? buildPortalConfigFromContext(context);
   const sourceContext = applyPortalConfigToContext(context, portalConfig);
   if (sourceContext.sourceStorage === 'git') {
     await pullGitPortalSource({
@@ -684,7 +724,11 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
       force: options.force,
     });
     await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
-    await writePortalConfig(sourceContext.portalDir, portalConfig);
+    await updatePortalEnvFiles({
+      portalDir: sourceContext.portalDir,
+      apiBaseUrl: sourceContext.apiBaseUrl,
+      portalBase: sourceContext.portalBase,
+    });
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,
       installDependencies: options.installDependencies,
@@ -705,17 +749,6 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
         `Unsupported portal source storage: ${sourceContext.sourceStorage}`,
       ),
     );
-  }
-
-  if (sourceContext.mode === 'local' || sourceContext.mode === 'docker') {
-    return {
-      ...sourceContext,
-      changed: false,
-      noopReason:
-        sourceContext.mode === 'local'
-          ? portalSourceText('messages.localPullNoop', undefined, 'Portal source is already local.')
-          : portalSourceText('messages.dockerPullNoop', undefined, 'Portal source is already available through the Docker volume.'),
-    };
   }
 
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-portal-pull-'));
@@ -749,7 +782,11 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
       force: options.force,
     });
     await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
-    await writePortalConfig(sourceContext.portalDir, portalConfig);
+    await updatePortalEnvFiles({
+      portalDir: sourceContext.portalDir,
+      apiBaseUrl: sourceContext.apiBaseUrl,
+      portalBase: sourceContext.portalBase,
+    });
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,
       installDependencies: options.installDependencies,
@@ -767,7 +804,10 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
 }
 
 export async function pushPortalSource(options: PortalSourceOptions): Promise<PortalSourceResult> {
-  const context = await resolvePortalSourceContext(options);
+  const context = await resolvePortalSourceContext({
+    ...options,
+    defaultSourcePath: true,
+  });
   if (!(await pathExists(context.portalDir))) {
     throw new Error(
       portalSourceText(
@@ -777,15 +817,7 @@ export async function pushPortalSource(options: PortalSourceOptions): Promise<Po
       ),
     );
   }
-  const portalConfig = await readPortalConfig(context.portalDir);
-  await syncPortalConfigToRemote({
-    portal: context.portal,
-    config: portalConfig,
-    currentOptions: context.options,
-    envName: options.envName,
-    cliVersion: options.cliVersion,
-    apiRequest: options.apiRequest,
-  });
+  const portalConfig = buildPortalConfigFromContext(context);
   const sourceContext = applyPortalConfigToContext(context, portalConfig);
 
   if (sourceContext.sourceStorage === 'git') {
@@ -811,17 +843,6 @@ export async function pushPortalSource(options: PortalSourceOptions): Promise<Po
         `Unsupported portal source storage: ${sourceContext.sourceStorage}`,
       ),
     );
-  }
-
-  if (sourceContext.mode === 'local' || sourceContext.mode === 'docker') {
-    return {
-      ...sourceContext,
-      changed: false,
-      noopReason:
-        sourceContext.mode === 'local'
-          ? portalSourceText('messages.localPushNoop', undefined, 'Portal source is already local.')
-          : portalSourceText('messages.dockerPushNoop', undefined, 'Portal source is already available through the Docker volume.'),
-    };
   }
 
   const archive = await packPortalSource(sourceContext.portalDir);

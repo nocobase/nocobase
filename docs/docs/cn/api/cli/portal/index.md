@@ -20,14 +20,14 @@ nb portal <command>
 
 | 命令 | 说明 |
 | --- | --- |
-| [`nb portal config`](./config.md) | 更新本地 Portal 工作区的源码配置，并尽量同步到远端 Portal 记录 |
-| [`nb portal create`](./create.md) | 基于模板创建本地 Portal 工作区，并创建或更新 Portal 记录 |
-| [`nb portal deploy`](./deploy.md) | 构建并部署指定 Portal 工作区 |
-| [`nb portal destroy`](./destroy.md) | 删除 Portal 记录和本地工作区 |
-| [`nb portal dev`](./dev.md) | 启动指定 Portal 工作区的开发模式 |
-| [`nb portal info`](./info.md) | 查看指定 Portal 记录和本地工作区详情 |
-| [`nb portal list`](./list.md) | 列出 Portal 记录和本地工作区同步状态 |
-| [`nb portal pull`](./pull.md) | 从 source storage 拉取 Portal 源码到本地工作区 |
+| [`nb portal config`](./config.md) | 更新 Portal 源码配置 |
+| [`nb portal create`](./create.md) | 基于模板创建本地 AI Portal |
+| [`nb portal deploy`](./deploy.md) | 构建并部署 Portal |
+| [`nb portal destroy`](./destroy.md) | 销毁 Portal 记录和已部署文件 |
+| [`nb portal dev`](./dev.md) | 启动 Portal 开发模式 |
+| [`nb portal info`](./info.md) | 查看 Portal 记录和本地文件详情 |
+| [`nb portal list`](./list.md) | 列出 Portal 记录和开发路径 |
+| [`nb portal pull`](./pull.md) | 拉取 Portal 源码到本地文件 |
 | [`nb portal push`](./push.md) | 把本地 Portal 源码变更推送到 source storage |
 
 ## 典型流程
@@ -75,7 +75,7 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 ## source storage
 
-创建 Portal 时，可以选择源码保存方式：
+Portal 源码保存方式记录在远端 Portal 记录的 options 中：
 
 | 方式 | 说明 |
 | --- | --- |
@@ -84,7 +84,7 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 如果只是快速创建和开发 Portal，默认的 `nocobase` 就够了。只有当你希望把 Portal 源码纳入已有 Git 仓库、走团队代码评审或 CI 流程时，才需要选择 `git`。
 
-源码配置会写入本地工作区的 `portal.config.json`。`create`、`pull` 和 `config` 都会维护这个文件；`push` 和 `deploy` 会读取它，并按配置同步源码或部署产物。
+`nb portal config` 负责更新远端 Portal 记录里的 source storage 和 Git 配置。开发工作区路径单独保存在 CLI env config 的 `portals.<portal>.path` 中，由 `create`、`pull --path` 或 `config --path` 维护。
 
 ## env 类型
 
@@ -92,15 +92,21 @@ nb portal push customer -e dev --yes --message "Move customer portal source to G
 
 | env 类型 | 说明 |
 | --- | --- |
-| `local` | 本地工作区和应用 storage 在当前机器上，`pull`/`push` 对默认 `nocobase` 存储通常不需要做额外同步 |
-| `docker` | 本地工作区通过 Docker volume 和应用共享，`pull`/`push` 对默认 `nocobase` 存储通常不需要做额外同步 |
+| `local` | 本地工作区和应用 storage 在当前机器上，`pull` 会把源码拉取到开发路径，`deploy` 会从开发路径构建并同步部署产物 |
+| `docker` | 本地工作区通过 Docker volume 和应用共享，`pull` 会把源码拉取到开发路径，`deploy` 会从开发路径构建并同步部署产物 |
 | `http` | 通过 API 同步源码和部署产物，`pull`/`push` 会下载或上传源码归档 |
 
 `ssh` env 在当前版本暂不支持 Portal 工作区管理。
 
-## 本地工作区路径
+## 开发和部署路径
 
-Portal 工作区会放在当前 env 的 storage 下：
+Portal 开发工作区默认放在当前命令执行目录下：
+
+```text
+./<portal>
+```
+
+你也可以在 `create`、`pull` 或 `config` 时通过 `--path` 指定开发路径。部署产物仍然存放在目标应用 storage 下：
 
 ```text
 <storagePath>/portals/<app>/<portal>

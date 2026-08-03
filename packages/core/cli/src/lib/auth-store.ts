@@ -29,6 +29,11 @@ import {
 } from './env-paths.js';
 import { ENV_CONFIG_SCHEMA_VERSION, normalizeEnvConfigSchemaVersion } from './env-config.js';
 import {
+  normalizeEnvPortalsConfig,
+  type EnvPortalConfigEntry,
+  type EnvPortalsConfig,
+} from './env-portal-config.js';
+import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
   setSessionCurrentEnv,
@@ -113,6 +118,8 @@ export interface EnvConfigEntry {
   portalName?: string;
   /** Initial portal template npm package or local path (INIT_PORTAL_TEMPLATE). */
   portalTemplate?: string;
+  /** Local AI portal source workspace directories keyed by portal name. */
+  portals?: EnvPortalsConfig;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;
@@ -281,12 +288,14 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     baseUrl: _baseUrl,
     apibaseUrl: _legacyApiBaseUrl,
     schemaVersion: _schemaVersion,
+    portals: _portals,
     ...rest
   } = entry as EnvConfigEntry & { kind?: unknown };
   const normalizedKind = resolveEnvKind(entry);
   const apiBaseUrl = readEnvApiBaseUrl(entry);
   const schemaVersion = normalizeEnvConfigSchemaVersion(entry.schemaVersion);
   const proxy = normalizeEnvProxyConfig(entry.proxy);
+  const portals = normalizeEnvPortalsConfig(entry.portals);
   return {
     ...rest,
     ...(schemaVersion ? { schemaVersion } : {}),
@@ -294,6 +303,7 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
     ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
     ...(proxy ? { proxy } : {}),
+    ...(portals ? { portals } : {}),
   };
 }
 
@@ -852,6 +862,74 @@ export async function setEnvRuntime(
     runtime,
   };
   await saveAuthConfig(config, options);
+}
+
+export function resolveEnvPortalPath(
+  config: Pick<EnvConfigEntry, 'portals'> | undefined,
+  portal: string,
+): string | undefined {
+  const portalName = normalizeOptionalString(portal);
+  if (!portalName) {
+    return undefined;
+  }
+  return normalizeOptionalString(config?.portals?.[portalName]?.path);
+}
+
+export async function setEnvPortalPath(
+  envName: string,
+  portal: string,
+  portalPath: string,
+  options: AuthStoreOptions = {},
+) {
+  const portalName = normalizeOptionalString(portal);
+  const normalizedPath = normalizeOptionalString(portalPath);
+  if (!portalName || !normalizedPath) {
+    return;
+  }
+
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+      const portals = normalizeEnvPortalsConfig(previous.portals) ?? {};
+      return {
+        ...previous,
+        portals: {
+          ...portals,
+          [portalName]: {
+            ...(portals[portalName] ?? {}),
+            path: normalizedPath,
+          } satisfies EnvPortalConfigEntry,
+        },
+      };
+    },
+    options,
+  );
+}
+
+export async function unsetEnvPortalPath(envName: string, portal: string, options: AuthStoreOptions = {}) {
+  const portalName = normalizeOptionalString(portal);
+  if (!portalName) {
+    return;
+  }
+
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+      const portals = normalizeEnvPortalsConfig(previous.portals) ?? {};
+      delete portals[portalName];
+      return {
+        ...previous,
+        ...(Object.keys(portals).length > 0 ? { portals } : { portals: undefined }),
+      };
+    },
+    options,
+  );
 }
 
 export function resolveEnvProxyEntry(

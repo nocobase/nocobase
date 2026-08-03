@@ -1,12 +1,12 @@
 ---
 title: "nb portal list"
-description: "nb portal list command reference: list portal records and local workspace sync status."
+description: "nb portal list command reference: list portal records and development paths."
 keywords: "nb portal list,NocoBase CLI,Portal"
 ---
 
 # nb portal list
 
-List portal records and local workspace sync status
+List portal records and development paths
 
 ## Usage
 
@@ -20,19 +20,19 @@ nb portal list [flags]
 | --- | --- | --- |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
-| `--json-output`, `-j` | boolean | Print portal records as JSON. |
+| `--json-output`, `--json`, `-j` | boolean | Print portal records as JSON. |
 
 ## Examples
 
 ```bash
 nb portal list
 nb portal list --env dev --yes
-nb portal list --json-output
+nb portal list --json
 ```
 
 ## Notes
 
-The list shows name, URL, portal type, source storage, local path, enabled status, and local sync status. Only `ai` portals have local workspace sync checks; other portal types show an empty sync status.
+The list shows name, URL, portal type, source storage, development path, enabled status, and default status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, `isDefault`, and `sourceStorage`.
 
 ## Related Commands
 

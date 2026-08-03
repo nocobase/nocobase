@@ -12,6 +12,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getCurrentEnvName: vi.fn(),
   getEnv: vi.fn(),
+  unsetEnvPortalPath: vi.fn(),
   destroyPortalWorkspace: vi.fn(),
   printInfo: vi.fn(),
   printSuccess: vi.fn(),
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../lib/auth-store.js', () => ({
   getCurrentEnvName: mocks.getCurrentEnvName,
   getEnv: mocks.getEnv,
+  unsetEnvPortalPath: mocks.unsetEnvPortalPath,
 }));
 
 vi.mock('../lib/portal-destroy.js', () => ({
@@ -55,11 +57,13 @@ test('portal destroy resolves the current env name before destroying', async () 
   mocks.destroyPortalWorkspace.mockResolvedValue({
     app: 'main',
     portal: 'cba',
-    portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+    developmentPath: '/Users/chen/test6/remote1/source/portals/cba',
+    deploymentPath: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
     portalBase: '/x/cba/',
     mode: 'http',
     recordDeleted: true,
-    workspaceDeleted: true,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: true,
   });
 
   const command = Object.assign(Object.create(PortalDestroy.prototype), {
@@ -69,6 +73,7 @@ test('portal destroy resolves the current env name before destroying', async () 
       flags: {
         yes: true,
         force: false,
+        'delete-dev-path': true,
       },
     })),
     config: {
@@ -93,15 +98,18 @@ test('portal destroy resolves the current env name before destroying', async () 
         envName: 'remote1',
         cliVersion: '1.2.3',
         force: false,
+        deleteDevPath: true,
       },
     ],
   ]);
+  expect(mocks.unsetEnvPortalPath.mock.calls).toEqual([['remote1', 'cba', { scope: 'global' }]]);
   expect(mocks.printSuccess.mock.calls).toEqual([['Portal "cba" destroyed.']]);
   expect(mocks.printInfo.mock.calls).toEqual([
     ['Mode: http'],
     ['App: main'],
     ['Base: /x/cba/'],
     ['Record: deleted'],
-    ['Portal files: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
+    ['Deployment path: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
+    ['Development path: retained (/Users/chen/test6/remote1/source/portals/cba)'],
   ]);
 });

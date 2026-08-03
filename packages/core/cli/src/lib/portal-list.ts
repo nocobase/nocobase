@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { stat } from 'node:fs/promises';
-import path from 'node:path';
 import { appendAppPublicPath } from './app-public-path.js';
 import { executeApiRequest, type RequestOperation } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
+  resolvePortalDeployPath,
   resolvePortalAppContext,
+  resolveSavedPortalSourcePath,
   resolvePortalStoragePath,
   type ResolvedPortalApp,
   type PortalCreateEnvLike,
@@ -40,6 +40,7 @@ export type PortalListItem = {
   routePath: string;
   portalType: string;
   enabled: boolean;
+  isDefault: boolean;
   sourceStorage: string;
   gitRepo: string;
   gitBranch: string;
@@ -48,17 +49,18 @@ export type PortalListItem = {
   options: Record<string, unknown>;
   portalUrl: string;
   portalDir: string;
-  localSynced: boolean | null;
+  deployDir: string;
 };
 
 export type PortalOutputItem = {
   name: string;
   url: string;
   portalType: string;
-  localPath: string;
+  developmentPath: string;
+  deploymentPath: string;
   enabled: boolean;
+  isDefault: boolean;
   sourceStorage: string;
-  localSynced: boolean | null;
 };
 
 export type PortalListResult = {
@@ -123,15 +125,6 @@ function readListData(data: unknown): Array<Record<string, unknown>> {
   }
 
   return readListData(directData);
-}
-
-async function pathExists(target: string): Promise<boolean> {
-  try {
-    await stat(target);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function buildPortalAccessUrl(apiBaseUrl: string, portalBase: string): string {
@@ -209,10 +202,11 @@ export function toPortalOutputItem(item: PortalListItem): PortalOutputItem {
     name: item.portalName,
     url: item.portalUrl,
     portalType: item.portalType,
-    localPath: item.localSynced === true ? item.portalDir : '',
+    developmentPath: item.portalDir,
+    deploymentPath: item.deployDir,
     enabled: item.enabled,
+    isDefault: item.isDefault,
     sourceStorage: item.sourceStorage,
-    localSynced: item.localSynced,
   };
 }
 
@@ -268,44 +262,45 @@ export async function listPortalWorkspaces(options: PortalListOptions): Promise<
     cliVersion: options.cliVersion,
     apiRequest: options.apiRequest,
   });
-  const items = await Promise.all(
-    records.map(async (record) => {
-      const uid = readRecordString(record, 'uid');
-      const portalName = readRecordString(record, 'portalName') || uid;
-      const routePath = readRecordString(record, 'routePath') || `/${portalName}`;
-      const portalType = readRecordString(record, 'portalType');
-      const enabled = readRecordBoolean(record, 'enabled');
-      const options = readRecordObject(record, 'options');
-      const git = readRecordObject(options, 'git');
-      const sourceStorage = trimValue(options.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
-      const isAi = portalType === 'ai';
-      const portalDir = isAi ? path.join(storagePath, 'portals', app, portalName) : '';
+  const items = records.map((record) => {
+    const uid = readRecordString(record, 'uid');
+    const portalName = readRecordString(record, 'portalName') || uid;
+    const routePath = readRecordString(record, 'routePath') || `/${portalName}`;
+    const portalType = readRecordString(record, 'portalType');
+    const enabled = readRecordBoolean(record, 'enabled');
+    const isDefault = readRecordBoolean(record, 'isDefault');
+    const recordOptions = readRecordObject(record, 'options');
+    const git = readRecordObject(recordOptions, 'git');
+    const sourceStorage = trimValue(recordOptions.sourceStorage) || readRecordString(record, 'sourceStorage') || 'nocobase';
+    const isAi = portalType === 'ai';
+    const portalDir = isAi ? resolveSavedPortalSourcePath(options.env, portalName) ?? '' : '';
+    const deployDir = isAi ? resolvePortalDeployPath({ storagePath, app, portal: portalName }) : '';
 
-      return {
-        uid,
-        portalName,
-        routePath,
-        portalType,
-        enabled,
-        sourceStorage,
-        gitRepo: trimValue(git.repo) || readRecordString(record, 'gitRepo'),
-        gitBranch: trimValue(git.branch) || readRecordString(record, 'gitBranch'),
-        gitPath: trimValue(git.path) || readRecordString(record, 'gitPath'),
-        sourceRevision: trimValue(options.sourceRevision) || readRecordString(record, 'sourceRevision'),
-        options,
-        portalUrl: enabled
-          ? buildPortalAccessUrl(
-              apiBaseUrl,
-              isAi
-                ? buildPortalBasePath({ app: baseApp, appPublicPath, portal: portalName })
-                : buildNoCodePortalBasePath({ app: baseApp, appPublicPath, routePath }),
-            )
-          : '',
-        portalDir,
-        localSynced: isAi ? await pathExists(portalDir) : null,
-      };
-    }),
-  );
+    return {
+      uid,
+      portalName,
+      routePath,
+      portalType,
+      enabled,
+      isDefault,
+      sourceStorage,
+      gitRepo: trimValue(git.repo) || readRecordString(record, 'gitRepo'),
+      gitBranch: trimValue(git.branch) || readRecordString(record, 'gitBranch'),
+      gitPath: trimValue(git.path) || readRecordString(record, 'gitPath'),
+      sourceRevision: trimValue(recordOptions.sourceRevision) || readRecordString(record, 'sourceRevision'),
+      options: recordOptions,
+      portalUrl: enabled
+        ? buildPortalAccessUrl(
+            apiBaseUrl,
+            isAi
+              ? buildPortalBasePath({ app: baseApp, appPublicPath, portal: portalName })
+              : buildNoCodePortalBasePath({ app: baseApp, appPublicPath, routePath }),
+          )
+        : '',
+      portalDir,
+      deployDir,
+    };
+  });
 
   return {
     app,

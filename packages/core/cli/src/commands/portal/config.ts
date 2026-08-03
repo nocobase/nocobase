@@ -8,7 +8,7 @@
  */
 
 import { Args, Command, Flags } from '@oclif/core';
-import { getCurrentEnvName, getEnv } from '../../lib/auth-store.js';
+import { getCurrentEnvName, getEnv, setEnvPortalPath } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { translateCli } from '../../lib/cli-locale.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
@@ -22,6 +22,7 @@ export default class PortalConfig extends Command {
   static override summary = 'Update portal source configuration';
 
   static override examples = [
+    '<%= config.bin %> <%= command.id %> customer --path ./portals/customer',
     '<%= config.bin %> <%= command.id %> customer --source-storage nocobase',
     '<%= config.bin %> <%= command.id %> customer --source-storage git --git-repo git@github.com:nocobase/customer-portal.git',
     '<%= config.bin %> <%= command.id %> customer --git-branch main --git-path portals/customer',
@@ -47,6 +48,9 @@ export default class PortalConfig extends Command {
     'source-storage': Flags.string({
       description: 'Where portal source code is managed',
       options: ['nocobase', 'git'],
+    }),
+    path: Flags.string({
+      description: 'Portal development workspace directory',
     }),
     'git-repo': Flags.string({
       description: 'Git repository URL used when --source-storage=git',
@@ -95,23 +99,30 @@ export default class PortalConfig extends Command {
       gitRepo: flags['git-repo'],
       gitBranch: flags['git-branch'],
       gitPath: flags['git-path'],
+      sourcePath: flags.path,
     });
+    if (flags.path) {
+      await setEnvPortalPath(envName, result.portal, result.portalDir, { scope });
+    }
 
     printSuccess(
       portalConfigureText(
         'messages.updated',
-        { portal: result.portal, portalDir: result.portalDir },
-        `Portal "${result.portal}" configuration updated at ${result.portalDir}/portal.config.json.`,
+        { portal: result.portal },
+        `Portal "${result.portal}" configuration updated.`,
       ),
     );
-    printInfo(
-      result.remoteSynced
-        ? portalConfigureText('messages.remoteSynced', undefined, 'Remote portal record: synced')
-        : portalConfigureText(
-            'messages.remoteSkipped',
-            undefined,
-            'Remote portal record: not found; local config only',
-          ),
-    );
+    if (result.pathUpdated) {
+      printInfo(
+        portalConfigureText(
+          'messages.pathUpdated',
+          { portalDir: result.portalDir },
+          `Development path: ${result.portalDir}`,
+        ),
+      );
+    }
+    if (result.config) {
+      printInfo(portalConfigureText('messages.remoteSynced', undefined, 'Remote portal record: synced'));
+    }
   }
 }

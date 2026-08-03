@@ -21,19 +21,19 @@ nb portal info <portal> [flags]
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
-| `--json-output`, `-j` | boolean | Print portal details as JSON. |
+| `--json-output`, `--json`, `-j` | boolean | Print portal details as JSON. |
 
 ## Examples
 
 ```bash
 nb portal info customer
 nb portal info customer --env dev --yes
-nb portal info customer --json-output
+nb portal info customer --json
 ```
 
 ## Notes
 
-Text output includes name, URL, portal type, local path, enabled status, and local sync status. `--json-output` prints `name`, `url`, `portalType`, `localPath`, `enabled`, `sourceStorage`, and `localSynced`. You can query by `routeName` or `uid`.
+Text output includes name, URL, portal type, development path, deployment path, and enabled status. `--json-output` and its alias `--json` print `name`, `url`, `portalType`, `developmentPath`, `deploymentPath`, `enabled`, `isDefault`, and `sourceStorage`. You can query by `routeName` or `uid`.
 
 ## Related Commands
 

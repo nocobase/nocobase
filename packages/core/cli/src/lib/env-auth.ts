@@ -1257,7 +1257,7 @@ export async function resolveServerRequestTarget(options: {
     );
   }
 
-  return { baseUrl, token };
+  return { baseUrl, token, envName };
 }
 
 export async function authenticateEnvWithBasic(options: {
