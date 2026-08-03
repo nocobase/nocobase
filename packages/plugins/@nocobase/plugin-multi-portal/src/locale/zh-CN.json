@@ -47,15 +47,7 @@
   "Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.": "用户通过自然语言描述需求，AI Agent 负责创建和修改应用，包括界面、数据模型、业务逻辑、角色权限等。",
   "Build business systems through visual configuration.": "通过可视化界面配置开发业务系统。",
   "Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.": "用户通过拖拽和配置方式创建应用，AI 可以协助创建、调整和优化数据模型、界面、工作流等配置。",
-  "Directory inside the Git repository for this portal. Leave empty for the root.": "该门户在 Git 仓库内的目录，留空表示仓库根目录。",
-  "Git": "Git",
-  "Git branch": "Git 分支",
-  "Git path": "Git 路径",
-  "Git repository URL": "Git 仓库 URL",
   "Icon": "图标",
-  "Store and manage application source code in a Git repository.": "在 Git 仓库中存储和管理应用源码。",
-  "Store and manage application source code in NocoBase.": "在 NocoBase 中存储和管理应用源码。",
-  "NocoBase": "NocoBase",
   "Portal": "门户",
   "No-code mode": "无代码模式",
   "Portal manager": "门户管理",
@@ -71,8 +63,6 @@
   "Saved successfully": "保存成功",
   "Search routes": "搜索路由",
   "Select a role to configure permissions": "请选择角色后配置权限",
-  "Source management": "源码管理",
-  "Select how the application source code is stored and managed.": "选择应用源码的存储和管理方式。",
   "Submit": "提交",
   "Target portal": "目标门户",
   "The default portal cannot be disabled": "默认门户不能停用，请先把默认设置给其他门户。",
@@ -146,6 +136,5 @@
   "Example:": "示例：",
   "Shown on the portal card.": "显示在门户卡片上。",
   "Device": "设备",
-  "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码门户按此选择组件形态；AI 门户用它做归类。",
-  "The title and name below are filled in from the repository name.": "下面的标题和名称会按仓库名自动填写。"
+  "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码门户按此选择组件形态；AI 门户用它做归类。"
 }

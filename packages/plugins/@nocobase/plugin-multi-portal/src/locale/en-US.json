@@ -47,15 +47,7 @@
   "Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.": "Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.",
   "Build business systems through visual configuration.": "Build business systems through visual configuration.",
   "Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.": "Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.",
-  "Directory inside the Git repository for this portal. Leave empty for the root.": "Directory inside the Git repository for this portal. Leave empty for the root.",
-  "Git": "Git",
-  "Git branch": "Git branch",
-  "Git path": "Git path",
-  "Git repository URL": "Git repository URL",
   "Icon": "Icon",
-  "Store and manage application source code in a Git repository.": "Store and manage application source code in a Git repository.",
-  "Store and manage application source code in NocoBase.": "Store and manage application source code in NocoBase.",
-  "NocoBase": "NocoBase",
   "Portal": "Portal",
   "No-code mode": "No-code mode",
   "Portal manager": "Portal manager",
@@ -71,8 +63,6 @@
   "Saved successfully": "Saved successfully",
   "Search routes": "Search routes",
   "Select a role to configure permissions": "Select a role to configure permissions",
-  "Source management": "Source management",
-  "Select how the application source code is stored and managed.": "Select how the application source code is stored and managed.",
   "Submit": "Submit",
   "Target portal": "Target portal",
   "The default portal cannot be disabled": "The default portal cannot be disabled. Set another portal as default first.",
@@ -146,6 +136,5 @@
   "Example:": "Example:",
   "Shown on the portal card.": "Shown on the portal card.",
   "Device": "Device",
-  "No-code portals render with the components of this device; AI portals use it for grouping.": "No-code portals render with the components of this device; AI portals use it for grouping.",
-  "The title and name below are filled in from the repository name.": "The title and name below are filled in from the repository name."
+  "No-code portals render with the components of this device; AI portals use it for grouping.": "No-code portals render with the components of this device; AI portals use it for grouping."
 }
