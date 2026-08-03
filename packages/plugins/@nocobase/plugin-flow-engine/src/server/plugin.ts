@@ -15,6 +15,7 @@ import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import type { AnalyzedTemplate, ResolvePathPolicy } from './template/variable-expression';
 import { authorizeVariablesResolve } from './variables/allow-list';
+import type { RecordBindingPlan } from './variables/record-bindings';
 import { resolveAnalyzedVariablesBatch, resolveAnalyzedVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
@@ -82,7 +83,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
             }>;
             type AuthorizedBatchItem = {
               analysis: AnalyzedTemplate;
-              contextParams?: Record<string, unknown>;
+              bindingPlan: RecordBindingPlan;
               id?: string | number;
               index: number;
               policy: ResolvePathPolicy;
@@ -102,7 +103,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               if (authorization.allowed) {
                 const authorizedItem = {
                   analysis: authorization.analysis,
-                  contextParams: authorization.contextParams,
+                  bindingPlan: authorization.bindingPlan,
                   id: item?.id,
                   index,
                   policy: authorization.policy,
@@ -118,9 +119,9 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               ctx as ResourcerContext,
               authorizedItems.map((item) => ({
                 analysis: item.analysis,
+                bindingPlan: item.bindingPlan,
                 id: item.index,
                 template: item.template,
-                contextParams: item.contextParams,
                 policy: item.policy,
               })),
             );
@@ -159,7 +160,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
                 ctx as ResourcerContext,
                 authorization.analysis,
                 authorization.policy,
-                authorization.contextParams,
+                authorization.bindingPlan,
               )
             : template;
           await next();

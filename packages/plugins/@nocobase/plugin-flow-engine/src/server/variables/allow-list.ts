@@ -17,7 +17,14 @@ import {
   type ResolvePathPolicy,
 } from '../template/variable-expression';
 import type { JSONValue } from '../template/resolver';
-import { sanitizeRegisteredVariableContextParams, type ValidateContextParamsResult, variables } from './registry';
+import { planRecordBindings, type RecordBindingPlan, type RecordBindingUsage } from './record-bindings';
+import {
+  getRecordBindingPolicies,
+  isSafeRecordBinding,
+  sanitizeRegisteredVariableContextParams,
+  type ValidateContextParamsResult,
+  variables,
+} from './registry';
 
 type RecordParams = {
   appends?: unknown;
@@ -43,7 +50,7 @@ type RoleRecord = {
 };
 
 type AuthorizationResultBase = {
-  contextParams: Record<string, unknown>;
+  contextParams: Readonly<Record<string, unknown>>;
   flowModelUid?: string;
   policy: ResolvePathPolicy;
 };
@@ -53,6 +60,7 @@ export type AuthorizationResult = AuthorizationResultBase &
     | {
         allowed: true;
         analysis: AnalyzedTemplate;
+        bindingPlan: RecordBindingPlan;
       }
     | {
         allowed: false;
@@ -248,11 +256,22 @@ function createPolicy(
 
 function denied(
   analysis: AnalyzedTemplate,
-  contextParams: Record<string, unknown>,
+  contextParams: Readonly<Record<string, unknown>>,
   policy: ResolvePathPolicy,
   flowModelUid?: string,
 ): AuthorizationResult {
   return { allowed: false, analysis, contextParams, flowModelUid, policy };
+}
+
+function createRecordBindingPlan(
+  contextParams: Readonly<Record<string, unknown>>,
+  usage: RecordBindingUsage,
+): RecordBindingPlan {
+  return planRecordBindings({ contextParams, policies: getRecordBindingPolicies(usage), usage });
+}
+
+function recordBindingPlanAllowed(plan: RecordBindingPlan) {
+  return plan.rejections.length === 0 && plan.bindings.every(isSafeRecordBinding);
 }
 
 export async function authorizeVariablesResolve(
@@ -270,13 +289,23 @@ export async function authorizeVariablesResolve(
   const result = analyzeVariableTemplateSafely(options.template);
   if (!result.ok) {
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
-    return { allowed: false, contextParams, flowModelUid: flowModelUid || undefined, policy };
+    return {
+      allowed: false,
+      contextParams: createRecordBindingPlan(contextParams, {}).contextParams,
+      flowModelUid: flowModelUid || undefined,
+      policy,
+    };
   }
   const { analysis } = result;
 
   if (!analysis.supported) {
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
-    return denied(analysis, contextParams, policy, flowModelUid || undefined);
+    return denied(
+      analysis,
+      createRecordBindingPlan(contextParams, analysis.usage).contextParams,
+      policy,
+      flowModelUid || undefined,
+    );
   }
 
   const flowModelRequiredVars = new Set<string>();
@@ -294,33 +323,50 @@ export async function authorizeVariablesResolve(
     contextParams = sanitizeContextParams(validation?.contextParams || contextParams);
     if (validation?.allowed === false) {
       contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
-      return denied(analysis, contextParams, policy, flowModelUid || undefined);
+      return denied(
+        analysis,
+        createRecordBindingPlan(contextParams, analysis.usage).contextParams,
+        policy,
+        flowModelUid || undefined,
+      );
     }
     if (validation?.requireFlowModel === false) unrestrictedVariables.add(varName);
     else flowModelRequiredVars.add(varName);
   }
 
   contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
+  const bindingPlan = createRecordBindingPlan(contextParams, analysis.usage);
 
   if (await currentRoleAllowsConfigure(ctx)) {
     policy = createPolicy(true, new Set(), unrestrictedVariables);
-    return { allowed: true, analysis, contextParams, policy };
+    return recordBindingPlanAllowed(bindingPlan)
+      ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy }
+      : denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
   }
 
-  if (flowModelRequiredVars.size > 0 && !flowModelUid) return denied(analysis, contextParams, policy);
+  if (flowModelRequiredVars.size > 0 && !flowModelUid) return denied(analysis, bindingPlan.contextParams, policy);
 
   const allowedPaths = flowModelUid ? await getFlowModelAllowedPaths(ctx, flowModelUid) : null;
   policy = createPolicy(false, allowedPaths || new Set(), unrestrictedVariables);
   if (flowModelRequiredVars.size > 0 && !allowedPaths) {
-    return denied(analysis, contextParams, policy, flowModelUid || undefined);
+    return denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
   }
 
   for (const path of analysis.paths) {
     if (unrestrictedVariables.has(path.varName)) continue;
     if (!allowedPaths?.has(path.canonicalKey)) {
-      return denied(analysis, contextParams, policy, flowModelUid || undefined);
+      return denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
     }
   }
 
-  return { allowed: true, analysis, contextParams, flowModelUid: flowModelUid || undefined, policy };
+  return recordBindingPlanAllowed(bindingPlan)
+    ? {
+        allowed: true,
+        analysis,
+        bindingPlan,
+        contextParams: bindingPlan.contextParams,
+        flowModelUid: flowModelUid || undefined,
+        policy,
+      }
+    : denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
 }

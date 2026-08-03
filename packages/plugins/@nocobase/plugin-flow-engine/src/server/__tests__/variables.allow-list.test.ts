@@ -211,7 +211,8 @@ describe('variables:resolve allow-list authorization', () => {
     });
 
     expect(result.allowed).toBe(true);
-    expect(result.contextParams['view.record']).toEqual({
+    if (!result.allowed) return;
+    expect(result.bindingPlan.bindings[0].params).toEqual({
       associationName: 'users.roles',
       collection: 'roles',
       dataSourceKey: 'secondary',
@@ -288,6 +289,7 @@ describe('variables:resolve allow-list authorization', () => {
     variables.register({
       name: 'evil',
       scope: 'request',
+      recordContextPolicy: { allowGenericStrictPrefix: true },
       validateContextParams: ({ contextParams }) => {
         contextParams['evil.record'] = { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' };
         return { allowed: true };
@@ -311,7 +313,8 @@ describe('variables:resolve allow-list authorization', () => {
     });
 
     expect(result.allowed).toBe(true);
-    expect(result.contextParams['evil.record']).toEqual({
+    if (!result.allowed) return;
+    expect(result.bindingPlan.bindings[0].params).toEqual({
       associationName: undefined,
       collection: 'roles',
       dataSourceKey: 'main',
@@ -578,6 +581,49 @@ describe('variables:resolve allow-list authorization', () => {
       ),
     ).rejects.toBe(modelError);
   });
+
+  it('authorizes a record descriptor only at a strict prefix', async () => {
+    const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template: '{{ ctx.view.record.name }}',
+      contextParams: {
+        'view.record': { collection: 'users', filterByTk: 1 },
+      },
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) return;
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({ prefix: ['record'], relativePaths: [['name']], preferFullRecord: false }),
+    ]);
+    expect(result.contextParams).toEqual({});
+  });
+
+  it('rejects a record descriptor attached to the scalar leaf', async () => {
+    const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+      template: '{{ ctx.view.record.name }}',
+      contextParams: {
+        'view.record.name': { collection: 'users', filterByTk: 1 },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.contextParams).toEqual({});
+  });
+
+  it.each(['query.page', 'headers.authorization', 'locale', 'now', 'env.PUBLIC_VALUE', 'defineProperty.value'])(
+    'rejects record descriptors on protected context roots: %s',
+    async (path) => {
+      const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+        template: `{{ ctx.${path} }}`,
+        contextParams: {
+          [path]: { collection: 'users', filterByTk: 1 },
+        },
+      });
+
+      expect(result.allowed).toBe(false);
+      expect(result.contextParams).toEqual({});
+    },
+  );
 
   it('rejects unsupported dynamic ctx paths for non-configure roles', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx(), {

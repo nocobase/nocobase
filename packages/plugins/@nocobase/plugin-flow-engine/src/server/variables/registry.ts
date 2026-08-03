@@ -10,9 +10,17 @@
 import _ from 'lodash';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
-import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
+import { isProtectedServerContextKey } from '../template/context-keys';
+import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN, ServerBaseContext } from '../template/contexts';
 import { analyzeVariableTemplate, type PathSegment, type VariablePathRef } from '../template/variable-expression';
-import { fetchRecordWithRequestCache, isRecordParams, type RecordParams } from './records';
+import {
+  planRecordBindings,
+  type AuthorizedRecordBinding,
+  type RecordBindingPlan,
+  type RecordBindingPolicies,
+  type RecordContextPolicy,
+} from './record-bindings';
+import { fetchRecordWithRequestCache } from './records';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -41,7 +49,7 @@ export type ValidateContextParamsResult = {
 export interface VariableDef {
   name: string; // e.g. 'record'
   scope: VarScope;
-  allowGenericRecordContext?: boolean;
+  recordContextPolicy?: RecordContextPolicy;
   requiredParams?: RequiredParamSpec[]; // for validation
   attach: (
     ctx: HttpRequestContext,
@@ -101,7 +109,8 @@ class VariableRegistry {
     template: JSONValue,
     contextParams: Record<string, unknown>,
   ) {
-    return this.attachUsedVariablesFromUsage(ctx, koaCtx, analyzeVariableTemplate(template).usage, contextParams);
+    const usage = analyzeVariableTemplate(template).usage;
+    return this.attachUsedVariablesFromUsage(ctx, koaCtx, usage, contextParams);
   }
 
   async attachUsedVariablesFromUsage(
@@ -110,16 +119,29 @@ class VariableRegistry {
     usage: VarUsage,
     contextParams: Record<string, unknown>,
   ) {
+    const plan = planRecordBindings({
+      contextParams,
+      mode: 'trusted',
+      policies: getRecordBindingPolicies(usage, this),
+      usage,
+    });
+    return this.attachUsedVariablesFromPlan(ctx, koaCtx, usage, plan);
+  }
+
+  async attachUsedVariablesFromPlan(
+    ctx: HttpRequestContext,
+    koaCtx: ResourcerContext,
+    usage: VarUsage,
+    plan: RecordBindingPlan,
+  ) {
     for (const varName of Object.keys(usage)) {
       const def = this.get(varName);
-      const params = _.get(contextParams, varName);
+      const params = _.get(plan.contextParams, varName);
       if (def) {
         await def.attach(ctx, koaCtx, params, { [varName]: usage[varName] });
       }
     }
-
-    // After running explicit variable defs, attach generic record-like variables based on contextParams shape.
-    attachGenericRecordVariables(ctx, koaCtx, usage, contextParams, this.vars);
+    attachAuthorizedRecordBindings(ctx, koaCtx, plan.bindings);
   }
 }
 
@@ -169,6 +191,35 @@ export function sanitizeRegisteredVariableContextParams(
     }
   }
   return next;
+}
+
+function isPopupWholeRecordPath(path: readonly PathSegment[]) {
+  if (!path.length || !['record', 'sourceRecord'].includes(String(path[path.length - 1]))) return false;
+  return path.slice(0, -1).every((segment) => segment === 'parent');
+}
+
+export function getRecordBindingPolicies(
+  usage: VarUsage,
+  registry: { list: () => VariableDef[] } = variables,
+): RecordBindingPolicies {
+  return Object.fromEntries(
+    registry.list().map((def) => {
+      const policy = def.recordContextPolicy;
+      const exactWholeRecordPaths = [
+        ...(policy?.exactWholeRecordPaths || []),
+        ...(def.name === 'popup'
+          ? (usage.popup || []).map((ref) => ref.runtimeSegments).filter(isPopupWholeRecordPath)
+          : []),
+      ];
+      return [
+        def.name,
+        {
+          allowGenericStrictPrefix: policy?.allowGenericStrictPrefix ?? false,
+          ...(exactWholeRecordPaths.length ? { exactWholeRecordPaths } : {}),
+        },
+      ];
+    }),
+  );
 }
 
 /**
@@ -247,103 +298,69 @@ export function inferSelectsFromUsage(
   return { generatedAppends, generatedFields };
 }
 
-/**
- * Attach record-like variables dynamically for any varName based on contextParams shape.
- * Supports:
- * - Top-level: contextParams[varName] is record params -> define ctx[varName]
- * - Nested: contextParams[varName][seg] is record params and template uses ctx[varName].seg.* -> define nested record
- */
-function attachGenericRecordVariables(
+function startsWithSegments(path: readonly PathSegment[], prefix: readonly PathSegment[]) {
+  return prefix.every((segment, index) => path[index] === segment);
+}
+
+export function isSafeRecordBinding(binding: AuthorizedRecordBinding) {
+  return !isProtectedServerContextKey(binding.varName);
+}
+
+function fetchBindingRecord(
+  koaCtx: ResourcerContext,
+  binding: AuthorizedRecordBinding,
+  relativePaths = binding.relativePaths,
+) {
+  const strictSelects = Array.isArray(binding.params.fields) || Array.isArray(binding.params.appends);
+  let { generatedAppends, generatedFields } = inferSelectsFromUsage(relativePaths);
+  if (Array.isArray(binding.params.fields)) generatedFields = binding.params.fields;
+  if (Array.isArray(binding.params.appends)) generatedAppends = binding.params.appends;
+  return fetchRecordWithRequestCache(
+    koaCtx,
+    binding.params,
+    generatedFields,
+    generatedAppends,
+    strictSelects,
+    binding.preferFullRecord ||
+      relativePaths.some((path) => path.some((segment) => typeof segment === 'string' && segment.includes('.'))),
+  );
+}
+
+function attachAuthorizedRecordBindings(
   flowCtx: HttpRequestContext,
   koaCtx: ResourcerContext,
-  usage: VarUsage,
-  contextParams: Record<string, unknown>,
-  explicitVariables: Map<string, VariableDef> = new Map(),
+  bindings: readonly AuthorizedRecordBinding[],
 ) {
-  const normalizeContextSegment = (segment: string): PathSegment => (/^\d+$/.test(segment) ? Number(segment) : segment);
-  const startsWithSegments = (path: readonly PathSegment[], prefix: readonly PathSegment[]) =>
-    prefix.every((segment, index) => path[index] === segment);
-  const collectNestedRecords = (
-    value: unknown,
-    prefix: readonly PathSegment[],
-    records: Map<string, { params: RecordParams; segments: readonly PathSegment[] }>,
-  ) => {
-    if (isRecordParams(value)) {
-      records.set(JSON.stringify(prefix), { params: value, segments: prefix });
-      return;
-    }
-    if (!value || typeof value !== 'object') return;
-    for (const [key, child] of Object.entries(value)) {
-      collectNestedRecords(child, [...prefix, Array.isArray(value) ? normalizeContextSegment(key) : key], records);
-    }
-  };
-  const fetchRecord = (params: RecordParams, paths: readonly (readonly PathSegment[])[], preferFullRecord: boolean) => {
-    const strictSelects = Array.isArray(params.fields) || Array.isArray(params.appends);
-    let { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
-    if (Array.isArray(params.fields)) generatedFields = params.fields;
-    if (Array.isArray(params.appends)) generatedAppends = params.appends;
-    const needsFullRecord = paths.some((path) =>
-      path.some((segment) => typeof segment === 'string' && segment.includes('.')),
-    );
-    return fetchRecordWithRequestCache(
-      koaCtx,
-      params,
-      generatedFields,
-      generatedAppends,
-      strictSelects,
-      preferFullRecord || needsFullRecord,
-    );
-  };
+  const byVariable = new Map<string, AuthorizedRecordBinding[]>();
+  for (const binding of bindings) {
+    if (!isSafeRecordBinding(binding)) continue;
+    const current = byVariable.get(binding.varName) || [];
+    current.push(binding);
+    byVariable.set(binding.varName, current);
+  }
 
-  for (const [varName, refs] of Object.entries(usage)) {
-    const explicitVariable = explicitVariables.get(varName);
-    if (explicitVariable && !explicitVariable.allowGenericRecordContext) continue;
-
-    const usedPaths = refs.map((ref) => ref.runtimeSegments);
-    const topParams = _.get(contextParams, varName);
-    const nestedRecords = new Map<string, { params: RecordParams; segments: readonly PathSegment[] }>();
-    if (!isRecordParams(topParams)) collectNestedRecords(topParams, [], nestedRecords);
-    for (const [key, value] of Object.entries(contextParams)) {
-      if (!key.startsWith(`${varName}.`) || !isRecordParams(value)) continue;
-      const segments = key
-        .slice(varName.length + 1)
-        .split('.')
-        .filter(Boolean)
-        .map(normalizeContextSegment);
-      if (segments.length) nestedRecords.set(JSON.stringify(segments), { params: value, segments });
-    }
-
-    if (isRecordParams(topParams)) {
-      const basePaths = usedPaths.filter(
-        (path) => ![...nestedRecords.values()].some(({ segments }) => startsWithSegments(path, segments)),
+  for (const [varName, variableBindings] of byVariable) {
+    const top = variableBindings.find((binding) => binding.prefix.length === 0);
+    const nested = variableBindings.filter((binding) => binding.prefix.length > 0);
+    if (top) {
+      const basePaths = top.relativePaths.filter(
+        (path) => !nested.some((binding) => startsWithSegments(path, binding.prefix)),
       );
-      const preferFullRecord = basePaths.some((path) => path.length === 0);
       flowCtx.defineProperty(varName, {
         get: async () => {
-          const base = await fetchRecord(topParams, basePaths, preferFullRecord);
-          if (!nestedRecords.size) return base;
+          const base = await fetchBindingRecord(koaCtx, top, basePaths);
+          if (!nested.length) return base;
           const merged: Record<string, unknown> =
             base && typeof base === 'object' && !Array.isArray(base) ? { ...(base as Record<string, unknown>) } : {};
-          for (const { params, segments } of nestedRecords.values()) {
-            const matchedPaths = usedPaths.filter((path) => startsWithSegments(path, segments));
-            if (!matchedPaths.length) continue;
-            const relativePaths = matchedPaths.map((path) => path.slice(segments.length));
+          for (const binding of nested) {
             let cursor = merged;
-            for (const segment of segments.slice(0, -1)) {
+            for (const segment of binding.prefix.slice(0, -1)) {
               const key = String(segment);
-              const child = cursor[key];
-              const next =
-                child && typeof child === 'object' && !Array.isArray(child)
-                  ? { ...(child as Record<string, unknown>) }
-                  : {};
-              cursor[key] = next;
-              cursor = next;
+              const value = cursor[key];
+              cursor[key] = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
+              cursor = cursor[key] as Record<string, unknown>;
             }
-            cursor[String(segments[segments.length - 1])] = fetchRecord(
-              params,
-              relativePaths,
-              relativePaths.some((path) => path.length === 0),
-            );
+            cursor[String(binding.prefix[binding.prefix.length - 1])] = fetchBindingRecord(koaCtx, binding);
           }
           return merged;
         },
@@ -352,23 +369,14 @@ function attachGenericRecordVariables(
       continue;
     }
 
-    const usedRecords = [...nestedRecords.values()].filter(({ segments }) =>
-      usedPaths.some((path) => startsWithSegments(path, segments)),
-    );
-    if (!usedRecords.length) continue;
     flowCtx.defineProperty(varName, {
       get: () => {
         const root = new ServerBaseContext();
         const containers = new Map<string, ServerBaseContext>([['[]', root]]);
-        for (const { params, segments } of usedRecords.sort((a, b) => a.segments.length - b.segments.length)) {
-          const relativePaths = usedPaths
-            .filter((path) => startsWithSegments(path, segments))
-            .map((path) => path.slice(segments.length));
-          if (!relativePaths.length) continue;
-          const parentSegments = segments.slice(0, -1);
+        for (const binding of nested.slice().sort((left, right) => left.prefix.length - right.prefix.length)) {
           let parent = root;
-          for (let index = 0; index < parentSegments.length; index++) {
-            const path = parentSegments.slice(0, index + 1);
+          for (let index = 0; index < binding.prefix.length - 1; index++) {
+            const path = binding.prefix.slice(0, index + 1);
             const cacheKey = JSON.stringify(path);
             let child = containers.get(cacheKey);
             if (!child) {
@@ -382,14 +390,8 @@ function attachGenericRecordVariables(
             }
             parent = child;
           }
-          const key = String(segments[segments.length - 1]);
-          parent.defineProperty(key, {
-            get: () =>
-              fetchRecord(
-                params,
-                relativePaths,
-                relativePaths.some((path) => path.length === 0),
-              ),
+          parent.defineProperty(String(binding.prefix[binding.prefix.length - 1]), {
+            get: () => fetchBindingRecord(koaCtx, binding),
             cache: true,
           });
         }
@@ -419,28 +421,35 @@ export function registerBuiltInVariables(reg: VariableRegistry) {
       const paths = (usage?.user || []).map((path) => path.runtimeSegments);
       const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
 
-      flowCtx.defineProperty('user', {
-        get: async () => {
-          const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
-          const uid = authObj?.user?.id;
-          if (typeof uid === 'undefined' || uid === null) return undefined;
-          return await fetchRecordWithRequestCache(
-            koaCtx,
-            { collection: 'users', dataSourceKey: 'main', filterByTk: uid },
-            generatedFields,
-            generatedAppends,
-            false,
-          );
+      flowCtx.defineProperty(
+        'user',
+        {
+          get: async () => {
+            const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
+            const uid = authObj?.user?.id;
+            if (typeof uid === 'undefined' || uid === null) return undefined;
+            return await fetchRecordWithRequestCache(
+              koaCtx,
+              { collection: 'users', dataSourceKey: 'main', filterByTk: uid },
+              generatedFields,
+              generatedAppends,
+              false,
+            );
+          },
+          cache: true,
         },
-        cache: true,
-      });
+        SERVER_CONTEXT_PROVIDER_TOKEN,
+      );
     },
   });
 
   reg.register({
     name: 'popup',
     scope: 'request',
-    allowGenericRecordContext: true,
+    recordContextPolicy: {
+      allowGenericStrictPrefix: true,
+      exactWholeRecordPaths: [['record'], ['sourceRecord']],
+    },
     attach: () => {
       // Generic record-like contextParams attach popup.record,
       // popup.sourceRecord and popup.parent.* records.

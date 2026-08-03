@@ -20,7 +20,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
   });
 
   const execResolve = async (values: any, userId?: number) => {
-    const action = app.resourceManager.getAction('variables', 'resolve');
+    const action = app.resourceManager.getAction('variables', 'resolve').clone();
     const ctx: any = {
       app,
       db: app.db,
@@ -204,5 +204,77 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(relationCalls).toHaveLength(2);
     expect(relationCalls.map((call) => call.sourceId)).toEqual([1, 2]);
     expect(relationCalls[0].options.fields).toEqual(['name']);
+  });
+
+  it('rejects leaf and protected-root descriptors before querying records', async () => {
+    const repository = app.db.getRepository('users');
+    const findOne = vi.spyOn(repository, 'findOne');
+
+    try {
+      const leafTemplate = { value: '{{ ctx.view.record.name }}' };
+      const single = await execResolve(
+        {
+          template: leafTemplate,
+          contextParams: { 'view.record.name': { collection: 'users', filterByTk: 1 } },
+        },
+        1,
+      );
+      expect(single.body).toEqual(leafTemplate);
+
+      const protectedTemplates = [
+        { id: 'query', path: 'query.page' },
+        { id: 'headers', path: 'headers.authorization' },
+        { id: 'internal', path: 'defineProperty.value' },
+      ];
+      const batch = await execResolve(
+        {
+          batch: protectedTemplates.map(({ id, path }) => ({
+            id,
+            template: { value: `{{ ctx.${path} }}` },
+            contextParams: { [path]: { collection: 'users', filterByTk: 1 } },
+          })),
+        },
+        1,
+      );
+
+      expect(batch.body.results).toEqual(
+        protectedTemplates.map(({ id, path }) => ({ id, data: { value: `{{ ctx.${path} }}` } })),
+      );
+      expect(findOne).not.toHaveBeenCalled();
+    } finally {
+      findOne.mockRestore();
+    }
+  });
+
+  it('isolates a rejected batch item while resolving a legal strict-prefix binding', async () => {
+    const repository = app.db.getRepository('users');
+    const findOne = vi.spyOn(repository, 'findOne');
+    const template = { value: '{{ ctx.view.record.nickname }}' };
+
+    try {
+      const response = await execResolve(
+        {
+          batch: [
+            {
+              id: 'attack',
+              template,
+              contextParams: { 'view.record.nickname': { collection: 'users', filterByTk: 1 } },
+            },
+            {
+              id: 'legal',
+              template,
+              contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
+            },
+          ],
+        },
+        1,
+      );
+
+      expect(response.body.results[0]).toEqual({ id: 'attack', data: template });
+      expect(response.body.results[1].data.value).not.toBe(template.value);
+      expect(findOne).toHaveBeenCalledTimes(1);
+    } finally {
+      findOne.mockRestore();
+    }
   });
 });

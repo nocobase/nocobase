@@ -71,6 +71,40 @@ describe('variables:resolve external data source records', () => {
     analyze.mockRestore();
   });
 
+  it('keeps a declared multi-level popup record as a whole object', async () => {
+    const findOne = vi.fn(async () => ({ email: 'parent@example.test', id: 'parent-1' }));
+    const collection = { filterTargetKey: 'id', model: { primaryKeyAttribute: 'id' } };
+    const context = {
+      app: {
+        dataSourceManager: {
+          get: () => ({
+            collectionManager: {
+              db: { getCollection: () => collection, getRepository: () => ({ findOne }) },
+            },
+          }),
+        },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+
+    const result = await resolveVariablesTemplate(
+      context,
+      { value: '{{ ctx.popup.parent.parent.record }}' },
+      {
+        'popup.parent.parent.record': {
+          collection: 'leads',
+          dataSourceKey: 'crm_external',
+          filterByTk: 'parent-1',
+        },
+      },
+    );
+
+    expect(result).toEqual({ value: { email: 'parent@example.test', id: 'parent-1' } });
+    expect(findOne).toHaveBeenCalledWith({ filterByTk: 'parent-1', fields: undefined, appends: undefined });
+  });
+
   it('isolates public wrapper analysis failures and hides the lexical helper', async () => {
     const context = {
       app: {

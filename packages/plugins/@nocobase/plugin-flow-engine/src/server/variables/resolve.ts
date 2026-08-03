@@ -12,7 +12,8 @@ import { GlobalContext, HttpRequestContext } from '../template/contexts';
 import { type AnalyzedTemplate, type ResolvePathPolicy } from '../template/variable-expression';
 import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
 import { analyzeVariableTemplateSafely } from './allow-list';
-import { variables } from './registry';
+import { planRecordBindings, type RecordBindingPlan } from './record-bindings';
+import { getRecordBindingPolicies, variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
 export type ResolveBatchItem = {
@@ -23,6 +24,7 @@ export type ResolveBatchItem = {
 
 export type AnalyzedResolveBatchItem = ResolveBatchItem & {
   analysis: AnalyzedTemplate;
+  bindingPlan: RecordBindingPlan;
   policy: ResolvePathPolicy;
 };
 
@@ -47,30 +49,39 @@ export async function resolveVariablesTemplate(
   contextParams: Record<string, unknown> = {},
 ) {
   const result = analyzeVariableTemplateSafely(template);
-  return result.ok
-    ? resolveAnalyzedVariablesTemplate(ctx, result.analysis, TRUSTED_RESOLVE_POLICY, contextParams)
-    : template;
+  if (!result.ok) return template;
+  const bindingPlan = createTrustedRecordBindingPlan(result.analysis, contextParams);
+  return resolveAnalyzedVariablesTemplate(ctx, result.analysis, TRUSTED_RESOLVE_POLICY, bindingPlan);
+}
+
+function createTrustedRecordBindingPlan(analysis: AnalyzedTemplate, contextParams: Readonly<Record<string, unknown>>) {
+  return planRecordBindings({
+    contextParams,
+    mode: 'trusted',
+    policies: getRecordBindingPolicies(analysis.usage),
+    usage: analysis.usage,
+  });
 }
 
 export async function resolveAnalyzedVariablesTemplate(
   ctx: ResourcerContext,
   analysis: AnalyzedTemplate,
   policy: ResolvePathPolicy,
-  contextParams: Record<string, unknown> = {},
+  bindingPlan: RecordBindingPlan,
 ) {
-  await prefetchRecordsForResolve(ctx, [{ usage: analysis.usage, contextParams }]);
-  return resolveAnalyzedVariablesTemplateWithPrefetchedRecords(ctx, analysis, policy, contextParams);
+  await prefetchRecordsForResolve(ctx, bindingPlan.bindings);
+  return resolveAnalyzedVariablesTemplateWithPrefetchedRecords(ctx, analysis, policy, bindingPlan);
 }
 
 async function resolveAnalyzedVariablesTemplateWithPrefetchedRecords(
   ctx: ResourcerContext,
   analysis: AnalyzedTemplate,
   policy: ResolvePathPolicy,
-  contextParams: Record<string, unknown>,
+  bindingPlan: RecordBindingPlan,
 ) {
   const requestCtx = new HttpRequestContext(ctx);
   requestCtx.delegate(getGlobalContext(ctx));
-  await variables.attachUsedVariablesFromUsage(requestCtx, ctx, analysis.usage, contextParams);
+  await variables.attachUsedVariablesFromPlan(requestCtx, ctx, analysis.usage, bindingPlan);
   return resolveAnalyzedJsonTemplate(analysis, requestCtx, policy);
 }
 
@@ -87,6 +98,7 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
       ...item,
       id: index,
       analysis: result.analysis,
+      bindingPlan: createTrustedRecordBindingPlan(result.analysis, item.contextParams || {}),
       policy: TRUSTED_RESOLVE_POLICY,
     });
   }
@@ -102,10 +114,7 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
 export async function resolveAnalyzedVariablesBatch(ctx: ResourcerContext, items: AnalyzedResolveBatchItem[]) {
   await prefetchRecordsForResolve(
     ctx,
-    items.map((item) => ({
-      usage: item.analysis.usage,
-      contextParams: item.contextParams || {},
-    })),
+    items.flatMap((item) => item.bindingPlan.bindings),
   );
 
   const results: Array<{ id?: string | number; data: unknown }> = [];
@@ -114,7 +123,7 @@ export async function resolveAnalyzedVariablesBatch(ctx: ResourcerContext, items
       ctx,
       item.analysis,
       item.policy,
-      item.contextParams || {},
+      item.bindingPlan,
     );
     results.push({ id: item.id, data });
   }
