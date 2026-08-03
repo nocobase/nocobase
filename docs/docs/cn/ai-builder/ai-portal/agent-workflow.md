@@ -8,7 +8,7 @@ keywords: "AI Portal,AI Agent,协作搭建,提示词,nocobase-portal-manage,Skil
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI Portal 搭建快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -81,7 +81,7 @@ cd <开发工作区目录>
 我刚建了一张 contracts 表，帮我做一套对应的增删改查页面
 ```
 
-如果表还没建，可以先用 [数据建模](../ai-builder/data-modeling.md) 让 AI 设计好数据结构，再回来做页面。
+如果表还没建，可以先用 [数据建模](../data-modeling.md) 让 AI 设计好数据结构，再回来做页面。
 
 <!-- 需要一张根据数据表自动生成的增删改查页面截图 -->
 
@@ -114,6 +114,8 @@ NocoBase 里已经启用了钉钉登录，帮登录页加上钉钉登录按钮
 
 **提供明确的报错。** 页面白屏、构建失败、接口报 403——把完整的错误信息、截图等贴给 AI，不要让 AI 自己猜，通常几轮对话就能解决。不用自己先去判断是哪一层的问题。
 
+![error](https://static-docs.nocobase.com/20260803204308.png)
+
 ## 常见问题
 
 **AI 改错了怎么回退？**
@@ -142,10 +144,10 @@ TypeScript 类型错误和依赖缺失是最常见的两类，把报错贴给 AI
 
 ## 相关链接
 
-- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI Portal 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [部署与源码管理](./deploy.md) — 把 Portal 源码纳入 Git，以及部署流程
 - [项目结构与技术栈](./project-structure.md) — 模板的目录约定，帮你判断 AI 写得对不对
 - [标准组件与扩展](./components.md) — shadcn/ui 组件基座和扩展机制
-- [数据建模](../ai-builder/data-modeling.md) — 让 AI 先设计好数据表再做页面
-- [`nb portal info`](../api/cli/portal/info.md) — 查看 Portal 的开发工作区位置
-- [`nb portal pull`](../api/cli/portal/pull.md) — 从 source storage 重新拉取源码
+- [数据建模](../data-modeling.md) — 让 AI 先设计好数据表再做页面
+- [`nb portal info`](../../api/cli/portal/info.md) — 查看 Portal 的开发工作区位置
+- [`nb portal pull`](../../api/cli/portal/pull.md) — 从 source storage 重新拉取源码

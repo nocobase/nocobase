@@ -1,8 +1,39 @@
 [
   {
     "type": "custom-link",
-    "label": "快速开始（无代码）",
+    "label": "快速开始",
     "link": "/ai-builder/"
+  },
+  {
+    "type": "custom-link",
+    "label": "AI Portal 搭建",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "快速开始",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "与 AI Agent 协作搭建",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "项目结构与技术栈",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "标准组件与扩展",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "部署与源码管理",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
   },
   {
     "type": "file",

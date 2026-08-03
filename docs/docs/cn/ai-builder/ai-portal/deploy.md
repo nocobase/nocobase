@@ -8,7 +8,7 @@ keywords: "AI Portal,部署,source storage,Git,nb portal deploy,nb portal push,�
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI Portal 搭建快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -123,7 +123,7 @@ nb portal deploy customer --env prod --yes
 
 `--yes` 用于跳过交互确认。当你显式传入的 `--env` 和当前 env 不一致时，CLI 默认会停下来问一句；在脚本或 CI 里执行时记得带上 `--yes`，否则命令会卡在确认环节。
 
-跨环境的数据表结构和配置发布，请参阅 [发布管理](../ai-builder/publish.md)。
+跨环境的数据表结构和配置发布，请参阅 [发布管理](../publish.md)。
 
 ## 访问路径
 
@@ -151,14 +151,14 @@ nb portal destroy customer
 
 ## 相关链接
 
-- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI Portal 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 用自然语言驱动 AI 编写页面
 - [项目结构与技术栈](./project-structure.md) — 构建命令和环境变量说明
-- [发布管理](../ai-builder/publish.md) — 跨环境发布数据表结构和配置
-- [`nb portal` 命令参考](../api/cli/portal/index.md) — 所有 Portal 命令的完整参数说明
-- [`nb portal create`](../api/cli/portal/create.md) — 创建 Portal 的全部参数
-- [`nb portal config`](../api/cli/portal/config.md) — 调整 source storage 和开发工作区路径
-- [`nb portal push`](../api/cli/portal/push.md) — 推送源码到 source storage
-- [`nb portal deploy`](../api/cli/portal/deploy.md) — 构建并部署 Portal
-- [`nb portal pull`](../api/cli/portal/pull.md) — 从 source storage 拉取源码
-- [`nb portal destroy`](../api/cli/portal/destroy.md) — 删除 Portal 记录和已部署文件
+- [发布管理](../publish.md) — 跨环境发布数据表结构和配置
+- [`nb portal` 命令参考](../../api/cli/portal/index.md) — 所有 Portal 命令的完整参数说明
+- [`nb portal create`](../../api/cli/portal/create.md) — 创建 Portal 的全部参数
+- [`nb portal config`](../../api/cli/portal/config.md) — 调整 source storage 和开发工作区路径
+- [`nb portal push`](../../api/cli/portal/push.md) — 推送源码到 source storage
+- [`nb portal deploy`](../../api/cli/portal/deploy.md) — 构建并部署 Portal
+- [`nb portal pull`](../../api/cli/portal/pull.md) — 从 source storage 拉取源码
+- [`nb portal destroy`](../../api/cli/portal/destroy.md) — 删除 Portal 记录和已部署文件

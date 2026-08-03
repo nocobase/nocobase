@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'NocoBase 的 AI 能力体系：AI 模式开发、AI + 无代码模式开发、AI 员工、AI Agent 对接、AI 工具与资源。'
-keywords: 'NocoBase AI,AI 模式开发,AI + 无代码模式开发,AI Portal,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'NocoBase 的 AI 能力体系：AI 搭建、AI 员工、AI Agent 对接、AI 工具与资源。'
+keywords: 'NocoBase AI,AI 搭建,AI Portal,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: 开始
     details: 安装 CLI、连接应用、开始搭建——一切从这里出发。
@@ -11,11 +11,8 @@ features:
       - title: 快速开始
         details: 安装 NocoBase CLI 以及配置 AI Skills，并连接 AI Agent，为 AI 搭建、使用和开发 NocoBase 做好准备。
         link: /ai/quick-start
-      - title: AI 模式开发
-        details: AI Agent 写业务系统代码，认证、数据、权限等能力由 NocoBase 提供。AI 自由发挥，NocoBase 负责可靠性。
-        link: /ai-portal
-      - title: AI + 无代码模式开发
-        details: AI 用 NocoBase 提供的无代码能力搭建系统，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+      - title: AI 搭建
+        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder
       - title: AI 员工
         details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
@@ -24,30 +21,11 @@ features:
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
 
-  - title: AI 模式开发
-    details: AI Agent 写业务系统代码，认证、数据、权限等能力由 NocoBase 提供，产出的是可以提交到 Git 的源码。AI 自由发挥，NocoBase 负责可靠性。
+  - title: AI 搭建
+    details: 用 AI 构建 NocoBase 应用和插件——从自然语言描述到可用的系统或插件代码。
     items:
-      - title: AI 模式开发快速开始
-        details: 从确认默认的 AI Portal 到部署上线，跑通描述需求、AI 写代码、看效果、部署的完整循环。
-        link: /ai-portal
-      - title: 与 AI Agent 协作搭建
-        details: 在 Portal 源码目录下打开 AI Agent，用自然语言描述页面需求，它来写代码。
-        link: /ai-portal/agent-workflow
-      - title: 项目结构与技术栈
-        details: React、Vite、Refine、Tailwind CSS 和 shadcn/ui——了解模板的目录约定和常用命令。
-        link: /ai-portal/project-structure
-      - title: 标准组件与扩展
-        details: 基于 shadcn/ui 的组件基座，以及装完即用的扩展机制。
-        link: /ai-portal/components
-      - title: 部署与源码管理
-        details: 开发、推送、部署的完整流程，以及把 Portal 源码纳入 Git 管理。
-        link: /ai-portal/deploy
-
-  - title: AI + 无代码模式开发
-    details: 不写代码，AI 用 NocoBase 提供的无代码能力搭建系统——你描述需求，它去配置数据表、页面和工作流。
-    items:
-      - title: AI + 无代码模式开发快速开始
-        details: AI 用 NocoBase 提供的无代码能力搭建系统，覆盖数据建模、界面配置、工作流到发布管理的全流程。
+      - title: AI 搭建快速开始
+        details: 用 AI 从零搭建 NocoBase 应用，覆盖数据建模、界面配置、工作流到发布管理的全流程。
         link: /ai-builder
       - title: 安全与审计：让 AI 操作有迹可循
         details: 了解 AI Agent 搭建 NocoBase 的鉴权方式、权限控制策略、推荐使用方法，以及如何追溯每一次操作记录。

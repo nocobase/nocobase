@@ -99,5 +99,5 @@ nb init --ui
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase CLI 参考](../api/cli/index.md) — 所有命令的完整参数说明
 - [插件开发](../plugin-development/index.md) — NocoBase 插件开发的完整指南
-- [AI Portal](../ai-portal/index.md) — 让 AI 写前端页面。插件是扩展 NocoBase 本身的能力，Portal 是基于这些能力做一个独立入口
-- [AI + 无代码模式开发快速开始](../ai-builder/index.md) — 用 AI 搭建 NocoBase 应用（无需写代码）
+- [AI Portal](../ai-builder/ai-portal/index.md) — 让 AI 写前端页面。插件是扩展 NocoBase 本身的能力，Portal 是基于这些能力做一个独立入口
+- [AI 搭建快速开始](../ai-builder/index.md) — 用 AI 搭建 NocoBase 应用（无需写代码）

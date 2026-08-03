@@ -52,8 +52,8 @@
       },
       {
         "type": "custom-link",
-        "label": "AI 模式开发快速开始",
-        "link": "/ai-portal/"
+        "label": "AI 搭建快速开始",
+        "link": "/ai-builder/"
       },
       {
         "type": "custom-link",

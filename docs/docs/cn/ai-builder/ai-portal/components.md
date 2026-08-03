@@ -8,7 +8,7 @@ keywords: "AI Portal,shadcn/ui,组件,扩展,AppExtension,Registry,Tailwind CSS"
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI 模式开发快速开始](./index.md) 跑通了第一个 Portal。
+阅读本页前，请确保你已按照 [AI Portal 搭建快速开始](./index.md) 跑通了第一个 Portal。
 
 :::
 
@@ -129,6 +129,6 @@ export default productsExtension;
 
 ## 相关链接
 
-- [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
+- [AI Portal 搭建快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口
 - [项目结构与技术栈](./project-structure.md) — 完整的目录约定和常用命令
 - [与 AI Agent 协作搭建](./agent-workflow.md) — 让 AI 照着内置扩展写新模块

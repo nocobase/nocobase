@@ -8,7 +8,7 @@ keywords: "AI 搭建,插件管理,插件启用,插件停用"
 
 :::tip 前置条件
 
-阅读本页前，请确保你已按照 [AI + 无代码模式开发快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
+阅读本页前，请确保你已按照 [AI 搭建快速开始](./index.md) 安装了 NocoBase CLI 并完成了初始化。
 
 :::
 
@@ -76,5 +76,5 @@ nb plugin disable  <本地化>
 
 ## 相关链接
 
-- [AI + 无代码模式开发概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
+- [AI 搭建概述](./index.md) — 所有 AI 搭建 Skill 的总览和安装方式
 - [NocoBase CLI](../ai/quick-start.md) — 安装和管理 NocoBase 的命令行工具

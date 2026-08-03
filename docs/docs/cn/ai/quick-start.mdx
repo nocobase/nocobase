@@ -25,7 +25,7 @@ CLI 支持两种常见的初始化方式：
 
 - Node.js >= 22
 - Yarn 1.x
-- pnpm（只有开发 [AI Portal](../ai-portal/index.md) 时需要，Portal 模板用它安装依赖和启动开发服务）
+- pnpm（只有开发 [AI Portal](../ai-builder/ai-portal/index.md) 时需要，Portal 模板用它安装依赖和启动开发服务）
 - 推荐使用 Claude、GPT 等主流大模型驱动的 AI Agent。实际效果与所用模型密切相关，建议优先选择最新的旗舰模型以获得最佳体验。
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -146,6 +146,10 @@ nb init --ui --locale zh-CN
 
 ## 接下来
 
+### 开始 AI 搭建
+
+用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——用对话代替手动配置，不需要写代码。请参阅 [AI 搭建快速开始](../ai-builder/index.md#用对话代替手动配置)。
+
 ### 生产环境安装部署
 
 如果你准备把 NocoBase 部署到生产环境，建议按这个顺序继续看：
@@ -156,14 +160,6 @@ nb init --ui --locale zh-CN
 ### 管理应用环境
 
 如果你需要管理已有的 NocoBase 实例（比如测试环境、生产环境），或者管理多个环境之间的切换，请参阅 [环境管理](../ai-builder/env-bootstrap)——涵盖环境检查、添加环境、升级和故障诊断。
-
-### 开始 AI Portal 开发
-
-`nb init` 完成后，你的应用里已经有一个 AI Portal 了。让 AI Agent 在它的源码目录里写 React 代码，NocoBase 负责认证、数据和权限——不用学配置规则，页面想怎么做就怎么做。请参阅 [AI 模式开发快速开始](../ai-portal/index.md)。
-
-### 开始 AI + 无代码模式开发
-
-用自然语言描述需求，AI 帮你完成数据建模、页面搭建、工作流编排——用对话代替手动配置，不需要写代码。请参阅 [AI + 无代码模式开发快速开始](../ai-builder/index.md#用对话代替手动配置)。
 
 ### 继续 AI 开发插件
 
@@ -179,8 +175,8 @@ nb init --ui --locale zh-CN
 
 ## 相关链接
 
-- [AI Portal](../ai-portal/index.md) — 让 AI Agent 写前端代码，NocoBase 做基座
-- [AI + 无代码模式开发](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI Portal](../ai-builder/ai-portal/index.md) — 让 AI Agent 写前端代码，NocoBase 做基座，搭建完整系统
+- [AI 搭建](../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [AI 开发插件](../ai-dev/index.md) — 用 AI 辅助开发 NocoBase 插件
 - [AI 员工](../ai-employees/index.md) — 在业务界面中与 AI 协作
 - [环境管理](../ai-builder/env-bootstrap) — 环境检查、添加环境、升级和故障诊断

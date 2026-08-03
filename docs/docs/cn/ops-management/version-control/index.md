@@ -92,4 +92,4 @@ keywords: "版本控制,Version control,运维管理,AI 搭建,nocobase-revision
 - [备份管理](../backup-manager/index.mdx) — 版本控制依赖的基础能力
 - [迁移管理](../migration-manager/index.md) — 在多环境之间迁移应用配置
 - [发布管理](../release-management/index.md) — 结合备份、迁移和变量配置规划发布流程
-- [AI + 无代码模式开发快速开始](../../ai-builder/index.md) — 用自然语言完成数据建模、页面配置和工作流编排
+- [AI 搭建快速开始](../../ai-builder/index.md) — 用自然语言完成数据建模、页面配置和工作流编排

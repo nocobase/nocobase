@@ -118,7 +118,7 @@ nb env list
 
 - [NocoBase CLI](../quick-start.md) — 安装和管理 NocoBase 的命令行工具
 - [NocoBase Skills](../../ai-builder/index.md#nocobase-skills) — 可安装到 AI Agent 中的领域知识包
-- [AI + 无代码模式开发快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
+- [AI 搭建快速开始](../../ai-builder/index.md) — 用 AI 从零搭建 NocoBase 应用
 - [Hermes Agent GitHub](https://github.com/nousresearch/hermes-agent) — Hermes Agent 源码和文档
 - [OpenClaw + NocoBase](../openclaw/index.md) — 全球最火的开源 AI Agent，飞书一键部署
 - [WorkBuddy + NocoBase](../workbuddy/index.md) — 企业微信、飞书、钉钉多平台远程操控 NocoBase
