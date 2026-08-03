@@ -33,7 +33,7 @@ import {
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
 
-import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../../constants';
+import { LIGHT_EXTENSION_ACL_SNIPPET, NAMESPACE } from '../../constants';
 import {
   JSActionLightExtensionSourceField,
   JSBlockLightExtensionSourceField,
@@ -41,7 +41,11 @@ import {
   JSItemLightExtensionSourceField,
   JSPageLightExtensionSourceField,
 } from '../../client-v2/components/JSBlockLightExtensionSourceField';
-import PluginLightExtensionClient from '..';
+import PluginJsTemplateClient, {
+  JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+  JS_TEMPLATE_SETTINGS_KEY,
+  PluginLightExtensionClient,
+} from '..';
 
 function createLegacyApplication() {
   return new Application({
@@ -52,16 +56,16 @@ function createLegacyApplication() {
 
 async function loadLegacyPlugins(app: Application) {
   installRunJSWorkspaceLegacyClient(app.apiClient);
-  const lightExtension = new PluginLightExtensionClient({ name: 'light-extension', packageName: NAMESPACE }, app);
+  const jsTemplate = new PluginJsTemplateClient({ name: 'light-extension', packageName: NAMESPACE }, app);
 
-  await lightExtension.afterAdd();
-  await lightExtension.beforeLoad();
-  await lightExtension.load();
+  await jsTemplate.afterAdd();
+  await jsTemplate.beforeLoad();
+  await jsTemplate.load();
 
-  return lightExtension;
+  return jsTemplate;
 }
 
-describe('legacy Light Extension runtime integration', () => {
+describe('JS Template legacy admin-shell integration', () => {
   afterEach(() => {
     LegacyRunJSEditorRegistry.clear();
     RunJSEditorRegistry.clear();
@@ -73,15 +77,31 @@ describe('legacy Light Extension runtime integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('hosts both Studio providers in Light Extension and replaces stale global registrations on reload', async () => {
+  it('registers the canonical route and hidden legacy route with one page, ACL, and runtime', async () => {
     const firstApp = createLegacyApplication();
     await firstApp.load();
     await loadLegacyPlugins(firstApp);
 
-    expect(firstApp.pluginSettingsManager.get(LIGHT_EXTENSION_SETTINGS_KEY, false)).toMatchObject({
-      title: 'Light extensions',
+    const canonicalSettings = firstApp.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
+    const legacySettings = firstApp.pluginSettingsManager.get(JS_TEMPLATE_LEGACY_SETTINGS_KEY, false);
+    expect(canonicalSettings).toMatchObject({
+      title: 'JS Templates',
+      path: '/admin/settings/js-templates',
       aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
     });
+    expect(legacySettings).toMatchObject({
+      title: 'JS Templates',
+      path: '/admin/settings/light-extension',
+      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      hidden: true,
+    });
+    expect(canonicalSettings?.Component).toBe(legacySettings?.Component);
+    const visibleSettingsNames = firstApp.pluginSettingsManager
+      .getList(false)
+      .filter((settings) => !settings.hidden)
+      .map((settings) => settings.name);
+    expect(visibleSettingsNames).toContain(JS_TEMPLATE_SETTINGS_KEY);
+    expect(visibleSettingsNames).not.toContain(JS_TEMPLATE_LEGACY_SETTINGS_KEY);
     expect(firstApp.flowEngine.flowSettings.components).toMatchObject({
       [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
       [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
@@ -100,12 +120,12 @@ describe('legacy Light Extension runtime integration', () => {
     const firstResolver = RunJSSourceResolverRegistry.getResolver('light-extension');
     const secondApp = createLegacyApplication();
     await secondApp.load();
-    const secondLightExtension = new PluginLightExtensionClient(
+    const secondJsTemplate = new PluginLightExtensionClient(
       { name: 'light-extension', packageName: NAMESPACE },
       secondApp,
     );
 
-    await secondLightExtension.beforeLoad();
+    await secondJsTemplate.beforeLoad();
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeNull();
 
     await loadLegacyPlugins(secondApp);

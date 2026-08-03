@@ -108,6 +108,17 @@ implementation, while legacy exports and registry keys remain available.
 User-visible product copy may use the canonical name, but route compatibility does not authorize any persisted token
 rewrite. Saved FlowModels continue to use the source, binding, provider, registry, and flow keys frozen above.
 
+## Client v1 admin-shell bridge
+
+The legacy client bundle exports `PluginJsTemplateClient` as its canonical bridge and retains
+`PluginLightExtensionClient` as the same constructor. It installs the shared v2 RunJS integrations and renders the
+same `JsTemplateListPage` used by client v2; it does not implement a second settings UI or runtime pipeline.
+
+The v1 settings shell exposes `/admin/settings/js-templates` as the visible `JS Templates` entry and keeps
+`/admin/settings/light-extension` registered as a hidden deep-link alias. Both registrations share the same page
+component and `pm.light-extension` ACL snippet. The legacy settings key remains registered so plugin-manager links,
+bookmarks, ACL configuration, and older callers continue to resolve without changing any persisted FlowModel token.
+
 ## Canonical SDK and compatibility facade
 
 New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,

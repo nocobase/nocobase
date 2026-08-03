@@ -11,25 +11,43 @@ import type React from 'react';
 
 export * from './vsc-file/public-api';
 
-import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY, NAMESPACE } from '../constants';
+export {
+  default as JsTemplateListPage,
+  default as LightExtensionListPage,
+} from '../client-v2/pages/LightExtensionListPage';
+export {
+  JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+  JS_TEMPLATE_SETTINGS_KEY,
+  JS_TEMPLATE_V2_UI_CONTRACT,
+} from '../client-v2/jsTemplateV2UIContract';
+
+import { NAMESPACE } from '../constants';
 import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from '../client-v2/jsTemplateRunJSIntegration';
-import LightExtensionListPage from '../client-v2/pages/LightExtensionListPage';
+import JsTemplateListPage from '../client-v2/pages/LightExtensionListPage';
+import {
+  JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+  JS_TEMPLATE_SETTINGS_KEY,
+  JS_TEMPLATE_V2_UI_CONTRACT,
+} from '../client-v2/jsTemplateV2UIContract';
 import { registerLightExtensionRuntimeAuthSession } from '../client-v2/resolvers/LightExtensionRuntimeCacheRegistry';
 
-interface LightExtensionLegacyClientOptions {
+export interface JsTemplateLegacyClientOptions {
   name?: string;
   packageName?: string;
   [key: string]: unknown;
 }
+
+export type LightExtensionLegacyClientOptions = JsTemplateLegacyClientOptions;
 
 interface LegacySettingsOptions {
   icon: string;
   title: string;
   Component: React.ComponentType;
   aclSnippet: string;
+  hidden?: boolean;
 }
 
 interface LegacySettingsManager {
@@ -59,7 +77,7 @@ function translate(app: LegacyApp | undefined, text: string) {
   return app?.i18n?.t(text, { ns: NAMESPACE }) || text;
 }
 
-let activeLightExtensionLegacyInstance: PluginLightExtensionClient | null = null;
+let activeJsTemplateLegacyInstance: PluginJsTemplateClient | null = null;
 
 /**
  * Legacy admin-shell bridge.
@@ -68,18 +86,18 @@ let activeLightExtensionLegacyInstance: PluginLightExtensionClient | null = null
  * shell still requests legacy client bundles. This registers the same minimal
  * settings page without adding SchemaComponent behavior.
  */
-export class PluginLightExtensionClient {
+export class PluginJsTemplateClient {
   private readonly disposers: Array<() => void> = [];
 
   constructor(
-    public readonly options: LightExtensionLegacyClientOptions = {},
+    public readonly options: JsTemplateLegacyClientOptions = {},
     protected readonly app?: LegacyApp,
   ) {}
 
   async afterAdd() {}
 
   async beforeLoad() {
-    activeLightExtensionLegacyInstance?.dispose();
+    activeJsTemplateLegacyInstance?.dispose();
     this.dispose();
   }
 
@@ -87,8 +105,8 @@ export class PluginLightExtensionClient {
     while (this.disposers.length) {
       this.disposers.pop()?.();
     }
-    if (activeLightExtensionLegacyInstance === this) {
-      activeLightExtensionLegacyInstance = null;
+    if (activeJsTemplateLegacyInstance === this) {
+      activeJsTemplateLegacyInstance = null;
     }
   }
 
@@ -103,14 +121,21 @@ export class PluginLightExtensionClient {
     }
     this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient));
 
-    this.app?.pluginSettingsManager?.add(LIGHT_EXTENSION_SETTINGS_KEY, {
+    const settingsOptions: LegacySettingsOptions = {
       icon: 'CodeOutlined',
-      title: translate(this.app, 'Light extensions'),
-      Component: LightExtensionListPage,
-      aclSnippet: LIGHT_EXTENSION_ACL_SNIPPET,
+      title: translate(this.app, JS_TEMPLATE_V2_UI_CONTRACT.productNameKey),
+      Component: JsTemplateListPage,
+      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.legacyAclSnippet,
+    };
+    this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
+    this.app?.pluginSettingsManager?.add(JS_TEMPLATE_LEGACY_SETTINGS_KEY, {
+      ...settingsOptions,
+      hidden: true,
     });
-    activeLightExtensionLegacyInstance = this;
+    activeJsTemplateLegacyInstance = this;
   }
 }
 
-export default PluginLightExtensionClient;
+export { PluginJsTemplateClient as PluginLightExtensionClient };
+
+export default PluginJsTemplateClient;

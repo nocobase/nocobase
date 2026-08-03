@@ -33,8 +33,17 @@ import {
 
 import { JSPageLightExtensionSourceField } from '../../client-v2/components/JSBlockLightExtensionSourceField';
 import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';
-import LightExtensionListPage from '../../client-v2/pages/LightExtensionListPage';
-import PluginLightExtensionClient from '..';
+import pluginEnUS from '../../locale/en-US.json';
+import pluginZhCN from '../../locale/zh-CN.json';
+import PluginJsTemplateClient, {
+  JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+  JS_TEMPLATE_SETTINGS_KEY,
+  JS_TEMPLATE_V2_UI_CONTRACT,
+  JsTemplateListPage,
+  LightExtensionListPage,
+  PluginJsTemplateClient as NamedPluginJsTemplateClient,
+  PluginLightExtensionClient,
+} from '..';
 
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
@@ -69,7 +78,7 @@ describe('plugin-light-extension legacy client boundary', () => {
     const apiClient = {
       request: vi.fn(),
     };
-    const plugin = new PluginLightExtensionClient(
+    const plugin = new PluginJsTemplateClient(
       { name: 'light-extension' },
       {
         apiClient,
@@ -91,15 +100,28 @@ describe('plugin-light-extension legacy client boundary', () => {
     await expect(plugin.afterAdd()).resolves.toBeUndefined();
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     await expect(plugin.load()).resolves.toBeUndefined();
-    expect(add).toHaveBeenCalledWith(
-      'light-extension',
+    expect(add).toHaveBeenNthCalledWith(
+      1,
+      JS_TEMPLATE_SETTINGS_KEY,
       expect.objectContaining({
         icon: 'CodeOutlined',
-        title: '@nocobase/plugin-light-extension:Light extensions',
+        title: '@nocobase/plugin-light-extension:JS Templates',
         Component: expect.any(Function),
         aclSnippet: 'pm.light-extension',
       }),
     );
+    expect(add).toHaveBeenNthCalledWith(
+      2,
+      JS_TEMPLATE_LEGACY_SETTINGS_KEY,
+      expect.objectContaining({
+        icon: 'CodeOutlined',
+        title: '@nocobase/plugin-light-extension:JS Templates',
+        Component: expect.any(Function),
+        aclSnippet: 'pm.light-extension',
+        hidden: true,
+      }),
+    );
+    expect(add.mock.calls[0][1].Component).toBe(add.mock.calls[1][1].Component);
     expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toBeTruthy();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('light-extension-runjs-value');
@@ -135,11 +157,12 @@ describe('plugin-light-extension legacy client boundary', () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
+    expect(source).not.toMatch(/sourceMode\s*[:=]\s*['"]js-template['"]|type\s*:\s*['"]js-template-entry['"]/u);
   });
 
-  it('uses the v2 settings page for the legacy settings route', async () => {
+  it('exposes canonical aliases and uses one v2 page for canonical and legacy settings routes', async () => {
     const add = vi.fn();
-    const plugin = new PluginLightExtensionClient(
+    const plugin = new PluginJsTemplateClient(
       { name: 'light-extension' },
       {
         pluginSettingsManager: { add },
@@ -151,7 +174,14 @@ describe('plugin-light-extension legacy client boundary', () => {
 
     await plugin.load();
 
-    const Component = add.mock.calls[0][1].Component;
-    expect(Component).toBe(LightExtensionListPage);
+    expect(PluginJsTemplateClient).toBe(NamedPluginJsTemplateClient);
+    expect(PluginLightExtensionClient).toBe(PluginJsTemplateClient);
+    expect(JsTemplateListPage).toBe(LightExtensionListPage);
+    expect(add.mock.calls.map(([key]) => key)).toEqual([JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_LEGACY_SETTINGS_KEY]);
+    expect(add.mock.calls[0][1].Component).toBe(JsTemplateListPage);
+    expect(add.mock.calls[1][1].Component).toBe(JsTemplateListPage);
+    expect(add.mock.calls[1][1].hidden).toBe(true);
+    expect(pluginEnUS[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe('JS Templates');
+    expect(pluginZhCN[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe(JS_TEMPLATE_V2_UI_CONTRACT.productNameZhCN);
   });
 });
