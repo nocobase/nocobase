@@ -11,7 +11,7 @@ import { Plugin } from '@nocobase/client-v2';
 import React from 'react';
 import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
-import { getPortalPathname, installMultiPortalRequestInterceptor } from './portalApiClient';
+import { getPortalPathname, installMultiPortalRequestInterceptor } from './interceptor';
 import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';

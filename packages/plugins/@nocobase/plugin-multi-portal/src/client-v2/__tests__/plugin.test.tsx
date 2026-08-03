@@ -20,7 +20,7 @@ import {
   type MultiPortalRuntimeRecord,
 } from '../layoutRegistration';
 import PluginMultiPortalClientV2 from '../plugin';
-import { getPortalPathname, installMultiPortalRequestInterceptor } from '../portalApiClient';
+import { getPortalPathname, installMultiPortalRequestInterceptor } from '../interceptor';
 import { installMultiPortalRouteRepositoryScope, type MultiPortalRouteScopeDescriptor } from '../routeRepositoryScope';
 import packageJson from '../../../package.json';
 
