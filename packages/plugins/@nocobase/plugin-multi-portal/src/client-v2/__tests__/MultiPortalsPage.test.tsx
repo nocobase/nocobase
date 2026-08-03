@@ -673,6 +673,8 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(customerPortalCard).queryByText('No-code')).not.toBeInTheDocument();
     expect(screen.getByText('No-code')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
+    expect(screen.getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(screen.getByText('Build business systems through visual configuration.')).toBeInTheDocument();
     // No-code portals keep the device icon mapped from uiLayoutUid; AI portals do not expose a device layout.
     expect(within(customerPortalCard).getByLabelText('Mobile')).toHaveClass('anticon-mobile');
     expect(within(developerPortalCard).queryByLabelText('Desktop')).not.toBeInTheDocument();
@@ -941,7 +943,9 @@ describe('plugin-multi-portal settings page', () => {
     // 新建默认就是 AI mode，源码位置不再单独选，改由 git 地址填没填决定。
     expect(within(dialog).getByRole('radio', { name: /AI mode/ })).toBeChecked();
     expect(within(dialog).getByRole('radio', { name: /No-code mode/ })).not.toBeChecked();
-    expect(within(dialog).getByText('Build complete business systems with AI agents and code.')).toBeInTheDocument();
+    expect(
+      within(dialog).queryByText('Build complete business systems with AI agents and code.'),
+    ).not.toBeInTheDocument();
     expect(
       within(dialog).getByText(
         'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
@@ -958,7 +962,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(within(dialog).queryByRole('combobox', { name: 'Device' })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('radio', { name: /No-code mode/ }));
     expect(within(dialog).getByText('Example: /v/<name>')).toBeInTheDocument();
-    expect(within(dialog).getByText('Build business systems through visual configuration.')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Build business systems through visual configuration.')).not.toBeInTheDocument();
     expect(
       within(dialog).getByText(
         'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',

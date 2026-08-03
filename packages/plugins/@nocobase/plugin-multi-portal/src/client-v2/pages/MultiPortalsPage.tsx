@@ -633,8 +633,18 @@ const MultiPortalsPage: React.FC = () => {
     // Reuse the locale keys the per-card tags used (AI mode / No-code mode):
     // the same thing is being named, no second vocabulary for it.
     const groups = [
-      { key: 'ai', title: 'AI', records: [] as MultiPortalRecord[] },
-      { key: 'no-code', title: 'No-code', records: [] as MultiPortalRecord[] },
+      {
+        key: 'ai',
+        title: 'AI',
+        description: 'Build complete business systems with AI agents and code.',
+        records: [] as MultiPortalRecord[],
+      },
+      {
+        key: 'no-code',
+        title: 'No-code',
+        description: 'Build business systems through visual configuration.',
+        records: [] as MultiPortalRecord[],
+      },
     ];
     for (const record of records) {
       const isNoCode = normalizePortalType(record.portalType) === DEFAULT_PORTAL_TYPE;
@@ -960,13 +970,18 @@ const MultiPortalsPage: React.FC = () => {
             <div key={group.key} style={{ marginBottom: token.marginXL }}>
               {/* 组标题：标题 + 计数 + 一条延伸到底的细线。只有一行浅灰文字的话，
                   它会和上面那句说明混成一片，看不出这里已经换了一组。 */}
-              <Flex align="center" gap={token.marginXS} style={{ marginBottom: token.marginSM }}>
-                <Typography.Text strong>{t(group.title)}</Typography.Text>
+              <div style={{ marginBottom: token.marginSM }}>
+                <Flex align="center" gap={token.marginXS}>
+                  <Typography.Text strong>{t(group.title)}</Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
+                    {group.records.length}
+                  </Typography.Text>
+                  <div style={{ background: token.colorSplit, flex: 1, height: token.lineWidth }} />
+                </Flex>
                 <Typography.Text type="secondary" style={{ fontSize: token.fontSizeSM }}>
-                  {group.records.length}
+                  {t(group.description)}
                 </Typography.Text>
-                <div style={{ background: token.colorSplit, flex: 1, height: token.lineWidth }} />
-              </Flex>
+              </div>
               {/* 网格里不再放虚线的新建块：右上角那个「新增门户」按钮已经是入口，
                   分了组之后虚线块还得挑跟在哪一组后面，怎么放都像是"新建这一类"。 */}
               <div style={galleryGridStyle}>{group.records.map(renderPortalCard)}</div>
@@ -1246,9 +1261,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
               >
                 <span>{t('AI mode')}</span>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('Build complete business systems with AI agents and code.')}
-                </div>
-                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t(
                     'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
                   )}
@@ -1256,9 +1268,6 @@ function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () =>
               </Radio>
               <Radio className={describedRadioClassName} style={describedRadioStyle} value="no-code">
                 <span>{t('No-code mode')}</span>
-                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
-                  {t('Build business systems through visual configuration.')}
-                </div>
                 <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
                   {t(
                     'Users create applications through drag-and-drop configuration. AI can assist with creating, adjusting, and optimizing configurations such as data models, interfaces, workflows, and more.',
