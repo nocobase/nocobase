@@ -19,6 +19,13 @@ import {
 import type { JSONValue } from '../template/resolver';
 import { planRecordBindings, type RecordBindingPlan, type RecordBindingUsage } from './record-bindings';
 import {
+  compileRecordSlotPolicies,
+  createFlowModelVariableContract,
+  type FlowModelVariableContract,
+  type RecordSlotPolicies,
+  type ResolveFlowModelFieldKind,
+} from './record-slot-policy';
+import {
   getRecordBindingPolicies,
   isSafeRecordBinding,
   sanitizeRegisteredVariableContextParams,
@@ -49,10 +56,22 @@ type RoleRecord = {
   get?: (key: string) => unknown;
 };
 
+type RecordSlotCollection = {
+  fields?: { get?: (name: string) => RecordSlotCollectionField | undefined };
+  getField?: (name: string) => RecordSlotCollectionField | undefined;
+};
+
+type RecordSlotCollectionField = {
+  isAssociationField?: () => boolean;
+  isRelationField?: () => boolean;
+  targetCollection?: RecordSlotCollection | (() => RecordSlotCollection | undefined);
+};
+
 type AuthorizationResultBase = {
   contextParams: Readonly<Record<string, unknown>>;
   flowModelUid?: string;
   policy: ResolvePathPolicy;
+  recordSlotPolicies: RecordSlotPolicies;
 };
 
 export type AuthorizationResult = AuthorizationResultBase &
@@ -83,7 +102,8 @@ export function analyzeVariableTemplateSafely(
   return { ok: true, analysis };
 }
 
-type FlowModelPathCacheValue = Promise<ReadonlySet<string> | null> | ReadonlySet<string> | null;
+type FlowModelCacheValue = Promise<Record<string, unknown> | null> | Record<string, unknown> | null;
+type FlowModelContractCacheValue = Promise<FlowModelVariableContract | null> | FlowModelVariableContract | null;
 
 export function clearVariableAllowListCache(app?: object) {
   // Kept as a stable invalidation hook for callers; allow-lists are request-local to avoid stale cross-request caches.
@@ -143,28 +163,92 @@ function getRequestState(ctx: ResourcerContext): Record<string, unknown> {
   return request.state;
 }
 
-async function getFlowModelAllowedPaths(
-  ctx: ResourcerContext,
-  flowModelUid: string,
-): Promise<ReadonlySet<string> | null> {
+function getFlowModelParentId(model: Record<string, unknown>) {
+  return typeof model.parentId === 'string' && model.parentId ? model.parentId : undefined;
+}
+
+function getFlowModelRepository(ctx: ResourcerContext) {
+  return ctx.db.getCollection('flowModels').repository as FlowModelRepository;
+}
+
+async function getFlowModel(ctx: ResourcerContext, flowModelUid: string): Promise<Record<string, unknown> | null> {
   const state = getRequestState(ctx);
-  const cacheKey = '__variableResolveAllowListCache';
+  const cacheKey = '__variableResolveFlowModelCache';
   const cache =
-    (state[cacheKey] as Map<string, FlowModelPathCacheValue> | undefined) || new Map<string, FlowModelPathCacheValue>();
+    (state[cacheKey] as Map<string, FlowModelCacheValue> | undefined) || new Map<string, FlowModelCacheValue>();
   state[cacheKey] = cache;
   if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
 
   const load = (async () => {
-    const repository = ctx.db.getCollection('flowModels').repository as FlowModelRepository;
-    const model = await repository.findModelById(flowModelUid, { includeAsyncNode: true });
-    if (!model) return null;
-    const result = analyzeVariableTemplateSafely(model, { mode: 'flow-model' });
-    return new Set(result.ok ? result.analysis.paths.map((path) => path.canonicalKey) : []);
+    const model = await getFlowModelRepository(ctx).findModelById(flowModelUid, { includeAsyncNode: true });
+    return isObject(model) ? model : null;
   })();
   cache.set(flowModelUid, load);
-  const allowedPaths = await load;
-  cache.set(flowModelUid, allowedPaths);
-  return allowedPaths;
+  const model = await load;
+  cache.set(flowModelUid, model);
+  return model;
+}
+
+function createFieldKindResolver(ctx: ResourcerContext): ResolveFlowModelFieldKind {
+  return (dataSourceKey, collectionName, fieldPath) => {
+    const dataSource = ctx.app.dataSourceManager.get(dataSourceKey);
+    let collection = dataSource?.collectionManager?.getCollection?.(collectionName) as RecordSlotCollection | undefined;
+    const segments = fieldPath.split('.').filter(Boolean);
+    for (let index = 0; index < segments.length; index++) {
+      const field = collection?.getField?.(segments[index]) ?? collection?.fields?.get?.(segments[index]);
+      if (!field) return undefined;
+      const association = field.isAssociationField?.() === true || field.isRelationField?.() === true;
+      if (index === segments.length - 1) return association ? 'association' : 'field';
+      if (!association || !field.targetCollection) return undefined;
+      collection = typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+    }
+    return undefined;
+  };
+}
+
+async function getFlowModelVariableContract(
+  ctx: ResourcerContext,
+  flowModelUid: string,
+): Promise<FlowModelVariableContract | null> {
+  const state = getRequestState(ctx);
+  const cacheKey = '__variableResolveContractCache';
+  const cache =
+    (state[cacheKey] as Map<string, FlowModelContractCacheValue> | undefined) ||
+    new Map<string, FlowModelContractCacheValue>();
+  state[cacheKey] = cache;
+  if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
+
+  const load = (async () => {
+    const model = await getFlowModel(ctx, flowModelUid);
+    if (!model) return null;
+    const result = analyzeVariableTemplateSafely(model, { mode: 'flow-model' });
+    if (!result.ok) {
+      return createFlowModelVariableContract(analyzeVariableTemplate({}, { mode: 'flow-model' }));
+    }
+
+    const ancestorModels: Record<string, unknown>[] = [];
+    if (result.analysis.paths.some((path) => path.varName === 'formValues')) {
+      const seen = new Set([flowModelUid]);
+      let parentId = getFlowModelParentId(model);
+      while (parentId && !seen.has(parentId)) {
+        seen.add(parentId);
+        const parent = await getFlowModel(ctx, parentId);
+        if (!parent) break;
+        ancestorModels.push(parent);
+        parentId = getFlowModelParentId(parent);
+      }
+    }
+
+    return createFlowModelVariableContract(result.analysis, {
+      ancestorModels,
+      flowModel: model,
+      resolveFieldKind: createFieldKindResolver(ctx),
+    });
+  })();
+  cache.set(flowModelUid, load);
+  const contract = await load;
+  cache.set(flowModelUid, contract);
+  return contract;
 }
 
 function getCurrentRoleNames(ctx: ResourcerContext): string[] {
@@ -258,9 +342,10 @@ function denied(
   analysis: AnalyzedTemplate,
   contextParams: Readonly<Record<string, unknown>>,
   policy: ResolvePathPolicy,
+  recordSlotPolicies: RecordSlotPolicies,
   flowModelUid?: string,
 ): AuthorizationResult {
-  return { allowed: false, analysis, contextParams, flowModelUid, policy };
+  return { allowed: false, analysis, contextParams, flowModelUid, policy, recordSlotPolicies };
 }
 
 function createRecordBindingPlan(
@@ -286,6 +371,7 @@ export async function authorizeVariablesResolve(
   const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
   const unrestrictedVariables = new Set<string>();
   let policy = createPolicy(false, new Set(), unrestrictedVariables);
+  let recordSlotPolicies: RecordSlotPolicies = new Map();
   const result = analyzeVariableTemplateSafely(options.template);
   if (!result.ok) {
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
@@ -294,6 +380,7 @@ export async function authorizeVariablesResolve(
       contextParams: createRecordBindingPlan(contextParams, {}).contextParams,
       flowModelUid: flowModelUid || undefined,
       policy,
+      recordSlotPolicies,
     };
   }
   const { analysis } = result;
@@ -304,6 +391,7 @@ export async function authorizeVariablesResolve(
       analysis,
       createRecordBindingPlan(contextParams, analysis.usage).contextParams,
       policy,
+      recordSlotPolicies,
       flowModelUid || undefined,
     );
   }
@@ -327,6 +415,7 @@ export async function authorizeVariablesResolve(
         analysis,
         createRecordBindingPlan(contextParams, analysis.usage).contextParams,
         policy,
+        recordSlotPolicies,
         flowModelUid || undefined,
       );
     }
@@ -339,23 +428,34 @@ export async function authorizeVariablesResolve(
 
   if (await currentRoleAllowsConfigure(ctx)) {
     policy = createPolicy(true, new Set(), unrestrictedVariables);
+    const fixedRequestSlots = compileRecordSlotPolicies(analysis);
+    if (flowModelUid) {
+      const flowModelSlots = (await getFlowModelVariableContract(ctx, flowModelUid))?.recordSlots || new Map();
+      recordSlotPolicies = new Map([...flowModelSlots, ...fixedRequestSlots]);
+    } else {
+      recordSlotPolicies = fixedRequestSlots;
+    }
     return recordBindingPlanAllowed(bindingPlan)
-      ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy }
-      : denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
+      ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy, recordSlotPolicies }
+      : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
   }
 
-  if (flowModelRequiredVars.size > 0 && !flowModelUid) return denied(analysis, bindingPlan.contextParams, policy);
+  if (flowModelRequiredVars.size > 0 && !flowModelUid) {
+    return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies);
+  }
 
-  const allowedPaths = flowModelUid ? await getFlowModelAllowedPaths(ctx, flowModelUid) : null;
+  const contract = flowModelUid ? await getFlowModelVariableContract(ctx, flowModelUid) : null;
+  const allowedPaths = contract?.allowedPaths || null;
+  recordSlotPolicies = contract?.recordSlots || new Map();
   policy = createPolicy(false, allowedPaths || new Set(), unrestrictedVariables);
   if (flowModelRequiredVars.size > 0 && !allowedPaths) {
-    return denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
+    return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
   }
 
   for (const path of analysis.paths) {
     if (unrestrictedVariables.has(path.varName)) continue;
     if (!allowedPaths?.has(path.canonicalKey)) {
-      return denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
+      return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
     }
   }
 
@@ -367,6 +467,7 @@ export async function authorizeVariablesResolve(
         contextParams: bindingPlan.contextParams,
         flowModelUid: flowModelUid || undefined,
         policy,
+        recordSlotPolicies,
       }
-    : denied(analysis, bindingPlan.contextParams, policy, flowModelUid || undefined);
+    : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
 }
