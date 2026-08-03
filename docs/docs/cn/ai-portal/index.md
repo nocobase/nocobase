@@ -138,12 +138,14 @@ AI 会读一遍现有的页面和扩展，照着模板的约定写新页面，�
 
 ## 第四步：部署
 
-本地改好之后，把源码推送到 source storage，再构建部署：
+本地改好之后，把源码推送到远端，再构建部署：
 
 ```bash
 nb portal push main --message "Add customer management page"
 nb portal deploy main
 ```
+
+`push` 推到哪里，取决于这个 Portal 的 source storage 配置。默认是 `nocobase`，源码由 NocoBase 管理；如果用 [`nb portal config`](../api/cli/portal/config.md) 把它配成了 `git`，`push` 就会把源码提交并推送到你指定的 Git 仓库，`--message` 也会作为 Git commit message。具体见 [部署与源码管理](./deploy.md#source-storage)。
 
 部署完成后访问 `/x/main/`，就能看到刚才的改动了。
 
@@ -161,7 +163,7 @@ nb portal create customer
 
 ## Demo 体验
 
-如果你想要体验 AI 模式开发的效果，可以申请一个 Demo 环境体验：https://demo.nocobase.com/new 。填写完表单之后，我们会给你生成一个专门的 Demo 环境，会带基于 NocoBase 实现的 AI Portal 应用。
+如果你想要体验 AI 模式开发的效果，可以申请一个 Demo 环境体验：https://demo.nocobase.com/new 。填写完表单之后，我们会给你生成一个专门的 Demo 环境——里面包含了一些基于 NocoBase 基座实现的 AI Portal 应用。
 
 ![AI Portal Settings](https://static-docs.nocobase.com/20260803154352.png)
 
@@ -169,7 +171,7 @@ nb portal create customer
 
 ![AI Portal CRM](https://static-docs.nocobase.com/20260803154700.png)
 
-并且我们提供了提示词，让你的 AI Agent 能够直接连接这个 AI Portal 应用，拉取应用代码，然后在本地启动开发服务，修改页面，最后推送部署回 Demo 环境，部署成功后，再刷新页面就能看到效果。
+并且我们在 Portal 欢迎页提供了提示词，让你的 AI Agent 能够直接连接这个 AI Portal 应用，拉取应用代码，然后在本地启动开发服务，修改页面，最后推送部署回 Demo 环境，部署成功后，再刷新页面就能看到效果。
 
 ## 接下来
 
