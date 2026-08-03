@@ -318,12 +318,17 @@
         "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
         "confirmationRequired": "Refusing to destroy a portal in non-interactive mode without --yes.",
         "outsideParent": "Refusing to delete a portal outside {{parentDir}}: {{portalDir}}",
-        "workspaceMissing": "Portal does not exist: {{portalDir}}\nPass --force to ignore missing local files.",
+        "workspaceMissing": "Portal deployment path does not exist: {{portalDir}}\nPass --force to ignore missing deployment files.",
         "unsupportedEnvKind": "Cannot destroy a portal for {{kind}} envs in the first version.",
         "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
       },
       "prompts": {
-        "confirm": "Destroy portal \"{{portal}}\" and delete its storage directory?"
+        "confirm": "Destroy portal \"{{portal}}\" and delete its deployment directory?"
+      },
+      "statuses": {
+        "deleted": "deleted",
+        "missing": "missing",
+        "retained": "retained"
       },
       "messages": {
         "destroyed": "Portal \"{{portal}}\" destroyed.",
@@ -331,7 +336,9 @@
         "app": "App: {{app}}",
         "base": "Base: {{base}}",
         "record": "Record: {{status}}",
-        "workspace": "Portal files: {{status}} ({{dir}})"
+        "deploymentPath": "Deployment path: {{status}} ({{dir}})",
+        "developmentPath": "Development path: {{status}} ({{dir}})",
+        "developmentPathMissing": "Development path: missing"
       }
     },
     "portalDev": {

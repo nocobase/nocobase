@@ -57,11 +57,13 @@ test('portal destroy resolves the current env name before destroying', async () 
   mocks.destroyPortalWorkspace.mockResolvedValue({
     app: 'main',
     portal: 'cba',
-    portalDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+    developmentPath: '/Users/chen/test6/remote1/source/portals/cba',
+    deploymentPath: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
     portalBase: '/x/cba/',
     mode: 'http',
     recordDeleted: true,
-    workspaceDeleted: true,
+    developmentPathDeleted: false,
+    deploymentPathDeleted: true,
   });
 
   const command = Object.assign(Object.create(PortalDestroy.prototype), {
@@ -71,6 +73,7 @@ test('portal destroy resolves the current env name before destroying', async () 
       flags: {
         yes: true,
         force: false,
+        'delete-dev-path': true,
       },
     })),
     config: {
@@ -95,6 +98,7 @@ test('portal destroy resolves the current env name before destroying', async () 
         envName: 'remote1',
         cliVersion: '1.2.3',
         force: false,
+        deleteDevPath: true,
       },
     ],
   ]);
@@ -105,6 +109,7 @@ test('portal destroy resolves the current env name before destroying', async () 
     ['App: main'],
     ['Base: /x/cba/'],
     ['Record: deleted'],
-    ['Portal files: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
+    ['Deployment path: deleted (/Users/chen/test6/remote1/source/storage/portals/main/cba)'],
+    ['Development path: retained (/Users/chen/test6/remote1/source/portals/cba)'],
   ]);
 });

@@ -318,12 +318,17 @@
         "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
         "confirmationRequired": "非交互模式下拒绝删除 Portal。请追加 --yes 后重试。",
         "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal：{{portalDir}}",
-        "workspaceMissing": "Portal 不存在：{{portalDir}}\n如需忽略本地文件缺失，请追加 --force。",
+        "workspaceMissing": "Portal 部署路径不存在：{{portalDir}}\n如需忽略部署文件缺失，请追加 --force。",
         "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal。",
         "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
       },
       "prompts": {
-        "confirm": "删除 Portal \"{{portal}}\" 并移除它的 storage 目录？"
+        "confirm": "删除 Portal \"{{portal}}\" 并移除它的部署目录？"
+      },
+      "statuses": {
+        "deleted": "已删除",
+        "missing": "缺失",
+        "retained": "已保留"
       },
       "messages": {
         "destroyed": "Portal \"{{portal}}\" 已删除。",
@@ -331,7 +336,9 @@
         "app": "App：{{app}}",
         "base": "Base：{{base}}",
         "record": "记录：{{status}}",
-        "workspace": "Portal：{{status}}（{{dir}}）"
+        "deploymentPath": "部署路径：{{status}}（{{dir}}）",
+        "developmentPath": "开发路径：{{status}}（{{dir}}）",
+        "developmentPathMissing": "开发路径：缺失"
       }
     },
     "portalDev": {
