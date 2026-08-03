@@ -4076,6 +4076,82 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(nextSecondary));
   });
 
+  it('assigns a to-many association from a sibling association in the same to-many row', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const initialRoles = [{ id: 2, name: 'Initial role' }];
+    const formStub = createFormStub({ users: [{ roles: [], secondaryRoles: [] }] });
+
+    const blockModel: any = {
+      uid: 'form-assign-to-many-assoc-from-to-many-row-sibling',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const roleCollection: any = { filterTargetKey: 'id', getField: () => null };
+    const rolesField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: roleCollection,
+    };
+    const usersItemCollection: any = {
+      getField: (name: string) => (name === 'roles' || name === 'secondaryRoles' ? rolesField : null),
+    };
+    const usersField: any = { isAssociationField: () => true, type: 'hasMany', targetCollection: usersItemCollection };
+    const collection: any = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: collection });
+
+    const rowModel: any = {
+      uid: 'users.roles:users:0',
+      isFork: true,
+      forkId: 'users:0',
+      subModels: { field: { context: { collectionField: rolesField } } },
+      getStepParams(flowKey: string, stepKey: string) {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath: 'users.roles' };
+        return undefined;
+      },
+    };
+    const rowCtx = createFieldContext(runtime);
+    rowCtx.defineProperty('blockModel', { value: blockModel });
+    rowCtx.defineProperty('collection', { value: collection });
+    rowCtx.defineProperty('fieldIndex', { value: ['users:0'] });
+    rowCtx.defineProperty('model', { value: rowModel });
+    rowModel.context = rowCtx;
+
+    blockCtx.defineProperty('engine', {
+      value: { forEachModel: (callback: (model: unknown) => void) => callback(rowModel) },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'roles-from-row-sibling',
+        enable: true,
+        targetPath: 'users.roles',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.item.parentItem.value.secondaryRoles }}',
+      },
+    ]);
+
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 0, 'secondaryRoles'], value: initialRoles }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'roles'])).toEqual(initialRoles));
+
+    const nextRoles = [{ id: 3, name: 'Next role' }];
+    await runtime.setFormValues(blockCtx, [{ path: ['users', 0, 'secondaryRoles'], value: nextRoles }], {
+      source: 'user',
+    });
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'roles'])).toEqual(nextRoles));
+  });
+
   it('preserves the PopupSubTable outer item chain for a top-level to-one association target', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
@@ -4141,6 +4217,73 @@ describe('FormValueRuntime (form assign rules)', () => {
 
     outerValue.defaultAssignee = nextAssignee;
     await waitFor(() => expect(formStub.getFieldValue(['assignee'])).toEqual(nextAssignee));
+  });
+
+  it('preserves the PopupSubTable outer item chain for a top-level to-many association target', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const initialReviewers = [{ id: 2, name: 'Initial reviewer' }];
+    const nextReviewers = [{ id: 3, name: 'Next reviewer' }];
+    const outerValue = observable({ defaultReviewers: initialReviewers });
+    const formStub = createFormStub({ reviewers: [] });
+
+    const blockModel: any = {
+      uid: 'popup-sub-table-form-assign-to-many-parent-item',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection: any = { filterTargetKey: 'id', getField: () => null };
+    const reviewersField: any = {
+      isAssociationField: () => true,
+      type: 'belongsToMany',
+      targetCollection: userCollection,
+    };
+    const collection: any = { getField: (name: string) => (name === 'reviewers' ? reviewersField : null) };
+    const outerItem = { index: 0, length: 1, value: outerValue };
+    blockCtx.defineProperty('collection', { value: collection });
+    blockCtx.defineProperty('item', {
+      get: () => ({
+        index: 1,
+        length: 3,
+        __is_new__: true,
+        __is_stored__: false,
+        value: blockCtx.formValues,
+        parentItem: outerItem,
+      }),
+      cache: false,
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'reviewers-from-popup-parent',
+        enable: true,
+        targetPath: 'reviewers',
+        mode: 'assign',
+        condition: {
+          logic: '$and',
+          items: [
+            { path: '{{ ctx.item.parentItem.index }}', operator: '$eq', value: 1 },
+            { path: '{{ ctx.item.parentItem.length }}', operator: '$eq', value: 3 },
+            { path: '{{ ctx.item.parentItem.__is_new__ }}', operator: '$eq', value: true },
+            { path: '{{ ctx.item.parentItem.__is_stored__ }}', operator: '$eq', value: false },
+          ],
+        },
+        value: '{{ ctx.item.parentItem.parentItem.value.defaultReviewers }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['reviewers'])).toEqual(initialReviewers));
+
+    outerValue.defaultReviewers = nextReviewers;
+    await waitFor(() => expect(formStub.getFieldValue(['reviewers'])).toEqual(nextReviewers));
   });
 
   it('does not write to to-many nested path without row index', async () => {
