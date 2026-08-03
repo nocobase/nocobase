@@ -279,6 +279,19 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.indexSettingsContent).toContain('src="/console/dist/2.1.0-beta.44/settings/assets/runtime.js"');
 });
 
+test('buildEnvProxyNginxBundle preserves settings-default in each client entry', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-settings-default-');
+  const runtime = await createLocalRuntime(root, {
+    appClientEntryMode: 'settings-default',
+  });
+
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  expect(bundle.indexV1Content).toContain(`window['__nocobase_app_client_entry_mode__'] = "settings-default";`);
+  expect(bundle.indexV2Content).toContain(`window['__nocobase_app_client_entry_mode__'] = "settings-default";`);
+  expect(bundle.indexSettingsContent).toContain(`window['__nocobase_app_client_entry_mode__'] = "settings-default";`);
+});
+
 test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted apps', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-nginx-root-');
   process.env.NB_CLI_ROOT = root;
