@@ -392,9 +392,27 @@ describe('plugin-multi-portal settings page', () => {
     ).toBe(
       'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.',
     );
+    expect(enUS['Source management']).toBe('Source management');
+    expect(enUS['Select how the application source code is stored and managed.']).toBe(
+      'Select how the application source code is stored and managed.',
+    );
+    expect(enUS.NocoBase).toBe('NocoBase');
+    expect(enUS.Git).toBe('Git');
+    expect(enUS['Git repository URL']).toBe('Git repository URL');
+    expect(enUS['Git branch']).toBe('Git branch');
+    expect(enUS['Git path']).toBe('Git path');
+    expect(enUS['Store and manage application source code in NocoBase.']).toBe(
+      'Store and manage application source code in NocoBase.',
+    );
+    expect(enUS['Store and manage application source code in a Git repository.']).toBe(
+      'Store and manage application source code in a Git repository.',
+    );
     expect(enUS['Used to generate the portal URL.']).toBe('Used to generate the portal URL.');
     expect(enUS['Display name of the portal.']).toBe('Display name of the portal.');
     expect(enUS['Example:']).toBe('Example:');
+    expect(enUS['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
+      'Directory inside the Git repository for this portal. Leave empty for the root.',
+    );
     expect(enUS['The corresponding portal directory will also be deleted.']).toBe(
       'The corresponding portal directory will also be deleted.',
     );
@@ -444,9 +462,25 @@ describe('plugin-multi-portal settings page', () => {
         'Users describe requirements in natural language, and AI agents create and modify applications, including interfaces, data models, business logic, roles and permissions, and more.'
       ],
     ).toBe('用户通过自然语言描述需求，AI Agent 负责创建和修改应用，包括界面、数据模型、业务逻辑、角色权限等。');
+    expect(zhCN['Source management']).toBe('源码管理');
+    expect(zhCN['Select how the application source code is stored and managed.']).toBe(
+      '选择应用源码的存储和管理方式。',
+    );
+    expect(zhCN.NocoBase).toBe('NocoBase');
+    expect(zhCN.Git).toBe('Git');
+    expect(zhCN['Git repository URL']).toBe('Git 仓库 URL');
+    expect(zhCN['Git branch']).toBe('Git 分支');
+    expect(zhCN['Git path']).toBe('Git 路径');
+    expect(zhCN['Store and manage application source code in NocoBase.']).toBe('在 NocoBase 中存储和管理应用源码。');
+    expect(zhCN['Store and manage application source code in a Git repository.']).toBe(
+      '在 Git 仓库中存储和管理应用源码。',
+    );
     expect(zhCN['Used to generate the portal URL.']).toBe('用于生成门户访问地址。');
     expect(zhCN['Display name of the portal.']).toBe('门户显示名称。');
     expect(zhCN['Example:']).toBe('示例：');
+    expect(zhCN['Directory inside the Git repository for this portal. Leave empty for the root.']).toBe(
+      '该门户在 Git 仓库内的目录，留空表示仓库根目录。',
+    );
     expect(zhCN['When disabled, this portal will not be registered or accessible.']).toBe(
       '关闭后，该门户将不会注册，也无法访问。',
     );
@@ -602,10 +636,12 @@ describe('plugin-multi-portal settings page', () => {
     const customerMenu = await openCardMenu(user, customerPortalCard);
     expect(customerMenu.getByRole('menuitem', { name: /Routes/ })).toBeInTheDocument();
     expect(customerMenu.getByRole('menuitem', { name: /Set as default/ })).toBeInTheDocument();
+    expect(customerMenu.queryByRole('menuitem', { name: /Source management/ })).not.toBeInTheDocument();
     expect(customerMenu.queryByRole('menuitem', { name: /View/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
     const developerMenu = await openCardMenu(user, developerPortalCard);
+    expect(developerMenu.getByRole('menuitem', { name: /Source management/ })).toBeInTheDocument();
     expect(developerMenu.queryByRole('menuitem', { name: /Routes/ })).not.toBeInTheDocument();
     await user.keyboard('{Escape}');
 
@@ -1360,6 +1396,100 @@ describe('plugin-multi-portal settings page', () => {
           uiLayoutUid: 'mobile-layout-model',
           options: {
             cover: null,
+            sourceStorage: 'git',
+            git: {
+              repo: 'git@github.com:nocobase/customer.git',
+              branch: 'develop',
+              path: 'portals/customer',
+            },
+          },
+        }),
+      });
+    });
+  });
+
+  it('should configure AI portal source management from the card menu', async () => {
+    const user = userEvent.setup();
+    let drawerContent: React.ReactNode;
+    const resource = makeResource({
+      list: vi.fn().mockResolvedValue({
+        data: {
+          data: [
+            {
+              ...portalValues,
+              portalType: 'ai',
+              uiLayoutUid: 'admin-layout-model',
+              options: {
+                cover: {
+                  id: 1,
+                  url: 'https://example.com/cover.png',
+                },
+                sourceStorage: 'nocobase',
+              },
+            },
+          ],
+        },
+      }),
+    });
+    flowContext.current = {
+      api: {
+        request: vi.fn().mockResolvedValue({ data: { data: [] } }),
+        resource: vi.fn((name: string) => {
+          if (name === 'multiPortals') {
+            return resource;
+          }
+          throw new Error(`Unexpected resource ${name}`);
+        }),
+      },
+      viewer: {
+        drawer: vi.fn((options: { content: () => React.ReactNode }) => {
+          drawerContent = options.content();
+        }),
+      },
+    };
+
+    const { rerender } = render(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const targetCard = (await screen.findByRole('button', { name: 'More' })).closest('.ant-card') as HTMLElement;
+    await clickCardMenuItem(user, targetCard, 'Source management');
+    rerender(
+      <AntdApp>
+        <MultiPortalsPage />
+        {drawerContent}
+      </AntdApp>,
+    );
+
+    const dialog = await screen.findByRole('dialog', { name: 'Source management' });
+    expect(within(dialog).getByLabelText('Source management')).toBeInTheDocument();
+    expect(within(dialog).getByRole('radio', { name: /NocoBase/ })).toBeChecked();
+    expect(within(dialog).queryByLabelText('Git repository URL')).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('radio', { name: /^Git/ }));
+    await user.type(within(dialog).getByLabelText('Git repository URL'), ' git@github.com:nocobase/customer.git ');
+    await user.clear(within(dialog).getByLabelText('Git branch'));
+    await user.type(within(dialog).getByLabelText('Git branch'), 'develop');
+    await user.type(within(dialog).getByLabelText('Git path'), 'portals/customer');
+    await user.click(within(dialog).getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(resource.update).toHaveBeenCalledWith({
+        filterByTk: 'customer-portal',
+        values: expect.objectContaining({
+          title: 'Customer portal',
+          uid: 'customer-portal',
+          portalName: 'customer-portal',
+          routePath: '/customer-portal',
+          portalType: 'ai',
+          options: {
+            cover: {
+              id: 1,
+              url: 'https://example.com/cover.png',
+            },
             sourceStorage: 'git',
             git: {
               repo: 'git@github.com:nocobase/customer.git',

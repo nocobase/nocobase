@@ -9,6 +9,7 @@
 
 import {
   ApartmentOutlined,
+  CodeOutlined,
   DeleteOutlined,
   DesktopOutlined,
   EditOutlined,
@@ -669,6 +670,17 @@ const MultiPortalsPage: React.FC = () => {
     [ctx.viewer],
   );
 
+  const openSourceManagementDrawer = useCallback(
+    (record: MultiPortalRecord) => {
+      ctx.viewer.drawer({
+        width: token.screenSM,
+        closable: true,
+        content: () => <PortalSourceManagementForm record={record} onSubmitted={refreshPortals} />,
+      });
+    },
+    [ctx.viewer, refreshPortals, token.screenSM],
+  );
+
   const handleDelete = useCallback(
     (filterByTk: MultiPortalPrimaryKey | MultiPortalPrimaryKey[], options: { isBatch?: boolean } = {}) => {
       modal.confirm({
@@ -827,6 +839,9 @@ const MultiPortalsPage: React.FC = () => {
                   items: [
                     // No open entry here: clicking the card itself opens the portal.
                     { key: 'edit', icon: <EditOutlined />, label: t('Edit') },
+                    ...(isNoCode
+                      ? []
+                      : [{ key: 'sourceManagement', icon: <CodeOutlined />, label: t('Source management') }]),
                     // Routes only mean something for an enabled no-code portal, so the
                     // entry is omitted otherwise. A greyed-out button out in the open at
                     // least hints the feature exists; inside a menu it is just one more
@@ -844,6 +859,8 @@ const MultiPortalsPage: React.FC = () => {
                   onClick: ({ key }) => {
                     if (key === 'edit') {
                       openFormDrawer(record);
+                    } else if (key === 'sourceManagement') {
+                      openSourceManagementDrawer(record);
                     } else if (key === 'routes') {
                       openRoutesDrawer(record);
                     } else if (key === 'default') {
@@ -883,6 +900,7 @@ const MultiPortalsPage: React.FC = () => {
       handleToggleEnabled,
       openFormDrawer,
       openRoutesDrawer,
+      openSourceManagementDrawer,
       t,
       token.fontSizeSM,
       token.colorTextDescription,
@@ -952,6 +970,117 @@ const MultiPortalsPage: React.FC = () => {
     </div>
   );
 };
+
+function PortalSourceManagementForm(props: { record: MultiPortalRecord; onSubmitted: () => void }) {
+  const { record, onSubmitted } = props;
+  const t = useT();
+  const ctx = useFlowContext();
+  const { token } = theme.useToken();
+  const { notification } = App.useApp();
+  const [form] = Form.useForm<MultiPortalFormDraftValues>();
+  const [submitting, setSubmitting] = useState(false);
+  const resource = useMemo(() => ctx.api.resource('multiPortals') as MultiPortalResource, [ctx.api]);
+  const initialValues = useMemo<Partial<MultiPortalFormDraftValues>>(() => toFormDraftValues(record), [record]);
+
+  const handleSubmit = useCallback(async () => {
+    await form.validateFields();
+    const draftValues = form.getFieldsValue(true) as MultiPortalFormDraftValues;
+    const values = toFormValues(record);
+    values.options = getSourceStorageOptionsFromDraft({
+      ...toFormDraftValues(record),
+      ...draftValues,
+      portalType: 'ai',
+    });
+    setSubmitting(true);
+    try {
+      await updateMultiPortal({
+        resource,
+        filterByTk: record.uid,
+        values,
+        onSubmitted,
+      });
+    } catch (error) {
+      notification.error({
+        message: getErrorMessage(error) || t('Failed to save portal'),
+        role: 'alert',
+      });
+      throw error;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [form, notification, onSubmitted, record, resource, t]);
+
+  return (
+    <DrawerFormLayout
+      title={t('Source management')}
+      onSubmit={handleSubmit}
+      submitting={submitting}
+      submitText={t('Submit')}
+      cancelText={t('Cancel')}
+    >
+      <style>{describedRadioCss}</style>
+      <Form form={form} layout="vertical" initialValues={initialValues}>
+        <Form.Item
+          name="sourceStorage"
+          label={t('Source management')}
+          extra={t('Select how the application source code is stored and managed.')}
+          htmlFor="multi-portal-source-storage-nocobase"
+          rules={[{ required: true, message: t('The field value is required') }]}
+        >
+          <Radio.Group name="multi-portal-source-storage" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Radio
+                className={describedRadioClassName}
+                id="multi-portal-source-storage-nocobase"
+                style={describedRadioStyle}
+                value="nocobase"
+              >
+                <span>{t('NocoBase')}</span>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t('Store and manage application source code in NocoBase.')}
+                </div>
+              </Radio>
+              <Radio className={describedRadioClassName} style={describedRadioStyle} value="git">
+                <span>{t('Git')}</span>
+                <div style={{ color: token.colorTextDescription, fontSize: token.fontSizeSM }}>
+                  {t('Store and manage application source code in a Git repository.')}
+                </div>
+              </Radio>
+            </Space>
+          </Radio.Group>
+        </Form.Item>
+        <Form.Item noStyle shouldUpdate={(prev, next) => prev.sourceStorage !== next.sourceStorage}>
+          {({ getFieldValue }) =>
+            getFieldValue('sourceStorage') === 'git' ? (
+              <>
+                <Form.Item
+                  name="gitRepo"
+                  label={t('Git repository URL')}
+                  rules={[{ required: true, whitespace: true, message: t('The field value is required') }]}
+                >
+                  <Input placeholder="git@github.com:nocobase/customer-portal.git" allowClear />
+                </Form.Item>
+                <Space size={token.marginSM} style={{ display: 'flex' }} align="start">
+                  <Form.Item name="gitBranch" label={t('Git branch')} style={{ flex: 1 }}>
+                    <Input placeholder={DEFAULT_PORTAL_GIT_BRANCH} />
+                  </Form.Item>
+                  <Form.Item
+                    name="gitPath"
+                    label={t('Git path')}
+                    style={{ flex: 1 }}
+                    extra={t('Directory inside the Git repository for this portal. Leave empty for the root.')}
+                  >
+                    <Input placeholder="/" />
+                  </Form.Item>
+                </Space>
+              </>
+            ) : null
+          }
+        </Form.Item>
+      </Form>
+    </DrawerFormLayout>
+  );
+}
 
 function MultiPortalForm(props: { record?: MultiPortalRecord; onSubmitted: () => void }) {
   const { record, onSubmitted } = props;
