@@ -25,19 +25,17 @@ import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import { JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionEntryRuntimeArtifact,
   LightExtensionKind,
   LightExtensionRuntimeSourceBinding,
 } from '../../shared/types';
-import {
-  getLightExtensionEntry,
-  moveLightExtensionToInline,
-  type ApiClientLike,
-} from '../api/lightExtensionEntriesRequests';
+import { getJsTemplateEntry, moveJsTemplateToInline, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
 import {
   isLightExtensionRuntimeSourceBinding,
-  type LightExtensionRunJSSourceResolver,
+  type JsTemplateRunJSSourceResolver,
 } from '../resolvers/LightExtensionRunJSResolver';
 import { invalidateLightExtensionRuntimeCache } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
@@ -50,7 +48,6 @@ import { createInlineLightExtensionWorkspaceTypeScriptContextResolver } from '..
 import { resolveInlineLightExtensionWorkspaceJsonSchema } from '../workspace/lightExtensionWorkspaceJsonSchema';
 
 const INLINE_SOURCE_MODE = 'inline';
-const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
 
 type LightExtensionEditorView = {
   close?: () => boolean | void | Promise<boolean | void>;
@@ -117,7 +114,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     }
 
     let active = true;
-    getLightExtensionEntry(api, binding.entryId)
+    getJsTemplateEntry(api, binding.entryId)
       .then((entry) => {
         if (!active || entry.id !== binding.entryId || entry.repoId !== binding.repoId || entry.kind !== binding.kind) {
           return;
@@ -231,7 +228,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
           ? existingAttempt
           : { requestFingerprint, idempotencyKey: createMoveToInlineIdempotencyKey() };
       moveToInlineAttemptRef.current = attempt;
-      const result = await moveLightExtensionToInline(api, {
+      const result = await moveJsTemplateToInline(api, {
         ...moveInput,
         idempotencyKey: attempt.idempotencyKey,
       });
@@ -256,8 +253,8 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
     let refreshedBinding = currentBinding;
     if (api && currentBinding) {
       const registeredResolver = RunJSSourceResolverRegistry.getResolver(
-        LIGHT_EXTENSION_SOURCE_MODE,
-      ) as Partial<LightExtensionRunJSSourceResolver> | null;
+        JS_TEMPLATE_SOURCE_MODE,
+      ) as Partial<JsTemplateRunJSSourceResolver> | null;
       registeredResolver?.invalidateCache?.(currentBinding.repoId);
       const cacheApis = [api, resolverApi].filter((item): item is ApiClientLike => Boolean(item));
       for (const cacheApi of new Set(cacheApis)) {
@@ -265,7 +262,7 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
         invalidateLightExtensionRuntimeCache(cacheApi, currentBinding.repoId);
       }
       try {
-        const entry = await getLightExtensionEntry(api, currentBinding.entryId);
+        const entry = await getJsTemplateEntry(api, currentBinding.entryId);
         if (
           entry.id === currentBinding.entryId &&
           entry.repoId === currentBinding.repoId &&
@@ -289,11 +286,11 @@ const LightExtensionSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
       } catch {
         // Keep the persisted binding when the refreshed entry metadata cannot be read immediately.
       }
-      const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+      const resolver = RunJSSourceResolverRegistry.getResolver(JS_TEMPLATE_SOURCE_MODE);
       if (refreshedBinding && typeof resolver?.getBindingTitle === 'function') {
         try {
           await resolver.getBindingTitle({
-            sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+            sourceMode: JS_TEMPLATE_SOURCE_MODE,
             sourceBinding: refreshedBinding,
             settings: isRecord(props.value.settings) ? props.value.settings : undefined,
           });
@@ -455,25 +452,23 @@ const InlineLightExtensionWorkspaceEditor: React.FC<RunJSEditorProviderRenderPro
   });
 };
 
-export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
+export function createJsTemplateRunJSEditorProvider(): RunJSEditorProvider {
   return {
-    key: 'light-extension-runjs-value',
+    key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.editorProviderKey,
     priority: 100,
     canHandle(props) {
       const locator = props.sourceLocator ?? props.locator;
       if (locator?.kind !== 'flowModel.step') {
         return false;
       }
-      return (
-        props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE || isLightExtensionSourceMetadata(props.sourceMetadata)
-      );
+      return props.value.sourceMode === JS_TEMPLATE_SOURCE_MODE || isLightExtensionSourceMetadata(props.sourceMetadata);
     },
     renderEditor(props) {
       const locator = props.sourceLocator ?? props.locator;
       if (locator?.kind !== 'flowModel.step') {
         return props.renderNext?.() ?? null;
       }
-      return props.value.sourceMode === LIGHT_EXTENSION_SOURCE_MODE ? (
+      return props.value.sourceMode === JS_TEMPLATE_SOURCE_MODE ? (
         <LightExtensionSourceWorkspaceEditor {...props} />
       ) : (
         <InlineLightExtensionWorkspaceEditor {...props} />
@@ -481,6 +476,8 @@ export function createRunJSLightExtensionEditorProvider(): RunJSEditorProvider {
     },
   };
 }
+
+export const createRunJSLightExtensionEditorProvider = createJsTemplateRunJSEditorProvider;
 
 function isLightExtensionSourceMetadata(value: unknown): boolean {
   return Boolean(getLightExtensionKind(value));
@@ -490,7 +487,7 @@ function getLightExtensionKind(value: unknown): LightExtensionKind | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
-  const kind = value.lightExtensionKind;
+  const kind = value[JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMetadataKindKey];
   return typeof kind === 'string' && (LIGHT_EXTENSION_SUPPORTED_KINDS as readonly string[]).includes(kind)
     ? (kind as LightExtensionKind)
     : undefined;

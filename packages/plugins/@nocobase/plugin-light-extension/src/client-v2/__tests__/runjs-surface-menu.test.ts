@@ -364,7 +364,7 @@ function registerModelMenuProviderTests() {
         : entries;
     return {
       request: vi.fn(async <TResponse>(options) => {
-        if (options.url !== 'lightExtensionEntries:listSelectable') {
+        if (options.url !== 'jsTemplateEntries:listSelectable') {
           throw new Error(`Unexpected request: ${options.url}`);
         }
         return { data: { data: catalog } } as TResponse;

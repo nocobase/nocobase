@@ -22,6 +22,7 @@ import {
   invalidateLightExtensionRuntimeCache,
 } from '../resolvers/LightExtensionRuntimeCacheRegistry';
 import { invalidateLightExtensionSettingsDescriptorCache } from '../resolvers/LightExtensionSettingsDescriptorCache';
+import { JS_TEMPLATE_RUNJS_HTTP_ALIASES } from '../jsTemplateRunJSIntegrationContract';
 
 export type ApiRequestOptions = {
   url: string;
@@ -45,9 +46,68 @@ export async function listSelectableLightExtensionEntries(
   api: ApiClientLike,
   input?: LightExtensionSelectableEntriesInput,
 ): Promise<LightExtensionSelectableEntrySummary[]> {
+  return listSelectableEntries(api, 'lightExtensionEntries:listSelectable', input);
+}
+
+export async function listSelectableJsTemplateEntries(
+  api: ApiClientLike,
+  input?: LightExtensionSelectableEntriesInput,
+): Promise<LightExtensionSelectableEntrySummary[]> {
+  return listSelectableEntries(api, JS_TEMPLATE_RUNJS_HTTP_ALIASES.listSelectableEntries, input);
+}
+
+export async function getLightExtensionEntry(api: ApiClientLike, entryId: string): Promise<LightExtensionEntryRecord> {
+  return getEntry(api, 'lightExtensionEntries:get', entryId);
+}
+
+export async function getJsTemplateEntry(api: ApiClientLike, entryId: string): Promise<LightExtensionEntryRecord> {
+  return getEntry(api, JS_TEMPLATE_RUNJS_HTTP_ALIASES.getEntry, entryId);
+}
+
+export async function listLightExtensionRepos(api: ApiClientLike): Promise<LightExtensionRepoRecord[]> {
+  return listRepos(api, 'lightExtensionRepos:list');
+}
+
+export async function listJsTemplateRepos(api: ApiClientLike): Promise<LightExtensionRepoRecord[]> {
+  return listRepos(api, JS_TEMPLATE_RUNJS_HTTP_ALIASES.listRepos);
+}
+
+export async function moveSourceToLightExtension(
+  api: ApiClientLike,
+  input: LightExtensionMoveSourceInput,
+): Promise<LightExtensionMoveSourceResult> {
+  return moveSource(api, 'lightExtensions:moveSource', input);
+}
+
+export async function moveSourceToJsTemplate(
+  api: ApiClientLike,
+  input: LightExtensionMoveSourceInput,
+): Promise<LightExtensionMoveSourceResult> {
+  return moveSource(api, JS_TEMPLATE_RUNJS_HTTP_ALIASES.moveSource, input);
+}
+
+export async function moveLightExtensionToInline(
+  api: ApiClientLike,
+  input: LightExtensionMoveToInlineInput,
+): Promise<LightExtensionMoveToInlineResult> {
+  return moveToInline(api, 'lightExtensions:moveToInline', input);
+}
+
+export async function moveJsTemplateToInline(
+  api: ApiClientLike,
+  input: LightExtensionMoveToInlineInput,
+): Promise<LightExtensionMoveToInlineResult> {
+  return moveToInline(api, JS_TEMPLATE_RUNJS_HTTP_ALIASES.moveToInline, input);
+}
+
+async function listSelectableEntries(
+  api: ApiClientLike,
+  url: string,
+  input?: LightExtensionSelectableEntriesInput,
+): Promise<LightExtensionSelectableEntrySummary[]> {
   const entries = await getOrLoadLightExtensionSelectableCatalog(api, async () => {
     const response = await api.request<ResourceResponse<LightExtensionSelectableEntrySummary[]>>({
-      url: 'lightExtensionEntries:listSelectable',
+      url,
       method: 'post',
     });
     return unwrapResourceResponse(response) || [];
@@ -57,47 +117,46 @@ export async function listSelectableLightExtensionEntries(
   );
 }
 
-export async function getLightExtensionEntry(api: ApiClientLike, entryId: string): Promise<LightExtensionEntryRecord> {
+async function getEntry(api: ApiClientLike, url: string, entryId: string): Promise<LightExtensionEntryRecord> {
   const response = await api.request<ResourceResponse<LightExtensionEntryRecord>>({
-    url: 'lightExtensionEntries:get',
+    url,
     method: 'post',
     data: { entryId },
   });
-
   return unwrapResourceResponse(response);
 }
 
-export async function listLightExtensionRepos(api: ApiClientLike): Promise<LightExtensionRepoRecord[]> {
+async function listRepos(api: ApiClientLike, url: string): Promise<LightExtensionRepoRecord[]> {
   const response = await api.request<ResourceResponse<LightExtensionRepoRecord[]>>({
-    url: 'lightExtensionRepos:list',
+    url,
     method: 'post',
   });
-
   return unwrapResourceResponse(response) || [];
 }
 
-export async function moveSourceToLightExtension(
+async function moveSource(
   api: ApiClientLike,
+  url: string,
   input: LightExtensionMoveSourceInput,
 ): Promise<LightExtensionMoveSourceResult> {
   const response = await api.request<ResourceResponse<LightExtensionMoveSourceResult>>({
-    url: 'lightExtensions:moveSource',
+    url,
     method: 'post',
     data: input,
   });
-
   const result = unwrapResourceResponse(response);
   invalidateLightExtensionSettingsDescriptorCache(api, result.repo.id);
   invalidateLightExtensionRuntimeCache(api, result.repo.id);
   return result;
 }
 
-export async function moveLightExtensionToInline(
+async function moveToInline(
   api: ApiClientLike,
+  url: string,
   input: LightExtensionMoveToInlineInput,
 ): Promise<LightExtensionMoveToInlineResult> {
   const response = await api.request<ResourceResponse<LightExtensionMoveToInlineResult>>({
-    url: 'lightExtensions:moveToInline',
+    url,
     method: 'post',
     data: input,
   });

@@ -13,16 +13,18 @@ import { Button, Form, Input, Modal, Radio, Select, Tooltip, message } from 'ant
 import React from 'react';
 
 import { LIGHT_EXTENSION_SUPPORTED_KINDS } from '../../constants';
+import {
+  createJsTemplateRuntimeSourceBinding,
+  isJsTemplateRuntimeSourceBinding,
+  serializeJsTemplateRunJSPersistence,
+} from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionKind,
   LightExtensionMoveSourceOriginBinding,
   LightExtensionRepoRecord,
 } from '../../shared/types';
-import {
-  type ApiClientLike,
-  listLightExtensionRepos,
-  moveSourceToLightExtension,
-} from '../api/lightExtensionEntriesRequests';
+import { type ApiClientLike, listJsTemplateRepos, moveSourceToJsTemplate } from '../api/lightExtensionEntriesRequests';
+import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
 import { useT } from '../locale';
 
 type MoveDestinationType = 'existing' | 'new';
@@ -65,19 +67,21 @@ const MODEL_USE_KIND = new Map<string, LightExtensionKind>([
   ['JSItemActionModel', 'js-item'],
 ]);
 
-export function createMoveSourceToLightExtensionContribution(api: ApiClientLike): RunJSStudioToolbarContribution {
+export function createMoveSourceToJsTemplateContribution(api: ApiClientLike): RunJSStudioToolbarContribution {
   const Contribution: React.FC<{ context: RunJSStudioToolbarContext }> = ({ context }) => (
     <MoveSourceToLightExtension api={api} context={context} />
   );
 
   return {
-    key: '@nocobase/plugin-light-extension/move-source',
+    key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.toolbarContributionKey,
     order: 50,
     isVisible: (context) =>
       !context.readOnly && context.workspace.permissions.canWrite && Boolean(resolveLightExtensionKind(context)),
     component: Contribution,
   };
 }
+
+export const createMoveSourceToLightExtensionContribution = createMoveSourceToJsTemplateContribution;
 
 export const MoveSourceToLightExtension: React.FC<{
   api: ApiClientLike;
@@ -96,7 +100,7 @@ export const MoveSourceToLightExtension: React.FC<{
   const loadRepos = React.useCallback(async () => {
     setLoadingRepos(true);
     try {
-      const items = await listLightExtensionRepos(api);
+      const items = await listJsTemplateRepos(api);
       setRepos(items.filter((repo) => repo.lifecycleStatus === 'enabled'));
       return items;
     } catch (error) {
@@ -152,16 +156,13 @@ export const MoveSourceToLightExtension: React.FC<{
     };
     setMoving(true);
     try {
-      const result = await moveSourceToLightExtension(api, {
+      const result = await moveSourceToJsTemplate(api, {
         ...moveInput,
         idempotencyKey: createMoveSourceIdempotencyKey(moveInput),
       });
       setOpen(false);
       message.success(t('Moved to light extension'));
-      await context.onExternalBindingPersisted({
-        sourceMode: 'light-extension',
-        sourceBinding: result.binding,
-      });
+      await context.onExternalBindingPersisted(serializeJsTemplateRunJSPersistence(result.binding));
     } catch (error) {
       message.error(formatError(error, t('Failed to move source to light extension')));
     } finally {
@@ -239,7 +240,8 @@ function resolveLightExtensionKind(context: RunJSStudioToolbarContext): LightExt
   if (serverKind) {
     return serverKind;
   }
-  const declaredKind = context.sourceMetadata?.lightExtensionKind;
+  const declaredKind =
+    context.sourceMetadata?.[JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMetadataKindKey];
   if (isLightExtensionKind(declaredKind)) {
     return declaredKind;
   }
@@ -254,26 +256,17 @@ function resolveOriginBinding(
   value: unknown,
   kind: LightExtensionKind,
 ): LightExtensionMoveSourceOriginBinding | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isJsTemplateRuntimeSourceBinding(value)) {
     return undefined;
   }
-  const binding = value as Record<string, unknown>;
-  if (
-    binding.type !== 'light-extension-entry' ||
-    typeof binding.repoId !== 'string' ||
-    !binding.repoId ||
-    typeof binding.entryId !== 'string' ||
-    !binding.entryId ||
-    binding.kind !== kind
-  ) {
+  if (value.kind !== kind) {
     return undefined;
   }
-  return {
-    type: 'light-extension-entry',
-    repoId: binding.repoId,
-    entryId: binding.entryId,
+  return createJsTemplateRuntimeSourceBinding({
+    repoId: value.repoId,
+    entryId: value.entryId,
     kind,
-  };
+  });
 }
 
 function suggestDisplayName(context: RunJSStudioToolbarContext, kind: LightExtensionKind): string {

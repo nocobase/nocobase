@@ -180,7 +180,7 @@ describe('MoveSourceToLightExtension', () => {
   it('submits the current unsaved workspace to an existing light extension', async () => {
     const onExternalBindingPersisted = vi.fn(async () => undefined);
     const request = vi.fn(async ({ url }: { url: string }) => {
-      if (url === 'lightExtensionRepos:list') {
+      if (url === 'jsTemplateRepos:list') {
         return {
           data: {
             data: [
@@ -197,7 +197,7 @@ describe('MoveSourceToLightExtension', () => {
           },
         };
       }
-      if (url === 'lightExtensions:moveSource') {
+      if (url === 'jsTemplates:moveSource') {
         return {
           data: {
             data: {
@@ -231,9 +231,7 @@ describe('MoveSourceToLightExtension', () => {
     render(<MoveSourceToLightExtension api={{ request }} context={context} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Move to light extension' }));
-    await waitFor(() =>
-      expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensionRepos:list' })),
-    );
+    await waitFor(() => expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplateRepos:list' })));
     fireEvent.click(screen.getByRole('radio', { name: 'Existing light extension' }));
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
@@ -243,7 +241,7 @@ describe('MoveSourceToLightExtension', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'lightExtensions:moveSource',
+          url: 'jsTemplates:moveSource',
           data: expect.objectContaining({
             expectedOwnerFingerprint: 'owner_before',
             sourceRepoId: 'runjs_repo',
@@ -277,10 +275,10 @@ describe('MoveSourceToLightExtension', () => {
   it('creates a new light extension when no existing repository is selected', async () => {
     const onExternalBindingPersisted = vi.fn(async () => undefined);
     const request = vi.fn(async ({ url }: { url: string }) => {
-      if (url === 'lightExtensionRepos:list') {
+      if (url === 'jsTemplateRepos:list') {
         return { data: { data: [] } };
       }
-      if (url === 'lightExtensions:moveSource') {
+      if (url === 'jsTemplates:moveSource') {
         return {
           data: {
             data: {
@@ -317,7 +315,7 @@ describe('MoveSourceToLightExtension', () => {
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
-          url: 'lightExtensions:moveSource',
+          url: 'jsTemplates:moveSource',
           data: expect.objectContaining({
             destination: {
               type: 'new',
@@ -341,7 +339,7 @@ describe('MoveSourceToLightExtension', () => {
       },
     });
     const request = vi.fn(async ({ url }: { url: string }) => {
-      if (url === 'lightExtensionRepos:list') {
+      if (url === 'jsTemplateRepos:list') {
         return {
           data: {
             data: [

@@ -11,6 +11,8 @@ import { createRunJSSourceModeField, type RunJSSourceModeFieldProps } from '../.
 
 export const JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSFieldLightExtensionFullSourceField';
 export const JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSFieldLightExtensionSettingsStepField';
+export const JS_TEMPLATE_FIELD_FULL_SOURCE_FIELD = JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD;
+export const JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD = JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD;
 
 export type JSFieldSourceModeFieldProps = RunJSSourceModeFieldProps;
 

@@ -12,7 +12,9 @@ import { vi } from 'vitest';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 import { FlowSurfaceRouteSync } from '../flow-surfaces/route-sync';
 import {
+  markJsTemplateReferencesOwnerMissingForNodeTree,
   markLightExtensionReferencesOwnerMissingForNodeTree,
+  syncJsTemplateReferencesForNodeTree,
   syncLightExtensionReferencesForNodeTree,
 } from '../flow-surfaces/light-extension-reference-integration';
 
@@ -102,6 +104,52 @@ describe('flowSurfaces light-extension reference integration', () => {
         requestId: 'req_mark_provider',
       },
     );
+  });
+
+  it('prefers canonical provider methods while keeping legacy functions as exact behavior aliases', async () => {
+    const provider = {
+      syncJsTemplateReferencesForNodeTree: vi.fn(async () => undefined),
+      markJsTemplateReferencesOwnerMissingForNodeTree: vi.fn(async () => undefined),
+      syncFlowModelReferencesForNodeTree: vi.fn(async () => undefined),
+      markFlowModelReferencesOwnerMissingForNodeTree: vi.fn(async () => undefined),
+    };
+    const plugin = {
+      app: {
+        pm: {
+          get: vi.fn((name: string) => (name === '@nocobase/plugin-light-extension' ? provider : null)),
+        },
+      },
+    };
+    const input = { rootUid: 'flow_js_action', action: 'flowModels.save' };
+    const ctx = { requestId: 'req_js_template_provider' };
+
+    await syncJsTemplateReferencesForNodeTree(plugin, input, ctx);
+    await syncLightExtensionReferencesForNodeTree(plugin, input, ctx);
+    await markJsTemplateReferencesOwnerMissingForNodeTree(plugin, input, ctx);
+    await markLightExtensionReferencesOwnerMissingForNodeTree(plugin, input, ctx);
+
+    expect(provider.syncJsTemplateReferencesForNodeTree).toHaveBeenCalledTimes(2);
+    expect(provider.markJsTemplateReferencesOwnerMissingForNodeTree).toHaveBeenCalledTimes(2);
+    expect(provider.syncFlowModelReferencesForNodeTree).not.toHaveBeenCalled();
+    expect(provider.markFlowModelReferencesOwnerMissingForNodeTree).not.toHaveBeenCalled();
+  });
+
+  it('treats a disabled or unavailable JS Template provider as a no-op', async () => {
+    const plugin = {
+      app: {
+        pm: {
+          get: vi.fn(() => null),
+          getPlugins: vi.fn(() => new Map()),
+        },
+      },
+    };
+
+    await expect(
+      syncJsTemplateReferencesForNodeTree(plugin, { rootUid: 'flow_disabled' }, { requestId: 'req_disabled' }),
+    ).resolves.toBeUndefined();
+    await expect(
+      markJsTemplateReferencesOwnerMissingForNodeTree(plugin, { rootUid: 'flow_disabled' }),
+    ).resolves.toBeUndefined();
   });
 
   it('marks route-backed tab anchor trees before route-sync removes them', async () => {

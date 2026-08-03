@@ -18,12 +18,16 @@ import type { RunJSSurfaceMenuItemProvider, RunJSSurfaceMenuItemProviderContext 
 import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 
 import { NAMESPACE } from '../../constants';
+import {
+  createJsTemplateRuntimeSourceBinding,
+  serializeJsTemplateRunJSPersistence,
+} from '../../shared/jsTemplateRunJSPersistence';
 import type {
   LightExtensionKind,
   LightExtensionRuntimeSourceBinding,
   LightExtensionSelectableEntrySummary,
 } from '../../shared/types';
-import { listSelectableLightExtensionEntries, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
+import { listSelectableJsTemplateEntries, type ApiClientLike } from '../api/lightExtensionEntriesRequests';
 
 export type LightExtensionModelMenuTarget = 'block' | 'action' | 'field' | 'column';
 
@@ -76,19 +80,21 @@ const FIELD_SURFACE_OPTIONS: Partial<
   'table-column': { target: 'column', modelUse: 'JSColumnModel' },
 };
 
-export function createLightExtensionSurfaceMenuProvider(api: ApiClientLike): RunJSSurfaceMenuItemProvider {
+export function createJsTemplateSurfaceMenuProvider(api: ApiClientLike): RunJSSurfaceMenuItemProvider {
   return async (context) => {
     const options = resolveSurfaceMenuOptions(context);
     if (!options) {
       return null;
     }
-    const source = createLightExtensionModelMenuProvider(api, options);
+    const source = createJsTemplateModelMenuProvider(api, options);
     const items = Array.isArray(source) ? source : await source(context.ctx);
     return items[0] || null;
   };
 }
 
-export function createLightExtensionModelMenuProvider(
+export const createLightExtensionSurfaceMenuProvider = createJsTemplateSurfaceMenuProvider;
+
+export function createJsTemplateModelMenuProvider(
   api: ApiClientLike,
   options: LightExtensionModelMenuOptions,
 ): SubModelItemsType {
@@ -116,13 +122,15 @@ export function createLightExtensionModelMenuProvider(
   ];
 }
 
+export const createLightExtensionModelMenuProvider = createJsTemplateModelMenuProvider;
+
 async function buildRepoItems(
   api: ApiClientLike,
   options: LightExtensionModelMenuOptions,
   ctx: FlowModelContext,
 ): Promise<SubModelItem[]> {
   const kind = targetKinds[options.target];
-  const entries = await listSelectableLightExtensionEntries(api, { kind });
+  const entries = await listSelectableJsTemplateEntries(api, { kind });
   const entriesByRepo = entries
     .filter((entry) => matchesTarget(entry, options.target))
     .reduce((groups, entry) => {
@@ -190,10 +198,10 @@ function createEntryMenuItem(
 }
 
 function createRunJs(entry: LightExtensionSelectableEntrySummary) {
+  const persisted = serializeJsTemplateRunJSPersistence(createRuntimeSourceBinding(entry));
   return {
     version: 'v2',
-    sourceMode: 'light-extension',
-    sourceBinding: createRuntimeSourceBinding(entry),
+    ...persisted,
     settings: extractRunJSSettingsDefaults(entry.settingsSchema),
   };
 }
@@ -297,8 +305,7 @@ function getModelUse(options: LightExtensionModelMenuOptions): string {
 }
 
 function createRuntimeSourceBinding(entry: LightExtensionSelectableEntrySummary): LightExtensionRuntimeSourceBinding {
-  return {
-    type: 'light-extension-entry',
+  return createJsTemplateRuntimeSourceBinding({
     repoId: entry.repoId,
     ...(typeof entry.repoName !== 'undefined' ? { repoName: entry.repoName } : {}),
     ...(typeof entry.repoTitle !== 'undefined' ? { repoTitle: entry.repoTitle } : {}),
@@ -307,7 +314,7 @@ function createRuntimeSourceBinding(entry: LightExtensionSelectableEntrySummary)
     entryName: entry.entryName,
     entryPath: entry.entryPath,
     kind: entry.kind,
-  };
+  });
 }
 
 function getRepoLabel(entry?: LightExtensionSelectableEntrySummary): string {

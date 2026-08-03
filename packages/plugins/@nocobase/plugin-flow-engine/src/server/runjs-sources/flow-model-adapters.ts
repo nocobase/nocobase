@@ -31,27 +31,54 @@ type ChartLocator = Extract<RunJSSourceLocator, { kind: 'chart.option' | 'chart.
 type JsonRecord = Record<string, unknown>;
 type JsonPath = Array<string | number>;
 
-const RENDER_MODEL_USES = new Set([
-  'JSBlockModel',
-  'JSPageModel',
-  'JSFieldModel',
-  'JSEditableFieldModel',
-  'JSItemModel',
-  'JSColumnModel',
-  'JSItemActionModel',
-]);
+/**
+ * Canonical JS Template integration names map to the established FlowModel and RunJS wire keys. This package cannot
+ * depend on the optional Light Extension plugin, so the literal contract is pinned here and compared by tests.
+ */
+export const JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT = Object.freeze({
+  sourceMode: 'light-extension',
+  sourceBindingType: 'light-extension-entry',
+  locatorKind: 'flowModel.step',
+  stepKey: 'runJs',
+  paramPath: Object.freeze(['code']),
+  versionPath: Object.freeze(['version']),
+  sourceMetadataKindKey: 'lightExtensionKind',
+  modelSurfaces: Object.freeze([
+    { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+    { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+    { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+    { modelUse: 'JSCollectionActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+    { modelUse: 'JSFormActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+    { modelUse: 'FilterFormJSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+  ] as const),
+  chartSurfaces: Object.freeze([
+    { kind: 'chart.option', surfaceStyle: 'value' },
+    { kind: 'chart.events', surfaceStyle: 'action' },
+  ] as const),
+});
 
-const ACTION_MODEL_USES = new Set([
-  'JSActionModel',
-  'JSRecordActionModel',
-  'JSCollectionActionModel',
-  'JSFormActionModel',
-  'FilterFormJSActionModel',
-]);
+const RENDER_MODEL_USES = new Set<string>(
+  JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.modelSurfaces
+    .filter((surface) => surface.surfaceStyle === 'render')
+    .map((surface) => surface.modelUse),
+);
+
+const ACTION_MODEL_USES = new Set<string>(
+  JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.modelSurfaces
+    .filter((surface) => surface.surfaceStyle === 'action')
+    .map((surface) => surface.modelUse),
+);
 
 const INITIALIZABLE_FLOW_MODEL_RUNJS_PATHS = new Map<string, string>([
-  ...Array.from(RENDER_MODEL_USES, (modelUse) => [modelUse, 'jsSettings'] as const),
-  ...Array.from(ACTION_MODEL_USES, (modelUse) => [modelUse, 'clickSettings'] as const),
+  ...JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.modelSurfaces.map(
+    (surface) => [surface.modelUse, surface.flowKey] as const,
+  ),
 ]);
 
 const CHART_OPTION_RAW_PATH = ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'];
@@ -531,7 +558,10 @@ function assertFlowModelStepSourceIsInline(
   if (typeof sourceMode === 'undefined' || sourceMode === 'inline') {
     return;
   }
-  if (sourceMode === 'light-extension' && ctx?.sourceTransition === 'external-to-inline') {
+  if (
+    sourceMode === JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.sourceMode &&
+    ctx?.sourceTransition === 'external-to-inline'
+  ) {
     return;
   }
 
@@ -545,9 +575,9 @@ function assertFlowModelStepSourceIsInline(
 
 function isInitializableFlowModelRunJSSource(model: JsonRecord, locator: FlowModelStepLocator): boolean {
   return (
-    locator.stepKey === 'runJs' &&
+    locator.stepKey === JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.stepKey &&
     locator.paramPath.length === 1 &&
-    locator.paramPath[0] === 'code' &&
+    locator.paramPath[0] === JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.paramPath[0] &&
     INITIALIZABLE_FLOW_MODEL_RUNJS_PATHS.get(readModelUse(model)) === locator.flowKey
   );
 }

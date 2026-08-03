@@ -141,18 +141,18 @@ function registerRuntimeBoundaryTests() {
       expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);
     });
 
-    it('keeps authoring-only pages out of the legacy client while sharing runtime model-menu bridges', () => {
+    it('keeps authoring-only pages out of the legacy client while sharing canonical integration installers', () => {
       const pluginSource = fs.readFileSync(path.resolve(__dirname, '../plugin.tsx'), 'utf8');
 
-      expect(pluginSource).toContain('createLightExtensionRunJSResolver');
-      expect(pluginSource).toContain('registerLightExtensionModelMenus');
+      expect(pluginSource).toContain('installJsTemplateRunJSIntegrations');
+      expect(pluginSource).toContain('registerJsTemplateRunJSFlowSettingsComponents');
       expect(pluginSource).not.toContain('EntryReferencesPanel');
 
       const legacySource = fs.readFileSync(path.resolve(__dirname, '../../client/index.ts'), 'utf8');
-      expect(legacySource).toContain('createLightExtensionRunJSResolver');
-      expect(legacySource).toContain('RunJSSourceResolverRegistry');
-      expect(legacySource).toContain('registerLightExtensionModelMenus');
-      expect(legacySource).toContain('JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD');
+      expect(legacySource).toContain('installJsTemplateRunJSIntegrations');
+      expect(legacySource).toContain('registerJsTemplateRunJSFlowSettingsComponents');
+      expect(legacySource).not.toContain('RunJSSourceResolverRegistry');
+      expect(legacySource).not.toContain('JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD');
       expect(legacySource).not.toContain('EntryReferencesPanel');
     });
   });

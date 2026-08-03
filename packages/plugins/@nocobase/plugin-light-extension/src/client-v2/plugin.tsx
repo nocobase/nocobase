@@ -8,36 +8,13 @@
  */
 
 import type { Application } from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
-import {
-  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-  Plugin,
-  RunJSSourceResolverRegistry,
-  RunJSEditorRegistry,
-} from '@nocobase/client-v2';
+import { Plugin } from '@nocobase/client-v2';
 
 import { LIGHT_EXTENSION_ACL_SNIPPET, LIGHT_EXTENSION_SETTINGS_KEY } from '../constants';
 import {
-  JSActionLightExtensionSourceField,
-  JSBlockLightExtensionSourceField,
-  JSFieldLightExtensionSourceField,
-  JSItemLightExtensionSourceField,
-  JSPageLightExtensionSourceField,
-} from './components/JSBlockLightExtensionSourceField';
-import { createRunJSLightExtensionEditorProvider } from './components/RunJSLightExtensionEditorProvider';
-import { createMoveSourceToLightExtensionContribution } from './components/MoveSourceToLightExtension';
-import { SettingsSingleField } from './components/SettingsAutoForm';
-import { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
-import { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
+  installJsTemplateRunJSIntegrations,
+  registerJsTemplateRunJSFlowSettingsComponents,
+} from './jsTemplateRunJSIntegration';
 import { registerLightExtensionRuntimeAuthSession } from './resolvers/LightExtensionRuntimeCacheRegistry';
 
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
@@ -54,43 +31,8 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
   async load() {
     this.disposers.push(registerLightExtensionRuntimeAuthSession(this.app.apiClient, this.app));
 
-    const components = {
-      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionLightExtensionSourceField,
-      [JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSBlockLightExtensionSourceField,
-      [JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldLightExtensionSourceField,
-      [JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemLightExtensionSourceField,
-      [JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageLightExtensionSourceField,
-      [JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD]: SettingsSingleField,
-    };
-    const flowSettings = this.flowEngine.flowSettings;
-    const previousComponents = new Map(
-      Object.keys(components).map((name) => [
-        name,
-        {
-          exists: Object.prototype.hasOwnProperty.call(flowSettings.components, name),
-          value: flowSettings.components[name],
-        },
-      ]),
-    );
-    flowSettings.registerComponents(components, { warnOnOverwrite: false });
-    this.disposers.push(() => {
-      for (const [name, component] of Object.entries(components)) {
-        if (flowSettings.components[name] !== component) {
-          continue;
-        }
-        const previous = previousComponents.get(name);
-        if (previous?.exists) {
-          flowSettings.components[name] = previous.value;
-        } else {
-          delete flowSettings.components[name];
-        }
-      }
-    });
-    this.disposers.push(installLightExtensionRunJSIntegrations(this.app.apiClient));
+    this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
+    this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient));
     activeLightExtensionClientV2Instance = this;
 
     const title = this.t('Light extensions');
@@ -119,27 +61,6 @@ export class PluginLightExtensionClientV2 extends Plugin<Record<string, never>, 
     if (activeLightExtensionClientV2Instance === this) {
       activeLightExtensionClientV2Instance = null;
     }
-  }
-}
-
-function installLightExtensionRunJSIntegrations(api: Application['apiClient']): () => void {
-  const disposers: Array<() => void> = [];
-  try {
-    disposers.push(RunJSSourceResolverRegistry.registerResolver(createLightExtensionRunJSResolver(api)));
-    disposers.push(RunJSEditorRegistry.registerProvider(createRunJSLightExtensionEditorProvider()));
-    disposers.push(runJSStudioToolbarRegistry.register(createMoveSourceToLightExtensionContribution(api)));
-    disposers.push(registerLightExtensionModelMenus(api));
-  } catch (error) {
-    disposeLightExtensionRunJSIntegrations(disposers);
-    throw error;
-  }
-
-  return () => disposeLightExtensionRunJSIntegrations(disposers);
-}
-
-function disposeLightExtensionRunJSIntegrations(disposers: Array<() => void>): void {
-  while (disposers.length) {
-    disposers.pop()?.();
   }
 }
 

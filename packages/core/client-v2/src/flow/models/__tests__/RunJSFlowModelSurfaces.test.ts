@@ -16,6 +16,8 @@ import { JSActionModel } from '../actions/JSActionModel';
 import {
   JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD,
+  JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD,
 } from '../actions/JSActionSourceModeField';
 import { JSCollectionActionModel } from '../actions/JSCollectionActionModel';
 import { JSItemActionModel } from '../actions/JSItemActionModel';
@@ -24,23 +26,35 @@ import { JSPageModel } from '../base/PageModel/JSPageModel';
 import {
   JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
+  JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
 } from '../base/PageModel/JSPageSourceModeField';
 import { FilterFormJSActionModel } from '../blocks/filter-form/FilterFormJSActionModel';
 import { JSFormActionModel } from '../blocks/form/JSFormActionModel';
 import { JSBlockModel } from '../blocks/js-block/JSBlock';
-import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from '../blocks/js-block/JSBlockSourceModeField';
+import {
+  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_TEMPLATE_BLOCK_FULL_SOURCE_FIELD,
+  JS_TEMPLATE_BLOCK_SETTINGS_STEP_FIELD,
+} from '../blocks/js-block/JSBlockSourceModeField';
 import { JSColumnModel } from '../blocks/table/JSColumnModel';
 import { JSEditableFieldModel } from '../fields/JSEditableFieldModel';
 import {
   JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_TEMPLATE_FIELD_FULL_SOURCE_FIELD,
+  JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD,
 } from '../fields/JSFieldSourceModeField';
 import { JSFieldModel } from '../fields/JSFieldModel';
 import { JSItemModel } from '../fields/JSItemModel';
 import {
   JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
   JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD,
+  JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
 } from '../fields/JSItemSourceModeField';
+import { JS_TEMPLATE_SOURCE_MODE, LIGHT_EXTENSION_SOURCE_MODE } from '../utils/runjsSourceRuntimeCommon';
 import { assertJSItemLightExtensionSourceContract } from '../utils/__tests__/jsItemLightExtensionSourceContract';
 import { assertLightExtensionSettingsHostContract } from '../utils/__tests__/lightExtensionSettingsHostContract';
 
@@ -255,6 +269,33 @@ describe('RunJS FlowModel surfaces', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
+  });
+
+  it('exposes JS Template names as aliases of every historical registry value', () => {
+    expect(JS_TEMPLATE_SOURCE_MODE).toBe(LIGHT_EXTENSION_SOURCE_MODE);
+    expect([
+      JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD,
+      JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD,
+      JS_TEMPLATE_BLOCK_FULL_SOURCE_FIELD,
+      JS_TEMPLATE_BLOCK_SETTINGS_STEP_FIELD,
+      JS_TEMPLATE_FIELD_FULL_SOURCE_FIELD,
+      JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD,
+      JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD,
+      JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
+      JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
+      JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
+    ]).toEqual([
+      JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+      JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+      JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+      JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+      JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+      JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    ]);
   });
 
   it.each(surfaces)('$name keeps canonical source, locator, and storage wiring', (spec) => {

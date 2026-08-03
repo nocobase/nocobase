@@ -220,18 +220,32 @@ export class PluginLightExtensionServer extends Plugin {
     return this.requireRemoteSyncModule().getRemoteSyncRuntime();
   }
 
-  async syncFlowModelReferencesForNodeTree(
+  async syncJsTemplateReferencesForNodeTree(
     input: { rootUid: string; action?: string },
     ctx: Parameters<ReferenceService['syncFlowModelReferencesForNodeTree']>[1] = {},
   ) {
     return this.referenceService?.syncFlowModelReferencesForNodeTree(input, ctx);
   }
 
-  async markFlowModelReferencesOwnerMissingForNodeTree(
+  async syncFlowModelReferencesForNodeTree(
+    input: { rootUid: string; action?: string },
+    ctx: Parameters<ReferenceService['syncFlowModelReferencesForNodeTree']>[1] = {},
+  ) {
+    return this.syncJsTemplateReferencesForNodeTree(input, ctx);
+  }
+
+  async markJsTemplateReferencesOwnerMissingForNodeTree(
     input: { rootUid: string; action?: string },
     ctx: Parameters<ReferenceService['markFlowModelReferencesOwnerMissingForNodeTree']>[1] = {},
   ) {
     return this.referenceService?.markFlowModelReferencesOwnerMissingForNodeTree(input, ctx);
+  }
+
+  async markFlowModelReferencesOwnerMissingForNodeTree(
+    input: { rootUid: string; action?: string },
+    ctx: Parameters<ReferenceService['markFlowModelReferencesOwnerMissingForNodeTree']>[1] = {},
+  ) {
+    return this.markJsTemplateReferencesOwnerMissingForNodeTree(input, ctx);
   }
 
   async beforeLoad() {

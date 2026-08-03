@@ -11,7 +11,10 @@ import type { Database } from '@nocobase/database';
 import type { RunJSSourceAdapter, RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
 
 import { registerFlowModelRunJSSourceAdapters } from '../runjs-sources';
-import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
+import {
+  createFlowModelRunJSSourceAdapters,
+  JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT,
+} from '../runjs-sources/flow-model-adapters';
 
 type Registrar = {
   adapters: RunJSSourceAdapter[];
@@ -19,6 +22,36 @@ type Registrar = {
 };
 
 describe('flow-engine RunJS source registration', () => {
+  it('pins JS Template integration to the historical FlowModel and source-binding wire keys', () => {
+    expect(JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT).toEqual({
+      sourceMode: 'light-extension',
+      sourceBindingType: 'light-extension-entry',
+      locatorKind: 'flowModel.step',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+      versionPath: ['version'],
+      sourceMetadataKindKey: 'lightExtensionKind',
+      modelSurfaces: [
+        { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
+        { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+        { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+        { modelUse: 'JSCollectionActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+        { modelUse: 'JSFormActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+        { modelUse: 'FilterFormJSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
+      ],
+      chartSurfaces: [
+        { kind: 'chart.option', surfaceStyle: 'value' },
+        { kind: 'chart.events', surfaceStyle: 'action' },
+      ],
+    });
+  });
+
   it('registers directly with the always-on Workspace runtime and unregisters every adapter on cleanup', () => {
     const registrar = createRegistrar();
     const cleanup = registerFlowModelRunJSSourceAdapters({} as Database, registrar);

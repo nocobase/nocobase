@@ -55,8 +55,8 @@ import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue
 import { executeMutateOps } from './executor';
 import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
-  markLightExtensionReferencesOwnerMissingForNodeTree,
-  syncLightExtensionReferencesForNodeTree,
+  markJsTemplateReferencesOwnerMissingForNodeTree,
+  syncJsTemplateReferencesForNodeTree,
 } from './light-extension-reference-integration';
 import {
   buildSurfaceFingerprintKeysObject as buildPlanningSurfaceFingerprintKeysObject,
@@ -1673,7 +1673,7 @@ export class FlowSurfacesService {
     action: string,
     options: { transaction?: unknown } = {},
   ): Promise<void> {
-    await syncLightExtensionReferencesForNodeTree(
+    await syncJsTemplateReferencesForNodeTree(
       this.plugin,
       {
         rootUid,
@@ -1691,7 +1691,7 @@ export class FlowSurfacesService {
     action: string,
     options: { transaction?: unknown } = {},
   ): Promise<void> {
-    await markLightExtensionReferencesOwnerMissingForNodeTree(
+    await markJsTemplateReferencesOwnerMissingForNodeTree(
       this.plugin,
       {
         rootUid,

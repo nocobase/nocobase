@@ -18,7 +18,7 @@ type PluginWithApp = {
   };
 };
 
-type LightExtensionReferenceContext = {
+export type JsTemplateReferenceContext = {
   transaction?: unknown;
   requestId?: string;
   requestSource?: string;
@@ -29,16 +29,27 @@ type LightExtensionReferenceContext = {
   timezone?: string;
 };
 
-type LightExtensionReferenceProvider = {
+export type JsTemplateReferenceProvider = {
+  syncJsTemplateReferencesForNodeTree?: (
+    input: { rootUid: string; action?: string },
+    ctx?: JsTemplateReferenceContext,
+  ) => Promise<unknown>;
+  markJsTemplateReferencesOwnerMissingForNodeTree?: (
+    input: { rootUid: string; action?: string },
+    ctx?: JsTemplateReferenceContext,
+  ) => Promise<unknown>;
   syncFlowModelReferencesForNodeTree?: (
     input: { rootUid: string; action?: string },
-    ctx?: LightExtensionReferenceContext,
+    ctx?: JsTemplateReferenceContext,
   ) => Promise<unknown>;
   markFlowModelReferencesOwnerMissingForNodeTree?: (
     input: { rootUid: string; action?: string },
-    ctx?: LightExtensionReferenceContext,
+    ctx?: JsTemplateReferenceContext,
   ) => Promise<unknown>;
 };
+
+export type LightExtensionReferenceContext = JsTemplateReferenceContext;
+export type LightExtensionReferenceProvider = JsTemplateReferenceProvider;
 
 const LIGHT_EXTENSION_PLUGIN_ALIASES = [
   '@nocobase/plugin-light-extension',
@@ -46,52 +57,49 @@ const LIGHT_EXTENSION_PLUGIN_ALIASES = [
   'plugin-light-extension',
 ];
 
-export async function syncLightExtensionReferencesForNodeTree(
+export async function syncJsTemplateReferencesForNodeTree(
   plugin: PluginWithApp,
   input: { rootUid?: string | null; action?: string },
-  ctx: LightExtensionReferenceContext = {},
+  ctx: JsTemplateReferenceContext = {},
 ): Promise<void> {
   const rootUid = normalizeString(input.rootUid);
   if (!rootUid) {
     return;
   }
-  const provider = findLightExtensionReferenceProvider(plugin.app?.pm);
-  await provider?.syncFlowModelReferencesForNodeTree?.(
-    {
-      rootUid,
-      action: input.action,
-    },
-    ctx,
-  );
+  const provider = findJsTemplateReferenceProvider(plugin.app?.pm);
+  const request = { rootUid, action: input.action };
+  const sync = provider?.syncJsTemplateReferencesForNodeTree || provider?.syncFlowModelReferencesForNodeTree;
+  await sync?.call(provider, request, ctx);
 }
 
-export async function markLightExtensionReferencesOwnerMissingForNodeTree(
+export async function markJsTemplateReferencesOwnerMissingForNodeTree(
   plugin: PluginWithApp,
   input: { rootUid?: string | null; action?: string },
-  ctx: LightExtensionReferenceContext = {},
+  ctx: JsTemplateReferenceContext = {},
 ): Promise<void> {
   const rootUid = normalizeString(input.rootUid);
   if (!rootUid) {
     return;
   }
-  const provider = findLightExtensionReferenceProvider(plugin.app?.pm);
-  await provider?.markFlowModelReferencesOwnerMissingForNodeTree?.(
-    {
-      rootUid,
-      action: input.action,
-    },
-    ctx,
-  );
+  const provider = findJsTemplateReferenceProvider(plugin.app?.pm);
+  const request = { rootUid, action: input.action };
+  const markOwnerMissing =
+    provider?.markJsTemplateReferencesOwnerMissingForNodeTree ||
+    provider?.markFlowModelReferencesOwnerMissingForNodeTree;
+  await markOwnerMissing?.call(provider, request, ctx);
 }
 
-function findLightExtensionReferenceProvider(pm?: PluginManagerLike): LightExtensionReferenceProvider | null {
+export const syncLightExtensionReferencesForNodeTree = syncJsTemplateReferencesForNodeTree;
+export const markLightExtensionReferencesOwnerMissingForNodeTree = markJsTemplateReferencesOwnerMissingForNodeTree;
+
+function findJsTemplateReferenceProvider(pm?: PluginManagerLike): JsTemplateReferenceProvider | null {
   if (!pm) {
     return null;
   }
 
   for (const alias of LIGHT_EXTENSION_PLUGIN_ALIASES) {
     const plugin = getPluginByAlias(pm, alias);
-    if (isLightExtensionReferenceProvider(plugin)) {
+    if (isJsTemplateReferenceProvider(plugin)) {
       return plugin;
     }
   }
@@ -101,7 +109,7 @@ function findLightExtensionReferenceProvider(pm?: PluginManagerLike): LightExten
     return null;
   }
   for (const plugin of plugins.values()) {
-    if (isLightExtensionReferenceProvider(plugin)) {
+    if (isJsTemplateReferenceProvider(plugin)) {
       return plugin;
     }
   }
@@ -125,12 +133,14 @@ function getInstalledPlugins(pm: PluginManagerLike): Map<unknown, unknown> | und
   }
 }
 
-function isLightExtensionReferenceProvider(value: unknown): value is LightExtensionReferenceProvider {
+function isJsTemplateReferenceProvider(value: unknown): value is JsTemplateReferenceProvider {
   return (
     Boolean(value) &&
     typeof value === 'object' &&
-    (typeof (value as LightExtensionReferenceProvider).syncFlowModelReferencesForNodeTree === 'function' ||
-      typeof (value as LightExtensionReferenceProvider).markFlowModelReferencesOwnerMissingForNodeTree === 'function')
+    (typeof (value as JsTemplateReferenceProvider).syncJsTemplateReferencesForNodeTree === 'function' ||
+      typeof (value as JsTemplateReferenceProvider).markJsTemplateReferencesOwnerMissingForNodeTree === 'function' ||
+      typeof (value as JsTemplateReferenceProvider).syncFlowModelReferencesForNodeTree === 'function' ||
+      typeof (value as JsTemplateReferenceProvider).markFlowModelReferencesOwnerMissingForNodeTree === 'function')
   );
 }
 

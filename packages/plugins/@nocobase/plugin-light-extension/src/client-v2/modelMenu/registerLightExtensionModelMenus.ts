@@ -9,16 +9,16 @@
 
 import { registerRunJSSurfaceMenuItemProvider } from '@nocobase/client-v2';
 
-import { NAMESPACE } from '../../constants';
 import type { ApiClientLike } from '../api/lightExtensionEntriesRequests';
-import { createLightExtensionSurfaceMenuProvider } from './createLightExtensionModelMenuProvider';
+import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
+import { createJsTemplateSurfaceMenuProvider } from './createLightExtensionModelMenuProvider';
 
-const MODEL_MENU_PROVIDER_KEY = `${NAMESPACE}/model-menus`;
+const MODEL_MENU_PROVIDER_KEY = JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.modelMenuProviderKey;
 
 const activeRegistrations = new Map<symbol, ApiClientLike>();
 let unregisterProviders: (() => void) | undefined;
 
-export function registerLightExtensionModelMenus(api: ApiClientLike): () => void {
+export function registerJsTemplateModelMenus(api: ApiClientLike): () => void {
   const registration = Symbol(MODEL_MENU_PROVIDER_KEY);
   activeRegistrations.set(registration, api);
   try {
@@ -39,9 +39,11 @@ export function registerLightExtensionModelMenus(api: ApiClientLike): () => void
   };
 }
 
+export const registerLightExtensionModelMenus = registerJsTemplateModelMenus;
+
 function installProviders(): () => void {
   return registerRunJSSurfaceMenuItemProvider(MODEL_MENU_PROVIDER_KEY, (context) =>
-    createLightExtensionSurfaceMenuProvider(getActiveApi())(context),
+    createJsTemplateSurfaceMenuProvider(getActiveApi())(context),
   );
 }
 

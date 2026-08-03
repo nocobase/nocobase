@@ -73,6 +73,30 @@ Move, reference indexing, runtime resolution, compile keys, artifact hashing, ZI
 through the existing implementation. Reading and saving a historical FlowModel or entry descriptor must not rewrite
 its source mode, binding type, schema URI, entry key, locator, or settings structure.
 
+## RunJS and Flow Surfaces integration aliases
+
+New integration code uses the `JsTemplate*` facade and the canonical `jsTemplate*` HTTP aliases, while
+`JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT` maps them to the existing persisted integration keys. The
+following values remain protocol identities rather than product copy:
+
+- FlowModel locator/step/value paths: `flowModel.step`, `runJs`, `code`, and `version`
+- Source metadata key: `lightExtensionKind`
+- Editor provider key: `light-extension-runjs-value`
+- Workspace toolbar key: `@nocobase/plugin-light-extension/move-source`
+- Surface menu provider key: `@nocobase/plugin-light-extension/model-menus`
+- Existing `JS*LightExtension*` Flow Settings component registry values
+
+The contract enumerates every supported JS Block, Page, Field, Item, and Action model use and its established
+`jsSettings` or `clickSettings` flow key. The Flow Engine server adapter contract separately pins render, value, and
+action source mappings, including chart value/action sources, without depending on the optional plugin package.
+
+Both v1 and v2 client entry points install the same resolver, editor provider, source-move contribution, model menus,
+and Flow Settings components. Canonical constructors prefer the `jsTemplate*` API aliases, but source serialization
+still goes through `JS_TEMPLATE_RUNJS_PERSISTENCE_RUNTIME_CONTRACT` and writes only the legacy wire identities.
+Reference synchronization exposes canonical provider methods and retains the old method names and plugin-manager
+aliases as facades. Disabling or temporarily removing the plugin therefore leaves historical FlowModels loadable and
+does not create a second registry or reference identity.
+
 ## Canonical SDK and compatibility facade
 
 New internal consumers and generated examples use `@nocobase/js-template-sdk`. This package owns the SDK source,

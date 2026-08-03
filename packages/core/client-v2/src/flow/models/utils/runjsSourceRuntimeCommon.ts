@@ -49,8 +49,10 @@ export const INLINE_SOURCE_MODE = 'inline';
 
 /** Canonical persisted source mode for the product now named JS templates. */
 export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+export const JS_TEMPLATE_SOURCE_MODE = LIGHT_EXTENSION_SOURCE_MODE;
 
 export type LightExtensionSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
+export type JsTemplateSourceMode = LightExtensionSourceMode;
 
 export type LightExtensionSourceModeParams = {
   sourceMode?: string;

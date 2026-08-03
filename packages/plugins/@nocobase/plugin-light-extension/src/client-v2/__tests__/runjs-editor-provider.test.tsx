@@ -368,7 +368,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     };
     const api: ApiClientLike = {
       request: vi.fn(async (options) => {
-        if (options.url === 'lightExtensionEntries:get') {
+        if (options.url === 'jsTemplateEntries:get') {
           return {
             data: {
               data: {
@@ -382,7 +382,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
             },
           };
         }
-        if (options.url === 'lightExtensions:moveToInline') {
+        if (options.url === 'jsTemplates:moveToInline') {
           return {
             data: {
               data: {
@@ -450,7 +450,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
 
     await waitFor(() => {
       expect(api.request).toHaveBeenCalledWith({
-        url: 'lightExtensions:moveToInline',
+        url: 'jsTemplates:moveToInline',
         method: 'post',
         data: {
           idempotencyKey: expect.stringMatching(/^move-to-inline-/),
@@ -499,7 +499,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     const onClose = vi.fn();
     const api: ApiClientLike = {
       request: vi.fn(async (options) => {
-        if (options.url === 'lightExtensionEntries:get') {
+        if (options.url === 'jsTemplateEntries:get') {
           return {
             data: {
               data: {
@@ -512,7 +512,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
             },
           };
         }
-        if (options.url === 'lightExtensions:moveToInline') {
+        if (options.url === 'jsTemplates:moveToInline') {
           throw new Error('copyback failed');
         }
         throw new Error(`Unexpected request: ${options.url}`);
@@ -555,24 +555,24 @@ describe('RunJSLightExtensionEditorProvider', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
 
     await waitFor(() => {
-      expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'lightExtensions:moveToInline' }));
+      expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:moveToInline' }));
     });
     fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
     await waitFor(() => {
       expect(
-        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline'),
+        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:moveToInline'),
       ).toHaveLength(2);
     });
     workspacePageMockState.moveToInlineCode = 'ctx.render(<div>changed working copy</div>);';
     fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
     await waitFor(() => {
       expect(
-        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline'),
+        vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:moveToInline'),
       ).toHaveLength(3);
     });
     const moveRequests = vi
       .mocked(api.request)
-      .mock.calls.filter(([options]) => options.url === 'lightExtensions:moveToInline')
+      .mock.calls.filter(([options]) => options.url === 'jsTemplates:moveToInline')
       .map(([options]) => options.data as { idempotencyKey: string });
     expect(moveRequests[0].idempotencyKey).toMatch(/^move-to-inline-/);
     expect(moveRequests[1].idempotencyKey).toBe(moveRequests[0].idempotencyKey);
@@ -730,7 +730,7 @@ describe('RunJSLightExtensionEditorProvider', () => {
     const onPersistedChange = vi.fn();
     const workspaceApi: ApiClientLike = {
       request: vi.fn(async (options) => {
-        if (options.url !== 'lightExtensionEntries:get') {
+        if (options.url !== 'jsTemplateEntries:get') {
           throw new Error(`Unexpected workspace request: ${options.url}`);
         }
         return {

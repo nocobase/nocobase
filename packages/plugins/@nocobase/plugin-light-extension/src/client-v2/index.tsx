@@ -16,13 +16,35 @@ export {
   JSItemLightExtensionSourceField,
   JSPageLightExtensionSourceField,
 } from './components/JSBlockLightExtensionSourceField';
-export { createLightExtensionRunJSResolver } from './resolvers/LightExtensionRunJSResolver';
 export {
+  createJsTemplateRunJSResolver,
+  createLightExtensionRunJSResolver,
+  resolveJsTemplateRuntimeSource,
+  resolveLightExtensionRuntimeSource,
+  type JsTemplateRunJSSourceResolver,
+  type LightExtensionRunJSSourceResolver,
+} from './resolvers/LightExtensionRunJSResolver';
+export {
+  createJsTemplateModelMenuProvider,
+  createJsTemplateSurfaceMenuProvider,
   createLightExtensionModelMenuProvider,
   type LightExtensionModelMenuOptions,
   type LightExtensionModelMenuTarget,
 } from './modelMenu/createLightExtensionModelMenuProvider';
-export { registerLightExtensionModelMenus } from './modelMenu/registerLightExtensionModelMenus';
+export {
+  registerJsTemplateModelMenus,
+  registerLightExtensionModelMenus,
+} from './modelMenu/registerLightExtensionModelMenus';
+export {
+  createJsTemplateRunJSEditorProvider,
+  createRunJSLightExtensionEditorProvider,
+} from './components/RunJSLightExtensionEditorProvider';
+export {
+  createMoveSourceToJsTemplateContribution,
+  createMoveSourceToLightExtensionContribution,
+} from './components/MoveSourceToLightExtension';
+export * from './jsTemplateRunJSIntegration';
+export * from './jsTemplateRunJSIntegrationContract';
 export * from './vsc-file/public-api';
 export { PluginLightExtensionClientV2 } from './plugin';
 export { default } from './plugin';

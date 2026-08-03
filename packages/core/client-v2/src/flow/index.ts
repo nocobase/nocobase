@@ -139,7 +139,13 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './utils';
-export { LIGHT_EXTENSION_SOURCE_MODE, stableSerialize } from './models/utils/runjsSourceRuntimeCommon';
+export {
+  JS_TEMPLATE_SOURCE_MODE,
+  LIGHT_EXTENSION_SOURCE_MODE,
+  stableSerialize,
+  type JsTemplateSourceMode,
+  type LightExtensionSourceMode,
+} from './models/utils/runjsSourceRuntimeCommon';
 export * from './actions';
 export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';
