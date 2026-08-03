@@ -1522,7 +1522,7 @@ describe('plugin-multi-portal server', () => {
     expect(spawnMock).not.toHaveBeenCalledWith('yarn', ['build:html'], expect.any(Object));
   });
 
-  it('should build storage portal HTML with the sub-app portal base path', async () => {
+  it('should build storage portal HTML without the sub-app path when X-App is not provided', async () => {
     process.env.APP_PUBLIC_PATH = '/nocobase/';
     process.env.API_BASE_PATH = '/api';
     app = await createMockServer({
@@ -1547,8 +1547,53 @@ describe('plugin-multi-portal server', () => {
 
     const portalDir = path.join(storagePath as string, 'portals', 'a_q7xx6p75d0e', 'test');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/nocobase/x/test/');
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+        env: expect.objectContaining({
+          NOCOBASE_API_URL: '/nocobase/api',
+          NOCOBASE_PORTAL_BASE: '/nocobase/x/test/',
+        }),
+      }),
+    );
+  });
+
+  it('should build storage portal HTML with the sub-app path when X-App is provided', async () => {
+    process.env.APP_PUBLIC_PATH = '/nocobase/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    app.options.name = 'a_q7xx6p75d0e';
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = (await app.agent().login(rootUser)).set('X-App', 'a_q7xx6p75d0e');
+    const portalDir = path.join(storagePath as string, 'portals', 'a_q7xx6p75d0e', 'crm');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'sub-app-request-storage-portal',
+        title: 'Sub-app request storage portal',
+        portalType: 'ai',
+        portalName: 'crm',
+        routePath: '/crm',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
-      '/nocobase/x/apps/a_q7xx6p75d0e/test/',
+      '/nocobase/x/apps/a_q7xx6p75d0e/crm/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
@@ -1557,7 +1602,7 @@ describe('plugin-multi-portal server', () => {
         cwd: portalDir,
         env: expect.objectContaining({
           NOCOBASE_API_URL: '/nocobase/api/__app/a_q7xx6p75d0e',
-          NOCOBASE_PORTAL_BASE: '/nocobase/x/apps/a_q7xx6p75d0e/test/',
+          NOCOBASE_PORTAL_BASE: '/nocobase/x/apps/a_q7xx6p75d0e/crm/',
         }),
       }),
     );

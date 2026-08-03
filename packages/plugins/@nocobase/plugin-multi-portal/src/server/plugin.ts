@@ -719,11 +719,20 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
   }
 }
 
-async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorageItem): Promise<void> {
+function hasRequestAppHeader(options?: DatabaseHookOptions) {
+  return Boolean(trimString(options?.context?.get('X-App')));
+}
+
+async function buildPortalStorageItem(
+  portalDir: string,
+  item: MultiPortalStorageItem,
+  options?: DatabaseHookOptions,
+): Promise<void> {
   const logPath = getPortalStorageLogPath(item);
+  const buildAppName = hasRequestAppHeader(options) ? item.appName : MAIN_APP_NAME;
   const buildEnv = getPortalStorageCommandEnv({
-    NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
-    NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
+    NOCOBASE_API_URL: getPortalStorageApiUrl(buildAppName),
+    NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(buildAppName, item.portalName),
     SKIP_YARN_COREPACK_CHECK: '1',
     COREPACK_ENABLE_STRICT: '0',
     COREPACK_ENABLE_PROJECT_SPEC: '0',
@@ -3142,6 +3151,7 @@ export class PluginMultiPortalServer extends Plugin {
     item: MultiPortalStorageItem,
     template: ResolvedPortalTemplate,
     portalDir: string,
+    options?: DatabaseHookOptions,
   ) {
     const taskKey = this.getPortalStorageTaskKey(item);
     if (this.portalStorageTaskKeys.has(taskKey)) {
@@ -3168,7 +3178,7 @@ export class PluginMultiPortalServer extends Plugin {
         }
         if (item.enabled) {
           this.logPortalBuildHtml(item, 'requested', 'storage directory was initialized');
-          await buildPortalStorageItem(portalDir, item);
+          await buildPortalStorageItem(portalDir, item, options);
           this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
           return;
         }
@@ -3193,7 +3203,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   private async ensurePortalStorageItem(
     item: MultiPortalStorageItem,
-    options: {
+    options: DatabaseHookOptions & {
       forceBuild?: boolean;
     } = {},
   ) {
@@ -3203,7 +3213,7 @@ export class PluginMultiPortalServer extends Plugin {
 
     if (!(await pathExists(portalDir))) {
       const template = await resolvePortalTemplate(getInitPortalTemplate(), logPath);
-      await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir);
+      await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir, options);
       return;
     }
 
@@ -3215,7 +3225,7 @@ export class PluginMultiPortalServer extends Plugin {
           'requested',
           options.forceBuild ? 'forceBuild is enabled' : 'dist/index.html does not exist',
         );
-        await buildPortalStorageItem(portalDir, item);
+        await buildPortalStorageItem(portalDir, item, options);
         this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
       } else {
         this.logPortalBuildHtml(item, 'skipped', 'dist/index.html already exists');
@@ -3245,7 +3255,7 @@ export class PluginMultiPortalServer extends Plugin {
         await this.removePortalStorageIndexHtml(previousItem);
       }
       if (currentItem) {
-        await this.ensurePortalStorageItem(currentItem, { forceBuild });
+        await this.ensurePortalStorageItem(currentItem, { ...options, forceBuild });
       }
     }, options);
   }
