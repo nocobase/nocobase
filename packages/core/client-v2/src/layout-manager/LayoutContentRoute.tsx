@@ -38,11 +38,12 @@ export const LayoutContentRoute = (props: LayoutContentRouteProps) => {
       id: lastMatch?.id,
       name: lastMatch?.id,
       pathname: location.pathname,
+      state: location.state,
       params: (lastMatch?.params || {}) as Record<string, string | undefined>,
       layoutRouteName: layout.routeName,
       layoutBasePathname: layoutMatch?.pathname,
     };
-  }, [layout.routeName, location.pathname, matches]);
+  }, [layout.routeName, location.pathname, location.state, matches]);
   if (!model) {
     throw new Error(`[NocoBase] Layout '${layout.routeName}' model '${layout.uid}' is not mounted.`);
   }

@@ -7,20 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { ManagedAppRuntime } from './app-runtime.js';
+import { resolveEnvKind, type EnvConfigEntry } from './auth-store.js';
 import { resolveConfiguredEnvPath } from './cli-home.js';
-import { resolveDockerEnvFileArg } from './docker-env-file.ts';
+import { resolveDockerEnvFileArg, resolveDockerEnvFilePath } from './docker-env-file.ts';
 import { resolveConfiguredAppPath } from './env-paths.js';
+
+export const DEFAULT_MANAGED_ENV_FILE_VALUES = {
+  APP_DISCOVERY_ADAPTER: 'local',
+  APP_PROCESS_ADAPTER: 'local',
+  APP_CLIENT_ENTRY_MODE: 'modern-only',
+} as const;
 
 function trimValue(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
   return text || undefined;
-}
-
-function normalizeEnvFilePath(value: string): string {
-  return value.replace(/\\/g, '/');
 }
 
 function stripWrappingQuotes(value: string) {
@@ -71,19 +74,89 @@ export function resolveManagedLocalEnvFilePath(runtime: Extract<ManagedAppRuntim
   const config = runtime.env.config ?? {};
   const explicitEnvFile = trimValue(config.envFile);
   if (explicitEnvFile) {
-    return normalizeEnvFilePath(resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile);
+    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
   }
 
   const configuredAppPath = resolveConfiguredAppPath(config);
   if (configuredAppPath) {
-    return normalizeEnvFilePath(path.join(configuredAppPath, '.env'));
+    return path.join(configuredAppPath, '.env');
   }
 
   if (path.basename(runtime.projectRoot) === 'source') {
-    return normalizeEnvFilePath(path.resolve(runtime.projectRoot, '..', '.env'));
+    return path.resolve(runtime.projectRoot, '..', '.env');
   }
 
-  return normalizeEnvFilePath(path.join(runtime.projectRoot, '.env'));
+  return path.join(runtime.projectRoot, '.env');
+}
+
+export function resolveManagedEnvFilePathFromConfig(
+  envName: string,
+  config?: Partial<EnvConfigEntry>,
+): string | undefined {
+  const kind = config?.kind ?? resolveEnvKind(config);
+
+  if (kind === 'docker') {
+    return resolveDockerEnvFilePath(envName, config);
+  }
+
+  if (kind !== 'local') {
+    return undefined;
+  }
+
+  const explicitEnvFile = trimValue(config?.envFile);
+  if (explicitEnvFile) {
+    return resolveConfiguredEnvPath(explicitEnvFile) ?? explicitEnvFile;
+  }
+
+  const configuredAppPath = resolveConfiguredAppPath(config);
+  if (configuredAppPath) {
+    return path.join(configuredAppPath, '.env');
+  }
+
+  const configuredAppRootPath = trimValue(config?.appRootPath);
+  if (configuredAppRootPath) {
+    const appRootPath = resolveConfiguredEnvPath(configuredAppRootPath) ?? configuredAppRootPath;
+    return path.basename(appRootPath) === 'source'
+      ? path.resolve(appRootPath, '..', '.env')
+      : path.join(appRootPath, '.env');
+  }
+
+  return undefined;
+}
+
+export async function ensureManagedEnvFileDefaults(
+  envName: string,
+  config?: Partial<EnvConfigEntry>,
+  defaults: Record<string, string> = DEFAULT_MANAGED_ENV_FILE_VALUES,
+): Promise<string | undefined> {
+  const envFilePath = resolveManagedEnvFilePathFromConfig(envName, config);
+  if (!envFilePath) {
+    return undefined;
+  }
+
+  let content = '';
+  try {
+    content = await readFile(envFilePath, 'utf8');
+  } catch (error) {
+    const code =
+      error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+    if (code !== 'ENOENT') {
+      throw error;
+    }
+  }
+
+  const existing = parseSimpleEnvFile(content);
+  const missingEntries = Object.entries(defaults).filter(([key, value]) => trimValue(value) && !existing[key]);
+  if (missingEntries.length === 0) {
+    return envFilePath;
+  }
+
+  const separator = content && !content.endsWith('\n') ? '\n' : '';
+  const nextContent = `${content}${separator}${missingEntries.map(([key, value]) => `${key}=${value}`).join('\n')}\n`;
+  await mkdir(path.dirname(envFilePath), { recursive: true });
+  await writeFile(envFilePath, nextContent, 'utf8');
+
+  return envFilePath;
 }
 
 export async function resolveManagedRuntimeEnvFilePath(

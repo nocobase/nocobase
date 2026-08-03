@@ -92,7 +92,11 @@ function isBuiltinCommand(argv: string[]) {
   const commandTokens = argv.filter((token) => token && !token.startsWith('-'));
   const [topic, subtopic] = commandTokens;
 
-  return topic === 'env' || topic === 'resource' || (topic === 'api' && subtopic === 'resource');
+  return (
+    topic === 'env' ||
+    topic === 'resource' ||
+    (topic === 'api' && (subtopic === 'resource' || subtopic === 'swagger'))
+  );
 }
 
 export function shouldSkipRuntimeBootstrap(argv: string[]) {

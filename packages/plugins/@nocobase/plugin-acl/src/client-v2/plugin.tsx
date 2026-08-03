@@ -42,12 +42,6 @@ export class PluginAclClientV2 extends Plugin<any, Application> {
       sort: 10,
       componentLoader: () => import('./pages/permissions/SystemPermissionsTab'),
     });
-    this.settingsUI.addPermissionsTab({
-      key: 'menu',
-      label: String(this.t('Desktop routes')),
-      sort: 20,
-      componentLoader: () => import('./pages/permissions/DesktopRoutesPermissionsTab'),
-    });
 
     this.flowEngine.registerModelLoaders({
       UIEditorTopbarActionModel: {

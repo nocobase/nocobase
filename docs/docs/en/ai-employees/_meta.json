@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Page Blocks",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Built-in AI Employees",
     "items": [
       {
@@ -152,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Vector Store",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Knowledge Base",
         "items": [
           {
@@ -190,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Development Guide",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "External Knowledge Base plugin",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -306,6 +301,69 @@
         "type": "custom-link",
         "label": "Prompt Engineering Guide",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Development Guide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Employees",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Define a Server-side Tool",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Define a Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Define a Built-in AI Employee",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Complete Example: Create a Built-in AI Employee",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Add Frontend Interaction to a Tool",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Internationalization",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Troubleshooting",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Knowledge Base",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External Knowledge Base Plugin",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

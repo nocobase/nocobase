@@ -110,7 +110,7 @@ describe('PluginFileManagerClientV2', () => {
     expect(plugin.getStorageType('local')?.defaultValues).toMatchObject({
       baseUrl: '/storage/uploads',
       renameMode: 'appendRandomID',
-      options: { documentRoot: 'storage/uploads' },
+      options: { documentRoot: 'storage/uploads', useOriginalUrl: false },
     });
     expect(registerModelLoaders).toHaveBeenCalledWith({
       DisplayPreviewFieldModel: { loader: expect.any(Function) },

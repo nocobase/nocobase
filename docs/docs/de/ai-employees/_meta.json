@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Seitenblöcke",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Integrierte KI-Mitarbeiter",
     "items": [
       {
@@ -152,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Vektorspeicher",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Wissensdatenbank",
         "items": [
           {
@@ -190,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Entwicklungsleitfaden",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "External Knowledge Base Plugin",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -306,6 +301,69 @@
         "type": "custom-link",
         "label": "Prompt-Leitfaden",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Entwicklungsleitfaden",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI-Mitarbeiter",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Übersicht",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Serverseitiges Tool definieren",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Skill definieren",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Integrierten AI-Mitarbeiter definieren",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Vollständiges Beispiel: Integrierten AI-Mitarbeiter erstellen",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Frontend-Interaktion für ein Tool hinzufügen",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Internationalisierung",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Häufige Probleme",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI-Wissensdatenbank",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin für externe Wissensdatenbanken",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

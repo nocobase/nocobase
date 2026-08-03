@@ -16,6 +16,8 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { isClientDevProxyPath, rewriteClientDevProxyRootPath } from '../clientDevProxy';
+import { createSettingsDevProxyOptions } from '../settingsDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,11 +48,19 @@ function toDefineLiteral(value: string | undefined) {
   return value === undefined ? 'undefined' : JSON.stringify(value);
 }
 
-function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
-  const modernClientPrefix =
-    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
+function normalizeModernClientPrefix(value: string | undefined) {
+  const normalized =
+    String(value || 'v')
       .trim()
       .replace(/^\/+|\/+$/g, '') || 'v';
+  if (normalized === 'settings') {
+    throw new Error('APP_MODERN_CLIENT_PREFIX "settings" is reserved for the standalone Settings application.');
+  }
+  return normalized;
+}
+
+function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
+  const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   const appClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
   if (!isBuild) {
     return [
@@ -109,16 +119,15 @@ export default defineConfig(({ command }) => {
   const localStorageBasePath = ensurePublicPath(`${resolvedAppPublicPath}storage/uploads/`, '/storage/uploads/');
   const staticBasePath = ensurePublicPath(`${resolvedAppPublicPath}static/`, '/static/');
   const wsBasePath = ensurePublicPath(process.env.WS_PATH, '/ws/');
-  const modernClientPrefix =
-    String(process.env.APP_MODERN_CLIENT_PREFIX || 'v')
-      .trim()
-      .replace(/^\/+|\/+$/g, '') || 'v';
+  const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   const v2BasePath = ensurePublicPath(
     `${resolvedAppPublicPath.replace(/\/$/, '')}/${modernClientPrefix}/`,
     `/${modernClientPrefix}/`,
   );
+  const portalBasePath = ensurePublicPath(`${resolvedAppPublicPath.replace(/\/$/, '')}/x/`, '/x/');
   const clientPort = toNumber(process.env.APP_PORT, 13001);
   const v2Port = toNumber(process.env.APP_V2_PORT, clientPort + 2);
+  const settingsPort = toNumber(process.env.APP_SETTINGS_PORT, clientPort + 3);
   const hmrPath = `${resolvedAppPublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${clientPort + 1}`;
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
@@ -207,8 +216,10 @@ export default defineConfig(({ command }) => {
       publicDir: {
         name: path.resolve(__dirname, 'public'),
       },
-      proxy: {
-        [apiBasePath]: {
+      proxy: [
+        createSettingsDevProxyOptions(resolvedAppPublicPath, settingsPort),
+        {
+          context: apiBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
@@ -226,34 +237,44 @@ export default defineConfig(({ command }) => {
             }
           },
         },
-        [localStorageBasePath]: {
+        {
+          context: localStorageBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [fileBasePath]: {
+        {
+          context: fileBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [staticBasePath]: {
+        {
+          context: staticBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [wsBasePath]: {
+        {
+          context: wsBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
           xfwd: true,
         },
-        [v2BasePath]: {
+        {
+          context: (pathname) => isClientDevProxyPath(pathname, v2BasePath),
           target: `http://127.0.0.1:${v2Port}`,
           changeOrigin: true,
           ws: true,
-          pathRewrite: {
-            [`^${v2BasePath}`]: v2BasePath,
-          },
+          pathRewrite: (pathname) => rewriteClientDevProxyRootPath(pathname, v2BasePath),
           xfwd: true,
         },
-      },
+        {
+          context: (pathname) => isClientDevProxyPath(pathname, portalBasePath),
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true,
+        },
+      ],
       historyApiFallback: {
         disableDotRule: true,
         index: `${resolvedAppPublicPath}index.html`,

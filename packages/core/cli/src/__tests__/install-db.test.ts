@@ -25,6 +25,7 @@ beforeEach(async () => {
   process.env.NB_LOCALE = 'en-US';
   delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
   await deleteCliConfigValue('default-api-host');
+  await deleteCliConfigValue('default-portal-template');
 });
 
 afterEach(async () => {
@@ -39,6 +40,7 @@ afterEach(async () => {
     process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
   }
   await deleteCliConfigValue('default-api-host');
+  await deleteCliConfigValue('default-portal-template');
 });
 
 type InstallStatics = {
@@ -76,7 +78,7 @@ type InstallStatics = {
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
-    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string };
+    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string; 'portal-template'?: string };
   }) => Promise<Record<string, unknown>>;
   buildDbPromptInitialValues: (params: {
     flags: { 'db-port'?: string };
@@ -1249,6 +1251,42 @@ test('install seeds app port initial values unless the user provided --app-port'
     ).toEqual({});
   } finally {
     resolveAvailableDefaultPort.mockRestore();
+  }
+});
+
+test('install seeds the configured default portal template', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const resolveAvailableDefaultPort = vi
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
+    .mockResolvedValue('61522');
+
+  await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
+  try {
+    await expect(
+      installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: {},
+      }),
+    ).resolves.toMatchObject({
+      portalTemplate: '/workspace/portal-template',
+    });
+    await expect(
+      installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: { 'portal-template': '/explicit/portal-template' },
+      }),
+    ).resolves.not.toHaveProperty('portalTemplate');
+  } finally {
+    resolveAvailableDefaultPort.mockRestore();
+    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
   }
 });
 

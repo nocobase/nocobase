@@ -45,6 +45,7 @@ function lazyByAuthType<P>(loaderMap: LoaderMap<() => Promise<{ default: React.C
 
 export default function SignInPage() {
   const app = useApp();
+  const authPlugin = usePlugin(PluginAuthClientV2);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useAuthTranslation();
@@ -59,12 +60,13 @@ export default function SignInPage() {
 
   const resolveSignInForm = useMemo(() => lazyByAuthType(signInFormLoaders), [signInFormLoaders]);
   const resolveSignInButton = useMemo(() => lazyByAuthType(signInButtonLoaders), [signInButtonLoaders]);
+  const defaultRedirectPath = authPlugin.getAuthRedirectFallbackPath(location.pathname);
 
   useDocumentTitle(t('Signin'));
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const redirect = params.get('redirect');
-    const normalized = normalizeV2RedirectPath(app, redirect);
+    const normalized = normalizeV2RedirectPath(app, redirect, defaultRedirectPath);
     if (redirect === normalized) {
       return;
     }
@@ -77,7 +79,7 @@ export default function SignInPage() {
       },
       { replace: true },
     );
-  }, [app, location.pathname, location.search, navigate]);
+  }, [app, defaultRedirectPath, location.pathname, location.search, navigate]);
 
   const tabs = useMemo(() => {
     return authenticators

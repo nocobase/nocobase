@@ -265,6 +265,7 @@ function useNotificationChannels(enabled: boolean) {
 
 function ForgotPasswordTab() {
   const { t } = useAuthTranslation();
+  const ctx = useFlowContext();
   const form = Form.useFormInstance();
   const enableResetPassword: boolean = Form.useWatch(['options', 'public', 'enableResetPassword'], form);
   const emailContentType: 'html' | 'text' = Form.useWatch(['options', 'emailContentType'], form) || 'html';
@@ -304,7 +305,10 @@ function ForgotPasswordTab() {
               notFoundContent={
                 <span>
                   {t('No notification channels found. Please ')}
-                  <Link to="/admin/settings/notification-manager/channels">{t('add one first')}</Link>.
+                  <Link to={ctx.app.pluginSettingsManager.getRoutePath('notification-manager.channels')}>
+                    {t('add one first')}
+                  </Link>
+                  .
                 </span>
               }
             />

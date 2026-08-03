@@ -10,6 +10,7 @@
 import type { EnvConfigEntry } from './auth-store.js';
 import { normalizeEnvProxyConfig } from './env-proxy-config.js';
 import { resolveAppPublicPath } from './app-public-path.js';
+import { normalizeEnvPortalsConfig } from './env-portal-config.js';
 
 const STRING_ENV_CONFIG_KEYS = [
   'source',
@@ -39,6 +40,9 @@ const STRING_ENV_CONFIG_KEYS = [
   'dbSchema',
   'dbTablePrefix',
   'lang',
+  'portalType',
+  'portalName',
+  'portalTemplate',
   'rootUsername',
   'rootEmail',
   'rootPassword',
@@ -65,6 +69,7 @@ export type StoredEnvConfigInput = {
   setupState?: unknown;
   schemaVersion?: unknown;
   proxy?: unknown;
+  portals?: unknown;
 } & Partial<Record<StringEnvConfigKey | BooleanEnvConfigKey, unknown>>;
 
 export type StoredEnvConfig = Partial<
@@ -152,6 +157,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
   const proxy = normalizeEnvProxyConfig(input.proxy);
   if (proxy) {
     envConfig.proxy = proxy;
+  }
+
+  const portals = normalizeEnvPortalsConfig(input.portals);
+  if (portals) {
+    envConfig.portals = portals;
   }
 
   return envConfig;

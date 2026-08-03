@@ -217,7 +217,8 @@ describe('action', () => {
         expect(status).toBe(200);
         expect(body.data.extname).toBe('.xml');
 
-        const res = await agent.get(body.data.url);
+        const storageUrl = await plugin.getFileURL(body.data);
+        const res = await agent.get(storageUrl);
         expect(res.headers['content-disposition']).toBe('attachment');
         expect(res.headers['content-security-policy']).toBe('sandbox');
         expect(res.headers['x-content-type-options']).toBe('nosniff');

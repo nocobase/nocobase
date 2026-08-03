@@ -8,8 +8,19 @@
  */
 
 import type { BaseApplication } from './BaseApplication';
+import {
+  resolveSettingsAppScope,
+  resolveSettingsAppScopeWithinPublicPath,
+  resolveSettingsDocumentPath,
+  type SettingsAppScope,
+} from './settings-app/settingsDocumentPath';
 
 type AppLike = Pick<BaseApplication<any>, 'getPublicPath'> & {
+  name?: string;
+  pluginSettingsManager?: {
+    getRouteName?: (name: string) => string;
+    getRoutePath?: (name: string) => string;
+  };
   router?: {
     getBasename?: () => string | undefined;
   };
@@ -52,7 +63,8 @@ function normalizePublicPath(value?: string) {
 }
 
 function normalizePathname(value?: string) {
-  const normalized = ensureLeadingSlash(String(value || '/').trim() || '/').replace(/\/{2,}/g, '/');
+  const pathname = ensureLeadingSlash(String(value || '/').trim() || '/');
+  const normalized = new URL(pathname, 'http://nocobase.local').pathname.replace(/\/{2,}/g, '/');
   if (normalized !== '/' && normalized.endsWith('/')) {
     return trimTrailingSlashes(normalized);
   }
@@ -179,7 +191,53 @@ function joinRootRelativePath(basePath: string, pathname: string) {
   return normalizePathname(`/${trimLeadingSlashes(normalizedBasePath)}/${trimLeadingSlashes(normalizedPathname)}`);
 }
 
+function isStandaloneSettingsApp(app: AppLike) {
+  return app.pluginSettingsManager?.getRouteName?.('') === 'settings.';
+}
+
+function getSettingsRootPublicPath(app: AppLike) {
+  const publicPath = normalizePublicPath(app.getPublicPath());
+  if (isStandaloneSettingsApp(app)) {
+    return publicPath;
+  }
+
+  const segments = trimTrailingSlashes(publicPath).split('/');
+  segments.pop();
+  return normalizePublicPath(segments.join('/') || '/');
+}
+
+function getSettingsAppScope(app: AppLike): SettingsAppScope {
+  const publicPath = app.getPublicPath();
+  return (
+    resolveSettingsAppScopeWithinPublicPath(publicPath, app.router?.getBasename?.()) ||
+    (app.name && app.name !== 'main' ? resolveSettingsAppScope(`/apps/${app.name}`) : '')
+  );
+}
+
+function getStandaloneSettingsBasePath(app: AppLike) {
+  return resolveSettingsDocumentPath(getSettingsRootPublicPath(app), getSettingsAppScope(app), '/settings');
+}
+
+function isStandaloneSettingsTarget(app: AppLike, pathname: string) {
+  const normalizedPathname = normalizePathname(pathname);
+  const settingsBasePath = normalizePathname(getStandaloneSettingsBasePath(app));
+  return normalizedPathname === settingsBasePath || normalizedPathname.startsWith(`${settingsBasePath}/`);
+}
+
+function isSettingsTargetForAnotherApp(app: AppLike, pathname: string) {
+  const normalizedPathname = normalizePathname(pathname);
+  const rootPublicPath = trimTrailingSlashes(getSettingsRootPublicPath(app)) || '';
+  const pathWithinRoot =
+    rootPublicPath && normalizedPathname.startsWith(`${rootPublicPath}/`)
+      ? normalizedPathname.slice(rootPublicPath.length)
+      : normalizedPathname;
+  return /^\/settings(?:\/|$)/.test(pathWithinRoot);
+}
+
 function getV2SigninPath(app: AppLike) {
+  if (isStandaloneSettingsApp(app)) {
+    return joinRootRelativePath(getStandaloneSettingsBasePath(app), '/signin');
+  }
   return joinRootRelativePath(getV2EffectiveBasePath(app), '/signin');
 }
 
@@ -204,7 +262,7 @@ function getDefaultV2AdminRedirectPath(app: AppLike) {
   return joinRootRelativePath(getV2EffectiveBasePath(app), '/admin');
 }
 
-function isSafeRootRelativePath(value?: string | null) {
+function isSafeRootRelativePath(value?: string | null): value is string {
   return !!value && value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\');
 }
 
@@ -224,6 +282,10 @@ export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fa
   let { pathname, search, hash } = splitPathLike(rawTarget);
   let normalizedPathname = normalizePathname(pathname);
 
+  if (isStandaloneSettingsTarget(app, normalizedPathname)) {
+    return `${preserveTrailingSlash(pathname, normalizedPathname)}${normalizeSearch(search)}${normalizeHash(hash)}`;
+  }
+
   // Already under the current v2 runtime, e.g. `/v/apps/a/admin/`.
   if (basePath === '/' || normalizedPathname === basePath || normalizedPathname.startsWith(`${basePath}/`)) {
     return `${preserveTrailingSlash(pathname, normalizedPathname)}${normalizeSearch(search)}${normalizeHash(hash)}`;
@@ -233,6 +295,11 @@ export function normalizeV2RedirectPath(app: AppLike, target?: string | null, fa
   // Under v2 publicPath but outside the current basename, e.g. `/v/admin/`
   // inside `/v/apps/a/`; use fallback so it lands on `/v/apps/a/admin/`.
   if (publicPath !== '/' && (normalizedPathname === publicPath || normalizedPathname.startsWith(`${publicPath}/`))) {
+    ({ pathname, search, hash } = splitPathLike(fallbackTarget));
+    normalizedPathname = normalizePathname(pathname);
+  }
+
+  if (isSettingsTargetForAnotherApp(app, normalizedPathname)) {
     ({ pathname, search, hash } = splitPathLike(fallbackTarget));
     normalizedPathname = normalizePathname(pathname);
   }
@@ -261,10 +328,14 @@ export function getCurrentV2RedirectPath(app: AppLike, locationLike: LocationLik
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
+ * @param options 可选的登录路由配置
  * @returns 指向 v2 登录页的 href
  */
-export function buildV2SigninHref(app: AppLike, targetPath: string) {
-  return `${getV2SigninPath(app)}?redirect=${encodeURIComponent(targetPath)}`;
+export function buildV2SigninHref(app: AppLike, targetPath: string, options?: { signInRoutePath?: string }) {
+  const signInPath = options?.signInRoutePath
+    ? normalizeV2RedirectPath(app, options.signInRoutePath, options.signInRoutePath)
+    : getV2SigninPath(app);
+  return `${signInPath}?redirect=${encodeURIComponent(targetPath)}`;
 }
 
 /**
@@ -272,10 +343,14 @@ export function buildV2SigninHref(app: AppLike, targetPath: string) {
  *
  * @param app 当前 v2 应用实例
  * @param targetPath 登录后回跳地址
- * @param options 跳转选项
+ * @param options 跳转和登录路由选项
  */
-export function redirectToV2Signin(app: AppLike, targetPath: string, options?: { replace?: boolean }) {
-  const href = buildV2SigninHref(app, targetPath);
+export function redirectToV2Signin(
+  app: AppLike,
+  targetPath: string,
+  options?: { replace?: boolean; signInRoutePath?: string },
+) {
+  const href = buildV2SigninHref(app, targetPath, options);
   if (options?.replace === false) {
     window.location.href = href;
     return;
@@ -306,7 +381,9 @@ export function resolveV2SigninRedirect(value: string | undefined | null, app: A
     return null;
   }
 
-  const validPathnames = new Set(['/signin', getV2SigninPath(app)]);
+  const validPathnames = new Set(
+    isStandaloneSettingsApp(app) ? [getV2SigninPath(app)] : ['/signin', getV2SigninPath(app)],
+  );
   if (!validPathnames.has(url.pathname)) {
     return null;
   }

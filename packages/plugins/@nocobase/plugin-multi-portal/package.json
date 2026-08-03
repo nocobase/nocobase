@@ -1,0 +1,32 @@
+{
+  "name": "@nocobase/plugin-multi-portal",
+  "version": "3.0.0-alpha.6",
+  "main": "dist/server/index.js",
+  "nocobase": {
+    "supportedVersions": [
+      "2.x"
+    ]
+  },
+  "displayName": "Portal manager",
+  "displayName.zh-CN": "Portal 管理",
+  "description": "Provides built-in Portal registration, entry access, and route permissions for Client V2.",
+  "description.zh-CN": "为 Client V2 提供内置 Portal 注册、入口访问与路由权限管理。",
+  "devDependencies": {
+    "@ant-design/icons": "5.x",
+    "@nocobase/plugin-ui-layout": "3.0.0-alpha.6",
+    "ahooks": "3.x",
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "tar": "^7.5.15"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-ui-layout": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

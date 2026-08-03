@@ -13,6 +13,9 @@ export { presetAuthType } from '../preset';
 export { defaultTokenPolicyConfig } from '../constants';
 export { buildRedirectPath, getModernClientPrefix, resolveSigninPrefix } from './utils/buildRedirectPath';
 export type { BuildRedirectPathOptions, ResolveSigninPrefixOptions } from './utils/buildRedirectPath';
+export { resolveSubAppSegment } from './utils/resolveSubAppSegment';
+export { appendAuthRedirectQuery, resolveAuthRedirect } from './utils/authRedirect';
+export type { AuthRedirectOriginContext } from './utils/authRedirect';
 
 export { default } from './plugin';
 export * from '../constants';

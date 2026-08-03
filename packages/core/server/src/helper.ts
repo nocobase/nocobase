@@ -41,22 +41,18 @@ export function createResourcer(options: ApplicationOptions) {
 
 function isWhitelistedCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
-  const whitelist = getCorsWhitelist();
 
   if (!origin) {
     return false;
   }
 
-  if (!whitelist) {
-    return isTrustedOrigin(ctx, origin);
-  }
-
-  return whitelist.has(origin);
+  return isTrustedOrigin(ctx, origin);
 }
 
-function resolveCorsOrigin(ctx: any) {
+export function resolveCorsOrigin(ctx: any) {
   const origin = ctx.get('origin');
   const disallowNoOrigin = process.env.CORS_DISALLOW_NO_ORIGIN === 'true';
+  const whitelist = getCorsWhitelist();
 
   if (!origin && disallowNoOrigin) {
     return false;
@@ -66,7 +62,7 @@ function resolveCorsOrigin(ctx: any) {
     return origin;
   }
 
-  return getCorsWhitelist() ? false : origin;
+  return whitelist ? false : origin;
 }
 
 export function registerMiddlewares(app: Application, options: ApplicationOptions) {
@@ -85,7 +81,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   app.use(
     cors({
       credentials: isWhitelistedCorsOrigin,
-      exposeHeaders: ['content-disposition'],
+      exposeHeaders: ['content-disposition', 'x-new-token'],
       origin: resolveCorsOrigin,
       ...options.cors,
     }),
@@ -122,7 +118,10 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
         ctx.state.pendingAuthTokenSource = 'query';
         return ctx.query.token;
       }
-      const cookieToken = ctx.cookies.get(getAuthCookieName('authToken', app.name));
+      // Browser-driven permanent file requests cannot set Authorization headers. Keep cookie authentication scoped to
+      // the file access middleware so regular APIs never silently fall back from bearer authentication to cookies.
+      const canUseAuthCookie = Boolean(ctx.state?.fileAccess) && ['GET', 'HEAD'].includes(ctx.method);
+      const cookieToken = canUseAuthCookie ? ctx.cookies.get(getAuthCookieName('authToken', app.name)) : undefined;
       ctx.state.pendingAuthTokenSource = cookieToken ? 'cookie' : undefined;
       return cookieToken;
     };

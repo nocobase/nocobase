@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "页面区块",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "内置 AI 员工",
     "items": [
       {
@@ -152,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "向量存储",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "知识库",
         "items": [
           {
@@ -190,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "开发指南",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "External 知识库插件",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -306,6 +301,69 @@
         "type": "custom-link",
         "label": "提示词指南",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "开发指南",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI 员工",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "定义服务端 Tool",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "定义 Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "定义内置 AI 员工",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "完整示例：创建内置 AI 员工",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "为 Tool 添加前端交互",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "国际化",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "常见问题",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "AI 知识库",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "External 知识库插件",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

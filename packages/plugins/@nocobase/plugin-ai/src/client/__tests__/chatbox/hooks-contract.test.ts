@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { act, renderHook as renderTestingHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 import type { AIEmployee, Conversation, Message } from '../../../client-v2/ai-employees/types';
@@ -18,16 +19,33 @@ import { useChatConversationActions } from '../../../client-v2/ai-employees/chat
 import { useChatMessageActions } from '../../../client-v2/ai-employees/chatbox/hooks/useChatMessageActions';
 import { useToolCallActions } from '../../../client-v2/ai-employees/chatbox/hooks/useToolCallActions';
 import { useWorkflowTasks } from '../../../client-v2/ai-employees/chatbox/hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-box';
-import { useChatConversationsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-conversations';
 import {
   CHAT_DEFAULT_SESSION_KEY,
   CHAT_EMPTY_SESSION_STATE,
-  useChatMessagesStore,
 } from '../../../client-v2/ai-employees/chatbox/stores/chat-messages';
-import { useChatToolCallStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tool-call';
-import { useChatToolsStore } from '../../../client-v2/ai-employees/chatbox/stores/chat-tools';
-import { useWorkflowTasksStore } from '../../../client-v2/ai-employees/chatbox/stores/workflow-tasks';
+import { ChatBoxRuntimeProvider, createChatBoxRuntime } from '../../../client-v2/ai-employees/chatbox/stores/runtime';
+
+const runtime = createChatBoxRuntime({ mode: 'global' });
+
+const createModelAccessor = <T extends object>(model: T) => ({
+  getState: () => model,
+  setState: (state: Partial<T>) => {
+    Object.assign(model, state);
+  },
+});
+
+const useChatBoxStore = createModelAccessor(runtime.chatBoxModel);
+const useChatConversationsStore = createModelAccessor(runtime.chatConversationModel);
+const useChatMessagesStore = createModelAccessor(runtime.chatMessageModel);
+const useChatToolCallStore = createModelAccessor(runtime.chatToolCallModel);
+const useChatToolsStore = createModelAccessor(runtime.chatToolModel);
+const useWorkflowTasksStore = createModelAccessor(runtime.workflowTaskModel);
+
+const ChatBoxTestRuntimeProvider: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
+  React.createElement(ChatBoxRuntimeProvider, { runtime }, children);
+
+const renderHook: typeof renderTestingHook = (callback, options) =>
+  renderTestingHook(callback, { wrapper: ChatBoxTestRuntimeProvider, ...options });
 
 type MockResourceMethods = Record<string, ReturnType<typeof vi.fn>>;
 
@@ -387,7 +405,7 @@ describe('useChat facade contract', () => {
   });
 
   it('rerenders use.messages subscribers and migrates draft state to a new session', async () => {
-    const { result } = renderHook(() => {
+    const { result, rerender } = renderHook(() => {
       const chat = useChat();
       return {
         chat,
@@ -400,9 +418,8 @@ describe('useChat facade contract', () => {
       result.current.chat.setAttachments([{ filename: 'draft.txt', status: 'done' }]);
     });
 
-    await waitFor(() => {
-      expect(result.current.messages.map((message) => message.key)).toEqual(['draft-1']);
-    });
+    rerender();
+    expect(result.current.messages.map((message) => message.key)).toEqual(['draft-1']);
 
     act(() => {
       result.current.chat.migrateSessionState('created-session');

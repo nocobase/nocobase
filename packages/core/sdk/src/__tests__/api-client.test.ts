@@ -148,6 +148,36 @@ describe('api-client', () => {
     expect(response?.data).toMatchObject({ data: { synced: true } });
   });
 
+  test.each([
+    ['https://example.com/settings/forgot-password?name=basic', 'https://example.com/settings'],
+    ['https://example.com/settings/apps/demo/forgot-password?name=basic', 'https://example.com/settings/apps/demo'],
+  ])('lostPassword derives the reset link base from the standalone Settings route', async (href, baseURL) => {
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        protocol: 'https:',
+        href,
+        search: '?name=basic',
+      },
+    });
+    const api = new APIClient({
+      baseURL: 'https://example.com/api',
+    });
+    const mock = new MockAdapter(api.axios);
+    mock.onPost('auth:lostPassword').reply((config) => {
+      expect(JSON.parse(config.data)).toEqual({
+        email: 'user@example.com',
+        baseURL,
+      });
+      expect(config.headers?.['X-Authenticator']).toBe('basic');
+      return [204];
+    });
+
+    const response = await api.auth.lostPassword({ email: 'user@example.com' });
+
+    expect(response.status).toBe(204);
+  });
+
   test('set token', async () => {
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',

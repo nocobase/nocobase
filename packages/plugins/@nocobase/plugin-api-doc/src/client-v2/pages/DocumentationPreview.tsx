@@ -7,20 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { DOCUMENTATION_PATH } from '../constants';
-import { useT } from '../locale';
 import Documentation from './Documentation';
 import DocumentationPreviewShell from './DocumentationPreviewShell';
 
 const DocumentationPreview = () => {
-  const ctx = useFlowContext();
-  const t = useT();
-  const documentationHref = ctx.app.getRouteUrl(DOCUMENTATION_PATH);
-
   return (
-    <DocumentationPreviewShell href={documentationHref} previewTitle={t('Preview')}>
+    <DocumentationPreviewShell>
       <Documentation />
     </DocumentationPreviewShell>
   );

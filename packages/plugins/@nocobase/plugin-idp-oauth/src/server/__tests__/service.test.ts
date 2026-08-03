@@ -50,10 +50,10 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
 
     expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/nocobase/idp-oauth/interaction/uid-1');
     expect(service.getFrontendErrorPath('main')).toBe('/nocobase/idp-oauth/error');
-    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/settings/idpOAuth/device');
     expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/nocobase/apps/demo/idp-oauth/interaction/uid-2');
     expect(service.getFrontendErrorPath('demo')).toBe('/nocobase/apps/demo/idp-oauth/error');
-    expect(service.getFrontendDevicePath('demo')).toBe('/nocobase/apps/demo/idpOAuth/device');
+    expect(service.getFrontendDevicePath('demo')).toBe('/nocobase/settings/apps/demo/idpOAuth/device');
   });
 
   test('should prefer explicit app public path for frontend paths', () => {
@@ -61,7 +61,7 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     process.env.APP_PUBLIC_PATH = '/nocobase/';
     const service = new IdpOauthService({} as any, {} as any);
 
-    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/settings/idpOAuth/device');
   });
 
   test('should build frontend paths without apps prefix in single mode', () => {
@@ -263,7 +263,7 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(configuration.routes.device_authorization).toBe('/idpOAuth/device/auth');
     expect(configuration.routes.code_verification).toBe('/idpOAuth/device');
     expect(configuration.features.deviceFlow.enabled).toBe(true);
-    expect(service.getFrontendDevicePath('main')).toBe('/idpOAuth/device');
+    expect(service.getFrontendDevicePath('main')).toBe('/settings/idpOAuth/device');
 
     const deviceRenderCtx = {} as any;
     await configuration.features.deviceFlow.userCodeInputSource(deviceRenderCtx, '<form></form>');

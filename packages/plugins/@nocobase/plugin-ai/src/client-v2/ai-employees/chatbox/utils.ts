@@ -9,7 +9,17 @@
 
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
+import type { APIClient } from '@nocobase/client-v2';
+import type { AIConfigRepository } from '../../repositories/AIConfigRepository';
+import {
+  ContextItem,
+  SkillSettings,
+  TaskMessage,
+  Message,
+  type AIEmployee,
+  type Task,
+  type TriggerTaskOptions,
+} from '../types';
 
 dayjs.extend(duration);
 
@@ -17,22 +27,172 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
+export type RunJSAIEmployeeTriggerTaskOptions = Omit<TriggerTaskOptions, 'aiEmployee'> & {
+  aiEmployee?: string | AIEmployee;
+};
+
+export type NormalizeTriggerTaskOptionsContext = {
+  aiConfigRepository?: Pick<AIConfigRepository, 'getAIEmployees'> | null;
+  apiClient?: Pick<APIClient, 'resource'> | null;
+};
+
+type APIListResponse = {
+  data?: {
+    data?: unknown;
+  };
+};
+
+type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
+
+export const getTargetChatBoxUid = (tasks?: Task[]) => {
+  if (tasks?.length !== 1) {
+    return undefined;
+  }
+  return tasks[0]?.chatBoxUid;
+};
+
+export async function normalizeTriggerTaskOptions(
+  options: RunJSAIEmployeeTriggerTaskOptions,
+  context?: NormalizeTriggerTaskOptionsContext,
+): Promise<TriggerTaskOptions | null> {
+  const { aiEmployee } = options;
+  if (aiEmployee === undefined || isAIEmployee(aiEmployee)) {
+    return options as TriggerTaskOptions;
+  }
+
+  const employees = context?.aiConfigRepository ? await context.aiConfigRepository.getAIEmployees() : [];
+  let matched = employees.find((employee) => employee.username === aiEmployee);
+  if (!matched) {
+    matched = (await getAIEmployeesFromAPIClient(context?.apiClient)).find(
+      (employee) => employee.username === aiEmployee,
+    );
+  }
+  if (!matched) {
+    console.warn(`[plugin-ai] AI employee "${aiEmployee}" was not found or is not accessible to the current user.`);
+    return null;
+  }
+
+  return {
+    ...options,
+    aiEmployee: matched,
+  };
+}
+
+function isAPIListResponse(value: unknown): value is APIListResponse {
+  return isRecord(value) && (value.data === undefined || isRecord(value.data));
+}
+
+function readArrayData(response: unknown): unknown[] {
+  if (!isAPIListResponse(response)) {
+    return [];
+  }
+  return Array.isArray(response.data?.data) ? response.data.data : [];
+}
+
+function isAIEmployee(value: unknown): value is AIEmployee {
+  return isRecord(value) && typeof value.username === 'string';
+}
+
+function isResourceAction(value: unknown): value is ResourceAction {
+  return typeof value === 'function';
+}
+
+async function getAIEmployeesFromAPIClient(apiClient?: Pick<APIClient, 'resource'> | null): Promise<AIEmployee[]> {
+  const resource = apiClient?.resource('aiEmployees') as Record<string, unknown> | undefined;
+  const listByUser = resource?.listByUser;
+  if (!isResourceAction(listByUser)) {
+    return [];
+  }
+
+  const response = await listByUser();
+  return readArrayData(response).filter(isAIEmployee);
+}
+
 export function normalizeAIFileUploadAttachment<T extends Record<string, unknown>>(
   fileData: T,
-  status: string,
-): T & { source?: Record<string, unknown>; status: string };
-export function normalizeAIFileUploadAttachment<T>(fileData: T, status: string): T;
-export function normalizeAIFileUploadAttachment(fileData: unknown, status: string) {
+  status?: string,
+): T & { filename?: string; source?: Record<string, unknown>; status?: string };
+export function normalizeAIFileUploadAttachment<T>(fileData: T, status?: string): T;
+export function normalizeAIFileUploadAttachment(fileData: unknown, status?: string) {
   if (!isRecord(fileData)) {
     return fileData;
   }
   const meta = isRecord(fileData.meta) ? fileData.meta : undefined;
   const source = isRecord(meta?.source) ? meta.source : undefined;
+  const filename =
+    typeof fileData.filename === 'string' && fileData.filename
+      ? fileData.filename
+      : typeof fileData.name === 'string'
+        ? fileData.name
+        : undefined;
   return {
     ...fileData,
+    ...(filename ? { filename } : {}),
     ...(source ? { source } : {}),
-    status,
+    ...(status ? { status } : {}),
   };
+}
+
+export const AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT = 10;
+export const AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT = 20 * 1024 * 1024;
+
+export type AttachmentLimitViolation =
+  | {
+      type: 'count';
+      limit: number;
+    }
+  | {
+      type: 'size';
+      limit: number;
+    };
+
+export function resolveStorageSizeLimit(rules: unknown): number {
+  const configuredSize = isRecord(rules) ? Number(rules.size) : Number.NaN;
+  return Number.isFinite(configuredSize) && configuredSize > 0
+    ? configuredSize
+    : AI_EMPLOYEE_ATTACHMENT_SIZE_LIMIT_DEFAULT;
+}
+
+function getAttachmentSize(value: unknown): number {
+  if (!isRecord(value)) {
+    return 0;
+  }
+  const size = Number(value.size);
+  return Number.isFinite(size) && size > 0 ? size : 0;
+}
+
+export function validateAIEmployeeAttachmentLimits(
+  attachments: unknown[],
+  sizeLimit: number,
+): AttachmentLimitViolation | null {
+  if (attachments.length > AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT) {
+    return {
+      type: 'count',
+      limit: AI_EMPLOYEE_ATTACHMENT_COUNT_LIMIT,
+    };
+  }
+
+  const totalSize = attachments.reduce<number>((total, attachment) => total + getAttachmentSize(attachment), 0);
+  if (totalSize > sizeLimit) {
+    return {
+      type: 'size',
+      limit: sizeLimit,
+    };
+  }
+
+  return null;
+}
+
+export function formatAttachmentSizeLimit(size: number): string {
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = size;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const fractionDigits = Number.isInteger(value) ? 0 : 2;
+  return `${value.toFixed(fractionDigits)} ${units[unitIndex]}`;
 }
 
 export function isCurrentLiveMessage(
@@ -156,24 +316,30 @@ export const parseWorkContext = async (app: WorkContextApplication, workContext:
     aiManager?: {
       getWorkContext?: (type: string) => {
         getContent?: (app: WorkContextApplication, item: ContextItem) => Promise<unknown>;
+        getFrontendTools?: (
+          app: WorkContextApplication,
+          item: ContextItem,
+        ) => Promise<NonNullable<ContextItem['frontendTools']>>;
       };
     };
   };
   for (const context of workContext) {
-    if (context.content) {
-      parsed.push(context);
-      continue;
-    }
     const contextOptions = plugin.aiManager?.getWorkContext?.(context.type);
-    if (!(contextOptions && contextOptions.getContent)) {
-      parsed.push(context);
-      continue;
+    let parsedContext = { ...context };
+    if (!context.content && contextOptions?.getContent) {
+      const content = await contextOptions.getContent(app, context);
+      parsedContext = {
+        ...parsedContext,
+        content,
+      };
     }
-    const content = await contextOptions.getContent(app, context);
-    parsed.push({
-      ...context,
-      content,
-    });
+    if (contextOptions?.getFrontendTools) {
+      const frontendTools = await contextOptions.getFrontendTools(app, context);
+      if (frontendTools.length) {
+        parsedContext.frontendTools = frontendTools;
+      }
+    }
+    parsed.push(parsedContext);
   }
   return parsed;
 };

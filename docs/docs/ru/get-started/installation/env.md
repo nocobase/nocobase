@@ -146,7 +146,7 @@ CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
 PLUGIN_PACKAGE_PREFIX можно настроить так:
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 Соответствие между именем плагина и именем пакета следующее:

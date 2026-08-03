@@ -117,7 +117,7 @@ describe('20250320223415-stats', () => {
   describe('executed field should works correctly after migrated', () => {
     beforeEach(async () => {
       app = await getApp();
-      app.version.update('1.6.0');
+      await app.version.update('1.6.0');
       plugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
       WorkflowStatsRepo = app.db.getRepository('workflowStats');
       WorkflowVersionStatsRepo = app.db.getRepository('workflowVersionStats');

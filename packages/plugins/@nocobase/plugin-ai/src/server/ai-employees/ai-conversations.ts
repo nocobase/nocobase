@@ -11,12 +11,14 @@ import { Model, Op, Transaction, Transactionable } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
+import type { FrontendToolManifest } from '../../common/frontend-tools';
 
 export type AIConversationsOptions = {
   systemMessage?: unknown;
   skillSettings?: unknown;
   conversationSettings?: unknown;
   modelSettings?: unknown;
+  frontendTools?: FrontendToolManifest[];
   [key: string]: unknown;
 };
 
@@ -32,6 +34,7 @@ export type CreateAIConversationParams = {
   title?: string;
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
+  scope?: string;
   transaction?: Transaction;
   category?: 'chat' | 'task';
 };
@@ -92,6 +95,7 @@ export class AIConversationsManager {
     title,
     options = {},
     from = 'main-agent',
+    scope,
     transaction,
     category = 'chat',
   }: CreateAIConversationParams) {
@@ -103,6 +107,7 @@ export class AIConversationsManager {
         options,
         thread: 1,
         from,
+        ...(scope !== undefined ? { scope } : {}),
         category,
       },
       transaction,

@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Блоки страниц",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Встроенные ИИ-сотрудники",
     "items": [
       {
@@ -152,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Векторное хранилище",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "База знаний",
         "items": [
           {
@@ -190,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Руководство разработчика",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Плагин External Knowledge Base",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -306,6 +301,69 @@
         "type": "custom-link",
         "label": "Руководство по проектированию запросов",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Руководство разработчика",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ИИ-сотрудники",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Определение серверного Tool",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Определение Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Определение встроенного ИИ-сотрудника",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Полный пример: создание встроенного ИИ-сотрудника",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Добавление фронтенд-взаимодействия для Tool",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Интернационализация плагина ИИ-сотрудника",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Частые проблемы",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "База знаний ИИ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Плагин External Knowledge Base",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

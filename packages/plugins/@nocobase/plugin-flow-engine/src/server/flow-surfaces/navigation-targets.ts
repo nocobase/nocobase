@@ -15,9 +15,8 @@ export const DEFAULT_MOBILE_UI_LAYOUT_UID = 'mobile-layout-model';
 export const DEFAULT_ADMIN_MULTI_PORTAL_UID = '__default_admin__';
 export const DEFAULT_MOBILE_MULTI_PORTAL_UID = '__default_mobile__';
 
-const RESERVED_MULTI_PORTAL_UIDS = new Set([DEFAULT_ADMIN_MULTI_PORTAL_UID, DEFAULT_MOBILE_MULTI_PORTAL_UID]);
-
 export type FlowSurfaceNavigationRequestRoles = readonly string[] | string;
+type FlowSurfacePortalRouteScopeKind = 'layout' | 'portal';
 
 export type FlowSurfaceResolvedMultiPortal = {
   uid: string;
@@ -29,6 +28,8 @@ export type FlowSurfaceResolvedMultiPortal = {
   enabled: true;
   layoutUid: string;
   layoutType?: string;
+  portalType: 'no-code';
+  routeScopeKind: FlowSurfacePortalRouteScopeKind;
 };
 
 export type FlowSurfaceNavigationTarget = {
@@ -85,6 +86,19 @@ function normalizeRelationRouteId(routeId: unknown): TargetKey | undefined {
   return routeId === null || typeof routeId === 'undefined' ? undefined : (routeId as TargetKey);
 }
 
+function isDefaultLayoutMultiPortalUid(uid: unknown) {
+  return uid === DEFAULT_ADMIN_MULTI_PORTAL_UID || uid === DEFAULT_MOBILE_MULTI_PORTAL_UID;
+}
+
+function getMultiPortalLayoutType(uiLayoutUid: string | undefined) {
+  if (uiLayoutUid === DEFAULT_ADMIN_UI_LAYOUT_UID) {
+    return 'desktop';
+  }
+  if (uiLayoutUid === DEFAULT_MOBILE_UI_LAYOUT_UID) {
+    return 'mobile';
+  }
+}
+
 export class FlowSurfaceNavigationTargetsService {
   constructor(private readonly db: Database) {}
 
@@ -115,9 +129,23 @@ export class FlowSurfaceNavigationTargetsService {
     currentRoles?: FlowSurfaceNavigationRequestRoles,
     transaction?: Transaction,
   ): Promise<FlowSurfaceNavigationTargetsResult> {
-    const layoutTargets = await this.listLayoutTargets(transaction);
+    let layoutTargets = await this.listLayoutTargets(transaction);
     const multiPortal = this.hasMultiPortalCapability();
-    const portalTargets = multiPortal ? await this.listAccessiblePortalTargets(currentRoles, transaction) : [];
+    const portalInventory = multiPortal
+      ? await this.getEnabledPortalInventory(currentRoles, transaction)
+      : { accessible: [] };
+    const portalTargets = multiPortal
+      ? await this.listAccessiblePortalTargets(portalInventory.accessible, transaction)
+      : [];
+    if (multiPortal) {
+      layoutTargets = layoutTargets.map(({ default: _default, ...target }) => target);
+      if (
+        portalInventory.accessible.length === 1 &&
+        portalTargets[0]?.uid === readStringField(portalInventory.accessible[0], 'uid')
+      ) {
+        portalTargets[0] = { ...portalTargets[0], default: true };
+      }
+    }
     return {
       version: '1',
       capabilities: {
@@ -125,6 +153,65 @@ export class FlowSurfaceNavigationTargetsService {
       },
       targets: [...layoutTargets, ...portalTargets],
     };
+  }
+
+  async resolveDefaultPortal(options: Omit<PortalResolveOptions, 'path'>): Promise<FlowSurfaceResolvedMultiPortal> {
+    if (!this.hasMultiPortalCapability()) {
+      throwBadRequest(`flowSurfaces ${options.actionName} requires the Multi-portal capability`, {
+        ruleId: 'navigation-portal-unsupported',
+        path: 'navigation',
+      });
+    }
+
+    const inventory = await this.getEnabledPortalInventory(options.currentRoles, options.transaction);
+    if (!inventory.enabled.length) {
+      throwBadRequest(`flowSurfaces ${options.actionName} requires an enabled portal`, {
+        ruleId: 'navigation-portal-not-found',
+        path: 'navigation',
+        details: {
+          uiBuilderAllowed: false,
+          adminLayoutFallbackAllowed: false,
+          agentInstruction:
+            'Stop this Flow Surfaces write. Ask the user to create and enable a Portal before retrying; do not fall back to the Admin layout.',
+        },
+      });
+    }
+    if (!inventory.accessible.length) {
+      throwForbidden(
+        `flowSurfaces ${options.actionName} current roles cannot access an enabled portal`,
+        'FLOW_SURFACE_NAVIGATION_PORTAL_FORBIDDEN',
+        {
+          ruleId: 'navigation-portal-forbidden',
+          path: 'navigation',
+        },
+      );
+    }
+    if (inventory.accessible.length > 1) {
+      throwBadRequest(`flowSurfaces ${options.actionName} requires an explicit portal selection`, {
+        ruleId: 'navigation-portal-selection-required',
+        path: 'navigation',
+        details: {
+          candidates: inventory.accessible.map((portal) => {
+            const uid = readStringField(portal, 'uid');
+            return {
+              uid,
+              portalName: readStringField(portal, 'portalName') || null,
+              title: readStringField(portal, 'title') || uid,
+              portalType: readStringField(portal, 'portalType') || null,
+            };
+          }),
+          uiBuilderAllowed: false,
+          adminLayoutFallbackAllowed: false,
+          agentInstruction:
+            'Stop this Flow Surfaces write and ask the user to select one candidate before retrying; do not choose by Portal type or fall back to the Admin layout.',
+        },
+      });
+    }
+
+    return this.resolvePortal(readStringField(inventory.accessible[0], 'uid'), {
+      ...options,
+      path: 'navigation',
+    });
   }
 
   async resolvePortal(portalUidValue: unknown, options: PortalResolveOptions): Promise<FlowSurfaceResolvedMultiPortal> {
@@ -142,20 +229,9 @@ export class FlowSurfaceNavigationTargetsService {
         details: { portalUid },
       });
     }
-    if (RESERVED_MULTI_PORTAL_UIDS.has(portalUid)) {
-      throwBadRequest(
-        `flowSurfaces ${options.actionName} ${options.path} cannot use reserved default portal uid '${portalUid}'; use layoutUid semantics instead`,
-        {
-          ruleId: 'navigation-portal-reserved',
-          path: options.path,
-          details: { portalUid },
-        },
-      );
-    }
-
     const portal = await this.db.getRepository('multiPortals').findOne({
       filter: { uid: portalUid },
-      fields: ['uid', 'title', 'icon', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
+      fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
       transaction: options.transaction,
     });
     if (!portal) {
@@ -165,48 +241,13 @@ export class FlowSurfaceNavigationTargetsService {
         details: { portalUid },
       });
     }
-    if (readRecordField(portal, 'enabled') !== true) {
-      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' is disabled`, {
-        ruleId: 'navigation-portal-disabled',
-        path: options.path,
-        details: { portalUid },
-      });
-    }
-
-    const layoutUid = readStringField(portal, 'uiLayoutUid');
-    if (!layoutUid || !this.db.getCollection('uiLayouts')) {
-      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has no available backing UI layout`, {
-        ruleId: 'navigation-portal-layout-not-found',
-        path: options.path,
-        details: { portalUid, layoutUid: layoutUid || null },
-      });
-    }
-    const layout = await this.db.getRepository('uiLayouts').findOne({
-      filter: { uid: layoutUid },
-      fields: ['uid', 'layoutType', 'enabled'],
-      transaction: options.transaction,
-    });
-    if (!layout) {
-      throwBadRequest(
-        `flowSurfaces ${options.actionName} portal '${portalUid}' backing UI layout '${layoutUid}' does not exist`,
-        {
-          ruleId: 'navigation-portal-layout-not-found',
-          path: options.path,
-          details: { portalUid, layoutUid },
-        },
-      );
-    }
-    if (readRecordField(layout, 'enabled') !== true) {
-      throwBadRequest(
-        `flowSurfaces ${options.actionName} portal '${portalUid}' backing UI layout '${layoutUid}' is disabled`,
-        {
-          ruleId: 'navigation-portal-layout-disabled',
-          path: options.path,
-          details: { portalUid, layoutUid },
-        },
-      );
-    }
-    if (!(await this.canAccessPortal(portalUid, options.currentRoles, options.transaction))) {
+    const routeScopeKind: FlowSurfacePortalRouteScopeKind = isDefaultLayoutMultiPortalUid(portalUid)
+      ? 'layout'
+      : 'portal';
+    if (
+      routeScopeKind === 'portal' &&
+      !(await this.canAccessPortal(portalUid, options.currentRoles, options.transaction))
+    ) {
       throwForbidden(
         `flowSurfaces ${options.actionName} current roles cannot access portal '${portalUid}'`,
         'FLOW_SURFACE_NAVIGATION_PORTAL_FORBIDDEN',
@@ -217,17 +258,62 @@ export class FlowSurfaceNavigationTargetsService {
         },
       );
     }
-
+    if (readRecordField(portal, 'enabled') !== true) {
+      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' is disabled`, {
+        ruleId: 'navigation-portal-disabled',
+        path: options.path,
+        details: { portalUid },
+      });
+    }
+    const portalType = readStringField(portal, 'portalType');
+    if (portalType !== 'no-code') {
+      if (portalType === 'ai') {
+        throwBadRequest(
+          `flowSurfaces ${options.actionName} cannot use UI Builder or Flow Surfaces for AI Portal '${portalUid}'; stop and implement the request in the Portal source code`,
+          {
+            ruleId: 'navigation-portal-type-unsupported',
+            path: options.path,
+            details: {
+              portalUid,
+              portalType,
+              portalName: readStringField(portal, 'portalName') || null,
+              expectedPortalType: 'no-code',
+              uiBuilderAllowed: false,
+              adminLayoutFallbackAllowed: false,
+              implementationPath: 'ai-portal-source',
+              agentInstruction:
+                'Stop this Flow Surfaces write. Run nb portal info <portalName> -j to resolve localPath, then implement the request in that AI Portal source code. Do not retry with an Admin layout.',
+            },
+          },
+        );
+      }
+      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' does not support no-code routes`, {
+        ruleId: 'navigation-portal-type-unsupported',
+        path: options.path,
+        details: { portalUid, portalType: portalType || null },
+      });
+    }
+    const layoutUid = readStringField(portal, 'uiLayoutUid');
+    const layoutType = getMultiPortalLayoutType(layoutUid);
+    if (!layoutUid || !layoutType) {
+      throwBadRequest(`flowSurfaces ${options.actionName} portal '${portalUid}' has an unsupported UI layout uid`, {
+        ruleId: 'navigation-portal-layout-not-found',
+        path: options.path,
+        details: { portalUid, layoutUid: layoutUid || null },
+      });
+    }
     return {
       uid: portalUid,
       title: readStringField(portal, 'title') || portalUid,
       icon: readStringField(portal, 'icon') || null,
-      routeName: readStringField(portal, 'routeName'),
+      routeName: readStringField(portal, 'portalName'),
       routePath: readStringField(portal, 'routePath'),
       authCheck: readRecordField(portal, 'authCheck') === true,
       enabled: true,
       layoutUid,
-      layoutType: readStringField(layout, 'layoutType'),
+      layoutType,
+      portalType,
+      routeScopeKind,
     };
   }
 
@@ -353,62 +439,57 @@ export class FlowSurfaceNavigationTargetsService {
     });
   }
 
-  private async listAccessiblePortalTargets(
-    currentRoles?: FlowSurfaceNavigationRequestRoles,
-    transaction?: Transaction,
-  ): Promise<FlowSurfaceNavigationTarget[]> {
-    const roles = normalizeRoles(currentRoles);
-    let accessiblePortalUids: string[] | undefined;
-    if (!roles.includes('root')) {
-      if (!roles.length || !this.db.getCollection('rolesMultiPortals')) {
-        return [];
-      }
-      const grants = await this.db.getRepository('rolesMultiPortals').find({
-        fields: ['multiPortalUid'],
-        filter: { roleName: roles },
-        transaction,
-      });
-      accessiblePortalUids = Array.from(
-        new Set(
-          grants
-            .map((grant: unknown) => readStringField(grant, 'multiPortalUid'))
-            .filter((portalUid: string | undefined): portalUid is string => !!portalUid),
-        ),
-      );
-      if (!accessiblePortalUids.length) {
-        return [];
-      }
-    }
-
-    const accessiblePortalUidSet = accessiblePortalUids ? new Set(accessiblePortalUids) : undefined;
-    const filter: Record<string, unknown> = {
-      enabled: true,
-      'uid.$notIn': Array.from(RESERVED_MULTI_PORTAL_UIDS),
-    };
-    const portals = await this.db.getRepository('multiPortals').find({
-      filter,
-      fields: ['uid', 'title', 'icon', 'routeName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
+  private async getEnabledPortalInventory(currentRoles?: FlowSurfaceNavigationRequestRoles, transaction?: Transaction) {
+    const records = await this.db.getRepository('multiPortals').find({
+      filter: { enabled: true },
+      fields: ['uid', 'title', 'icon', 'portalType', 'portalName', 'routePath', 'authCheck', 'enabled', 'uiLayoutUid'],
       sort: ['uid'],
       transaction,
     });
+    const enabled = records.filter((portal: unknown) => {
+      const uiLayoutUid = readStringField(portal, 'uiLayoutUid');
+      return !!getMultiPortalLayoutType(uiLayoutUid);
+    });
+    enabled.sort((left: unknown, right: unknown) =>
+      String(readStringField(left, 'uid') || '').localeCompare(String(readStringField(right, 'uid') || '')),
+    );
+    const roles = normalizeRoles(currentRoles);
+    const isRoot = roles.includes('root');
+    const accessiblePortalUids = new Set<string>();
+    if (!isRoot && roles.length && this.db.getCollection('rolesMultiPortals')) {
+      const grants = await this.db.getRepository('rolesMultiPortals').find({
+        filter: { roleName: roles },
+        fields: ['multiPortalUid'],
+        transaction,
+      });
+      for (const grant of grants) {
+        const portalUid = readStringField(grant, 'multiPortalUid');
+        if (portalUid) {
+          accessiblePortalUids.add(portalUid);
+        }
+      }
+    }
+    const accessible = enabled.filter((portal: unknown) => {
+      const portalUid = readStringField(portal, 'uid');
+      return !!portalUid && (isRoot || isDefaultLayoutMultiPortalUid(portalUid) || accessiblePortalUids.has(portalUid));
+    });
+    return { enabled, accessible };
+  }
+
+  private async listAccessiblePortalTargets(
+    portals: unknown[],
+    _transaction?: Transaction,
+  ): Promise<FlowSurfaceNavigationTarget[]> {
     const targets: FlowSurfaceNavigationTarget[] = [];
     for (const portal of portals) {
       const portalUid = readStringField(portal, 'uid');
       const layoutUid = readStringField(portal, 'uiLayoutUid');
-      if (
-        !portalUid ||
-        (accessiblePortalUidSet && !accessiblePortalUidSet.has(portalUid)) ||
-        !layoutUid ||
-        !this.db.getCollection('uiLayouts')
-      ) {
+      const portalType = readStringField(portal, 'portalType');
+      if (!portalUid || portalType !== 'no-code') {
         continue;
       }
-      const layout = await this.db.getRepository('uiLayouts').findOne({
-        filter: { uid: layoutUid, enabled: true },
-        fields: ['layoutType'],
-        transaction,
-      });
-      if (!layout) {
+      const layoutType = getMultiPortalLayoutType(layoutUid);
+      if (!layoutUid || !layoutType) {
         continue;
       }
       targets.push({
@@ -418,13 +499,33 @@ export class FlowSurfaceNavigationTargetsService {
         title: readStringField(portal, 'title') || portalUid,
         icon: readStringField(portal, 'icon') || null,
         layoutUid,
-        layoutType: readStringField(layout, 'layoutType'),
-        routeName: readStringField(portal, 'routeName'),
+        layoutType,
+        routeName: readStringField(portal, 'portalName'),
         routePath: readStringField(portal, 'routePath'),
         authCheck: readRecordField(portal, 'authCheck') === true,
       });
     }
-    return targets;
+    return targets.sort((left, right) => this.comparePortalPriority(left, right));
+  }
+
+  private comparePortalPriority(left: unknown, right: unknown) {
+    const priorityDelta = this.getPortalPriority(left) - this.getPortalPriority(right);
+    if (priorityDelta) {
+      return priorityDelta;
+    }
+    return String(readStringField(left, 'uid') || '').localeCompare(String(readStringField(right, 'uid') || ''));
+  }
+
+  private getPortalPriority(portal: unknown) {
+    const uiLayout = readRecordField(portal, 'uiLayout');
+    const layoutType = readStringField(portal, 'layoutType') || readStringField(uiLayout, 'layoutType');
+    if (readStringField(portal, 'uid') === DEFAULT_ADMIN_MULTI_PORTAL_UID) {
+      return 0;
+    }
+    if (layoutType !== 'mobile') {
+      return 1;
+    }
+    return 2;
   }
 
   private async canAccessPortal(

@@ -12,20 +12,23 @@ import { Bubble } from '@ant-design/x';
 import { Button, Divider, Layout, Space, Spin, theme, Typography } from 'antd';
 import { DownOutlined, LoadingOutlined, RightOutlined } from '@ant-design/icons';
 import { useApp } from '@nocobase/client-v2';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import type { Message } from '../../types';
 import { useChat } from '../hooks/useChat';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
-import { useChatToolsStore } from '../stores/chat-tools';
+import { useChatBoxRuntime } from '../stores/runtime';
 import { flattenMessages, formatConversationDuration, type RenderedItem } from '../utils';
 import { createAIEmployeeRole, defaultMessageRoles } from './MessageRenderers';
 
 const { Link, Text } = Typography;
 
 const STICKY_BOTTOM_THRESHOLD = 48;
+
+type MessagesProps = {
+  containerStyle?: React.CSSProperties;
+};
 
 const isSameMessageContent = (prev: Message['content'], next: Message['content']) =>
   prev === next ||
@@ -49,14 +52,16 @@ const MemoBubble = React.memo(Bubble, (prevProps, nextProps) => {
   );
 });
 
-export const Messages: React.FC = () => {
+export const Messages: React.FC<MessagesProps> = observer(({ containerStyle }) => {
   const t = useT();
   const { token } = theme.useToken();
   const app = useApp();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const chat = useChat(currentConversation);
-  const roles = useChatBoxStore.use.roles();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const runtime = useChatBoxRuntime();
+  const { chatBoxModel, chatConversationModel, chatToolModel } = runtime;
+  const currentConversation = chatConversationModel.currentConversation;
+  const chat = useChat(currentConversation, runtime);
+  const roles = chatBoxModel.roles;
+  const currentEmployee = chatBoxModel.currentEmployee;
   const messages = chat.use.messages();
   const messagesLoading = chat.use.messagesLoading();
   const renderedMessages = useMemo(() => flattenMessages(Array.isArray(messages) ? messages : []), [messages]);
@@ -66,14 +71,13 @@ export const Messages: React.FC = () => {
   const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
-  const updateTools = useChatToolsStore.use.updateTools();
-  const { loadMessages, lastMessageRef } = useChatMessageActions();
+  const { loadMessages, lastMessageRef } = useChatMessageActions(runtime);
   const setResponseLoading = chat.setResponseLoading;
-  const { updateReadonly } = useWorkflowTasks();
+  const { updateReadonly } = useWorkflowTasks(runtime);
 
   useEffect(() => {
-    updateTools(messages);
-  }, [messages, updateTools]);
+    chatToolModel.updateTools(messages);
+  }, [chatToolModel, messages]);
 
   useEffect(() => {
     setCollapsedConversationKeys((previous) => {
@@ -134,10 +138,12 @@ export const Messages: React.FC = () => {
       if (currentConversation && currentConversation === sessionId && status !== 'processing') {
         loadMessages(sessionId);
         setResponseLoading(false);
-        updateReadonly(sessionId).catch(console.error);
+        if (runtime.mode === 'global') {
+          updateReadonly(sessionId).catch(console.error);
+        }
       }
     },
-    [currentConversation, loadMessages, setResponseLoading, updateReadonly],
+    [currentConversation, loadMessages, runtime.mode, setResponseLoading, updateReadonly],
   );
 
   useEffect(() => {
@@ -257,6 +263,7 @@ export const Messages: React.FC = () => {
         margin: '16px 0',
         overflow: 'auto',
         position: 'relative',
+        ...containerStyle,
       }}
     >
       {messagesLoading ? (
@@ -287,14 +294,16 @@ export const Messages: React.FC = () => {
       )}
     </Layout.Content>
   );
-};
+});
 
-const BackgroundWorkingHint: React.FC = () => {
+const BackgroundWorkingHint: React.FC = observer(() => {
   const t = useT();
-  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions();
-  const currentConversation = useChatConversationsStore.use.currentConversation();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const chat = useChat(currentConversation);
+  const runtime = useChatBoxRuntime();
+  const { loadMessages, getConversationLLMActiveState } = useChatMessageActions(runtime);
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  const { chatBoxModel } = runtime;
+  const currentEmployee = chatBoxModel.currentEmployee;
+  const chat = useChat(currentConversation, runtime);
   const messages = chat.use.messages();
   const backgroundWorking = chat.use.backgroundWorking();
   const resumeStreamFailed = chat.use.resumeStreamFailed();
@@ -371,4 +380,4 @@ const BackgroundWorkingHint: React.FC = () => {
       messageRender={() => <Content />}
     />
   );
-};
+});

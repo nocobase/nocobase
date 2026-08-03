@@ -18,15 +18,17 @@ import { useChat } from '../hooks/useChat';
 import { useChatBoxActions } from '../hooks/useChatBoxActions';
 import { useChatConversationActions } from '../hooks/useChatConversationActions';
 import { useWorkflowTasks } from '../hooks/useWorkflowTasks';
-import { useChatBoxStore } from '../stores/chat-box';
+import { useChatBoxRuntime } from '../stores/runtime';
 
 const icon = new URL('../../icon.svg', import.meta.url).toString();
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const t = useT();
-  const { pathname } = useLocation();
   const isV1Page = ctx?.pageInfo?.version === 'v1';
+  const { pathname } = useLocation();
+  const isV2Route = window.location.pathname.startsWith('/v/') || pathname.startsWith('/v/');
+  const isAdmin = pathname.startsWith('/admin');
   const { isMobileLayout } = useMobileLayout();
   const { token } = theme.useToken();
   const { unreadCount: unreadConversationCount } = useChatConversationActions();
@@ -35,10 +37,9 @@ export const ChatButton: React.FC = observer(() => {
   const repository = useAIConfigRepository();
   const aiEmployees = repository.aiEmployees;
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const open = useChatBoxStore.use.open();
+  const { chatBoxModel } = useChatBoxRuntime();
+  const open = chatBoxModel.open;
   const chat = useChat();
-  const setOpen = useChatBoxStore.use.setOpen();
-  const setReadonly = useChatBoxStore.use.setReadonly();
   const [badgeAnimating, setBadgeAnimating] = useState(false);
   const prevUnreadCountRef = useRef(0);
   const badgeAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -73,7 +74,7 @@ export const ChatButton: React.FC = observer(() => {
     };
   }, [unreadCount]);
 
-  if (open || !aiEmployees?.length || isV1Page || isMobileLayout || !pathname.startsWith('/admin')) {
+  if (open || !aiEmployees?.length || isV1Page || (!isV2Route && !isAdmin) || isMobileLayout) {
     return null;
   }
 
@@ -85,9 +86,9 @@ export const ChatButton: React.FC = observer(() => {
     }
     setBadgeAnimating(false);
     setDropdownOpen(false);
-    setReadonly(false);
+    chatBoxModel.setReadonly(false);
     chat.setResponseLoading(false);
-    setOpen(true);
+    chatBoxModel.setOpen(true);
     const leaderEmployee = aiEmployees.find((employee) => employee.builtIn && employee.username === 'atlas');
     if (leaderEmployee) {
       switchAIEmployee(leaderEmployee);

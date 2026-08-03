@@ -18,7 +18,6 @@ import { theme as antdTheme, ConfigProvider, Grid, Popover } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import {
   AdminLayoutMenuModelRenderer,
@@ -35,7 +34,6 @@ import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorit
 import { PinnedPluginListLite } from './PinnedPluginListLite';
 import { useApplications } from './useApplications';
 import { useGlobalTheme, type CustomToken } from '../../../theme';
-import { useSystemSettings } from '../../system-settings';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import {
   FLOW_SETTINGS_PREFERENCE_CHANGE_EVENT,
@@ -44,60 +42,7 @@ import {
 } from './flowSettingsPreference';
 import { joinAdminLayoutRoutePath, type AdminLayoutRoutePathLike } from './resolveAdminRouteRuntimeTarget';
 import { useAppListRender } from './AppListRender';
-
-const className1 = css`
-  height: var(--nb-header-height);
-  margin-right: 4px;
-  display: inline-flex;
-  flex-shrink: 0;
-  color: #fff;
-  padding: 0;
-  align-items: center;
-`;
-const className1WithFixedWidth = css`
-  ${className1}
-  width: 168px;
-`;
-const className1WithAutoWidth = css`
-  ${className1}
-  width: auto;
-  min-width: 168px;
-`;
-const className2 = css`
-  object-fit: contain;
-  width: 100%;
-  height: 100%;
-`;
-const className3 = css`
-  width: 100%;
-  height: 100%;
-  font-weight: 500;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const NocoBaseLogo = observer(() => {
-  const { token } = antdTheme.useToken();
-  const customToken = token as CustomToken;
-  const result = useSystemSettings();
-  const { t } = useTranslation('lm-collections');
-  const fontSizeStyle = useMemo(() => ({ fontSize: customToken.fontSizeHeading3 }), [customToken.fontSizeHeading3]);
-
-  const hasLogo = result?.data?.data?.logo?.url;
-  const logo = hasLogo ? (
-    <img className={className2} src={result?.data?.data?.logo?.url} />
-  ) : (
-    <span style={fontSizeStyle} className={className3}>
-      {t(result?.data?.data?.title)}
-    </span>
-  );
-
-  return (
-    <div className={hasLogo ? className1WithFixedWidth : className1WithAutoWidth}>{result?.loading ? null : logo}</div>
-  );
-});
+import { NocoBaseLogo } from './NocoBaseLogo';
 
 const resetStyle = css`
   .ant-layout-sider-children {

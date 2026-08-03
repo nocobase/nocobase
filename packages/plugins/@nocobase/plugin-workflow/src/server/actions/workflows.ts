@@ -85,6 +85,7 @@ export async function update(context: Context, next) {
 }
 
 export async function destroy(context: Context, next) {
+  const plugin = context.app.pm.get(Plugin) as Plugin;
   const repository = utils.getRepositoryFromParams(context) as WorkflowRepository;
   const { filterByTk, filter } = context.action.params;
 
@@ -96,6 +97,17 @@ export async function destroy(context: Context, next) {
       transaction,
     });
     const ids = new Set<number>(items.map((item) => item.id));
+    const affectedKeys = Array.from(new Set<string>(items.map((item) => item.get('key') as string)));
+    const affectedTaskStats = affectedKeys.length
+      ? await context.db.getRepository('userWorkflowTaskStats').find({
+          filter: {
+            workflowKey: affectedKeys,
+          },
+          fields: ['userId'],
+          transaction,
+        })
+      : [];
+    const affectedUserIds = Array.from(new Set<number>(affectedTaskStats.map((item) => item.get('userId') as number)));
     const keysSet = new Set<string>(items.filter((item) => item.current).map((item) => item.key));
     const revisions = await repository.find({
       filter: {
@@ -120,6 +132,13 @@ export async function destroy(context: Context, next) {
       },
       transaction,
     });
+    if (affectedKeys.length) {
+      await plugin.repairTaskStats({
+        workflowKeys: affectedKeys,
+        ...(affectedUserIds.length ? { userIds: affectedUserIds } : {}),
+        transaction,
+      });
+    }
 
     context.body = deleted;
   });
@@ -209,7 +228,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (executed == 0 && autoRevision) {
+  if (executed === 0 && Number(autoRevision) === 1) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },

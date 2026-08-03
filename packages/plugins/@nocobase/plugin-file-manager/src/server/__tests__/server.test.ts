@@ -430,6 +430,62 @@ describe('file manager > server', () => {
         expect(body.data.local).toBe(true);
       });
 
+      it('controls public access and original URL responses independently', async () => {
+        expect(await plugin.isPublicAccessStorage()).toBe(false);
+
+        const { body: createdBody } = await agent.resource('attachments').create({
+          values: {
+            title: 'public-file',
+            filename: 'public-file.png',
+            extname: '.png',
+            path: '',
+            size: 12,
+            mimetype: 'image/png',
+            storageId: defaultStorage.id,
+            meta: {},
+          },
+        });
+        expect(createdBody.data.url).toContain('/files/main/main/attachments/');
+
+        await StorageRepo.update({
+          filterByTk: defaultStorage.id,
+          values: {
+            options: {
+              ...defaultStorage.get('options'),
+              public: true,
+            },
+          },
+        });
+        await plugin.loadStorages();
+        expect(await plugin.isPublicAccessStorage()).toBe(true);
+
+        const { body: publicBody } = await agent.resource('attachments').get({
+          filterByTk: createdBody.data.id,
+        });
+        expect(publicBody.data.url).toContain('/files/main/main/attachments/');
+
+        await StorageRepo.update({
+          filterByTk: defaultStorage.id,
+          values: {
+            options: {
+              ...defaultStorage.get('options'),
+              public: false,
+              useOriginalUrl: true,
+            },
+          },
+        });
+        await plugin.loadStorages();
+        expect(await plugin.isPublicAccessStorage()).toBe(true);
+
+        const { body } = await agent.resource('attachments').get({
+          filterByTk: createdBody.data.id,
+        });
+
+        expect(body.data.url).toBe(await plugin.getFileURL(body.data));
+        expect(body.data.preview).toBe(await plugin.getFileURL(body.data, true));
+        expect(body.data.url).not.toContain('/files/main/main/attachments/');
+      });
+
       it('local (default with base url) attachment with env', async () => {
         const originalPath = process.env.APP_PUBLIC_PATH;
         process.env.APP_PUBLIC_PATH = '/app';
@@ -1167,6 +1223,35 @@ describe('file manager > server', () => {
         expect(response.status).toBe(403);
       });
 
+      it('allows stable file URLs without permission checks when public access is enabled', async () => {
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        enableFileAccessACL(app);
+        await StorageRepo.update({
+          filterByTk: defaultStorage.id,
+          values: {
+            options: {
+              ...defaultStorage.get('options'),
+              public: true,
+              useOriginalUrl: false,
+            },
+          },
+        });
+        await plugin.loadStorages();
+
+        const response = await app
+          .agent()
+          .get(body.data.url)
+          .set('Cookie', [
+            `${getAuthCookieName('authToken', app.name)}=invalid-token`,
+            `${getAuthCookieName('authenticator', app.name)}=basic`,
+          ]);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+      });
+
       it('redirects without credentials when anonymous can view attachments', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
@@ -1293,7 +1378,7 @@ describe('file manager > server', () => {
         }
       });
 
-      it('uses the same app auth cookies for API and APP_PUBLIC_PATH file access', async () => {
+      it('allows auth cookie fallback for APP_PUBLIC_PATH file access only', async () => {
         const originalPath = process.env.APP_PUBLIC_PATH;
         process.env.APP_PUBLIC_PATH = '/nocobase';
 
@@ -1307,8 +1392,9 @@ describe('file manager > server', () => {
             `${getAuthCookieName('authenticator', app.name)}=basic`,
           ];
 
-          const apiCheckResponse = await app.agent().get('/auth:check').set('Cookie', cookieHeader);
+          const apiCheckResponse = await app.agent().resource('auth').check().set('Cookie', cookieHeader);
           expect(apiCheckResponse.status).toBe(200);
+          expect(apiCheckResponse.body.data.id).toBeUndefined();
 
           const { body } = await agent.resource('attachments').create({
             [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
@@ -1318,6 +1404,10 @@ describe('file manager > server', () => {
           const fileResponse = await app.agent().get(body.data.url).set('Cookie', cookieHeader);
           expect(fileResponse.status).toBe(302);
           expect(fileResponse.headers.location).toBe(await plugin.getFileURL(body.data));
+
+          const headResponse = await app.agent().head(body.data.url).set('Cookie', cookieHeader);
+          expect(headResponse.status).toBe(302);
+          expect(headResponse.headers.location).toBe(await plugin.getFileURL(body.data));
         } finally {
           restoreEnv('APP_PUBLIC_PATH', originalPath);
         }

@@ -10,6 +10,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import PluginWorkflowClientV2 from '../plugin';
 import {
+  WORKFLOW_CANVAS_ROUTE_NAME,
+  WORKFLOW_CANVAS_ROUTE_PATH,
+  WORKFLOW_EXECUTION_ROUTE_NAME,
+  WORKFLOW_EXECUTION_ROUTE_PATH,
   WORKFLOW_TASKS_MOBILE_ROUTE_NAME,
   WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
   WORKFLOW_TASKS_ROUTE_NAME,
@@ -54,6 +58,39 @@ describe('PluginWorkflowClientV2 task type registry', () => {
     const { app, plugin } = createPlugin();
 
     await plugin.load();
+
+    expect(app.router.add).toHaveBeenCalledWith(
+      WORKFLOW_CANVAS_ROUTE_NAME,
+      expect.objectContaining({
+        path: WORKFLOW_CANVAS_ROUTE_PATH,
+        componentLoader: expect.any(Function),
+      }),
+    );
+    expect(app.router.add).toHaveBeenCalledWith(
+      WORKFLOW_EXECUTION_ROUTE_NAME,
+      expect.objectContaining({
+        path: WORKFLOW_EXECUTION_ROUTE_PATH,
+        componentLoader: expect.any(Function),
+      }),
+    );
+    expect(app.router.add).toHaveBeenCalledWith(
+      'admin.workflow.workflows.id',
+      expect.objectContaining({
+        path: '/admin/workflow/workflows/:id',
+        Component: expect.any(Function),
+      }),
+    );
+    expect(app.router.add).toHaveBeenCalledWith(
+      'admin.workflow.executions.id',
+      expect.objectContaining({
+        path: '/admin/workflow/executions/:id',
+        Component: expect.any(Function),
+      }),
+    );
+    expect(WORKFLOW_CANVAS_ROUTE_NAME).toBe('settingsDetails.workflow.workflows.id');
+    expect(WORKFLOW_CANVAS_ROUTE_PATH).toBe('/settings/workflow/workflows/:id');
+    expect(WORKFLOW_EXECUTION_ROUTE_NAME).toBe('settingsDetails.workflow.executions.id');
+    expect(WORKFLOW_EXECUTION_ROUTE_PATH).toBe('/settings/workflow/executions/:id');
 
     expect(app.router.add).toHaveBeenCalledWith(
       WORKFLOW_TASKS_ROUTE_NAME,

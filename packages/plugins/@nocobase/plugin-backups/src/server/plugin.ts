@@ -33,6 +33,7 @@ const DEFAULT_SETTINGS = {
     cron: '0 0 * * *',
     keep: 100,
     enableFilesBackup: true,
+    enablePortalsBackup: true,
     storageId: null,
     encryptionPassword: '',
   } satisfies BackupSettings,
@@ -203,6 +204,7 @@ export class PluginBackupsServer extends Plugin {
       cron: null,
       encryptionPassword: null,
       enableFilesBackup: false,
+      enablePortalsBackup: false,
       keep: 0,
     });
     const fileBaseName = await backupManager.createBackupName();

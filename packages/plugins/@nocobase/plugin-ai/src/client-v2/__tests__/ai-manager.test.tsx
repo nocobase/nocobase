@@ -10,8 +10,9 @@
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { AI_EMPLOYEE_TRIGGER_TASK_EVENT, AIManager } from '../manager/ai-manager';
-import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils/normalizeTriggerTaskOptions';
+import type { RunJSAIEmployeeTriggerTaskOptions } from '../ai-employees/chatbox/utils';
 import type { ContextItem, Task } from '../ai-employees/types';
+import type { FrontendToolRegistration } from '../manager/frontend-tool-registry';
 import type { LLMProviderOptions, ToolModalProps, ToolOptions } from '../manager/ai-manager';
 
 const ProviderSettingsForm = () => <div />;
@@ -20,7 +21,11 @@ const ChatSettingsForm = () => <div />;
 
 function createManager(getModel?: (uid: string, searchInPreviousEngines?: boolean) => unknown) {
   const eventBus = new EventTarget();
+  const request = vi.fn();
   const app = {
+    apiClient: {
+      request,
+    },
     eventBus,
     flowEngine: {
       getModel: getModel ?? vi.fn(),
@@ -30,6 +35,7 @@ function createManager(getModel?: (uid: string, searchInPreviousEngines?: boolea
   return {
     manager: new AIManager(app),
     eventBus,
+    request,
   };
 }
 
@@ -92,6 +98,69 @@ describe('AIManager v2', () => {
     expect(manager.getWorkContext('unknown.child')).toBeNull();
   });
 
+  it('registers, executes, lists, and clears frontend tools by block uid', async () => {
+    const manager = new AIManager();
+    const execute = vi.fn().mockResolvedValue({ refreshed: true });
+    const inputSchema = {
+      type: 'object',
+      properties: {
+        force: { type: 'boolean' },
+      },
+    };
+
+    const manifest = manager.frontendTools.register('block-1', {
+      name: 'refresh_dashboard',
+      description: 'Refresh the current dashboard.',
+      permission: 'ALLOW',
+      inputSchema,
+      execute,
+    });
+
+    expect(manifest.id).toBe('block-1:refresh_dashboard');
+    expect(manifest.permission).toBe('ALLOW');
+    expect(manager.frontendTools.list('block-1')).toEqual([manifest]);
+    expect(manager.frontendTools.getManifest(manifest.id)).toEqual(manifest);
+
+    inputSchema.properties.force.type = 'string';
+    manifest.inputSchema.properties = {};
+    const loadedManifest = manager.frontendTools.getManifest(manifest.id);
+    (loadedManifest.inputSchema as typeof inputSchema).properties.force.type = 'number';
+    expect(manager.frontendTools.getManifest(manifest.id).inputSchema).toEqual({
+      type: 'object',
+      properties: {
+        force: { type: 'boolean' },
+      },
+    });
+
+    await expect(manager.frontendTools.execute(manifest.id, { force: true })).resolves.toEqual({ refreshed: true });
+    expect(execute).toHaveBeenCalledWith({ force: true });
+
+    manager.frontendTools.clear('block-1');
+    expect(manager.frontendTools.list('block-1')).toEqual([]);
+    expect(() => manager.frontendTools.getManifest(manifest.id)).toThrow('is unavailable');
+    await expect(manager.frontendTools.execute(manifest.id, {})).rejects.toThrow('is unavailable');
+  });
+
+  it('defaults frontend tool permission to ASK and rejects invalid permissions', () => {
+    const manager = new AIManager();
+    const manifest = manager.frontendTools.register('block-1', {
+      name: 'read_dashboard',
+      description: 'Read the current dashboard.',
+      execute: vi.fn(),
+    });
+
+    expect(manifest.permission).toBe('ASK');
+    const invalidRegistration = {
+      name: 'invalid_permission',
+      description: 'Use an invalid permission.',
+      permission: 'DENY',
+      execute: vi.fn(),
+    } as unknown as FrontendToolRegistration;
+    expect(() => manager.frontendTools.register('block-1', invalidRegistration)).toThrow(
+      'Frontend tool permission must be ASK or ALLOW',
+    );
+  });
+
   it('exports v2 tool-related public types', () => {
     const tool: ToolOptions = {};
     const modalProps: ToolModalProps = { width: 720 };
@@ -122,6 +191,33 @@ describe('AIManager v2', () => {
     expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [{ title: 'Now' }] }]);
   });
 
+  it('uploads files through the application API client', async () => {
+    const source = { dataSourceKey: 'main', collectionName: 'aiFiles' };
+    const { manager, request } = createManager();
+    request.mockResolvedValue({
+      data: {
+        data: {
+          id: 1,
+          filename: 'report.txt',
+          meta: { source },
+        },
+      },
+    });
+
+    await expect(manager.uploadFile(new File(['report'], 'report.txt'))).resolves.toMatchObject({
+      id: 1,
+      filename: 'report.txt',
+      source,
+      status: 'done',
+    });
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: 'aiFiles:create',
+        method: 'post',
+      }),
+    );
+  });
+
   it('drops the oldest queued task when the pending AI employee task queue exceeds 20 tasks', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { manager, eventBus } = createManager();
@@ -143,7 +239,8 @@ describe('AIManager v2', () => {
   });
 
   it('triggers a model task by reading model AI employee and 0-based task index', () => {
-    const task: Task = { title: 'Summarize' };
+    const task: Task = { title: 'Summarize', chatBoxUid: 'chat-box-1' };
+    const onResponseLoadingChange = vi.fn();
     const getModel = vi.fn(() => ({
       props: {
         aiEmployee: { username: 'nathan' },
@@ -154,10 +251,38 @@ describe('AIManager v2', () => {
     const details = listenTasks(eventBus);
 
     manager.onChatBoxMounted();
-    manager.triggerModelTask('flow-model-uid', 1, { open: true });
+    manager.triggerModelTask('flow-model-uid', 1, { open: true, onResponseLoadingChange });
 
     expect(getModel).toHaveBeenCalledWith('flow-model-uid', true);
-    expect(details).toEqual([{ aiEmployee: 'nathan', tasks: [task], open: true }]);
+    expect(details).toEqual([
+      { aiEmployee: 'nathan', tasks: [task], chatBoxUid: 'chat-box-1', open: true, onResponseLoadingChange },
+    ]);
+  });
+
+  it('appends runtime attachments to the configured model task without mutating it', () => {
+    const configuredAttachment = { id: 1, filename: 'configured.txt' };
+    const runtimeAttachment = { id: 2, filename: 'runtime.txt' };
+    const task: Task = {
+      title: 'Summarize',
+      message: {
+        user: 'Summarize the attachments',
+        attachments: [configuredAttachment],
+      },
+    };
+    const getModel = vi.fn(() => ({
+      props: {
+        aiEmployee: { username: 'nathan' },
+        tasks: [task],
+      },
+    }));
+    const { manager, eventBus } = createManager(getModel);
+    const details = listenTasks(eventBus);
+
+    manager.onChatBoxMounted();
+    manager.triggerModelTask('flow-model-uid', 0, { attachments: [runtimeAttachment] });
+
+    expect(details[0].tasks?.[0].message?.attachments).toEqual([configuredAttachment, runtimeAttachment]);
+    expect(task.message?.attachments).toEqual([configuredAttachment]);
   });
 
   it('warns when model props have no task at the requested index', () => {

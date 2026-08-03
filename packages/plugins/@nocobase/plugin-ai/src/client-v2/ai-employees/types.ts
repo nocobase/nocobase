@@ -11,6 +11,7 @@ import type { BubbleProps } from '@ant-design/x';
 import type { ComponentType } from 'react';
 import type { Application } from '@nocobase/client-v2';
 import type { FlowEngineContext } from '@nocobase/flow-engine';
+import type { FrontendToolManifest } from '../../common/frontend-tools';
 
 export type Selector = {
   onSelect: (options: { uid: string }) => void;
@@ -79,6 +80,7 @@ export type ContextItem = {
   uid: string;
   title?: string;
   content?: unknown;
+  frontendTools?: FrontendToolManifest[];
 };
 
 type ActionParams = {
@@ -121,6 +123,7 @@ export type WorkContextOptions = {
   actions?: ActionOptions[];
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
   getContent?: (app: Application, item: ContextItem) => Promise<unknown>;
+  getFrontendTools?: (app: Application, item: ContextItem) => Promise<FrontendToolManifest[]>;
 };
 
 export type ToolCall<T = unknown> = {
@@ -140,12 +143,36 @@ export type ToolCall<T = unknown> = {
 };
 
 export type Attachment = {
+  id?: string | number;
+  uid?: string;
+  name?: string;
   filename?: string;
+  url?: string;
+  preview?: string;
+  thumbUrl?: string;
+  size?: number;
+  mimetype?: string;
+  type?: string;
+  percent?: number;
   status?: string;
+  source?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+    field?: string;
+  };
+  meta?: {
+    source?: Attachment['source'];
+    [key: string]: unknown;
+  };
   response?: {
     data?: Attachment;
   };
   [key: string]: unknown;
+};
+
+export type UploadAIFileOptions = {
+  onProgress?: (percent: number) => void;
+  signal?: AbortSignal;
 };
 
 export type MessageType = 'text' | 'greeting';
@@ -197,6 +224,7 @@ export type TaskMessage = {
 
 export type Task = {
   title?: string;
+  chatBoxUid?: string;
   message?: TaskMessage;
   autoSend?: boolean;
   skillSettings?: SkillSettings;
@@ -210,8 +238,10 @@ export type Task = {
 export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
   tasks?: Task[];
+  chatBoxUid?: string;
   auto?: boolean;
   open?: boolean;
+  onResponseLoadingChange?: (loading: boolean) => void;
 };
 
 export type SendOptions = {
@@ -231,6 +261,7 @@ export type SendOptions = {
     llmService: string;
     model: string;
   } | null;
+  onResponseLoadingChange?: (loading: boolean) => void;
 };
 
 export type ResendOptions = {

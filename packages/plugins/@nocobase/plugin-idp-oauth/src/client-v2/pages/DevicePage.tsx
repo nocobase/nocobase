@@ -43,6 +43,10 @@ function getCurrentDevicePath(pathname: string, search: string, userCode?: strin
   return `${pathname}${currentSearch}`;
 }
 
+function getDeviceCompleteRedirectPath(pathname: string) {
+  return /(^|\/)settings(\/|$)/.test(pathname) ? '/settings/' : '/';
+}
+
 const DevicePage = () => {
   const ctx = useFlowContext();
   const api = ctx.api;
@@ -207,7 +211,7 @@ const DevicePage = () => {
           title={t('Device sign-in complete')}
           subTitle={t('Authorization is complete. You can return to the terminal.')}
           extra={
-            <Button type="primary" onClick={() => navigate('/')}>
+            <Button type="primary" onClick={() => navigate(getDeviceCompleteRedirectPath(location.pathname))}>
               {t('Back to home')}
             </Button>
           }

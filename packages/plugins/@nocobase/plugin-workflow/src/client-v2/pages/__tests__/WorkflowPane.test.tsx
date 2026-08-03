@@ -38,6 +38,7 @@ vi.mock('../../locale', () => ({
 vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
   getRouteRuntimeVersion: () => 'modern',
+  useApp: () => holder.ctx.app,
   FormSubmitActionModel: {
     registerFlow: vi.fn(),
   },
@@ -117,7 +118,14 @@ function makeCtx(resourceMap: Record<string, any>) {
   return {
     api: { resource: (name: string) => resourceMap[name] },
     viewer: { drawer: vi.fn(), dialog: vi.fn() },
-    app: { name: 'main', pm: { get: () => mockPlugin } },
+    app: {
+      name: 'main',
+      pm: { get: () => mockPlugin },
+      pluginSettingsManager: {
+        getRouteName: () => 'admin.settings.',
+        getRoutePath: () => '/admin/settings/',
+      },
+    },
   };
 }
 

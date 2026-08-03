@@ -13,7 +13,7 @@ import crypto from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
-import { getEnv, upsertEnv } from '../lib/auth-store.ts';
+import { getEnv, type EnvConfigEntry, upsertEnv } from '../lib/auth-store.ts';
 import {
   type PromptBlock,
   type PromptCatalogValues,
@@ -43,6 +43,7 @@ import { omitKeys, pickKeys } from '../lib/object-utils.ts';
 import { ENV_CONFIG_SCHEMA_VERSION } from '../lib/env-config.js';
 import { printInfo, printStage, printVerbose, printWarning } from '../lib/ui.js';
 import { persistHookScript } from '../lib/hook-script.js';
+import { ensureManagedEnvFileDefaults } from '../lib/managed-env-file.js';
 import Download from './download.ts';
 import EnvAdd from './env/add.ts';
 import Install, { defaultDbPortForDialect } from './install.ts';
@@ -141,6 +142,18 @@ function resolveInitDownloadVersion(results: Record<string, string | number | bo
 
 function initVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha' | 'other' {
   return version === 'latest' || version === 'beta' || version === 'alpha' ? version : 'other';
+}
+
+export function defaultInitDownloadVersionForCliVersion(cliVersion: string): 'latest' | 'beta' | 'alpha' {
+  if (/-alpha(?:[.-]|$)/i.test(cliVersion)) {
+    return 'alpha';
+  }
+
+  if (/-beta(?:[.-]|$)/i.test(cliVersion)) {
+    return 'beta';
+  }
+
+  return 'latest';
 }
 
 function yesInitialValue(def: PromptBlock, fallback: string): string {
@@ -485,8 +498,15 @@ Prompt modes:
   };
 
   private buildPromptCatalog(flags: { 'skip-auth'?: boolean }, options: { defaultApiHost: string }): PromptsCatalog {
+    const downloadVersion = defaultInitDownloadVersionForCliVersion(String(this.config.pjson?.version ?? '').trim());
+    const versionPrompt = Init.prompts.version as SelectPromptBlock;
     const prompts: PromptsCatalog = {
       ...Init.prompts,
+      version: {
+        ...versionPrompt,
+        initialValue: downloadVersion,
+        yesInitialValue: downloadVersion,
+      },
       installApiBaseUrl: createInstallConnectionApiBaseUrlPrompt(options.defaultApiHost),
     };
 
@@ -808,6 +828,7 @@ Prompt modes:
           ? { setupMode: normalizeInitSetupMode(presetValues.hasNocobase) }
           : {}),
       },
+      yesInitialValues: {},
       values: presetValues,
       yes: normalizedFlags.yes || useBrowserUi || !interactive,
       hooks: {
@@ -904,7 +925,8 @@ Prompt modes:
   ): Promise<PromptInitialValues> {
     const out: PromptInitialValues = {};
 
-    if (!Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
+    const shouldResolveAppInitialValues = !Object.prototype.hasOwnProperty.call(presetValues, 'appPort');
+    if (shouldResolveAppInitialValues) {
       const appInitialValues = await Install.buildAppPromptInitialValues({
         envName: String(presetValues.appName ?? '').trim(),
         flags: {
@@ -915,7 +937,7 @@ Prompt modes:
         },
         warnOnPortFallback: false,
       });
-      if (appInitialValues.appPort !== undefined) {
+      if (appInitialValues.appPort !== undefined && !Object.prototype.hasOwnProperty.call(presetValues, 'appPort')) {
         out.appPort = appInitialValues.appPort;
       }
     }
@@ -1327,7 +1349,9 @@ Prompt modes:
     const dbSchema = String(results.dbSchema ?? '').trim();
     const dbTablePrefix = String(results.dbTablePrefix ?? '').trim();
     const apiBaseUrl = String(results.apiBaseUrl ?? '').trim();
-    const authType = String(results.authType ?? '').trim() || 'oauth';
+    const authTypeInput = String(results.authType ?? '').trim();
+    const authType: EnvConfigEntry['authType'] =
+      authTypeInput === 'basic' || authTypeInput === 'token' || authTypeInput === 'oauth' ? authTypeInput : 'oauth';
     const authUsername = authType === 'basic' ? String(results.username ?? results.rootUsername ?? '').trim() : '';
     const accessToken = String(results.accessToken ?? '');
     const skipDownload = results.skipDownload === true;
@@ -1350,56 +1374,57 @@ Prompt modes:
     results.appKey = appKey;
     results.timeZone = timeZone;
 
-    await upsertEnv(
-      envName,
-      {
-        schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
-        ...(source === 'docker'
-          ? { kind: 'docker' }
-          : source || appPath || appRootPath
-            ? { kind: 'local' }
-            : appPort
-              ? { kind: 'http' }
-              : {}),
-        ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
-        ...(authType ? { authType } : {}),
-        ...(authUsername ? { authUsername } : {}),
-        ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
-        ...(source ? { source } : {}),
-        ...(version ? { downloadVersion: version } : {}),
-        ...(dockerRegistry ? { dockerRegistry } : {}),
-        ...(dockerPlatform ? { dockerPlatform } : {}),
-        ...(gitUrl ? { gitUrl } : {}),
-        ...(npmRegistry ? { npmRegistry } : {}),
-        ...(hookScript ? { hookScript } : {}),
-        ...(appPath ? { appPath } : {}),
-        ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
-        ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
-        ...(appPort ? { appPort } : {}),
-        ...(appPublicPath ? { appPublicPath } : {}),
-        ...(appKey ? { appKey } : {}),
-        ...(timeZone ? { timezone: timeZone } : {}),
-        ...(!skipDownload && results.devDependencies !== undefined
-          ? { devDependencies: Boolean(results.devDependencies) }
-          : {}),
-        ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
-        ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
-        ...(builtinDb !== undefined ? { builtinDb } : {}),
-        ...(dbDialect ? { dbDialect } : {}),
-        ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
-        ...(dbHost ? { dbHost } : {}),
-        ...(dbPort ? { dbPort } : {}),
-        ...(dbDatabase ? { dbDatabase } : {}),
-        ...(dbUser ? { dbUser } : {}),
-        ...(dbPassword ? { dbPassword } : {}),
-        ...(dbSchema ? { dbSchema } : {}),
-        ...(dbTablePrefix ? { dbTablePrefix } : {}),
-        ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
-        setupState: 'prepared',
-        ...(String(results.lang ?? '').trim() ? { lang: String(results.lang ?? '').trim() } : {}),
-      },
-      { scope: resolveDefaultConfigScope() },
-    );
+    const savedEnvConfig: Partial<EnvConfigEntry> = {
+      schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
+      ...(source === 'docker'
+        ? { kind: 'docker' }
+        : source || appPath || appRootPath
+          ? { kind: 'local' }
+          : appPort
+            ? { kind: 'http' }
+            : {}),
+      ...(apiBaseUrl ? { apiBaseUrl } : appPort ? { apiBaseUrl: `http://127.0.0.1:${appPort}/api` } : {}),
+      ...(authType ? { authType } : {}),
+      ...(authUsername ? { authUsername } : {}),
+      ...((authType === 'token' || authType === 'basic') && accessToken ? { accessToken } : {}),
+      ...(source ? { source } : {}),
+      ...(version ? { downloadVersion: version } : {}),
+      ...(dockerRegistry ? { dockerRegistry } : {}),
+      ...(dockerPlatform ? { dockerPlatform } : {}),
+      ...(gitUrl ? { gitUrl } : {}),
+      ...(npmRegistry ? { npmRegistry } : {}),
+      ...(hookScript ? { hookScript } : {}),
+      ...(appPath ? { appPath } : {}),
+      ...(appRootPath && !areConfiguredPathsEquivalent(appRootPath, derivedAppRootPath) ? { appRootPath } : {}),
+      ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
+      ...(appPort ? { appPort } : {}),
+      ...(appPublicPath ? { appPublicPath } : {}),
+      ...(appKey ? { appKey } : {}),
+      ...(timeZone ? { timezone: timeZone } : {}),
+      ...(!skipDownload && results.devDependencies !== undefined
+        ? { devDependencies: Boolean(results.devDependencies) }
+        : {}),
+      ...(!skipDownload && results.build !== undefined ? { build: Boolean(results.build) } : {}),
+      ...(!skipDownload && results.buildDts !== undefined ? { buildDts: Boolean(results.buildDts) } : {}),
+      ...(builtinDb !== undefined ? { builtinDb } : {}),
+      ...(dbDialect ? { dbDialect } : {}),
+      ...(builtinDbImage || builtinDb === false ? { builtinDbImage: builtinDbImage || undefined } : {}),
+      ...(dbHost ? { dbHost } : {}),
+      ...(dbPort ? { dbPort } : {}),
+      ...(dbDatabase ? { dbDatabase } : {}),
+      ...(dbUser ? { dbUser } : {}),
+      ...(dbPassword ? { dbPassword } : {}),
+      ...(dbSchema ? { dbSchema } : {}),
+      ...(dbTablePrefix ? { dbTablePrefix } : {}),
+      ...(results.dbUnderscored !== undefined ? { dbUnderscored: Boolean(results.dbUnderscored) } : {}),
+      setupState: 'prepared',
+      ...(String(results.lang ?? '').trim() ? { lang: String(results.lang ?? '').trim() } : {}),
+    };
+
+    await upsertEnv(envName, savedEnvConfig, { scope: resolveDefaultConfigScope() });
+    if (source === 'docker' || appPath) {
+      await ensureManagedEnvFileDefaults(envName, savedEnvConfig);
+    }
   }
 
   private buildEnvAddArgv(results: Record<string, string | number | boolean>): string[] {

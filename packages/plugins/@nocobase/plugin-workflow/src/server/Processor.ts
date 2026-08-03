@@ -19,6 +19,8 @@ import { IJob, InstructionResult, Runner } from './instructions';
 import type { ExecutionModel, FlowNodeModel, JobModel } from './types';
 import { isWorkflowTimeoutError, WorkflowTimeoutError } from './timeout-errors';
 
+const JOB_SAVE_BATCH_SIZE = 100;
+
 export type ProcessorRunOptions = {
   rerun?: true;
   signal?: AbortSignal;
@@ -326,7 +328,7 @@ export default class Processor {
     }
   }
 
-  public resolveRerun(options: ProcessorRerunOptions = {}) {
+  private resolveRerun(options: ProcessorRerunOptions = {}) {
     const node = this.getRerunNode(options.nodeId);
     const targetJob = this.jobsMapByNodeKey[node.key];
 
@@ -582,14 +584,17 @@ export default class Processor {
       }
       if (newJobs.length) {
         const JobsModel = this.options.plugin.db.getModel('jobs');
-        await JobsModel.bulkCreate(
-          newJobs.map((job) => job.toJSON()),
-          {
-            returning: false,
-          },
-        );
-        for (const job of newJobs) {
-          job.isNewRecord = false;
+        for (let offset = 0; offset < newJobs.length; offset += JOB_SAVE_BATCH_SIZE) {
+          const batch = newJobs.slice(offset, offset + JOB_SAVE_BATCH_SIZE);
+          await JobsModel.bulkCreate(
+            batch.map((job) => job.toJSON()),
+            {
+              returning: false,
+            },
+          );
+          for (const job of batch) {
+            job.isNewRecord = false;
+          }
         }
       }
       this.jobsToSave.clear();

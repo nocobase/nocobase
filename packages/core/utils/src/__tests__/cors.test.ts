@@ -48,6 +48,15 @@ describe('cors utils', () => {
     expect(isTrustedOrigin(ctx, 'https://evil.example')).toBe(false);
   });
 
+  it('trusts every origin when CORS_ORIGIN_WHITELIST contains an asterisk', () => {
+    process.env.CORS_ORIGIN_WHITELIST = '*';
+
+    const ctx = createContext({ host: 'example.com' });
+
+    expect(isTrustedOrigin(ctx, 'https://trusted.example')).toBe(true);
+    expect(isTrustedOrigin(ctx, 'https://evil.example')).toBe(true);
+  });
+
   it('resolves forwarded request origins and referer origins', () => {
     const ctx = createContext(
       {

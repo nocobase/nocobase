@@ -82,6 +82,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Block trang",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "AI Chat box",
+        "link": "/ai-employees/block/ai-chat-box"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Nhân viên AI tích hợp sẵn",
     "items": [
       {
@@ -152,11 +163,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Lưu trữ vector",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
         "label": "Knowledge Base",
         "items": [
           {
@@ -190,17 +196,6 @@
         "type": "custom-link",
         "label": "RAG",
         "link": "/ai-employees/knowledge-base/rag"
-      },
-      {
-        "type": "custom-link",
-        "label": "Hướng dẫn phát triển",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Plugin External Knowledge Base",
-            "link": "/ai-employees/knowledge-base/dev/external-knowledge-base"
-          }
-        ]
       }
     ]
   },
@@ -306,6 +301,69 @@
         "type": "custom-link",
         "label": "Hướng dẫn Prompt",
         "link": "/ai-employees/configuration/prompt-engineering-guide"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Hướng dẫn phát triển",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Nhân viên AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Phát triển plugin Nhân viên AI",
+            "link": "/ai-employees/dev/ai-employee/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Định nghĩa Tool phía máy chủ",
+            "link": "/ai-employees/dev/ai-employee/define-tool"
+          },
+          {
+            "type": "custom-link",
+            "label": "Định nghĩa Skill",
+            "link": "/ai-employees/dev/ai-employee/define-skill"
+          },
+          {
+            "type": "custom-link",
+            "label": "Định nghĩa Nhân viên AI tích hợp sẵn",
+            "link": "/ai-employees/dev/ai-employee/define-ai-employee"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ví dụ hoàn chỉnh: Tạo Nhân viên AI tích hợp sẵn",
+            "link": "/ai-employees/dev/ai-employee/complete-example"
+          },
+          {
+            "type": "custom-link",
+            "label": "Thêm tương tác frontend cho Tool",
+            "link": "/ai-employees/dev/ai-employee/frontend-tool-ui"
+          },
+          {
+            "type": "custom-link",
+            "label": "Quốc tế hóa phần mở rộng Nhân viên AI",
+            "link": "/ai-employees/dev/ai-employee/internationalization"
+          },
+          {
+            "type": "custom-link",
+            "label": "Các vấn đề thường gặp khi phát triển plugin Nhân viên AI",
+            "link": "/ai-employees/dev/ai-employee/troubleshooting"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Cơ sở tri thức AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Plugin Cơ sở tri thức bên ngoài",
+            "link": "/ai-employees/dev/knowledge-base/external-knowledge-base"
+          }
+        ]
       }
     ]
   }

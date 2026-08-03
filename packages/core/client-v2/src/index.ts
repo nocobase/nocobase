@@ -29,7 +29,15 @@ export * from './PluginSettingsManager';
 export * from './layout-manager';
 export * from './hooks';
 export { default as languageCodes } from './locale/languageCodes';
-export * from './nocobase-buildin-plugin';
+export {
+  CurrentUserContext,
+  NocoBaseBuildInPlugin,
+  NocoBaseBuildInPluginV2,
+  resolveUnauthenticatedSignInRoute,
+  useCurrentRoles,
+  useCurrentUserContext,
+} from './nocobase-buildin-plugin';
+export type { CurrentRoleOption, CurrentUserState } from './nocobase-buildin-plugin';
 export { getRouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
 export type { RouteRuntimeVersion } from './utils/getRouteRuntimeVersion';
 export * from './collection-field-interface/CollectionFieldInterface';
@@ -55,4 +63,7 @@ export {
 } from './flow-compat';
 export type { NocoBaseDesktopRoute } from './flow-compat';
 export * from './utils/markdownSanitize';
+export * from './ui-operation';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';
+export { isSettingsApp } from './settings-app/isSettingsApp';
+export { MINIMAL_THEME_UID, useSettingsThemeConfig } from './settings-app/useSettingsThemeConfig';

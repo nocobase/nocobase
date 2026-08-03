@@ -52,5 +52,5 @@ features:
         link: /file-manager/development
       - title: 知识库扩展
         details: 接入外部知识库或自定义检索服务，为 AI 员工扩展 RAG 检索来源。
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

@@ -101,5 +101,6 @@ export const GlobalThemeProvider: FC<GlobalThemeProviderProps> = ({ children, th
 
 export { default as compatOldTheme } from './compatOldTheme';
 export { addCustomAlgorithmToTheme, customAlgorithm } from './customAlgorithm';
+export { getItemActiveColors } from './itemActive';
 export * from './type';
 export { defaultTheme };

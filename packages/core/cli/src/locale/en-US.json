@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "MySQL lower_case_table_names=1 requires DB_UNDERSCORED=true."
     }
   },
+  "apiClient": {
+    "authRequiredHint": "Authentication failed or the saved session has expired. Run `{{command}}` to sign in again."
+  },
   "commands": {
     "envAdd": {
       "prompts": {
@@ -166,6 +169,204 @@
       "crossEnv": {
         "prompt": "Current env is \"{{currentEnv}}\", but this command targets \"{{requestedEnv}}\" via --env. Continue without switching the current env?",
         "refusal": "Refusing to run against env \"{{requestedEnv}}\" because the current env is \"{{currentEnv}}\" and interactive confirmation is unavailable in the current agent session.\n\nFor safety, the agent will not switch envs automatically and will not add --yes on your behalf.\n\nTo continue:\n- run `nb env use {{requestedEnv}}` yourself and then re-run the command, or\n- re-run the same command with `--env {{requestedEnv}} --yes` to confirm this one-off cross-env operation."
+      }
+    },
+    "portalCreate": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "templateInvalidDirectory": "Portal template \"{{source}}\" is invalid: expected a directory.",
+        "localTemplateMissing": "Portal template directory does not exist: {{source}}",
+        "templateUnresolved": "Portal template \"{{source}}\" could not be resolved. {{details}}",
+        "templateDownloadFailed": "Failed to download portal template \"{{source}}\" with npm pack. {{details}}",
+        "templateExtractFailed": "Failed to extract portal template \"{{source}}\": {{details}}",
+        "templateMissingPackageJson": "Portal template \"{{source}}\" is invalid: package.json is missing.",
+        "npmPackNoTarball": "npm pack did not produce a local tarball for {{source}}.",
+        "npmPackMultipleTarballs": "npm pack produced multiple tarballs for {{source}}.",
+        "invalidPortalName": "Invalid portal name \"{{value}}\". Use lowercase letters, numbers, underscores, or hyphens, and start with a lowercase letter or number.",
+        "invalidPortalAppName": "Invalid portal app name \"{{value}}\" from apiBaseUrl. Use letters, numbers, underscores, or hyphens, and start with a letter or number.",
+        "missingApiBaseUrl": "Cannot create a portal because the selected env has no apiBaseUrl.",
+        "outsideParent": "Refusing to modify a portal outside {{parentDir}}: {{portalDir}}",
+        "sshUnsupported": "Cannot create a portal for ssh envs in the first version.",
+        "workspaceExists": "Portal already exists: {{portalDir}}\nPass --force to delete it and create a new portal.",
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
+      },
+      "messages": {
+        "skipInstall": "Skipped pnpm install because package.json was not found in {{portalDir}}.",
+        "created": "Portal \"{{portal}}\" created at {{portalDir}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "sourceStorage": "Source storage: {{sourceStorage}}",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
+      }
+    },
+    "portalConfig": {
+      "errors": {
+        "invalidSourceStorage": "Invalid source storage \"{{value}}\". Use \"nocobase\" or \"git\".",
+        "invalidGitPath": "--git-path must be a relative path inside the Git repository.",
+        "gitOptionsForNocobaseStorage": "--git-repo, --git-branch, and --git-path can only be used with --source-storage git.",
+        "gitRepoRequired": "--git-repo is required when --source-storage is git.",
+        "gitRepoInvalid": "--git-repo must be a full Git remote URL.",
+        "updateFailed": "Portal config update failed with status {{status}}\n{{details}}"
+      }
+    },
+    "portalConfigure": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "noChanges": "No portal configuration changes were provided. Pass --path, --source-storage, or a --git-* flag.",
+        "notFound": "Portal \"{{portal}}\" was not found. Run `nb portal list` to see available portals."
+      },
+      "messages": {
+        "updated": "Portal \"{{portal}}\" configuration updated.",
+        "pathUpdated": "Development path: {{portalDir}}",
+        "remoteSynced": "Remote portal record: synced",
+        "remoteSkipped": "Remote portal record: not found; local config only"
+      }
+    },
+    "portalDeploy": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal is invalid: package.json is missing in {{portalDir}}.",
+        "distMissing": "Portal build did not produce {{distDir}}/index.html.",
+        "unsupportedEnvKind": "Cannot deploy a portal for {{kind}} envs in the first version.",
+        "uploadFailed": "Portal dist upload failed with status {{status}}\n{{details}}",
+        "recordSyncFailed": "Portal record sync failed with status {{status}}\n{{details}}"
+      },
+      "messages": {
+        "deployed": "Portal \"{{portal}}\" deployed.",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "record": "Record: synced",
+        "dist": "Dist: {{dist}}",
+        "localDist": "Local dist: {{dist}}",
+        "serverDist": "Server dist: {{dist}}"
+      }
+    },
+    "portalList": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "unsupportedEnvKind": "Cannot list portals for {{kind}} envs in the first version.",
+        "listFailed": "Portal list failed with status {{status}}\n{{details}}"
+      },
+      "messages": {
+        "empty": "No portal records found."
+      },
+      "table": {
+        "name": "Name",
+        "url": "URL",
+        "portalType": "Portal type",
+        "path": "Development path",
+        "enabled": "Enabled",
+        "default": "Default"
+      }
+    },
+    "portalPull": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "gitRepoRequiredForTemporaryPull": "--git-branch and --git-path require --git-repo for a temporary Git pull. To update the portal configuration, use `nb portal config`."
+      },
+      "messages": {
+        "noop": "No pull is needed.",
+        "pulled": "Pulled portal source \"{{portal}}\" into {{portalDir}}",
+        "installFailed": "Dependency installation did not finish successfully. Run `pnpm install` manually in {{portalDir}}."
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "workspaceNotReplaceable": "Refusing to replace a non-portal directory: {{portalDir}}\nThe target directory must be empty or contain package.json with a nocobase field."
+      }
+    },
+    "swagger": {
+      "errors": {
+        "pluginDisabled": "The API documentation plugin is not enabled. Enable it before requesting Swagger documents.",
+        "requestFailed": "Swagger request failed with status {{status}}\n{{details}}",
+        "invalidDestinations": "swagger:getUrls returned an invalid destination list.",
+        "invalidDocument": "swagger:get returned an invalid OpenAPI document."
+      },
+      "messages": {
+        "empty": "No Swagger document namespaces are available.",
+        "saved": "Saved Swagger document to {{output}}."
+      },
+      "table": {
+        "name": "Name",
+        "namespace": "Namespace",
+        "url": "URL",
+        "field": "Field",
+        "value": "Value"
+      },
+      "fields": {
+        "namespace": "Namespace",
+        "title": "Title",
+        "version": "Version",
+        "openapi": "OpenAPI",
+        "paths": "Paths"
+      }
+    },
+    "portalInfo": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "notFound": "Portal \"{{portal}}\" was not found."
+      },
+      "fields": {
+        "name": "Name",
+        "url": "URL",
+        "portalType": "Portal type",
+        "developmentPath": "Development path",
+        "deploymentPath": "Deployment path",
+        "enabled": "Enabled"
+      }
+    },
+    "portalDestroy": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "confirmationRequired": "Refusing to destroy a portal in non-interactive mode without --yes.",
+        "outsideParent": "Refusing to delete a portal outside {{parentDir}}: {{portalDir}}",
+        "workspaceMissing": "Portal deployment path does not exist: {{portalDir}}\nPass --force to ignore missing deployment files.",
+        "unsupportedEnvKind": "Cannot destroy a portal for {{kind}} envs in the first version.",
+        "unsafeDevelopmentPath": "Refusing to delete an unsafe portal development path: {{portalDir}}",
+        "recordDestroyFailed": "Portal record destroy failed with status {{status}}\n{{details}}"
+      },
+      "prompts": {
+        "confirm": "Destroy portal \"{{portal}}\" and delete its deployment directory?"
+      },
+      "statuses": {
+        "deleted": "deleted",
+        "missing": "missing",
+        "retained": "retained"
+      },
+      "messages": {
+        "destroyed": "Portal \"{{portal}}\" destroyed.",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "record": "Record: {{status}}",
+        "deploymentPath": "Deployment path: {{status}} ({{dir}})",
+        "developmentPath": "Development path: {{status}} ({{dir}})",
+        "developmentPathMissing": "Development path: missing"
+      }
+    },
+    "portalDev": {
+      "errors": {
+        "envNotConfigured": "Env \"{{envName}}\" is not configured. Run `nb env add {{envName}} --api-base-url <url>` first.",
+        "noEnvConfigured": "No NocoBase env is configured yet. Run `nb init --ui` to create one first.",
+        "workspaceMissing": "Portal does not exist: {{portalDir}}\nRun `nb portal create {{portal}}` first.",
+        "packageJsonMissing": "Portal is invalid: package.json is missing in {{portalDir}}.",
+        "sshUnsupported": "Cannot start a portal in dev mode for ssh envs in the first version."
+      },
+      "messages": {
+        "starting": "Starting portal \"{{portal}}\"...",
+        "mode": "Mode: {{mode}}",
+        "app": "App: {{app}}",
+        "base": "Base: {{base}}",
+        "dir": "Dir: {{dir}}"
       }
     },
     "license": {
@@ -341,6 +542,21 @@
           "message": "App subpath (for example, /nocobase/)",
           "placeholder": "/ or /nocobase/"
         },
+        "portalType": {
+          "message": "Portal type",
+          "noCodeLabel": "No-code portal",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>",
+          "aiLabel": "AI portal",
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>"
+        },
+        "portalName": {
+          "message": "Portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Starter template (copied to ./storage/portals/)",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
+        },
         "storagePath": {
           "message": "Uploads and local files directory",
           "placeholder": "./<env>/storage/"
@@ -440,6 +656,21 @@
         },
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
+        },
+        "portalType": {
+          "message": "Portal type",
+          "noCodeLabel": "No-code portal",
+          "noCodeHint": "Create with visual configuration. AI can help adjust the configuration. Path: /v/<name>",
+          "aiLabel": "AI portal",
+          "aiHint": "Create with AI Agent and code. Users can request changes in natural language. Path: /x/<name>"
+        },
+        "portalName": {
+          "message": "Portal name",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "Starter template (copied to ./storage/portals/)",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {
@@ -461,6 +692,10 @@
         "downloadAppFiles": {
           "title": "App source and version",
           "description": "Choose how to get the app and which source and version to use."
+        },
+        "portalType": {
+          "title": "Configure portal",
+          "description": "Set the default portal name and type."
         },
         "configureDatabase": {
           "title": "Configure the database",

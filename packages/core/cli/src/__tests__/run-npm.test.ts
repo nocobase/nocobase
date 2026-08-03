@@ -119,7 +119,45 @@ test('run forwards piped stdout and stderr to callbacks', async () => {
   }
 });
 
+test('run can replace the child process environment', async () => {
+  vi.stubEnv('NOCOBASE_PARENT_ONLY', 'parent-value');
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-run-env-'));
+  const script = path.join(dir, 'print-env.cjs');
+  await fsp.writeFile(
+    script,
+    [
+      'process.stdout.write(JSON.stringify({',
+      '  childOnly: process.env.NOCOBASE_CHILD_ONLY,',
+      '  parentOnly: process.env.NOCOBASE_PARENT_ONLY,',
+      '  nodeOptions: process.env.NODE_OPTIONS,',
+      '}));',
+    ].join('\n'),
+  );
+
+  let stdout = '';
+
+  try {
+    await run(process.execPath, [script], {
+      env: {
+        NOCOBASE_CHILD_ONLY: 'child-value',
+      },
+      envMode: 'replace',
+      stdio: 'pipe',
+      onStdout: (chunk) => {
+        stdout += chunk;
+      },
+    });
+
+    expect(JSON.parse(stdout)).toEqual({
+      childOnly: 'child-value',
+    });
+  } finally {
+    await fsp.rm(dir, { recursive: true, force: true });
+  }
+});
+
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
 });
 

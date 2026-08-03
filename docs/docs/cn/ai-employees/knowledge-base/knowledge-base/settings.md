@@ -1,38 +1,42 @@
 ---
 pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "设置"
-description: "在知识库 Settings 页面修改基本信息、向量存储和默认分段参数，并理解知识库级设置与文档级分段设置的关系。"
-keywords: "知识库设置,分段参数,Chunk size,Chunk overlap,向量存储,NocoBase"
+description: "在知识库 Settings 页面修改基本信息、向量数据库、LLM 服务、Embedding model 和默认分段参数。"
+keywords: "知识库设置,向量数据库,LLM 服务,Embedding model,分段参数,NocoBase"
 ---
 
 # 设置
 
 ## 进入 Settings 页面
 
-进入知识库详情页后，点击左侧「Settings」。这里用于修改当前知识库的基本信息、文件存储、向量存储和默认分段参数。
+进入知识库详情页后，点击左侧「Settings」。这里用于修改当前知识库的基本信息、文件存储、向量数据库、LLM 服务、Embedding model 和默认分段参数。
 
-![20260617005832](https://static-docs.nocobase.com/20260617005832.png)
+![20260728222407](https://static-docs.nocobase.com/20260728222407.png)
 
 ## 基本信息
 
 Local 知识库的设置项包括：
 
-| 设置项           | 说明                                             |
-| ---------------- | ------------------------------------------------ |
-| 「Key」          | 知识库唯一标识，创建后不可修改                   |
-| 「Name」         | 知识库名称                                       |
-| 「File storage」 | 文档和分段文件保存到哪个文件存储，创建后不可修改 |
-| 「Vector store」 | 当前知识库使用的向量存储                         |
-| 「Description」  | 知识库说明                                       |
-| 「Enabled」      | 是否启用当前知识库                               |
+| 设置项              | 说明                                             |
+| ------------------- | ------------------------------------------------ |
+| 「Key」             | 知识库唯一标识，创建后不可修改                   |
+| 「Name」            | 知识库名称                                       |
+| 「File storage」    | 文档和分段文件保存到哪个文件存储，创建后不可修改 |
+| 「Vector database」 | 当前知识库使用的向量数据库                       |
+| 「LLM service」     | 用于生成 Embedding 的 LLM 服务                   |
+| 「Embedding model」 | 用于生成和检索向量的 Embedding model             |
+| 「Description」     | 知识库说明                                       |
+| 「Enabled」         | 是否启用当前知识库                               |
 
-:::tip 向量存储变更
+:::tip 向量配置变更
 
-修改「Vector store」后，NocoBase 会在保存时提示确认。向量存储发生变化后，已有文档需要重新向量化，才能把向量数据写入新的向量存储。选择「Save and vectorize」会保存设置并立即重新向量化；选择「Save only」只保存设置，之后可以回到「Documents」页面手动执行「Vectorization」。
+修改「Vector database」「LLM service」或「Embedding model」后，NocoBase 会在保存时提示确认。向量配置发生变化后，已有文档需要重新向量化。选择「Save and vectorize」会保存设置并立即重新向量化；选择「Save only」只保存设置，之后可以回到「Documents」页面手动执行「Vectorization」。
+
+如果向量数据库的连接配置发生变化，「Documents」页面也会提示重新向量化。
 
 :::
 
-![20260617005951](https://static-docs.nocobase.com/20260617005951.png)
+![20260728222408](https://static-docs.nocobase.com/20260728222408.png)
 
 ## 默认分段参数
 

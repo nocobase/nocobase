@@ -17,7 +17,13 @@ import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { koaMulter as multer } from '@nocobase/utils';
 
-import PluginWorkflow, { EXECUTION_STATUS, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import PluginWorkflow, {
+  EXECUTION_STATUS,
+  type ExecutionModel,
+  JOB_STATUS,
+  type JobModel,
+  Processor,
+} from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 
 import RequestInstruction, { RequestInstructionConfig } from '../RequestInstruction';
@@ -170,6 +176,27 @@ describe('workflow > instructions > request', () => {
     await app.destroy();
   });
 
+  async function waitForExecutionAndJobStatuses(
+    executionStatus: number | null,
+    jobStatus: number,
+    timeout = 3000,
+  ): Promise<{ execution: ExecutionModel; job: JobModel }> {
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      const [execution] = await workflow.getExecutions();
+      if (execution?.status === executionStatus) {
+        const [job] = await execution.getJobs();
+        if (job?.status === jobStatus) {
+          return { execution, job };
+        }
+      }
+      await sleep(20);
+    }
+    throw new Error(
+      `Timed out waiting for execution status ${executionStatus} and job status ${jobStatus} after ${timeout}ms`,
+    );
+  }
+
   describe('params processing', () => {
     it('trim should not crash', async () => {
       await workflow.createNode({
@@ -270,7 +297,7 @@ describe('workflow > instructions > request', () => {
         enabled: true,
         type: 'collection',
         options: {
-          timeout: 300,
+          timeout: 1000,
         },
         config: {
           mode: 1,
@@ -289,22 +316,14 @@ describe('workflow > instructions > request', () => {
 
       await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(100);
-
-      const plugin = app.pm.get(PluginWorkflow) as PluginWorkflow;
-      let [execution] = await workflow.getExecutions();
+      let { execution, job } = await waitForExecutionAndJobStatuses(EXECUTION_STATUS.STARTED, JOB_STATUS.PENDING);
       expect(execution.status).toBe(EXECUTION_STATUS.STARTED);
       expect(execution.startedAt).toBeTruthy();
       expect(execution.expiresAt).toBeTruthy();
-
-      let [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.PENDING);
 
-      await sleep(350);
-
-      [execution] = await workflow.getExecutions();
+      ({ execution, job } = await waitForExecutionAndJobStatuses(EXECUTION_STATUS.ABORTED, JOB_STATUS.ABORTED));
       expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
-      [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.ABORTED);
 
       await sleep(2200);

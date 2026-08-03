@@ -8,22 +8,19 @@
  */
 
 import { DecisionActions, ToolCall, useApp } from '@nocobase/client-v2';
-import { useChatBoxStore } from '../stores/chat-box';
-import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessageActions } from './useChatMessageActions';
 import { UserDecision } from '../../types';
-import { useChatToolCallStore } from '../stores/chat-tool-call';
+import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
 
-export const useToolCallActions = ({ messageId }: { messageId: string }) => {
+const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+export const useToolCallActions = ({ messageId, runtime }: { messageId: string; runtime?: ChatBoxRuntime }) => {
   const app = useApp();
   const api = app.apiClient;
-  const sessionId = useChatConversationsStore.use.currentConversation();
-  const aiEmployee = useChatBoxStore.use.currentEmployee();
-  const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
-  const getInvokeStatus = useChatToolCallStore.use.getInvokeStatus();
-  const isAllWaiting = useChatToolCallStore.use.isAllWaiting();
-  const isInterrupted = useChatToolCallStore.use.isInterrupted();
-  const { resumeToolCall } = useChatMessageActions();
+  const resolvedRuntime = useResolvedChatBoxRuntime(runtime);
+  const { chatBoxModel, chatConversationModel, chatToolCallModel } = resolvedRuntime;
+  const sessionId = chatConversationModel.currentConversation;
+  const { resumeToolCall } = useChatMessageActions(resolvedRuntime);
 
   const { toolsManager } = app.aiManager;
   const toolsMap = toolsManager.useTools();
@@ -33,8 +30,8 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
       throw new Error('sessionId is required to update tool call user decision');
     }
 
-    if (!isInterrupted(sessionId, messageId, toolCallId)) {
-      const invokeStatus = getInvokeStatus(sessionId, messageId, toolCallId);
+    if (!chatToolCallModel.isInterrupted(sessionId, messageId, toolCallId)) {
+      const invokeStatus = chatToolCallModel.getInvokeStatus(sessionId, messageId, toolCallId);
       console.warn('tool call invokeStatus is not interrupted', {
         sessionId,
         messageId,
@@ -51,8 +48,8 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
       return;
     }
 
-    updateToolCallInvokeStatus(sessionId, messageId, toolCallId, 'waiting');
-    if (!isAllWaiting(sessionId, messageId)) {
+    chatToolCallModel.updateToolCallInvokeStatus(sessionId, messageId, toolCallId, 'waiting');
+    if (!chatToolCallModel.isAllWaiting(sessionId, messageId)) {
       return;
     }
 
@@ -60,14 +57,30 @@ export const useToolCallActions = ({ messageId }: { messageId: string }) => {
     const toolCallResults: { id: string; result: unknown }[] = [];
     for (const toolCall of res.data.toolCalls) {
       const t = toolsMap.get(toolCall.name);
-      if (t?.invoke) {
-        const result = await t.invoke(app, toolCall.args);
-        toolCallResults.push({
-          id: toolCall.id,
-          result,
-        });
+      const decision = toolCall.userDecision as { type?: unknown } | undefined;
+      if (t?.invoke && decision?.type !== 'reject') {
+        try {
+          const result = await t.invoke(app, toolCall.args);
+          toolCallResults.push({
+            id: toolCall.id,
+            result,
+          });
+        } catch (error) {
+          toolCallResults.push({
+            id: toolCall.id,
+            result: {
+              status: 'error',
+              content: getErrorMessage(error),
+            },
+          });
+        }
       }
       toolCallIds.push(toolCall.id);
+    }
+
+    const aiEmployee = chatBoxModel.currentEmployee;
+    if (!aiEmployee) {
+      return;
     }
 
     await resumeToolCall({ sessionId, messageId, aiEmployee, toolCallIds, toolCallResults });

@@ -433,7 +433,7 @@ const DEFAULT_MODERN_CLIENT_PREFIX = 'v';
 exports.DEFAULT_MODERN_CLIENT_PREFIX = DEFAULT_MODERN_CLIENT_PREFIX;
 
 const DEFAULT_APP_CLIENT_ENTRY_MODE = 'legacy-default';
-const APP_CLIENT_ENTRY_MODES = new Set(['legacy-default', 'modern-default', 'modern-only']);
+const APP_CLIENT_ENTRY_MODES = new Set(['legacy-default', 'modern-default', 'modern-only', 'settings-default']);
 
 exports.DEFAULT_APP_CLIENT_ENTRY_MODE = DEFAULT_APP_CLIENT_ENTRY_MODE;
 
@@ -462,7 +462,11 @@ function normalizeModernClientPrefix(value) {
   const segment = String(value || '')
     .trim()
     .replace(/^\/+|\/+$/g, '');
-  return segment || DEFAULT_MODERN_CLIENT_PREFIX;
+  const normalized = segment || DEFAULT_MODERN_CLIENT_PREFIX;
+  if (normalized === 'settings') {
+    throw new Error('APP_MODERN_CLIENT_PREFIX "settings" is reserved for the standalone Settings application.');
+  }
+  return normalized;
 }
 
 exports.normalizeModernClientPrefix = normalizeModernClientPrefix;

@@ -18,6 +18,7 @@ import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import yauzl from 'yauzl';
 import { EventEmitter } from 'events';
+import os from 'os';
 import { Readable, Writable } from 'stream';
 
 vi.mock('child_process', async (importOriginal) => {
@@ -78,6 +79,12 @@ async function listZipEntries(filePath: string) {
   });
 }
 
+class TestBackupManager extends BackupManager {
+  setPortalDir(portalDir: string) {
+    this.portalDir = portalDir;
+  }
+}
+
 describe('BackupManager', async () => {
   let app: MockServer;
   const defaultBackupSettings: BackupSettings = {
@@ -85,6 +92,7 @@ describe('BackupManager', async () => {
     cron: '',
     encryptionPassword: '',
     enableFilesBackup: false,
+    enablePortalsBackup: false,
     keep: 10,
   };
 
@@ -214,6 +222,30 @@ describe('BackupManager', async () => {
         app.db.collections.delete(fileCollection.name);
         await fs.promises.unlink(validFilePath).catch(() => {});
         getRepositorySpy.mockRestore();
+      }
+    });
+
+    it('should back up portals independently from local storage files', async () => {
+      const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-backup-portals-'));
+      const portalDir = path.join(testDir, 'portals');
+      const portalFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+      const backupManager = new TestBackupManager(app, null, defaultBackupSettings);
+      backupManager.setPortalDir(portalDir);
+
+      try {
+        await fs.promises.mkdir(path.dirname(portalFilePath), { recursive: true });
+        await fs.promises.writeFile(portalFilePath, '<html>customer portal</html>');
+
+        await backupManager.backup(backupFileBaseName, {
+          enableFilesBackup: false,
+          enablePortalsBackup: true,
+        });
+
+        const entries = await listZipEntries(finalBackupFilePath);
+        expect(entries).toContain('portals/customer/dist/index.html');
+        expect(entries.some((entry) => entry.startsWith('uploads/'))).toBe(false);
+      } finally {
+        await fs.promises.rm(testDir, { recursive: true, force: true });
       }
     });
 

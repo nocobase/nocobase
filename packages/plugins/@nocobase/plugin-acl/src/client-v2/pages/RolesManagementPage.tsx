@@ -8,7 +8,7 @@
  */
 
 import { MoreOutlined, PlusOutlined, TagOutlined } from '@ant-design/icons';
-import { useACLRoleContext } from '@nocobase/client-v2';
+import { getItemActiveColors, useACLRoleContext } from '@nocobase/client-v2';
 import { randomId, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn, useRequest } from 'ahooks';
 import {
@@ -212,6 +212,7 @@ export default function RolesManagementPage() {
   const t = useT();
   const { modal } = App.useApp();
   const { token } = theme.useToken();
+  const { bg: itemActiveBg, color: itemActiveText } = getItemActiveColors(token);
   const aclPlugin = ctx.app.pm.get(PluginAclClientV2) as PluginAclClientV2;
   const currentUserRole = toCurrentUserRole(useACLRoleContext());
   const roleTabComponentCache = React.useRef<
@@ -499,7 +500,9 @@ export default function RolesManagementPage() {
                         padding: `${token.paddingXS}px ${token.paddingSM}px`,
                         marginBottom: token.marginXXS,
                         borderRadius: token.borderRadiusLG,
-                        background: selected ? token.controlItemBgActive : 'transparent',
+                        background: selected ? itemActiveBg : 'transparent',
+                        // 文字色跟着底色走：底色可能被主题改成深色，写死正文色会变成深底深字。
+                        color: selected ? itemActiveText : undefined,
                       }}
                     >
                       <div
@@ -512,7 +515,10 @@ export default function RolesManagementPage() {
                           minWidth: 0,
                         }}
                       >
-                        <Typography.Text ellipsis style={{ flex: '1 1 auto', minWidth: 0 }}>
+                        <Typography.Text
+                          ellipsis
+                          style={{ flex: '1 1 auto', minWidth: 0, color: selected ? itemActiveText : undefined }}
+                        >
                           <span
                             style={{ display: 'inline-flex', alignItems: 'center', gap: token.marginXS, minWidth: 0 }}
                           >

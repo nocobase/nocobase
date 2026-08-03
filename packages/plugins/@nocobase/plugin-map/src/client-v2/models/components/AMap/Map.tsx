@@ -19,6 +19,7 @@ import { useT } from '../../../locale';
 import { MapEditorType } from '../../../../shared/types';
 import { normalizeErrorMessage, runIdleTask } from '../../../../shared/utils';
 import { mapActiveColor } from '../../../../shared/theme';
+import { resolveMapSettingsHref } from '../../../settingsLink';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -114,7 +115,6 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const { navigate } = ctx.router;
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
@@ -434,9 +434,11 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         action={
           <Button
             type="primary"
+            href={resolveMapSettingsHref(ctx.app, window.location.pathname)}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => {
               ctx.view?.close?.();
-              navigate('/admin/settings/map');
             }}
           >
             {t('Go to the configuration page')}

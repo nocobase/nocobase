@@ -10,10 +10,9 @@
 import type { ToolsOptions } from '@nocobase/client-v2';
 import type { FlowContext } from '@nocobase/flow-engine';
 import { getSnippetBody } from '@nocobase/flow-engine';
-import { applyPatch } from 'diff';
+import { applyPatch, parsePatch } from 'diff';
 import { useChat } from '../chatbox/hooks/useChat';
-import { useChatConversationsStore } from '../chatbox/stores/chat-conversations';
-import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
+import { type ChatBoxRuntime, useChatBoxRuntime } from '../chatbox/stores/runtime';
 import type { ChatEditorRef } from '../types';
 
 type FlowInfoContext = FlowContext & {
@@ -28,24 +27,37 @@ type FlowContextToolState = ToolsOptions & {
 };
 
 type EditorToolState = ToolsOptions & {
-  editorRef?: ChatEditorRef | null;
+  chatBoxRuntime?: ChatBoxRuntime;
 };
 
+type FlowEditorToolState = FlowContextToolState & EditorToolState;
+
 const editorVersions = new Map<string, number>();
+
+function useCurrentRuntimeChat() {
+  const runtime = useChatBoxRuntime();
+  const currentConversation = runtime.chatConversationModel.currentConversation;
+  return useChat(currentConversation, runtime);
+}
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function getCurrentEditorRef() {
-  const state = useChatMessagesStore.getState();
-  const uid = state.currentEditorRefUid;
-  const editorRef = uid ? state.editorRef?.[uid] : null;
+function useEditorToolState<T extends EditorToolState>(state: T) {
+  state.chatBoxRuntime = useChatBoxRuntime();
+  return state;
+}
+
+function getCurrentEditorRef(state: EditorToolState) {
+  const chatMessageModel = state.chatBoxRuntime?.chatMessageModel;
+  const uid = chatMessageModel?.currentEditorRefUid;
+  const editorRef = uid ? chatMessageModel?.editorRef[uid] : null;
   return { uid, editorRef };
 }
 
-function getEditorState() {
-  const { uid, editorRef } = getCurrentEditorRef();
+function getEditorState(state: EditorToolState) {
+  const { uid, editorRef } = getCurrentEditorRef(state);
   if (!uid || !editorRef) {
     throw new Error('Current code editor is not available.');
   }
@@ -127,9 +139,25 @@ function normalizeUnifiedDiffHunkHeaders(patch: string) {
 }
 
 export function applyUnifiedDiff(source: string, patch: string) {
-  const result = applyPatch(source, normalizeUnifiedDiffHunkHeaders(patch), { fuzzFactor: 2 });
+  const normalizedPatch = normalizeUnifiedDiffHunkHeaders(patch);
+  const parsedPatches = parsePatch(normalizedPatch);
+  const hunks = parsedPatches.flatMap((parsedPatch) => parsedPatch.hunks);
+  if (!hunks.length) {
+    throw new Error(
+      'Invalid unified diff: no valid hunks found. Use headers such as `@@ -1,1 +1,1 @@`; bare `@@` headers are not supported.',
+    );
+  }
+  const hasChanges = hunks.some((hunk) => hunk.lines.some((line) => line.startsWith('+') || line.startsWith('-')));
+  if (!hasChanges) {
+    throw new Error('Invalid unified diff: no changed lines found.');
+  }
+
+  const result = applyPatch(source, normalizedPatch, { fuzzFactor: 2 });
   if (result === false) {
     throw new Error('Patch could not be applied to the current editor code.');
+  }
+  if (result === source) {
+    throw new Error('Patch produced no changes to the current editor code.');
   }
   return result;
 }
@@ -138,15 +166,11 @@ export const listCodeSnippetTool: [string, ToolsOptions] = [
   'listCodeSnippet',
   {
     invoke(this: EditorToolState) {
-      return (this.editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
+      const { editorRef } = getCurrentEditorRef(this);
+      return (editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
     },
     useHooks(this: EditorToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
-      const editorRefMap = chat.use.editorRef() ?? {};
-      const currentEditorRefUid = chat.use.currentEditorRefUid();
-      this.editorRef = currentEditorRefUid ? editorRefMap[currentEditorRefUid] : null;
-      return this;
+      return useEditorToolState(this);
     },
   },
 ];
@@ -168,8 +192,7 @@ export const getContextApisTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -184,8 +207,7 @@ export const getContextEnvsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -203,8 +225,7 @@ export const getContextVarsTool: [string, ToolsOptions] = [
       return result ?? {};
     },
     useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
       return this;
     },
@@ -214,7 +235,7 @@ export const getContextVarsTool: [string, ToolsOptions] = [
 export const writeJSCodeTool: [string, ToolsOptions] = [
   'writeJSCode',
   {
-    async invoke(_app, args: { code?: unknown }) {
+    async invoke(this: EditorToolState, _app, args: { code?: unknown }) {
       if (typeof args?.code !== 'string') {
         return {
           status: 'error',
@@ -224,7 +245,7 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
           },
         };
       }
-      const { uid, editorRef } = getCurrentEditorRef();
+      const { uid, editorRef } = getCurrentEditorRef(this);
       if (!uid || !editorRef) {
         return {
           status: 'error',
@@ -247,15 +268,18 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
         },
       };
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const readJSCodeTool: [string, ToolsOptions] = [
   'readJSCode',
   {
-    async invoke() {
+    async invoke(this: EditorToolState) {
       try {
-        const current = getEditorState();
+        const current = getEditorState(this);
         return {
           status: 'success',
           content: {
@@ -276,13 +300,16 @@ export const readJSCodeTool: [string, ToolsOptions] = [
         };
       }
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const patchJSCodeTool: [string, ToolsOptions] = [
   'patchJSCode',
   {
-    async invoke(_app, args: { patch?: unknown }) {
+    async invoke(this: EditorToolState, _app, args: { patch?: unknown }) {
       if (typeof args?.patch !== 'string' || args.patch.length === 0) {
         return {
           status: 'error',
@@ -293,7 +320,7 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const current = getEditorState();
+        const current = getEditorState(this);
         const nextCode = applyUnifiedDiff(current.code, args.patch);
         current.editorRef.write(nextCode);
         const version = bumpEditorVersion(current.uid);
@@ -318,13 +345,16 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
         };
       }
     },
+    useHooks(this: EditorToolState) {
+      return useEditorToolState(this);
+    },
   },
 ];
 
 export const lintAndTestJSTool: [string, ToolsOptions] = [
   'lintAndTestJS',
   {
-    async invoke(this: FlowContextToolState, app, args: { code?: unknown }) {
+    async invoke(this: FlowEditorToolState, app, args: { code?: unknown }) {
       let ctx = this.flowContext;
       if (!ctx) {
         ctx = app.flowEngine?.context as FlowInfoContext | undefined;
@@ -339,7 +369,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const editorState = typeof args?.code === 'string' ? null : getEditorState();
+        const editorState = typeof args?.code === 'string' ? null : getEditorState(this);
         const code = typeof args?.code === 'string' ? args.code : editorState.code;
         const content = await ctx.previewRunJS(code);
         let ranCurrentEditor = false;
@@ -367,11 +397,10 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
     },
-    useHooks(this: FlowContextToolState) {
-      const currentConversation = useChatConversationsStore.use.currentConversation();
-      const chat = useChat(currentConversation);
+    useHooks(this: FlowEditorToolState) {
+      const chat = useCurrentRuntimeChat();
       this.flowContext = chat.use.flowContext() as FlowInfoContext | undefined;
-      return this;
+      return useEditorToolState(this);
     },
   },
 ];
