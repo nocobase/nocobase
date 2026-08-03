@@ -127,12 +127,6 @@ export default productsExtension;
 
 文案放在 `src/locales/`，模板自带中英文。扩展也可以有自己的语言包，在扩展目录里建 `locales/` 然后在 `extension.tsx` 里导入即可。
 
-改动涉及国际化时跑一下回归脚本：
-
-```bash
-pnpm test:i18n
-```
-
 ## 相关链接
 
 - [AI 模式开发快速开始](./index.md) — 跑通第一个由 AI 编写的前端入口

@@ -1,6 +1,6 @@
 ---
 title: "AI 模式开发快速开始"
-description: "AI 搭建是让 AI Agent 写业务系统代码，NocoBase 提供认证、数据库、API 和权限作为基座，代码写在 AI Portal 这个应用入口里。"
+description: "AI 模式开发是让 AI Agent 写业务系统代码，NocoBase 提供认证、数据库、API 和权限作为基座，代码写在 AI Portal 这个应用入口里。"
 keywords: "AI 模式开发,AI 搭建,AI Portal,NocoBase AI,NocoBase 基座,前端开发,React,shadcn/ui,AI Agent,快速开始"
 ---
 
@@ -15,7 +15,6 @@ NocoBase 作为一个低代码/无代码平台，已经提供了这些基础能�
 
 下文出现 Portal 的地方，指的都是这个入口。
 
-> 想要体验 AI 搭建的效果，可以申请一个 Demo 环境体验：https://demo.nocobase.com/new
 
 ## NocoBase 作为基座
 
@@ -30,7 +29,10 @@ NocoBase 作为一个低代码/无代码平台，已经提供了这些基础能�
 - **工作流** — 业务流程自动化，前端触发或者数据变更触发
 - **文件存储** — 上传下载
 
-同时，我们基于上述能力，封装了标准的[系统模板代码](https://github.com/nocobase/portal-template-default)，AI Agent 直接复制就能运行一个基本的应用。同时， NocoBase 提供了[数据建模](../ai-builder/data-modeling.md)、[权限配置](../ai-builder/acl.md)等一系列 skills 能力，能够让你在描述自己业务需求后，AI Agent 不仅生成前端页面，还能帮你生成数据表、配置权限等操作，完成一个完整的业务系统。
+![AI Portal Template](https://static-docs.nocobase.com/20260803161414.png)
+
+我们基于上述能力，封装了标准的[系统模板代码](https://github.com/nocobase/portal-template-default)，AI Agent 直接复制就能运行一个基本的应用。同时， NocoBase 提供了[数据建模](../ai-builder/data-modeling.md)、[权限配置](../ai-builder/acl.md)等一系列 skills 能力，能够让你在描述自己业务需求后，AI Agent 不仅生成前端页面，还能帮你生成数据表、配置权限等操作，完成一个完整的业务系统。
+
 
 ### 为什么是让 AI 写代码搭建
 
@@ -78,7 +80,7 @@ AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码
 
 ## 前置条件
 
-- NocoBase >= 3.0.0-alpha.4
+- NocoBase >= 3.0.0-alpha.6
 - Node.js >= 22
 - [pnpm](https://pnpm.io/installation)——Portal 模板用它安装依赖和启动开发服务
 - 安装了 `nocobase cli` 的 alpha 版本（**注意：目前只支持 alpha 版本**）
@@ -94,7 +96,7 @@ AI Portal 就是这个思路的产物——一个专门留给 AI Agent 写代码
 nb portal list
 ```
 
-<!-- 需要一张 nb portal list 输出的截图，展示 main portal 的名称、访问 URL、Portal 类型和本地同步状态 -->
+![nb portal list](https://static-docs.nocobase.com/20260803163517.png)
 
 输出里会列出 Portal 名称、访问 URL、Portal 类型、source storage、本地路径和同步状态。
 
@@ -158,6 +160,18 @@ nb portal create customer
 ```
 
 新建的 Portal 同样通过 `nb portal dev` 开发、`nb portal deploy` 部署。它有自己独立的源码目录，用 `nb portal info customer` 查到位置后进去开 AI Agent 即可。详细说明请参阅 [部署与源码管理](./deploy.md)。
+
+## Demo 体验
+
+如果你想要体验 AI 模式开发的效果，可以申请一个 Demo 环境体验：https://demo.nocobase.com/new 。填写完表单之后，我们会给你生成一个专门的 Demo 环境，会带基于 NocoBase 实现的 AI Portal 应用。
+
+![AI Portal Settings](https://static-docs.nocobase.com/20260803154352.png)
+
+然后你就可以选一个 AI Portal 进入访问：
+
+![AI Portal CRM](https://static-docs.nocobase.com/20260803154700.png)
+
+并且我们提供了提示词，让你的 AI Agent 能够直接连接这个 AI Portal 应用，拉取应用代码，然后在本地启动开发服务，修改页面，最后推送部署回 Demo 环境，部署成功后，再刷新页面就能看到效果。
 
 ## 接下来
 

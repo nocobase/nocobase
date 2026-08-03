@@ -12,11 +12,11 @@ keywords: "AI Portal,AI Agent,协作搭建,提示词,nocobase-portal-manage,Skil
 
 :::
 
-AI Portal 的日常开发就是跟 AI Agent 说话——你描述要什么页面，它写代码，你在浏览器里看效果。这一页讲怎么把话说好，以及遇到问题时怎么处理。
+AI Portal 的日常开发就是跟 AI Agent 说话——你描述要什么页面，它写代码，你在浏览器里看效果。
 
 ## 在 Portal 目录下工作
 
-开始之前，先进到 Portal 的源码目录，再在那里打开 AI Agent。这样 Agent 一上来就在正确的上下文里，读得到 `AGENTS.md` 和现有代码。
+开始之前，建议先进到 Portal 的源码目录，再在那里打开 AI Agent。这样 Agent 一上来就在正确的上下文里，读得到 `AGENTS.md` 和现有代码。
 
 先查出目录在哪：
 
@@ -30,19 +30,11 @@ nb portal info main
 cd <本地源码目录>
 ```
 
-之后描述需求就行，不用再交代代码在哪：
+之后描述需求就行：
 
 ```
-加一个订单列表页
+帮我给 nocobase 的 main portal 加一个订单列表页
 ```
-
-如果同时在管好几个 Portal，提示词里点名是哪一个，`nocobase-portal-manage` Skill 会帮你确认目标是否正确：
-
-```
-在 main portal 里加一个订单列表页
-```
-
-这个 Skill 随 `nb init` 自动安装，跟 [AI 无代码搭建](../ai-builder/index.md#nocobase-skills)的那些 Skill 是同一套机制，不需要额外配置。
 
 ## 让 AI 先读再写
 
@@ -120,15 +112,7 @@ NocoBase 里已经启用了钉钉登录，帮登录页加上钉钉登录按钮
 
 **让开发服务一直开着。** `nb portal dev main` 跑起来之后是热更新的，AI 每改完一次你马上能看到效果，反馈循环最短。
 
-**报错直接回喂。** 页面白屏、构建失败、接口报 403——把完整的错误信息贴给 AI，通常几轮对话就能解决。不用自己先去判断是哪一层的问题。
-
-**用测试脚本验证。** 模板自带几个回归脚本，改动涉及认证、权限或国际化时可以跑一下：
-
-```bash
-pnpm test:auth
-pnpm test:acl
-pnpm test:i18n
-```
+**提供明确的报错。** 页面白屏、构建失败、接口报 403——把完整的错误信息、截图等贴给 AI，不要让 AI 自己猜，通常几轮对话就能解决。不用自己先去判断是哪一层的问题。
 
 ## 常见问题
 
@@ -142,10 +126,6 @@ nb portal pull main --force
 
 `--force` 会删掉本地源码目录重新拉取，执行前确认没有想保留的改动。想避免这种取舍，建议早点把源码切到 Git 管理，具体做法见 [部署与源码管理](./deploy.md)。
 
-**AI 引入了 Ant Design 依赖怎么办？**
-
-Portal 模板的组件基座是 shadcn/ui，跟 NocoBase 自身用的 Ant Design 不是一套。告诉 AI 改用 `src/components/ui` 下的组件重写即可。这条约定已经写在 `AGENTS.md` 里，正常情况下不会发生。
-
 **构建失败怎么排查？**
 
 先在本地跑一次构建，看完整报错：
@@ -154,7 +134,7 @@ Portal 模板的组件基座是 shadcn/ui，跟 NocoBase 自身用的 Ant Design
 nb portal deploy main
 ```
 
-TypeScript 类型错误和依赖缺失是最常见的两类，把报错贴给 AI 让它修。
+TypeScript 类型错误和依赖缺失是最常见的两类，把报错贴给 AI 让它修复即可。
 
 **手动改代码和 AI 改代码会冲突吗？**
 

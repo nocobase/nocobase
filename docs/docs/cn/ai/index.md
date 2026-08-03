@@ -44,7 +44,7 @@ features:
         link: /ai-portal/deploy
 
   - title: AI + 无代码模式开发
-    details: AI 用 NocoBase 提供的无代码能力搭建系统——你描述需求，它去配置数据表、页面和工作流。
+    details: 不写代码，AI 用 NocoBase 提供的无代码能力搭建系统——你描述需求，它去配置数据表、页面和工作流。
     items:
       - title: AI + 无代码模式开发快速开始
         details: AI 用 NocoBase 提供的无代码能力搭建系统，覆盖数据建模、界面配置、工作流到发布管理的全流程。
