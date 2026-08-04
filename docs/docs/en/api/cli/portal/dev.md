@@ -1,7 +1,7 @@
 ---
 title: "nb portal dev"
 description: "nb portal dev command reference: start development mode for a Portal's local source directory."
-keywords: "nb portal dev,NocoBase CLI,Portal"
+keywords: "nb portal dev,NocoBase CLI,Portal,development mode,local development"
 ---
 
 # nb portal dev
@@ -20,14 +20,21 @@ nb portal dev <portal> [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `<portal>` | string | Portal name or slug. |
-| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
-| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `<portal>` | string | Portal name or slug |
+| `--env`, `-e` | string | CLI env name. If omitted, the current env is used |
+| `--yes`, `-y` | boolean | Skip the interactive confirmation when an explicit `--env` differs from the current env |
 
 ## Examples
 
+Start development mode for a Portal in the current env:
+
 ```bash
 nb portal dev customer
+```
+
+Start development mode for a Portal in a specified env:
+
+```bash
 nb portal dev customer --env dev --yes
 ```
 
@@ -39,5 +46,6 @@ The local source directory must contain `package.json`. `ssh` envs don't support
 
 ## Related Commands
 
-- [`nb portal`](./index.md)
-- [`nb env`](../env/index.md)
+- [`nb portal create`](./create.md)
+- [`nb portal pull`](./pull.md)
+- [`nb portal deploy`](./deploy.md)

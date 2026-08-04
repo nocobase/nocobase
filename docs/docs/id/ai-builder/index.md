@@ -1,14 +1,63 @@
 ---
 title: "Mulai Cepat Pembangunan AI"
-description: "Pembangunan AI adalah kemampuan pembangunan dengan bantuan AI dari NocoBase, menyelesaikan operasi pemodelan data, konfigurasi UI, orkestrasi Workflow, dan lainnya melalui bahasa natural, memberikan pengalaman pembangunan yang lebih modern dan efisien."
-keywords: "Pembangunan AI,AI Builder,NocoBase AI,Agent Skills,Pembangunan Bahasa Natural,AI Low-code,Mulai Cepat"
+description: "Pembangunan AI adalah kemampuan pembangunan dengan bantuan AI dari NocoBase, gunakan bahasa natural untuk pemodelan data, pembangunan UI, orkestrasi Workflow, dan konfigurasi Permission, mendukung dua cara: konfigurasi no-code dan AI menulis kode."
+keywords: "Pembangunan AI,AI Builder,NocoBase AI,Agent Skills,Pembangunan Bahasa Natural,AI Low-code,AI Portal,Mulai Cepat"
 ---
 
 # Mulai Cepat Pembangunan AI
 
-Pembangunan AI adalah kemampuan pembangunan dengan bantuan AI yang disediakan NocoBase — Anda dapat mendeskripsikan kebutuhan dengan bahasa natural, AI akan secara otomatis menyelesaikan operasi seperti pemodelan data, konfigurasi halaman, pengaturan Permission, dan lainnya. Memberikan pengalaman pembangunan yang lebih modern dan efisien.
+Pembangunan AI adalah kemampuan pembangunan dengan bantuan AI yang disediakan NocoBase — Anda mendeskripsikan kebutuhan bisnis dengan bahasa natural, AI Agent membantu Anda membangun sistemnya. Mulai dari pemodelan data, pembangunan UI, orkestrasi Workflow, konfigurasi Permission, hingga akhirnya rilis ke production, seluruh rantainya tercakup.
+
+Khusus untuk **bagaimana UI dibangun**, ada dua cara:
+
+- **AI + pembangunan Portal no-code** — AI membangun UI sistem Anda berdasarkan kemampuan konfigurasi no-code NocoBase, hasilnya berupa konfigurasi yang tersimpan di database. Cocok untuk CRUD standar dan back-office internal, dan orang bisnis nantinya juga dapat menyesuaikannya sendiri lewat antarmuka
+- **Pembangunan AI Portal** — NocoBase menyediakan kemampuan dasar (data, autentikasi, Permission, dan lainnya), AI Agent langsung menulis kode secara lokal (hasilnya dapat langsung di-commit ke Git), setelah di-build dan di-deploy dapat diakses langsung melalui [AI Portal](./ai-portal/index.md). Cocok untuk interaksi kustom, sistem bisnis kompleks, dan skenario dengan kebutuhan visual khusus
+
+Cara mana pun yang Anda pilih, tabel data, Permission, dan Workflow tetap menggunakan satu set Skill yang sama — sambil menulis halaman, AI Agent juga sekalian dapat membuatkan tabel data dan mengonfigurasi Permission untuk Anda, sehingga melalui percakapan sebuah sistem bisnis yang lengkap terbangun secara bertahap.
+
+## Cara Memilih di Antara Dua Cara Pembangunan
+
+Kedua cara di atas masing-masing berkaitan dengan satu entry akses. Satu aplikasi NocoBase dapat memiliki beberapa entry yang berbagi satu set data yang sama, dan dari path aksesnya Anda dapat mengenali entry yang mana:
+
+```text
+/v/<name>    Portal no-code
+/x/<name>    AI Portal
+```
+
+![two types of portal](https://static-docs.nocobase.com/20260804091849.png)
+
+Perbedaan detailnya:
+
+| | Portal no-code | AI Portal |
+| --- | --- | --- |
+| Path akses | `/v/<name>` | `/x/<name>` |
+| Asal halaman | Dikonfigurasi lewat antarmuka, AI dapat membantu mengubah konfigurasi | Source React, ditulis AI Agent |
+| Hasil | Konfigurasi yang tersimpan di database | Source yang dapat di-commit ke Git |
+| Cara iterasi | Klik-klik di antarmuka, atau minta AI mengubah konfigurasi | Ubah kode, `dev` → `deploy` |
+| Manajemen versi | Menyimpan snapshot melalui [Kontrol Versi](./version-control.md) | Git, atau source storage NocoBase |
+| Kebebasan UI | Terbatas pada kemampuan Block, layout dan interaksi punya pola yang sudah ditetapkan | Terserah Anda mau dibuat seperti apa |
+| Kemampuan siap pakai | Dashboard, kalender, tampilan kanban, dan Block lainnya siap pakai | Mengacu pada kode template standar yang kami sediakan, atau diimplementasikan sendiri oleh AI Agent |
+| Tingkat kesulitan | Perlu memahami Block, Field, dan konsep NocoBase lainnya | Perlu cukup terbiasa menggunakan AI Agent |
+| Cocok untuk | CRUD standar, back-office internal | Interaksi kustom, sistem bisnis kompleks, kebutuhan visual khusus |
+
+Beberapa kondisi berikut cukup ditangani dengan Portal no-code:
+
+- Struktur halaman sangat standar, hanya tabel dan formulir biasa, mengonfigurasinya lebih cepat daripada menulis kode
+- Orang bisnis yang tidak menulis kode perlu menyesuaikan halaman sendiri
+- Anda hanya ingin memakai kemampuan Block bawaan NocoBase, misalnya dashboard, tampilan kalender, tampilan kanban
+- Membangun sendirian, atau tidak butuh pembangunan bersama banyak orang
+
+Untuk skenario lainnya kami lebih menyarankan membangun dengan [AI Portal](./ai-portal/index.md). Pada pembangunan Portal no-code, konteks yang harus dipelajari AI terlalu banyak — tipe Block, struktur konfigurasi, aturan reaksi, dan lainnya — sehingga untuk sistem bisnis yang butuh pembangunan kompleks, efisiensi pembangunan, kemudahan pemeliharaan, maupun kolaborasi banyak orang sama-sama kurang ideal.
+
+Maka kami mengambil pendekatan lain: **menulis kode frontend adalah hal yang paling dikuasai AI**, jadi biarkan ia mengerjakan yang paling dikuasainya. NocoBase berperan sebagai fondasi kernel sistem, sedangkan frontend diserahkan sepenuhnya kepada AI. Dengan kebutuhan yang sama, hasilnya lebih cepat dan lebih baik. **AI berkreasi bebas, NocoBase yang menjamin keandalan.**
+
+Kedua mode ini juga dapat dicampur: back-office internal dikonfigurasi cepat dengan Portal no-code, sedangkan portal pelanggan yang menghadap keluar dikustomisasi secara rinci dengan AI Portal — keduanya berada dalam satu aplikasi yang sama, berbagi satu set data dan sistem pengguna.
 
 ## Mulai Cepat
+
+::: warning Perhatian
+Jika ingin mencoba pembangunan AI Portal, harap pasang NocoBase CLI versi alpha (`npm install -g @nocobase/cli@alpha`).
+:::
 
 Jika Anda sudah memasang [NocoBase CLI](../ai/quick-start.md), Anda dapat melewati langkah ini.
 
@@ -17,13 +66,13 @@ Jika Anda sudah memasang [NocoBase CLI](../ai/quick-start.md), Anda dapat melewa
 Salin prompt di bawah ini ke asisten AI Anda (Claude Code, Codex, Cursor, Trae, dll), instalasi dan konfigurasi akan otomatis selesai:
 
 ```
-Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.nocobase.com/cn/ai/ai-quick-start.md (silakan akses langsung konten link)
+Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.nocobase.com/id/ai/ai-quick-start.md (silakan akses langsung konten link)
 ```
 
 ### Instalasi Manual
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -49,17 +98,19 @@ AI secara otomatis menghasilkan tabel data seperti pelanggan, kontak, peluang, p
 
 Untuk mempelajari lebih lanjut tentang penggunaan pemodelan data, silakan lihat [Pemodelan Data](./data-modeling).
 
-### Deskripsikan Halaman dengan Bahasa Bisnis, AI Membangunnya untuk Anda
+### Bangun satu milestone, dan AI menyimpan versi yang dapat dipulihkan untuk Anda
 
-Tidak perlu mempelajari aturan konfigurasi, langsung katakan halaman seperti apa yang Anda inginkan — kotak pencarian, tabel, kondisi filter, sebutkan saja maka akan tersedia.
+Setelah menyelesaikan sebuah halaman, sekelompok tabel data, atau sebuah Workflow, minta AI menyimpan keadaan saat ini sebagai versi — jika ada konfigurasi yang rusak, Anda selalu bisa kembali ke milestone terakhir yang jelas.
 
 ```
-Bantu saya membuat halaman manajemen pelanggan, berisi kotak pencarian nama dan tabel pelanggan, tabel menampilkan nama, telepon, email, waktu pembuatan
+Simpan hasil pembangunan saat ini sebagai versi: halaman manajemen pelanggan, area filter, dan form edit sudah selesai dikonfigurasi
 ```
 
-![Halaman Manajemen Pelanggan](https://static-docs.nocobase.com/20260420100608.png)
+![AI membuat versi setelah membangun](https://static-docs.nocobase.com/20260611115804.png)
 
-Untuk mempelajari lebih lanjut tentang penggunaan konfigurasi UI, silakan lihat [Konfigurasi UI](./ui-builder).
+AI tidak menyimpan versi setiap kali mengubah satu Field; AI hanya menyimpan setelah menyelesaikan dan memverifikasi satu milestone yang jelas, sehingga daftar versi lebih mudah dibaca dan lebih mudah menentukan ke mana harus kembali.
+
+Untuk mempelajari lebih lanjut tentang kontrol versi, silakan lihat [Kontrol Versi](./version-control).
 
 ### Orkestrasi Workflow Otomatis dengan Satu Kalimat
 
@@ -73,41 +124,29 @@ Bantu saya orkestrasikan satu Workflow yang otomatis mengurangi stok barang sete
 
 Untuk mempelajari lebih lanjut tentang penggunaan Workflow, silakan lihat [Manajemen Workflow](./workflow).
 
-### Tabel Data, Halaman, Dashboard, Sekaligus
+### Deskripsikan Halaman dengan Bahasa Bisnis, AI Membangunnya untuk Anda
 
-:::warning Perhatian
+NocoBase secara default menyediakan satu **AI Portal** dan satu **Portal no-code**. Tidak perlu mempelajari aturan konfigurasi, langsung katakan halaman seperti apa yang Anda inginkan — kotak pencarian, tabel, kondisi filter, sebutkan saja maka akan tersedia.
 
-Fungsi solusi saat ini masih dalam tahap pengujian, stabilitasnya terbatas, hanya untuk pengalaman mencoba.
+![portal manage](https://static-docs.nocobase.com/20260804104517.png)
 
-:::
-
-Deskripsikan skenario bisnis Anda dengan satu kalimat, AI akan membantu Anda membangun semua tabel data, halaman manajemen, dashboard, dan grafik.
+Jika membangun melalui Portal no-code (nama Portal default adalah admin), acuannya seperti berikut:
 
 ```
-Bantu saya menggunakan nocobase-dsl-reconciler skill untuk membangun sistem manajemen tiket, berisi dashboard, daftar tiket, manajemen pengguna, konfigurasi SLA
+Bantu saya membuat halaman manajemen pelanggan di admin, berisi kotak pencarian nama dan tabel pelanggan, tabel menampilkan nama, telepon, email, waktu pembuatan
 ```
 
-AI terlebih dahulu mengeluarkan rancangan desain, setelah dikonfirmasi langsung dibangun sekaligus:
+![Halaman Manajemen Pelanggan](https://static-docs.nocobase.com/20260420100608.png)
 
-![Rancangan Desain Sistem Tiket](https://static-docs.nocobase.com/20260420100420.png)
-
-![Hasil Pembangunan Sistem Tiket](https://static-docs.nocobase.com/20260420100450.png)
-
-Untuk mempelajari lebih lanjut tentang penggunaan pembangunan seluruh sistem, silakan lihat [Solusi](./dsl-reconciler).
-
-### Bangun satu milestone, dan AI menyimpan versi yang dapat dipulihkan untukmu
-
-Setelah menyelesaikan sebuah halaman, sekelompok tabel data, atau sebuah workflow, minta AI menyimpan keadaan saat ini sebagai versi — jika ada konfigurasi yang rusak, kamu selalu bisa kembali ke milestone terakhir yang jelas.
+Jika membangun melalui mode AI Portal (nama Portal default adalah main), acuannya seperti berikut:
 
 ```
-Simpan hasil pembangunan saat ini sebagai versi: halaman manajemen pelanggan, area filter, dan form edit sudah selesai dikonfigurasi
+Bantu saya membuat halaman manajemen pelanggan di main portal, berisi kotak pencarian dan tabel pelanggan, tabel menampilkan nama, telepon, industri
 ```
 
-![AI membuat versi setelah membangun](https://static-docs.nocobase.com/20260611115804.png)
+![halaman portal](https://static-docs.nocobase.com/20260803204422.png)
 
-AI tidak menyimpan versi setiap kali mengubah satu field; AI hanya menyimpan setelah menyelesaikan dan memverifikasi satu milestone yang jelas, sehingga daftar versi lebih mudah dibaca dan lebih mudah menentukan ke mana harus kembali.
-
-Untuk mempelajari lebih lanjut tentang kontrol versi, silakan lihat [Kontrol Versi](./version-control).
+Untuk mempelajari lebih lanjut tentang penggunaan konfigurasi UI, silakan lihat [Konfigurasi UI](./ui-builder) atau [Pembangunan AI Portal](./ai-portal/index.md).
 
 ## Keamanan & Audit
 
@@ -115,7 +154,7 @@ Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami t
 
 ## NocoBase Skills
 
-[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan 9 Skills, mencakup seluruh proses pembangunan:
+[NocoBase Skills](https://github.com/nocobase/skills) adalah paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami sistem konfigurasi NocoBase. NocoBase menyediakan beberapa Skills, mencakup seluruh proses pembangunan:
 
 - [Manajemen Lingkungan](./env-bootstrap) — Pemeriksaan lingkungan, instalasi deployment, upgrade, dan diagnostik masalah
 - [Pemodelan Data](./data-modeling) — Membuat dan mengelola tabel data, Field, relasi
@@ -126,6 +165,7 @@ Sebelum membiarkan AI Agent mengoperasikan NocoBase, disarankan untuk memahami t
 - [Manajemen Plugin](./plugin-manage) — Melihat, mengaktifkan, dan menonaktifkan Plugin
 - [Manajemen Publikasi](./publish) — Publikasi lintas lingkungan, backup recovery, dan migrasi
 - [Kontrol Versi](./version-control) — Menyimpan versi yang dapat dipulihkan setelah milestone selesai
+- [Pembangunan AI Portal](https://github.com/nocobase/skills/blob/main/skills/nocobase-ai-builder/SKILL.md) - Membuat AI Agent menulis kode di AI Portal untuk membangun UI sistem
 
 :::tip Tips
 
@@ -135,6 +175,7 @@ NocoBase CLI akan secara otomatis menginstal Skills selama proses inisialisasi (
 
 ## Tautan Terkait
 
+- [AI Portal](./ai-portal/index.md) — Cara pembangunan lain, dengan AI Agent langsung menulis kode frontend
 - [NocoBase CLI](../ai/quick-start.md) — Tool baris perintah untuk memasang dan mengelola NocoBase
 - [Referensi NocoBase CLI](../api/cli/index.md) — Penjelasan parameter lengkap untuk semua perintah
 - [Pengembangan Plugin AI](../ai-dev/index.md) — Gunakan AI untuk membantu mengembangkan Plugin NocoBase

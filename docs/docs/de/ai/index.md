@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'Das KI-Fähigkeitssystem von NocoBase: KI-Builder und -Entwicklung, KI-Mitarbeiter, AI-Agent-Anbindung sowie KI-Tools und -Ressourcen.'
-keywords: 'NocoBase AI,KI-Builder,KI-Mitarbeiter,KI-Entwicklung,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'Das KI-Fähigkeitssystem von NocoBase: KI-Builder, KI-Mitarbeiter, AI-Agent-Anbindung sowie KI-Tools und -Ressourcen.'
+keywords: 'NocoBase AI,KI-Builder,AI Portal,KI-Mitarbeiter,KI-Entwicklung,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: Erste Schritte
     details: CLI installieren, Anwendung verbinden, mit dem Aufbau beginnen – alles startet hier.
@@ -21,7 +21,7 @@ features:
         details: Lassen Sie sich von KI bei der Entwicklung von NocoBase-Plugins unterstützen – vom Scaffolding über Komponentencode bis zur Geschäftslogik.
         link: /ai-dev
 
-  - title: KI-Builder und -Entwicklung
+  - title: KI-Builder
     details: Erstellen Sie NocoBase-Anwendungen und Plugins mit KI – von einer natürlichsprachlichen Beschreibung bis zu einem nutzbaren System oder Plugin-Code.
     items:
       - title: Schnellstart KI-Builder
@@ -65,28 +65,6 @@ features:
         details: Binden Sie KI-Mitarbeiter in Workflow-Knoten ein, um automatisierte intelligente Entscheidungen und Inhaltserstellung zu ermöglichen.
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: Binden Sie Ihren AI Agent an
-    details: Ihr Lieblings-AI-Agent kann jetzt auch NocoBase bedienen.
-    items:
-      - title: OpenClaw + NocoBase – der beliebteste AI Agent erledigt es für Sie
-        details: Der weltweit beliebteste Open-Source-AI-Agent. OpenClaw wird Ihr rund um die Uhr verfügbarer NocoBase-Operator.
-        link: /ai/openclaw
-      - title: Hermes Agent – der NocoBase-Assistent, der Sie immer besser versteht
-        details: Sammelt erfolgreiche Erfahrungen automatisch als wiederverwendbare Skills und versteht Ihr Geschäftssystem mit jedem Einsatz besser.
-        link: /ai/hermes-agent
-      - title: Hände frei – treiben Sie NocoBase mit WorkBuddy an
-        details: Aus dem Hause Tencent, mit über 20 integrierten Skills, fernsteuerbar in NocoBase über mehrere Plattformen wie WeCom und Lark.
-        link: /ai/workbuddy
-      - title: Claude Code + NocoBase – das stärkste KI-Gehirn, Ihr leitender NocoBase-Architekt
-        details: Ein leistungsstarker KI-Architekt – versteht den Projektkontext und baut NocoBase so natürlich wie das Schreiben von Code.
-        link: /ai/claude-code
-      - title: Mit Codex NocoBase bedienen – Aufbau und Entwicklung in einem
-        details: Aus dem Hause OpenAI, gestützt auf die GPT-Reihe. Baut NocoBase in einer sicheren Sandbox auf, jeder Schritt bleibt kontrollierbar.
-        link: /ai/codex
-      - title: OpenCode + NocoBase – die offene, freie und nicht gebundene Art, NocoBase aufzubauen
-        details: Ebenfalls von der Open-Source-Community getrieben, mit freier Modellauswahl – die freie Wahl für Entwickler.
-        link: /ai/opencode
-
   - title: KI-Tools und -Ressourcen
     details: Die Infrastruktur hinter den KI-Fähigkeiten von NocoBase – CLI, Skills und MCP.
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: Domänenwissenpakete, die in einen AI Agent installiert werden können, damit dieser die Fähigkeiten und Konventionen von NocoBase versteht.
         link: /ai-builder#nocobase-skills
+      - title: nb portal Befehlsreferenz
+        details: Alle Befehle zur Verwaltung eines Portals – erstellen, entwickeln, Quellcode synchronisieren und deployen.
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Anbindung über das Model Context Protocol, damit ein AI Agent über ein standardisiertes Protokoll mit NocoBase interagieren kann.
         link: /ai/mcp/

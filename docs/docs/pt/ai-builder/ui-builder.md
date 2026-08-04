@@ -33,6 +33,7 @@ Não pode fazer:
 - Não desenha estruturas de tabelas (use o [Skill de Modelagem de Dados](./data-modeling)).
 - Não orquestra workflows (use o [Skill de Gerenciamento de Workflow](./workflow)).
 - Não trata navegação de páginas não modernas (v1) — só dá suporte a páginas v2.
+- Não trata o código-fonte de frontend do AI Portal (use o [AI Portal](./ai-portal/index.md))
 
 ## Exemplos de prompt
 
@@ -98,3 +99,4 @@ Se a configuração manual e a por IA acontecerem ao mesmo tempo, podem se atrap
 - [Modelagem de Dados](./data-modeling) — Crie e gerencie tabelas, campos e relacionamentos com IA
 - [Configuração de Permissões](./acl) — Configure papéis e permissões de acesso a dados
 - [Gerenciamento de Workflow](./workflow) — Crie, edite e diagnostique workflows
+- [AI Portal](./ai-portal/index.md) — A outra forma de fazer quando uma página precisa de código customizado

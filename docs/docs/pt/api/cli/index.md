@@ -39,7 +39,7 @@ Os seguintes grupos de comandos são exibidos em `nb --help`:
 | [`nb env`](./env/index.md)           | Gerencia ambientes de projeto NocoBase, o env atual, status, detalhes e comandos de runtime.                     |
 | [`nb license`](./license/index.md)   | Gerencia licenças comerciais e plugins licenciados.                                                              |
 | [`nb plugin`](./plugin/index.md)     | Gerencia plugins do env NocoBase selecionado.                                                                    |
-| [`nb portal`](./portal/index.md)     | Gerencia workspaces de Portal: configurar, criar, desenvolver, sincronizar código-fonte, fazer deploy e excluir. |
+| [`nb portal`](./portal/index.md)     | Gerencia o diretório local de código-fonte de um Portal: configurar, criar, desenvolver, sincronizar código-fonte, fazer deploy e excluir. |
 | [`nb scaffold`](./scaffold/index.md) | Gera scaffolding para desenvolvimento de plugins NocoBase.                                                       |
 | [`nb self`](./self/index.md)         | Verifica ou atualiza a própria NocoBase CLI.                                                                     |
 | [`nb session`](./session/index.md)   | Configura `NB_SESSION_ID` para que o env atual fique isolado por shell ou agent runtime.                         |

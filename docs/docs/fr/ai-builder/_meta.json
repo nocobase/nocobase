@@ -5,6 +5,58 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Construction avec AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Démarrage rapide",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Construire avec un AI Agent",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Structure du projet et stack technique",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Composants standard et extensions",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Déploiement et gestion des sources",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Construction avec un Portal no-code",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Configuration de l'interface",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Solutions",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Contrôle de version",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Sécurité et audit"
@@ -21,11 +73,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Configuration de l'interface"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Gestion des workflows"
   },
@@ -36,11 +83,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Solutions"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Gestion des plugins"
   },
@@ -48,10 +90,5 @@
     "type": "file",
     "name": "publish",
     "label": "Gestion des publications"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Contrôle de version"
   }
 ]

@@ -91,7 +91,7 @@ Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.no
 ### Instalasi Manual
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 

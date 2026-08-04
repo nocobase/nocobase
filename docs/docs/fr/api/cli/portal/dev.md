@@ -1,12 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a Portal in development mode."
-keywords: "nb portal dev,NocoBase CLI,Portal"
+description: "Référence de la commande nb portal dev : démarrer le mode développement du répertoire de code source local d'un Portal."
+keywords: "nb portal dev,NocoBase CLI,Portal,mode développement,développement local"
 ---
 
 # nb portal dev
 
-Démarre le mode développement pour le workspace Portal spécifié
+Démarre le mode développement du répertoire de code source local du Portal indiqué. Cette commande s'utilise généralement après [`nb portal create`](./create.md) ou [`nb portal pull`](./pull.md).
+
+À l'exécution, elle actualise les fichiers `.env` et `.env.local` du répertoire de code source local, puis exécute `pnpm dev` dans ce même répertoire.
 
 ## Utilisation
 
@@ -18,22 +20,32 @@ nb portal dev <portal> [flags]
 
 | Paramètre | Type | Description |
 | --- | --- | --- |
-| `<portal>` | string | Portal name or slug. |
-| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
-| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `<portal>` | string | Nom ou slug du Portal |
+| `--env`, `-e` | string | Nom du CLI env. S'il est omis, l'env courant est utilisé |
+| `--yes`, `-y` | boolean | Ignore la confirmation interactive lorsque le `--env` indiqué explicitement diffère de l'env courant |
 
 ## Exemples
 
+Démarrer le mode développement d'un Portal dans l'env courant :
+
 ```bash
 nb portal dev customer
+```
+
+Démarrer le mode développement d'un Portal dans un env précis :
+
+```bash
 nb portal dev customer --env dev --yes
 ```
 
 ## Notes
 
-The workspace must contain `package.json`. The command refreshes `.env` and `.env.local`, then runs `pnpm dev`. `ssh` envs are not supported in the current version.
+`dev` démarre le serveur de développement à partir du répertoire de code source local du Portal. Cette commande ne crée pas d'enregistrement de Portal et ne récupère pas le code source distant ; si le répertoire de code source local n'existe pas, utilisez d'abord [`nb portal create`](./create.md) ou [`nb portal pull`](./pull.md).
+
+Le répertoire de code source local doit contenir `package.json`. Les env de type `ssh` ne prennent pas encore en charge le démarrage du mode développement d'un Portal.
 
 ## Commandes liées
 
-- [`nb portal`](./index.md)
-- [`nb env`](../env/index.md)
+- [`nb portal create`](./create.md)
+- [`nb portal pull`](./pull.md)
+- [`nb portal deploy`](./deploy.md)

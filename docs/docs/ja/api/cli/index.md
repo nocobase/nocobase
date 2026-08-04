@@ -39,7 +39,7 @@ nb [command]
 | [`nb env`](./env/index.md)           | NocoBase プロジェクト環境、現在の env、状態、詳細、ランタイムコマンドを管理します。                         |
 | [`nb license`](./license/index.md)   | 商用ライセンスとライセンス済みプラグインを管理します。                                                      |
 | [`nb plugin`](./plugin/index.md)     | 選択した NocoBase env のプラグインを管理します。                                                            |
-| [`nb portal`](./portal/index.md)     | Portal ワークスペースを管理します: 設定、作成、開発、ソース同期、デプロイ、削除。 |
+| [`nb portal`](./portal/index.md)     | Portal のローカルソースディレクトリを管理します: 設定、作成、開発、ソース同期、デプロイ、削除。 |
 | [`nb scaffold`](./scaffold/index.md) | NocoBase プラグイン開発用のスキャフォールドを生成します。                                                   |
 | [`nb self`](./self/index.md)         | NocoBase CLI 自体を確認または更新します。                                                                   |
 | [`nb session`](./session/index.md)   | `NB_SESSION_ID` を設定し、current env をシェルまたは agent runtime ごとに分離します。                       |

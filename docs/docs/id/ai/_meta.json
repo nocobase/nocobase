@@ -52,6 +52,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Mulai Cepat Pembangunan AI",
+        "link": "/ai-builder/"
+      },
+      {
+        "type": "custom-link",
         "label": "NocoBase CLI",
         "proxy": false,
         "link": "/nocobase-cli/"
