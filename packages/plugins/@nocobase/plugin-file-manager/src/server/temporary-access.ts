@@ -109,7 +109,9 @@ export async function createTemporaryURLAction(ctx: Context, next: Next) {
 
   const id = ctx.action.params.filterByTk;
   let filter: object = { id };
+  const loggedInAttachmentAccess = collection.name === 'attachments' && Boolean(ctx.state.currentUser);
   if (
+    !loggedInAttachmentAccess &&
     ctx.app.options.acl !== false &&
     ctx.dataSource.options?.useACL !== false &&
     ctx.dataSource.options?.acl !== false

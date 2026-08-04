@@ -746,9 +746,13 @@ describe('file manager > server', () => {
         );
       });
 
-      it('requires login and file get permission to create a temporary URL', async () => {
+      it('allows logged-in users to create temporary URLs for attachments while keeping file table permissions', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const file = await plugin.createFileRecord({
+          collectionName: 'files',
+          filePath: path.resolve(__dirname, './files/text.txt'),
         });
         enableFileAccessACL(app);
 
@@ -758,8 +762,11 @@ describe('file manager > server', () => {
         app.acl.define({ role: 'file-denied' });
         const admin = await db.getRepository('users').findOne();
         const deniedAgent = (await app.agent().login(admin)).set('X-Role', 'file-denied');
-        const deniedResponse = await deniedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
-        expect(deniedResponse.status).toBe(403);
+        const attachmentResponse = await deniedAgent.post(`/attachments:createTemporaryURL/${body.data.id}`);
+        expect(attachmentResponse.status).toBe(200);
+
+        const fileResponse = await deniedAgent.post(`/files:createTemporaryURL/${file.id}`);
+        expect(fileResponse.status).toBe(403);
       });
 
       it('rejects missing, expired, forged, and resource-mismatched temporary tokens', async () => {
@@ -1331,7 +1338,7 @@ describe('file manager > server', () => {
         expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
       });
 
-      it('returns 403 when role cannot view attachments', async () => {
+      it('allows logged-in users to access attachments when the current role cannot view their records', async () => {
         const { body } = await agent.resource('attachments').create({
           [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
         });
@@ -1343,6 +1350,24 @@ describe('file manager > server', () => {
         const deniedAgent = (await app.agent().login(admin)).set('X-Role', 'file-denied');
 
         const response = await deniedAgent.get(body.data.url);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+      });
+
+      it('keeps file table access restricted by the current role', async () => {
+        const file = await plugin.createFileRecord({
+          collectionName: 'files',
+          filePath: path.resolve(__dirname, './files/text.txt'),
+        });
+        enableFileAccessACL(app);
+        app.acl.define({
+          role: 'file-denied',
+        });
+        const admin = await db.getRepository('users').findOne();
+        const deniedAgent = (await app.agent().login(admin)).set('X-Role', 'file-denied');
+
+        const response = await deniedAgent.get(file.get('url'));
 
         expect(response.status).toBe(403);
       });
