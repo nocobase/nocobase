@@ -18,6 +18,7 @@ import { vi } from 'vitest';
 import winston from 'winston';
 import { CacheTransport } from '../cache-logger';
 import ScriptInstruction from '../ScriptInstruction';
+import { ScriptWorkerRunner } from '../ScriptWorkerRunner';
 
 import Plugin from '..';
 
@@ -210,6 +211,74 @@ describe('workflow > instructions > script', () => {
   });
 
   describe('promise and timeout', () => {
+    it('should persist, claim and consume an async JavaScript job once', async () => {
+      let resolveRun: ((result: { status: number; result: string }) => void) | undefined;
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation(() => {
+        return new Promise((resolve) => {
+          resolveRun = resolve;
+        });
+      });
+
+      try {
+        await workflow.update({ sync: false });
+        await workflow.createNode({
+          type: 'script',
+          config: {
+            arguments: [{ name: 'title', value: '{{$context.data.title}}' }],
+            content: 'return title;',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        let job;
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = execution ? await execution.getJobs() : [];
+          if (job?.startedAt && runSpy.mock.calls.length === 1) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(job?.status).toBe(JOB_STATUS.PENDING);
+        expect(job?.startedAt).toBeTruthy();
+        expect(job?.meta?.javascript).toMatchObject({
+          version: 1,
+          content: 'return title;',
+          args: { title: 'post' },
+        });
+        expect(runSpy).toHaveBeenCalledWith(
+          'return title;',
+          { title: 'post' },
+          expect.objectContaining({ logger: expect.any(Object) }),
+        );
+        expect(runSpy).toHaveBeenCalledTimes(1);
+
+        await app.eventQueue.publish((app.pm.get(Plugin) as Plugin).channelPendingJavaScriptTask, { jobId: job.id });
+        await sleep(100);
+        expect(runSpy).toHaveBeenCalledTimes(1);
+
+        resolveRun?.({ status: JOB_STATUS.RESOLVED, result: 'queued-result' });
+
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = await execution.getJobs();
+          if (execution?.status === EXECUTION_STATUS.RESOLVED && job?.status === JOB_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(job.status).toBe(JOB_STATUS.RESOLVED);
+        expect(job.result).toBe('queued-result');
+        expect(execution?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        runSpy.mockRestore();
+      }
+    });
+
     it('should fail when Promise is reject', async () => {
       const script = `
         return Promise.reject(new Error('fail'));
@@ -278,7 +347,7 @@ describe('workflow > instructions > script', () => {
 
     it('should abort a background script when an async workflow times out', async () => {
       let backgroundSignal: AbortSignal | undefined;
-      const runSpy = vi.spyOn(ScriptInstruction, 'run').mockImplementation((_source, _args, options) => {
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation((_source, _args, options) => {
         backgroundSignal = options.signal;
         return new Promise((resolve) => {
           const abort = () => resolve({ status: JOB_STATUS.ERROR, result: 'aborted' });

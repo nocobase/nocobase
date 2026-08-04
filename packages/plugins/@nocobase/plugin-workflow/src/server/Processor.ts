@@ -545,6 +545,10 @@ export default class Processor {
             changes.push([`result`, JSON.stringify(job.result ?? null)]);
             job.changed('result', false);
           }
+          if (job.changed('startedAt')) {
+            changes.push([`started_at`, job.startedAt]);
+            job.changed('startedAt', false);
+          }
           if (changes.length) {
             await this.options.plugin.db.sequelize.query(
               `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
@@ -615,6 +619,7 @@ export default class Processor {
     const { database } = <typeof ExecutionModel>this.execution.constructor;
     const model = database.getModel('jobs');
     let job: JobModel;
+    const startedAt = Object.prototype.hasOwnProperty.call(payload, 'startedAt') ? payload.startedAt : new Date();
     if (payload instanceof model) {
       job = payload;
       job.set('updatedAt', new Date());
@@ -628,6 +633,7 @@ export default class Processor {
         status: payload.status,
         result: Object.prototype.hasOwnProperty.call(payload, 'result') ? payload.result : null,
         meta: Object.prototype.hasOwnProperty.call(payload, 'meta') ? payload.meta : null,
+        startedAt,
         updatedAt: new Date(),
       });
     } else {
@@ -635,6 +641,7 @@ export default class Processor {
         {
           ...payload,
           id: this.options.plugin.snowflake.getUniqueID().toString(),
+          startedAt,
           createdAt: new Date(),
           updatedAt: new Date(),
           executionId: this.execution.id,

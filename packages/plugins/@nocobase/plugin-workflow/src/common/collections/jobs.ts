@@ -57,6 +57,10 @@ export default {
       type: 'json',
       name: 'meta',
     },
+    {
+      type: 'datetime',
+      name: 'startedAt',
+    },
     /**
      * @experimental
      */
