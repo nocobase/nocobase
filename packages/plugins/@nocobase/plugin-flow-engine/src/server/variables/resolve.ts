@@ -13,7 +13,7 @@ import { type AnalyzedTemplate, type ResolvePathPolicy } from '../template/varia
 import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
 import { analyzeVariableTemplateSafely } from './allow-list';
 import { planRecordBindings, type RecordBindingPlan } from './record-bindings';
-import { getRecordBindingPolicies, variables } from './registry';
+import { variables } from './registry';
 import { prefetchRecordsForResolve } from './utils';
 
 export type ResolveBatchItem = {
@@ -58,7 +58,6 @@ function createTrustedRecordBindingPlan(analysis: AnalyzedTemplate, contextParam
   return planRecordBindings({
     contextParams,
     mode: 'trusted',
-    policies: getRecordBindingPolicies(analysis.usage),
     usage: analysis.usage,
   });
 }

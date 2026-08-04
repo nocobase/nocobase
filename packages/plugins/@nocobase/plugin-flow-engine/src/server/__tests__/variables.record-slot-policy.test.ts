@@ -415,15 +415,16 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(model, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
   });
 
-  it('gives configure roles fixed slots without RD but no dynamic form slot', async () => {
+  it('keeps configure roles on the trusted lane without compiling request slots', async () => {
     const ctx = createFakeCtx({ currentRole: 'root' });
     const view = await authorizeVariablesResolve(ctx, { template: '{{ ctx.view.record.name }}' });
     const form = await authorizeVariablesResolve(ctx, { template: '{{ ctx.formValues.customer.name }}' });
     const item = await authorizeVariablesResolve(ctx, { template: '{{ ctx.item.value.owner.name }}' });
 
-    expect(view.recordSlotPolicies.get(getFirstCanonicalKey(view))?.slot).toEqual(['record']);
-    expect(form.recordSlotPolicies.get(getFirstCanonicalKey(form))).toBeUndefined();
-    expect(item.recordSlotPolicies.get(getFirstCanonicalKey(item))).toBeUndefined();
+    expect([view.allowed, form.allowed, item.allowed]).toEqual([true, true, true]);
+    expect([view.recordSlotPolicies.size, form.recordSlotPolicies.size, item.recordSlotPolicies.size]).toEqual([
+      0, 0, 0,
+    ]);
   });
 
   it('loads and caches the persisted ancestor Form contract', async () => {

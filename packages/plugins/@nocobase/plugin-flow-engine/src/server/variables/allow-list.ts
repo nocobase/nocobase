@@ -17,16 +17,19 @@ import {
   type ResolvePathPolicy,
 } from '../template/variable-expression';
 import type { JSONValue } from '../template/resolver';
-import { planRecordBindings, type RecordBindingPlan, type RecordBindingUsage } from './record-bindings';
 import {
-  compileRecordSlotPolicies,
+  planRecordBindings,
+  type RecordBindingPlannerMode,
+  type RecordBindingPlan,
+  type RecordBindingUsage,
+} from './record-bindings';
+import {
   createFlowModelVariableContract,
   type FlowModelVariableContract,
   type RecordSlotPolicies,
   type ResolveFlowModelFieldKind,
 } from './record-slot-policy';
 import {
-  getRecordBindingPolicies,
   isSafeRecordBinding,
   sanitizeRegisteredVariableContextParams,
   type ValidateContextParamsResult,
@@ -116,7 +119,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function isRecordParams(value: unknown): value is RecordParams {
   return (
-    isObject(value) && typeof value.collection === 'string' && Object.prototype.hasOwnProperty.call(value, 'filterByTk')
+    isObject(value) &&
+    typeof value.collection === 'string' &&
+    Object.prototype.hasOwnProperty.call(value, 'filterByTk') &&
+    (typeof value.dataSourceKey === 'undefined' || typeof value.dataSourceKey === 'string') &&
+    (typeof value.associationName === 'undefined' || typeof value.associationName === 'string') &&
+    (typeof value.fields === 'undefined' ||
+      (Array.isArray(value.fields) && value.fields.every((field) => typeof field === 'string'))) &&
+    (typeof value.appends === 'undefined' ||
+      (Array.isArray(value.appends) && value.appends.every((append) => typeof append === 'string')))
   );
 }
 
@@ -354,9 +365,10 @@ function denied(
 function createRecordBindingPlan(
   contextParams: Readonly<Record<string, unknown>>,
   usage: RecordBindingUsage,
-  recordSlotPolicies: RecordSlotPolicies = getRecordBindingPolicies(usage),
+  mode: RecordBindingPlannerMode = 'strict',
+  recordSlotPolicies?: RecordSlotPolicies,
 ): RecordBindingPlan {
-  return planRecordBindings({ contextParams, policies: recordSlotPolicies, usage });
+  return planRecordBindings({ contextParams, mode, policies: recordSlotPolicies, usage });
 }
 
 function recordBindingPlanAllowed(plan: RecordBindingPlan) {
@@ -432,14 +444,7 @@ export async function authorizeVariablesResolve(
 
   if (await currentRoleAllowsConfigure(ctx)) {
     policy = createPolicy(true, new Set(), unrestrictedVariables);
-    const fixedRequestSlots = compileRecordSlotPolicies(analysis);
-    if (flowModelUid) {
-      const flowModelSlots = (await getFlowModelVariableContract(ctx, flowModelUid))?.recordSlots || new Map();
-      recordSlotPolicies = new Map([...flowModelSlots, ...fixedRequestSlots]);
-    } else {
-      recordSlotPolicies = fixedRequestSlots;
-    }
-    bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, recordSlotPolicies);
+    bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, 'trusted');
     return recordBindingPlanAllowed(bindingPlan)
       ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy, recordSlotPolicies }
       : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
@@ -464,7 +469,7 @@ export async function authorizeVariablesResolve(
     }
   }
 
-  bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, recordSlotPolicies);
+  bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, 'strict', recordSlotPolicies);
   return recordBindingPlanAllowed(bindingPlan)
     ? {
         allowed: true,

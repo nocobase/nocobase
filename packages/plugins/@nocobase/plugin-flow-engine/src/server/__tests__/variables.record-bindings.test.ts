@@ -48,20 +48,15 @@ describe('record binding planner', () => {
     expect(plan.rejections).toEqual([]);
   });
 
-  it('rejects an exact scalar leaf in strict mode', () => {
+  it('strips a descriptor moved to a scalar leaf in strict mode', () => {
     const plan = planRecordBindings({
       ...strictOptions('{{ ctx.view.record.name }}', [['record']]),
       contextParams: { 'view.record.name': recordParams() },
     });
 
     expect(plan.bindings).toEqual([]);
-    expect(plan.rejections).toEqual([
-      expect.objectContaining({
-        reason: 'record-slot-mismatch',
-        varName: 'view',
-        prefix: ['record', 'name'],
-      }),
-    ]);
+    expect(plan.contextParams).toEqual({});
+    expect(plan.rejections).toEqual([]);
   });
 
   it.each<[string, readonly string[]]>([
@@ -89,7 +84,7 @@ describe('record binding planner', () => {
     });
 
     expect(plan.bindings).toEqual([]);
-    expect(plan.rejections[0]?.reason).toBe('record-slot-mismatch');
+    expect(plan.rejections).toEqual([]);
   });
 
   it('compiles fixed direct, view, and popup parent slots per canonical path', () => {
@@ -132,7 +127,7 @@ describe('record binding planner', () => {
     ['{{ ctx.view.record.department.name }}', 'view.record.department', ['record']],
     ['{{ ctx.popup.record.roles.title }}', 'popup.record.roles', ['record']],
     ['{{ ctx.popup.parent.record.roles.title }}', 'popup.parent.record.roles', ['parent', 'record']],
-  ] as const)('rejects a descriptor moved below its exact slot for %s', (template, contextKey, slot) => {
+  ] as const)('strips a descriptor moved below its exact slot for %s', (template, contextKey, slot) => {
     const plan = planRecordBindings({
       ...strictOptions(template, [slot]),
       contextParams: { [contextKey]: recordParams() },
@@ -140,7 +135,62 @@ describe('record binding planner', () => {
 
     expect(plan.bindings).toEqual([]);
     expect(plan.contextParams).toEqual({});
-    expect(plan.rejections[0]).toMatchObject({ reason: 'record-slot-mismatch', contextKey });
+    expect(plan.rejections).toEqual([]);
+  });
+
+  it('merges all paths authorized for one exact slot into one binding', () => {
+    const plan = planRecordBindings({
+      ...strictOptions(['{{ ctx.view.record.name }}', '{{ ctx.view.record.email }}'], [['record'], ['record']]),
+      contextParams: { 'view.record': recordParams() },
+    });
+
+    expect(plan.bindings).toEqual([
+      expect.objectContaining({ prefix: ['record'], relativePaths: [['name'], ['email']] }),
+    ]);
+  });
+
+  it('fails closed for duplicate flat and nested descriptors without blocking a legal sibling', () => {
+    const plan = planRecordBindings({
+      ...strictOptions(
+        ['{{ ctx.formValues.department.name }}', '{{ ctx.formValues.owner.name }}'],
+        [['department'], ['owner']],
+      ),
+      contextParams: {
+        formValues: { department: recordParams(1), owner: recordParams(2) },
+        'formValues.department': recordParams(3),
+      },
+    });
+
+    expect(plan.bindings).toEqual([
+      expect.objectContaining({ prefix: ['owner'], params: expect.objectContaining({ filterByTk: 2 }) }),
+    ]);
+    expect(plan.contextParams).toEqual({ formValues: {} });
+    expect(plan.rejections).toEqual([]);
+  });
+
+  it('ignores a slot the contract cannot prove without blocking a legal sibling', () => {
+    const analysis = analyzeVariableTemplate(['{{ ctx.formValues.status }}', '{{ ctx.formValues.department.name }}']);
+    const plan = planRecordBindings({
+      policies: new Map([[analysis.paths[0].canonicalKey, { slot: [], source: 'form-record' as const }]]),
+      usage: analysis.usage,
+      contextParams: {
+        formValues: recordParams(1),
+        'formValues.department': recordParams(2),
+      },
+    });
+
+    expect(plan.bindings).toEqual([expect.objectContaining({ prefix: [], relativePaths: [['status']] })]);
+    expect(plan.contextParams).toEqual({});
+    expect(plan.rejections).toEqual([]);
+  });
+
+  it('strips malformed descriptors instead of exposing them as ordinary context', () => {
+    const plan = planRecordBindings({
+      ...strictOptions('{{ ctx.view.record.name }}', [['record']]),
+      contextParams: { 'view.record': { collection: 'users', fields: 'name', filterByTk: 1 } },
+    });
+
+    expect(plan).toMatchObject({ bindings: [], contextParams: {}, rejections: [] });
   });
 
   it('keeps dashed keys structured under an authorized slot', () => {
@@ -179,6 +229,17 @@ describe('record binding planner', () => {
       expect(plan.rejections[0]?.reason).toBe('protected-context-key');
     },
   );
+
+  it('rejects a protected requested segment below a trusted descriptor', () => {
+    const plan = planRecordBindings({
+      usage: usageOf('{{ ctx.view.record.constructor.name }}'),
+      contextParams: { 'view.record': recordParams() },
+      mode: 'trusted',
+    });
+
+    expect(plan.bindings).toEqual([]);
+    expect(plan.rejections[0]?.reason).toBe('protected-context-key');
+  });
 
   it('keeps flat numeric indices structured', () => {
     const plan = planRecordBindings({
@@ -231,14 +292,15 @@ describe('record binding planner', () => {
     expect(plan).toMatchObject({ bindings: [], contextParams: {}, rejections: [] });
   });
 
-  it('fails closed when a strict path has no record slot policy', () => {
+  it('strips a descriptor when a strict path has no record slot policy', () => {
     const plan = planRecordBindings({
       usage: usageOf('{{ ctx.registered.record.name }}'),
       contextParams: { 'registered.record': recordParams() },
     });
 
     expect(plan.bindings).toEqual([]);
-    expect(plan.rejections[0]?.reason).toBe('missing-record-slot-policy');
+    expect(plan.contextParams).toEqual({});
+    expect(plan.rejections).toEqual([]);
   });
 
   it('requires an explicit trusted mode for permissive exact bindings', () => {
@@ -247,7 +309,7 @@ describe('record binding planner', () => {
       contextParams: { 'internal.record': recordParams() },
     };
 
-    expect(planRecordBindings(options).rejections[0]?.reason).toBe('missing-record-slot-policy');
+    expect(planRecordBindings(options).rejections).toEqual([]);
     expect(planRecordBindings({ ...options, mode: 'trusted' }).bindings[0]).toMatchObject({
       relativePaths: [[]],
       preferFullRecord: true,
