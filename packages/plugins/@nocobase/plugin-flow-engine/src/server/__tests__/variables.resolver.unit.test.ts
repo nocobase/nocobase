@@ -11,6 +11,7 @@ import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
 import { GlobalContext, HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
+import { projectRecord } from '../variables/record-projection';
 import { variables } from '../variables/registry';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
@@ -103,6 +104,32 @@ describe('variables resolver (no HTTP)', () => {
     const tpl = { obj: '{{ ({ a: 1, b: ctx.user.id }) }}' } as any;
     const out = await resolveJsonTemplate(tpl, req);
     expect(out.obj).toEqual({ a: 1, b: 2 });
+  });
+
+  it('keeps projected dates and normalizes buffers through final JSON output', async () => {
+    const createdAt = new Date('2026-08-04T00:00:00.000Z');
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('record', {
+      value: projectRecord({ blob: Buffer.from([0, 127, 255]), createdAt }, [[]]),
+    });
+    ctx.defineProperty('rawBlob', { value: Buffer.from([1, 2, 3]) });
+
+    const out = await resolveJsonTemplate({ rawBlob: '{{ ctx.rawBlob }}', record: '{{ ctx.record }}' }, ctx);
+
+    expect(out).toEqual({
+      rawBlob: { type: 'Buffer', data: [1, 2, 3] },
+      record: { blob: { type: 'Buffer', data: [0, 127, 255] }, createdAt },
+    });
+    expect(out.record.createdAt).toBeInstanceOf(Date);
+    expect(out.record.createdAt).not.toBe(createdAt);
+    expect(out.record.createdAt.getTime()).toBe(createdAt.getTime());
+    expect(JSON.parse(JSON.stringify(out))).toEqual({
+      rawBlob: { type: 'Buffer', data: [1, 2, 3] },
+      record: {
+        blob: { type: 'Buffer', data: [0, 127, 255] },
+        createdAt: '2026-08-04T00:00:00.000Z',
+      },
+    });
   });
 
   it('does not endow timers (setTimeout is undefined)', async () => {

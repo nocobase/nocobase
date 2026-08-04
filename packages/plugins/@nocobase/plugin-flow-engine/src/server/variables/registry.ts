@@ -11,7 +11,7 @@ import _ from 'lodash';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
 import { isProtectedServerContextKey } from '../template/context-keys';
-import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN, ServerBaseContext } from '../template/contexts';
+import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN } from '../template/contexts';
 import { analyzeVariableTemplate, type PathSegment, type VariablePathRef } from '../template/variable-expression';
 import {
   planRecordBindings,
@@ -273,8 +273,70 @@ export function inferSelectsFromUsage(
   return { generatedAppends, generatedFields };
 }
 
-function startsWithSegments(path: readonly PathSegment[], prefix: readonly PathSegment[]) {
-  return prefix.every((segment, index) => path[index] === segment);
+type RecordProviderNode = {
+  binding?: AuthorizedRecordBinding;
+  children: Map<PathSegment, RecordProviderNode>;
+};
+
+function createRecordProviderNode(): RecordProviderNode {
+  return { children: new Map() };
+}
+
+function addRecordProviderBinding(root: RecordProviderNode, binding: AuthorizedRecordBinding) {
+  let node = root;
+  for (const segment of binding.prefix) {
+    let child = node.children.get(segment);
+    if (!child) {
+      child = createRecordProviderNode();
+      node.children.set(segment, child);
+    }
+    node = child;
+  }
+  if (node.binding) return false;
+  node.binding = binding;
+  return true;
+}
+
+function isProvidedByDescendant(node: RecordProviderNode, path: readonly PathSegment[]) {
+  let current = node;
+  for (const segment of path) {
+    const child = current.children.get(segment);
+    if (!child) return false;
+    if (child.binding) return true;
+    current = child;
+  }
+  return false;
+}
+
+function materializeRecordProvider(
+  node: RecordProviderNode,
+  values: ReadonlyMap<RecordProviderNode, unknown>,
+  inherited?: unknown,
+): unknown {
+  const base = node.binding ? values.get(node) : inherited;
+  if (!node.children.size) return base;
+
+  if (Array.isArray(base)) {
+    const result: unknown[] | Record<string, unknown> = Array.from(node.children.keys()).every(
+      (segment) => typeof segment === 'number',
+    )
+      ? [...base]
+      : Object.assign(Object.create(null), base);
+    for (const [segment, child] of node.children) {
+      if (typeof segment !== 'number') continue;
+      result[segment] = materializeRecordProvider(child, values, result[segment]);
+    }
+    return result;
+  }
+
+  const result: Record<string, unknown> = _.isPlainObject(base)
+    ? { ...(base as Record<string, unknown>) }
+    : Object.create(null);
+  for (const [segment, child] of node.children) {
+    const key = String(segment);
+    result[key] = materializeRecordProvider(child, values, result[key]);
+  }
+  return result;
 }
 
 export function isSafeRecordBinding(binding: AuthorizedRecordBinding) {
@@ -307,71 +369,34 @@ function attachAuthorizedRecordBindings(
   koaCtx: ResourcerContext,
   bindings: readonly AuthorizedRecordBinding[],
 ) {
-  const byVariable = new Map<string, AuthorizedRecordBinding[]>();
+  const byVariable = new Map<string, RecordProviderNode>();
+  const conflicts = new Set<string>();
   for (const binding of bindings) {
     if (!isSafeRecordBinding(binding)) continue;
-    const current = byVariable.get(binding.varName) || [];
-    current.push(binding);
-    byVariable.set(binding.varName, current);
+    let root = byVariable.get(binding.varName);
+    if (!root) {
+      root = createRecordProviderNode();
+      byVariable.set(binding.varName, root);
+    }
+    if (!addRecordProviderBinding(root, binding)) conflicts.add(binding.varName);
   }
 
-  for (const [varName, variableBindings] of byVariable) {
-    const top = variableBindings.find((binding) => binding.prefix.length === 0);
-    const nested = variableBindings.filter((binding) => binding.prefix.length > 0);
-    if (top) {
-      const basePaths = top.relativePaths.filter(
-        (path) => !nested.some((binding) => startsWithSegments(path, binding.prefix)),
-      );
-      flowCtx.defineProperty(varName, {
-        get: async () => {
-          const base = await fetchBindingRecord(koaCtx, top, basePaths);
-          if (!nested.length) return base;
-          const merged: Record<string, unknown> =
-            base && typeof base === 'object' && !Array.isArray(base) ? { ...(base as Record<string, unknown>) } : {};
-          for (const binding of nested) {
-            let cursor = merged;
-            for (const segment of binding.prefix.slice(0, -1)) {
-              const key = String(segment);
-              const value = cursor[key];
-              cursor[key] = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
-              cursor = cursor[key] as Record<string, unknown>;
-            }
-            cursor[String(binding.prefix[binding.prefix.length - 1])] = fetchBindingRecord(koaCtx, binding);
-          }
-          return merged;
-        },
-        cache: true,
-      });
-      continue;
-    }
-
+  for (const [varName, root] of byVariable) {
+    if (conflicts.has(varName)) continue;
     flowCtx.defineProperty(varName, {
-      get: () => {
-        const root = new ServerBaseContext();
-        const containers = new Map<string, ServerBaseContext>([['[]', root]]);
-        for (const binding of nested.slice().sort((left, right) => left.prefix.length - right.prefix.length)) {
-          let parent = root;
-          for (let index = 0; index < binding.prefix.length - 1; index++) {
-            const path = binding.prefix.slice(0, index + 1);
-            const cacheKey = JSON.stringify(path);
-            let child = containers.get(cacheKey);
-            if (!child) {
-              child = new ServerBaseContext();
-              const childContext = child;
-              parent.defineProperty(String(path[path.length - 1]), {
-                get: () => childContext.createProxy(),
-                cache: true,
-              });
-              containers.set(cacheKey, child);
-            }
-            parent = child;
+      get: async () => {
+        const entries: [RecordProviderNode, Promise<unknown>][] = [];
+        const collect = (node: RecordProviderNode) => {
+          if (node.binding) {
+            const paths = node.binding.relativePaths.filter((path) => !isProvidedByDescendant(node, path));
+            entries.push([node, fetchBindingRecord(koaCtx, node.binding, paths)]);
           }
-          parent.defineProperty(String(binding.prefix[binding.prefix.length - 1]), {
-            get: () => fetchBindingRecord(koaCtx, binding),
-            cache: true,
-          });
-        }
-        return root.createProxy();
+          for (const child of node.children.values()) collect(child);
+        };
+        collect(root);
+        const values = new Map<RecordProviderNode, unknown>();
+        await Promise.all(entries.map(async ([node, pending]) => values.set(node, await pending)));
+        return materializeRecordProvider(root, values);
       },
       cache: true,
     });

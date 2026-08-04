@@ -59,6 +59,14 @@ describe('record projection', () => {
     expect(projectRecord({ createdAt }, [['createdAt']])).toEqual({ createdAt });
   });
 
+  it('normalizes projected buffers to their stable JSON shape', () => {
+    const blob = Buffer.from([0, 127, 255]);
+    const expected = { blob: { type: 'Buffer', data: [0, 127, 255] } };
+
+    expect(projectRecord({ blob }, [[]])).toEqual(expected);
+    expect(projectRecord({ blob }, [['blob']])).toEqual(expected);
+  });
+
   it('projects string segments across association arrays', () => {
     const raw = {
       roles: [

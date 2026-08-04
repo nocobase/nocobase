@@ -278,8 +278,10 @@ export function prepareRecordQuery(
 ): RecordQuery {
   const adjusted = adjustSelectsForCollection(koaCtx, target.dataSourceKey, target.collectionName, fields, appends);
   const extraKeys = getExtraKeyFieldsForSelect(filterByTk, target);
-  const effectiveExtras = strictSelects ? extraKeys.filter((key) => key === target.pkAttr) : extraKeys;
-  const selectedFields = mergeFieldsWithExtras(adjusted.fields, effectiveExtras);
+  const selectedFields = mergeFieldsWithExtras(
+    Array.isArray(fields) ? adjusted.fields || [] : adjusted.fields,
+    extraKeys,
+  );
   const queryFields = preferFullRecord ? undefined : selectedFields?.slice().sort();
   const queryAppends = preferFullRecord ? undefined : adjusted.appends?.slice().sort();
   const cacheKey = JSON.stringify({
@@ -450,7 +452,7 @@ export function getExtraKeyFieldsForSelect(
 }
 
 export function mergeFieldsWithExtras(fields?: string[], extras: string[] = []): string[] | undefined {
-  if (!Array.isArray(fields) || fields.length === 0 || extras.length === 0) return fields;
+  if (!Array.isArray(fields) || extras.length === 0) return fields;
   return uniqStrings([...fields, ...extras]);
 }
 

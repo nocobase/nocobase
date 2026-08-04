@@ -243,6 +243,7 @@ async function unwrapSandboxValue(
   const source = meta ?? resolved;
   if (typeof source === 'function') return undefined;
   if (seen.has(source)) return seen.get(source);
+  if (Buffer.isBuffer(source)) return Buffer.prototype.toJSON.call(source);
 
   if (isSandboxContextSource(source)) {
     const out: Record<string, unknown> = {};

@@ -68,6 +68,7 @@ function copyWhole(value: unknown, seen: WeakMap<object, unknown>): unknown | ty
   if (typeof value === 'function') return omitted;
   if (!value || typeof value !== 'object') return value;
   if (value instanceof Date) return new Date(value.getTime());
+  if (Buffer.isBuffer(value)) return Buffer.prototype.toJSON.call(value);
 
   const cached = seen.get(value);
   if (cached) return cached;
