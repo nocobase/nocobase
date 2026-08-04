@@ -67,6 +67,7 @@ function defineDataProperty(target: object, key: string, value: unknown) {
 function copyWhole(value: unknown, seen: WeakMap<object, unknown>): unknown | typeof omitted {
   if (typeof value === 'function') return omitted;
   if (!value || typeof value !== 'object') return value;
+  if (value instanceof Date) return new Date(value.getTime());
 
   const cached = seen.get(value);
   if (cached) return cached;

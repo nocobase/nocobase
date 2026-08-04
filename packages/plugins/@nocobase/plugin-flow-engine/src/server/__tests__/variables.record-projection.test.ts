@@ -50,6 +50,15 @@ describe('record projection', () => {
     }
   });
 
+  it('preserves non-plain scalar values in whole records', () => {
+    const createdAt = new Date('2026-08-04T00:00:00.000Z');
+    const projected = projectRecord({ createdAt }, [[]]) as { createdAt: Date };
+
+    expect(projected).toEqual({ createdAt });
+    expect(projected.createdAt).not.toBe(createdAt);
+    expect(projectRecord({ createdAt }, [['createdAt']])).toEqual({ createdAt });
+  });
+
   it('projects string segments across association arrays', () => {
     const raw = {
       roles: [
