@@ -25,6 +25,7 @@ Antes de comenzar, asegúrese de cumplir los siguientes requisitos del entorno:
 
 - Node.js >= 22
 - Yarn 1.x
+- pnpm (solo es necesario al desarrollar un [AI Portal](../ai-builder/ai-portal/index.md), ya que la plantilla de Portal lo utiliza para instalar dependencias e iniciar el servidor de desarrollo)
 - Se recomienda utilizar AI Agents impulsados por modelos grandes de referencia como Claude o GPT. El resultado real depende en gran medida del modelo utilizado, por lo que se recomienda priorizar los modelos insignia más recientes para obtener la mejor experiencia.
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -41,7 +42,7 @@ Si todavía no tiene una aplicación NocoBase, puede instalar e inicializar una 
 #### Paso 1: Instalar la CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli@alpha
 nb --version // confirme que la instalación se realizó correctamente
 ```
 
@@ -100,7 +101,7 @@ Si ya tiene una instancia de NocoBase en ejecución, puede conectar directamente
 #### Paso 1: Instalar la CLI
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli@alpha
 nb --version // confirme que la instalación se realizó correctamente
 ```
 
@@ -145,6 +146,10 @@ Una vez completada la configuración, reinicie la sesión de su AI Agent y podr�
 
 ## A continuación
 
+### Empezar a construir con IA
+
+Describa los requisitos en lenguaje natural y la IA le ayudará con el modelado de datos, la construcción de páginas y la orquestación de flujos de trabajo: sustituya la configuración manual por una conversación, sin necesidad de escribir código. Consulte [Inicio rápido del Constructor de IA](../ai-builder/index.md#reemplace-la-configuración-manual-por-una-conversación).
+
 ### Instalación y despliegue en producción
 
 Si se está preparando para desplegar NocoBase en producción, este orden suele funcionar mejor:
@@ -155,10 +160,6 @@ Si se está preparando para desplegar NocoBase en producción, este orden suele 
 ### Gestionar entornos de la aplicación
 
 Si necesita gestionar instancias existentes de NocoBase (por ejemplo, entornos de prueba o de producción) o cambiar entre varios entornos, consulte [Gestión de entornos](../ai-builder/env-bootstrap), que cubre la verificación, la incorporación de entornos, las actualizaciones y el diagnóstico de fallos.
-
-### Empezar a construir con IA
-
-Describa los requisitos en lenguaje natural y la IA le ayudará con el modelado de datos, la construcción de páginas y la orquestación de flujos de trabajo: sustituya la configuración manual por una conversación. Consulte [Inicio rápido del Constructor de IA](../ai-builder/index.md#sustituya-la-configuración-manual-por-una-conversación).
 
 ### Continuar con el desarrollo de plugins con IA
 
@@ -174,6 +175,7 @@ Si ya tiene una aplicación NocoBase en ejecución o ya completó una inicializa
 
 ## Enlaces relacionados
 
+- [AI Portal](../ai-builder/ai-portal/index.md) — Deje que el AI Agent escriba el código frontend con NocoBase como base y construya un sistema completo
 - [Constructor de IA](../ai-builder/index.md) — Construya aplicaciones NocoBase desde cero con IA
 - [Desarrollo de plugins con IA](../ai-dev/index.md) — Desarrolle plugins de NocoBase con la ayuda de IA
 - [Empleados de IA](../ai-employees/index.md) — Colabore con la IA dentro de la interfaz de negocio

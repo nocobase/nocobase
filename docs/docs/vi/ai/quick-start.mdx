@@ -25,6 +25,7 @@ Trước khi bắt đầu, hãy đảm bảo bạn đã đáp ứng các yêu c�
 
 - Node.js >= 22
 - Yarn 1.x
+- pnpm (chỉ cần khi phát triển [AI Portal](../ai-builder/ai-portal/index.md), template Portal dùng nó để cài dependency và khởi động dịch vụ phát triển)
 - Khuyến nghị sử dụng AI Agent được điều khiển bởi các LLM phổ biến như Claude, GPT. Hiệu quả thực tế phụ thuộc nhiều vào mô hình được sử dụng, nên ưu tiên các mô hình flagship mới nhất để có trải nghiệm tốt nhất.
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -41,7 +42,7 @@ Nếu bạn chưa có ứng dụng NocoBase, có thể cài đặt và khởi t�
 #### Bước 1: Cài đặt CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Xác nhận cài đặt thành công
 ```
 
@@ -100,7 +101,7 @@ Nếu bạn đã có một NocoBase đang chạy, có thể để AI Agent kết
 #### Bước 1: Cài đặt CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Xác nhận cài đặt thành công
 ```
 
@@ -145,6 +146,10 @@ Sau khi cấu hình xong, khởi động lại phiên AI Agent là có thể b�
 
 ## Tiếp theo
 
+### Bắt đầu xây dựng bằng AI
+
+Sử dụng ngôn ngữ tự nhiên để mô tả nhu cầu, AI sẽ giúp bạn hoàn thành mô hình hóa dữ liệu, xây dựng trang, sắp xếp Workflow — dùng hội thoại thay cho cấu hình thủ công, không cần viết code. Vui lòng tham khảo [Bắt đầu nhanh với AI Builder](../ai-builder/index.md#thay-cấu-hình-thủ-công-bằng-hội-thoại).
+
 ### Cài đặt và triển khai production
 
 Nếu bạn đang chuẩn bị triển khai NocoBase lên môi trường production, thứ tự này thường sẽ phù hợp hơn:
@@ -156,13 +161,9 @@ Nếu bạn đang chuẩn bị triển khai NocoBase lên môi trường product
 
 Nếu bạn cần quản lý các NocoBase đã có (ví dụ môi trường test, môi trường production), hoặc quản lý chuyển đổi giữa nhiều môi trường, vui lòng tham khảo [Quản lý môi trường](../ai-builder/env-bootstrap) — bao quát kiểm tra môi trường, thêm môi trường, nâng cấp và chẩn đoán sự cố.
 
-### Bắt đầu xây dựng bằng AI
-
-Sử dụng ngôn ngữ tự nhiên để mô tả nhu cầu, AI sẽ giúp bạn hoàn thành mô hình hóa dữ liệu, xây dựng trang, sắp xếp Workflow — dùng hội thoại thay cho cấu hình thủ công. Vui lòng tham khảo [Bắt đầu nhanh với AI Builder](../ai-builder/index.md#thay-cấu-hình-thủ-công-bằng-hội-thoại).
-
 ### Tiếp tục phát triển Plugin bằng AI
 
-Nếu bạn cần phát triển Plugin tùy chỉnh, AI cũng có thể giúp được — từ scaffold đến code component, logic nghiệp vụ, bao quát toàn bộ quy trình phát triển Plugin. Vui lòng tham khảo [Phát triển Plugin bằng AI](../ai-dev/index.md#từ-một-câu-nói-đến-một-plugin-hoàn-chỉnh).
+Nếu bạn cần phát triển Plugin tùy chỉnh, AI cũng có thể giúp được — từ scaffold đến code component, logic nghiệp vụ, bao quát toàn bộ quy trình phát triển Plugin. Vui lòng tham khảo [Phát triển Plugin bằng AI](../ai-dev/index.md#từ-một-câu-mô-tả-đến-một-plugin-hoàn-chỉnh).
 
 ### Sử dụng Nhân viên AI
 
@@ -174,6 +175,7 @@ Nếu bạn đã có ứng dụng NocoBase đang chạy, hoặc đã khởi tạ
 
 ## Liên kết liên quan
 
+- [AI Portal](../ai-builder/ai-portal/index.md) — Để AI Agent viết code frontend, NocoBase làm nền tảng, dựng nên một hệ thống hoàn chỉnh
 - [AI Builder](../ai-builder/index.md) — Sử dụng AI để xây dựng ứng dụng NocoBase từ đầu
 - [Phát triển Plugin bằng AI](../ai-dev/index.md) — Sử dụng AI để hỗ trợ phát triển Plugin NocoBase
 - [Nhân viên AI](../ai-employees/index.md) — Cộng tác cùng AI ngay trong giao diện nghiệp vụ

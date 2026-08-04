@@ -25,6 +25,7 @@ Stellen Sie sicher, dass die folgenden Umgebungsanforderungen erfüllt sind, bev
 
 - Node.js >= 22
 - Yarn 1.x
+- pnpm (nur bei der Entwicklung eines [AI Portals](../ai-builder/ai-portal/index.md) erforderlich, da die Portal-Vorlage damit Abhängigkeiten installiert und den Entwicklungsserver startet)
 - Es wird empfohlen, einen AI Agent zu verwenden, der von einem führenden Modell wie Claude oder GPT angetrieben wird. Das tatsächliche Ergebnis hängt stark vom verwendeten Modell ab; wir empfehlen, vorrangig die neuesten Flaggschiffmodelle zu verwenden, um die beste Erfahrung zu erzielen.
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -41,7 +42,7 @@ Falls Sie noch keine NocoBase-Anwendung haben, können Sie über die CLI eine ne
 #### Schritt 1: CLI installieren
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Erfolgreiche Installation bestätigen
 ```
 
@@ -100,7 +101,7 @@ Falls Sie bereits eine laufende NocoBase-Instanz haben, können Sie diese direkt
 #### Schritt 1: CLI installieren
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Erfolgreiche Installation bestätigen
 ```
 
@@ -145,6 +146,10 @@ Sobald die Konfiguration abgeschlossen ist, starten Sie die Sitzung Ihres AI Age
 
 ## Wie geht es weiter?
 
+### Mit dem KI-Builder beginnen
+
+Beschreiben Sie Anforderungen in natürlicher Sprache, und die KI erledigt für Sie Datenmodellierung, Seitenaufbau und Workflow-Orchestrierung – ersetzen Sie manuelle Konfiguration durch Dialog, ohne Code schreiben zu müssen. Lesen Sie [Schnellstart KI-Builder](../ai-builder/index.md#konfiguration-durch-dialog-statt-manueller-einrichtung).
+
 ### Installation und Bereitstellung für die Produktionsumgebung
 
 Wenn Sie NocoBase in der Produktionsumgebung bereitstellen möchten, empfiehlt sich in der Regel diese Reihenfolge:
@@ -156,13 +161,9 @@ Wenn Sie NocoBase in der Produktionsumgebung bereitstellen möchten, empfiehlt s
 
 Falls Sie bestehende NocoBase-Instanzen verwalten müssen (z. B. Test- oder Produktionsumgebung) oder zwischen mehreren Umgebungen wechseln, lesen Sie [Umgebungsverwaltung](../ai-builder/env-bootstrap) – dort werden Umgebungsprüfung, Hinzufügen von Umgebungen, Upgrades und Fehlerdiagnose behandelt.
 
-### Mit dem KI-Builder beginnen
-
-Beschreiben Sie Anforderungen in natürlicher Sprache, und die KI erledigt für Sie Datenmodellierung, Seitenaufbau und Workflow-Orchestrierung – ersetzen Sie manuelle Konfiguration durch Dialog. Lesen Sie [Schnellstart KI-Builder](../ai-builder/index.md#dialog-statt-manueller-konfiguration).
-
 ### KI-gestützte Plugin-Entwicklung fortsetzen
 
-Falls Sie eigene Plugins entwickeln müssen, kann KI ebenfalls helfen – vom Scaffolding über Komponentencode bis zur Geschäftslogik deckt sie den gesamten Plugin-Entwicklungsprozess ab. Lesen Sie [KI-gestützte Plugin-Entwicklung](../ai-dev/index.md#von-einem-satz-zu-einem-vollständigen-plugin).
+Falls Sie eigene Plugins entwickeln müssen, kann KI ebenfalls helfen – vom Scaffolding über Komponentencode bis zur Geschäftslogik deckt sie den gesamten Plugin-Entwicklungsprozess ab. Lesen Sie [KI-gestützte Plugin-Entwicklung](../ai-dev/index.md#von-einem-satz-zum-vollständigen-plugin).
 
 ### KI-Mitarbeiter einsetzen
 
@@ -174,6 +175,7 @@ Falls Sie bereits eine laufende NocoBase-Anwendung haben oder die Initialisierun
 
 ## Verwandte Links
 
+- [AI Portal](../ai-builder/ai-portal/index.md) – Den AI Agent Frontend-Code schreiben lassen, mit NocoBase als Basis, und so ein vollständiges System aufbauen
 - [KI-Builder](../ai-builder/index.md) – Bauen Sie NocoBase-Anwendungen von Grund auf mit KI
 - [KI-gestützte Plugin-Entwicklung](../ai-dev/index.md) – KI-gestützte Entwicklung von NocoBase-Plugins
 - [KI-Mitarbeiter](../ai-employees/index.md) – Mit KI in der Geschäftsoberfläche zusammenarbeiten

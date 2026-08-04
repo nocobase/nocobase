@@ -33,6 +33,7 @@ Nicht möglich:
 - Kein Entwurf von Datentabellenstrukturen (verwenden Sie den [Datenmodellierungs-Skill](./data-modeling))
 - Keine Workflow-Orchestrierung (verwenden Sie den [Workflow-Verwaltungs-Skill](./workflow))
 - Keine Behandlung der Navigation für nicht-moderne Seiten (v1) – es werden nur v2-Seiten unterstützt.
+- Keine Bearbeitung des Frontend-Quellcodes eines AI Portals (verwenden Sie [AI Portal](./ai-portal/index.md))
 
 ## Beispiel-Prompts
 
@@ -98,3 +99,4 @@ Wenn manuelle und KI-Konfiguration gleichzeitig erfolgen, beeinflussen sie sich 
 - [Datenmodellierung](./data-modeling) – Datentabellen, Felder und Beziehungen mit der KI erstellen und verwalten
 - [Berechtigungskonfiguration](./acl) – Konfiguration von Rollen und Datenzugriffsrechten
 - [Workflow-Verwaltung](./workflow) – Erstellen, Bearbeiten und Diagnostizieren von Workflows
+- [AI Portal](./ai-portal/index.md) – der andere Weg, wenn eine Seite eigenen Code zur Anpassung braucht

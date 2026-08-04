@@ -9,7 +9,7 @@
 Сначала установите CLI глобально:
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

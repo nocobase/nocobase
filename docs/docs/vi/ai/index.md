@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'Hệ sinh thái năng lực AI của NocoBase: AI Builder và phát triển bằng AI, Nhân viên AI, tích hợp AI Agent, công cụ và tài nguyên AI.'
-keywords: 'NocoBase AI,AI Builder,Nhân viên AI,Phát triển AI,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'Hệ sinh thái năng lực AI của NocoBase: AI Builder, Nhân viên AI, tích hợp AI Agent, công cụ và tài nguyên AI.'
+keywords: 'NocoBase AI,AI Builder,AI Portal,Nhân viên AI,Phát triển AI,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: Bắt đầu
     details: Cài đặt CLI, kết nối ứng dụng, bắt đầu xây dựng — mọi thứ bắt đầu từ đây.
@@ -21,7 +21,7 @@ features:
         details: Sử dụng AI để hỗ trợ phát triển Plugin NocoBase, bao gồm toàn bộ quy trình từ scaffold, code component đến logic nghiệp vụ.
         link: /ai-dev
 
-  - title: Xây dựng và phát triển bằng AI
+  - title: Xây dựng bằng AI
     details: Sử dụng AI để xây dựng ứng dụng và Plugin NocoBase — từ mô tả ngôn ngữ tự nhiên đến hệ thống hoặc Plugin có thể sử dụng được.
     items:
       - title: Bắt đầu nhanh với AI Builder
@@ -65,28 +65,6 @@ features:
         details: Tích hợp Nhân viên AI vào các Node của Workflow để thực hiện tự động hóa thông minh trong việc ra quyết định và tạo nội dung.
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: Tích hợp AI Agent của bạn
-    details: AI Agent yêu thích của bạn giờ đây cũng có thể thao tác trên NocoBase.
-    items:
-      - title: 'OpenClaw + NocoBase: AI Agent hot nhất hiện nay làm việc giúp bạn'
-        details: AI Agent mã nguồn mở phổ biến nhất thế giới, để OpenClaw trở thành người vận hành NocoBase trực tuyến 24/7 của bạn.
-        link: /ai/openclaw
-      - title: 'Hermes Agent: Trợ lý NocoBase càng dùng càng hiểu bạn'
-        details: Tự động đúc kết các kinh nghiệm thành công thành Skill có thể tái sử dụng, càng dùng càng hiểu hệ thống nghiệp vụ của bạn.
-        link: /ai/hermes-agent
-      - title: Giải phóng đôi tay, dùng WorkBuddy điều khiển NocoBase
-        details: Sản phẩm của Tencent, hơn 20 Skill tích hợp sẵn, hỗ trợ điều khiển NocoBase từ xa qua nhiều nền tảng như WeChat Work, Lark.
-        link: /ai/workbuddy
-      - title: 'Claude Code + NocoBase: Bộ não AI mạnh nhất, kiến trúc sư trưởng NocoBase của bạn'
-        details: Kiến trúc sư AI mạnh mẽ — hiểu ngữ cảnh dự án, xây dựng NocoBase tự nhiên như viết code.
-        link: /ai/claude-code
-      - title: Dùng Codex để vận hành NocoBase, vừa xây dựng vừa phát triển
-        details: Sản phẩm của OpenAI, được hỗ trợ bởi dòng GPT, giúp bạn xây dựng NocoBase trong sandbox an toàn, mọi bước đều có thể kiểm soát.
-        link: /ai/codex
-      - title: 'OpenCode + NocoBase: Cách xây dựng NocoBase mã nguồn mở, tự do và không bị ràng buộc'
-        details: Cũng được dẫn dắt bởi cộng đồng mã nguồn mở, cho phép chuyển đổi mô hình tự do, lựa chọn tự do dành cho lập trình viên.
-        link: /ai/opencode
-
   - title: Công cụ và tài nguyên AI
     details: Hạ tầng hỗ trợ năng lực AI của NocoBase — CLI, Skills và MCP.
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: Gói kiến thức chuyên ngành có thể cài đặt vào AI Agent, giúp AI hiểu được năng lực và quy chuẩn của NocoBase.
         link: /ai-builder#nocobase-skills
+      - title: Tài liệu tham khảo lệnh nb portal
+        details: Toàn bộ các lệnh để quản lý Portal — tạo, phát triển, đồng bộ mã nguồn và triển khai.
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Tích hợp Model Context Protocol, để AI Agent tương tác với NocoBase qua giao thức chuẩn hóa.
         link: /ai/mcp/

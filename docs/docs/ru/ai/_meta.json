@@ -52,6 +52,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Быстрый старт Мастера ИИ-разработки",
+        "link": "/ai-builder/"
+      },
+      {
+        "type": "custom-link",
         "label": "NocoBase CLI",
         "proxy": false,
         "link": "/nocobase-cli/"

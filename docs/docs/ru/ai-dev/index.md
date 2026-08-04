@@ -25,7 +25,7 @@ keywords: "ИИ-разработка,разработка плагинов,NocoB
 ### Ручная установка
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ nb init --ui
 - [NocoBase CLI](../ai/quick-start.md) — инструмент командной строки для установки и управления NocoBase
 - [Справочник NocoBase CLI](../api/cli/index.md) — полная документация по параметрам всех команд
 - [Разработка плагинов](../plugin-development/index.md) — полное руководство по разработке плагинов NocoBase
+- [AI Portal](../ai-builder/ai-portal/index.md) — ИИ пишет фронтенд-страницы. Плагин расширяет сам NocoBase, а Portal — это отдельная точка входа, построенная на его возможностях
 - [Мастер ИИ-разработки](../ai-builder/index.md) — создание приложений NocoBase с помощью ИИ (без написания кода)

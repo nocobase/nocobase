@@ -33,6 +33,7 @@ Cannot do:
 - Cannot design data table structures (use the [Data Modeling Skill](./data-modeling))
 - Cannot orchestrate workflows (use the [Workflow Management Skill](./workflow))
 - Cannot handle non-modern page (v1) navigation, only supports v2 pages.
+- Does not handle AI Portal frontend source (use [AI Portal](./ai-portal/index.md))
 
 ## Prompt Examples
 
@@ -98,3 +99,4 @@ If manual configuration and AI configuration are done simultaneously, they may i
 - [Data Modeling](./data-modeling) — Create and manage data tables, fields, and relationships with AI
 - [ACL Configuration](./acl) — Configure roles and data access permissions
 - [Workflow Management](./workflow) — Create, edit, and diagnose workflows
+- [AI Portal](./ai-portal/index.md) — The other way to go when a page needs custom code

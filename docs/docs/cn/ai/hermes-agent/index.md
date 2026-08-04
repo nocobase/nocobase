@@ -96,7 +96,7 @@ Hermes Agent 需要自行部署和维护。如果你希望零配置开箱即用�
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 

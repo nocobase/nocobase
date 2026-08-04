@@ -39,7 +39,7 @@ nb [command]
 | [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、当前 env、状态、详情和运行时命令。 |
 | [`nb license`](./license/index.md) | 管理商业授权和授权插件。 |
 | [`nb plugin`](./plugin/index.md) | 管理选中 NocoBase env 的插件。 |
-| [`nb portal`](./portal/index.md) | 管理 Portal 工作区：配置、创建、开发、同步源码、部署和删除。 |
+| [`nb portal`](./portal/index.md) | 管理 Portal 本地源码目录：配置、创建、开发、同步源码、部署和删除。 |
 | [`nb scaffold`](./scaffold/index.md) | 生成 NocoBase 插件开发脚手架。 |
 | [`nb self`](./self/index.md) | 检查或更新 NocoBase CLI 本身。 |
 | [`nb session`](./session/index.md) | 配置 `NB_SESSION_ID`，让 current env 按 shell 或 agent runtime 隔离。 |

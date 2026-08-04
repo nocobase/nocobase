@@ -16,7 +16,7 @@ description: Cài đặt NocoBase CLI và nhanh chóng tạo một ứng dụng 
 Trước tiên, hãy cài NocoBase CLI ở mức toàn cục:
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

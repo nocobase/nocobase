@@ -25,7 +25,7 @@ Copiez le prompt ci-dessous dans votre assistant IA (Claude Code, Codex, Cursor,
 ### Installation manuelle
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ Pour la description détaillée de chaque capacité et les exemples de prompts �
 - [NocoBase CLI](../ai/quick-start.md) — Outil en ligne de commande pour installer et gérer NocoBase
 - [Référence NocoBase CLI](../api/cli/index.md) — Description complète des paramètres de toutes les commandes
 - [Développement de plugins](../plugin-development/index.md) — Guide complet du développement de plugins NocoBase
+- [AI Portal](../ai-builder/ai-portal/index.md) — Laisser l'IA écrire les pages front-end. Un plugin étend NocoBase lui-même ; un Portal construit un point d'entrée autonome par-dessus ces capacités
 - [Démarrage rapide d'AI Builder](../ai-builder/index.md) — Construire des applications NocoBase avec l'IA (sans écrire de code)

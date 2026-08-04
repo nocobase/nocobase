@@ -16,7 +16,7 @@ description: Installieren Sie die NocoBase CLI und erstellen Sie mit `nb init --
 Installieren Sie die NocoBase CLI zunächst global:
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

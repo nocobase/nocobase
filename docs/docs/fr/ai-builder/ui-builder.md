@@ -33,6 +33,7 @@ Limitations :
 - Ne peut pas concevoir la structure des tables (utilisez [Skill Modélisation des données](./data-modeling))
 - Ne peut pas orchestrer de workflows (utilisez [Skill Gestion des workflows](./workflow))
 - Ne peut pas gérer la navigation des pages non modernes (v1), seules les pages v2 sont prises en charge.
+- Ne gère pas le code source front-end d'un AI Portal (utilisez [AI Portal](./ai-portal/index.md))
 
 ## Exemples de prompts
 
@@ -98,3 +99,4 @@ Si la configuration manuelle et la configuration par IA sont effectuées simulta
 - [Modélisation des données](./data-modeling) — créer et gérer les tables, champs et relations avec l'IA
 - [Configuration des permissions](./acl) — configurer les rôles et les permissions d'accès aux données
 - [Gestion des workflows](./workflow) — créer, éditer et diagnostiquer les workflows
+- [AI Portal](./ai-portal/index.md) — l'autre approche lorsqu'une page nécessite du code sur mesure

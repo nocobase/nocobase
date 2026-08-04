@@ -1,12 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a Portal in development mode."
-keywords: "nb portal dev,NocoBase CLI,Portal"
+description: "Справочник команды nb portal dev: запуск режима разработки для локального каталога исходного кода Portal."
+keywords: "nb portal dev,NocoBase CLI,Portal,режим разработки,локальная разработка"
 ---
 
 # nb portal dev
 
-Запускает режим разработки для указанного рабочего пространства Portal
+Запускает режим разработки для локального каталога исходного кода указанного Portal. Обычно используется после выполнения [`nb portal create`](./create.md) или [`nb portal pull`](./pull.md).
+
+При запуске обновляет `.env` и `.env.local` в локальном каталоге исходного кода, а затем выполняет в нём `pnpm dev`.
 
 ## Использование
 
@@ -18,22 +20,32 @@ nb portal dev <portal> [flags]
 
 | Параметр | Тип | Описание |
 | --- | --- | --- |
-| `<portal>` | string | Portal name or slug. |
-| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
-| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `<portal>` | string | Имя или slug Portal |
+| `--env`, `-e` | string | Имя окружения CLI. Если не указано, используется текущее окружение |
+| `--yes`, `-y` | boolean | Пропустить интерактивное подтверждение, когда явно указанный `--env` отличается от текущего окружения |
 
 ## Примеры
 
+Запуск режима разработки Portal в текущем окружении:
+
 ```bash
 nb portal dev customer
+```
+
+Запуск режима разработки Portal в указанном окружении:
+
+```bash
 nb portal dev customer --env dev --yes
 ```
 
 ## Примечания
 
-The workspace must contain `package.json`. The command refreshes `.env` and `.env.local`, then runs `pnpm dev`. `ssh` envs are not supported in the current version.
+`dev` запускает сервер разработки из локального каталога исходного кода Portal. Команда не создаёт запись Portal и не загружает удалённый исходный код; если локального каталога исходного кода нет, сначала используйте [`nb portal create`](./create.md) или [`nb portal pull`](./pull.md).
+
+Локальный каталог исходного кода должен содержать `package.json`. Окружения типа `ssh` пока не поддерживают запуск режима разработки Portal.
 
 ## Связанные команды
 
-- [`nb portal`](./index.md)
-- [`nb env`](../env/index.md)
+- [`nb portal create`](./create.md)
+- [`nb portal pull`](./pull.md)
+- [`nb portal deploy`](./deploy.md)

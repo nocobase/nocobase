@@ -25,7 +25,7 @@ Bantu saya memasang NocoBase CLI dan menyelesaikan inisialisasi: https://docs.no
 ### Instalasi Manual
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ Penjelasan detail dan contoh prompt setiap kemampuan → [Kemampuan yang Didukun
 - [NocoBase CLI](../ai/quick-start.md) — Tool baris perintah untuk memasang dan mengelola NocoBase
 - [Referensi NocoBase CLI](../api/cli/index.md) — Penjelasan parameter lengkap untuk semua perintah
 - [Pengembangan Plugin](../plugin-development/index.md) — Panduan lengkap pengembangan Plugin NocoBase
+- [AI Portal](../ai-builder/ai-portal/index.md) — Biarkan AI menulis halaman frontend. Plugin memperluas kemampuan NocoBase itu sendiri, sedangkan Portal membangun entry mandiri di atas kemampuan tersebut
 - [Mulai Cepat Pembangunan AI](../ai-builder/index.md) — Bangun aplikasi NocoBase dengan AI (tanpa menulis kode)

@@ -1,14 +1,63 @@
 ---
 title: "Démarrage rapide de la construction par IA"
-description: "La construction par IA est la capacité d'assistance à la construction par IA de NocoBase. Elle permet d'effectuer la modélisation des données, la configuration de l'interface, l'orchestration des workflows et d'autres opérations en langage naturel, offrant une expérience de construction plus moderne et plus efficace."
-keywords: "construction par IA, AI Builder, NocoBase AI, Agent Skills, construction en langage naturel, low-code IA, démarrage rapide"
+description: "La construction par IA est la capacité d'assistance à la construction par IA de NocoBase : utilisez le langage naturel pour la modélisation des données, la construction de l'interface, l'orchestration des workflows et la configuration des permissions, via la configuration no-code ou via du code écrit par l'IA."
+keywords: "construction par IA, AI Builder, NocoBase AI, Agent Skills, construction en langage naturel, low-code IA, AI Portal, démarrage rapide"
 ---
 
 # Démarrage rapide de la construction par IA
 
-La construction par IA est la capacité d'assistance à la construction par IA fournie par NocoBase — vous pouvez décrire vos besoins en langage naturel, et l'IA effectue automatiquement la modélisation des données, la configuration des pages, le paramétrage des permissions et d'autres opérations. Elle offre une expérience de construction plus moderne et plus efficace.
+La construction par IA est la capacité d'assistance à la construction par IA fournie par NocoBase — vous décrivez vos besoins métier en langage naturel, et un AI Agent construit le système pour vous. Elle couvre toute la chaîne, de la modélisation des données à la mise en production, en passant par la construction de l'interface, l'orchestration des workflows et la configuration des permissions.
+
+Concrètement, pour **construire l'interface**, il existe deux approches :
+
+- **IA + construction avec un Portal no-code** — l'IA construit l'interface de votre système en s'appuyant sur les capacités de configuration no-code de NocoBase, et le résultat est une configuration enregistrée en base de données. Cette approche convient au CRUD standard et aux back-offices internes ; les utilisateurs métier peuvent ensuite continuer à ajuster l'interface eux-mêmes
+- **Construction avec un AI Portal** — NocoBase fournit le socle (données, authentification, permissions, etc.) et l'AI Agent écrit le code directement en local, avec un résultat que vous pouvez versionner tel quel dans Git. Une fois construit et déployé, l'accès se fait via l'[AI Portal](./ai-portal/index.md). Cette approche convient aux interactions sur mesure, aux systèmes métier complexes et aux scénarios ayant des exigences visuelles particulières
+
+Quelle que soit l'approche retenue, les tables, les permissions et les workflows reposent sur le même ensemble de Skills — pendant que l'AI Agent écrit les pages, il peut aussi créer vos tables et configurer les permissions, et construire progressivement, par la conversation, un système métier complet.
+
+## Comment choisir entre les deux approches
+
+Chacune de ces deux approches correspond à un point d'entrée. Une application NocoBase peut avoir plusieurs points d'entrée qui partagent les mêmes données, et le chemin d'accès permet de reconnaître lequel est lequel :
+
+```text
+/v/<name>    Portal no-code
+/x/<name>    AI Portal
+```
+
+![two types of portal](https://static-docs.nocobase.com/20260804091849.png)
+
+Les différences :
+
+| | Portal no-code | AI Portal |
+| --- | --- | --- |
+| Chemin d'accès | `/v/<name>` | `/x/<name>` |
+| D'où viennent les pages | Configurées dans l'interface, l'IA pouvant aider à modifier la configuration | Code source React écrit par l'AI Agent |
+| Résultat produit | Configuration enregistrée en base de données | Code source versionnable dans Git |
+| Mode d'itération | Clics dans l'interface, ou modification de la configuration par l'IA | Modification du code, `dev` → `deploy` |
+| Gestion des versions | Instantanés via le [contrôle de version](./version-control.md) | Git, ou le source storage de NocoBase |
+| Liberté sur l'interface | Limitée par les capacités des blocs, avec des schémas établis de mise en page et d'interaction | Tout ce que vous voulez en faire |
+| Capacités déjà disponibles | Tableaux de bord, calendrier, vue kanban et autres blocs prêts à l'emploi | Le code du modèle standard que nous fournissons, ou ce que l'AI Agent implémente lui-même |
+| Prise en main | Nécessite de connaître les blocs, les champs et autres notions NocoBase | Nécessite une certaine familiarité avec l'usage des AI Agents |
+| Convient à | CRUD standard, back-offices internes | Interactions sur mesure, systèmes métier complexes, exigences visuelles particulières |
+
+Un Portal no-code suffit dans les cas suivants :
+
+- La structure de la page est très standard : un tableau et un formulaire classiques, où la configuration est plus rapide que l'écriture de code
+- Des utilisateurs métier qui n'écrivent pas de code doivent pouvoir ajuster les pages eux-mêmes
+- Vous voulez uniquement utiliser les capacités de blocs intégrées à NocoBase, comme les tableaux de bord, les vues calendrier et les vues kanban
+- Vous construisez seul, ou vous n'avez pas besoin de construire à plusieurs
+
+Pour tous les autres cas, nous recommandons de construire avec l'[AI Portal](./ai-portal/index.md). Avec la construction par Portal no-code, l'IA a trop de contexte à assimiler — types de blocs, structures de configuration, règles d'interaction — et pour les systèmes métier qui exigent une construction complexe, l'efficacité, la maintenabilité et la collaboration en équipe restent insuffisantes.
+
+Nous avons donc changé d'approche : **écrire du code front-end est ce que l'IA fait le mieux**, autant la laisser faire ce qu'elle sait faire. NocoBase joue le rôle de socle du noyau système, et le front-end est laissé à l'IA. Mêmes besoins, résultat plus rapide et de meilleure qualité. **L'IA construit librement, NocoBase garantit la fiabilité.**
+
+Les deux modes peuvent aussi être combinés : configurez rapidement le back-office interne avec un Portal no-code, et affinez le portail destiné aux clients avec un AI Portal — les deux vivent dans la même application et partagent les mêmes données et les mêmes utilisateurs.
 
 ## Démarrage rapide
+
+::: warning Attention
+Pour essayer la construction avec un AI Portal, installez la version alpha du NocoBase CLI (`npm install -g @nocobase/cli@alpha`).
+:::
 
 Si vous avez déjà installé le [NocoBase CLI](../ai/quick-start.md), vous pouvez ignorer cette étape.
 
@@ -23,7 +72,7 @@ Aide-moi à installer NocoBase CLI et à terminer l'initialisation : https://doc
 ### Installation manuelle
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -49,52 +98,6 @@ L'IA a généré automatiquement les tables Clients, Contacts, Opportunités, Co
 
 Pour en savoir plus sur la modélisation des données, consultez [Modélisation des données](./data-modeling).
 
-### Décrivez les pages en langage métier, l'IA les construit pour vous
-
-Pas besoin d'apprendre les règles de configuration : décrivez simplement le type de page que vous voulez — barre de recherche, tableau, conditions de filtrage, dites-le et c'est fait.
-
-```
-Aide-moi à créer une page de gestion des clients, avec une barre de recherche par nom et un tableau des clients affichant le nom, le téléphone, l'email et la date de création
-```
-
-![Page de gestion des clients](https://static-docs.nocobase.com/20260420100608.png)
-
-Pour en savoir plus sur la configuration de l'interface, consultez [Configuration de l'interface](./ui-builder).
-
-### Orchestrer un workflow automatisé en une phrase
-
-Décrivez les conditions de déclenchement et la logique de traitement d'un processus métier, et l'IA créera automatiquement les déclencheurs et la chaîne de nœuds.
-
-```
-Aide-moi à orchestrer un workflow qui décrémente automatiquement le stock après la création d'une commande
-```
-
-![Workflow de décrémentation de stock après création de commande](https://static-docs.nocobase.com/20260419234303.png)
-
-Pour en savoir plus sur les workflows, consultez [Gestion des workflows](./workflow).
-
-### Tables, pages, tableaux de bord : tout en une seule étape
-
-:::warning Attention
-
-La fonctionnalité Solutions est encore en phase de test, sa stabilité est limitée, elle est uniquement destinée à un usage exploratoire.
-
-:::
-
-Décrivez votre scénario métier en une phrase, et l'IA construira pour vous l'ensemble des tables, pages de gestion, tableaux de bord et graphiques.
-
-```
-Aide-moi à utiliser le skill nocobase-dsl-reconciler pour construire un système de gestion de tickets, comprenant un tableau de bord, une liste de tickets, la gestion des utilisateurs et la configuration SLA
-```
-
-L'IA produit d'abord un plan de conception, et après confirmation, elle effectue la construction complète en une seule fois :
-
-![Plan de conception du système de tickets](https://static-docs.nocobase.com/20260420100420.png)
-
-![Résultat de la construction du système de tickets](https://static-docs.nocobase.com/20260420100450.png)
-
-Pour en savoir plus sur la construction d'un système complet, consultez [Solutions](./dsl-reconciler).
-
 ### Construisez un jalon, et l'IA enregistre une version restaurable pour vous
 
 Après avoir terminé une page, un ensemble de tables de données ou un workflow, laissez l'IA enregistrer l'état actuel comme version — si une configuration tourne mal, vous pouvez toujours revenir au dernier jalon clair.
@@ -109,13 +112,49 @@ L'IA n'enregistre pas une version à chaque modification de champ ; elle n'enreg
 
 Pour en savoir plus sur le contrôle de version, consultez [Contrôle de version](./version-control).
 
+### Orchestrer un workflow automatisé en une phrase
+
+Décrivez les conditions de déclenchement et la logique de traitement d'un processus métier, et l'IA créera automatiquement les déclencheurs et la chaîne de nœuds.
+
+```
+Aide-moi à orchestrer un workflow qui décrémente automatiquement le stock après la création d'une commande
+```
+
+![Workflow de décrémentation de stock après création de commande](https://static-docs.nocobase.com/20260419234303.png)
+
+Pour en savoir plus sur les workflows, consultez [Gestion des workflows](./workflow).
+
+### Décrivez les pages en langage métier, l'IA les construit pour vous
+
+NocoBase fournit par défaut un **AI Portal** et un **Portal no-code**. Pas besoin d'apprendre les règles de configuration : décrivez simplement le type de page que vous voulez — barre de recherche, tableau, conditions de filtrage, dites-le et c'est fait.
+
+![portal manage](https://static-docs.nocobase.com/20260804104517.png)
+
+Pour une construction via un Portal no-code (le Portal par défaut s'appelle admin) :
+
+```
+Aide-moi à créer dans admin une page de gestion des clients, avec une barre de recherche par nom et un tableau des clients affichant le nom, le téléphone, l'email et la date de création
+```
+
+![Page de gestion des clients](https://static-docs.nocobase.com/20260420100608.png)
+
+Pour une construction via un AI Portal (le Portal par défaut s'appelle main) :
+
+```
+Aide-moi à créer dans le portal main une page de gestion des clients, avec une barre de recherche et un tableau des clients affichant le nom, le téléphone et le secteur d'activité
+```
+
+![portal page](https://static-docs.nocobase.com/20260803204422.png)
+
+Pour en savoir plus sur la configuration de l'interface, consultez [Configuration de l'interface](./ui-builder) ou [Construction avec AI Portal](./ai-portal/index.md).
+
 ## Sécurité et audit
 
 Avant de laisser un AI Agent opérer sur NocoBase, il est recommandé de comprendre les méthodes d'authentification, le contrôle des permissions et l'audit des opérations — pour vous assurer que l'IA ne fait que ce qu'elle doit faire, et que chaque étape est tracée. Consultez [Sécurité et audit](./security).
 
 ## NocoBase Skills
 
-Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit 9 Skills couvrant l'ensemble du processus de construction :
+Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de connaissances métier installables dans votre AI Agent, qui permettent à l'IA de comprendre le système de configuration de NocoBase. NocoBase fournit plusieurs Skills couvrant l'ensemble du processus de construction :
 
 - [Gestion des environnements](./env-bootstrap) — vérification d'environnement, installation, déploiement, mise à niveau et diagnostic
 - [Modélisation des données](./data-modeling) — création et gestion des tables, champs et relations
@@ -126,6 +165,7 @@ Les [NocoBase Skills](https://github.com/nocobase/skills) sont des packs de conn
 - [Gestion des plugins](./plugin-manage) — consultation, activation et désactivation des plugins
 - [Gestion des publications](./publish) — publication multi-environnements, sauvegarde, restauration et migration
 - [Contrôle de version](./version-control) — enregistrer des versions restaurables après des jalons terminés
+- [Construction avec AI Portal](https://github.com/nocobase/skills/blob/main/skills/nocobase-ai-builder/SKILL.md) - laisser l'AI Agent écrire du code dans un AI Portal pour construire les interfaces du système
 
 :::tip Astuce
 
@@ -135,6 +175,7 @@ Le NocoBase CLI installe automatiquement les Skills lors de l'initialisation (`n
 
 ## Liens connexes
 
+- [AI Portal](./ai-portal/index.md) — l'autre approche de construction, où l'AI Agent écrit directement le code front-end
 - [NocoBase CLI](../ai/quick-start.md) — outil en ligne de commande pour installer et gérer NocoBase
 - [Référence du NocoBase CLI](../api/cli/index.md) — description complète des paramètres de toutes les commandes
 - [Plugin de développement IA](../ai-dev/index.md) — développer des plugins NocoBase avec l'aide de l'IA

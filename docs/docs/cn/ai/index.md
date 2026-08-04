@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'NocoBase 的 AI 能力体系：AI 搭建与开发、AI 员工、AI Agent 对接、AI 工具与资源。'
-keywords: 'NocoBase AI,AI 搭建,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'NocoBase 的 AI 能力体系：AI 搭建、AI 员工、AI Agent 对接、AI 工具与资源。'
+keywords: 'NocoBase AI,AI 搭建,AI Portal,AI 员工,AI 开发,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: 开始
     details: 安装 CLI、连接应用、开始搭建——一切从这里出发。
@@ -21,7 +21,7 @@ features:
         details: 用 AI 辅助 NocoBase 插件开发，覆盖从脚手架、组件代码到业务逻辑的全流程。
         link: /ai-dev
 
-  - title: AI 搭建与开发
+  - title: AI 搭建
     details: 用 AI 构建 NocoBase 应用和插件——从自然语言描述到可用的系统或插件代码。
     items:
       - title: AI 搭建快速开始
@@ -65,28 +65,6 @@ features:
         details: 在工作流节点中接入 AI 员工，实现自动化的智能决策和内容生成。
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: 接入你的 AI Agent
-    details: 你最爱的 AI Agent，现在也能操作 NocoBase 了。
-    items:
-      - title: OpenClaw + NocoBase：全网最火 AI Agent 帮你干活
-        details: 全球最受欢迎的开源 AI Agent，让 OpenClaw 成为你全天候在线的 NocoBase 操作员。
-        link: /ai/openclaw
-      - title: Hermes Agent：越用越懂你的 NocoBase 助手
-        details: 自动把成功经验沉淀为可复用技能，越用越懂你的业务系统。
-        link: /ai/hermes-agent
-      - title: 解放双手，用 WorkBuddy 驱动 NocoBase
-        details: 腾讯出品，20+ 内置技能，支持企业微信、飞书等多平台远程操控 NocoBase。
-        link: /ai/workbuddy
-      - title: Claude Code + NocoBase：最强 AI 大脑，你的 NocoBase 首席架构师
-        details: 实力强劲的 AI 架构师——理解项目上下文，搭建 NocoBase 像写代码一样自然。
-        link: /ai/claude-code
-      - title: 用 Codex 操作 NocoBase，搭建开发两不误
-        details: OpenAI 出品，GPT 系列加持，安全沙箱里帮你搭建 NocoBase，每一步都可控。
-        link: /ai/codex
-      - title: OpenCode + NocoBase：开源、自由、不被绑定的 NocoBase 搭建方式
-        details: 同是开源社区驱动，模型自由切换，开发者的自由之选。
-        link: /ai/opencode
-
   - title: AI 工具与资源
     details: 支撑 NocoBase AI 能力的基础设施——CLI、Skills 和 MCP。
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: 可安装到 AI Agent 中的领域知识包，让 AI 理解 NocoBase 的能力和规范。
         link: /ai-builder#nocobase-skills
+      - title: nb portal 命令参考
+        details: 管理 Portal 的全部命令——创建、开发、同步源码和部署。
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Model Context Protocol 接入，让 AI Agent 通过标准化协议与 NocoBase 交互。
         link: /ai/mcp/

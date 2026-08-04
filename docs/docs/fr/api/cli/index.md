@@ -39,7 +39,7 @@ La commande racine sert principalement à afficher l’aide et à répartir les 
 | [`nb env`](./env/index.md)           | Gérer les environnements de projet NocoBase, l’environnement courant, l’état, les détails et les commandes d’exécution.  |
 | [`nb license`](./license/index.md)   | Gérer la licence commerciale et les plugins sous licence.                                                                |
 | [`nb plugin`](./plugin/index.md)     | Gérer les plugins de l’environnement NocoBase sélectionné.                                                               |
-| [`nb portal`](./portal/index.md)     | Gérer les workspaces Portal : configurer, créer, développer, synchroniser le code source, déployer et supprimer. |
+| [`nb portal`](./portal/index.md)     | Gérer le répertoire de code source local d'un Portal : configurer, créer, développer, synchroniser le code source, déployer et supprimer. |
 | [`nb scaffold`](./scaffold/index.md) | Générer le scaffold de développement de plugins NocoBase.                                                                |
 | [`nb self`](./self/index.md)         | Vérifier ou mettre à jour NocoBase CLI lui-même.                                                                         |
 | [`nb session`](./session/index.md)   | Configurer `NB_SESSION_ID` pour isoler l’environnement courant selon le shell ou l’environnement d’exécution de l’agent. |

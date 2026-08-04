@@ -39,7 +39,7 @@ El comando raíz se utiliza principalmente para mostrar ayuda y distribuir las i
 | [`nb env`](./env/index.md)           | Gestiona los entornos de proyecto de NocoBase, el env actual, el estado, los detalles y los comandos de tiempo de ejecución. |
 | [`nb license`](./license/index.md)   | Gestiona las licencias comerciales y los plugins con licencia.                                                               |
 | [`nb plugin`](./plugin/index.md)     | Gestiona los plugins del env de NocoBase seleccionado.                                                                       |
-| [`nb portal`](./portal/index.md)     | Gestiona workspaces de Portal: configurar, crear, desarrollar, sincronizar código fuente, desplegar y eliminar. |
+| [`nb portal`](./portal/index.md)     | Gestiona el directorio local de código fuente de un Portal: configurar, crear, desarrollar, sincronizar código fuente, desplegar y eliminar. |
 | [`nb scaffold`](./scaffold/index.md) | Genera scaffolding para el desarrollo de plugins de NocoBase.                                                                |
 | [`nb self`](./self/index.md)         | Comprueba o actualiza la propia NocoBase CLI.                                                                                |
 | [`nb session`](./session/index.md)   | Configura `NB_SESSION_ID` para que el env actual quede aislado por shell o por agent runtime.                                |

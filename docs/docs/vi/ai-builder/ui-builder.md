@@ -33,6 +33,7 @@ Không thể làm:
 - Không thể thiết kế cấu trúc bảng dữ liệu (dùng [Skill mô hình hóa dữ liệu](./data-modeling))
 - Không thể sắp xếp Workflow (dùng [Skill quản lý Workflow](./workflow))
 - Không thể xử lý điều hướng cho trang non-modern (v1), chỉ hỗ trợ xử lý trang v2.
+- Không xử lý mã nguồn frontend của AI Portal (dùng [AI Portal](./ai-portal/index.md))
 
 ## Ví dụ câu lệnh
 
@@ -98,3 +99,4 @@ Nếu cấu hình thủ công và cấu hình AI cùng diễn ra đồng thời 
 - [Mô hình hóa dữ liệu](./data-modeling) — Sử dụng AI để tạo và quản lý bảng, Field, quan hệ liên kết
 - [Cấu hình quyền](./acl) — Cấu hình vai trò và quyền truy cập dữ liệu
 - [Quản lý Workflow](./workflow) — Tạo, chỉnh sửa và chẩn đoán Workflow
+- [AI Portal](./ai-portal/index.md) — Cách làm khác khi bạn cần viết code để tùy chỉnh trang
