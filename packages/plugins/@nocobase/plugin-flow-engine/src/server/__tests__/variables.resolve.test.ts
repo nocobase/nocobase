@@ -251,7 +251,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     }
   });
 
-  it('should hide the runtime helper from ordinary and configure lanes', async () => {
+  it('should keep unsafe expressions unresolved for ordinary and configure lanes', async () => {
     const templates = [
       '{{ eval("__resolveVariablePath0") }}',
       '{{ (eval)("__resolveVariablePath0") }}',
@@ -259,6 +259,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       '{{ (0, eval)("__resolveVariablePath0") }}',
       '{{ Function("return __resolveVariablePath0")() }}',
       '{{ globalThis["__resolveVariablePath"] }}',
+      '{{ (() => 1)() }}',
     ];
     const payload = {
       batch: templates.map((template, index) => ({ id: index, template })),

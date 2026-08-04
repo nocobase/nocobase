@@ -388,7 +388,7 @@ export async function authorizeVariablesResolve(
   const unrestrictedVariables = new Set<string>();
   let policy = createPolicy(false, new Set(), unrestrictedVariables);
   let recordSlotPolicies: RecordSlotPolicies = new Map();
-  const result = analyzeVariableTemplateSafely(options.template);
+  const result = analyzeVariableTemplateSafely(options.template, { mode: 'untrusted-request' });
   if (!result.ok) {
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
     return {

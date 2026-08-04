@@ -183,6 +183,32 @@ describe('server variable expression analyzer', () => {
     expect(analysis.paths.map((path) => path.runtimeSegments)).toEqual([['score']]);
   });
 
+  it.each([
+    '{{ (() => { while (true) {} })() }}',
+    '{{ Function("while(true){}")() }}',
+    '{{ ({ get value() { while (true) {} } }).value }}',
+    '{{ Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0) }}',
+    '{{ 2n ** 1000000000n }}',
+  ])('rejects executable syntax from an untrusted request without evaluating it: %s', (template) => {
+    const analysis = analyzeVariableTemplate(template, { mode: 'untrusted-request' });
+
+    expect(analysis.supported).toBe(false);
+    expect(analysis.errors.map((error) => error.code)).toContain('unsafe-execution');
+    expect(analysis.paths).toEqual([]);
+  });
+
+  it('keeps static paths and direct Math calls available to untrusted requests', () => {
+    const analysis = analyzeVariableTemplate(['{{ ctx.user.id }}', '{{ Math.max(ctx.record.score, 0) }}'], {
+      mode: 'untrusted-request',
+    });
+
+    expect(analysis.supported).toBe(true);
+    expect(analysis.paths.map((path) => [path.varName, path.runtimeSegments])).toEqual([
+      ['user', ['id']],
+      ['record', ['score']],
+    ]);
+  });
+
   it('does not treat lexically bound ctx identifiers as server context', () => {
     const analysis = analyzeVariableTemplate([
       '{{ ((ctx) => ctx.secret)({ secret: 1 }) }}',

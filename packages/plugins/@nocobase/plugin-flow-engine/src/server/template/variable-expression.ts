@@ -37,6 +37,7 @@ export type VariableExpressionErrorCode =
   | 'dynamic-ctx-path'
   | 'invalid-expression'
   | 'reserved-helper'
+  | 'unsafe-execution'
   | 'unreliable-scope';
 
 export type VariableExpressionError = Readonly<{
@@ -69,7 +70,7 @@ export type AnalyzedTemplate = Readonly<{
   supported: boolean;
 }>;
 
-export type AnalyzeTemplateMode = 'request' | 'flow-model';
+export type AnalyzeTemplateMode = 'request' | 'untrusted-request' | 'flow-model';
 
 type AstNode = {
   type: string;
@@ -91,6 +92,66 @@ type ParsedMemberPath =
 
 const CANONICAL_INDEX: CanonicalPathSegment = Object.freeze({ kind: 'index' });
 const RESERVED_HELPERS = new Set(['__get', '__resolveVariablePath']);
+const SAFE_MATH_CALLS = new Set([
+  'abs',
+  'acos',
+  'acosh',
+  'asin',
+  'asinh',
+  'atan',
+  'atan2',
+  'atanh',
+  'cbrt',
+  'ceil',
+  'clz32',
+  'cos',
+  'cosh',
+  'exp',
+  'expm1',
+  'floor',
+  'fround',
+  'hypot',
+  'imul',
+  'log',
+  'log10',
+  'log1p',
+  'log2',
+  'max',
+  'min',
+  'pow',
+  'random',
+  'round',
+  'sign',
+  'sin',
+  'sinh',
+  'sqrt',
+  'tan',
+  'tanh',
+  'trunc',
+]);
+const UNSAFE_EXECUTION_NODES = new Set([
+  'ArrowFunctionExpression',
+  'AssignmentExpression',
+  'AwaitExpression',
+  'ClassDeclaration',
+  'ClassExpression',
+  'DoWhileStatement',
+  'ForInStatement',
+  'ForOfStatement',
+  'ForStatement',
+  'FunctionDeclaration',
+  'FunctionExpression',
+  'ImportExpression',
+  'MetaProperty',
+  'NewExpression',
+  'SequenceExpression',
+  'SpreadElement',
+  'StaticBlock',
+  'TaggedTemplateExpression',
+  'UpdateExpression',
+  'WhileStatement',
+  'YieldExpression',
+]);
 const ACORN_OPTIONS = { ecmaVersion: 'latest' as const, preserveParens: true, sourceType: 'script' as const };
 
 export function getVariableRuntimeKey(varName: string, runtimeSegments: readonly PathSegment[]) {
@@ -115,7 +176,7 @@ export function analyzeVariableTemplate(
 
   const visit = (value: unknown, templatePath: readonly TemplatePathSegment[]): AnalyzedTemplateNode => {
     if (typeof value === 'string') {
-      const expressions = analyzeString(value, templatePath, paths, errors, helperIdentifiers);
+      const expressions = analyzeString(value, templatePath, paths, errors, helperIdentifiers, mode);
       return { kind: 'string', source: value, expressions };
     }
     if (Array.isArray(value)) {
@@ -155,6 +216,7 @@ function analyzeString(
   allPaths: VariablePathRef[],
   allErrors: VariableExpressionError[],
   helperIdentifiers: Set<string>,
+  mode: AnalyzeTemplateMode,
 ) {
   const expressions: AnalyzedExpression[] = [];
   let cursor = 0;
@@ -188,7 +250,7 @@ function analyzeString(
     const expressionEnd = placeholderEnd;
     const expressionErrors: VariableExpressionError[] = [];
     const helperIdentifier = createHelperIdentifier(ast, helperIdentifiers);
-    let expressionPaths = analyzeAst(ast, templatePath, expressionErrors);
+    let expressionPaths = analyzeAst(ast, templatePath, expressionErrors, mode);
     const dashedPath = parseDashedCtxPath(source.slice(ast.start, ast.end));
     if (dashedPath && expressionPaths.length === 1 && expressionErrors.length === 0) {
       expressionPaths = [createPathRef(dashedPath[0], dashedPath.slice(1), ast, templatePath)];
@@ -213,7 +275,12 @@ function analyzeString(
   return expressions;
 }
 
-function analyzeAst(ast: AstNode, templatePath: readonly TemplatePathSegment[], errors: VariableExpressionError[]) {
+function analyzeAst(
+  ast: AstNode,
+  templatePath: readonly TemplatePathSegment[],
+  errors: VariableExpressionError[],
+  mode: AnalyzeTemplateMode,
+) {
   const paths: VariablePathRef[] = [];
   const pathRanges: SourceSpan[] = [];
   const errorKeys = new Set<string>();
@@ -227,6 +294,8 @@ function analyzeAst(ast: AstNode, templatePath: readonly TemplatePathSegment[], 
   };
 
   const visit = (node: AstNode, scope: Scope, parent?: AstNode, parentKey?: string) => {
+    if (mode === 'untrusted-request' && isUnsafeExecutionNode(node)) addError('unsafe-execution', node);
+
     if (RESERVED_HELPERS.has(identifierName(node) ?? '') && isIdentifierReference(parent, parentKey)) {
       addError('reserved-helper', node);
     }
@@ -363,6 +432,23 @@ function analyzeAst(ast: AstNode, templatePath: readonly TemplatePathSegment[], 
 
   visit(ast, rootScope);
   return paths.sort((left, right) => left.span.start - right.span.start);
+}
+
+function isUnsafeExecutionNode(node: AstNode) {
+  if (node.type === 'CallExpression') return !isSafeMathCall(node);
+  if (node.type === 'Literal' && (typeof node.value === 'bigint' || typeof node.bigint === 'string')) return true;
+  if (node.type === 'UnaryExpression' && node.operator === 'delete') return true;
+  return UNSAFE_EXECUTION_NODES.has(node.type);
+}
+
+function isSafeMathCall(node: AstNode) {
+  if (node.optional === true) return false;
+  const callee = unwrapChain(asNode(node.callee) ?? node);
+  if (callee.type !== 'MemberExpression' || callee.computed === true || callee.optional === true) return false;
+  return (
+    identifierName(asNode(callee.object)) === 'Math' &&
+    SAFE_MATH_CALLS.has(identifierName(asNode(callee.property)) ?? '')
+  );
 }
 
 function visitFunction(
