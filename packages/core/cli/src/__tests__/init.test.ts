@@ -224,6 +224,28 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(webUiOptions?.stages[3]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.downloadAppFiles.title',
   });
+  expect(webUiOptions?.stages[3]?.catalog).toMatchObject({
+    appClientEntryMode: {
+      type: 'select',
+      options: [
+        expect.objectContaining({
+          value: 'modern-only',
+          label: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyHint' },
+        }),
+        expect.objectContaining({
+          value: 'modern-default',
+          label: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultHint' },
+        }),
+        expect.objectContaining({
+          value: 'legacy-default',
+          label: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultHint' },
+        }),
+      ],
+    },
+  });
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.configureDatabase.title',
   });

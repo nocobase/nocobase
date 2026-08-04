@@ -328,11 +328,12 @@ export async function runPromptCatalog(
     if (def.type === 'select') {
       const message = resolvePromptText(def.message, locale, key);
       const valueList = selectOptionValues(def.options);
+      const valuesSoFar = { ...computationSeed, ...out } as PromptCatalogValues;
       if (def.required && def.options.length === 0) {
         hooks.onMissingNonInteractive(t('promptCatalog.nonInteractive.selectRequiredNoOptions', { key }));
       }
       if (!interactive) {
-        const merged = mergedSelect(key, def, resolveIv, useYesInitial);
+        const merged = mergedSelect(key, def, resolveIv, useYesInitial, valuesSoFar);
         if (merged === undefined || !valueList.includes(merged)) {
           const bad =
             hasIvKey(resolveIv, key) && !valueList.includes(String(resolveIv[key]))
@@ -358,11 +359,8 @@ export async function runPromptCatalog(
         continue;
       }
 
-      const merged = mergedSelect(key, def, promptIv, false);
-      const uiInitial =
-        merged ??
-        (def.initialValue && valueList.includes(def.initialValue) ? def.initialValue : undefined) ??
-        valueList[0];
+      const merged = mergedSelect(key, def, promptIv, false, valuesSoFar);
+      const uiInitial = merged ?? valueList[0];
       if (uiInitial === undefined || !valueList.includes(uiInitial)) {
         const hint = def.required
           ? t('promptCatalog.nonInteractive.selectRequiredInteractive', { key })

@@ -657,6 +657,15 @@
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
         },
+        "appClientEntryMode": {
+          "message": "App client entry mode",
+          "modernOnlyLabel": "Modern UI only",
+          "modernOnlyHint": "Only the modern UI is available; the legacy UI cannot be accessed.",
+          "modernDefaultLabel": "Modern UI by default",
+          "modernDefaultHint": "Open the modern UI by default while keeping the legacy UI available.",
+          "legacyDefaultLabel": "Legacy UI by default",
+          "legacyDefaultHint": "Open the legacy UI by default while keeping the modern UI available."
+        },
         "portalType": {
           "message": "Portal type",
           "noCodeLabel": "No-code portal",
