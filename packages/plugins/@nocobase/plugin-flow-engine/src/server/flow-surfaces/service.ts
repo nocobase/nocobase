@@ -332,6 +332,7 @@ import {
   joinRequiredFieldPaths,
   normalizeBlockTitleDescription,
   normalizeBlockTitleDescriptionValue,
+  normalizeAfterSuccess,
   normalizeChartCardSettings,
   normalizeChartCardHeightModeForWrite,
   normalizeFlowSurfaceComposeKey,
@@ -25109,6 +25110,15 @@ export class FlowSurfacesService {
       } else {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support confirm`);
       }
+    }
+    if (hasOwnDefined(changes, 'afterSuccess')) {
+      if (!UPDATE_ASSIGN_ACTION_USES.has(use)) {
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support afterSuccess`);
+      }
+      stepParams.assignSettings = {
+        ...(stepParams.assignSettings || {}),
+        afterSuccess: normalizeAfterSuccess(changes.afterSuccess),
+      };
     }
     if (hasOwnDefined(changes, 'assignValues')) {
       const assignValues = this.normalizeActionAssignValues('configure', changes.assignValues);
