@@ -28,7 +28,6 @@ interface AppErrorPayload {
       maintainingDialog?: string;
     };
   };
-  [key: string]: unknown;
 }
 
 const isAppUpgrading = (error?: AppErrorPayload) =>
