@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   getAIEmployees: vi.fn(),
   setResponseLoading: vi.fn(),
   switchAIEmployee: vi.fn(),
+  publicPath: '/',
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -32,6 +33,10 @@ vi.mock('@nocobase/flow-engine', async () => {
   };
 });
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  useApp: () => ({ getPublicPath: () => mocks.publicPath }),
+}));
 vi.mock('../../../../locale', () => ({
   useT: () => (text: string) => text,
 }));
@@ -85,6 +90,7 @@ const renderWithRuntime = (runtime: ChatBoxRuntime, initialEntry = '/customer1')
 
 describe('global chatbox behavior', () => {
   beforeEach(() => {
+    mocks.publicPath = '/';
     window.history.replaceState({}, '', '/v/customer1');
     mocks.getAIEmployees.mockResolvedValue(undefined);
     mocks.setResponseLoading.mockClear();
@@ -122,11 +128,22 @@ describe('global chatbox behavior', () => {
     expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
   });
 
-  it('hides the entry outside /v/* and /admin routes', () => {
-    window.history.replaceState({}, '', '/signin');
+  it('renders the entry on a Portal route under a public path prefix', () => {
+    mocks.publicPath = '/nocobase/';
+    window.history.replaceState({}, '', '/nocobase/v/custom');
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/signin');
+    renderWithRuntime(runtime, '/custom');
+
+    expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
+  });
+
+  it('hides the entry for a non-V2 route under the public path', () => {
+    mocks.publicPath = '/nocobase/';
+    window.history.replaceState({}, '', '/nocobase/custom');
+    const runtime = createChatBoxRuntime();
+
+    renderWithRuntime(runtime, '/custom');
 
     expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
   });
