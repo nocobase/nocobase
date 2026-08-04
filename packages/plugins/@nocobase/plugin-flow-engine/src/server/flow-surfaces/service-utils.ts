@@ -654,6 +654,32 @@ export function normalizeSimpleConfirm(confirm: any) {
   throwBadRequest('flowSurfaces configure confirm must be a boolean or object');
 }
 
+type AfterSuccessInput = {
+  successMessage?: unknown;
+  manualClose?: unknown;
+  actionAfterSuccess?: unknown;
+  redirectTo?: unknown;
+};
+
+export function normalizeAfterSuccess(afterSuccess: unknown) {
+  if (!_.isPlainObject(afterSuccess)) {
+    throwBadRequest('flowSurfaces configure afterSuccess must be an object');
+  }
+  const input = afterSuccess as AfterSuccessInput;
+  if (
+    input.actionAfterSuccess !== undefined &&
+    !['stay', 'previous', 'redirect'].includes(String(input.actionAfterSuccess))
+  ) {
+    throwBadRequest('flowSurfaces configure afterSuccess.actionAfterSuccess must be stay, previous, or redirect');
+  }
+  return buildDefinedPayload({
+    successMessage: input.successMessage,
+    manualClose: input.manualClose,
+    actionAfterSuccess: input.actionAfterSuccess,
+    redirectTo: input.redirectTo,
+  });
+}
+
 export function assertSupportedSimpleChanges(context: string, changes: Record<string, any>, allowedKeys: string[]) {
   const unknownKeys = Object.keys(changes).filter((key) => !allowedKeys.includes(key));
   if (!unknownKeys.length) {
