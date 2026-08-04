@@ -11,7 +11,7 @@ import _ from 'lodash';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
 import { isProtectedServerContextKey } from '../template/context-keys';
-import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN } from '../template/contexts';
+import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN, ServerBaseContext } from '../template/contexts';
 import { analyzeVariableTemplate, type PathSegment, type VariablePathRef } from '../template/variable-expression';
 import { planRecordBindings, type AuthorizedRecordBinding, type RecordBindingPlan } from './record-bindings';
 import { projectRecord } from './record-projection';
@@ -377,21 +377,32 @@ function attachAuthorizedRecordBindings(
 
   for (const [varName, root] of byVariable) {
     if (conflicts.has(varName)) continue;
+    const resolveNode = async (node: RecordProviderNode) => {
+      const entries: [RecordProviderNode, Promise<unknown>][] = [];
+      const collect = (current: RecordProviderNode) => {
+        if (current.binding) {
+          const paths = current.binding.relativePaths.filter((path) => !isProvidedByDescendant(current, path));
+          entries.push([current, fetchBindingRecord(koaCtx, current.binding, paths)]);
+        }
+        for (const child of current.children.values()) collect(child);
+      };
+      collect(node);
+      const values = new Map<RecordProviderNode, unknown>();
+      await Promise.all(entries.map(async ([current, pending]) => values.set(current, await pending)));
+      return materializeRecordProvider(node, values);
+    };
+    const createProxy = (node: RecordProviderNode) => {
+      const context = new ServerBaseContext();
+      for (const [segment, child] of node.children) {
+        context.defineProperty(String(segment), {
+          get: () => (child.binding ? resolveNode(child) : createProxy(child)),
+          cache: true,
+        });
+      }
+      return context.createProxy();
+    };
     flowCtx.defineProperty(varName, {
-      get: async () => {
-        const entries: [RecordProviderNode, Promise<unknown>][] = [];
-        const collect = (node: RecordProviderNode) => {
-          if (node.binding) {
-            const paths = node.binding.relativePaths.filter((path) => !isProvidedByDescendant(node, path));
-            entries.push([node, fetchBindingRecord(koaCtx, node.binding, paths)]);
-          }
-          for (const child of node.children.values()) collect(child);
-        };
-        collect(root);
-        const values = new Map<RecordProviderNode, unknown>();
-        await Promise.all(entries.map(async ([node, pending]) => values.set(node, await pending)));
-        return materializeRecordProvider(root, values);
-      },
+      get: () => (root.binding ? resolveNode(root) : createProxy(root)),
       cache: true,
     });
   }
