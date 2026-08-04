@@ -167,5 +167,121 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(refresh).not.toHaveBeenCalled();
     expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(ctx.runAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs the configured after-success action when refresh fails after updating selected records', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-action-success', flowEngine: engine } as any);
+    const update = vi.fn(async () => ({}));
+    const refreshError = new Error('refresh failed');
+    const refresh = vi.fn().mockRejectedValue(refreshError);
+    const runAction = vi.fn(async () => {});
+    const warn = vi.fn();
+    const setProps = vi.fn();
+    const ctx: any = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'confirm') {
+            return { enable: false };
+          }
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          if (stepKey === 'afterSuccess') {
+            return {
+              successMessage: 'Records updated',
+            };
+          }
+          return undefined;
+        }),
+        setProps,
+      },
+      runAction,
+      collection: {
+        name: 'users',
+        dataSourceKey: 'main',
+        filterTargetKey: 'id',
+        getPrimaryKey: () => 'id',
+        getFilterByTK: (record: { id: number }) => record.id,
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: () => [{ id: 1 }],
+          refresh,
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      logger: { warn },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+
+    await handler(ctx, { assignedValues: { status: 'active' } });
+
+    expect(update).toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(
+      { err: refreshError },
+      'Failed to refresh the block after a successful bulk update',
+    );
+    expect(runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: false });
+    expect(runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: 'Records updated',
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
+    expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
+  });
+
+  it('does not run the after-success action when no records are selected', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-action-empty', flowEngine: engine } as any);
+    const runAction = vi.fn(async () => {});
+    const ctx: any = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          return undefined;
+        }),
+        setProps: vi.fn(),
+      },
+      runAction,
+      collection: {
+        name: 'users',
+        filterTargetKey: 'id',
+        getPrimaryKey: () => 'id',
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: () => [],
+          refresh: vi.fn(),
+        },
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+
+    await handler(ctx, { assignedValues: { status: 'active' } });
+
+    expect(runAction).toHaveBeenCalledTimes(1);
+    expect(runAction).toHaveBeenCalledWith('confirm', { enable: false });
+    expect(ctx.message.error).toHaveBeenCalledWith('Please select the records to be updated');
   });
 });

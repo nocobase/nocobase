@@ -629,6 +629,17 @@ const ACTION_ASSIGN_OPTIONS: FlowSurfaceConfigureOptions = {
   updateMode: stringOption('Update mode', { example: 'overwrite' }),
 };
 
+const ACTION_AFTER_SUCCESS_OPTIONS: FlowSurfaceConfigureOptions = {
+  afterSuccess: objectOption('Action after a successful update', {
+    example: {
+      successMessage: 'Saved successfully',
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+      redirectTo: '/admin/example',
+    },
+  }),
+};
+
 const ACTION_TRIGGER_WORKFLOWS_OPTIONS: FlowSurfaceConfigureOptions = {
   triggerWorkflows: arrayOption('Workflow bindings for submit/update actions', {
     example: [{ workflowKey: 'workflow-key', context: 'department' }],
@@ -821,11 +832,17 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
       return merged(
         ACTION_CONFIRM_OPTIONS,
         ACTION_ASSIGN_OPTIONS,
+        ACTION_AFTER_SUCCESS_OPTIONS,
         ACTION_TRIGGER_WORKFLOWS_OPTIONS,
         ACTION_LINKAGE_OPTIONS,
       );
     case 'BulkUpdateActionModel':
-      return merged(ACTION_CONFIRM_OPTIONS, ACTION_ASSIGN_OPTIONS, ACTION_LINKAGE_OPTIONS);
+      return merged(
+        ACTION_CONFIRM_OPTIONS,
+        ACTION_ASSIGN_OPTIONS,
+        ACTION_AFTER_SUCCESS_OPTIONS,
+        ACTION_LINKAGE_OPTIONS,
+      );
     case 'BulkEditActionModel':
       return merged(ACTION_EDIT_MODE_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'DuplicateActionModel':
