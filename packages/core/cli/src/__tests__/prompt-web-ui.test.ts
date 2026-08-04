@@ -952,6 +952,23 @@ test('reflow supports select defaults derived from previous field values', async
   expect(alphaState.values.appClientEntryMode).toBe('modern-only');
 });
 
+test('init reflow hides client entry mode for latest and defaults non-latest to modern only', async () => {
+  const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
+  const { default: Init } = await import('../commands/init.js');
+
+  const latestState = reflowWebFormState(Init.prompts, {
+    version: 'latest',
+  });
+  const alphaState = reflowWebFormState(Init.prompts, {
+    version: 'alpha',
+  });
+
+  expect(latestState.show.appClientEntryMode).toBe(false);
+  expect(latestState.values.appClientEntryMode).toBeUndefined();
+  expect(alphaState.show.appClientEntryMode).toBe(true);
+  expect(alphaState.values.appClientEntryMode).toBe('modern-only');
+});
+
 test('reflow recomputes the built-in database image from the configured registry seed', async () => {
   const { reflowWebFormState } = await import('../lib/prompt-web-ui.js');
   const { default: Init } = await import('../commands/init.js');

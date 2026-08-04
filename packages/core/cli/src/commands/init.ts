@@ -155,7 +155,7 @@ function argvHasToken(argv: string[], tokens: string[]): boolean {
   return tokens.some((token) => argv.includes(token));
 }
 
-function resolveInitDownloadVersion(results: Record<string, string | number | boolean>): string {
+function resolveInitDownloadVersion(results: PromptCatalogValues): string {
   const preset = String(results.version ?? '').trim();
   if (preset === 'other') {
     return String(results.otherVersion ?? '').trim();
@@ -481,6 +481,7 @@ Prompt modes:
       message: initText('prompts.appClientEntryMode.message'),
       options: [...PUBLIC_APP_CLIENT_ENTRY_MODE_OPTIONS],
       variant: 'radio',
+      hidden: (values) => resolveInitDownloadVersion(values) === 'latest',
       initialValue: (values) => defaultAppClientEntryModeForDownloadVersion(values.version),
       required: true,
     }),
