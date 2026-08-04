@@ -95,7 +95,7 @@ jobs:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
           DB_HOST: postgres
-          DB_PORT: 5432
+          DB_PORT: 5866
           DB_USER: nocobase
           DB_PASSWORD: password
           DB_DATABASE: nocobase
