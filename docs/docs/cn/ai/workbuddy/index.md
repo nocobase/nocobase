@@ -91,7 +91,7 @@ WorkBuddy 目前处于快速迭代中，部分功能可能有变化。建议关�
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 

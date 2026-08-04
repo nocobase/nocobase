@@ -36,6 +36,27 @@
     ]
   },
   {
+    "type": "custom-link",
+    "label": "无代码 Portal 搭建",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "界面配置",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "解决方案",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "版本控制",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "安全与审计"
@@ -52,11 +73,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "界面配置"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "工作流管理"
   },
@@ -67,11 +83,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "解决方案"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "插件管理"
   },
@@ -79,10 +90,5 @@
     "type": "file",
     "name": "publish",
     "label": "发布管理"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "版本控制"
   }
 ]

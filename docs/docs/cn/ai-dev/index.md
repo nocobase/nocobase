@@ -25,7 +25,7 @@ AI 开发插件的能力基于 [nocobase-plugin-development](https://github.com/
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 

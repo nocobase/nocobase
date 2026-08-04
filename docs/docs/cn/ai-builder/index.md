@@ -72,9 +72,7 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你用自然语言描
 ### 手动安装
 
 ```bash
-npm install -g @nocobase/cli
-# 如果要尝试 AI Portal 搭建，请安装 alpha 版本
-# npm install -g @nocobase/cli@alpha
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -128,15 +126,19 @@ AI 不会每改一个字段就存一次，只在完成并验证一个清晰节�
 
 ### 用业务语言描述页面，AI 帮你搭好
 
-不用学配置规则，直接说你想要什么样的页面——搜索框、表格、筛选条件，说出来就有了。如果是通过无代码模式搭建，参考如下：
+NocoBase 默认提供了一个 **AI Portal** 和一个 **无代码 Portal**，不用学配置规则，直接说你想要什么样的页面——搜索框、表格、筛选条件，说出来就有了。
+
+![portal manage](https://static-docs.nocobase.com/20260804104517.png)
+
+如果是通过无代码 Portal 搭建（默认 Portal 名字是 admin），参考如下：
 
 ```
-帮我创建一个客户管理页面，包含姓名搜索框和客户表格，表格显示名称、电话、邮箱、创建时间
+帮我在 admin 里创建一个客户管理页面，包含姓名搜索框和客户表格，表格显示名称、电话、邮箱、创建时间
 ```
 
 ![客户管理页面](https://static-docs.nocobase.com/20260420100608.png)
 
-如果是通过 AI Portal 模式搭建，则最好显式告诉 AI Agent 你需要它在哪个 portal 里搭建：
+如果是通过 AI Portal 模式搭建（默认 Portal 名字是 main），参考如下：
 
 ```
 帮我在 main portal 里创建一个客户管理页面，包含搜索框和客户表格，表格显示名称、电话、行业
