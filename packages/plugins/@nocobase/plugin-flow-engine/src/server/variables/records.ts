@@ -279,7 +279,7 @@ export function prepareRecordQuery(
   const adjusted = adjustSelectsForCollection(koaCtx, target.dataSourceKey, target.collectionName, fields, appends);
   const extraKeys = getExtraKeyFieldsForSelect(filterByTk, target);
   const selectedFields = mergeFieldsWithExtras(
-    Array.isArray(fields) ? adjusted.fields || [] : adjusted.fields,
+    strictSelects && Array.isArray(fields) ? adjusted.fields || [] : adjusted.fields,
     extraKeys,
   );
   const queryFields = preferFullRecord ? undefined : selectedFields?.slice().sort();
