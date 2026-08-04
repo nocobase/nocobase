@@ -522,7 +522,7 @@ export class LightExtensionRepoService {
       return await this.withTransaction(ctx.transaction, async (transaction) => {
         const repo = await this.lockInternalRepoForUpdate(input.repoId, { ...ctx, transaction });
         await this.assertRemoteSyncIdle(repo.vscRepoId, transaction);
-        const referenceCount = await this.countRepoReferences(input.repoId, transaction);
+        const referenceCount = await this.countBlockingRepoReferences(input.repoId, transaction);
 
         if (referenceCount > 0) {
           throw referenceExistsError(input.repoId, referenceCount);
@@ -550,10 +550,18 @@ export class LightExtensionRepoService {
           },
           transaction,
         });
-        const finalReferenceCount = await this.countRepoReferences(input.repoId, transaction);
+        const finalReferenceCount = await this.countBlockingRepoReferences(input.repoId, transaction);
         if (finalReferenceCount > 0) {
           throw referenceExistsError(input.repoId, finalReferenceCount);
         }
+
+        await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).destroy({
+          filter: {
+            repoId: input.repoId,
+            resolvedStatus: 'owner_missing',
+          },
+          transaction,
+        });
 
         await this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.repos).destroy({
           filterByTk: input.repoId,
@@ -576,7 +584,7 @@ export class LightExtensionRepoService {
     } catch (error) {
       if (error instanceof LightExtensionError && error.code === 'LIGHT_EXTENSION_REFERENCE_EXISTS') {
         const repo = await this.getInternalRepo(input.repoId, ctx);
-        const referenceCount = await this.countRepoReferences(input.repoId, ctx.transaction);
+        const referenceCount = await this.countBlockingRepoReferences(input.repoId, ctx.transaction);
         await this.recordDeleteBlockedByReferences(
           input.repoId,
           requestId,
@@ -588,7 +596,7 @@ export class LightExtensionRepoService {
         throw error;
       }
       if (isReferenceConstraintError(error)) {
-        const referenceCount = await this.countRepoReferences(input.repoId);
+        const referenceCount = await this.countBlockingRepoReferences(input.repoId);
         await this.recordDeleteBlockedByReferences(input.repoId, requestId, ctx, null, referenceCount, ctx.transaction);
         throw referenceExistsError(input.repoId, referenceCount);
       }
@@ -725,10 +733,11 @@ export class LightExtensionRepoService {
     );
   }
 
-  private async countRepoReferences(repoId: string, transaction?: Transaction): Promise<number> {
+  private async countBlockingRepoReferences(repoId: string, transaction?: Transaction): Promise<number> {
     return this.db.getRepository(LIGHT_EXTENSION_COLLECTIONS.references).count({
       filter: {
         repoId,
+        resolvedStatus: { $ne: 'owner_missing' },
       },
       transaction,
     });

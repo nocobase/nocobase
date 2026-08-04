@@ -205,7 +205,10 @@ describe('MoveSourceService', () => {
       const publishPreparedSave = vi.fn(async () => ({ repo, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
       const syncReferences = vi.fn(async () => undefined);
       const recordLifecycleEvent = vi.fn(async () => undefined);
-      const listEntries = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([movedEntry]);
+      const listEntries = vi
+        .fn()
+        .mockResolvedValueOnce([{ ...movedEntry, id: 'lee_existing_source_key', entryName: 'welcome-card' }])
+        .mockResolvedValueOnce([movedEntry]);
       const service = new MoveSourceService(
         {
           sequelize: {
@@ -242,7 +245,18 @@ describe('MoveSourceService', () => {
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.ts',
           version: 'v2',
-          files: [{ path: 'src/main.ts', content: 'return 1;' }],
+          files: [
+            { path: 'src/main.ts', content: 'return 1;' },
+            {
+              path: 'src/client/entry.json',
+              content: JSON.stringify({
+                schemaVersion: 1,
+                key: 'welcome-card',
+                description: 'Preserved source description',
+                icon: 'CodeOutlined',
+              }),
+            },
+          ],
           originBinding: {
             type: 'light-extension-entry',
             repoId: 'ler_origin',
@@ -278,6 +292,11 @@ describe('MoveSourceService', () => {
       } else {
         expect(descriptor).not.toHaveProperty('category');
       }
+      expect(descriptor).toMatchObject({
+        key: 'sales-kpi',
+        description: 'Preserved source description',
+        icon: 'CodeOutlined',
+      });
       expect(descriptor.settingsSchema).toEqual(originSettingsSchema);
       expect(getEntry).toHaveBeenCalledWith('lee_origin', expect.anything());
       expect(writeExternalBinding).toHaveBeenCalledWith({

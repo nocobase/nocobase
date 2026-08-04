@@ -806,13 +806,9 @@ function upsertEntryDescriptor(
   const descriptorPath = `${entryRoot}/entry.json`;
   const existing = files.find((file) => file.path === descriptorPath);
   const sourceDescriptor = existing ? parseEntryDescriptor(existing.content, descriptorPath) : {};
-  const sourceKey =
-    typeof sourceDescriptor.key === 'string' && LIGHT_EXTENSION_ENTRY_KEY_PATTERN.test(sourceDescriptor.key)
-      ? sourceDescriptor.key
-      : key;
   const descriptor: Record<string, unknown> = {
     schemaVersion: 1,
-    key: sourceKey,
+    key,
   };
   if (title) {
     descriptor.title = title;

@@ -288,7 +288,7 @@ describe('move source relocation', () => {
     ['js-field', 'src/client/js-fields', 'js-field'],
     ['js-action', 'src/client/js-actions', null],
     ['js-item', 'src/client/js-items', null],
-  ] as const)('preserves entry.json configuration when relocating %s', (kind, root, category) => {
+  ] as const)('overrides the source key when relocating %s', (kind, root, category) => {
     const settings = {
       enabled: { type: 'boolean', default: false },
       retryCount: { type: 'integer', default: 0 },
@@ -335,7 +335,7 @@ describe('move source relocation', () => {
     ]);
     expect(JSON.parse(files.find((file) => file.path.endsWith('/entry.json'))?.content || '{}')).toEqual({
       schemaVersion: 1,
-      key: 'old-key',
+      key: 'normalize-order',
       title: 'Normalize order',
       description: 'Keep this description',
       category: category || 'old-category',

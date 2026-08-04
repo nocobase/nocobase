@@ -439,6 +439,76 @@ describe('plugin-light-extension repo service', () => {
     expect(blockedLog?.get('reasonCode')).toBe('references_exist');
   });
 
+  it('deletes a repository with only owner-missing references and cleans those orphaned records', async () => {
+    const repo = await service.createRepo({ name: 'Orphaned Reference Repo' });
+    await app.db.getRepository('lightExtensionReferences').create({
+      values: {
+        repoId: repo.id,
+        entryId: 'lee_owner_missing',
+        kind: 'js-block',
+        ownerKind: 'flowModel.step',
+        ownerLocator: {
+          kind: 'flowModel.step',
+          modelUid: 'flow_owner_missing',
+          use: 'JSBlockModel',
+          stepPath: ['stepParams', 'jsSettings'],
+        },
+        ownerLocatorHash: 'owner_hash_missing',
+        resolvedStatus: 'owner_missing',
+      },
+    });
+
+    await expect(service.deleteRepo({ repoId: repo.id })).resolves.toMatchObject({ id: repo.id });
+    await expect(app.db.getRepository('lightExtensionReferences').count({ filter: { repoId: repo.id } })).resolves.toBe(
+      0,
+    );
+    await expect(app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).resolves.toBeNull();
+  });
+
+  it('keeps all references when an active and an owner-missing reference coexist', async () => {
+    const repo = await service.createRepo({ name: 'Mixed Reference Repo' });
+    const references = app.db.getRepository('lightExtensionReferences');
+    await references.create({
+      values: {
+        repoId: repo.id,
+        entryId: 'lee_active',
+        kind: 'js-block',
+        ownerKind: 'flowModel.step',
+        ownerLocator: {
+          kind: 'flowModel.step',
+          modelUid: 'flow_active',
+          use: 'JSBlockModel',
+          stepPath: ['stepParams', 'jsSettings'],
+        },
+        ownerLocatorHash: 'owner_hash_active',
+        resolvedStatus: 'active',
+      },
+    });
+    await references.create({
+      values: {
+        repoId: repo.id,
+        entryId: 'lee_owner_missing',
+        kind: 'js-block',
+        ownerKind: 'flowModel.step',
+        ownerLocator: {
+          kind: 'flowModel.step',
+          modelUid: 'flow_owner_missing',
+          use: 'JSBlockModel',
+          stepPath: ['stepParams', 'jsSettings'],
+        },
+        ownerLocatorHash: 'owner_hash_missing',
+        resolvedStatus: 'owner_missing',
+      },
+    });
+
+    await expect(service.deleteRepo({ repoId: repo.id })).rejects.toMatchObject({
+      code: 'LIGHT_EXTENSION_REFERENCE_EXISTS',
+      details: expect.objectContaining({ referenceCount: 1 }),
+    });
+    await expect(references.count({ filter: { repoId: repo.id } })).resolves.toBe(2);
+    await expect(app.db.getRepository('lightExtensionRepos').findOne({ filterByTk: repo.id })).resolves.toBeTruthy();
+  });
+
   it('deletes unreferenced light-extension metadata after archiving source storage', async () => {
     const repo = await service.createRepo({ name: 'Delete Demo' }, { requestId: 'req_delete_create' });
     const repoRecord = await app.db.getRepository('lightExtensionRepos').findOne({
