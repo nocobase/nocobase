@@ -225,6 +225,10 @@ export async function upsertManagedEnvFileValues(
   }
 
   const nextContent = upsertSimpleEnvContent(content, values);
+  if (nextContent === content) {
+    return envFilePath;
+  }
+
   await mkdir(path.dirname(envFilePath), { recursive: true });
   await writeFile(envFilePath, nextContent, 'utf8');
 

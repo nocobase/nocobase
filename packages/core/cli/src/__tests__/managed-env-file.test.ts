@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, expect, test } from 'vitest';
@@ -140,4 +140,32 @@ test('upsertManagedEnvFileValues appends a missing env value', async () => {
   await expect(readFile(envFilePath, 'utf8')).resolves.toBe(
     ['APP_DISCOVERY_ADAPTER=local', 'APP_CLIENT_ENTRY_MODE=modern-default', ''].join('\n'),
   );
+});
+
+test('upsertManagedEnvFileValues skips writing unchanged env content', async () => {
+  const root = await createTempRoot();
+  process.env.NB_CLI_ROOT = root;
+  const envFilePath = path.join(root, 'apps/local/.env');
+  const content = ['APP_DISCOVERY_ADAPTER=local', 'APP_CLIENT_ENTRY_MODE=modern-only', ''].join('\n');
+  await mkdir(path.dirname(envFilePath), { recursive: true });
+  await writeFile(envFilePath, content, 'utf8');
+  const before = await stat(envFilePath);
+
+  await expect(
+    upsertManagedEnvFileValues(
+      'local',
+      {
+        kind: 'local',
+        appPath: './apps/local',
+      },
+      {
+        APP_CLIENT_ENTRY_MODE: 'modern-only',
+      },
+    ),
+  ).resolves.toBe(envFilePath);
+
+  await expect(readFile(envFilePath, 'utf8')).resolves.toBe(content);
+  await expect(stat(envFilePath)).resolves.toMatchObject({
+    mtimeMs: before.mtimeMs,
+  });
 });

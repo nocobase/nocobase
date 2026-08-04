@@ -766,6 +766,7 @@ export default class Install extends Command {
         type: 'text',
         message: installText('prompts.portalTemplate.message'),
         placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        initialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
         yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
         required: true,
       },

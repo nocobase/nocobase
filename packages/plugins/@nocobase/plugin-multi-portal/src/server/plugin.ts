@@ -149,7 +149,14 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
-type MultiPortalSeedType = 'no-code' | 'ai';
+const MULTI_PORTAL_SEED_TYPES = ['no-code', 'ai'] as const;
+type MultiPortalSeedType = (typeof MULTI_PORTAL_SEED_TYPES)[number];
+const MULTI_PORTAL_SEED_TYPE_SET = new Set<string>(MULTI_PORTAL_SEED_TYPES);
+
+function isMultiPortalSeedType(value: unknown): value is MultiPortalSeedType {
+  return typeof value === 'string' && MULTI_PORTAL_SEED_TYPE_SET.has(value);
+}
+
 type DefaultMultiPortalRecord = {
   uid: string;
   title: string;
@@ -250,6 +257,10 @@ function trimString(value: unknown) {
 
 function getInitPortalTemplate() {
   return trimString(process.env.INIT_PORTAL_TEMPLATE) || DEFAULT_INIT_PORTAL_TEMPLATE;
+}
+
+function hasDeprecatedInitPortalEnv() {
+  return Boolean(trimString(process.env.INIT_PORTAL_TYPE) || trimString(process.env.INIT_PORTAL_NAME));
 }
 
 function getDefaultAiMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
@@ -2745,12 +2756,12 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
 
 const DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS = ['uid', 'portalType', 'routePath'] as const;
 
-function getDefaultMultiPortalType(record: Model): InitPortalType | null {
+function getDefaultMultiPortalType(record: Model): MultiPortalSeedType | null {
   const portalType = record.get('portalType');
   if (portalType === null || portalType === undefined) {
     return 'no-code';
   }
-  return typeof portalType === 'string' && isInitPortalType(portalType) ? portalType : null;
+  return isMultiPortalSeedType(portalType) ? portalType : null;
 }
 
 function pickDefaultMultiPortalFields(record: Model) {
@@ -3026,6 +3037,7 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
 export class PluginMultiPortalServer extends Plugin {
   private portalStorageTaskKeys = new Set<string>();
   private portalStorageTasks = new Map<string, Promise<void>>();
+  private deprecatedInitPortalEnvWarningEmitted = false;
 
   async afterAdd() {}
 
@@ -3681,6 +3693,13 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async install() {
+    if (!this.deprecatedInitPortalEnvWarningEmitted && hasDeprecatedInitPortalEnv()) {
+      this.deprecatedInitPortalEnvWarningEmitted = true;
+      this.app.logger?.warn?.(
+        'INIT_PORTAL_TYPE and INIT_PORTAL_NAME are deprecated and no longer affect multi-portal seeding; NocoBase now creates the AI Portal "main" plus the fixed no-code "admin" and "mobile" portals by default.',
+      );
+    }
+
     const version = await this.app.version.get();
     if (!version) {
       await ensureDefaultRoleMultiPortalAccess(this.db);

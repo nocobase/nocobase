@@ -877,7 +877,11 @@ describe('plugin-multi-portal server', () => {
   it('should allow ordinary portals to use admin and mobile route names', async () => {
     app = await createMultiPortalAclMockServer();
     const repository = app.db.getRepository('multiPortals');
-    await repository.destroy({ filterByTk: '__default_portal__' });
+    await repository.destroy({
+      filter: {
+        uid: ['__default_admin__', '__default_mobile__', '__default_portal__'],
+      },
+    });
     const rootUser = await app.db.getRepository('users').findOne({
       filter: {
         'roles.name': 'root',
@@ -1190,8 +1194,12 @@ describe('plugin-multi-portal server', () => {
     expect(await app.version.get()).toBeNull();
     process.env.INIT_PORTAL_TYPE = 'invalid';
     process.env.INIT_PORTAL_NAME = 'Admin';
+    const loggerWarnSpy = vi.spyOn(app.logger, 'warn');
 
     await expect(plugin.install()).resolves.toBeUndefined();
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      'INIT_PORTAL_TYPE and INIT_PORTAL_NAME are deprecated and no longer affect multi-portal seeding; NocoBase now creates the AI Portal "main" plus the fixed no-code "admin" and "mobile" portals by default.',
+    );
     expect(
       (await app.db.getRepository('multiPortals').findOne({ filterByTk: '__default_portal__' }))?.toJSON(),
     ).toMatchObject({
@@ -1260,6 +1268,22 @@ describe('plugin-multi-portal server', () => {
       plugins: ['ui-layout', 'multi-portal'],
     });
     await app.db.sync();
+    const defaultAdminManifestItem = {
+      uid: '__default_admin__',
+      title: 'Desktop layout',
+      icon: 'DesktopOutlined',
+      portalType: 'no-code',
+      routePath: '/admin',
+      layout: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
+    };
+    const defaultMobileManifestItem = {
+      uid: '__default_mobile__',
+      title: 'Mobile layout',
+      icon: 'MobileOutlined',
+      portalType: 'no-code',
+      routePath: '/mobile',
+      layout: DEFAULT_MOBILE_UI_LAYOUT.layoutType,
+    };
     const defaultManifestItem = {
       uid: '__default_portal__',
       title: 'Main',
@@ -1324,6 +1348,8 @@ describe('plugin-multi-portal server', () => {
     };
 
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
+      defaultAdminManifestItem,
+      defaultMobileManifestItem,
       defaultManifestItem,
       {
         uid: 'manifest-customer-portal',
@@ -1340,6 +1366,8 @@ describe('plugin-multi-portal server', () => {
       enabled: false,
     });
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
+      defaultAdminManifestItem,
+      defaultMobileManifestItem,
       defaultManifestItem,
       mobileManifestItem,
     ]);
@@ -1349,6 +1377,8 @@ describe('plugin-multi-portal server', () => {
     });
     await customerPortal.destroy();
     await expect(AppSupervisor.getInstance().getAppManifestItems(app.name, 'multi-portal')).resolves.toEqual([
+      defaultAdminManifestItem,
+      defaultMobileManifestItem,
       defaultManifestItem,
       mobileManifestItem,
     ]);
@@ -2096,6 +2126,7 @@ describe('plugin-multi-portal server', () => {
 
     const agent = app.agent();
     const repository = app.db.getRepository('multiPortals');
+    await repository.destroy({ filterByTk: '__default_mobile__' });
     const createResponse = await agent.resource('multiPortals').create({
       values: {
         uid: 'matching-mobile-layout-route-portal',
@@ -4767,12 +4798,18 @@ describe('plugin-multi-portal server', () => {
       'accessible-beta-portal',
       'accessible-gamma-portal',
     ]);
-    expect(roleAPortals.map((portal) => portal.uid).sort()).toEqual(['accessible-alpha-portal']);
+    expect(roleAPortals.map((portal) => portal.uid).sort()).toEqual([
+      '__default_admin__',
+      '__default_mobile__',
+      'accessible-alpha-portal',
+    ]);
     expect(unionPortals.map((portal) => portal.uid).sort()).toEqual([
+      '__default_admin__',
+      '__default_mobile__',
       'accessible-alpha-portal',
       'accessible-beta-portal',
     ]);
-    expect(noAccessPortals).toEqual([]);
+    expect(noAccessPortals.map((portal) => portal.uid).sort()).toEqual(['__default_admin__', '__default_mobile__']);
     for (const portal of [...rootPortals, ...roleAPortals, ...unionPortals]) {
       expect(portal.enabled).toBe(true);
       expect(Object.keys(portal).sort()).toEqual([...MULTI_PORTAL_ACCESSIBLE_FIELDS].sort());
