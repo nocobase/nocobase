@@ -24,7 +24,6 @@ import {
   isOauthAccessTokenExpired,
   resolveServerRequestTarget,
   resolveAccessToken,
-  resolveDeviceVerificationUrlForApiBaseUrl,
   setOauthBrowserOpenerForTests,
 } from '../lib/env-auth.js';
 
@@ -143,68 +142,6 @@ test('isOauthAccessTokenExpired uses a refresh window', () => {
       now,
     ),
   ).toBe(false);
-});
-
-test('resolveDeviceVerificationUrlForApiBaseUrl aligns device URLs with api public paths', () => {
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB',
-      'http://localhost:56187/nocobase/api',
-    ),
-  ).toBe('http://localhost:56187/nocobase/settings/idpOAuth/device?user_code=ZMVQ-MBLB');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api/__app/a_b6hhu8n6qnr',
-    ),
-  ).toBe('http://localhost:56187/nocobase/settings/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/nocobase/settings/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api/__app/a_b6hhu8n6qnr',
-    ),
-  ).toBe('http://localhost:56187/nocobase/settings/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'https://provider.example.com/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api',
-    ),
-  ).toBe('https://provider.example.com/device?user_code=WDQQ-PFCZ');
-});
-
-test('resolveDeviceVerificationUrlForApiBaseUrl keeps legacy entry device URLs out of settings', () => {
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB',
-      'http://localhost:56187/api',
-      {
-        appClientEntryMode: 'legacy-default',
-      },
-    ),
-  ).toBe('http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/settings/idpOAuth/device?user_code=ZMVQ-MBLB',
-      'http://localhost:56187/api',
-      {
-        appClientEntryMode: 'legacy-default',
-      },
-    ),
-  ).toBe('http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB',
-      'http://localhost:56187/nocobase/api',
-      {
-        downloadVersion: 'latest',
-      },
-    ),
-  ).toBe('http://localhost:56187/nocobase/idpOAuth/device?user_code=ZMVQ-MBLB');
 });
 
 test('authenticateEnvWithBasic exchanges basic credentials for a token', async () => {
@@ -464,7 +401,7 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
         });
         expect(tokenAttempts).toBe(2);
         expect(openedUrls).toEqual([
-          'http://localhost:13000/base/settings/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH',
+          'http://localhost:13000/settings/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH',
         ]);
       } finally {
         globalThis.fetch = originalFetch;
@@ -474,7 +411,7 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
   });
 });
 
-test('authenticateEnvWithOauth opens the legacy device page for latest envs', async () => {
+test('authenticateEnvWithOauth opens the server-provided device verification URL', async () => {
   await withOauthDevicePollDelay('0', async () => {
     await withTempCliHome(async () => {
       await saveAuthConfig(
@@ -483,8 +420,6 @@ test('authenticateEnvWithOauth opens the legacy device page for latest envs', as
           envs: {
             test: {
               baseUrl: 'http://localhost:13000/api',
-              downloadVersion: 'latest',
-              appClientEntryMode: 'legacy-default',
             },
           },
         },

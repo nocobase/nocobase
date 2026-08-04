@@ -21,11 +21,6 @@ import {
   type AuthStoreOptions,
   type OauthAuthConfig,
 } from './auth-store.js';
-import {
-  defaultAppClientEntryModeForDownloadVersion,
-  normalizeAppClientEntryMode,
-  type AppClientEntryMode,
-} from './app-client-entry-mode.js';
 import { printInfo, printVerbose, printWarning, printWarningBlock, stopTask, updateTask } from './ui.js';
 
 const ACCESS_TOKEN_REFRESH_WINDOW_MS = 60_000;
@@ -65,64 +60,6 @@ interface OauthDeviceAuthorizationResponse {
 
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.replace(/\/+$/, '');
-}
-
-function shouldUseSettingsDevicePath(options: DeviceVerificationUrlOptions | undefined) {
-  const appClientEntryMode =
-    normalizeAppClientEntryMode(options?.appClientEntryMode) ??
-    defaultAppClientEntryModeForDownloadVersion(options?.downloadVersion);
-  return appClientEntryMode !== 'legacy-default';
-}
-
-interface DeviceVerificationUrlOptions {
-  appClientEntryMode?: AppClientEntryMode;
-  downloadVersion?: string;
-}
-
-function buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl: string, options?: DeviceVerificationUrlOptions) {
-  const url = new URL(apiBaseUrl);
-  const useSettingsPath = shouldUseSettingsDevicePath(options);
-  const subappMatch = url.pathname.match(/^(.*)\/api\/__app\/([^/]+)\/?$/);
-  if (subappMatch) {
-    const publicPath = (subappMatch[1] || '').replace(/\/+$/, '');
-    return useSettingsPath
-      ? `${publicPath}/settings/apps/${subappMatch[2]}/idpOAuth/device`
-      : `${publicPath}/apps/${subappMatch[2]}/idpOAuth/device`;
-  }
-
-  const appMatch = url.pathname.match(/^(.*)\/api\/?$/);
-  if (appMatch) {
-    const publicPath = (appMatch[1] || '').replace(/\/+$/, '');
-    return useSettingsPath ? `${publicPath}/settings/idpOAuth/device` : `${publicPath}/idpOAuth/device`;
-  }
-
-  return undefined;
-}
-
-export function resolveDeviceVerificationUrlForApiBaseUrl(
-  verificationUrl: string,
-  apiBaseUrl: string,
-  options?: DeviceVerificationUrlOptions,
-) {
-  try {
-    const devicePath = buildDeviceVerificationPathFromApiBaseUrl(apiBaseUrl, options);
-    if (!devicePath) {
-      return verificationUrl;
-    }
-
-    const originalUrl = new URL(verificationUrl);
-    if (!originalUrl.pathname.endsWith('/idpOAuth/device')) {
-      return verificationUrl;
-    }
-
-    const publicUrl = new URL(apiBaseUrl);
-    publicUrl.pathname = devicePath;
-    publicUrl.search = originalUrl.search;
-    publicUrl.hash = originalUrl.hash;
-    return publicUrl.toString();
-  } catch {
-    return verificationUrl;
-  }
 }
 
 export function getOauthMetadataUrl(baseUrl: string) {
@@ -1365,8 +1302,6 @@ async function authenticateEnvWithOauthDevice(options: {
   envName: string;
   baseUrl: string;
   metadata: OauthServerMetadata;
-  appClientEntryMode?: AppClientEntryMode;
-  downloadVersion?: string;
   scope?: AuthStoreOptions['scope'];
 }) {
   const resource = getOauthResource(options.metadata.issuer);
@@ -1389,14 +1324,7 @@ async function authenticateEnvWithOauthDevice(options: {
     });
 
     stopTask();
-    const verificationUrl = resolveDeviceVerificationUrlForApiBaseUrl(
-      deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri,
-      options.baseUrl,
-      {
-        appClientEntryMode: options.appClientEntryMode,
-        downloadVersion: options.downloadVersion,
-      },
-    );
+    const verificationUrl = deviceAuthorization.verification_uri_complete || deviceAuthorization.verification_uri;
     const browser = await browserOpener(verificationUrl);
     cleanupBrowserOpenTarget = browser.cleanup;
     if (!browser.opened) {
@@ -1581,8 +1509,6 @@ export async function authenticateEnvWithOauth(options: {
       envName,
       baseUrl,
       metadata,
-      appClientEntryMode: env.config.appClientEntryMode,
-      downloadVersion: env.config.downloadVersion,
       scope: options.scope,
     });
     return;

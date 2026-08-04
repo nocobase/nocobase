@@ -113,7 +113,8 @@ function escapeHtmlText(value: unknown) {
 }
 
 function shouldUseSettingsDevicePath() {
-  return String(process.env.APP_CLIENT_ENTRY_MODE ?? '').trim() !== 'legacy-default';
+  const appClientEntryMode = String(process.env.APP_CLIENT_ENTRY_MODE ?? '').trim();
+  return ['modern-only', 'modern-default', 'settings-default'].includes(appClientEntryMode);
 }
 
 function renderDevicePage(options: {

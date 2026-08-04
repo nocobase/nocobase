@@ -83,6 +83,15 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(service.getFrontendDevicePath('demo')).toBe('/nocobase/apps/demo/idpOAuth/device');
   });
 
+  test('should build legacy frontend device paths when client entry mode is not configured', () => {
+    process.env.API_BASE_PATH = '/nocobase/api';
+    delete process.env.APP_CLIENT_ENTRY_MODE;
+    delete process.env.APP_PUBLIC_PATH;
+    const service = new IdpOauthService({} as any, {} as any);
+
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
+  });
+
   test('should build frontend paths without apps prefix in single mode', () => {
     const service = new IdpOauthService({} as any, {} as any);
     vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
