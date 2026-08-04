@@ -10,6 +10,8 @@
 import { ChildPageTabModel, RootPageTabModel, type ChildPageModel, type RootPageModel } from '@nocobase/client-v2';
 import type { CreateModelOptions } from '@nocobase/flow-engine';
 import { MobileChildPageModel, MobileLayoutModel, MobileRootPageModel } from '@nocobase/plugin-ui-layout/client-v2';
+import React from 'react';
+import { MultiPortalLayoutAccessBoundary } from '../PortalAccessBoundary';
 
 type RouteWithOwnership = Record<string, unknown> & {
   multiPortals?: unknown;
@@ -134,7 +136,12 @@ function normalizePortalTabRouteOwnership(model: RootPageTabModel | ChildPageTab
   model.setProps('route', withoutRouteOwnership(model.props.route));
 }
 
-export class MultiPortalMobileLayoutModel extends MobileLayoutModel {}
+export class MultiPortalMobileLayoutModel extends MobileLayoutModel {
+  render() {
+    const renderAllowed = () => super.render();
+    return <MultiPortalLayoutAccessBoundary portalUid={this.layout.uid} renderAllowed={renderAllowed} />;
+  }
+}
 
 export class MultiPortalMobileRootPageModel extends MobileRootPageModel {
   constructor(options: ConstructorParameters<typeof MobileRootPageModel>[0]) {

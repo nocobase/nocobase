@@ -85,6 +85,9 @@ const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
 const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
+const PORTAL_ACCESS_DENIED_CODE = 'PORTAL_ACCESS_DENIED';
+const PORTAL_CONTEXT_INVALID_CODE = 'PORTAL_CONTEXT_INVALID';
+const PORTAL_NOT_FOUND_CODE = 'PORTAL_NOT_FOUND';
 const INIT_PORTAL_TYPES = ['no-code', 'ai'] as const;
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
@@ -1581,6 +1584,79 @@ async function canAccessMultiPortal(ctx: ResourcerContext, multiPortalUid: strin
     },
   });
   return count > 0;
+}
+
+function throwPortalAccessGateError(ctx: ResourcerContext, status: number, code: string, message: string): never {
+  ctx.throw(status, ctx.t(message, { ns: NAMESPACE }), { code });
+  throw new Error(message);
+}
+
+function getRequestedPortalNameFromHeader(ctx: ResourcerContext) {
+  const headers = ctx.request?.headers;
+  if (!isRecordLike(headers) || !Object.prototype.hasOwnProperty.call(headers, 'x-portal')) {
+    return;
+  }
+
+  const portalName = headers['x-portal'];
+  if (typeof portalName !== 'string' || !MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
+    throwPortalAccessGateError(ctx, 400, PORTAL_CONTEXT_INVALID_CODE, 'Invalid Portal context');
+  }
+  return portalName;
+}
+
+function pickPortalAccessDeniedData(ctx: ResourcerContext, portalName: string) {
+  const roleCheckBody = isRecordLike(ctx.body) ? ctx.body : {};
+  return {
+    portalName,
+    role: typeof roleCheckBody.role === 'string' ? roleCheckBody.role : '',
+    roles: Array.isArray(roleCheckBody.roles)
+      ? roleCheckBody.roles.filter((role): role is string => typeof role === 'string')
+      : [],
+    roleMode: typeof roleCheckBody.roleMode === 'string' ? roleCheckBody.roleMode : 'default',
+    allowAnonymous: roleCheckBody.allowAnonymous === true,
+  };
+}
+
+async function checkMultiPortalAccessForRolesCheck(ctx: ResourcerContext, next: () => Promise<void>) {
+  const portalName = getRequestedPortalNameFromHeader(ctx);
+  if (portalName === undefined) {
+    await next();
+    return;
+  }
+
+  const portal = await ctx.db.getRepository('multiPortals').findOne({
+    filter: {
+      portalName,
+    },
+    fields: ['uid', 'portalType', 'enabled', 'uiLayoutUid'],
+  });
+  if (
+    !portal ||
+    portal.get('enabled') !== true ||
+    !getDefaultMultiPortalType(portal) ||
+    !isMultiPortalUiLayoutUid(portal.get('uiLayoutUid'))
+  ) {
+    throwPortalAccessGateError(ctx, 404, PORTAL_NOT_FOUND_CODE, 'Portal not found');
+  }
+
+  const portalUid = String(portal.get('uid'));
+  if (isDefaultLayoutMultiPortalUid(portalUid) || (await canAccessMultiPortal(ctx, portalUid))) {
+    await next();
+    return;
+  }
+
+  await next();
+  ctx.status = 403;
+  ctx.withoutDataWrapping = true;
+  ctx.body = {
+    errors: [
+      {
+        code: PORTAL_ACCESS_DENIED_CODE,
+        message: ctx.t('You do not have access to this Portal', { ns: NAMESPACE }),
+      },
+    ],
+    data: pickPortalAccessDeniedData(ctx, portalName),
+  };
 }
 
 async function listCurrentRoleAccessibleMultiPortalUids(ctx: ResourcerContext) {
@@ -3596,6 +3672,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   async beforeLoad() {
     this.app.db.registerRepositories({ MultiPortalDesktopRouteRepository });
+    this.app.resourceManager.registerPreActionHandler('roles:check', checkMultiPortalAccessForRolesCheck);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:list', addDesktopRouteEffectiveScopeFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:get', addDesktopRouteEffectiveScopeFilter);
     this.app.resourceManager.registerPreActionHandler(

@@ -44,11 +44,10 @@ type MultiPortalRegistrationApp = {
   layoutManager: Pick<Application['layoutManager'], 'hasLayout' | 'listLayouts' | 'registerLayout'>;
 };
 
-const ADMIN_LAYOUT_MODEL_CLASS = 'AdminLayoutModel';
+const MULTI_PORTAL_DESKTOP_LAYOUT_MODEL_CLASS = 'MultiPortalDesktopLayoutModel';
 const MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS = 'MultiPortalMobileLayoutModel';
 const MULTI_PORTAL_MOBILE_ROOT_PAGE_MODEL_CLASS = 'MultiPortalMobileRootPageModel';
 const MULTI_PORTAL_MOBILE_CHILD_PAGE_MODEL_CLASS = 'MultiPortalMobileChildPageModel';
-const MOBILE_LAYOUT_MODEL_CLASS = 'MobileLayoutModel';
 const MOBILE_ROOT_PAGE_MODEL_CLASS = 'MobileRootPageModel';
 const MOBILE_CHILD_PAGE_MODEL_CLASS = 'MobileChildPageModel';
 const MULTI_PORTAL_LAYOUT_ROUTE_NAME_PREFIX = 'multiPortalLayout_';
@@ -58,7 +57,7 @@ const layoutRegisterOptionsByUid: Record<
   Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>
 > = {
   [ADMIN_UI_LAYOUT_UID]: {
-    layoutModelClass: ADMIN_LAYOUT_MODEL_CLASS,
+    layoutModelClass: MULTI_PORTAL_DESKTOP_LAYOUT_MODEL_CLASS,
   },
   [MOBILE_UI_LAYOUT_UID]: {
     layoutModelClass: MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS,
@@ -68,7 +67,7 @@ const layoutRegisterOptionsByUid: Record<
 };
 
 const layoutModeMobileRegisterOptions = {
-  layoutModelClass: MOBILE_LAYOUT_MODEL_CLASS,
+  layoutModelClass: MULTI_PORTAL_MOBILE_LAYOUT_MODEL_CLASS,
   rootPageModelClass: MOBILE_ROOT_PAGE_MODEL_CLASS,
   childPageModelClass: MOBILE_CHILD_PAGE_MODEL_CLASS,
 } satisfies Pick<LayoutRegisterOptions, 'layoutModelClass' | 'rootPageModelClass' | 'childPageModelClass'>;
