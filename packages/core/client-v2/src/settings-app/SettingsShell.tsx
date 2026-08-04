@@ -18,6 +18,7 @@ import {
 } from '../flow/models/topbar/UserCenterTopbarActionModel';
 import { useApp } from '../hooks/useApp';
 import { useCurrentUserAuthStatus } from '../nocobase-buildin-plugin/currentUserAuthStatus';
+import { addCustomAlgorithmToTheme } from '../theme/customAlgorithm';
 import { SettingsBrand } from './SettingsBrand';
 import { SettingsGroupNav } from './SettingsGroupNav';
 import { SettingsSearch } from './SettingsSearch';
@@ -79,17 +80,31 @@ export const SettingsShell: FC = ({ children }) => {
   const { token } = antdTheme.useToken();
   // 设置中心的外观由主题编辑器里那条「简约」主题记录约束；读不到才用代码里的中性配色兜底。
   const storedThemeConfig = useSettingsThemeConfig();
+  const normalizedStoredThemeConfig = useMemo(
+    () =>
+      storedThemeConfig
+        ? addCustomAlgorithmToTheme({
+            ...storedThemeConfig,
+            algorithm: Array.isArray(storedThemeConfig.algorithm)
+              ? [...storedThemeConfig.algorithm]
+              : storedThemeConfig.algorithm,
+          })
+        : storedThemeConfig,
+    [storedThemeConfig],
+  );
   // 顶栏和补丁样式要按**设置中心自己这套主题**算色，不能直接用上面那个 `token`——
   // 这个组件在自己的 ConfigProvider 外面，`token` 是业务端主题的。用它的话，业务端一切暗黑，
   // 顶栏就跟着变黑，而内容区还是简约的白，一半黑一半白。
   const settingsToken = useMemo(
-    () => (storedThemeConfig ? antdTheme.getDesignToken(storedThemeConfig) : token),
-    [storedThemeConfig, token],
+    () => (normalizedStoredThemeConfig ? antdTheme.getDesignToken(normalizedStoredThemeConfig) : token),
+    [normalizedStoredThemeConfig, token],
   );
   const settingsShellTheme = useMemo<ThemeConfig>(
     () =>
-      storedThemeConfig ? withSettingsHeaderTheme(storedThemeConfig, settingsToken) : buildSettingsNeutralTheme(token),
-    [settingsToken, storedThemeConfig, token],
+      normalizedStoredThemeConfig
+        ? withSettingsHeaderTheme(normalizedStoredThemeConfig, settingsToken)
+        : buildSettingsNeutralTheme(token),
+    [normalizedStoredThemeConfig, settingsToken, token],
   );
   const headerColors = useMemo(() => getSettingsHeaderColors(settingsToken), [settingsToken]);
   const settingsGlobalCss = useMemo(() => buildSettingsGlobalCss(settingsToken), [settingsToken]);

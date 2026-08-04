@@ -8,7 +8,7 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, theme as antdTheme } from 'antd';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,7 @@ import type { ThemeConfig } from '../theme';
 const userCenterModel = { uid: 'settings-user-center' };
 const createModel = vi.fn(() => userCenterModel);
 const matchRoutes = vi.fn(() => [{ route: { id: 'settings' } }]);
+let settingsThemeConfig: ThemeConfig | null = null;
 const mockApp = {
   flowEngine: {
     createModel,
@@ -46,6 +47,10 @@ vi.mock('../settings-app/SettingsSearch', () => ({
   SettingsSearch: () => <div data-testid="settings-search">search</div>,
 }));
 
+vi.mock('../settings-app/useSettingsThemeConfig', () => ({
+  useSettingsThemeConfig: () => settingsThemeConfig,
+}));
+
 vi.mock('../flow/admin-shell/admin-layout/HelpLite', () => ({
   HelpLite: () => <div data-testid="settings-help">help</div>,
 }));
@@ -60,8 +65,15 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+const TokenProbe = () => {
+  const { token } = antdTheme.useToken();
+
+  return <div data-testid="settings-theme-token">{`${token.marginBlock}:${token.sizeLG}`}</div>;
+};
+
 describe('SettingsShell', () => {
   beforeEach(() => {
+    settingsThemeConfig = null;
     createModel.mockClear();
     matchRoutes.mockReset();
     matchRoutes.mockReturnValue([{ route: { id: 'settings' } }]);
@@ -109,6 +121,20 @@ describe('SettingsShell', () => {
 
     // 主题编辑器里的深色顶栏只作用于业务端；设置中心固定用容器底色。
     expect(screen.getByRole('banner')).toHaveStyle({ background: '#ffffff' });
+  });
+
+  it('preserves NocoBase custom tokens in the stored compact theme', () => {
+    settingsThemeConfig = { algorithm: antdTheme.compactAlgorithm };
+
+    render(
+      <MemoryRouter initialEntries={['/settings/system-settings']}>
+        <SettingsShell>
+          <TokenProbe />
+        </SettingsShell>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId('settings-theme-token')).toHaveTextContent('16:16');
   });
 
   it('places the settings content and embed container side by side below the header', () => {
