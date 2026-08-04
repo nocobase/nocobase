@@ -6,7 +6,6 @@ keywords: "AI Portal 搭建,AI 搭建,AI Portal,NocoBase AI,NocoBase 基座,前�
 
 # AI Portal 搭建快速开始
 
-
 我们发现，AI vibe coding 可能能够写出一个很好看的页面，但是不容易把实际业务系统对接起来，或者需要从头实现一个系统的认证、权限、数据表设计等基础能力。
 
 NocoBase 作为一个低代码/无代码平台，已经提供了这些基础能力的实现。你可以把它当作一个系统内核的基座，让 AI Agent 专注于写业务逻辑，而 NocoBase 负责提供可靠的认证、数据库、API 和权限等基础设施。

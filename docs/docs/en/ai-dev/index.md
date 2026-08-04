@@ -25,7 +25,7 @@ Help me install NocoBase CLI and complete initialization: https://docs.nocobase.
 ### Manual Installation
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ Detailed descriptions and sample prompts for each capability -> [Supported Capab
 - [NocoBase CLI](../ai/quick-start.md) -- Command-line tool for installing and managing NocoBase
 - [NocoBase CLI Reference](../api/cli/index.md) -- Complete parameter documentation for all commands
 - [Plugin Development](../plugin-development/index.md) -- The complete guide to NocoBase plugin development
+- [AI Portal](../ai-builder/ai-portal/index.md) -- Have AI write frontend pages. A plugin extends NocoBase itself; a Portal builds a standalone entry on top of those capabilities
 - [AI Builder](../ai-builder/index.md) -- Build NocoBase applications with AI (no coding required)

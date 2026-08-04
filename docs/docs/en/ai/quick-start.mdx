@@ -25,6 +25,7 @@ Before getting started, make sure the following environment requirements are met
 
 - Node.js >= 22
 - Yarn 1.x
+- pnpm (only needed when developing an [AI Portal](../ai-builder/ai-portal/index.md), where the Portal template uses it to install dependencies and start the dev server)
 - We recommend using AI Agents powered by leading large models such as Claude or GPT. Results depend heavily on the model used — for the best experience, choose the latest flagship model available.
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -41,7 +42,7 @@ If you don't have a NocoBase application yet, you can use CLI to install and ini
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Confirm successful installation
 ```
 
@@ -100,7 +101,7 @@ If you already have a running NocoBase instance, you can connect AI Agent to it 
 #### Step 1: Install CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Confirm successful installation
 ```
 
@@ -145,6 +146,10 @@ After configuration is complete, restart your AI Agent session and you can start
 
 ## What's Next
 
+### Start AI Building
+
+Describe your requirements in natural language, and AI helps you complete data modeling, page building, and workflow orchestration — replace manual configuration with conversation, no coding required. See [AI Building Quick Start](../ai-builder/index.md#replace-manual-configuration-with-conversation).
+
 ### Production Installation and Deployment
 
 If you're preparing to deploy NocoBase to production, this order usually works best:
@@ -155,10 +160,6 @@ If you're preparing to deploy NocoBase to production, this order usually works b
 ### Manage Application Environments
 
 If you need to manage existing NocoBase instances (such as test or production environments), or switch between multiple environments, see [Environment Management](../ai-builder/env-bootstrap) — covering environment checks, adding environments, upgrades, and troubleshooting.
-
-### Start AI Building
-
-Describe your requirements in natural language, and AI helps you complete data modeling, page building, and workflow orchestration — replace manual configuration with conversation. See [AI Building Quick Start](../ai-builder/index.md#replace-manual-configuration-with-conversation).
 
 ### Continue with AI Plugin Development
 
@@ -174,6 +175,7 @@ If you already have a NocoBase application running, or have successfully complet
 
 ## Related Links
 
+- [AI Portal](../ai-builder/ai-portal/index.md) — Have the AI Agent write frontend code with NocoBase as the foundation, and build a complete system
 - [AI Building](../ai-builder/index.md) — Build NocoBase applications from scratch with AI
 - [AI Plugin Development](../ai-dev/index.md) — Develop NocoBase plugins with AI assistance
 - [AI Employees](../ai-employees/index.md) — Collaborate with AI in the business interface

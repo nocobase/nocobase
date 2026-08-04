@@ -1,12 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a portal in development mode."
+description: "nb portal dev command reference: start development mode for a Portal's local source directory."
 keywords: "nb portal dev,NocoBase CLI,Portal"
 ---
 
 # nb portal dev
 
-Start development mode for the specified portal
+Start development mode for the specified Portal's local source directory. It is normally used after [`nb portal create`](./create.md) or [`nb portal pull`](./pull.md).
+
+It refreshes `.env` and `.env.local` in the local source directory, then runs `pnpm dev` there.
 
 ## Usage
 
@@ -31,7 +33,9 @@ nb portal dev customer --env dev --yes
 
 ## Notes
 
-The workspace must contain `package.json`. The command refreshes `.env` and `.env.local`, then runs `pnpm dev`. `ssh` envs are not supported in the current version.
+`dev` starts the dev server from the Portal's local source directory. It doesn't create a Portal record, and it doesn't pull remote source; if the local source directory doesn't exist, use [`nb portal create`](./create.md) or [`nb portal pull`](./pull.md) first.
+
+The local source directory must contain `package.json`. `ssh` envs don't support starting Portal development mode yet.
 
 ## Related Commands
 

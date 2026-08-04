@@ -148,7 +148,6 @@ NocoBase 默认提供了一个 **AI Portal** 和一个 **无代码 Portal**，�
 
 想了解更多界面配置的用法，请参阅 [界面配置](./ui-builder) 或 [AI Portal 搭建](./ai-portal/index.md)。
 
-
 ## 安全与审计
 
 在让 AI Agent 操作 NocoBase 之前，建议先了解鉴权方式、权限控制和操作审计——确保 AI 只做该做的事，每一步都有记录。请参阅 [安全与审计](./security)。
