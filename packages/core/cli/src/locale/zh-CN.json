@@ -468,7 +468,7 @@
           "betaLabel": "beta",
           "betaHint": "测试版。包含即将发布的新功能，适合提前体验和反馈。",
           "alphaLabel": "alpha",
-          "alphaHint": "开发版。功能更新最快，但可能不完整或不稳定。",
+          "alphaHint": "如果要体验 3.0 新功能，选择这个版本。",
           "otherLabel": "其他",
           "otherHint": "手动填写其他版本号、Docker tag 或 Git ref，例如分支名。"
         },
