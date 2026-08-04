@@ -15,7 +15,6 @@ import {
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
   FlowSettingsButton,
-  getAssociationFilterByTk,
   tExpr,
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
@@ -103,16 +102,6 @@ export class FormBlockModel<
     if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
       resource.addUpdateAssociationValues(updateAssociationValues);
     }
-  }
-
-  private getConfiguredFormValueFieldNames() {
-    const names = new Set<string>();
-    for (const item of this.subModels.grid?.subModels?.items ?? []) {
-      const fieldPath = item?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-      const name = fieldPath?.toString().split('.')[0];
-      if (name) names.add(name);
-    }
-    return names;
   }
 
   renderConfigureActions() {
@@ -299,10 +288,7 @@ export class FormBlockModel<
     return createAssociationAwareObjectMetaFactory(
       () => this.collection,
       this.translate('Current form'),
-      () => {
-        const values = this.form?.getFieldsValue?.() || {};
-        return Object.fromEntries([...this.getConfiguredFormValueFieldNames()].map((name) => [name, values[name]]));
-      },
+      () => this.form?.getFieldsValue?.() || {},
     );
   }
 
@@ -345,7 +331,18 @@ export class FormBlockModel<
         const field = this.collection?.getField?.(top);
         if (!field) return false;
 
-        const isConfiguredField = this.getConfiguredFormValueFieldNames().has(top);
+        const getActiveTopLevelFieldNames = (): Set<string> => {
+          const items = this.subModels.grid?.subModels?.items ?? [];
+          const names = new Set<string>();
+          for (const it of items) {
+            const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+            const active = fp?.toString().split('.')[0];
+            if (active) names.add(active);
+          }
+          return names;
+        };
+        const activeTopLevel = getActiveTopLevelFieldNames();
+        const isConfiguredField = activeTopLevel.has(top);
 
         if (isConfiguredField) {
           // 编辑表单场景：若前端已将关联字段清空（但尚未提交到服务端），
@@ -370,12 +367,7 @@ export class FormBlockModel<
             () => this.collection,
             () => runtime.getFormValuesSnapshot(),
           );
-          if (!assocResolver(subPath)) return false;
-
-          const filterTargetKey = field.targetCollection?.filterTargetKey;
-          if (!filterTargetKey) return false;
-          const hasFilterByTk = (value: unknown) => getAssociationFilterByTk(value, filterTargetKey) != null;
-          return Array.isArray(topValue) ? topValue.some(hasFilterByTk) : hasFilterByTk(topValue);
+          return assocResolver(subPath);
         }
 
         // 未配置字段：仅在可推断当前记录锚点（filterByTk）时才允许服务端解析；
