@@ -779,7 +779,7 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
         : undefined,
       { locale: 'zh-CN' },
     ),
-  ).toContain('开发版');
+  ).toContain('体验 3.0 新功能');
   expect(otherVersionPrompt.type).toBe('text');
   expect(otherVersionPrompt.hidden?.({ version: 'alpha' })).toBe(true);
   expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);
