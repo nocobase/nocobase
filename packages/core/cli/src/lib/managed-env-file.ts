@@ -22,10 +22,16 @@ export const DEFAULT_MANAGED_ENV_FILE_VALUES = {
   APP_CLIENT_ENTRY_MODE: 'modern-only',
 } as const;
 
-function buildManagedEnvFileDefaults(config?: Partial<EnvConfigEntry>, defaults = DEFAULT_MANAGED_ENV_FILE_VALUES) {
+function buildManagedEnvFileDefaults(
+  config?: Partial<EnvConfigEntry>,
+  defaults: Record<string, string> = DEFAULT_MANAGED_ENV_FILE_VALUES,
+) {
   return {
     ...defaults,
-    APP_CLIENT_ENTRY_MODE: normalizeAppClientEntryMode(config?.appClientEntryMode) ?? defaults.APP_CLIENT_ENTRY_MODE,
+    APP_CLIENT_ENTRY_MODE:
+      normalizeAppClientEntryMode(config?.appClientEntryMode) ??
+      trimValue(defaults.APP_CLIENT_ENTRY_MODE) ??
+      DEFAULT_MANAGED_ENV_FILE_VALUES.APP_CLIENT_ENTRY_MODE,
   };
 }
 

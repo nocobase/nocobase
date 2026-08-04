@@ -18,6 +18,7 @@ import {
   defaultAppClientEntryModeForDownloadVersion,
   normalizePublicAppClientEntryMode,
   PUBLIC_APP_CLIENT_ENTRY_MODES,
+  type PublicAppClientEntryMode,
 } from '../lib/app-client-entry-mode.js';
 import {
   type PromptBlock,
@@ -148,7 +149,7 @@ function resolveInitDownloadVersion(results: Record<string, string | number | bo
 function resolveInitAppClientEntryMode(
   results: Record<string, string | number | boolean>,
   explicitValue?: unknown,
-): string {
+): PublicAppClientEntryMode {
   return (
     normalizePublicAppClientEntryMode(explicitValue) ??
     normalizePublicAppClientEntryMode(results.appClientEntryMode) ??
@@ -1596,7 +1597,11 @@ Prompt modes:
       argv.push('--app-public-path', appPublicPath);
     }
 
-    const appClientEntryMode = resolveInitAppClientEntryMode(results, flags['app-client-entry-mode']);
+    const appClientEntryMode =
+      normalizePublicAppClientEntryMode(flags['app-client-entry-mode']) ||
+      (results.setupMode === 'install-new' && results.hasNocobase === undefined
+        ? resolveInitAppClientEntryMode(results)
+        : undefined);
     if (appClientEntryMode) {
       argv.push('--app-client-entry-mode', appClientEntryMode);
     }
