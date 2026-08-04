@@ -13,6 +13,7 @@ import { IdpOauthService } from '../service';
 
 const originalApiBasePath = process.env.API_BASE_PATH;
 const originalAppPublicPath = process.env.APP_PUBLIC_PATH;
+const originalAppClientEntryMode = process.env.APP_CLIENT_ENTRY_MODE;
 
 function restoreEnv(name: string, value: string | undefined) {
   if (typeof value === 'undefined') {
@@ -24,10 +25,15 @@ function restoreEnv(name: string, value: string | undefined) {
 }
 
 describe('plugin-idp-oauth > IdpOauthService', () => {
+  beforeEach(() => {
+    process.env.APP_CLIENT_ENTRY_MODE = 'modern-only';
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     restoreEnv('API_BASE_PATH', originalApiBasePath);
     restoreEnv('APP_PUBLIC_PATH', originalAppPublicPath);
+    restoreEnv('APP_CLIENT_ENTRY_MODE', originalAppClientEntryMode);
   });
 
   test('should build frontend interaction paths for main app and sub app in multi-app mode', () => {
@@ -62,6 +68,19 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     const service = new IdpOauthService({} as any, {} as any);
 
     expect(service.getFrontendDevicePath('main')).toBe('/nocobase/settings/idpOAuth/device');
+  });
+
+  test('should build legacy frontend device paths for legacy entry mode', () => {
+    process.env.API_BASE_PATH = '/nocobase/api';
+    process.env.APP_CLIENT_ENTRY_MODE = 'legacy-default';
+    delete process.env.APP_PUBLIC_PATH;
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    expect(service.getFrontendDevicePath('main')).toBe('/nocobase/idpOAuth/device');
+    expect(service.getFrontendDevicePath('demo')).toBe('/nocobase/apps/demo/idpOAuth/device');
   });
 
   test('should build frontend paths without apps prefix in single mode', () => {

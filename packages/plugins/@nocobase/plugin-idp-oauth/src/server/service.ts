@@ -112,6 +112,10 @@ function escapeHtmlText(value: unknown) {
     .replace(/"/g, '&quot;');
 }
 
+function shouldUseSettingsDevicePath() {
+  return String(process.env.APP_CLIENT_ENTRY_MODE ?? '').trim() !== 'legacy-default';
+}
+
 function renderDevicePage(options: {
   title: string;
   heading: string;
@@ -363,11 +367,14 @@ export class IdpOauthService {
 
   getFrontendDevicePath(appName: string, issuerPath = this.getIssuerPath(appName)) {
     const appPublicPath = this.getAppPublicPath();
+    const useSettingsPath = shouldUseSettingsDevicePath();
     if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
-      return `${appPublicPath}/settings/idpOAuth/device`;
+      return useSettingsPath ? `${appPublicPath}/settings/idpOAuth/device` : `${appPublicPath}/idpOAuth/device`;
     }
 
-    return `${appPublicPath}/settings/apps/${appName}/idpOAuth/device`;
+    return useSettingsPath
+      ? `${appPublicPath}/settings/apps/${appName}/idpOAuth/device`
+      : `${appPublicPath}/apps/${appName}/idpOAuth/device`;
   }
 
   getProviderContext(ctx: any): ProviderContext {
