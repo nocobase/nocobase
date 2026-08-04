@@ -24,6 +24,8 @@ AI 搭建是 NocoBase 提供的 AI 辅助搭建能力——你用自然语言描
 /x/<name>    AI Portal
 ```
 
+![two types of portal](https://static-docs.nocobase.com/20260804091849.png)
+
 具体差别：
 
 | | 无代码 Portal | AI Portal |
