@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Badge, theme } from 'antd';
-import { useApp, useMobileLayout } from '@nocobase/client-v2';
+import { getModernClientPrefix, stripModernClientPrefix, useApp, useMobileLayout } from '@nocobase/client-v2';
 import { observer, useFlowContext, type FlowRuntimeContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { useT } from '../../../locale';
@@ -28,13 +28,15 @@ export const ChatButton: React.FC = observer(() => {
   const t = useT();
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { pathname } = useLocation();
-  const publicPath = app.getPublicPath().replace(/\/$/, '');
-  const completePathname = window.location.pathname;
+  const publicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/$/, '');
+  const browserPathname = window.location.pathname;
   const pathnameWithoutPublicPath =
-    publicPath && completePathname.startsWith(`${publicPath}/`)
-      ? completePathname.slice(publicPath.length)
-      : completePathname;
-  const isV2Route = pathnameWithoutPublicPath.startsWith('/v/');
+    publicPath && browserPathname.startsWith(`${publicPath}/`)
+      ? browserPathname.slice(publicPath.length)
+      : browserPathname;
+  const modernClientPath = `/${getModernClientPrefix()}`;
+  const isV2Route =
+    pathnameWithoutPublicPath === modernClientPath || pathnameWithoutPublicPath.startsWith(`${modernClientPath}/`);
   const isAdmin = pathname.startsWith('/admin');
   const { isMobileLayout } = useMobileLayout();
   const { token } = theme.useToken();

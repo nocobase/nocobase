@@ -128,9 +128,9 @@ describe('global chatbox behavior', () => {
     expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
   });
 
-  it('renders the entry on a Portal route under a public path prefix', () => {
-    mocks.publicPath = '/nocobase/';
-    window.history.replaceState({}, '', '/nocobase/v/custom');
+  it('renders the entry when the V2 public path includes the modern client prefix', () => {
+    mocks.publicPath = '/drol/v/';
+    window.history.replaceState({}, '', '/drol/v/test');
     const runtime = createChatBoxRuntime();
 
     renderWithRuntime(runtime, '/custom');
@@ -139,7 +139,7 @@ describe('global chatbox behavior', () => {
   });
 
   it('hides the entry for a non-V2 route under the public path', () => {
-    mocks.publicPath = '/nocobase/';
+    mocks.publicPath = '/nocobase/v/';
     window.history.replaceState({}, '', '/nocobase/custom');
     const runtime = createChatBoxRuntime();
 
