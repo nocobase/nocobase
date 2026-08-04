@@ -13,6 +13,45 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import { TaskType } from './task-type';
 
+export function parseArgv(list: string[]): Record<string, unknown> {
+  const argv: Record<string, unknown> = {};
+
+  for (const item of list) {
+    const match = item.match(/^--([^=]+)=(.*)$/);
+
+    if (match) {
+      const key = match[1];
+      let value: unknown = match[2];
+
+      if (typeof value === 'string' && (value.startsWith('{') || value.startsWith('['))) {
+        try {
+          value = JSON.parse(value);
+        } catch {
+          // ignore parse error, keep raw text
+        }
+      } else {
+        if (value === 'true') {
+          value = true;
+        } else if (value === 'false') {
+          value = false;
+        }
+      }
+
+      argv[key] = value;
+      continue;
+    }
+
+    const parts = item.split(':');
+    if (parts.length === 2) {
+      const command = parts[0];
+      const commandValue = parts[1];
+      argv[command] = commandValue;
+    }
+  }
+
+  return argv;
+}
+
 export class CommandTaskType extends TaskType {
   static type = 'command';
 
@@ -25,15 +64,17 @@ export class CommandTaskType extends TaskType {
 
   async execute() {
     const { argv } = this.record.params;
+    const parsedArgv = parseArgv(argv);
+    const targetApp = typeof parsedArgv.app === 'string' ? parsedArgv.app : undefined;
     const isDev = (process.argv[1]?.endsWith('.ts') || process.argv[1].includes('tinypool')) ?? false;
     const appRoot = process.env.APP_PACKAGE_ROOT || 'packages/core/app';
     const workerPath = path.resolve(process.cwd(), appRoot, isDev ? 'src/index.ts' : 'lib/index.js');
 
-    const workerPromise = new Promise((resolve, reject) => {
+    const workerPromise = new Promise<unknown>((resolve, reject) => {
       let settled = false;
-      let successPayload: any;
+      let successPayload: unknown;
 
-      const settleOnce = (err?: Error | null, payload?: any) => {
+      const settleOnce = (err?: Error | null, payload?: unknown) => {
         if (settled) {
           return;
         }
@@ -60,6 +101,7 @@ export class CommandTaskType extends TaskType {
           env: {
             ...process.env,
             WORKER_MODE: '-',
+            ...(targetApp && targetApp !== 'main' ? { STARTUP_SUBAPP: targetApp } : {}),
           },
         });
 
