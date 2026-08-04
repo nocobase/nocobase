@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/client-v2';
 import React from 'react';
 import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
+import { getPortalPathname, installMultiPortalRequestInterceptor } from './interceptor';
 import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
@@ -114,6 +115,9 @@ export class PluginMultiPortalClientV2 extends Plugin {
     try {
       const records = await fetchMultiPortals(this.app.apiClient);
       registerMultiPortals(this.app, records);
+      installMultiPortalRequestInterceptor(this.app.apiClient, records, () =>
+        getPortalPathname(window.location.pathname, this.app.getPublicPath()),
+      );
       registerMultiPortalAuthRouteScopes(this.app.pm.get<AuthRouteScopeRegistrar>('@nocobase/plugin-auth'), records);
     } catch (error) {
       console.error('[NocoBase] Failed to register multi-portals.', error);
