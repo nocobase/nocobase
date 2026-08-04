@@ -12,19 +12,21 @@ import { generateFlowModelRd } from '@nocobase/utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { analyzeVariableTemplate } from '../template/variable-expression';
 import { authorizeVariablesResolve, type AuthorizationResult } from '../variables/allow-list';
-import { compileRecordSlotPolicies, type ResolveFlowModelFieldKind } from '../variables/record-slot-policy';
+import { createFlowModelVariableContract, type ResolveFlowModelFieldKind } from '../variables/record-slot-policy';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 const resolveFieldKind: ResolveFlowModelFieldKind = (_dataSourceKey, collectionName, fieldPath) => {
   if (collectionName === 'users') {
     return ['roles', 'roles.users'].includes(fieldPath) ? 'association' : 'field';
   }
-  return ['customer', 'owner'].includes(fieldPath) ? 'association' : 'field';
+  if (fieldPath === 'metadataMissing') return undefined;
+  return ['customer', 'customer.owner', 'department', 'owner'].includes(fieldPath) ? 'association' : 'field';
 };
 
 function compile(flowModel: unknown) {
   const analysis = analyzeVariableTemplate(flowModel, { mode: 'flow-model' });
-  return { analysis, policies: compileRecordSlotPolicies(analysis, { flowModel, resolveFieldKind }) };
+  const contract = createFlowModelVariableContract(analysis, { flowModel, resolveFieldKind });
+  return { analysis, contract, policies: contract.recordSlots };
 }
 
 function getPolicy(flowModel: unknown, expression: string) {
@@ -39,7 +41,11 @@ function getFirstCanonicalKey(result: AuthorizationResult) {
   return key;
 }
 
-function formModel(use: string, props: unknown, configuredFields: string[] = []) {
+function formModel(
+  use: string,
+  props: unknown,
+  configuredFields: Array<string | { associationPathName: string; fieldPath: string }> = [],
+) {
   return {
     uid: `${use}-1`,
     use,
@@ -49,10 +55,10 @@ function formModel(use: string, props: unknown, configuredFields: string[] = [])
         uid: `${use}-grid`,
         use: 'FormGridModel',
         subModels: {
-          items: configuredFields.map((fieldPath, index) => ({
+          items: configuredFields.map((field, index) => ({
             uid: `${use}-item-${index}`,
             use: 'FormItemModel',
-            stepParams: { fieldSettings: { init: { fieldPath } } },
+            stepParams: { fieldSettings: { init: typeof field === 'string' ? { fieldPath: field } : field } },
           })),
         },
       },
@@ -318,30 +324,47 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(model, '{{ ctx.item.value.users.nickname }}')).toBeUndefined();
   });
 
-  it('separates configured Form associations from unconfigured record anchors', () => {
+  it('uses the longest configured Form field and supports whole associations', () => {
     const model = formModel(
       'EditFormModel',
       {
-        configured: '{{ ctx.formValues.customer.level.name }}',
-        unconfigured: '{{ ctx.formValues.status }}',
+        nested: '{{ ctx.formValues.customer.owner.name }}',
+        whole: '{{ ctx.formValues.department }}',
+        scalar: '{{ ctx.formValues.status }}',
+        missing: '{{ ctx.formValues.metadataMissing.name }}',
+        unconfigured: '{{ ctx.formValues.priority }}',
       },
-      ['customer'],
+      ['customer', { associationPathName: 'customer', fieldPath: 'owner' }, 'department', 'status', 'metadataMissing'],
     );
 
-    expect(getPolicy(model, '{{ ctx.formValues.customer.level.name }}')).toMatchObject({
-      slot: ['customer'],
+    expect(getPolicy(model, '{{ ctx.formValues.customer.owner.name }}')).toMatchObject({
+      slot: ['customer', 'owner'],
       source: 'form-association',
     });
-    expect(getPolicy(model, '{{ ctx.formValues.status }}')).toMatchObject({ slot: [], source: 'form-record' });
-  });
-
-  it('does not invent an unconfigured record anchor for CreateForm', () => {
-    const model = formModel('CreateFormModel', '{{ ctx.formValues.status }}');
-
+    expect(getPolicy(model, '{{ ctx.formValues.department }}')).toMatchObject({
+      slot: ['department'],
+      source: 'form-association',
+    });
     expect(getPolicy(model, '{{ ctx.formValues.status }}')).toBeUndefined();
+    expect(getPolicy(model, '{{ ctx.formValues.metadataMissing.name }}')).toBeUndefined();
+    expect(getPolicy(model, '{{ ctx.formValues.priority }}')).toMatchObject({ slot: [], source: 'form-record' });
+
+    const { contract } = compile(model);
+    for (const expression of ['{{ ctx.formValues.status }}', '{{ ctx.formValues.metadataMissing.name }}']) {
+      const canonicalKey = analyzeVariableTemplate(expression).paths[0].canonicalKey;
+      expect(contract.allowedPaths.has(canonicalKey)).toBe(true);
+    }
   });
 
-  it('compiles the complete persisted FilterForm field name', () => {
+  it('does not invent record slots for unconfigured CreateForm fields or unknown model types', () => {
+    const createForm = formModel('CreateFormModel', '{{ ctx.formValues.status }}');
+    const unknownForm = formModel('UnknownFormModel', '{{ ctx.formValues.customer.name }}', ['customer']);
+
+    expect(getPolicy(createForm, '{{ ctx.formValues.status }}')).toBeUndefined();
+    expect(getPolicy(unknownForm, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
+  });
+
+  it('uses the longest persisted FilterForm field name regardless of grid order', () => {
     const model = {
       uid: 'filter-form',
       use: 'FilterFormBlockModel',
@@ -352,6 +375,12 @@ describe('record slot policy compiler', () => {
           use: 'FormGridModel',
           subModels: {
             items: [
+              {
+                uid: 'customer-filter',
+                use: 'FilterFormItemModel',
+                props: { name: 'criteria' },
+                stepParams: { fieldSettings: { init: { fieldPath: 'customer' } } },
+              },
               {
                 uid: 'owner-filter',
                 use: 'FilterFormItemModel',

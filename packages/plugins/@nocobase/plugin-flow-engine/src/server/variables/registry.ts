@@ -19,6 +19,7 @@ import {
   type RecordBindingPlan,
   type RecordContextPolicy,
 } from './record-bindings';
+import { projectRecord } from './record-projection';
 import { fetchRecordWithRequestCache } from './records';
 import { compileRecordSlotPolicies, type RecordSlotPolicies } from './record-slot-policy';
 
@@ -280,7 +281,7 @@ export function isSafeRecordBinding(binding: AuthorizedRecordBinding) {
   return !isProtectedServerContextKey(binding.varName);
 }
 
-function fetchBindingRecord(
+async function fetchBindingRecord(
   koaCtx: ResourcerContext,
   binding: AuthorizedRecordBinding,
   relativePaths = binding.relativePaths,
@@ -289,7 +290,7 @@ function fetchBindingRecord(
   let { generatedAppends, generatedFields } = inferSelectsFromUsage(relativePaths);
   if (Array.isArray(binding.params.fields)) generatedFields = binding.params.fields;
   if (Array.isArray(binding.params.appends)) generatedAppends = binding.params.appends;
-  return fetchRecordWithRequestCache(
+  const raw = await fetchRecordWithRequestCache(
     koaCtx,
     binding.params,
     generatedFields,
@@ -298,6 +299,7 @@ function fetchBindingRecord(
     binding.preferFullRecord ||
       relativePaths.some((path) => path.some((segment) => typeof segment === 'string' && segment.includes('.'))),
   );
+  return projectRecord(raw, relativePaths);
 }
 
 function attachAuthorizedRecordBindings(

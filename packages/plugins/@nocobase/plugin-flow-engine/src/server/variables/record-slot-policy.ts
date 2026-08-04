@@ -140,7 +140,11 @@ function getGridItems(host: FlowModelNode): readonly FlowModelNode[] {
 function getFieldPath(item: FlowModelNode) {
   const fieldSettings = isObject(item.stepParams?.fieldSettings) ? item.stepParams.fieldSettings : undefined;
   const init = isObject(fieldSettings?.init) ? fieldSettings.init : undefined;
-  return typeof init?.fieldPath === 'string' && init.fieldPath ? init.fieldPath : undefined;
+  const fieldPath = typeof init?.fieldPath === 'string' ? init.fieldPath : '';
+  const associationPathName = typeof init?.associationPathName === 'string' ? init.associationPathName : '';
+  return associationPathName && fieldPath && !fieldPath.includes('.')
+    ? `${associationPathName}.${fieldPath}`
+    : fieldPath || undefined;
 }
 
 function getItemOwnerField(owner: FlowModelNode | undefined, hosts: readonly FlowModelNode[]) {
@@ -271,18 +275,33 @@ function compileFormSlot(
 ): RecordSlotPolicy | undefined {
   if (path.varName !== 'formValues') return undefined;
   const host = findHost(path, options, (node) => NORMAL_FORM_USES.has(String(node.use)));
-  const top = path.runtimeSegments[0];
   const resource = host && getResource(host);
-  if (!host || !resource || typeof top !== 'string' || !options.resolveFieldKind) return undefined;
+  const resolveFieldKind = options.resolveFieldKind;
+  if (!host || !resource || !resolveFieldKind) return undefined;
 
-  const fieldKind = options.resolveFieldKind(resource.dataSourceKey, resource.collectionName, top);
-  if (!fieldKind) return undefined;
-  const configured = getGridItems(host).some((item) => getFieldPath(item)?.split('.')[0] === top);
-  if (!configured && FORM_RECORD_USES.has(String(host.use))) {
-    return { slot: Object.freeze([]), source: 'form-record' };
+  let configured: { fieldPath: string; slot: string[] } | undefined;
+  for (const item of getGridItems(host)) {
+    const fieldPath = getFieldPath(item);
+    if (!fieldPath) continue;
+    const slot = fieldPath.split('.').filter(Boolean);
+    if (startsWithSegments(path.runtimeSegments, slot) && (!configured || slot.length > configured.slot.length)) {
+      configured = { fieldPath, slot };
+    }
   }
-  if (fieldKind === 'association' && path.runtimeSegments.length > 1) {
-    return { slot: Object.freeze([top]), source: 'form-association' };
+  if (configured) {
+    if (resolveFieldKind(resource.dataSourceKey, resource.collectionName, configured.fieldPath) !== 'association') {
+      return undefined;
+    }
+    return { slot: Object.freeze(configured.slot), source: 'form-association' };
+  }
+
+  const top = path.runtimeSegments[0];
+  if (
+    typeof top === 'string' &&
+    resolveFieldKind(resource.dataSourceKey, resource.collectionName, top) &&
+    FORM_RECORD_USES.has(String(host.use))
+  ) {
+    return { slot: Object.freeze([]), source: 'form-record' };
   }
   return undefined;
 }
@@ -294,8 +313,10 @@ function compileFilterFormSlot(
   if (path.varName !== 'formValues') return undefined;
   const host = findHost(path, options, (node) => node.use === 'FilterFormBlockModel');
   const resource = host && getResource(host);
-  if (!host || !resource || !options.resolveFieldKind) return undefined;
+  const resolveFieldKind = options.resolveFieldKind;
+  if (!host || !resource || !resolveFieldKind) return undefined;
 
+  let configured: { fieldPaths: string[]; slot: string[] } | undefined;
   for (const item of getGridItems(host)) {
     const fieldPath = getFieldPath(item);
     const configuredName = typeof item.props?.name === 'string' && item.props.name ? item.props.name : undefined;
@@ -303,12 +324,21 @@ function compileFilterFormSlot(
     if (!fieldName || !fieldPath) continue;
     const slot = fieldName.split('.').filter(Boolean);
     if (!startsWithSegments(path.runtimeSegments, slot) || path.runtimeSegments.length === slot.length) continue;
-    if (options.resolveFieldKind(resource.dataSourceKey, resource.collectionName, fieldPath) !== 'association') {
-      return undefined;
+    if (!configured || slot.length > configured.slot.length) {
+      configured = { fieldPaths: [fieldPath], slot };
+    } else if (slot.length === configured.slot.length) {
+      configured.fieldPaths.push(fieldPath);
     }
-    return { slot: Object.freeze(slot), source: 'filter-form' };
   }
-  return undefined;
+  if (
+    !configured ||
+    configured.fieldPaths.some(
+      (fieldPath) => resolveFieldKind(resource.dataSourceKey, resource.collectionName, fieldPath) !== 'association',
+    )
+  ) {
+    return undefined;
+  }
+  return { slot: Object.freeze(configured.slot), source: 'filter-form' };
 }
 
 function compilePathSlot(path: VariablePathRef, options: CompileRecordSlotPoliciesOptions) {
