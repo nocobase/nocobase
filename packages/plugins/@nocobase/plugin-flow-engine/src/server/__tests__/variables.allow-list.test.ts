@@ -325,7 +325,6 @@ describe('variables:resolve allow-list authorization', () => {
     variables.register({
       name: 'evil',
       scope: 'request',
-      recordContextPolicy: { allowGenericStrictPrefix: true },
       validateContextParams: ({ contextParams }) => {
         contextParams['evil.record'] = { dataSourceKey: 'main', collection: 'roles', filterByTk: 'root' };
         return { allowed: true };

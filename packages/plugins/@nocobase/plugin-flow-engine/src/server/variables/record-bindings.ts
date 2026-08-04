@@ -18,11 +18,6 @@ import type { RecordSlotPolicies } from './record-slot-policy';
 
 export type RecordBindingPlannerMode = 'strict' | 'trusted';
 
-export type RecordContextPolicy = Readonly<{
-  allowGenericStrictPrefix?: boolean;
-  exactWholeRecordPaths?: readonly (readonly PathSegment[])[];
-}>;
-
 export type AuthorizedRecordBinding = Readonly<{
   params: RecordParams;
   varName: string;
@@ -33,11 +28,7 @@ export type AuthorizedRecordBinding = Readonly<{
   contextLocation: readonly PathSegment[];
 }>;
 
-export type RecordBindingRejectionReason =
-  | 'protected-context-root'
-  | 'protected-context-key'
-  | 'missing-record-slot-policy'
-  | 'record-slot-mismatch';
+export type RecordBindingRejectionReason = 'protected-context-root' | 'protected-context-key';
 
 export type RecordBindingRejection = Readonly<{
   reason: RecordBindingRejectionReason;

@@ -342,6 +342,16 @@ function cachedQueryCovers(query: RecordQuery, cached: RecordCacheMetadata) {
   );
 }
 
+export function findRecordRequestCacheValue(cache: Map<string, unknown>, query: RecordQuery) {
+  if (cache.has(query.cacheKey)) return { hit: true, value: cache.get(query.cacheKey) };
+  if (cache instanceof RecordRequestCache) {
+    for (const [metadata, value] of cache.candidates(query)) {
+      if (cachedQueryCovers(query, metadata)) return { hit: true, value };
+    }
+  }
+  return { hit: false, value: undefined };
+}
+
 export async function fetchRecordWithRequestCache(
   koaCtx: ResourcerContext,
   params: RecordParams,
@@ -363,12 +373,8 @@ export async function fetchRecordWithRequestCache(
       preferFullRecord,
     );
     const cache = getRecordRequestCache(koaCtx);
-    if (cache.has(query.cacheKey)) return cache.get(query.cacheKey);
-    if (!strictSelects && cache instanceof RecordRequestCache) {
-      for (const [metadata, value] of cache.candidates(query)) {
-        if (cachedQueryCovers(query, metadata)) return value;
-      }
-    }
+    const cached = findRecordRequestCacheValue(cache, query);
+    if (cached.hit) return cached.value;
 
     const value = await fetchRecordOrRecordsJson(query.repository, query);
     setRecordRequestCache(cache, query, value);

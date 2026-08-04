@@ -9,6 +9,7 @@
 
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { describe, expect, it, vi } from 'vitest';
+import { projectRecord } from '../variables/record-projection';
 import {
   fetchRecordWithRequestCache,
   getRecordRequestCache,
@@ -99,14 +100,57 @@ describe('variable record request cache index', () => {
     }
   });
 
-  it('keeps strict selects exact even when a non-strict superset exists', async () => {
+  it('reuses a covering non-strict cache entry for a strict projection', async () => {
     const { calls, context } = createContext();
-    await fetchRecordWithRequestCache(context, { collection: 'users', filterByTk: 1 }, ['id', 'email']);
-    await fetchRecordWithRequestCache(context, { collection: 'users', filterByTk: 1 }, ['id'], undefined, true);
-    await fetchRecordWithRequestCache(context, { collection: 'users', filterByTk: 1 }, ['id'], undefined, true);
+    const broad = await fetchRecordWithRequestCache(
+      context,
+      { collection: 'users', filterByTk: 1 },
+      ['email', 'id'],
+      ['roles'],
+    );
+    const strict = await fetchRecordWithRequestCache(
+      context,
+      { collection: 'users', filterByTk: 1 },
+      ['id', 'roles.name'],
+      ['roles'],
+      true,
+    );
 
-    expect(calls).toHaveLength(2);
-    expect(calls[1].options.fields).toEqual(['id']);
+    expect(strict).toBe(broad);
+    expect(projectRecord(strict, [['id']])).toEqual({ id: 1 });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('queries again when a strict cache candidate does not cover selects or identity', async () => {
+    const selects = createContext();
+    await fetchRecordWithRequestCache(selects.context, { collection: 'users', filterByTk: 1 }, ['id']);
+    await fetchRecordWithRequestCache(
+      selects.context,
+      { collection: 'users', filterByTk: 1 },
+      ['email', 'id'],
+      undefined,
+      true,
+    );
+    await fetchRecordWithRequestCache(selects.context, { collection: 'users', filterByTk: 1 }, ['id'], ['roles'], true);
+    expect(selects.calls).toHaveLength(3);
+
+    const identities = createContext();
+    await fetchRecordWithRequestCache(identities.context, { collection: 'users', filterByTk: 1 }, ['id', 'name']);
+    await fetchRecordWithRequestCache(
+      identities.context,
+      { collection: 'users', filterByTk: 2 },
+      ['id'],
+      undefined,
+      true,
+    );
+    await fetchRecordWithRequestCache(
+      identities.context,
+      { collection: 'users', dataSourceKey: 'analytics', filterByTk: 1 },
+      ['id'],
+      undefined,
+      true,
+    );
+    expect(identities.calls).toHaveLength(3);
   });
 
   it('preserves full-record coverage, append coverage, and filter array order', async () => {
@@ -170,7 +214,7 @@ describe('variable record request cache index', () => {
     const params = { associationName: 'users.roles', collection: 'users', filterByTk: 'root' };
 
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name', 'title']);
-    await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name']);
+    await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name'], undefined, true);
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 2 }, ['name']);
     await fetchRecordWithRequestCache(createAssociationContext(), { ...params, sourceId: 1 }, ['name']);
 

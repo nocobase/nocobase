@@ -12,6 +12,7 @@ import type { AuthorizedRecordBinding } from './record-bindings';
 import { inferSelectsFromUsage, isSafeRecordBinding } from './registry';
 import {
   fetchRecordOrRecordsJson,
+  findRecordRequestCacheValue,
   getRecordRequestCache,
   prepareRecordQuery,
   resolveRecordTarget,
@@ -87,7 +88,7 @@ export async function prefetchRecordsForResolve(
           group.strictSelects,
           group.preferFullRecord,
         );
-        if (cache.has(query.cacheKey)) continue;
+        if (findRecordRequestCacheValue(cache, query).hit) continue;
         setRecordRequestCache(cache, query, await fetchRecordOrRecordsJson(query.repository, query));
       } catch (error) {
         log?.debug('[variables.resolve] prefetch query error', {

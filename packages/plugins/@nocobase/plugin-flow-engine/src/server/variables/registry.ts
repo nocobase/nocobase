@@ -13,12 +13,7 @@ import { extractUsedVariablePaths } from '@nocobase/utils';
 import { isProtectedServerContextKey } from '../template/context-keys';
 import { HttpRequestContext, SERVER_CONTEXT_PROVIDER_TOKEN } from '../template/contexts';
 import { analyzeVariableTemplate, type PathSegment, type VariablePathRef } from '../template/variable-expression';
-import {
-  planRecordBindings,
-  type AuthorizedRecordBinding,
-  type RecordBindingPlan,
-  type RecordContextPolicy,
-} from './record-bindings';
+import { planRecordBindings, type AuthorizedRecordBinding, type RecordBindingPlan } from './record-bindings';
 import { projectRecord } from './record-projection';
 import { fetchRecordWithRequestCache } from './records';
 import { compileRecordSlotPolicies, type RecordSlotPolicies } from './record-slot-policy';
@@ -50,7 +45,6 @@ export type ValidateContextParamsResult = {
 export interface VariableDef {
   name: string; // e.g. 'record'
   scope: VarScope;
-  recordContextPolicy?: RecordContextPolicy;
   requiredParams?: RequiredParamSpec[]; // for validation
   attach: (
     ctx: HttpRequestContext,

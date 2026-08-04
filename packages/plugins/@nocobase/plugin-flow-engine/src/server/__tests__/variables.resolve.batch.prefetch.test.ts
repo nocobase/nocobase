@@ -12,7 +12,11 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 import * as variableExpression from '../template/variable-expression';
+import type { AuthorizedRecordBinding } from '../variables/record-bindings';
+import { projectRecord } from '../variables/record-projection';
+import { fetchRecordWithRequestCache } from '../variables/records';
 import { resolveVariablesTemplate } from '../variables/resolve';
+import { prefetchRecordsForResolve } from '../variables/utils';
 import FlowModelRepository from '../repository';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
@@ -221,6 +225,59 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(relationCalls).toHaveLength(2);
     expect(relationCalls.map((call) => call.sourceId)).toEqual([1, 2]);
     expect(relationCalls[0].options.fields).toEqual(['name']);
+  });
+
+  it('reuses a wide prefetch entry for a later strict batch group', async () => {
+    const raw = { email: 'root@example.test', id: 1, name: 'Root' };
+    const findOne = vi.fn(async () => raw);
+    const collection = {
+      filterTargetKey: 'id',
+      model: {
+        associations: {},
+        primaryKeyAttribute: 'id',
+        rawAttributes: { email: {}, id: {}, name: {} },
+      },
+      name: 'users',
+    };
+    const context = {
+      app: {
+        dataSourceManager: {
+          get: () => ({
+            collectionManager: {
+              db: {
+                getCollection: () => collection,
+                getRepository: () => ({ collection, findOne }),
+              },
+            },
+          }),
+        },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+    const binding = (relativePaths: readonly (readonly string[])[], fields?: string[]): AuthorizedRecordBinding => ({
+      contextKey: 'view.record',
+      contextLocation: ['view.record'],
+      params: { collection: 'users', fields, filterByTk: 1 },
+      prefix: ['record'],
+      preferFullRecord: false,
+      relativePaths,
+      varName: 'view',
+    });
+
+    await prefetchRecordsForResolve(context, [binding([['email'], ['id']]), binding([['id']], ['id'])]);
+    const strict = await fetchRecordWithRequestCache(
+      context,
+      { collection: 'users', fields: ['id'], filterByTk: 1 },
+      ['id'],
+      undefined,
+      true,
+    );
+
+    expect(findOne).toHaveBeenCalledTimes(1);
+    expect(findOne).toHaveBeenCalledWith({ appends: undefined, fields: ['email', 'id'], filterByTk: 1 });
+    expect(strict).toBe(raw);
+    expect(projectRecord(strict, [['id']])).toEqual({ id: 1 });
   });
 
   it('allows trusted leaf descriptors but rejects protected-root descriptors before querying records', async () => {
