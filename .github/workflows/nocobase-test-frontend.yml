@@ -34,7 +34,7 @@ jobs:
   frontend-test:
     strategy:
       matrix:
-        node_version: ['20']
+        node_version: ['22']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
