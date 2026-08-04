@@ -24,18 +24,18 @@ import {
   type ResolvedRuntimeRunJS,
 } from '../../../components/runjs-source';
 import {
-  createLightExtensionRunJsUISchema,
+  createJsTemplateRunJsUISchema,
   createRunJSEditorEmbedUIMode,
-  createLightExtensionSettingSteps,
-  createLightExtensionSourcePlumbing,
-  normalizeLightExtensionSourceMode,
-  normalizeLightExtensionRuntimeError,
+  createJsTemplateSettingSteps,
+  createJsTemplateSourcePlumbing,
+  normalizeJsTemplateSourceMode,
+  normalizeJsTemplateRuntimeError,
   resolveEffectiveRunJSSettings,
 } from '../../utils/runjsSourceRuntimeCommon';
 import { RootPageModel } from './RootPageModel';
 import {
-  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
 } from './JSPageSourceModeField';
 import { createJSPageSourceLocator } from './jsPageContracts';
 import { JSPageRuntimeController, type JSPageRuntimeRunContext, type JSPageRuntimeState } from './jsPageRuntime';
@@ -74,7 +74,7 @@ function hasOwn(value: Record<string, unknown>, key: string) {
   return Object.prototype.hasOwnProperty.call(value, key);
 }
 
-const jsPageSource = createLightExtensionSourcePlumbing<JSPageModel>({
+const jsPageSource = createJsTemplateSourcePlumbing<JSPageModel>({
   flowKey: 'jsSettings',
   stepKey: 'runJs',
   ownerKind: 'flowModel.pageSettings',
@@ -124,14 +124,14 @@ export class JSPageModel extends RootPageModel {
     }
 
     const params = readRunParams(this);
-    const descriptor = await getJSPageLightExtensionSettingsDescriptor(this, params);
+    const descriptor = await getJSPageJsTemplateSettingsDescriptor(this, params);
     if (!descriptor) {
       return undefined;
     }
-    return createLightExtensionSettingSteps<JSPageModel>({
+    return createJsTemplateSettingSteps<JSPageModel>({
       descriptor,
       settings: isRecord(params.settings) ? params.settings : {},
-      component: JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      component: JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
       syncValue: jsPageSource.syncSetting,
       afterParamsSave: jsPageSource.afterParamsSave,
     });
@@ -187,11 +187,11 @@ export class JSPageModel extends RootPageModel {
   renderPageContent() {
     const loadingLabel = this.context.t('Loading JavaScript page');
     const runtimeError = this.runtimeState.error
-      ? normalizeLightExtensionRuntimeError(this.runtimeState.error, {
+      ? normalizeJsTemplateRuntimeError(this.runtimeState.error, {
           defaultTitle: 'JavaScript page failed to run',
           defaultHint: 'Check the JavaScript page configuration and retry.',
           defaultMessage: 'Failed to run JavaScript page',
-          outdatedHint: 'Refresh the page settings and choose the current entry.',
+          outdatedHint: 'Refresh the page settings and choose the current template.',
           invalidSettingsHint: 'Open the page settings and fix the JS Template settings.',
         })
       : null;
@@ -241,9 +241,9 @@ export class JSPageModel extends RootPageModel {
 
   private async resolveRuntimeSource(): Promise<ResolvedJSPageRun> {
     const params = readRunParams(this);
-    const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+    const sourceMode = normalizeJsTemplateSourceMode(params.sourceMode);
     const storedSettings = isRecord(params.settings) ? params.settings : {};
-    const descriptor = sourceMode === 'inline' ? await getJSPageLightExtensionSettingsDescriptor(this, params) : null;
+    const descriptor = sourceMode === 'inline' ? await getJSPageJsTemplateSettingsDescriptor(this, params) : null;
     const runtimeSettings = descriptor ? resolveEffectiveRunJSSettings(descriptor, storedSettings) : storedSettings;
     const runtime = await resolveRuntimeRunJS({
       runJs: {
@@ -295,7 +295,7 @@ export class JSPageModel extends RootPageModel {
   }
 }
 
-async function getJSPageLightExtensionSettingsDescriptor(model: JSPageModel, params: Record<string, unknown>) {
+async function getJSPageJsTemplateSettingsDescriptor(model: JSPageModel, params: Record<string, unknown>) {
   return jsPageSource.getSettingsDescriptor(model, params);
 }
 
@@ -320,7 +320,7 @@ JSPageModel.registerFlow({
           type: 'string',
           title: tExpr('Code source'),
           'x-decorator': 'FormItem',
-          'x-component': JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+          'x-component': JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
         },
         sourceBinding: { type: 'object', 'x-display': 'hidden' },
         settings: { type: 'object', 'x-display': 'hidden' },
@@ -332,7 +332,7 @@ JSPageModel.registerFlow({
     runJs: {
       title: tExpr('Write JavaScript'),
       useRawParams: true,
-      uiSchema: createLightExtensionRunJsUISchema({
+      uiSchema: createJsTemplateRunJsUISchema({
         kind: 'js-page',
         scene: 'page',
         surfaceStyle: 'render',

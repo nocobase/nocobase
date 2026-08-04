@@ -14,8 +14,8 @@ import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
 import { RunJSEditorField, RunJSEditorRegistry, type RunJSSurfaceStyle } from '../../components/runjs-studio';
 import { JSActionModel } from '../actions/JSActionModel';
 import {
-  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD,
   JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD,
 } from '../actions/JSActionSourceModeField';
@@ -24,8 +24,8 @@ import { JSItemActionModel } from '../actions/JSItemActionModel';
 import { JSRecordActionModel } from '../actions/JSRecordActionModel';
 import { JSPageModel } from '../base/PageModel/JSPageModel';
 import {
-  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
   JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
 } from '../base/PageModel/JSPageSourceModeField';
@@ -33,36 +33,36 @@ import { FilterFormJSActionModel } from '../blocks/filter-form/FilterFormJSActio
 import { JSFormActionModel } from '../blocks/form/JSFormActionModel';
 import { JSBlockModel } from '../blocks/js-block/JSBlock';
 import {
-  JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_BLOCK_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_BLOCK_FULL_SOURCE_FIELD,
   JS_TEMPLATE_BLOCK_SETTINGS_STEP_FIELD,
 } from '../blocks/js-block/JSBlockSourceModeField';
 import { JSColumnModel } from '../blocks/table/JSColumnModel';
 import { JSEditableFieldModel } from '../fields/JSEditableFieldModel';
 import {
-  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_FIELD_FULL_SOURCE_FIELD,
   JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD,
 } from '../fields/JSFieldSourceModeField';
 import { JSFieldModel } from '../fields/JSFieldModel';
 import { JSItemModel } from '../fields/JSItemModel';
 import {
-  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+  JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD,
   JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
 } from '../fields/JSItemSourceModeField';
-import { JS_TEMPLATE_SOURCE_MODE, LIGHT_EXTENSION_SOURCE_MODE } from '../utils/runjsSourceRuntimeCommon';
-import { assertJSItemLightExtensionSourceContract } from '../utils/__tests__/jsItemLightExtensionSourceContract';
-import { assertLightExtensionSettingsHostContract } from '../utils/__tests__/lightExtensionSettingsHostContract';
+import { JS_TEMPLATE_SOURCE_MODE } from '../utils/runjsSourceRuntimeCommon';
+import { assertJSItemJsTemplateSourceContract } from '../utils/__tests__/jsItemJsTemplateSourceContract';
+import { assertJsTemplateSettingsHostContract } from '../utils/__tests__/jsTemplateSettingsHostContract';
 
 type SurfaceSpec = {
   name: string;
   modelClass: typeof FlowModel;
   flowKey: string;
-  lightExtensionKind: 'js-block' | 'js-page' | 'js-action' | 'js-field' | 'js-item';
+  jsTemplateKind: 'js-block' | 'js-page' | 'js-action' | 'js-field' | 'js-item';
   surfaceStyle: RunJSSurfaceStyle;
   scene: string;
   sourceComponent?: string;
@@ -98,10 +98,10 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSBlockModel',
     modelClass: JSBlockModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-block',
+    jsTemplateKind: 'js-block',
     surfaceStyle: 'render',
     scene: 'block',
-    settingsComponent: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    settingsComponent: JS_BLOCK_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: false,
     minHeight: 'calc(100vh - 42px)',
   },
@@ -109,121 +109,121 @@ const surfaces: SurfaceSpec[] = [
     name: 'JSFieldModel',
     modelClass: JSFieldModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-field',
+    jsTemplateKind: 'js-field',
     surfaceStyle: 'render',
     scene: 'block',
-    sourceComponent: JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSEditableFieldModel',
     modelClass: JSEditableFieldModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-field',
+    jsTemplateKind: 'js-field',
     surfaceStyle: 'render',
     scene: 'formValue',
-    sourceComponent: JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSItemModel',
     modelClass: JSItemModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-item',
+    jsTemplateKind: 'js-item',
     surfaceStyle: 'render',
     scene: 'block',
-    sourceComponent: JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSColumnModel',
     modelClass: JSColumnModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-field',
+    jsTemplateKind: 'js-field',
     surfaceStyle: 'render',
     scene: 'block',
-    sourceComponent: JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSItemActionModel',
     modelClass: JSItemActionModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-item',
+    jsTemplateKind: 'js-item',
     surfaceStyle: 'render',
     scene: 'block',
-    sourceComponent: JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSActionModel',
     modelClass: JSActionModel,
     flowKey: 'clickSettings',
-    lightExtensionKind: 'js-action',
+    jsTemplateKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
-    sourceComponent: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSRecordActionModel',
     modelClass: JSRecordActionModel,
     flowKey: 'clickSettings',
-    lightExtensionKind: 'js-action',
+    jsTemplateKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
-    sourceComponent: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSCollectionActionModel',
     modelClass: JSCollectionActionModel,
     flowKey: 'clickSettings',
-    lightExtensionKind: 'js-action',
+    jsTemplateKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
-    sourceComponent: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSFormActionModel',
     modelClass: JSFormActionModel,
     flowKey: 'clickSettings',
-    lightExtensionKind: 'js-action',
+    jsTemplateKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
-    sourceComponent: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'FilterFormJSActionModel',
     modelClass: FilterFormJSActionModel,
     flowKey: 'clickSettings',
-    lightExtensionKind: 'js-action',
+    jsTemplateKind: 'js-action',
     surfaceStyle: 'action',
     scene: 'eventFlow',
-    sourceComponent: JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
   {
     name: 'JSPageModel',
     modelClass: JSPageModel,
     flowKey: 'jsSettings',
-    lightExtensionKind: 'js-page',
+    jsTemplateKind: 'js-page',
     surfaceStyle: 'render',
     scene: 'page',
-    sourceComponent: JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-    settingsComponent: JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    sourceComponent: JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
+    settingsComponent: JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: false,
     minHeight: 'calc(100vh - 42px)',
   },
@@ -271,8 +271,8 @@ describe('RunJS FlowModel surfaces', () => {
     RunJSSourceResolverRegistry.clear();
   });
 
-  it('exposes JS Template names as aliases of every historical registry value', () => {
-    expect(JS_TEMPLATE_SOURCE_MODE).toBe(LIGHT_EXTENSION_SOURCE_MODE);
+  it('exposes canonical JS Template registry values consistently', () => {
+    expect(JS_TEMPLATE_SOURCE_MODE).toBe('js-template');
     expect([
       JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD,
       JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD,
@@ -285,16 +285,16 @@ describe('RunJS FlowModel surfaces', () => {
       JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
       JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
     ]).toEqual([
-      JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-      JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-      JS_BLOCK_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-      JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-      JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-      JS_FIELD_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-      JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-      JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
-      JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-      JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+      JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+      JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
+      JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
+      JS_BLOCK_JS_TEMPLATE_SETTINGS_STEP_FIELD,
+      JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
+      JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
+      JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
+      JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
+      JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
+      JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     ]);
   });
 
@@ -310,7 +310,7 @@ describe('RunJS FlowModel surfaces', () => {
     expect(codeProps).toMatchObject({
       locatorFactory: 'flowModel.step',
       sourceMetadata: {
-        lightExtensionKind: spec.lightExtensionKind,
+        jsTemplateKind: spec.jsTemplateKind,
       },
       surfaceStyle: spec.surfaceStyle,
       scene: spec.scene,
@@ -325,9 +325,9 @@ describe('RunJS FlowModel surfaces', () => {
 
     if (spec.sourceComponent) {
       expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe(spec.sourceComponent);
-      if (spec.lightExtensionKind !== 'js-page') {
+      if (spec.jsTemplateKind !== 'js-page') {
         expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
-          kind: spec.lightExtensionKind,
+          kind: spec.jsTemplateKind,
         });
       }
     } else {
@@ -338,7 +338,7 @@ describe('RunJS FlowModel surfaces', () => {
       expect(sourceBindingStep?.hideInSettings).toBe(true);
       expect(sourceBindingStep?.uiSchema?.sourceBinding).toMatchObject({
         'x-component': spec.sourceComponent,
-        'x-component-props': { kind: spec.lightExtensionKind },
+        'x-component-props': { kind: spec.jsTemplateKind },
       });
     } else {
       expect(sourceBindingStep).toBeUndefined();
@@ -385,16 +385,16 @@ describe('RunJS FlowModel surfaces', () => {
       bindingOnly ? {} : { code: 'ctx.render("inline fallback");', version: 'v2' },
     );
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_surface_contracts',
-      entryId: `entry_${spec.name}`,
-      kind: spec.lightExtensionKind,
+      type: 'js-template-entry',
+      projectId: 'jtp_surface_contracts',
+      templateId: `jtt_${spec.name}`,
+      kind: spec.jsTemplateKind,
     };
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: () => ({ code: '' }),
       getSettingsDescriptor: async () => ({
-        entryId: sourceBinding.entryId,
+        entryId: sourceBinding.templateId,
         settingsSchemaHash: 'surface-schema-v1',
         defaults: { label: 'Default label' },
         schema: {
@@ -410,13 +410,13 @@ describe('RunJS FlowModel surfaces', () => {
 
     await sourceModeStep?.beforeParamsSave?.(
       settingsContext,
-      { sourceMode: 'light-extension', sourceBinding, settings: {} },
+      { sourceMode: 'js-template', sourceBinding, settings: {} },
       {},
     );
 
     const runJs = model.getStepParams(spec.flowKey, 'runJs') as Record<string, unknown>;
     expect(runJs).toMatchObject({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding,
       settings: {},
     });
@@ -425,7 +425,7 @@ describe('RunJS FlowModel surfaces', () => {
     const resolvedDefaultParams =
       typeof defaultParams === 'function' ? await defaultParams(settingsContext) : defaultParams;
     expect(resolvedDefaultParams).toMatchObject({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding,
       settings: {},
     });
@@ -452,24 +452,24 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it('runs the complete light extension settings host contract once', async () => {
+  it('runs the complete JS Template settings host contract once', async () => {
     const spec = surfaces.find((surface) => surface.name === 'JSBlockModel') as SurfaceSpec;
     const model = createSurfaceModel(spec);
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_settings_contract',
-      entryId: 'entry_settings_contract',
+      type: 'js-template-entry',
+      projectId: 'jtp_settings_contract',
+      templateId: 'jtt_settings_contract',
       kind: 'js-block',
     };
 
-    await assertLightExtensionSettingsHostContract({
+    await assertJsTemplateSettingsHostContract({
       model,
       flowKey: spec.flowKey,
       settingsComponent: spec.settingsComponent,
       sourceBinding,
       nextSourceBinding: {
         ...sourceBinding,
-        entryId: 'entry_settings_contract_next',
+        templateId: 'jtt_settings_contract_next',
       },
     });
   });
@@ -478,12 +478,12 @@ describe('RunJS FlowModel surfaces', () => {
     const spec = surfaces.find((surface) => surface.name === 'JSItemModel') as SurfaceSpec;
     const model = createSurfaceModel(spec);
 
-    await assertJSItemLightExtensionSourceContract({
+    await assertJSItemJsTemplateSourceContract({
       model,
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo_item_contract',
-        entryId: 'entry_item_contract',
+        type: 'js-template-entry',
+        projectId: 'jtp_item_contract',
+        templateId: 'jtt_item_contract',
         kind: 'js-item',
       },
       settings: { color: 'red' },

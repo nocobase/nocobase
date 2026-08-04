@@ -8,10 +8,10 @@
  */
 
 import {
-  buildLightExtensionSettingsSchema,
-  LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
-  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
-  LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN,
+  buildJsTemplateSettingsSchema,
+  JS_TEMPLATE_SCHEMA_URI,
+  JS_TEMPLATE_SCHEMA_VERSION,
+  JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN,
 } from '@nocobase/js-template-sdk/schema';
 
 import type { RunJSWorkspaceDiagnostic } from '../../../shared/runjs-source-contracts';
@@ -25,7 +25,7 @@ import type {
 import { isValidEntryName } from './workspacePolicy';
 
 const invalidJsonParse = Symbol('invalidJsonParse');
-const settingsPropertyPattern = new RegExp(LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN);
+const settingsPropertyPattern = new RegExp(JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN);
 const unsafePathSegments = new Set(['__proto__', 'prototype', 'constructor']);
 
 interface ConditionOwner {
@@ -118,24 +118,24 @@ export class RunJSWorkspaceSchemaValidator {
       }
     }
 
-    if (json.schemaVersion !== LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION) {
+    if (json.schemaVersion !== JS_TEMPLATE_SCHEMA_VERSION) {
       diagnostics.push(
         diagnostic(
           typeof json.schemaVersion === 'undefined'
             ? 'entry_descriptor_schema_version_required'
             : 'entry_descriptor_schema_version_unsupported',
           'error',
-          `entry.json schemaVersion must be ${LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION}`,
+          `entry.json schemaVersion must be ${JS_TEMPLATE_SCHEMA_VERSION}`,
           descriptorTarget,
         ),
       );
     }
-    if (typeof json.$schema !== 'undefined' && json.$schema !== LIGHT_EXTENSION_ENTRY_SCHEMA_URI) {
+    if (typeof json.$schema !== 'undefined' && json.$schema !== JS_TEMPLATE_SCHEMA_URI) {
       diagnostics.push(
         diagnostic(
           'entry_descriptor_schema_url_unsupported',
           'error',
-          `entry.json $schema must be "${LIGHT_EXTENSION_ENTRY_SCHEMA_URI}"`,
+          `entry.json $schema must be "${JS_TEMPLATE_SCHEMA_URI}"`,
           descriptorTarget,
         ),
       );
@@ -187,7 +187,7 @@ export class RunJSWorkspaceSchemaValidator {
       return null;
     }
 
-    const rootSchema = buildLightExtensionSettingsSchema(value);
+    const rootSchema = buildJsTemplateSettingsSchema(value);
     const properties = isPlainRecord(rootSchema.properties) ? rootSchema.properties : {};
     const required = Array.isArray(rootSchema.required)
       ? rootSchema.required.filter((item): item is string => typeof item === 'string')

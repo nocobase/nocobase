@@ -9,13 +9,13 @@
 
 import { createRunJSSourceModeField, type RunJSSourceModeFieldProps } from '../../components/runjs-source';
 
-export const JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSActionLightExtensionFullSourceField';
-export const JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSActionLightExtensionSettingsStepField';
-export const JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD = JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD;
-export const JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD = JS_ACTION_LIGHT_EXTENSION_SETTINGS_STEP_FIELD;
+export const JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD = 'JSActionJsTemplateFullSourceField';
+export const JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD = 'JSActionJsTemplateSettingsStepField';
+export const JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD = JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD;
+export const JS_TEMPLATE_ACTION_SETTINGS_STEP_FIELD = JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD;
 
 export type JSActionSourceModeFieldProps = RunJSSourceModeFieldProps;
 
-export const JSActionSourceModeField = createRunJSSourceModeField(JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD);
+export const JSActionSourceModeField = createRunJSSourceModeField(JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD);
 
 export default JSActionSourceModeField;

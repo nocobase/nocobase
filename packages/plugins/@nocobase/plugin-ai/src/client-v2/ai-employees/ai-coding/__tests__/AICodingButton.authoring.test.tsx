@@ -62,7 +62,7 @@ const createSurface = (): CodeAuthoringSurface => ({
   id: 'workspace-a',
   getSnapshot: vi.fn(async () => ({
     surfaceId: 'workspace-a',
-    kind: 'light-extension',
+    kind: 'js-template',
     title: 'Workspace A',
     snapshotId: 'snapshot-1',
     files: [],
@@ -126,7 +126,7 @@ describe('AICodingButton authoring target', () => {
         type: 'code-workspace',
         uid: 'workspace-a',
         title: 'Workspace A',
-        content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
+        content: { surfaceId: 'workspace-a', kind: 'js-template', title: 'Workspace A' },
       },
     ]);
     expect(chatMessageModel.getSessionState(undefined).workspaceSurfaceId).toBe('workspace-a');
@@ -141,7 +141,7 @@ describe('AICodingButton authoring target', () => {
                   type: 'code-workspace',
                   uid: 'workspace-a',
                   title: 'Workspace A',
-                  content: { surfaceId: 'workspace-a', kind: 'light-extension', title: 'Workspace A' },
+                  content: { surfaceId: 'workspace-a', kind: 'js-template', title: 'Workspace A' },
                 },
               ],
             }),

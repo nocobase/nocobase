@@ -581,8 +581,8 @@ describe('runJSStudioProvider', () => {
       key: 'test-source-metadata',
       component: ({ context }) => (
         <>
-          <span data-testid="toolbar-source-kind">{String(context.sourceMetadata?.lightExtensionKind || '')}</span>
-          <span data-testid="toolbar-source-entry">{String(context.sourceBinding?.entryId || '')}</span>
+          <span data-testid="toolbar-source-kind">{String(context.sourceMetadata?.jsTemplateKind || '')}</span>
+          <span data-testid="toolbar-source-entry">{String(context.sourceBinding?.templateId || '')}</span>
         </>
       ),
     });
@@ -593,19 +593,19 @@ describe('runJSStudioProvider', () => {
           code: 'return 1;',
           version: 'v2',
           sourceBinding: {
-            type: 'light-extension-entry',
-            repoId: 'ler_origin',
-            entryId: 'lee_origin',
+            type: 'js-template-entry',
+            projectId: 'jtp_origin',
+            templateId: 'jtt_origin',
             kind: 'js-field',
           },
         },
         sourceMetadata: {
-          lightExtensionKind: 'js-field',
+          jsTemplateKind: 'js-field',
         },
       });
 
       expect(await screen.findByTestId('toolbar-source-kind')).toHaveTextContent('js-field');
-      expect(screen.getByTestId('toolbar-source-entry')).toHaveTextContent('lee_origin');
+      expect(screen.getByTestId('toolbar-source-entry')).toHaveTextContent('jtt_origin');
     } finally {
       unregister();
     }
@@ -1068,7 +1068,7 @@ describe('runJSStudioProvider', () => {
     const workspaceJsonSchemaResolver = vi.fn((path: string) =>
       path === 'src/client/entry.json'
         ? {
-            uri: 'https://schemas.nocobase.com/light-extension/entry-v1.schema.json',
+            uri: 'https://schemas.nocobase.com/js-template/entry-v1.schema.json',
             schema: { type: 'object' },
           }
         : undefined,
@@ -1087,7 +1087,7 @@ describe('runJSStudioProvider', () => {
     );
     expect(screen.getByTestId('mock-code-editor')).toHaveAttribute(
       'data-json-schema-uri',
-      'https://schemas.nocobase.com/light-extension/entry-v1.schema.json',
+      'https://schemas.nocobase.com/js-template/entry-v1.schema.json',
     );
   });
 

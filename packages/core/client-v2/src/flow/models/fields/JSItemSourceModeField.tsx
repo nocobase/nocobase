@@ -9,13 +9,13 @@
 
 import { createRunJSSourceModeField, type RunJSSourceModeFieldProps } from '../../components/runjs-source';
 
-export const JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSItemLightExtensionFullSourceField';
-export const JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSItemLightExtensionSettingsStepField';
-export const JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD = JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD;
-export const JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD = JS_ITEM_LIGHT_EXTENSION_SETTINGS_STEP_FIELD;
+export const JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD = 'JSItemJsTemplateFullSourceField';
+export const JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD = 'JSItemJsTemplateSettingsStepField';
+export const JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD = JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD;
+export const JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD = JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD;
 
 export type JSItemSourceModeFieldProps = RunJSSourceModeFieldProps;
 
-export const JSItemSourceModeField = createRunJSSourceModeField(JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD);
+export const JSItemSourceModeField = createRunJSSourceModeField(JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD);
 
 export default JSItemSourceModeField;

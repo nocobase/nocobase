@@ -20,7 +20,7 @@ export * from './JSActionSourceModeField';
 export * from './JSCollectionActionModel';
 export * from './JSItemActionModel';
 export * from './JSRecordActionModel';
-export * from './jsActionLightExtensionRuntime';
+export * from './jsActionJsTemplateRuntime';
 export * from './PopupCollectionActionModel';
 export * from './RefreshActionModel';
 export * from './UpdateRecordActionModel';

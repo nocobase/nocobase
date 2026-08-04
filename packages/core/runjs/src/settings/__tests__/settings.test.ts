@@ -8,10 +8,10 @@
  */
 
 import {
-  getLightExtensionSettingStepKey,
-  normalizeLightExtensionEntrySelection,
-  normalizeLightExtensionSettings,
-  setLightExtensionTopLevelSetting,
+  getJsTemplateSettingStepKey,
+  normalizeJsTemplateSelection,
+  normalizeJsTemplateSettings,
+  setJsTemplateTopLevelSetting,
 } from '..';
 
 const descriptor = {
@@ -42,7 +42,7 @@ const descriptor = {
 describe('@nocobase/runjs/settings', () => {
   it('deeply fills missing defaults without replacing saved values', () => {
     expect(
-      normalizeLightExtensionSettings(descriptor, {
+      normalizeJsTemplateSettings(descriptor, {
         displayOptions: {
           pageSize: 50,
         },
@@ -58,18 +58,18 @@ describe('@nocobase/runjs/settings', () => {
   });
 
   it('preserves settings for the same entry and resets them for another entry', () => {
-    const currentBinding = { entryId: 'entry-sales' };
+    const currentBinding = { templateId: 'entry-sales' };
     expect(
-      normalizeLightExtensionEntrySelection({
+      normalizeJsTemplateSelection({
         currentBinding,
         currentSettings: { mode: 2 },
-        nextBinding: { entryId: 'entry-sales' },
+        nextBinding: { templateId: 'entry-sales' },
         descriptor,
       }),
     ).toMatchObject({ mode: 2 });
 
     expect(
-      normalizeLightExtensionEntrySelection({
+      normalizeJsTemplateSelection({
         currentBinding,
         currentSettings: {
           mode: 2,
@@ -77,7 +77,7 @@ describe('@nocobase/runjs/settings', () => {
           displayOptions: { pageSize: 50, color: 'red', removedNested: true },
         },
         submittedSettings: { displayOptions: { pageSize: 60 }, anotherRemovedSetting: true },
-        nextBinding: { entryId: 'entry-sales' },
+        nextBinding: { templateId: 'entry-sales' },
         descriptor,
       }),
     ).toEqual({
@@ -86,27 +86,27 @@ describe('@nocobase/runjs/settings', () => {
     });
 
     expect(
-      normalizeLightExtensionEntrySelection({
+      normalizeJsTemplateSelection({
         currentBinding,
         currentSettings: { mode: 2 },
-        nextBinding: { entryId: 'entry-orders' },
+        nextBinding: { templateId: 'entry-orders' },
         descriptor: { ...descriptor, entryId: 'entry-orders' },
       }),
     ).toEqual({});
   });
 
   it('keeps descriptor defaults out of Host overrides so later default changes remain effective', () => {
-    const overrides = normalizeLightExtensionEntrySelection({
-      currentBinding: { entryId: 'entry-sales' },
+    const overrides = normalizeJsTemplateSelection({
+      currentBinding: { templateId: 'entry-sales' },
       currentSettings: { mode: 2 },
-      nextBinding: { entryId: 'entry-orders' },
+      nextBinding: { templateId: 'entry-orders' },
       descriptor: { ...descriptor, entryId: 'entry-orders' },
     });
 
     expect(overrides).toEqual({});
-    expect(normalizeLightExtensionSettings(descriptor, overrides)).toMatchObject({ mode: 1 });
+    expect(normalizeJsTemplateSettings(descriptor, overrides)).toMatchObject({ mode: 1 });
     expect(
-      normalizeLightExtensionSettings(
+      normalizeJsTemplateSettings(
         {
           ...descriptor,
           defaults: { ...descriptor.defaults, mode: 3 },
@@ -125,13 +125,13 @@ describe('@nocobase/runjs/settings', () => {
 
   it('prunes same-entry overrides against the current schema without materializing defaults', () => {
     expect(
-      normalizeLightExtensionEntrySelection({
-        currentBinding: { entryId: 'entry-sales' },
+      normalizeJsTemplateSelection({
+        currentBinding: { templateId: 'entry-sales' },
         currentSettings: {
           displayOptions: { pageSize: 50, removedNested: true },
           removedSetting: true,
         },
-        nextBinding: { entryId: 'entry-sales' },
+        nextBinding: { templateId: 'entry-sales' },
         descriptor,
       }),
     ).toEqual({
@@ -141,24 +141,24 @@ describe('@nocobase/runjs/settings', () => {
 
   it('saves scalar and object top-level settings without mutating the input', () => {
     const current = { mode: 1 };
-    const next = setLightExtensionTopLevelSetting(current, 'displayOptions', { pageSize: 30 });
+    const next = setJsTemplateTopLevelSetting(current, 'displayOptions', { pageSize: 30 });
     expect(next).toEqual({ mode: 1, displayOptions: { pageSize: 30 } });
     expect(current).toEqual({ mode: 1 });
   });
 
   it('removes a cleared override so the descriptor default becomes effective again', () => {
-    const cleared = setLightExtensionTopLevelSetting({ mode: 2 }, 'mode', undefined);
+    const cleared = setJsTemplateTopLevelSetting({ mode: 2 }, 'mode', undefined);
 
     expect(cleared).toEqual({});
-    expect(normalizeLightExtensionSettings(descriptor, cleared)).toMatchObject({ mode: 1 });
+    expect(normalizeJsTemplateSettings(descriptor, cleared)).toMatchObject({ mode: 1 });
   });
 
   it('keeps step identity stable for schema changes and changes it for another entry', () => {
-    expect(getLightExtensionSettingStepKey('entry-sales', 'displayOptions')).toBe(
-      getLightExtensionSettingStepKey('entry-sales', 'displayOptions'),
+    expect(getJsTemplateSettingStepKey('entry-sales', 'displayOptions')).toBe(
+      getJsTemplateSettingStepKey('entry-sales', 'displayOptions'),
     );
-    expect(getLightExtensionSettingStepKey('entry-sales', 'displayOptions')).not.toBe(
-      getLightExtensionSettingStepKey('entry-orders', 'displayOptions'),
+    expect(getJsTemplateSettingStepKey('entry-sales', 'displayOptions')).not.toBe(
+      getJsTemplateSettingStepKey('entry-orders', 'displayOptions'),
     );
   });
 });

@@ -18,7 +18,7 @@ import {
   getJSActionRuntimeFlowSettingSteps,
   INLINE_SOURCE_MODE,
   runJSActionRuntime,
-} from '../../actions/jsActionLightExtensionRuntime';
+} from '../../actions/jsActionJsTemplateRuntime';
 
 export class FilterFormJSActionModel extends FilterFormActionModel {
   public async getRuntimeFlowSettingSteps(flowKey: string): Promise<Record<string, StepDefinition> | undefined> {

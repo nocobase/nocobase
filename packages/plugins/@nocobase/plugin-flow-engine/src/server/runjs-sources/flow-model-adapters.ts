@@ -33,16 +33,16 @@ type JsonPath = Array<string | number>;
 
 /**
  * Canonical JS Template integration names map to the established FlowModel and RunJS wire keys. This package cannot
- * depend on the optional Light Extension plugin, so the literal contract is pinned here and compared by tests.
+ * depend on the optional JS Template plugin, so the literal contract is pinned here and compared by tests.
  */
 export const JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT = Object.freeze({
-  sourceMode: 'light-extension',
-  sourceBindingType: 'light-extension-entry',
+  sourceMode: 'js-template',
+  sourceBindingType: 'js-template-entry',
   locatorKind: 'flowModel.step',
   stepKey: 'runJs',
   paramPath: Object.freeze(['code']),
   versionPath: Object.freeze(['version']),
-  sourceMetadataKindKey: 'lightExtensionKind',
+  sourceMetadataKindKey: 'jsTemplateKind',
   modelSurfaces: Object.freeze([
     { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },

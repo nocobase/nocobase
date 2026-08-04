@@ -15,13 +15,13 @@ import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import {
-  markLightExtensionReferencesOwnerMissingForNodeTree,
-  syncLightExtensionReferencesForNodeTree,
-} from './flow-surfaces/light-extension-reference-integration';
+  markJsTemplateUsagesOwnerMissingForNodeTree,
+  syncJsTemplateUsagesForNodeTree,
+} from './flow-surfaces/js-template-usage-integration';
 import { FlowSchemaModel } from './model';
 import FlowModelRepository from './repository';
 
-type LightExtensionReferenceActionContext = {
+type JsTemplateUsageActionContext = {
   request?: {
     headers?: Record<string, string | string[] | undefined>;
     header?: Record<string, string | string[] | undefined>;
@@ -129,7 +129,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     });
 
     db.on('flowModels.beforeRemoveTree', async (payload, options) => {
-      await markLightExtensionReferencesOwnerMissingForNodeTree(
+      await markJsTemplateUsagesOwnerMissingForNodeTree(
         this,
         {
           rootUid: payload?.rootUid,
@@ -160,13 +160,13 @@ export class PluginUISchemaStorageServer extends Plugin {
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           const duplicated = await ctx.db.sequelize.transaction(async (transaction) => {
             const duplicated = await repository.duplicate(uid, { transaction });
-            await syncLightExtensionReferencesForNodeTree(
+            await syncJsTemplateUsagesForNodeTree(
               this,
               {
                 rootUid: duplicated?.uid,
                 action: 'flowModels.duplicate',
               },
-              getLightExtensionReferenceContext(ctx, transaction),
+              getJsTemplateUsageContext(ctx, transaction),
             );
             return duplicated;
           });
@@ -197,13 +197,13 @@ export class PluginUISchemaStorageServer extends Plugin {
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           const uid = await ctx.db.sequelize.transaction(async (transaction) => {
             const uid = await repository.upsertModel(values, { transaction });
-            await syncLightExtensionReferencesForNodeTree(
+            await syncJsTemplateUsagesForNodeTree(
               this,
               {
                 rootUid: uid,
                 action: 'flowModels.save',
               },
-              getLightExtensionReferenceContext(ctx, transaction),
+              getJsTemplateUsageContext(ctx, transaction),
             );
             return uid;
           });
@@ -257,9 +257,9 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 }
 
-function getLightExtensionReferenceContext(ctx: unknown, transaction?: Transaction) {
-  const actionCtx: LightExtensionReferenceActionContext =
-    ctx && typeof ctx === 'object' ? (ctx as LightExtensionReferenceActionContext) : {};
+function getJsTemplateUsageContext(ctx: unknown, transaction?: Transaction) {
+  const actionCtx: JsTemplateUsageActionContext =
+    ctx && typeof ctx === 'object' ? (ctx as JsTemplateUsageActionContext) : {};
   const headers = actionCtx.request?.headers || actionCtx.request?.header || {};
   return {
     can: actionCtx.can,
@@ -273,7 +273,7 @@ function getLightExtensionReferenceContext(ctx: unknown, transaction?: Transacti
   };
 }
 
-function getCurrentUserId(ctx: LightExtensionReferenceActionContext): string | null {
+function getCurrentUserId(ctx: JsTemplateUsageActionContext): string | null {
   const user = ctx.auth?.user;
   if (!user || typeof user !== 'object') {
     return null;

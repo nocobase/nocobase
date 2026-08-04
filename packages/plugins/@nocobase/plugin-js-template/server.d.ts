@@ -1,2 +1,2 @@
-export * from '@nocobase/plugin-light-extension/server';
-export { default } from '@nocobase/plugin-light-extension/server';
+export * from './dist/server';
+export { default } from './dist/server';

@@ -35,7 +35,7 @@ type SavedRunJSValue = RunJSValue & {
 };
 
 const UNSAFE_RUNJS_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
-const SOURCE_BINDING_IDENTITY_KEYS = ['type', 'repoId', 'entryId', 'kind'] as const;
+const SOURCE_BINDING_IDENTITY_KEYS = ['type', 'projectId', 'templateId', 'kind'] as const;
 
 function isRecord(value: unknown): value is StepParams {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -192,7 +192,7 @@ function containsRunJSSourceBinding(
 
   const record = value as Record<string, unknown>;
   if (typeof record.code === 'string' || typeof record.script === 'string') {
-    return record.sourceMode === 'light-extension' && hasSameSourceBinding(record.sourceBinding, sourceBinding);
+    return record.sourceMode === 'js-template' && hasSameSourceBinding(record.sourceBinding, sourceBinding);
   }
 
   return Object.values(record).some((item) => containsRunJSSourceBinding(item, sourceBinding, visited));
@@ -372,7 +372,7 @@ function syncFlowModelStepValue(
   persistedHostModels.forEach((loadedModel) => {
     loadedModel.setStepParams(locator.flowKey, locator.stepKey, cloneRecord(currentStepParams));
   });
-  const refreshExternalSource = !persist && value.sourceMode === 'light-extension' && isRecord(value.sourceBinding);
+  const refreshExternalSource = !persist && value.sourceMode === 'js-template' && isRecord(value.sourceBinding);
   if (!stepParamsChanged && !refreshExternalSource) {
     invalidateRunJSSourceHost(model);
   }

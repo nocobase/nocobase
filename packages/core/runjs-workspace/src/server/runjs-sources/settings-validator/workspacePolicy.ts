@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_ENTRY_KEY_PATTERN } from '@nocobase/js-template-sdk/schema';
+import { JS_TEMPLATE_KEY_PATTERN } from '@nocobase/js-template-sdk/schema';
 
-const entryKeyPattern = new RegExp(LIGHT_EXTENSION_ENTRY_KEY_PATTERN);
+const entryKeyPattern = new RegExp(JS_TEMPLATE_KEY_PATTERN);
 
 export function isValidEntryName(value: string): boolean {
   return entryKeyPattern.test(value);

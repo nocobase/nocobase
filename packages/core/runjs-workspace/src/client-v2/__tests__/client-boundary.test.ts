@@ -41,7 +41,7 @@ describe('RunJS workspace client-v2 boundary', () => {
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
   });
 
-  it('does not import the legacy client or Light Extension domain contracts', () => {
+  it('does not import the legacy client or JS Template domain contracts', () => {
     const clientRoot = path.resolve(__dirname, '..');
     const sources = readSourceFiles(clientRoot)
       .filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`))
@@ -49,8 +49,8 @@ describe('RunJS workspace client-v2 boundary', () => {
       .join('\n');
 
     expect(sources).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
-    expect(sources).not.toMatch(/LightExtension(?:Repository|Repo|Entry|RuntimeSourceBinding)/);
-    expect(sources).not.toContain('@nocobase/plugin-light-extension');
+    expect(sources).not.toMatch(/JsTemplate(?:Repository|Repo|Entry|RuntimeSourceBinding)/);
+    expect(sources).not.toContain('@nocobase/plugin-js-template');
   });
 });
 

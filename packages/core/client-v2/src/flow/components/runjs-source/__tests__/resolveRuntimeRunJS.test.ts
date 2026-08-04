@@ -18,10 +18,10 @@ import {
 } from '../index';
 import { evaluateResolvedRunJSValue, getRunJSModelUse } from '../runJSRuntime';
 
-const LIGHT_EXTENSION_SOURCE_BINDING = {
-  type: 'light-extension-entry',
-  repoId: 'repo_sales',
-  entryId: 'entry_sales_kpi',
+const JS_TEMPLATE_SOURCE_BINDING = {
+  type: 'js-template-entry',
+  projectId: 'jtp_sales',
+  templateId: 'jtt_sales_kpi',
   kind: 'js-block',
 };
 
@@ -69,7 +69,7 @@ describe('resolveRuntimeRunJS', () => {
       version: 'v2',
     }));
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve,
     });
 
@@ -79,7 +79,7 @@ describe('resolveRuntimeRunJS', () => {
           code: 'return "legacy inline";',
           version: 'v1',
           sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
-          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
           settings: { region: 'APAC' },
         },
       }),
@@ -145,7 +145,7 @@ return {
       },
     }));
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve,
     });
 
@@ -154,15 +154,15 @@ return {
     };
     await expect(
       resolveRuntimeRunJS({
-        sourceMode: 'light-extension',
-        sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        sourceMode: 'js-template',
+        sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
         settings,
       }),
     ).resolves.toMatchObject({
       code: 'ctx.render("sales");',
       version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
       sourceMap: {
         version: 3,
         mappings: '',
@@ -171,8 +171,8 @@ return {
     });
     expect(resolve).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceMode: 'light-extension',
-        sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        sourceMode: 'js-template',
+        sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
         settings,
       }),
     );
@@ -187,7 +187,7 @@ return {
       },
     }));
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve,
     });
 
@@ -196,8 +196,8 @@ return {
         runJs: {
           code: 'return "inline";',
           version: 'v1',
-          sourceMode: 'light-extension',
-          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          sourceMode: 'js-template',
+          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
           settings: {
             currency: 'CNY',
           },
@@ -206,15 +206,15 @@ return {
     ).resolves.toMatchObject({
       code: 'return ctx.settings.currency;',
       version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
       settings: {
         currency: 'USD',
       },
     });
     expect(resolve).toHaveBeenCalledWith(
       expect.objectContaining({
-        sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
         settings: {
           currency: 'CNY',
         },
@@ -224,7 +224,7 @@ return {
 
   it('executes the compiled artifact while leaving the inline fallback untouched', async () => {
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: () => ({
         code: 'return "compiled artifact";',
         version: 'v2',
@@ -234,22 +234,22 @@ return {
       code: 'return "inline fallback";',
       version: 'v1',
       sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
     };
 
     await expect(resolveRuntimeRunJS({ runJs })).resolves.toMatchObject({
       code: 'return "compiled artifact";',
       version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
     });
     expect(runJs).toEqual({
       code: 'return "inline fallback";',
       version: 'v1',
       sourceRef: { type: 'vsc-file', path: 'legacy/runjs.ts' },
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
     });
   });
 
@@ -286,12 +286,12 @@ return {
   it('rejects external source bindings without a sourceBinding object', async () => {
     await expect(
       resolveRunJSSourceBinding({
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: null,
       }),
     ).rejects.toMatchObject({
       code: 'RUNJS_SOURCE_BINDING_REQUIRED',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
     } satisfies Partial<RunJSSourceResolverError>);
   });
 
@@ -320,13 +320,13 @@ return {
   it('throws a standard error when external sourceMode has no resolver', async () => {
     await expect(
       resolveRuntimeRunJS({
-        sourceMode: 'light-extension',
-        sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+        sourceMode: 'js-template',
+        sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
       }),
     ).rejects.toMatchObject({
       name: 'RunJSSourceResolverError',
       code: 'RUNJS_SOURCE_RESOLVER_NOT_FOUND',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
     } satisfies Partial<RunJSSourceResolverError>);
   });
 
@@ -335,28 +335,28 @@ return {
       resolveRuntimeRunJS({
         runJs: {
           code: 'return "last known good";',
-          sourceMode: 'light-extension',
-          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          sourceMode: 'js-template',
+          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
           settings: { region: 'APAC' },
         },
       }),
     ).resolves.toEqual({
       code: 'return "last known good";',
       version: 'v1',
-      sourceMode: 'light-extension',
-      sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+      sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
       settings: { region: 'APAC' },
       context: undefined,
     });
   });
 
   it.each([
-    Object.assign(new Error('runtime unavailable'), { code: 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE', status: 409 }),
+    Object.assign(new Error('runtime unavailable'), { code: 'JS_TEMPLATE_RUNTIME_UNAVAILABLE', status: 409 }),
     Object.assign(new Error('resource unavailable'), { response: { status: 404 } }),
     Object.assign(new Error('service unavailable'), { response: { status: 503 } }),
   ])('uses the retained artifact for an explicitly unavailable resolver service', async (resolverError) => {
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: async () => {
         throw resolverError;
       },
@@ -367,25 +367,25 @@ return {
         runJs: {
           code: 'return "last known good";',
           version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          sourceMode: 'js-template',
+          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
         },
       }),
     ).resolves.toMatchObject({
       code: 'return "last known good";',
       version: 'v2',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
     });
   });
 
   it.each([
-    Object.assign(new Error('permission denied'), { code: 'LIGHT_EXTENSION_PERMISSION_DENIED', status: 403 }),
-    Object.assign(new Error('settings invalid'), { code: 'LIGHT_EXTENSION_SETTINGS_INVALID', status: 422 }),
-    Object.assign(new Error('validation failed'), { code: 'LIGHT_EXTENSION_VALIDATION_FAILED', status: 503 }),
-    Object.assign(new Error('binding conflict'), { code: 'LIGHT_EXTENSION_BINDING_OUTDATED', status: 409 }),
+    Object.assign(new Error('permission denied'), { code: 'JS_TEMPLATE_PERMISSION_DENIED', status: 403 }),
+    Object.assign(new Error('settings invalid'), { code: 'JS_TEMPLATE_SETTINGS_INVALID', status: 422 }),
+    Object.assign(new Error('validation failed'), { code: 'JS_TEMPLATE_VALIDATION_FAILED', status: 503 }),
+    Object.assign(new Error('binding conflict'), { code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 }),
   ])('preserves permission and data errors instead of using the retained artifact', async (resolverError) => {
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: async () => {
         throw resolverError;
       },
@@ -396,8 +396,8 @@ return {
         runJs: {
           code: 'return "last known good";',
           version: 'v2',
-          sourceMode: 'light-extension',
-          sourceBinding: LIGHT_EXTENSION_SOURCE_BINDING,
+          sourceMode: 'js-template',
+          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
         },
       }),
     ).rejects.toBe(resolverError);

@@ -11,8 +11,6 @@ import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-export const lightExtensionEntryV1SchemaFilePath = resolve(__dirname, 'entry-v1.schema.json');
-export const lightExtensionEntryV1SchemaFileContent = readFileSync(lightExtensionEntryV1SchemaFilePath, 'utf8');
-export const lightExtensionEntryV1SchemaSha256 = createHash('sha256')
-  .update(lightExtensionEntryV1SchemaFileContent)
-  .digest('hex');
+export const jsTemplateV1SchemaFilePath = resolve(__dirname, 'entry-v1.schema.json');
+export const jsTemplateV1SchemaFileContent = readFileSync(jsTemplateV1SchemaFilePath, 'utf8');
+export const jsTemplateV1SchemaSha256 = createHash('sha256').update(jsTemplateV1SchemaFileContent).digest('hex');

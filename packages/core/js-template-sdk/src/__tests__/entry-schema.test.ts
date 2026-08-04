@@ -12,65 +12,66 @@ import fs from 'fs';
 import path from 'path';
 
 import {
-  buildLightExtensionSettingsSchema,
-  LIGHT_EXTENSION_ENTRY_KEY_PATTERN,
-  LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
-  LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION,
-  LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS,
-  LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS,
-  LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS,
-  LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS,
-  LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES,
-  LIGHT_EXTENSION_X_COMPONENT_WHITELIST,
-  lightExtensionEntryV1Schema,
-  lightExtensionEntryV1SchemaJson,
+  buildJsTemplateSettingsDefinition,
+  buildJsTemplateSettingsSchema,
+  JS_TEMPLATE_KEY_PATTERN,
+  JS_TEMPLATE_SCHEMA_URI,
+  JS_TEMPLATE_SCHEMA_VERSION,
+  JS_TEMPLATE_SETTINGS_CONDITION_LIMITS,
+  JS_TEMPLATE_SETTINGS_CONDITION_LOGICS,
+  JS_TEMPLATE_SETTINGS_CONDITION_OPERATORS,
+  JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS,
+  JS_TEMPLATE_SETTINGS_SCHEMA_TYPES,
+  JS_TEMPLATE_X_COMPONENT_WHITELIST,
+  jsTemplateV1Schema,
+  jsTemplateV1SchemaJson,
 } from '../schema';
-import { lightExtensionEntryV1SchemaFileContent, lightExtensionEntryV1SchemaSha256 } from '../schema/server';
+import { jsTemplateV1SchemaFileContent, jsTemplateV1SchemaSha256 } from '../schema/server';
 
 describe('@nocobase/js-template-sdk entry.json schema', () => {
   const ajv = new Ajv({ allErrors: true, jsonPointers: true });
-  const validate = ajv.compile(lightExtensionEntryV1Schema);
+  const validate = ajv.compile(jsTemplateV1Schema);
 
   it('passes JSON Schema meta-validation and validates the canonical example', () => {
-    expect(ajv.validateSchema(lightExtensionEntryV1Schema)).toBe(true);
-    expect(validate(lightExtensionEntryV1Schema.examples[0])).toBe(true);
+    expect(ajv.validateSchema(jsTemplateV1Schema)).toBe(true);
+    expect(validate(jsTemplateV1Schema.examples[0])).toBe(true);
     const canonicalFile = fs.readFileSync(path.resolve(__dirname, '../schema/entry-v1.schema.json'), 'utf8');
-    expect(lightExtensionEntryV1SchemaFileContent).toBe(canonicalFile);
-    expect(lightExtensionEntryV1SchemaSha256).toMatch(/^[a-f0-9]{64}$/u);
+    expect(jsTemplateV1SchemaFileContent).toBe(canonicalFile);
+    expect(jsTemplateV1SchemaSha256).toMatch(/^[a-f0-9]{64}$/u);
   });
 
   it('locks canonical constants to the schema', () => {
-    const schema = lightExtensionEntryV1Schema;
+    const schema = jsTemplateV1Schema;
     const settingsSchema = schema.definitions.settingsSchema;
     const conditionRefs = schema.definitions.condition.oneOf.map((item) => item.$ref);
 
-    expect(schema.$id).toBe(LIGHT_EXTENSION_ENTRY_SCHEMA_URI);
-    expect(schema.properties.schemaVersion.const).toBe(LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION);
-    expect(schema.properties.key.pattern).toBe(LIGHT_EXTENSION_ENTRY_KEY_PATTERN);
+    expect(schema.$id).toBe(JS_TEMPLATE_SCHEMA_URI);
+    expect(schema.properties.schemaVersion.const).toBe(JS_TEMPLATE_SCHEMA_VERSION);
+    expect(schema.properties.key.pattern).toBe(JS_TEMPLATE_KEY_PATTERN);
     expect(schema.properties).not.toHaveProperty('$schema');
     expect(schema.properties).not.toHaveProperty('settingsSchema');
     expect(schema.properties.settings.description).toContain('Settings field definitions');
     expect(schema.properties.settings.additionalProperties.$ref).toBe('#/definitions/settingsSchema');
-    expect(settingsSchema.properties.type.enum).toEqual(LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES);
-    expect(Object.keys(settingsSchema.properties)).toEqual(LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS);
-    expect(settingsSchema.properties['x-component'].enum).toEqual(LIGHT_EXTENSION_X_COMPONENT_WHITELIST);
+    expect(settingsSchema.properties.type.enum).toEqual(JS_TEMPLATE_SETTINGS_SCHEMA_TYPES);
+    expect(Object.keys(settingsSchema.properties)).toEqual(JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS);
+    expect(settingsSchema.properties['x-component'].enum).toEqual(JS_TEMPLATE_X_COMPONENT_WHITELIST);
     expect(settingsSchema.properties['x-visible-when'].description).toContain('controls whether');
     expect(schema.definitions.conditionWithValue.properties.operator.enum).toEqual(['$eq', '$ne']);
     expect(schema.definitions.conditionWithArrayValue.properties.operator.enum).toEqual(['$in', '$notIn']);
     expect(schema.definitions.conditionWithoutValue.properties.operator.enum).toEqual(['$empty', '$notEmpty']);
-    expect(schema.definitions.conditionGroup.properties.logic.enum).toEqual(LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS);
+    expect(schema.definitions.conditionGroup.properties.logic.enum).toEqual(JS_TEMPLATE_SETTINGS_CONDITION_LOGICS);
     expect(schema.definitions.conditionGroup.properties.items.maxItems).toBe(
-      LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS.maxItemsPerGroup,
+      JS_TEMPLATE_SETTINGS_CONDITION_LIMITS.maxItemsPerGroup,
     );
     expect(conditionRefs).toHaveLength(4);
     expect([
       ...schema.definitions.conditionWithValue.properties.operator.enum,
       ...schema.definitions.conditionWithArrayValue.properties.operator.enum,
       ...schema.definitions.conditionWithoutValue.properties.operator.enum,
-    ]).toEqual(LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS);
+    ]).toEqual(JS_TEMPLATE_SETTINGS_CONDITION_OPERATORS);
   });
 
-  it('rejects legacy fields, old kinds of expressions, and malformed conditions', () => {
+  it('rejects non-canonical fields, unsupported expressions, and malformed conditions', () => {
     expect(validate({ schemaVersion: 1, key: 'sales', meta: {} })).toBe(false);
     expect(
       validate({
@@ -88,7 +89,7 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
       validate({
         schemaVersion: 1,
         key: 'sales',
-        $schema: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+        $schema: JS_TEMPLATE_SCHEMA_URI,
       }),
     ).toBe(false);
     expect(
@@ -98,7 +99,7 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
         settingsSchema: { type: 'object', properties: {} },
       }),
     ).toBe(false);
-    expect(lightExtensionEntryV1SchemaJson).not.toMatch(/meta\.json|settings\.json|"runjs"|\$not"/u);
+    expect(jsTemplateV1SchemaJson).not.toMatch(/meta\.json|settings\.json|"runjs"|\$not"/u);
   });
 
   it('allows visibility only on object properties outside array item subtrees', () => {
@@ -136,26 +137,27 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
   });
 
   it('normalizes required flags recursively through objects and array items', () => {
-    expect(
-      buildLightExtensionSettingsSchema({
-        mode: { type: 'string', required: true },
-        groups: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              label: { type: 'string', required: true },
-              options: {
-                type: 'object',
-                properties: {
-                  enabled: { type: 'boolean', required: true },
-                },
+    const settings = {
+      mode: { type: 'string', required: true },
+      groups: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            label: { type: 'string', required: true },
+            options: {
+              type: 'object',
+              properties: {
+                enabled: { type: 'boolean', required: true },
               },
             },
           },
         },
-      }),
-    ).toEqual({
+      },
+    };
+    const settingsSchema = buildJsTemplateSettingsSchema(settings);
+
+    expect(settingsSchema).toEqual({
       type: 'object',
       required: ['mode'],
       properties: {
@@ -179,5 +181,6 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
         },
       },
     });
+    expect(buildJsTemplateSettingsDefinition(settingsSchema)).toEqual(settings);
   });
 });

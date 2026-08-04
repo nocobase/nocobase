@@ -10,14 +10,14 @@
 import ts from 'typescript';
 
 import {
-  createActiveEntryContextType,
+  createActiveTemplateContextType,
   generateClientSettingsTypes,
   generateInlineClientSettingsTypes,
-  LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH,
+  JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH,
   parseSettingsTypeImport,
 } from '../typegen';
 
-describe('light extension settings typegen', () => {
+describe('JS Template settings typegen', () => {
   it('generates nested object, array, enum and required types from the entry.json settings field map', () => {
     const result = generateClientSettingsTypes({
       files: [
@@ -45,7 +45,7 @@ describe('light extension settings typegen', () => {
     });
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.entries).toHaveLength(1);
+    expect(result.templates).toHaveLength(1);
     const content = result.files.find((file) => file.path.endsWith('/sales-kpi.d.ts'))?.content || '';
     expect(content).toContain('mode: 1 | 2;');
     expect(content).toContain('title?: string;');
@@ -65,43 +65,32 @@ describe('light extension settings typegen', () => {
             content: JSON.stringify({ key: 'stable-sales', settings: {} }),
           },
         ],
-      }).entries[0];
+      }).templates[0];
 
-    expect(generate('before').virtualImport).toBe('light-extension:settings/client/js-block/stable-sales');
+    expect(generate('before').virtualImport).toBe('js-template:settings/client/js-block/stable-sales');
     expect(generate('after').virtualImport).toBe(generate('before').virtualImport);
     expect(generate('after').outputPath).toBe(generate('before').outputPath);
   });
 
-  it('keeps legacy settingsSchema type generation isolated from the preferred settings field', () => {
-    const legacy = generateClientSettingsTypes({
+  it('rejects the non-canonical settingsSchema field', () => {
+    const result = generateClientSettingsTypes({
       files: [
         {
-          path: 'src/client/js-blocks/legacy/entry.json',
+          path: 'src/client/js-blocks/invalid/entry.json',
           content: JSON.stringify({
-            key: 'legacy',
+            key: 'invalid',
             settingsSchema: { type: 'object', required: ['mode'], properties: { mode: { type: 'string' } } },
           }),
         },
       ],
     });
-    const mixed = generateClientSettingsTypes({
-      files: [
-        {
-          path: 'src/client/js-blocks/mixed/entry.json',
-          content: JSON.stringify({ key: 'mixed', settings: {}, settingsSchema: {} }),
-        },
-      ],
-    });
-
-    expect(legacy.diagnostics).toEqual([]);
-    expect(legacy.files.find((file) => file.path.endsWith('/legacy.d.ts'))?.content).toContain('mode: string;');
-    expect(mixed.entries).toEqual([]);
-    expect(mixed.diagnostics).toContainEqual(
-      expect.objectContaining({ message: 'entry.json must not define both settings and settingsSchema' }),
+    expect(result.templates).toEqual([]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ message: 'entry.json settingsSchema is not supported; use settings' }),
     );
   });
 
-  it('replaces the active Entry context shim and types ctx.settings', () => {
+  it('replaces the active template context shim and types ctx.settings', () => {
     const result = generateClientSettingsTypes({
       files: [
         descriptor('js-blocks', 'sales-dir', 'sales', 'mode', 'number'),
@@ -111,20 +100,20 @@ describe('light extension settings typegen', () => {
         descriptor('js-items', 'item-dir', 'item', 'label', 'string'),
       ],
     });
-    const sales = createActiveEntryContextType({
+    const sales = createActiveTemplateContextType({
       activePath: 'src/client/js-blocks/sales-dir/index.tsx',
-      entries: result.entries,
+      templates: result.templates,
     });
-    const orders = createActiveEntryContextType({
+    const orders = createActiveTemplateContextType({
       activePath: 'src/client/js-actions/order-dir/index.ts',
-      entries: result.entries,
+      templates: result.templates,
     });
-    expect(sales.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
+    expect(sales.file?.path).toBe(JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH);
     expect(sales.file?.content).toContain('client/js-block/sales');
-    expect(orders.file?.path).toBe(LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH);
+    expect(orders.file?.path).toBe(JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH);
     expect(orders.file?.content).toContain('client/js-action/orders');
     expect(orders.file?.content).not.toContain('client/js-block/sales');
-    expect(result.entries.map((entry) => entry.kind).sort()).toEqual(
+    expect(result.templates.map((entry) => entry.kind).sort()).toEqual(
       ['js-action', 'js-block', 'js-field', 'js-item', 'js-page'].sort(),
     );
     expect(result.files.find((file) => file.path.endsWith('/js-block/sales.d.ts'))?.content).toContain(
@@ -143,7 +132,7 @@ describe('light extension settings typegen', () => {
       'export type Context = JSItemContext<Settings>;',
     );
     if (!sales.file || !orders.file) {
-      throw new Error('Expected active Entry context declarations');
+      throw new Error('Expected active template context declarations');
     }
 
     const salesDiagnostics = getTypeScriptDiagnostics([
@@ -169,9 +158,9 @@ describe('light extension settings typegen', () => {
       files: [descriptor('runjs', 'subtotal-dir', 'subtotal', 'precision', 'number')],
     });
 
-    expect(result.entries).toEqual([]);
+    expect(result.templates).toEqual([]);
     expect(result.files.some((file) => file.path.includes('/client/runjs/'))).toBe(false);
-    expect(parseSettingsTypeImport('light-extension:settings/client/runjs/subtotal')).toBeNull();
+    expect(parseSettingsTypeImport('js-template:settings/client/runjs/subtotal')).toBeNull();
     expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
       'export interface RunJSContext',
     );
@@ -195,22 +184,22 @@ describe('light extension settings typegen', () => {
       ],
       kind: 'js-block',
     });
-    const active = createActiveEntryContextType({
+    const active = createActiveTemplateContextType({
       activePath: 'src/client/index.tsx',
-      entries: result.entries,
+      templates: result.templates,
     });
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.entries[0]).toMatchObject({
+    expect(result.templates[0]).toMatchObject({
       descriptorPath: 'src/client/entry.json',
       sourceRoot: 'src/client',
-      virtualImport: 'light-extension:settings/client/js-block/collection-table',
+      virtualImport: 'js-template:settings/client/js-block/collection-table',
     });
     expect(result.files.find((file) => file.path.endsWith('/collection-table.d.ts'))?.content).toContain(
       'columns?: Array<{}>;',
     );
     if (!active.file) {
-      throw new Error('Expected inline active Entry context declaration');
+      throw new Error('Expected inline active template context declaration');
     }
     const diagnostics = getTypeScriptDiagnostics([
       ...result.files,
@@ -226,31 +215,26 @@ describe('light extension settings typegen', () => {
     const result = generateClientSettingsTypes({
       files: [descriptor('js-pages', 'orders-dir', 'orders', 'title', 'string')],
     });
-    const entry = result.entries[0];
-    const active = createActiveEntryContextType({
+    const template = result.templates[0];
+    const active = createActiveTemplateContextType({
       activePath: 'src/client/js-pages/orders-dir/index.tsx',
-      entries: result.entries,
+      templates: result.templates,
     });
 
     expect(result.diagnostics).toEqual([]);
-    expect(entry).toMatchObject({
+    expect(template).toMatchObject({
       kind: 'js-page',
       sourceRoot: 'src/client/js-pages/orders-dir',
-      virtualImport: 'light-extension:settings/client/js-page/orders',
+      virtualImport: 'js-template:settings/client/js-page/orders',
     });
     expect(result.files.find((file) => file.path.endsWith('/js-page/orders.d.ts'))?.content).toContain(
       'export type Context = JSPageContext<Settings>;',
     );
-    expect(active.file?.content).toContain('type LightExtensionActiveEntryContext = RunJSContext & Context;');
-    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
-      'export interface JSPageContext',
-    );
-    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
-      'declare module "@nocobase/js-template-sdk/client"',
-    );
-    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
-      'declare module "@nocobase/light-extension-sdk/client"',
-    );
+    expect(active.file?.content).toContain('type JsTemplateActiveTemplateContext = RunJSContext & Context;');
+    const sdkDeclarations = result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content || '';
+    expect(sdkDeclarations).toContain('export interface JSPageContext');
+    expect(sdkDeclarations.match(/declare module "@nocobase\/js-template-sdk\/client"/gu)).toHaveLength(1);
+    expect(sdkDeclarations.match(/declare module "@nocobase\/js-template-sdk\/shared"/gu)).toHaveLength(1);
   });
 });
 
@@ -267,7 +251,7 @@ function descriptor(kindRoot: string, directoryName: string, key: string, proper
 function runJSContextDeclaration() {
   return {
     path: '__runjs__/context.d.ts',
-    content: 'interface RunJSContext { logger: unknown; }\ndeclare const ctx: LightExtensionActiveEntryContext;\n',
+    content: 'interface RunJSContext { logger: unknown; }\ndeclare const ctx: JsTemplateActiveTemplateContext;\n',
   };
 }
 

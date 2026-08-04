@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE } from '../shared/constants';
+import { JS_TEMPLATE_PERSISTED_VSC_OWNER_TYPE } from '../shared/constants';
 import { VscError } from '../shared/errors';
 import type { VscRepositoryRecord } from '../shared/types';
 
@@ -163,7 +163,7 @@ function isProtectedOwnerAllowResult(result: VscPermissionHookResult, input: Vsc
 
 function isProtectedOwnerType(input: VscPermissionHookInput): boolean {
   const ownerType = input.repository?.ownerType || input.ownerType;
-  return ownerType === LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE || ownerType === RUNJS_SOURCE_OWNER_TYPE;
+  return ownerType === JS_TEMPLATE_PERSISTED_VSC_OWNER_TYPE || ownerType === RUNJS_SOURCE_OWNER_TYPE;
 }
 
 function buildRawResourceAction(request: VscPermissionRequestMetadata | undefined, fallbackAction: string): string {

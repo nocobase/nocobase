@@ -2,40 +2,44 @@
   "name": "@nocobase/plugin-js-template",
   "displayName": "JS Templates",
   "displayName.zh-CN": "JS 模板",
-  "description": "Organize and reuse multi-file RunJS entries from JS Template repositories.",
-  "description.zh-CN": "组织并复用 JS 模板仓库中的多文件 RunJS Entry。",
+  "description": "Organize and reuse multi-file RunJS templates from JS Template projects.",
+  "description.zh-CN": "组织并复用 JS 模板项目中的多文件 RunJS 模板。",
   "version": "2.2.0-beta.16",
   "license": "Apache-2.0",
+  "main": "./dist/server/index.js",
   "files": [
-    "client.cjs",
-    "client.d.ts",
-    "client-v2.cjs",
+    "dist",
+    "src/swagger",
     "client-v2.d.ts",
-    "server.js",
-    "server.d.ts"
+    "client-v2.js",
+    "client.d.ts",
+    "client.js",
+    "server.d.ts",
+    "server.js"
   ],
-  "main": "./server.js",
   "exports": {
     ".": {
       "types": "./server.d.ts",
-      "import": "./server.js",
-      "require": "./server.js"
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/index.js"
     },
     "./client": {
       "types": "./client.d.ts",
-      "import": "./client.cjs",
-      "require": "./client.cjs"
+      "import": "./client.js",
+      "require": "./client.js"
     },
     "./client-v2": {
       "types": "./client-v2.d.ts",
-      "import": "./client-v2.cjs",
-      "require": "./client-v2.cjs"
+      "import": "./client-v2.js",
+      "require": "./client-v2.js"
     },
     "./server": {
       "types": "./server.d.ts",
       "import": "./server.js",
       "require": "./server.js"
     },
+    "./src/swagger/index.ts": "./src/swagger/index.ts",
+    "./dist/swagger/index.js": "./dist/swagger/index.js",
     "./package.json": "./package.json"
   },
   "homepage": "https://docs.nocobase.com",
@@ -44,6 +48,35 @@
     "Developer tools"
   ],
   "dependencies": {
-    "@nocobase/plugin-light-extension": "2.2.0-beta.16"
+    "@nocobase/js-template-sdk": "2.2.0-beta.16",
+    "@nocobase/runjs-workspace": "2.2.0-beta.16",
+    "jszip": "^3.10.1",
+    "typescript": "5.1.3"
+  },
+  "devDependencies": {
+    "@formily/core": "2.x",
+    "@formily/react": "2.x",
+    "dayjs": "^1.11.10",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.11.2"
+  },
+  "peerDependencies": {
+    "@ant-design/icons": "5.x",
+    "@nocobase/acl": "2.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
+    "@nocobase/plugin-environment-variables": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/runjs": "2.2.0-beta.16",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x",
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "react-i18next": "^11.15.1"
   }
 }

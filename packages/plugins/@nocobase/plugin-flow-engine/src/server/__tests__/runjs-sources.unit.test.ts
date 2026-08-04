@@ -24,13 +24,13 @@ type Registrar = {
 describe('flow-engine RunJS source registration', () => {
   it('pins JS Template integration to the historical FlowModel and source-binding wire keys', () => {
     expect(JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT).toEqual({
-      sourceMode: 'light-extension',
-      sourceBindingType: 'light-extension-entry',
+      sourceMode: 'js-template',
+      sourceBindingType: 'js-template-entry',
       locatorKind: 'flowModel.step',
       stepKey: 'runJs',
       paramPath: ['code'],
       versionPath: ['version'],
-      sourceMetadataKindKey: 'lightExtensionKind',
+      sourceMetadataKindKey: 'jsTemplateKind',
       modelSurfaces: [
         { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
         { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
@@ -257,8 +257,8 @@ describe('flow-engine RunJS source registration', () => {
     if (!isRecord(source)) {
       throw new Error('FlowModel step source is unavailable');
     }
-    source.sourceMode = 'light-extension';
-    source.sourceBinding = { type: 'light-extension-entry', repoId: 'extension-repo', entryId: 'entry-1' };
+    source.sourceMode = 'js-template';
+    source.sourceBinding = { type: 'js-template-entry', projectId: 'jtp_extension', templateId: 'jtt_1' };
     await expect(adapter.assertCanRead({ locator, ctx })).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
 
     const transitionCtx: RunJSSourceAdapterContext = { ...ctx, sourceTransition: 'external-to-inline' };
@@ -273,8 +273,8 @@ describe('flow-engine RunJS source registration', () => {
     });
     expect(getAtPath(model, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
       code: 'ctx.render("inline again");',
-      sourceMode: 'light-extension',
-      sourceBinding: { type: 'light-extension-entry', repoId: 'extension-repo', entryId: 'entry-1' },
+      sourceMode: 'js-template',
+      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_extension', templateId: 'jtt_1' },
     });
   });
 

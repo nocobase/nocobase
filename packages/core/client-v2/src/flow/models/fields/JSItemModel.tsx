@@ -20,7 +20,7 @@ import {
   INLINE_SOURCE_MODE,
   resetJSItemRuntimeElement,
   runJSItemRuntime,
-} from './jsItemLightExtensionRuntime';
+} from './jsItemJsTemplateRuntime';
 
 /**
  * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中

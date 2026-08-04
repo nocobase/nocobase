@@ -14,7 +14,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const INLINE_SOURCE_MODE = 'inline';
-const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
+const JS_TEMPLATE_SOURCE_MODE = 'js-template';
 
 export interface RunJSSourceModeFieldProps {
   value?: string;
@@ -73,7 +73,7 @@ const InlineRunJSSourceModeField: React.FC<RunJSSourceModeFieldProps> = ({ value
         onChange={(event) => handleModeChange(event.target.value)}
         options={[
           { label: t('Inline code'), value: INLINE_SOURCE_MODE },
-          { label: t('JS Template'), value: LIGHT_EXTENSION_SOURCE_MODE, disabled: true },
+          { label: t('JS Template'), value: JS_TEMPLATE_SOURCE_MODE, disabled: true },
         ]}
       />
       {sourceMode !== INLINE_SOURCE_MODE ? (

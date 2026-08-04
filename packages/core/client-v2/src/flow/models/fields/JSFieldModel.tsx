@@ -26,7 +26,7 @@ import {
   renderJSFieldRuntimeError,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
-} from './jsFieldLightExtensionRuntime';
+} from './jsFieldJsTemplateRuntime';
 
 const DEFAULT_CODE = `
 function JsReadonlyField() {

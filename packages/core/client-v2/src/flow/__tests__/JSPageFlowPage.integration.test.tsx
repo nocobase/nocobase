@@ -124,7 +124,7 @@ async function renderFlowPage(repository: MemoryRepository) {
 }
 
 describe('JS Page FlowPage integration', () => {
-  it('persists defaults before the first save and reloads without light-extension APIs', async () => {
+  it('persists defaults before the first save and reloads without js-template APIs', async () => {
     await setupRunJSContexts();
     const repository = new MemoryRepository();
     const first = await renderFlowPage(repository);

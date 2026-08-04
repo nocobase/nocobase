@@ -80,10 +80,6 @@
       "js-template": {
         "description": "Pull, check, and save local JS Templates source workspaces."
       },
-      "light": {
-        "description": "Legacy alias for JS Templates workspace commands.",
-        "hidden": true
-      },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",
         "hidden": true

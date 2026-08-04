@@ -70,7 +70,7 @@ export function normalizeInitialRunJSSource(value: unknown): RunJSSourceInitialS
   if (typeof source.version !== 'string' || !source.version) {
     throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS initial source is invalid');
   }
-  // Missing code is treated as empty inline source (e.g. light-extension → inline with no stored code).
+  // Missing code is treated as empty inline source (e.g. js-template → inline with no stored code).
   if (source.code !== undefined && source.code !== null && typeof source.code !== 'string') {
     throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', 'RunJS initial source is invalid');
   }

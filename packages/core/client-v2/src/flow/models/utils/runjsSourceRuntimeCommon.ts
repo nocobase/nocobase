@@ -18,12 +18,12 @@ import {
 import React from 'react';
 import {
   getCanonicalRunJSSettings,
-  getLightExtensionEntryId,
-  getLightExtensionSettingStepKey,
+  getJsTemplateId,
+  getJsTemplateSettingStepKey,
   isSettingsFieldVisible,
-  normalizeLightExtensionEntrySelection,
-  normalizeLightExtensionSettings,
-  setLightExtensionTopLevelSetting,
+  normalizeJsTemplateSelection,
+  normalizeJsTemplateSettings,
+  setJsTemplateTopLevelSetting,
   type RunJSSettingsCondition,
 } from '@nocobase/runjs/settings';
 
@@ -48,13 +48,12 @@ import { RunJSEditorField, RunJSEditorRegistry, type RunJSSourceLocator } from '
 export const INLINE_SOURCE_MODE = 'inline';
 
 /** Canonical persisted source mode for the product now named JS templates. */
-export const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
-export const JS_TEMPLATE_SOURCE_MODE = LIGHT_EXTENSION_SOURCE_MODE;
+export const JS_TEMPLATE_SOURCE_MODE = 'js-template';
 
-export type LightExtensionSourceMode = typeof INLINE_SOURCE_MODE | typeof LIGHT_EXTENSION_SOURCE_MODE;
-export type JsTemplateSourceMode = LightExtensionSourceMode;
+export type JsTemplateSourceMode = typeof JS_TEMPLATE_SOURCE_MODE;
+export type RunJSSourceMode = typeof INLINE_SOURCE_MODE | JsTemplateSourceMode;
 
-export type LightExtensionSourceModeParams = {
+export type RunJSSourceModeParams = {
   sourceMode?: string;
   sourceBinding?: unknown;
   settings?: unknown;
@@ -85,7 +84,7 @@ type RuntimeErrorLabels = {
 
 type SourceStepHooks = Pick<StepDefinition, 'defaultParams' | 'beforeParamsSave' | 'afterParamsSave'>;
 
-type LightExtensionSourcePlumbingOptions<TModel extends FlowModel> = {
+type JsTemplateSourcePlumbingOptions<TModel extends FlowModel> = {
   flowKey: string;
   stepKey: string;
   ownerKind: string;
@@ -94,79 +93,79 @@ type LightExtensionSourcePlumbingOptions<TModel extends FlowModel> = {
   afterParamsSave: (ctx: FlowSettingsContext<TModel>) => Promise<void>;
 };
 
-type PendingLightExtensionBindingSettings = {
+type PendingJsTemplateBindingSettings = {
   entryId: string;
   missingRequiredPaths: string[];
   schema: JsonSchemaLike;
 };
 
-type LightExtensionSelectOption = {
+type JsTemplateSelectOption = {
   label: string;
   value: string;
 };
 
-type LightExtensionCollectionField = {
+type JsTemplateCollectionField = {
   name?: unknown;
   title?: unknown;
   hidden?: unknown;
   options?: unknown;
 };
 
-type LightExtensionCollection = {
+type JsTemplateCollection = {
   name?: unknown;
   title?: unknown;
   hidden?: unknown;
   options?: unknown;
-  getFields?: () => LightExtensionCollectionField[];
+  getFields?: () => JsTemplateCollectionField[];
 };
 
-type LightExtensionDataSource = {
+type JsTemplateDataSource = {
   key?: unknown;
   name?: unknown;
-  getCollections?: () => LightExtensionCollection[];
-  getCollection?: (name: string) => LightExtensionCollection | undefined;
+  getCollections?: () => JsTemplateCollection[];
+  getCollection?: (name: string) => JsTemplateCollection | undefined;
 };
 
-type LightExtensionDataSourceManager = {
-  getDataSources?: () => LightExtensionDataSource[];
-  getDataSource?: (key: string) => LightExtensionDataSource | undefined;
+type JsTemplateDataSourceManager = {
+  getDataSources?: () => JsTemplateDataSource[];
+  getDataSource?: (key: string) => JsTemplateDataSource | undefined;
 };
 
-const pendingLightExtensionBindingSettings = new WeakMap<object, PendingLightExtensionBindingSettings>();
+const pendingJsTemplateBindingSettings = new WeakMap<object, PendingJsTemplateBindingSettings>();
 
-export class LightExtensionSettingsValidationError extends FlowCancelSaveException {
-  readonly code = 'LIGHT_EXTENSION_SETTINGS_INVALID';
+export class JsTemplateSettingsValidationError extends FlowCancelSaveException {
+  readonly code = 'JS_TEMPLATE_SETTINGS_INVALID';
   readonly paths: string[];
 
   constructor(paths: string[]) {
-    super('Light extension settings validation failed.');
-    this.name = 'LightExtensionSettingsValidationError';
+    super('JS Template settings validation failed.');
+    this.name = 'JsTemplateSettingsValidationError';
     this.paths = paths;
   }
 }
 
-export class LightExtensionSettingsConditionRuntimeError extends Error {
-  readonly code = 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID';
-  readonly entryId: string;
+export class JsTemplateSettingsConditionRuntimeError extends Error {
+  readonly code = 'JS_TEMPLATE_SETTINGS_CONDITION_INVALID';
+  readonly templateId: string;
   readonly propertyPath: string;
   readonly reason: string;
   readonly flowSettingsDiagnostic: RuntimeFlowSettingDiagnosticPayload;
 
-  constructor(options: { entryId: string; propertyPath: string; cause: unknown; message?: string }) {
+  constructor(options: { templateId: string; propertyPath: string; cause: unknown; message?: string }) {
     const reason = options.cause instanceof Error ? options.cause.message : String(options.cause);
     super(
       options.message ||
-        `JS Template entry "${options.entryId}" setting "${options.propertyPath}" has an invalid x-visible-when condition: ${reason}`,
+        `JS Template "${options.templateId}" setting "${options.propertyPath}" has an invalid x-visible-when condition: ${reason}`,
     );
-    this.name = 'LightExtensionSettingsConditionRuntimeError';
-    this.entryId = options.entryId;
+    this.name = 'JsTemplateSettingsConditionRuntimeError';
+    this.templateId = options.templateId;
     this.propertyPath = options.propertyPath;
     this.reason = reason;
     this.flowSettingsDiagnostic = {
       code: this.code,
       message: this.message,
       details: {
-        entryId: this.entryId,
+        templateId: this.templateId,
         propertyPath: this.propertyPath,
         reason: this.reason,
       },
@@ -174,18 +173,18 @@ export class LightExtensionSettingsConditionRuntimeError extends Error {
   }
 }
 
-export function normalizeLightExtensionSourceMode(value: unknown): LightExtensionSourceMode {
-  return value === LIGHT_EXTENSION_SOURCE_MODE ? LIGHT_EXTENSION_SOURCE_MODE : INLINE_SOURCE_MODE;
+export function normalizeJsTemplateSourceMode(value: unknown): RunJSSourceMode {
+  return value === JS_TEMPLATE_SOURCE_MODE ? JS_TEMPLATE_SOURCE_MODE : INLINE_SOURCE_MODE;
 }
 
-export function createLightExtensionSourcePlumbing<TModel extends FlowModel>(
-  options: LightExtensionSourcePlumbingOptions<TModel>,
+export function createJsTemplateSourcePlumbing<TModel extends FlowModel>(
+  options: JsTemplateSourcePlumbingOptions<TModel>,
 ) {
   const getRunJsStepParams = (model: TModel): Record<string, unknown> =>
     cloneRecord(model.getStepParams(options.flowKey, options.stepKey));
 
   const getSettingsDescriptor = (model: TModel, params: Record<string, unknown>) =>
-    getLightExtensionSettingsDescriptor({
+    getJsTemplateSettingsDescriptor({
       modelUid: model.uid,
       ownerKind: options.ownerKind,
       ownerLocator: options.getOwnerLocator(model),
@@ -201,66 +200,64 @@ export function createLightExtensionSourcePlumbing<TModel extends FlowModel>(
     });
 
   const resolveBindingTitle = async (model: TModel, params: Record<string, unknown>) =>
-    getLightExtensionStoredBindingTitle(params.sourceBinding) ||
-    (await resolveLightExtensionBindingTitle({
+    (await resolveJsTemplateBindingTitle({
       modelUid: model.uid,
       ownerKind: options.ownerKind,
       ownerLocator: options.getOwnerLocator(model),
       params,
-    })) ||
-    getLightExtensionFallbackBindingTitle(params.sourceBinding);
+    })) || getJsTemplateFallbackBindingTitle(params.sourceBinding);
 
   return {
     getRunJsStepParams,
     getSettingsDescriptor,
     getRuntimeSettings: (params: Record<string, unknown>): RunJSSourceSettings => cloneRecord(params.settings),
-    getSourceDefaultParams(ctx: FlowSettingsContext<TModel>): LightExtensionSourceModeParams {
+    getSourceDefaultParams(ctx: FlowSettingsContext<TModel>): RunJSSourceModeParams {
       const runJs = getRunJsStepParams(ctx.model);
       return {
-        sourceMode: normalizeLightExtensionSourceMode(runJs.sourceMode),
+        sourceMode: normalizeJsTemplateSourceMode(runJs.sourceMode),
         sourceBinding: isRecord(runJs.sourceBinding) ? cloneJsonValue(runJs.sourceBinding) : undefined,
         settings: isRecord(runJs.settings) ? cloneJsonValue(runJs.settings) : {},
       };
     },
-    async beforeParamsSave(ctx: FlowSettingsContext<TModel>, params: LightExtensionSourceModeParams) {
-      const sourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
+    async beforeParamsSave(ctx: FlowSettingsContext<TModel>, params: RunJSSourceModeParams) {
+      const sourceMode = normalizeJsTemplateSourceMode(params?.sourceMode);
       const sourceBinding = isRecord(params?.sourceBinding) ? cloneJsonValue(params.sourceBinding) : undefined;
-      if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE && !sourceBinding) {
-        ctx.model.context?.message?.error?.(ctx.model.context.t('Select a JS Template entry'));
-        throw new FlowCancelSaveException('Light extension source binding is required.');
+      if (sourceMode === JS_TEMPLATE_SOURCE_MODE && !sourceBinding) {
+        ctx.model.context?.message?.error?.(ctx.model.context.t('Select a JS Template'));
+        throw new FlowCancelSaveException('JS Template source binding is required.');
       }
       const descriptor =
-        sourceMode === LIGHT_EXTENSION_SOURCE_MODE
+        sourceMode === JS_TEMPLATE_SOURCE_MODE
           ? await getSettingsDescriptor(ctx.model, { ...params, sourceMode, sourceBinding })
           : null;
-      const normalized = normalizeLightExtensionSourceSettingsForBinding({
+      const normalized = normalizeJsTemplateSourceSettingsForBinding({
         currentRunJs: getRunJsStepParams(ctx.model),
         nextSourceMode: sourceMode,
         nextSourceBinding: sourceBinding,
         nextSettings: params.settings,
         descriptor,
       });
-      setCanonicalLightExtensionSource(ctx.model, options.flowKey, {
+      setCanonicalJsTemplateSource(ctx.model, options.flowKey, {
         sourceMode,
         sourceBinding,
         settings: normalized.settings,
       });
-      rememberLightExtensionBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
+      rememberJsTemplateBindingSettings(ctx.model, descriptor, normalized.missingRequiredPaths);
     },
     async afterSourceParamsSave(ctx: FlowSettingsContext<TModel>) {
       await options.afterParamsSave(ctx);
-      await showPendingLightExtensionRequiredSettings(ctx.model, options.flowKey);
+      await showPendingJsTemplateRequiredSettings(ctx.model, options.flowKey);
     },
     afterParamsSave: options.afterParamsSave,
     syncSetting(ctx: FlowSettingsContext<TModel>, fieldName: string, value: unknown) {
-      setCanonicalLightExtensionSetting(ctx.model, options.flowKey, fieldName, value);
+      setCanonicalJsTemplateSetting(ctx.model, options.flowKey, fieldName, value);
     },
     resolveBindingTitle,
     async getEditorTitle(model: TModel): Promise<string> {
       const translate = getModelTranslator(model);
       const params = getRunJsStepParams(model);
       const baseTitle = translate('Write JavaScript');
-      if (normalizeLightExtensionSourceMode(params.sourceMode) !== LIGHT_EXTENSION_SOURCE_MODE) {
+      if (normalizeJsTemplateSourceMode(params.sourceMode) !== JS_TEMPLATE_SOURCE_MODE) {
         return baseTitle;
       }
       const sourceTitle = await resolveBindingTitle(model, params);
@@ -285,7 +282,7 @@ export function createRuntimeRunTracker() {
   };
 }
 
-export function createLightExtensionSourceModeStep(options: {
+export function createJsTemplateSourceModeStep(options: {
   kind: string;
   component: string;
   createMenuUIMode: (options: { kind: string }) => unknown;
@@ -311,7 +308,7 @@ export function createLightExtensionSourceModeStep(options: {
   };
 }
 
-export function createLightExtensionSourceBindingStep(options: {
+export function createJsTemplateSourceBindingStep(options: {
   kind: string;
   component: string;
   hooks: SourceStepHooks;
@@ -335,7 +332,7 @@ export function createLightExtensionSourceBindingStep(options: {
   };
 }
 
-export function createLightExtensionRunJsUISchema(options: {
+export function createJsTemplateRunJsUISchema(options: {
   kind: 'js-action' | 'js-field' | 'js-item' | 'js-page';
   scene: string;
   surfaceStyle: 'action' | 'render' | 'value';
@@ -353,7 +350,7 @@ export function createLightExtensionRunJsUISchema(options: {
       'x-component-props': {
         locatorFactory: 'flowModel.step',
         sourceMetadata: {
-          lightExtensionKind: options.kind,
+          jsTemplateKind: options.kind,
         },
         surfaceStyle: options.surfaceStyle,
         scene: options.scene,
@@ -405,7 +402,7 @@ export function createRunJSEditorEmbedUIMode(title?: string) {
   };
 }
 
-export async function getLightExtensionSettingsDescriptor(options: {
+export async function getJsTemplateSettingsDescriptor(options: {
   modelUid: string;
   ownerKind: string;
   ownerLocator: Record<string, unknown>;
@@ -413,7 +410,7 @@ export async function getLightExtensionSettingsDescriptor(options: {
   sourceLocator?: RunJSSourceLocator;
 }): Promise<RunJSSourceSettingsDescriptor | null> {
   const { params } = options;
-  const sourceMode = normalizeLightExtensionSourceMode(params.sourceMode);
+  const sourceMode = normalizeJsTemplateSourceMode(params.sourceMode);
   const settings = isRecord(params.settings) ? (params.settings as RunJSSourceSettings) : undefined;
   const context = {
     modelUid: options.modelUid,
@@ -421,16 +418,16 @@ export async function getLightExtensionSettingsDescriptor(options: {
     ownerLocator: options.ownerLocator,
   };
   let descriptor: RunJSSourceSettingsDescriptor | undefined;
-  if (sourceMode === LIGHT_EXTENSION_SOURCE_MODE) {
+  if (sourceMode === JS_TEMPLATE_SOURCE_MODE) {
     if (!isRecord(params.sourceBinding)) {
       return null;
     }
-    const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+    const resolver = RunJSSourceResolverRegistry.getResolver(JS_TEMPLATE_SOURCE_MODE);
     if (typeof resolver?.getSettingsDescriptor !== 'function') {
       return null;
     }
     descriptor = await resolver.getSettingsDescriptor({
-      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+      sourceMode: JS_TEMPLATE_SOURCE_MODE,
       sourceBinding: params.sourceBinding as RunJSSourceBinding,
       settings,
       context,
@@ -450,7 +447,10 @@ export async function getLightExtensionSettingsDescriptor(options: {
       context,
     });
   }
-  if (!isRecord(descriptor) || !toNonEmptyString(descriptor.entryId)) {
+  if (!isRecord(descriptor)) {
+    return null;
+  }
+  if (!toNonEmptyString(descriptor.entryId)) {
     return null;
   }
   const schema = isRecord(descriptor.schema) ? descriptor.schema : null;
@@ -459,10 +459,10 @@ export async function getLightExtensionSettingsDescriptor(options: {
     return null;
   }
 
-  return descriptor as unknown as RunJSSourceSettingsDescriptor;
+  return descriptor as RunJSSourceSettingsDescriptor;
 }
 
-export async function resolveLightExtensionBindingTitle(options: {
+export async function resolveJsTemplateBindingTitle(options: {
   modelUid: string;
   ownerKind: string;
   ownerLocator: Record<string, unknown>;
@@ -471,13 +471,13 @@ export async function resolveLightExtensionBindingTitle(options: {
   if (!isRecord(options.params.sourceBinding)) {
     return undefined;
   }
-  const resolver = RunJSSourceResolverRegistry.getResolver(LIGHT_EXTENSION_SOURCE_MODE);
+  const resolver = RunJSSourceResolverRegistry.getResolver(JS_TEMPLATE_SOURCE_MODE);
   if (typeof resolver?.getBindingTitle !== 'function') {
     return undefined;
   }
   try {
     const title = await resolver.getBindingTitle({
-      sourceMode: LIGHT_EXTENSION_SOURCE_MODE,
+      sourceMode: JS_TEMPLATE_SOURCE_MODE,
       sourceBinding: options.params.sourceBinding as RunJSSourceBinding,
       settings: isRecord(options.params.settings) ? (options.params.settings as RunJSSourceSettings) : undefined,
       context: {
@@ -493,8 +493,8 @@ export async function resolveLightExtensionBindingTitle(options: {
   }
 }
 
-export function createLightExtensionSettingStep<TModel extends FlowModel>(options: {
-  entryId: string;
+export function createJsTemplateSettingStep<TModel extends FlowModel>(options: {
+  templateId: string;
   fieldName: string;
   fieldSchema: JsonSchemaLike;
   required: boolean;
@@ -512,7 +512,7 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
   const title = getSchemaTitle(fieldSchema, fieldName);
   const visibilityCondition = fieldSchema['x-visible-when'];
   const fieldType = normalizeSchemaType(fieldSchema) || 'string';
-  const inlineSelect = createLightExtensionInlineSelectUIMode<TModel>({
+  const inlineSelect = createJsTemplateInlineSelectUIMode<TModel>({
     fieldSchema,
     savedRootValue: options.savedRootValue,
   });
@@ -561,14 +561,14 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
               } catch (error) {
                 const reason = error instanceof Error ? error.message : String(error);
                 const translate = getModelTranslator(ctx.model);
-                throw new LightExtensionSettingsConditionRuntimeError({
-                  entryId: options.entryId,
+                throw new JsTemplateSettingsConditionRuntimeError({
+                  templateId: options.templateId,
                   propertyPath: fieldName,
                   cause: error,
                   message: translate(
-                    'JS Template entry "{{entryId}}" setting "{{propertyPath}}" has an invalid x-visible-when condition: {{reason}}',
+                    'JS Template "{{templateId}}" setting "{{propertyPath}}" has an invalid x-visible-when condition: {{reason}}',
                     {
-                      entryId: options.entryId,
+                      templateId: options.templateId,
                       propertyPath: fieldName,
                       reason,
                     },
@@ -590,14 +590,14 @@ export function createLightExtensionSettingStep<TModel extends FlowModel>(option
           return;
         }
         ctx.model.context?.message?.error?.(ctx.model.context.t('Settings validation failed'));
-        throw new LightExtensionSettingsValidationError(validation.errors.map((issue) => issue.path));
+        throw new JsTemplateSettingsValidationError(validation.errors.map((issue) => issue.path));
       },
       afterParamsSave: options.afterParamsSave,
     },
   ];
 }
 
-function createLightExtensionInlineSelectUIMode<TModel extends FlowModel>(options: {
+function createJsTemplateInlineSelectUIMode<TModel extends FlowModel>(options: {
   fieldSchema: JsonSchemaLike;
   savedRootValue: Record<string, unknown>;
 }): StepDefinition<TModel>['uiMode'] | undefined {
@@ -613,7 +613,7 @@ function createLightExtensionInlineSelectUIMode<TModel extends FlowModel>(option
       allowClear: true,
       showSearch: true,
       optionFilterProp: 'label',
-      options: buildLightExtensionSettingSelectOptions({
+      options: buildJsTemplateSettingSelectOptions({
         component,
         fieldSchema: options.fieldSchema,
         savedRootValue: options.savedRootValue,
@@ -623,31 +623,31 @@ function createLightExtensionInlineSelectUIMode<TModel extends FlowModel>(option
   });
 }
 
-function buildLightExtensionSettingSelectOptions<TModel extends FlowModel>(options: {
+function buildJsTemplateSettingSelectOptions<TModel extends FlowModel>(options: {
   component: 'CollectionSelect' | 'CollectionFieldSelect';
   fieldSchema: JsonSchemaLike;
   savedRootValue: Record<string, unknown>;
   ctx: FlowRuntimeContext<TModel>;
-}): LightExtensionSelectOption[] {
-  const manager = resolveLightExtensionDataSourceManager(options.ctx);
-  const dataSource = resolveLightExtensionDataSource(manager, options.fieldSchema, options.savedRootValue, options.ctx);
+}): JsTemplateSelectOption[] {
+  const manager = resolveJsTemplateDataSourceManager(options.ctx);
+  const dataSource = resolveJsTemplateDataSource(manager, options.fieldSchema, options.savedRootValue, options.ctx);
   if (!dataSource) {
     return [];
   }
   if (options.component === 'CollectionSelect') {
-    return toLightExtensionSelectOptions(dataSource.getCollections?.() || []);
+    return toJsTemplateSelectOptions(dataSource.getCollections?.() || []);
   }
 
-  const collectionName = resolveLightExtensionCollectionName(options.fieldSchema, options.savedRootValue);
+  const collectionName = resolveJsTemplateCollectionName(options.fieldSchema, options.savedRootValue);
   if (!collectionName) {
     return [];
   }
-  return toLightExtensionSelectOptions(dataSource.getCollection?.(collectionName)?.getFields?.() || []);
+  return toJsTemplateSelectOptions(dataSource.getCollection?.(collectionName)?.getFields?.() || []);
 }
 
-function resolveLightExtensionDataSourceManager<TModel extends FlowModel>(
+function resolveJsTemplateDataSourceManager<TModel extends FlowModel>(
   ctx: FlowRuntimeContext<TModel>,
-): LightExtensionDataSourceManager | undefined {
+): JsTemplateDataSourceManager | undefined {
   const modelContext = getRecordProperty(getRecordProperty(ctx, 'model'), 'context');
   const manager =
     getRecordProperty(ctx, 'dataSourceManager') ||
@@ -657,17 +657,17 @@ function resolveLightExtensionDataSourceManager<TModel extends FlowModel>(
     isRecord(manager) &&
     (typeof manager.getDataSource === 'function' || typeof manager.getDataSources === 'function')
   ) {
-    return manager as LightExtensionDataSourceManager;
+    return manager as JsTemplateDataSourceManager;
   }
   return undefined;
 }
 
-function resolveLightExtensionDataSource<TModel extends FlowModel>(
-  manager: LightExtensionDataSourceManager | undefined,
+function resolveJsTemplateDataSource<TModel extends FlowModel>(
+  manager: JsTemplateDataSourceManager | undefined,
   fieldSchema: JsonSchemaLike,
   savedRootValue: Record<string, unknown>,
   ctx: FlowRuntimeContext<TModel>,
-): LightExtensionDataSource | undefined {
+): JsTemplateDataSource | undefined {
   if (!manager) {
     return undefined;
   }
@@ -690,7 +690,7 @@ function resolveLightExtensionDataSource<TModel extends FlowModel>(
   return manager.getDataSources?.()[0];
 }
 
-function resolveLightExtensionCollectionName(
+function resolveJsTemplateCollectionName(
   fieldSchema: JsonSchemaLike,
   savedRootValue: Record<string, unknown>,
 ): string | undefined {
@@ -702,9 +702,9 @@ function resolveLightExtensionCollectionName(
   );
 }
 
-function toLightExtensionSelectOptions(
-  items: Array<LightExtensionCollection | LightExtensionCollectionField>,
-): LightExtensionSelectOption[] {
+function toJsTemplateSelectOptions(
+  items: Array<JsTemplateCollection | JsTemplateCollectionField>,
+): JsTemplateSelectOption[] {
   return items.flatMap((item) => {
     const options = isRecord(item.options) ? item.options : {};
     if (item.hidden === true || options.hidden === true) {
@@ -718,7 +718,7 @@ function toLightExtensionSelectOptions(
   });
 }
 
-export function createLightExtensionSettingSteps<TModel extends FlowModel>(options: {
+export function createJsTemplateSettingSteps<TModel extends FlowModel>(options: {
   descriptor: RunJSSourceSettingsDescriptor;
   settings: Record<string, unknown>;
   component: string;
@@ -734,16 +734,16 @@ export function createLightExtensionSettingSteps<TModel extends FlowModel>(optio
     return undefined;
   }
   const requiredFields = getSettingsSchemaRequired(options.descriptor.schema);
-  const canonicalSettings = normalizeLightExtensionSettings(options.descriptor, options.settings);
+  const canonicalSettings = normalizeJsTemplateSettings(options.descriptor, options.settings);
 
   return Object.fromEntries(
     Object.entries(properties).map(([fieldName, fieldSchema], index) =>
-      createLightExtensionSettingStep<TModel>({
-        entryId: options.descriptor.entryId,
+      createJsTemplateSettingStep<TModel>({
+        templateId: options.descriptor.entryId,
         fieldName,
         fieldSchema,
         required: requiredFields.has(fieldName),
-        stepKey: getLightExtensionSettingStepKey(options.descriptor.entryId, fieldName),
+        stepKey: getJsTemplateSettingStepKey(options.descriptor.entryId, fieldName),
         defaultValue: canonicalSettings[fieldName],
         sort: (options.sortStart ?? 700) + index,
         component: options.component,
@@ -762,7 +762,7 @@ export function resolveEffectiveRunJSSettings(
   settings: unknown,
 ): Record<string, unknown> {
   const overrides = isRecord(settings) ? settings : {};
-  const effectiveSettings = normalizeLightExtensionSettings(descriptor, overrides);
+  const effectiveSettings = normalizeJsTemplateSettings(descriptor, overrides);
   if (!isRecord(descriptor.schema)) {
     return effectiveSettings;
   }
@@ -779,30 +779,30 @@ export function resolveEffectiveRunJSSettings(
   });
   const invalidPaths = [...overrideValidation.errors, ...runtimeValidation.errors].map((issue) => issue.path);
   if (invalidPaths.length) {
-    throw new LightExtensionSettingsValidationError(Array.from(new Set(invalidPaths)));
+    throw new JsTemplateSettingsValidationError(Array.from(new Set(invalidPaths)));
   }
 
   return effectiveSettings;
 }
 
-export function normalizeLightExtensionSourceSettings(options: {
+export function normalizeJsTemplateSourceSettings(options: {
   currentRunJs: Record<string, unknown>;
-  nextSourceMode: LightExtensionSourceMode;
+  nextSourceMode: RunJSSourceMode;
   nextSourceBinding?: Record<string, unknown>;
   nextSettings?: unknown;
   descriptor?: RunJSSourceSettingsDescriptor | null;
 }): Record<string, unknown> {
-  return normalizeLightExtensionSourceSettingsForBinding(options).settings;
+  return normalizeJsTemplateSourceSettingsForBinding(options).settings;
 }
 
-export function normalizeLightExtensionSourceSettingsForBinding(options: {
+export function normalizeJsTemplateSourceSettingsForBinding(options: {
   currentRunJs: Record<string, unknown>;
-  nextSourceMode: LightExtensionSourceMode;
+  nextSourceMode: RunJSSourceMode;
   nextSourceBinding?: Record<string, unknown>;
   nextSettings?: unknown;
   descriptor?: RunJSSourceSettingsDescriptor | null;
 }): { settings: Record<string, unknown>; missingRequiredPaths: string[] } {
-  if (options.nextSourceMode !== LIGHT_EXTENSION_SOURCE_MODE) {
+  if (options.nextSourceMode !== JS_TEMPLATE_SOURCE_MODE) {
     return {
       settings: isRecord(options.nextSettings)
         ? cloneRecord(options.nextSettings)
@@ -814,9 +814,9 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
     return { settings: {}, missingRequiredPaths: [] };
   }
   if (!options.descriptor) {
-    throw new FlowCancelSaveException('Light extension settings descriptor is required.');
+    throw new FlowCancelSaveException('JS Template settings descriptor is required.');
   }
-  const settings = normalizeLightExtensionEntrySelection({
+  const settings = normalizeJsTemplateSelection({
     currentBinding: options.currentRunJs.sourceBinding,
     currentSettings: getCanonicalRunJSSettings(options.currentRunJs),
     submittedSettings: options.nextSettings,
@@ -825,11 +825,10 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
   });
   if (!isRecord(options.descriptor.schema)) {
     const sameEntry =
-      getLightExtensionEntryId(options.currentRunJs.sourceBinding) ===
-      getLightExtensionEntryId(options.nextSourceBinding);
+      getJsTemplateId(options.currentRunJs.sourceBinding) === getJsTemplateId(options.nextSourceBinding);
     const submittedPaths = sameEntry && isRecord(options.nextSettings) ? Object.keys(options.nextSettings) : [];
     if (submittedPaths.length > 0) {
-      throw new LightExtensionSettingsValidationError(submittedPaths);
+      throw new JsTemplateSettingsValidationError(submittedPaths);
     }
     return { settings: {}, missingRequiredPaths: [] };
   }
@@ -841,7 +840,7 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
   });
   const invalidPaths = validation.errors.map((issue) => issue.path);
   if (invalidPaths.length > 0) {
-    throw new LightExtensionSettingsValidationError(Array.from(new Set(invalidPaths)));
+    throw new JsTemplateSettingsValidationError(Array.from(new Set(invalidPaths)));
   }
 
   return {
@@ -850,25 +849,25 @@ export function normalizeLightExtensionSourceSettingsForBinding(options: {
   };
 }
 
-export function rememberLightExtensionBindingSettings(
+export function rememberJsTemplateBindingSettings(
   model: object,
   descriptor: RunJSSourceSettingsDescriptor | null,
   missingRequiredPaths: string[],
 ): void {
   if (!descriptor || !isRecord(descriptor.schema) || missingRequiredPaths.length === 0) {
-    pendingLightExtensionBindingSettings.delete(model);
+    pendingJsTemplateBindingSettings.delete(model);
     return;
   }
-  pendingLightExtensionBindingSettings.set(model, {
+  pendingJsTemplateBindingSettings.set(model, {
     entryId: descriptor.entryId,
     missingRequiredPaths: [...missingRequiredPaths],
     schema: descriptor.schema,
   });
 }
 
-export async function showPendingLightExtensionRequiredSettings(model: FlowModel, flowKey: string): Promise<void> {
-  const pending = pendingLightExtensionBindingSettings.get(model);
-  pendingLightExtensionBindingSettings.delete(model);
+export async function showPendingJsTemplateRequiredSettings(model: FlowModel, flowKey: string): Promise<void> {
+  const pending = pendingJsTemplateBindingSettings.get(model);
+  pendingJsTemplateBindingSettings.delete(model);
   if (!pending) {
     return;
   }
@@ -887,7 +886,7 @@ export async function showPendingLightExtensionRequiredSettings(model: FlowModel
             fieldName,
             {
               label: getSchemaTitle(fieldSchema, fieldName),
-              stepKey: getLightExtensionSettingStepKey(pending.entryId, fieldName),
+              stepKey: getJsTemplateSettingStepKey(pending.entryId, fieldName),
             },
           ] as const,
         ];
@@ -931,7 +930,7 @@ export async function showPendingLightExtensionRequiredSettings(model: FlowModel
   model.context?.message?.info?.({ content, duration: 0 });
 }
 
-export function setCanonicalLightExtensionSetting(
+export function setCanonicalJsTemplateSetting(
   model: CanonicalSettingsModel,
   flowKey: string,
   fieldName: string,
@@ -941,22 +940,22 @@ export function setCanonicalLightExtensionSetting(
   model.setStepParams(flowKey, {
     runJs: {
       ...runJs,
-      settings: setLightExtensionTopLevelSetting(getCanonicalRunJSSettings(runJs), fieldName, value),
+      settings: setJsTemplateTopLevelSetting(getCanonicalRunJSSettings(runJs), fieldName, value),
     },
   });
 }
 
-export function setCanonicalLightExtensionSource(
+export function setCanonicalJsTemplateSource(
   model: CanonicalSettingsModel,
   flowKey: string,
   value: {
-    sourceMode: LightExtensionSourceMode;
+    sourceMode: RunJSSourceMode;
     sourceBinding?: Record<string, unknown>;
     settings: Record<string, unknown>;
   },
 ): void {
   const runJs = cloneRecord(model.getStepParams(flowKey, 'runJs'));
-  // Light-extension-only bindings often omit `code`. When switching back to inline, pin the stored
+  // JS Template bindings often omit `code`. When switching back to inline, pin the stored
   // string (or empty) so runtime/editor defaultParams never inject the welcome template, and studio
   // open always receives a valid initialSource.code.
   const nextRunJs: Record<string, unknown> = {
@@ -979,7 +978,7 @@ export function setCanonicalLightExtensionSource(
   });
 }
 
-export function normalizeLightExtensionRuntimeError(error: unknown, labels: RuntimeErrorLabels): RuntimeErrorInfo {
+export function normalizeJsTemplateRuntimeError(error: unknown, labels: RuntimeErrorLabels): RuntimeErrorInfo {
   const source = readRunJSRuntimeError(error);
   const code = source.code;
   const normalizedCode = code?.toLowerCase() || '';
@@ -990,18 +989,26 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
   if (status === 403 || normalizedCode.includes('permission') || normalizedCode.includes('forbidden')) {
     title = 'JS Template access denied';
     hint = 'Ask an administrator for permission to use this JS Template.';
-  } else if (status === 404 || normalizedCode.includes('entry_not_found') || normalizedCode.includes('missing')) {
-    title = 'JS Template entry missing';
-    hint = 'Choose an available entry or restore this entry.';
+  } else if (normalizedCode.includes('project_not_found') || normalizedReasonCode.includes('project_missing')) {
+    title = 'JS Template project missing';
+    hint = 'Choose an available project or restore this project.';
+  } else if (
+    status === 404 ||
+    normalizedCode.includes('template_not_found') ||
+    normalizedCode.includes('missing') ||
+    normalizedReasonCode.includes('template_missing')
+  ) {
+    title = 'JS Template missing';
+    hint = 'Choose an available template or restore this template.';
   } else if (normalizedCode.includes('binding_outdated') || normalizedCode.includes('outdated')) {
     title = 'JS Template binding is outdated';
     hint = labels.outdatedHint;
   } else if (normalizedCode.includes('settings_invalid') || normalizedReasonCode.includes('settings_invalid')) {
     title = 'JS Template settings are invalid';
     hint = labels.invalidSettingsHint;
-  } else if (normalizedCode.includes('repo_archived') || normalizedCode.includes('repository_archived')) {
-    title = 'JS Template repository is archived';
-    hint = 'Restore the repository or choose an entry from another repository.';
+  } else if (normalizedCode.includes('project_archived') || normalizedReasonCode.includes('project_archived')) {
+    title = 'JS Template project is archived';
+    hint = 'Restore the project or choose a template from another project.';
   }
   return {
     title,
@@ -1014,20 +1021,11 @@ export function normalizeLightExtensionRuntimeError(error: unknown, labels: Runt
   };
 }
 
-export function getLightExtensionStoredBindingTitle(binding: unknown): string | undefined {
+export function getJsTemplateFallbackBindingTitle(binding: unknown): string | undefined {
   if (!isRecord(binding)) {
     return undefined;
   }
-  return (
-    toNonEmptyString(binding.entryTitle) || toNonEmptyString(binding.entryName) || toNonEmptyString(binding.repoTitle)
-  );
-}
-
-export function getLightExtensionFallbackBindingTitle(binding: unknown): string | undefined {
-  if (!isRecord(binding)) {
-    return undefined;
-  }
-  return toNonEmptyString(binding.entryId) || toNonEmptyString(binding.repoId);
+  return toNonEmptyString(binding.templateId) || toNonEmptyString(binding.projectId);
 }
 
 export function getModelTranslator(model: {

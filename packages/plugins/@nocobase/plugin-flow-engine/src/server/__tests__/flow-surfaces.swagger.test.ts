@@ -459,12 +459,12 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceJsFieldSourceBinding.properties.kind.enum).toEqual(['js-field']);
     expect(schemas.FlowSurfaceJsActionSourceBinding.properties.kind.enum).toEqual(['js-action']);
     expect(schemas.FlowSurfaceJsItemSourceBinding.properties.kind.enum).toEqual(['js-item']);
-    expect(schemas.FlowSurfaceJsFieldSourceBinding.required).toEqual(['type', 'repoId', 'entryId', 'kind']);
+    expect(schemas.FlowSurfaceJsFieldSourceBinding.required).toEqual(['type', 'projectId', 'templateId', 'kind']);
     expect(schemas.FlowSurfaceJsFieldSettings.properties).toEqual(
       expect.objectContaining({
         code: expect.objectContaining({ type: 'string' }),
         version: expect.objectContaining({ type: 'string' }),
-        sourceMode: expect.objectContaining({ enum: ['inline', 'light-extension'] }),
+        sourceMode: expect.objectContaining({ enum: ['inline', 'js-template'] }),
         sourceBinding: expect.objectContaining({
           $ref: '#/components/schemas/FlowSurfaceJsFieldSourceBinding',
         }),
@@ -474,9 +474,9 @@ describe('flowSurfaces swagger', () => {
     const compileVariant = (schema: Record<string, any>) =>
       new Ajv({ allErrors: true, unknownFormats: 'ignore' }).compile(dereferenceLocalSchema(schema, schemas));
     const sourceBinding = (kind: string) => ({
-      type: 'light-extension-entry',
-      repoId: 'repo_users',
-      entryId: 'entry_users',
+      type: 'js-template-entry',
+      projectId: 'jtp_users',
+      templateId: 'jtt_users',
       kind,
     });
     const composeBoundFieldObject = schemas.FlowSurfaceComposeFieldSpec.oneOf[1];
@@ -495,14 +495,14 @@ describe('flowSurfaces swagger', () => {
       validateBoundField({
         fieldPath: 'nickname',
         renderer: 'js',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-field') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') },
       }),
     ).toBe(true);
     expect(
       validateBoundField({
         fieldPath: 'nickname',
         renderer: 'js',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-item') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(false);
     const composeSyntheticFieldObject = schemas.FlowSurfaceComposeFieldSpec.oneOf[2];
@@ -516,19 +516,19 @@ describe('flowSurfaces swagger', () => {
     expect(
       validateSyntheticField({
         type: 'jsColumn',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-field') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') },
       }),
     ).toBe(true);
     expect(
       validateSyntheticField({
         type: 'jsColumn',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-item') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(false);
     expect(
       validateSyntheticField({
         type: 'jsItem',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-item') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(true);
     const composeActionObject = schemas.FlowSurfaceComposeActionSpec.oneOf[1];
@@ -545,19 +545,19 @@ describe('flowSurfaces swagger', () => {
     expect(
       validateAction({
         type: 'js',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-action') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-action') },
       }),
     ).toBe(true);
     expect(
       validateAction({
         type: 'js',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-item') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(false);
     expect(
       validateAction({
         type: 'jsItem',
-        settings: { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-item') },
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(true);
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.rules.description).toContain('Pass `[]` to clear');
@@ -1590,11 +1590,11 @@ describe('flowSurfaces swagger', () => {
       context: 'department',
     });
     expect(configureRequest.examples.jsBlockSettings.value.changes.showBlockCard).toBe(true);
-    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceMode).toBe('light-extension');
+    expect(configureRequest.examples.jsBlockSettings.value.changes.sourceMode).toBe('js-template');
     expect(configureRequest.examples.jsBlockSettings.value.changes.sourceBinding).toEqual({
-      type: 'light-extension-entry',
-      repoId: 'repo_users',
-      entryId: 'entry_users_hero',
+      type: 'js-template-entry',
+      projectId: 'jtp_users',
+      templateId: 'jtt_users_hero',
       kind: 'js-block',
     });
     expect(configureRequest.examples.jsBlockSettings.value.changes.settings).toEqual({
@@ -1738,11 +1738,11 @@ describe('flowSurfaces swagger', () => {
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).not.toContain('Legacy');
     expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain('`kanban`');
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
-    expect(addBlockRequest.examples.jsBlock.value.settings.sourceMode).toBe('light-extension');
+    expect(addBlockRequest.examples.jsBlock.value.settings.sourceMode).toBe('js-template');
     expect(addBlockRequest.examples.jsBlock.value.settings.sourceBinding).toEqual({
-      type: 'light-extension-entry',
-      repoId: 'repo_users',
-      entryId: 'entry_users_banner',
+      type: 'js-template-entry',
+      projectId: 'jtp_users',
+      templateId: 'jtt_users_banner',
       kind: 'js-block',
     });
     expect(addBlockRequest.examples.jsBlock.value.settings.settings).toEqual({

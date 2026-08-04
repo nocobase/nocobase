@@ -17,7 +17,7 @@ describe('RunJSSettingsDescriptorProviderRegistryManager', () => {
     const fallback = vi.fn(async () => ({ entryId: 'fallback', settingsSchemaHash: null, schema: null }));
     registry.registerProvider({ key: 'fallback', getSettingsDescriptor: fallback });
     const dispose = registry.registerProvider({
-      key: 'inline-light-extension',
+      key: 'inline-js-template',
       priority: 100,
       canHandle: (input) => input.sourceMode === 'inline',
       getSettingsDescriptor: async () => ({

@@ -55,9 +55,9 @@ import { FLOW_SURFACE_FILTER_GROUP_EXAMPLE, normalizeFlowSurfaceFilterGroupValue
 import { executeMutateOps } from './executor';
 import { assertNoFlowSurfaceLegacyRef } from './reference-guards';
 import {
-  markJsTemplateReferencesOwnerMissingForNodeTree,
-  syncJsTemplateReferencesForNodeTree,
-} from './light-extension-reference-integration';
+  markJsTemplateUsagesOwnerMissingForNodeTree,
+  syncJsTemplateUsagesForNodeTree,
+} from './js-template-usage-integration';
 import {
   buildSurfaceFingerprintKeysObject as buildPlanningSurfaceFingerprintKeysObject,
   FLOW_SURFACE_INTERNAL_META_KEY,
@@ -1384,12 +1384,12 @@ export function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKe
   return undefined;
 }
 
-function hasLightExtensionSourceMode(stepParams: unknown, groupKey: RunJsSettingsGroupKey | undefined) {
+function hasJsTemplateSourceMode(stepParams: unknown, groupKey: RunJsSettingsGroupKey | undefined) {
   if (!groupKey || !_.isPlainObject(stepParams)) {
     return false;
   }
   const group = _.get(stepParams, [groupKey]);
-  return _.get(group, ['runJs', 'sourceMode']) === 'light-extension';
+  return _.get(group, ['runJs', 'sourceMode']) === 'js-template';
 }
 
 function getRunJsReferenceSourceState(stepParams: unknown, groupKey: RunJsSettingsGroupKey | undefined) {
@@ -1403,7 +1403,7 @@ function getRunJsReferenceSourceState(stepParams: unknown, groupKey: RunJsSettin
   return _.pick(runJs, ['sourceMode', 'sourceBinding', 'settings']);
 }
 
-export function shouldSyncLightExtensionReferences(
+export function shouldSyncJsTemplateUsages(
   currentOptions: Record<string, unknown>,
   nextOptions: Record<string, unknown>,
 ) {
@@ -1413,8 +1413,8 @@ export function shouldSyncLightExtensionReferences(
     return false;
   }
   return (
-    hasLightExtensionSourceMode(currentOptions?.stepParams, currentGroupKey) ||
-    hasLightExtensionSourceMode(nextOptions?.stepParams, nextGroupKey) ||
+    hasJsTemplateSourceMode(currentOptions?.stepParams, currentGroupKey) ||
+    hasJsTemplateSourceMode(nextOptions?.stepParams, nextGroupKey) ||
     !_.isEqual(
       getRunJsReferenceSourceState(currentOptions?.stepParams, currentGroupKey),
       getRunJsReferenceSourceState(nextOptions?.stepParams, nextGroupKey),
@@ -1456,7 +1456,7 @@ function prepareConfigureRunJsAuthoringValues(values: FlowSurfaceConfigureValues
     ...values,
     changes: {
       ...changes,
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
     },
   };
 }
@@ -1494,7 +1494,7 @@ export class FlowSurfacesService {
       this.repository,
       (values, options) => this.patchFlowSurfaceModelOptions(values, options),
       (uid, transaction) =>
-        this.markLightExtensionReferencesOwnerMissingForNodeTree(uid, 'flowSurfaces.routeSync.removeTabAnchorTree', {
+        this.markJsTemplateUsagesOwnerMissingForNodeTree(uid, 'flowSurfaces.routeSync.removeTabAnchorTree', {
           transaction,
         }),
     );
@@ -1663,17 +1663,17 @@ export class FlowSurfacesService {
     if (values?.['x-server-hooks']) {
       await this.db.emitAsync(`${this.repository.collection.name}.afterSave`, model, options);
     }
-    if (shouldSyncLightExtensionReferences(currentOptions, nextOptions)) {
-      await this.syncLightExtensionReferencesForNodeTree(normalizedUid, 'flowSurfaces.updateSettings', options);
+    if (shouldSyncJsTemplateUsages(currentOptions, nextOptions)) {
+      await this.syncJsTemplateUsagesForNodeTree(normalizedUid, 'flowSurfaces.updateSettings', options);
     }
   }
 
-  private async syncLightExtensionReferencesForNodeTree(
+  private async syncJsTemplateUsagesForNodeTree(
     rootUid: string | undefined | null,
     action: string,
     options: { transaction?: unknown } = {},
   ): Promise<void> {
-    await syncJsTemplateReferencesForNodeTree(
+    await syncJsTemplateUsagesForNodeTree(
       this.plugin,
       {
         rootUid,
@@ -1686,12 +1686,12 @@ export class FlowSurfacesService {
     );
   }
 
-  private async markLightExtensionReferencesOwnerMissingForNodeTree(
+  private async markJsTemplateUsagesOwnerMissingForNodeTree(
     rootUid: string | undefined | null,
     action: string,
     options: { transaction?: unknown } = {},
   ): Promise<void> {
-    await markJsTemplateReferencesOwnerMissingForNodeTree(
+    await markJsTemplateUsagesOwnerMissingForNodeTree(
       this.plugin,
       {
         rootUid,
@@ -6466,7 +6466,7 @@ export class FlowSurfacesService {
       popupTemplateTreeCache,
     });
     const referenceSyncTarget = await this.locator.resolve(pageLocator, options).catch(() => null);
-    await this.syncLightExtensionReferencesForNodeTree(
+    await this.syncJsTemplateUsagesForNodeTree(
       referenceSyncTarget?.uid || pageLocator.uid || pageLocator.pageSchemaUid,
       'flowSurfaces.applyBlueprint',
       options,
@@ -7844,7 +7844,7 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     await this.clearFlowTemplateUsagesForNodeTree(sourceNode, transaction);
-    await this.markLightExtensionReferencesOwnerMissingForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', {
+    await this.markJsTemplateUsagesOwnerMissingForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', {
       transaction,
     });
     await this.repository.remove(sourceNode.uid, { transaction });
@@ -7856,7 +7856,7 @@ export class FlowSurfacesService {
     );
     await this.repositionFlowModelInParent(sourceNode, parentNode, transaction);
     await this.syncFlowTemplateUsagesForNodeTree(sourceNode.uid, transaction);
-    await this.syncLightExtensionReferencesForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', { transaction });
+    await this.syncJsTemplateUsagesForNodeTree(sourceNode.uid, 'flowSurfaces.saveTemplate', { transaction });
     return {
       uid: sourceNode.uid,
       type: 'block' as const,
@@ -8367,7 +8367,7 @@ export class FlowSurfacesService {
         );
       }
       await this.ensurePopupSurface(popupUid, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(popupUid, 'flowSurfaces.convertTemplateToCopy', options);
+      await this.syncJsTemplateUsagesForNodeTree(popupUid, 'flowSurfaces.convertTemplateToCopy', options);
       const nextStepParams = _.cloneDeep(node.stepParams || {});
       const currentGroup = _.isPlainObject(nextStepParams[resolved.openViewStep.flowKey])
         ? _.cloneDeep(nextStepParams[resolved.openViewStep.flowKey])
@@ -8440,7 +8440,7 @@ export class FlowSurfacesService {
         })
       : null;
     await this.clearFlowTemplateUsagesForNodeTree(node, options.transaction);
-    await this.markLightExtensionReferencesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', {
+    await this.markJsTemplateUsagesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', {
       transaction: options.transaction,
     });
     await this.repository.remove(node.uid, { transaction: options.transaction });
@@ -8455,7 +8455,7 @@ export class FlowSurfacesService {
     );
     await this.repositionFlowModelInParent(node, parentNode, options.transaction);
     await this.syncFlowTemplateUsagesForNodeTree(node.uid, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', options);
+    await this.syncJsTemplateUsagesForNodeTree(node.uid, 'flowSurfaces.convertTemplateToCopy', options);
     return {
       uid: node.uid,
       type: 'block',
@@ -8755,7 +8755,7 @@ export class FlowSurfacesService {
         });
         if (
           configuredNode?.use === 'JSBlockModel' &&
-          !hasLightExtensionSourceMode(configuredNode.stepParams, 'jsSettings')
+          !hasJsTemplateSourceMode(configuredNode.stepParams, 'jsSettings')
         ) {
           const runJSWorkspace = await this.bootstrapRunJSHost(
             'JSBlockModel',
@@ -8863,7 +8863,7 @@ export class FlowSurfacesService {
     if (approvalRoot) {
       await this.syncApprovalRuntimeConfigForSurfaceRoot(approvalRoot, options.transaction);
     }
-    await this.syncLightExtensionReferencesForNodeTree(gridUid, 'flowSurfaces.compose', options);
+    await this.syncJsTemplateUsagesForNodeTree(gridUid, 'flowSurfaces.compose', options);
     return result;
   }
 
@@ -10705,12 +10705,12 @@ export class FlowSurfacesService {
       const runJSWorkspace =
         createdNode?.use === 'JSBlockModel' &&
         !options.skipRunJSWorkspaceBootstrap &&
-        !hasLightExtensionSourceMode(createdNode.stepParams, 'jsSettings')
+        !hasJsTemplateSourceMode(createdNode.stepParams, 'jsSettings')
           ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
           : undefined;
       const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
       await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
+      await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
       return publicResult;
     }
     const popupDefaultsMetadata = this.buildPopupDefaultsMetadata(values?.defaults);
@@ -11169,12 +11169,12 @@ export class FlowSurfacesService {
     const runJSWorkspace =
       catalogItem.use === 'JSBlockModel' &&
       !options.skipRunJSWorkspaceBootstrap &&
-      !hasLightExtensionSourceMode(createdRunJSBlock?.stepParams, 'jsSettings')
+      !hasJsTemplateSourceMode(createdRunJSBlock?.stepParams, 'jsSettings')
         ? await this.bootstrapRunJSHost('JSBlockModel', result.uid, options.transaction, options.authoringContext)
         : undefined;
     const publicResult = runJSWorkspace ? { ...result, ...runJSWorkspace } : result;
     await this.persistCreatedKeysForAction('addBlock', values, publicResult, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
+    await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addBlock', options);
     return publicResult;
   }
 
@@ -11205,7 +11205,7 @@ export class FlowSurfacesService {
         : undefined;
       const publicResult = await this.attachCreatedRunJSWorkspace(result, createdNode?.use, modelUid, options);
       await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+      await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
       return publicResult;
     }
     const target = await this.prepareWriteTarget('addField', values?.target, values, options);
@@ -11291,7 +11291,7 @@ export class FlowSurfacesService {
         options,
       );
       await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+      await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
       return publicResult;
     }
 
@@ -11662,7 +11662,7 @@ export class FlowSurfacesService {
       options,
     );
     await this.persistCreatedKeysForAction('addField', values, publicResult, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
+    await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addField', options);
     return publicResult;
   }
 
@@ -11740,7 +11740,7 @@ export class FlowSurfacesService {
       };
       const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
       await this.persistCreatedKeysForAction('addAction', values, publicResult, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
+      await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
       return publicResult;
     }
     const resourceContext = container.ownerUid
@@ -11817,7 +11817,7 @@ export class FlowSurfacesService {
     };
     const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
     await this.persistCreatedKeysForAction('addAction', values, publicResult, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
+    await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addAction', options);
     return publicResult;
   }
 
@@ -11888,7 +11888,7 @@ export class FlowSurfacesService {
       };
       const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
       await this.persistCreatedKeysForAction('addRecordAction', values, publicResult, options.transaction);
-      await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
+      await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
       return publicResult;
     }
     const resourceContext = container.ownerUid
@@ -11967,7 +11967,7 @@ export class FlowSurfacesService {
     };
     const publicResult = await this.attachCreatedRunJSWorkspace(result, actionCatalogItem.use, result.uid, options);
     await this.persistCreatedKeysForAction('addRecordAction', values, publicResult, options.transaction);
-    await this.syncLightExtensionReferencesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
+    await this.syncJsTemplateUsagesForNodeTree(publicResult.uid, 'flowSurfaces.addRecordAction', options);
     return publicResult;
   }
 
@@ -14099,7 +14099,7 @@ export class FlowSurfacesService {
       }
       if (templateRef.mode === 'copy') {
         await this.ensurePopupSurface(resolvedUid, options.transaction);
-        await this.syncLightExtensionReferencesForNodeTree(resolvedUid, actionName, options);
+        await this.syncJsTemplateUsagesForNodeTree(resolvedUid, actionName, options);
       }
       let runtimeRecordFilterTargetKey: string | undefined;
       if (options.popupActionContext?.hasCurrentRecord === true) {
@@ -21681,7 +21681,7 @@ export class FlowSurfacesService {
     await this.removeFlowSqlBindingsForNodeTree(node, transaction);
     await this.cleanupNodeBindings(node, transaction);
     await this.clearFlowTemplateUsagesForNodeTree(node, transaction);
-    await this.markLightExtensionReferencesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.removeNode', {
+    await this.markJsTemplateUsagesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.removeNode', {
       transaction,
     });
     await this.repository.remove(uid, { transaction });

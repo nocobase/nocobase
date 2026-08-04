@@ -11,5 +11,5 @@ import entryV1Schema from './entry-v1.schema.json';
 
 export * from './contracts';
 
-export const lightExtensionEntryV1Schema = entryV1Schema;
-export const lightExtensionEntryV1SchemaJson = `${JSON.stringify(entryV1Schema, null, 2)}\n`;
+export const jsTemplateV1Schema = entryV1Schema;
+export const jsTemplateV1SchemaJson = `${JSON.stringify(entryV1Schema, null, 2)}\n`;

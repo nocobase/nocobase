@@ -31,7 +31,7 @@ type SurfaceCase = {
 type RunJsState = {
   code?: string;
   version?: string;
-  sourceMode?: 'inline' | 'light-extension';
+  sourceMode?: 'inline' | 'js-template';
   sourceBinding?: Record<string, unknown>;
   settings?: Record<string, unknown>;
 };
@@ -59,11 +59,11 @@ const ACTION_SURFACES: SurfaceCase[] = Array.from(new Set(actionCatalog.map((ite
 
 const SURFACES = [...NON_ACTION_SURFACES, ...ACTION_SURFACES];
 
-function sourceBinding(kind: RunJsSourceBindingKind, entryId = `entry_${kind}`) {
+function sourceBinding(kind: RunJsSourceBindingKind, templateId = `jtt_${kind}`) {
   return {
-    type: 'light-extension-entry',
-    repoId: `repo_${kind}`,
-    entryId,
+    type: 'js-template-entry',
+    projectId: `jtp_${kind}`,
+    templateId,
     kind,
   };
 }
@@ -100,12 +100,12 @@ function mergeSource(caseItem: SurfaceCase, current: RunJsState, changes: Record
   );
 }
 
-function lightExtensionRunJs(kind: SurfaceCase['kind'], entryId: string, code: string): RunJsState {
+function jsTemplateRunJs(kind: SurfaceCase['kind'], templateId: string, code: string): RunJsState {
   return {
     code,
     version: 'v2',
-    sourceMode: 'light-extension',
-    sourceBinding: sourceBinding(kind, entryId),
+    sourceMode: 'js-template',
+    sourceBinding: sourceBinding(kind, templateId),
     settings: {
       locale: 'en-US',
     },
@@ -120,13 +120,9 @@ function fieldInit(fieldPath: string) {
   };
 }
 
-function createLightExtensionPageTree() {
-  const fieldSource = lightExtensionRunJs('js-field', 'entry_table_field', "ctx.render(String(ctx.value || '')); ");
-  const editableSource = lightExtensionRunJs(
-    'js-field',
-    'entry_editable_field',
-    "ctx.render(String(ctx.value || '')); ",
-  );
+function createJsTemplatePageTree() {
+  const fieldSource = jsTemplateRunJs('js-field', 'entry_table_field', "ctx.render(String(ctx.value || '')); ");
+  const editableSource = jsTemplateRunJs('js-field', 'entry_editable_field', "ctx.render(String(ctx.value || '')); ");
   return {
     uid: 'page-js-source-matrix',
     use: 'RootPageModel',
@@ -157,7 +153,7 @@ function createLightExtensionPageTree() {
                     use: 'JSBlockModel',
                     stepParams: {
                       jsSettings: {
-                        runJs: lightExtensionRunJs('js-block', 'entry_block', "ctx.render('block fallback');"),
+                        runJs: jsTemplateRunJs('js-block', 'entry_block', "ctx.render('block fallback');"),
                       },
                     },
                   },
@@ -193,7 +189,7 @@ function createLightExtensionPageTree() {
                           use: 'JSColumnModel',
                           stepParams: {
                             jsSettings: {
-                              runJs: lightExtensionRunJs(
+                              runJs: jsTemplateRunJs(
                                 'js-field',
                                 'entry_column',
                                 "ctx.render(String(ctx.record?.status || '')); ",
@@ -206,7 +202,7 @@ function createLightExtensionPageTree() {
                           use: 'JSItemModel',
                           stepParams: {
                             jsSettings: {
-                              runJs: lightExtensionRunJs('js-item', 'entry_item', "ctx.render('item fallback');"),
+                              runJs: jsTemplateRunJs('js-item', 'entry_item', "ctx.render('item fallback');"),
                             },
                           },
                         },
@@ -220,7 +216,7 @@ function createLightExtensionPageTree() {
                                 use: 'JSItemActionModel',
                                 stepParams: {
                                   jsSettings: {
-                                    runJs: lightExtensionRunJs(
+                                    runJs: jsTemplateRunJs(
                                       'js-item',
                                       'entry_item_action',
                                       "ctx.render('item action fallback');",
@@ -238,7 +234,7 @@ function createLightExtensionPageTree() {
                           use: 'JSCollectionActionModel',
                           stepParams: {
                             clickSettings: {
-                              runJs: lightExtensionRunJs(
+                              runJs: jsTemplateRunJs(
                                 'js-action',
                                 'entry_action',
                                 "ctx.message.info('action fallback');",
@@ -304,7 +300,7 @@ describe('flowSurfaces JS source contract matrix', () => {
     expect(getNodeContract('FormJSFieldItemModel')).toMatchObject({ editableDomains: [], domains: {} });
   });
 
-  it('keeps legacy inline, explicit inline, and light-extension source in canonical runJs for every owner use', () => {
+  it('keeps legacy inline, explicit inline, and js-template source in canonical runJs for every owner use', () => {
     for (const caseItem of SURFACES) {
       expect(resolveRunJsSettingsGroupKey(caseItem.use), caseItem.label).toBe(caseItem.group);
       const sourceGroup = getNodeContract(caseItem.use).domains.stepParams?.groups?.[caseItem.group];
@@ -328,32 +324,32 @@ describe('flowSurfaces JS source contract matrix', () => {
       const binding = sourceBinding(caseItem.kind, `entry_${caseItem.use}`);
       const bindingOnly = mergeSource(caseItem, {}, { sourceBinding: binding });
       expect(readRunJs(bindingOnly, caseItem.group), caseItem.label).toEqual({
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: binding,
       });
       expect(readRunJs(bindingOnly, caseItem.group), caseItem.label).not.toHaveProperty('code');
 
-      const currentLightExtension = {
+      const currentJsTemplate = {
         code: 'return "fallback";',
         version: 'v2',
-        sourceMode: 'light-extension' as const,
+        sourceMode: 'js-template' as const,
         sourceBinding: binding,
         settings: { currency: 'CNY', precision: 2 },
       };
-      const changedEntry = mergeSource(caseItem, currentLightExtension, {
-        sourceBinding: { entryId: `entry_${caseItem.use}_next` },
+      const changedEntry = mergeSource(caseItem, currentJsTemplate, {
+        sourceBinding: { templateId: `jtt_${caseItem.use}_next` },
         settings: { currency: 'USD' },
       });
       expect(readRunJs(changedEntry, caseItem.group), caseItem.label).toEqual({
-        ...currentLightExtension,
+        ...currentJsTemplate,
         sourceBinding: {
           ...binding,
-          entryId: `entry_${caseItem.use}_next`,
+          templateId: `jtt_${caseItem.use}_next`,
         },
         settings: { currency: 'USD', precision: 2 },
       });
 
-      const switchedInline = mergeSource(caseItem, currentLightExtension, { sourceMode: 'inline' });
+      const switchedInline = mergeSource(caseItem, currentJsTemplate, { sourceMode: 'inline' });
       clearInactiveRunJsSourceBinding(
         caseItem.use,
         stepParams(caseItem.group, { sourceMode: 'inline' }),
@@ -371,7 +367,7 @@ describe('flowSurfaces JS source contract matrix', () => {
   it('treats binding-only value-return RunJS as runnable and enforces the runjs kind', () => {
     const accepted = validateRunJsSourceBinding({
       source: {
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: sourceBinding('runjs', 'entry_value_return'),
       },
       path: '$.value.runJs',
@@ -381,13 +377,13 @@ describe('flowSurfaces JS source contract matrix', () => {
     });
     expect(accepted).toMatchObject({
       errors: [],
-      hasLightExtensionSourceInput: true,
-      hasRunnableLightExtensionSource: true,
+      hasJsTemplateSourceInput: true,
+      hasRunnableJsTemplateSource: true,
     });
 
     const wrongKind = validateRunJsSourceBinding({
       source: {
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: sourceBinding('js-action', 'entry_wrong_kind'),
       },
       path: '$.value.runJs',
@@ -404,12 +400,12 @@ describe('flowSurfaces JS source contract matrix', () => {
         }),
       ]),
     );
-    expect(wrongKind.hasRunnableLightExtensionSource).toBe(false);
+    expect(wrongKind.hasRunnableJsTemplateSource).toBe(false);
   });
 
-  it('round-trips light-extension bindings and preserved fallback code through export and apply compilation', async () => {
+  it('round-trips js-template bindings and preserved fallback code through export and apply compilation', async () => {
     const exported = exportFlowSurfaceBlueprintDocument({
-      page: createLightExtensionPageTree(),
+      page: createJsTemplatePageTree(),
       target: { pageSchemaUid: 'page-schema-js-source-matrix' },
     });
     expect(exported.unsupported).toEqual([]);
@@ -436,11 +432,11 @@ describe('flowSurfaces JS source contract matrix', () => {
       expect(runJs, label).toMatchObject({
         code: expect.any(String),
         version: 'v2',
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: expect.objectContaining({
-          type: 'light-extension-entry',
-          repoId: expect.any(String),
-          entryId: expect.any(String),
+          type: 'js-template-entry',
+          projectId: expect.any(String),
+          templateId: expect.any(String),
           kind: expect.stringMatching(/^js-(?:block|field|action|item)$/),
         }),
         settings: { locale: 'en-US' },
@@ -465,7 +461,7 @@ describe('flowSurfaces JS source contract matrix', () => {
         expect.objectContaining({
           type: 'jsBlock',
           settings: expect.objectContaining({
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
             sourceBinding: expect.objectContaining({ kind: 'js-block' }),
             code: "ctx.render('block fallback');",
           }),

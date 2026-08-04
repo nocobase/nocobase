@@ -7,35 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildLightExtensionSettingsSchema } from '../schema/contracts';
+import { buildJsTemplateSettingsSchema } from '../schema/contracts';
 
-export type LightExtensionClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+export type JsTemplateClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
 
-export interface LightExtensionSettingsTypegenSourceFile {
+export interface JsTemplateSettingsTypegenSourceFile {
   path: string;
   content?: string;
 }
 
-export interface LightExtensionSettingsTypegenFile {
+export interface JsTemplateSettingsTypegenFile {
   path: string;
   content: string;
 }
 
-export interface LightExtensionSettingsTypegenDiagnostic {
+export interface JsTemplateSettingsTypegenDiagnostic {
   code: string;
   severity: 'error';
   message: string;
   path?: string;
-  kind?: LightExtensionClientTypegenKind;
-  entryName?: string;
+  kind?: JsTemplateClientTypegenKind;
+  templateName?: string;
   details?: Record<string, unknown>;
 }
 
-export interface LightExtensionSettingsTypegenEntry {
+export interface JsTemplateSettingsTypegenTemplate {
   target: 'client';
-  kind: LightExtensionClientTypegenKind;
+  kind: JsTemplateClientTypegenKind;
   directoryName: string;
-  entryName: string;
+  templateName: string;
   entryKey: string;
   descriptorPath: string;
   sourceRoot: string;
@@ -45,15 +45,15 @@ export interface LightExtensionSettingsTypegenEntry {
   schemaHash: string;
 }
 
-export interface LightExtensionSettingsTypegenResult {
-  entries: LightExtensionSettingsTypegenEntry[];
-  files: LightExtensionSettingsTypegenFile[];
-  diagnostics: LightExtensionSettingsTypegenDiagnostic[];
+export interface JsTemplateSettingsTypegenResult {
+  templates: JsTemplateSettingsTypegenTemplate[];
+  files: JsTemplateSettingsTypegenFile[];
+  diagnostics: JsTemplateSettingsTypegenDiagnostic[];
 }
 
-export interface LightExtensionActiveEntryContextResult {
-  entry?: LightExtensionSettingsTypegenEntry;
-  file?: LightExtensionSettingsTypegenFile;
+export interface JsTemplateActiveTemplateContextResult {
+  template?: JsTemplateSettingsTypegenTemplate;
+  file?: JsTemplateSettingsTypegenFile;
   globalContextType?: string;
 }
 
@@ -65,17 +65,17 @@ type JsonSchemaLike = {
   items?: unknown;
 };
 
-export const LIGHT_EXTENSION_GENERATED_TYPES_ROOT = '.light-extension/types';
-export const LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH = `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/__active-entry-context.d.ts`;
-export const LIGHT_EXTENSION_SDK_DECLARATIONS_PATH = `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/sdk.d.ts`;
-export const LIGHT_EXTENSION_SETTINGS_MODULES_PATH = `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/modules.d.ts`;
-export const LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX = 'light-extension:settings/';
-export const LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE = 'LightExtensionActiveEntryContext';
+export const JS_TEMPLATE_GENERATED_TYPES_ROOT = '.js-template/types';
+export const JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH = `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/__active-template-context.d.ts`;
+export const JS_TEMPLATE_SDK_DECLARATIONS_PATH = `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/sdk.d.ts`;
+export const JS_TEMPLATE_SETTINGS_MODULES_PATH = `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/modules.d.ts`;
+export const JS_TEMPLATE_SETTINGS_IMPORT_PREFIX = 'js-template:settings/';
+export const JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_TYPE = 'JsTemplateActiveTemplateContext';
 
 const entryKeyPattern = /^[a-z0-9][a-z0-9-]{0,62}$/;
 const emptySettingsSchema: Record<string, unknown> = { type: 'object', properties: {} };
 
-const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: string }> = [
+const clientKindRoots: Array<{ kind: JsTemplateClientTypegenKind; root: string }> = [
   { kind: 'js-block', root: 'src/client/js-blocks' },
   { kind: 'js-page', root: 'src/client/js-pages' },
   { kind: 'js-field', root: 'src/client/js-fields' },
@@ -83,7 +83,7 @@ const clientKindRoots: Array<{ kind: LightExtensionClientTypegenKind; root: stri
   { kind: 'js-item', root: 'src/client/js-items' },
 ];
 
-const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
+const contextTypes: Record<JsTemplateClientTypegenKind, string> = {
   'js-block': 'JSBlockContext',
   'js-page': 'JSPageContext',
   'js-field': 'JSFieldContext',
@@ -92,31 +92,31 @@ const contextTypes: Record<LightExtensionClientTypegenKind, string> = {
 };
 
 export function generateClientSettingsTypes(input: {
-  files: LightExtensionSettingsTypegenSourceFile[];
-}): LightExtensionSettingsTypegenResult {
+  files: JsTemplateSettingsTypegenSourceFile[];
+}): JsTemplateSettingsTypegenResult {
   const sourceFiles = normalizeSourceFiles(input.files);
-  const diagnostics: LightExtensionSettingsTypegenDiagnostic[] = [];
-  const entries = collectClientSettingsEntries(sourceFiles, diagnostics);
+  const diagnostics: JsTemplateSettingsTypegenDiagnostic[] = [];
+  const templates = collectClientSettingsTemplates(sourceFiles, diagnostics);
 
-  return buildSettingsTypegenResult(entries, diagnostics);
+  return buildSettingsTypegenResult(templates, diagnostics);
 }
 
 export function generateInlineClientSettingsTypes(input: {
   descriptorPath?: string;
-  files: LightExtensionSettingsTypegenSourceFile[];
-  kind: LightExtensionClientTypegenKind;
+  files: JsTemplateSettingsTypegenSourceFile[];
+  kind: JsTemplateClientTypegenKind;
   sourceRoot?: string;
-}): LightExtensionSettingsTypegenResult {
+}): JsTemplateSettingsTypegenResult {
   const sourceFiles = normalizeSourceFiles(input.files);
-  const diagnostics: LightExtensionSettingsTypegenDiagnostic[] = [];
+  const diagnostics: JsTemplateSettingsTypegenDiagnostic[] = [];
   const descriptorPath = normalizeSourcePath(input.descriptorPath || 'src/client/entry.json');
   const descriptorFile = sourceFiles.find((file) => file.path === descriptorPath);
   const descriptor = descriptorFile
     ? parseEntryDescriptor(descriptorFile, { kind: input.kind, directoryName: 'inline' }, diagnostics)
     : null;
-  const entries = descriptor
+  const templates = descriptor
     ? [
-        createClientSettingsTypegenEntry({
+        createClientSettingsTypegenTemplate({
           descriptor,
           descriptorPath,
           directoryName: 'inline',
@@ -126,47 +126,47 @@ export function generateInlineClientSettingsTypes(input: {
       ]
     : [];
 
-  return buildSettingsTypegenResult(entries, diagnostics);
+  return buildSettingsTypegenResult(templates, diagnostics);
 }
 
 function buildSettingsTypegenResult(
-  entries: LightExtensionSettingsTypegenEntry[],
-  diagnostics: LightExtensionSettingsTypegenDiagnostic[],
-): LightExtensionSettingsTypegenResult {
+  templates: JsTemplateSettingsTypegenTemplate[],
+  diagnostics: JsTemplateSettingsTypegenDiagnostic[],
+): JsTemplateSettingsTypegenResult {
   return {
-    entries,
-    files: buildGeneratedFiles(entries),
+    templates,
+    files: buildGeneratedFiles(templates),
     diagnostics: sortDiagnostics(diagnostics),
   };
 }
 
-export function createActiveEntryContextType(input: {
+export function createActiveTemplateContextType(input: {
   activePath?: string;
-  entries: LightExtensionSettingsTypegenEntry[];
-}): LightExtensionActiveEntryContextResult {
+  templates: JsTemplateSettingsTypegenTemplate[];
+}): JsTemplateActiveTemplateContextResult {
   const activePath = normalizeSourcePath(input.activePath || '');
   if (!activePath) {
     return {};
   }
 
-  const entry = input.entries.find(
+  const template = input.templates.find(
     (candidate) => activePath === candidate.descriptorPath || activePath.startsWith(`${candidate.sourceRoot}/`),
   );
-  if (!entry) {
+  if (!template) {
     return {};
   }
 
   return {
-    entry,
-    globalContextType: LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE,
+    template,
+    globalContextType: JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_TYPE,
     file: {
-      path: LIGHT_EXTENSION_ACTIVE_ENTRY_CONTEXT_PATH,
+      path: JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH,
       content: [
         generatedHeader(),
-        `import type { Context } from "${entry.virtualImport}";`,
+        `import type { Context } from "${template.virtualImport}";`,
         '',
         'declare global {',
-        `  type ${LIGHT_EXTENSION_ACTIVE_CONTEXT_TYPE} = RunJSContext & Context;`,
+        `  type ${JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_TYPE} = RunJSContext & Context;`,
         '}',
         '',
         'export {};',
@@ -178,22 +178,22 @@ export function createActiveEntryContextType(input: {
 
 export function parseSettingsTypeImport(
   specifier: string,
-): { target: 'client'; kind: LightExtensionClientTypegenKind; entryName: string } | null {
-  if (!specifier.startsWith(LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX)) {
+): { target: 'client'; kind: JsTemplateClientTypegenKind; templateName: string } | null {
+  if (!specifier.startsWith(JS_TEMPLATE_SETTINGS_IMPORT_PREFIX)) {
     return null;
   }
-  const [target, kind, entryName, ...rest] = specifier.slice(LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX.length).split('/');
+  const [target, kind, templateName, ...rest] = specifier.slice(JS_TEMPLATE_SETTINGS_IMPORT_PREFIX.length).split('/');
   if (
     target === 'client' &&
     clientKindRoots.some((item) => item.kind === kind) &&
-    typeof entryName === 'string' &&
-    isValidEntryName(entryName) &&
+    typeof templateName === 'string' &&
+    isValidTemplateName(templateName) &&
     rest.length === 0
   ) {
     return {
       target,
-      kind: kind as LightExtensionClientTypegenKind,
-      entryName,
+      kind: kind as JsTemplateClientTypegenKind,
+      templateName,
     };
   }
   return null;
@@ -203,11 +203,11 @@ export function isNamespacedSettingsTypeImport(specifier: string): boolean {
   return Boolean(parseSettingsTypeImport(specifier));
 }
 
-function collectClientSettingsEntries(
-  files: Array<Required<LightExtensionSettingsTypegenSourceFile>>,
-  diagnostics: LightExtensionSettingsTypegenDiagnostic[],
-): LightExtensionSettingsTypegenEntry[] {
-  const entries: LightExtensionSettingsTypegenEntry[] = [];
+function collectClientSettingsTemplates(
+  files: Array<Required<JsTemplateSettingsTypegenSourceFile>>,
+  diagnostics: JsTemplateSettingsTypegenDiagnostic[],
+): JsTemplateSettingsTypegenTemplate[] {
+  const templates: JsTemplateSettingsTypegenTemplate[] = [];
   const seenEntryKeys = new Set<string>();
 
   for (const file of files.sort((left, right) => left.path.localeCompare(right.path))) {
@@ -225,14 +225,14 @@ function collectClientSettingsEntries(
         message: `Entry key "${descriptor.key}" is duplicated for ${parsed.kind}`,
         path: file.path,
         kind: parsed.kind,
-        entryName: descriptor.key,
+        templateName: descriptor.key,
       });
       continue;
     }
     seenEntryKeys.add(entryKey);
 
-    entries.push(
-      createClientSettingsTypegenEntry({
+    templates.push(
+      createClientSettingsTypegenTemplate({
         descriptor,
         descriptorPath: file.path,
         directoryName: parsed.directoryName,
@@ -242,59 +242,52 @@ function collectClientSettingsEntries(
     );
   }
 
-  return entries.sort((left, right) => left.entryKey.localeCompare(right.entryKey));
+  return templates.sort((left, right) => left.entryKey.localeCompare(right.entryKey));
 }
 
-function createClientSettingsTypegenEntry(input: {
+function createClientSettingsTypegenTemplate(input: {
   descriptor: { key: string; settingsSchema: Record<string, unknown> | null };
   descriptorPath: string;
   directoryName: string;
-  kind: LightExtensionClientTypegenKind;
+  kind: JsTemplateClientTypegenKind;
   sourceRoot: string;
-}): LightExtensionSettingsTypegenEntry {
+}): JsTemplateSettingsTypegenTemplate {
   const schema = input.descriptor.settingsSchema || emptySettingsSchema;
   const entryKey = `client/${input.kind}/${input.descriptor.key}`;
   return {
     target: 'client',
     kind: input.kind,
     directoryName: input.directoryName,
-    entryName: input.descriptor.key,
+    templateName: input.descriptor.key,
     entryKey,
     descriptorPath: input.descriptorPath,
     sourceRoot: input.sourceRoot,
-    virtualImport: `${LIGHT_EXTENSION_SETTINGS_IMPORT_PREFIX}${entryKey}`,
-    outputPath: `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/client/${input.kind}/${input.descriptor.key}.d.ts`,
+    virtualImport: `${JS_TEMPLATE_SETTINGS_IMPORT_PREFIX}${entryKey}`,
+    outputPath: `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/client/${input.kind}/${input.descriptor.key}.d.ts`,
     schema,
     schemaHash: shortHash(stableSerialize(schema)),
   };
 }
 
 function parseEntryDescriptor(
-  file: Required<LightExtensionSettingsTypegenSourceFile>,
-  parsed: { kind: LightExtensionClientTypegenKind; directoryName: string },
-  diagnostics: LightExtensionSettingsTypegenDiagnostic[],
+  file: Required<JsTemplateSettingsTypegenSourceFile>,
+  parsed: { kind: JsTemplateClientTypegenKind; directoryName: string },
+  diagnostics: JsTemplateSettingsTypegenDiagnostic[],
 ): { key: string; settingsSchema: Record<string, unknown> | null } | null {
   try {
     const value = JSON.parse(file.content) as unknown;
-    if (!isRecord(value) || typeof value.key !== 'string' || !isValidEntryName(value.key)) {
+    if (!isRecord(value) || typeof value.key !== 'string' || !isValidTemplateName(value.key)) {
       throw new Error('entry.json must contain a valid key to generate settings types');
     }
     if (typeof value.settings !== 'undefined' && !isRecord(value.settings)) {
       throw new Error('entry.json settings must be an object');
     }
-    if (typeof value.settingsSchema !== 'undefined' && !isRecord(value.settingsSchema)) {
-      throw new Error('entry.json settingsSchema must be an object');
-    }
-    if (typeof value.settings !== 'undefined' && typeof value.settingsSchema !== 'undefined') {
-      throw new Error('entry.json must not define both settings and settingsSchema');
+    if (typeof value.settingsSchema !== 'undefined') {
+      throw new Error('entry.json settingsSchema is not supported; use settings');
     }
     return {
       key: value.key,
-      settingsSchema: isRecord(value.settings)
-        ? buildLightExtensionSettingsSchema(value.settings)
-        : isRecord(value.settingsSchema)
-          ? value.settingsSchema
-          : null,
+      settingsSchema: isRecord(value.settings) ? buildJsTemplateSettingsSchema(value.settings) : null,
     };
   } catch (error) {
     diagnostics.push({
@@ -303,75 +296,77 @@ function parseEntryDescriptor(
       message: error instanceof Error ? error.message : 'entry.json is invalid',
       path: file.path,
       kind: parsed.kind,
-      entryName: parsed.directoryName,
+      templateName: parsed.directoryName,
     });
     return null;
   }
 }
 
-function buildGeneratedFiles(entries: LightExtensionSettingsTypegenEntry[]): LightExtensionSettingsTypegenFile[] {
+function buildGeneratedFiles(templates: JsTemplateSettingsTypegenTemplate[]): JsTemplateSettingsTypegenFile[] {
   return [
-    { path: LIGHT_EXTENSION_SDK_DECLARATIONS_PATH, content: buildSdkDeclarations() },
-    ...entries.map((entry) => ({ path: entry.outputPath, content: buildEntryTypes(entry) })),
-    { path: LIGHT_EXTENSION_SETTINGS_MODULES_PATH, content: buildVirtualSettingsModules(entries) },
-    { path: `${LIGHT_EXTENSION_GENERATED_TYPES_ROOT}/index.d.ts`, content: buildIndexTypes(entries) },
+    { path: JS_TEMPLATE_SDK_DECLARATIONS_PATH, content: buildSdkDeclarations() },
+    ...templates.map((template) => ({ path: template.outputPath, content: buildTemplateTypes(template) })),
+    { path: JS_TEMPLATE_SETTINGS_MODULES_PATH, content: buildVirtualSettingsModules(templates) },
+    { path: `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/index.d.ts`, content: buildIndexTypes(templates) },
   ];
 }
 
-function buildVirtualSettingsModules(entries: LightExtensionSettingsTypegenEntry[]): string {
+function buildVirtualSettingsModules(templates: JsTemplateSettingsTypegenTemplate[]): string {
   return [
     generatedHeader(),
-    ...entries.flatMap((entry) => [
+    ...templates.flatMap((template) => [
       '',
-      `declare module "${entry.virtualImport}" {`,
-      `  export type Settings = import("./client/${entry.kind}/${entry.entryName}").Settings;`,
-      `  export type SettingsSchemaSummary = import("./client/${entry.kind}/${entry.entryName}").SettingsSchemaSummary;`,
-      `  export type Context = import("./client/${entry.kind}/${entry.entryName}").Context;`,
+      `declare module "${template.virtualImport}" {`,
+      `  export type Settings = import("./client/${template.kind}/${template.templateName}").Settings;`,
+      `  export type SettingsSchemaSummary = import("./client/${template.kind}/${template.templateName}").SettingsSchemaSummary;`,
+      `  export type Context = import("./client/${template.kind}/${template.templateName}").Context;`,
       '}',
     ]),
     '',
   ].join('\n');
 }
 
-function buildEntryTypes(entry: LightExtensionSettingsTypegenEntry): string {
-  const contextType = contextTypes[entry.kind];
+function buildTemplateTypes(template: JsTemplateSettingsTypegenTemplate): string {
+  const contextType = contextTypes[template.kind];
   return [
     generatedHeader(),
     `import type { ${contextType} } from "@nocobase/js-template-sdk/client";`,
     '',
     'export type SettingsSchemaSummary = {',
     '  target: "client";',
-    `  kind: "${entry.kind}";`,
-    `  entryName: "${entry.entryName}";`,
-    `  entryKey: "${entry.entryKey}";`,
-    `  descriptorPath: "${entry.descriptorPath}";`,
-    `  virtualImport: "${entry.virtualImport}";`,
-    `  schemaHash: "${entry.schemaHash}";`,
+    `  kind: "${template.kind}";`,
+    `  templateName: "${template.templateName}";`,
+    `  entryKey: "${template.entryKey}";`,
+    `  descriptorPath: "${template.descriptorPath}";`,
+    `  virtualImport: "${template.virtualImport}";`,
+    `  schemaHash: "${template.schemaHash}";`,
     '};',
     '',
-    `export interface Settings ${schemaObjectToTypeBody(entry.schema)}`,
+    `export interface Settings ${schemaObjectToTypeBody(template.schema)}`,
     '',
     `export type Context = ${contextType}<Settings>;`,
     '',
   ].join('\n');
 }
 
-function buildIndexTypes(entries: LightExtensionSettingsTypegenEntry[]): string {
-  const imports = entries.map(
-    (entry) =>
-      `import type { Settings as ${entryTypeIdentifier(entry)} } from "./client/${entry.kind}/${entry.entryName}";`,
+function buildIndexTypes(templates: JsTemplateSettingsTypegenTemplate[]): string {
+  const imports = templates.map(
+    (template) =>
+      `import type { Settings as ${templateTypeIdentifier(template)} } from "./client/${template.kind}/${
+        template.templateName
+      }";`,
   );
-  const mapEntries = entries.map((entry) => `  "${entry.entryKey}": ${entryTypeIdentifier(entry)};`);
+  const mapEntries = templates.map((template) => `  "${template.entryKey}": ${templateTypeIdentifier(template)};`);
   return [
     generatedHeader(),
     ...imports,
     '',
-    'export interface LightExtensionEntrySettingsMap {',
+    'export interface JsTemplateSettingsMap {',
     ...mapEntries,
     '}',
     '',
-    'export type LightExtensionEntryKey = keyof LightExtensionEntrySettingsMap;',
-    'export type LightExtensionEntrySettings<TKey extends LightExtensionEntryKey> = LightExtensionEntrySettingsMap[TKey];',
+    'export type JsTemplateKey = keyof JsTemplateSettingsMap;',
+    'export type JsTemplateSettings<TKey extends JsTemplateKey> = JsTemplateSettingsMap[TKey];',
     '',
   ].join('\n');
 }
@@ -379,12 +374,12 @@ function buildIndexTypes(entries: LightExtensionSettingsTypegenEntry[]): string 
 function buildSdkDeclarations(): string {
   return `${generatedHeader()}
 declare module "@nocobase/js-template-sdk/shared" {
-  export interface LightExtensionSettingsContext<TSettings = unknown> { settings: TSettings; }
-  export type LightExtensionRecord = Record<string, unknown>;
-  export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-    record?: LightExtensionRecord | null;
-    records?: LightExtensionRecord[];
-    values?: LightExtensionRecord;
+  export interface JsTemplateSettingsContext<TSettings = unknown> { settings: TSettings; }
+  export type JsTemplateContextRecord = Record<string, unknown>;
+  export interface JsTemplateDataContext<TSettings = unknown> extends JsTemplateSettingsContext<TSettings> {
+    record?: JsTemplateContextRecord | null;
+    records?: JsTemplateContextRecord[];
+    values?: JsTemplateContextRecord;
     collection?: unknown;
     collectionField?: unknown;
     dataSource?: unknown;
@@ -394,28 +389,20 @@ declare module "@nocobase/js-template-sdk/shared" {
 }
 
 declare module "@nocobase/js-template-sdk/client" {
-  import type { LightExtensionDataContext, LightExtensionRecord } from "@nocobase/js-template-sdk/shared";
-  export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from "@nocobase/js-template-sdk/shared";
+  import type { JsTemplateDataContext, JsTemplateContextRecord } from "@nocobase/js-template-sdk/shared";
+  export type { JsTemplateDataContext, JsTemplateContextRecord, JsTemplateSettingsContext } from "@nocobase/js-template-sdk/shared";
   export { assertSettings, defineSettings } from "@nocobase/js-template-sdk/shared";
-  export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+  export interface JSBlockContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> {
     element?: HTMLElement | null;
     render?: (node: unknown) => void;
     i18n?: { t: (key: string, options?: Record<string, unknown>) => string };
   }
   export interface JSPageRuntimeFacade { readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void; }
   export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> { page: JSPageRuntimeFacade; }
-  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }
-  export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> { event?: unknown; formValues?: LightExtensionRecord; }
-  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> { value?: TValue; }
-  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> { input?: TInput; event?: unknown; formValues?: LightExtensionRecord; }
-}
-
-declare module "@nocobase/light-extension-sdk/shared" {
-  export * from "@nocobase/js-template-sdk/shared";
-}
-
-declare module "@nocobase/light-extension-sdk/client" {
-  export * from "@nocobase/js-template-sdk/client";
+  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> { value?: TValue; }
+  export interface JSActionContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> { event?: unknown; formValues?: JsTemplateContextRecord; }
+  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> { value?: TValue; }
+  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends JsTemplateDataContext<TSettings> { input?: TInput; event?: unknown; formValues?: JsTemplateContextRecord; }
 }
 `;
 }
@@ -466,20 +453,20 @@ function literalToType(value: unknown): string {
 
 function parseClientEntryDescriptorPath(
   path: string,
-): { kind: LightExtensionClientTypegenKind; directoryName: string; root: string } | null {
+): { kind: JsTemplateClientTypegenKind; directoryName: string; root: string } | null {
   for (const item of clientKindRoots) {
     const prefix = `${item.root}/`;
     if (!path.startsWith(prefix) || !path.endsWith('/entry.json')) continue;
     const segments = path.slice(prefix.length).split('/');
-    if (segments.length === 2 && segments[1] === 'entry.json' && isValidEntryName(segments[0])) {
+    if (segments.length === 2 && segments[1] === 'entry.json' && isValidTemplateName(segments[0])) {
       return { kind: item.kind, directoryName: segments[0], root: item.root };
     }
   }
   return null;
 }
 
-function entryTypeIdentifier(entry: LightExtensionSettingsTypegenEntry): string {
-  return `${toPascalCase(entry.target)}${toPascalCase(entry.kind)}${toPascalCase(entry.entryName)}Settings`;
+function templateTypeIdentifier(template: JsTemplateSettingsTypegenTemplate): string {
+  return `${toPascalCase(template.target)}${toPascalCase(template.kind)}${toPascalCase(template.templateName)}Settings`;
 }
 
 function toPascalCase(value: string): string {
@@ -494,7 +481,7 @@ function quotePropertyName(propertyName: string): string {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(propertyName) ? propertyName : JSON.stringify(propertyName);
 }
 
-function isValidEntryName(value: string): boolean {
+function isValidTemplateName(value: string): boolean {
   return entryKeyPattern.test(value);
 }
 
@@ -516,8 +503,8 @@ function normalizeSourcePath(path: string): string {
 }
 
 function normalizeSourceFiles(
-  files: LightExtensionSettingsTypegenSourceFile[],
-): Array<Required<LightExtensionSettingsTypegenSourceFile>> {
+  files: JsTemplateSettingsTypegenSourceFile[],
+): Array<Required<JsTemplateSettingsTypegenSourceFile>> {
   return files.map((file) => ({
     path: normalizeSourcePath(file.path),
     content: typeof file.content === 'string' ? file.content : '',
@@ -546,12 +533,10 @@ function shortHash(input: string): string {
 }
 
 function generatedHeader(): string {
-  return '/* Generated by NocoBase light-extension settings typegen. Do not edit by hand. */';
+  return '/* Generated by NocoBase js-template settings typegen. Do not edit by hand. */';
 }
 
-function sortDiagnostics(
-  diagnostics: LightExtensionSettingsTypegenDiagnostic[],
-): LightExtensionSettingsTypegenDiagnostic[] {
+function sortDiagnostics(diagnostics: JsTemplateSettingsTypegenDiagnostic[]): JsTemplateSettingsTypegenDiagnostic[] {
   return [...diagnostics].sort((left, right) =>
     `${left.path || ''}:${left.code}`.localeCompare(`${right.path || ''}:${right.code}`),
   );

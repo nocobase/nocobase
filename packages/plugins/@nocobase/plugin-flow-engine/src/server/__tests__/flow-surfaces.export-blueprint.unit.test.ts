@@ -763,11 +763,11 @@ describe('flowSurfaces exportBlueprint', () => {
           runJs: {
             version: '1.0.1',
             code: "ctx.message.info('Diagnostics ready');",
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
             sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'repo_diagnostics',
-              entryId: 'entry_collection_diagnostics',
+              type: 'js-template-entry',
+              projectId: 'jtp_diagnostics',
+              templateId: 'jtt_collection_diagnostics',
               kind: 'js-action',
             },
             settings: {
@@ -798,11 +798,11 @@ describe('flowSurfaces exportBlueprint', () => {
           runJs: {
             version: '1.0.2',
             code: "ctx.render('Row diagnostics ready');",
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
             sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'repo_diagnostics',
-              entryId: 'entry_row_diagnostics',
+              type: 'js-template-entry',
+              projectId: 'jtp_diagnostics',
+              templateId: 'jtt_row_diagnostics',
               kind: 'js-item',
             },
             settings: {
@@ -831,11 +831,11 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.1',
         code: "ctx.message.info('Diagnostics ready');",
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'repo_diagnostics',
-          entryId: 'entry_collection_diagnostics',
+          type: 'js-template-entry',
+          projectId: 'jtp_diagnostics',
+          templateId: 'jtt_collection_diagnostics',
           kind: 'js-action',
         },
         settings: {
@@ -852,11 +852,11 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.2',
         code: "ctx.render('Row diagnostics ready');",
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'repo_diagnostics',
-          entryId: 'entry_row_diagnostics',
+          type: 'js-template-entry',
+          projectId: 'jtp_diagnostics',
+          templateId: 'jtt_row_diagnostics',
           kind: 'js-item',
         },
         settings: {
@@ -882,9 +882,9 @@ describe('flowSurfaces exportBlueprint', () => {
     const [replacedTableDocument] = getData(replacedExportRes).document.tabs[0].blocks;
     expect(replacedTableDocument.actions.find((action) => action?.type === 'js')?.settings).toMatchObject({
       code: "ctx.message.info('Diagnostics ready');",
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: expect.objectContaining({
-        entryId: 'entry_collection_diagnostics',
+        templateId: 'jtt_collection_diagnostics',
         kind: 'js-action',
       }),
       settings: {
@@ -893,9 +893,9 @@ describe('flowSurfaces exportBlueprint', () => {
     });
     expect(replacedTableDocument.recordActions.find((action) => action?.type === 'jsItem')?.settings).toMatchObject({
       code: "ctx.render('Row diagnostics ready');",
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: expect.objectContaining({
-        entryId: 'entry_row_diagnostics',
+        templateId: 'jtt_row_diagnostics',
         kind: 'js-item',
       }),
       settings: {
@@ -909,11 +909,11 @@ describe('flowSurfaces exportBlueprint', () => {
     const jsFieldSettings = {
       code: "ctx.render(String(ctx.value || ''));",
       version: '1.0.0',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo_fields',
-        entryId: 'entry_nickname_field',
+        type: 'js-template-entry',
+        projectId: 'jtp_fields',
+        templateId: 'jtt_nickname_field',
         kind: 'js-field',
       },
       settings: {
@@ -924,11 +924,11 @@ describe('flowSurfaces exportBlueprint', () => {
       title: 'Runtime status',
       code: "ctx.render(String(ctx.record?.status || ''));",
       version: '1.0.1',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'repo_fields',
-        entryId: 'entry_status_column',
+        type: 'js-template-entry',
+        projectId: 'jtp_fields',
+        templateId: 'jtt_status_column',
         kind: 'js-field',
       },
       settings: {

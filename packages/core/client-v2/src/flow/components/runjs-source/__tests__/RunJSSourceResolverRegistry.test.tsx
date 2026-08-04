@@ -17,7 +17,7 @@ describe('RunJSSourceResolverRegistry', () => {
 
   it('registers and returns source resolvers by sourceMode', () => {
     const resolver = {
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: vi.fn(() => ({
         code: 'ctx.render("ok");',
         version: 'v2',
@@ -26,8 +26,8 @@ describe('RunJSSourceResolverRegistry', () => {
 
     RunJSSourceResolverRegistry.registerResolver(resolver);
 
-    expect(RunJSSourceResolverRegistry.getResolver('light-extension')).toMatchObject({
-      sourceMode: 'light-extension',
+    expect(RunJSSourceResolverRegistry.getResolver('js-template')).toMatchObject({
+      sourceMode: 'js-template',
       resolve: resolver.resolve,
     });
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
@@ -35,7 +35,7 @@ describe('RunJSSourceResolverRegistry', () => {
 
   it('normalizes sourceMode before registration and lookup', () => {
     const resolver = {
-      sourceMode: ' light-extension ',
+      sourceMode: ' js-template ',
       resolve: vi.fn(() => ({
         code: 'ctx.render("ok");',
       })),
@@ -43,18 +43,18 @@ describe('RunJSSourceResolverRegistry', () => {
 
     RunJSSourceResolverRegistry.registerResolver(resolver);
 
-    expect(RunJSSourceResolverRegistry.getResolver('light-extension')?.sourceMode).toBe('light-extension');
+    expect(RunJSSourceResolverRegistry.getResolver('js-template')?.sourceMode).toBe('js-template');
   });
 
   it('uses unregister callback only for the resolver instance that registered it', () => {
     const first = {
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: vi.fn(() => ({
         code: 'ctx.render("first");',
       })),
     };
     const second = {
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: vi.fn(() => ({
         code: 'ctx.render("second");',
       })),
@@ -64,7 +64,7 @@ describe('RunJSSourceResolverRegistry', () => {
     RunJSSourceResolverRegistry.registerResolver(second);
     unregisterFirst();
 
-    expect(RunJSSourceResolverRegistry.getResolver('light-extension')?.resolve).toBe(second.resolve);
+    expect(RunJSSourceResolverRegistry.getResolver('js-template')?.resolve).toBe(second.resolve);
   });
 
   it('rejects inline and invalid resolver registrations', () => {

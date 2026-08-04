@@ -7,5 +7,114 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '@nocobase/plugin-light-extension/client';
-export { default } from '@nocobase/plugin-light-extension/client';
+import type React from 'react';
+
+export * from './vsc-file/public-api';
+
+export { default as JsTemplateListPage } from '../client-v2/pages/JsTemplateListPage';
+export { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
+
+import { NAMESPACE } from '../constants';
+import {
+  installJsTemplateRunJSIntegrations,
+  registerJsTemplateRunJSFlowSettingsComponents,
+} from '../client-v2/jsTemplateRunJSIntegration';
+import JsTemplateListPage from '../client-v2/pages/JsTemplateListPage';
+import { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
+import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
+
+export interface JsTemplateClientOptions {
+  name?: string;
+  packageName?: string;
+  [key: string]: unknown;
+}
+
+interface ClientV1SettingsOptions {
+  icon: string;
+  title: string;
+  Component: React.ComponentType;
+  aclSnippet: string;
+  hidden?: boolean;
+}
+
+interface ClientV1SettingsManager {
+  add: (name: string, options: ClientV1SettingsOptions) => void;
+}
+
+interface ClientV1I18n {
+  t: (text: string, options?: { ns?: string }) => string;
+}
+
+interface ClientV1App {
+  pluginSettingsManager?: ClientV1SettingsManager;
+  i18n?: ClientV1I18n;
+  apiClient?: Parameters<typeof installJsTemplateRunJSIntegrations>[0];
+  flowEngine?: {
+    flowSettings?: {
+      components?: Record<string, React.ElementType>;
+      registerComponents?: (
+        components: Record<string, React.ElementType>,
+        options?: { warnOnOverwrite?: boolean },
+      ) => void;
+    };
+  };
+}
+
+function translate(app: ClientV1App | undefined, text: string) {
+  return app?.i18n?.t(text, { ns: NAMESPACE }) || text;
+}
+
+let activeJsTemplateClientV1Instance: PluginJsTemplateClient | null = null;
+
+export class PluginJsTemplateClient {
+  private readonly disposers: Array<() => void> = [];
+
+  constructor(
+    public readonly options: JsTemplateClientOptions = {},
+    protected readonly app?: ClientV1App,
+  ) {}
+
+  async afterAdd() {}
+
+  async beforeLoad() {
+    activeJsTemplateClientV1Instance?.dispose();
+    this.dispose();
+  }
+
+  dispose() {
+    while (this.disposers.length) {
+      this.disposers.pop()?.();
+    }
+    if (activeJsTemplateClientV1Instance === this) {
+      activeJsTemplateClientV1Instance = null;
+    }
+  }
+
+  async load() {
+    const flowSettings = this.app?.flowEngine?.flowSettings;
+    if (flowSettings?.registerComponents) {
+      this.disposers.push(
+        registerJsTemplateRunJSFlowSettingsComponents({
+          components: flowSettings.components,
+          registerComponents: flowSettings.registerComponents.bind(flowSettings),
+        }),
+      );
+    }
+
+    if (this.app?.apiClient) {
+      this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
+    }
+    this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient));
+
+    const settingsOptions: ClientV1SettingsOptions = {
+      icon: 'CodeOutlined',
+      title: translate(this.app, JS_TEMPLATE_V2_UI_CONTRACT.productNameKey),
+      Component: JsTemplateListPage,
+      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+    };
+    this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
+    activeJsTemplateClientV1Instance = this;
+  }
+}
+
+export default PluginJsTemplateClient;

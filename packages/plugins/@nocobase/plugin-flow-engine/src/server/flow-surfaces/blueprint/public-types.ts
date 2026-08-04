@@ -55,16 +55,16 @@ export type FlowSurfaceApplyBlueprintAssetMap = Record<string, Record<string, an
 export type FlowSurfaceRunJsSourceBindingKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 
 export type FlowSurfaceRunJsSourceBinding = {
-  type: 'light-extension-entry';
-  repoId: string;
-  entryId: string;
+  type: 'js-template-entry';
+  projectId: string;
+  templateId: string;
   kind: FlowSurfaceRunJsSourceBindingKind;
 };
 
 export type FlowSurfaceRunJsPublicSettings = {
   code?: string;
   version?: string;
-  sourceMode?: 'inline' | 'light-extension';
+  sourceMode?: 'inline' | 'js-template';
   sourceBinding?: FlowSurfaceRunJsSourceBinding;
   settings?: Record<string, unknown>;
 };

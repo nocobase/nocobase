@@ -34,17 +34,17 @@ describe('@nocobase/runjs-workspace package boundary', () => {
     ]);
   });
 
-  it('does not depend on plugin lifecycle or Light Extension domain implementations', () => {
+  it('does not depend on plugin lifecycle or JS Template domain implementations', () => {
     const violations = collectSourceFiles(sourceRoot)
       .filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`))
       .flatMap((file) => {
         const source = fs.readFileSync(file, 'utf8');
         return [
           '@nocobase/plugin-flow-engine',
-          '@nocobase/plugin-light-extension',
-          '/LightExtensionRepoService',
-          '/LightExtensionEntryService',
-          '/MoveSourceService',
+          '@nocobase/plugin-js-template',
+          '/JsTemplateProjectService',
+          '/JsTemplateService',
+          '/SaveAsJsTemplateService',
         ]
           .filter((needle) => source.includes(needle))
           .map((needle) => `${path.relative(sourceRoot, file)} -> ${needle}`);

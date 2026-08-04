@@ -19,7 +19,7 @@ import {
   getJSActionRuntimeFlowSettingSteps,
   INLINE_SOURCE_MODE,
   runJSActionRuntime,
-} from './jsActionLightExtensionRuntime';
+} from './jsActionJsTemplateRuntime';
 
 export class JSActionModel extends ActionModel {
   defaultProps: ButtonProps = {

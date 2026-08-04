@@ -7,38 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { registerLightExtensionDomainAvailabilityGuard } from '@nocobase/plugin-js-template/server';
+import { registerJsTemplateDomainAvailabilityGuard } from '@nocobase/plugin-js-template/server';
 import { findBuiltInPlugins, findLocalPlugins, packageNameTrim, Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 
-const JS_TEMPLATE_PACKAGE = '@nocobase/plugin-js-template';
-const LIGHT_EXTENSION_PACKAGE = '@nocobase/plugin-light-extension';
-const LIGHT_EXTENSION_NAME = 'light-extension';
 const JS_TEMPLATE_NAME = 'js-template';
-
-const jsTemplatePluginRecordFilter = {
-  $or: [
-    { name: LIGHT_EXTENSION_NAME },
-    { name: JS_TEMPLATE_NAME },
-    { packageName: JS_TEMPLATE_PACKAGE },
-    { packageName: LIGHT_EXTENSION_PACKAGE },
-  ],
-};
 
 export class PresetNocoBase extends Plugin {
   async load() {
-    registerLightExtensionDomainAvailabilityGuard(
+    registerJsTemplateDomainAvailabilityGuard(
       this.app,
       async () => {
-        if (this.pm.get(LIGHT_EXTENSION_NAME)?.enabled) {
+        if (this.pm.get(JS_TEMPLATE_NAME)?.enabled) {
           return true;
         }
         const record = await this.pm.repository.findOne({
-          filter: jsTemplatePluginRecordFilter,
+          filter: { name: JS_TEMPLATE_NAME },
         });
         return record ? Boolean(record.get('enabled')) : true;
       },
-      'preset-light-extension-domain-availability',
+      'preset-js-template-domain-availability',
     );
   }
 
@@ -91,10 +79,7 @@ export class PresetNocoBase extends Plugin {
     const { packageName } = await PluginManager.parseName(name);
     const packageJson = require(`${packageName}/package.json`);
     const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
-    const instance = await repository.findOne({
-      filter:
-        packageJson.name === JS_TEMPLATE_PACKAGE ? jsTemplatePluginRecordFilter : { packageName: packageJson.name },
-    });
+    const instance = await repository.findOne({ filter: { packageName: packageJson.name } });
     const langMap = {
       'zh-CN': 'cn/',
       'en-US': '',
@@ -199,28 +184,6 @@ export class PresetNocoBase extends Plugin {
     const plugins = await this.getPluginToBeUpgraded();
     await this.db.sequelize.transaction(async (transaction) => {
       for (const values of plugins) {
-        if (
-          values.name === LIGHT_EXTENSION_NAME &&
-          [JS_TEMPLATE_PACKAGE, LIGHT_EXTENSION_PACKAGE].includes(values.packageName)
-        ) {
-          const existing = await repository.findOne({
-            transaction,
-            filter: jsTemplatePluginRecordFilter,
-          });
-          if (existing) {
-            await repository.update({
-              transaction,
-              filterByTk: existing.get('id'),
-              values: {
-                name: LIGHT_EXTENSION_NAME,
-                packageName: LIGHT_EXTENSION_PACKAGE,
-                version: values.version,
-                builtIn: true,
-              },
-            });
-            continue;
-          }
-        }
         await repository.updateOrCreate({
           transaction,
           values,

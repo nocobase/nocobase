@@ -762,7 +762,7 @@ export function useRunJSStudioController(props: RunJSStudioControllerProps) {
       const opened = await runJSSourceRequest('open', {
         locator: props.locator,
         initialSource: {
-          // Blocks created from a light-extension menu entry may have no stored code. Always pass a
+          // Blocks created from a js-template menu entry may have no stored code. Always pass a
           // string so open does not reject with RUNJS_SOURCE_LOCATOR_INVALID.
           code: typeof value.code === 'string' ? value.code : '',
           version: typeof value.version === 'string' && value.version ? value.version : 'v2',

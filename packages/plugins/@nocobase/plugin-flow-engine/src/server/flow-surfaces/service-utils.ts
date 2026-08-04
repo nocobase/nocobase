@@ -792,7 +792,7 @@ export function buildRunJsSourceChanges(changes: Record<string, any>) {
     sourceMode:
       hasOwnDefined(changes, 'sourceMode') || !hasOwnDefined(changes, 'sourceBinding')
         ? changes.sourceMode
-        : 'light-extension',
+        : 'js-template',
     sourceBinding: changes.sourceBinding,
     settings: changes.settings,
   });

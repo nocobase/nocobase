@@ -7,22 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const LIGHT_EXTENSION_ENTRY_SCHEMA_VERSION = 1;
-export const LIGHT_EXTENSION_ENTRY_SCHEMA_URI = 'https://schemas.nocobase.com/light-extension/entry-v1.schema.json';
-export const LIGHT_EXTENSION_ENTRY_SCHEMA_LOCAL_PATH = '/light-extensions/schemas/entry-v1.schema.json';
-export const LIGHT_EXTENSION_ENTRY_KEY_PATTERN = '^[a-z0-9][a-z0-9-]{0,62}$';
-export const LIGHT_EXTENSION_SETTINGS_PROPERTY_PATTERN = '^[A-Za-z_][A-Za-z0-9_-]{0,63}$';
+export const JS_TEMPLATE_SCHEMA_VERSION = 1;
+export const JS_TEMPLATE_SCHEMA_URI = 'https://schemas.nocobase.com/js-template/entry-v1.schema.json';
+export const JS_TEMPLATE_SCHEMA_LOCAL_PATH = '/js-templates/schemas/entry-v1.schema.json';
+export const JS_TEMPLATE_KEY_PATTERN = '^[a-z0-9][a-z0-9-]{0,62}$';
+export const JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN = '^[A-Za-z_][A-Za-z0-9_-]{0,63}$';
 
-export const LIGHT_EXTENSION_SETTINGS_SCHEMA_TYPES = [
-  'object',
-  'array',
-  'string',
-  'number',
-  'integer',
-  'boolean',
-] as const;
+export const JS_TEMPLATE_SETTINGS_SCHEMA_TYPES = ['object', 'array', 'string', 'number', 'integer', 'boolean'] as const;
 
-export const LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS = [
+export const JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS = [
   'type',
   'title',
   'description',
@@ -41,7 +34,7 @@ export const LIGHT_EXTENSION_SETTINGS_SCHEMA_KEYWORDS = [
   'x-visible-when',
 ] as const;
 
-export const LIGHT_EXTENSION_X_COMPONENT_WHITELIST = [
+export const JS_TEMPLATE_X_COMPONENT_WHITELIST = [
   'Input',
   'Input.TextArea',
   'InputNumber',
@@ -57,26 +50,19 @@ export const LIGHT_EXTENSION_X_COMPONENT_WHITELIST = [
   'ColorPicker',
 ] as const;
 
-export const LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS = [
-  '$eq',
-  '$ne',
-  '$in',
-  '$notIn',
-  '$empty',
-  '$notEmpty',
-] as const;
-export const LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS = ['$and', '$or'] as const;
-export const LIGHT_EXTENSION_SETTINGS_CONDITION_LIMITS = {
+export const JS_TEMPLATE_SETTINGS_CONDITION_OPERATORS = ['$eq', '$ne', '$in', '$notIn', '$empty', '$notEmpty'] as const;
+export const JS_TEMPLATE_SETTINGS_CONDITION_LOGICS = ['$and', '$or'] as const;
+export const JS_TEMPLATE_SETTINGS_CONDITION_LIMITS = {
   maxDepth: 8,
   maxNodes: 64,
   maxItemsPerGroup: 32,
   maxPathSegments: 16,
 } as const;
 
-export type LightExtensionSettingsConditionOperator = (typeof LIGHT_EXTENSION_SETTINGS_CONDITION_OPERATORS)[number];
-export type LightExtensionSettingsConditionLogic = (typeof LIGHT_EXTENSION_SETTINGS_CONDITION_LOGICS)[number];
+export type JsTemplateSettingsConditionOperator = (typeof JS_TEMPLATE_SETTINGS_CONDITION_OPERATORS)[number];
+export type JsTemplateSettingsConditionLogic = (typeof JS_TEMPLATE_SETTINGS_CONDITION_LOGICS)[number];
 
-export type LightExtensionSettingsCondition =
+export type JsTemplateSettingsCondition =
   | {
       path: string;
       operator: '$eq' | '$ne' | '$in' | '$notIn';
@@ -87,17 +73,26 @@ export type LightExtensionSettingsCondition =
       operator: '$empty' | '$notEmpty';
     }
   | {
-      logic: LightExtensionSettingsConditionLogic;
-      items: LightExtensionSettingsCondition[];
+      logic: JsTemplateSettingsConditionLogic;
+      items: JsTemplateSettingsCondition[];
     };
 
-export function buildLightExtensionSettingsSchema(settings: Record<string, unknown>): Record<string, unknown> {
+export function buildJsTemplateSettingsSchema(settings: Record<string, unknown>): Record<string, unknown> {
   const normalized = normalizeSettingsProperties(settings);
   return {
     type: 'object',
     ...(normalized.required.length ? { required: normalized.required } : {}),
     properties: normalized.properties,
   };
+}
+
+export function buildJsTemplateSettingsDefinition(settingsSchema: Record<string, unknown>): Record<string, unknown> {
+  const properties = settingsSchema.properties;
+  if (!isRecord(properties)) {
+    return {};
+  }
+
+  return restoreSettingsProperties(properties, settingsSchema.required);
 }
 
 function normalizeSettingsProperties(settings: Record<string, unknown>): {
@@ -157,6 +152,46 @@ function normalizeSettingsSchemaNode(schema: Record<string, unknown>): Record<st
   }
 
   return normalized;
+}
+
+function restoreSettingsProperties(
+  properties: Record<string, unknown>,
+  requiredValue: unknown,
+): Record<string, unknown> {
+  const required = new Set(
+    Array.isArray(requiredValue) ? requiredValue.filter((name): name is string => typeof name === 'string') : [],
+  );
+  return Object.fromEntries(
+    Object.entries(properties).map(([name, schema]) => [
+      name,
+      isRecord(schema) ? restoreSettingsSchemaNode(schema, required.has(name)) : cloneJsonValue(schema),
+    ]),
+  );
+}
+
+function restoreSettingsSchemaNode(schema: Record<string, unknown>, required: boolean): Record<string, unknown> {
+  const entries = Object.entries(schema)
+    .filter(([key]) => key !== 'required' && key !== 'properties' && key !== 'items')
+    .map(([key, value]) => [key, cloneJsonValue(value)] as const);
+  const restored = Object.fromEntries(entries);
+  const properties = schema.properties;
+  const items = schema.items;
+
+  if (required) {
+    restored.required = true;
+  }
+  if (isRecord(properties)) {
+    restored.properties = restoreSettingsProperties(properties, schema.required);
+  } else if (typeof properties !== 'undefined') {
+    restored.properties = cloneJsonValue(properties);
+  }
+  if (isRecord(items)) {
+    restored.items = restoreSettingsSchemaNode(items, false);
+  } else if (typeof items !== 'undefined') {
+    restored.items = cloneJsonValue(items);
+  }
+
+  return restored;
 }
 
 function cloneJsonValue<T>(value: T): T {

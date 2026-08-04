@@ -64,7 +64,6 @@
     "@nocobase/plugin-kanban": "2.2.0-beta.16",
     "@nocobase/plugin-license": "2.2.0-beta.16",
     "@nocobase/plugin-js-template": "2.2.0-beta.16",
-    "@nocobase/plugin-light-extension": "2.2.0-beta.16",
     "@nocobase/plugin-locale-tester": "2.2.0-beta.16",
     "@nocobase/plugin-localization": "2.2.0-beta.16",
     "@nocobase/plugin-logger": "2.2.0-beta.16",
@@ -117,8 +116,7 @@
     "@nocobase/plugin-charts",
     "@nocobase/plugin-comments",
     "@nocobase/plugin-mobile-client",
-    "@nocobase/plugin-snapshot-field",
-    "@nocobase/plugin-light-extension"
+    "@nocobase/plugin-snapshot-field"
   ],
   "builtIn": [
     "@nocobase/plugin-acl",

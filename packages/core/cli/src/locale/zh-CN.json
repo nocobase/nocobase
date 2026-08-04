@@ -90,10 +90,10 @@
     }
   },
   "commands": {
-    "light": {
+    "jsTemplate": {
       "flags": {
-        "repo": "JS 模板仓库 ID",
-        "entry": "JS Block 或 JS Page 入口 ID",
+        "project": "JS 模板项目 ID",
+        "template": "JS 模板 ID",
         "dir": "本地 Workspace 目录",
         "env": "环境名称",
         "apiBaseUrl": "NocoBase API 基础地址",
@@ -103,7 +103,7 @@
         "jsonOutput": "输出机器可读的 JSON"
       },
       "operations": {
-        "entryRead": "读取 JS 模板入口",
+        "templateRead": "读取 JS 模板",
         "pull": "拉取 JS 模板",
         "workspaceCheck": "检查 JS 模板 Workspace",
         "save": "保存 JS 模板"
@@ -115,7 +115,7 @@
         "success": "已将 {{count}} 个文件拉取到 {{workspace}}。",
         "baseHead": "基线 Head：{{head}}",
         "errors": {
-          "entryRepoMismatch": "入口“{{entry}}”属于仓库“{{actualRepo}}”，而不是“{{selectedRepo}}”。"
+          "templateProjectMismatch": "模板“{{template}}”属于项目“{{actualProject}}”，而不是“{{selectedProject}}”。"
         }
       },
       "check": {
@@ -124,7 +124,7 @@
         "workspaceLocation": "workspace",
         "success": "Workspace 检查已接受快照 {{snapshotId}}。",
         "baseHead": "基线 Head：{{head}}",
-        "entriesAccepted": "已接受 {{count}} 个入口。",
+        "templatesAccepted": "已接受 {{count}} 个模板。",
         "errors": {
           "rejected": "Workspace 检查拒绝了快照 {{snapshotId}}。\n{{problems}}",
           "notAccepted": "Workspace 检查未接受快照 {{snapshotId}}。\n{{problems}}"
@@ -138,7 +138,7 @@
         },
         "defaultMessage": "更新 JS 模板源码",
         "deltaSummary": "差异：{{changedFiles}} 个文件，新增 {{additions}} 行，删除 {{deletions}} 行。",
-        "confirm": "将此源码差异保存到 JS 模板仓库吗？",
+        "confirm": "将此源码差异保存到 JS 模板项目吗？",
         "success": "已在 Head {{head}} 保存 {{count}} 个文件。",
         "errors": {
           "noChanges": "没有可保存的本地源码修改。",
@@ -154,27 +154,27 @@
         "checkAcceptedInvalid": "Workspace 检查结果中的 accepted 缺失或无效。",
         "checkArraysInvalid": "Workspace 检查结果中的 diagnostics 缺失或无效。",
         "httpFailure": "{{operation}} 失败，HTTP 状态码为 {{status}}。",
-        "clientEntriesOnly": "本地 JS 模板工作流仅支持客户端入口。",
-        "unsupportedEntryKind": "本地 JS 模板工作流仅支持 JS Block 和 JS Page 入口；收到“{{kind}}”。其他类型请使用原始 API 命令。",
+        "clientTemplatesOnly": "本地 JS 模板工作流仅支持客户端模板。",
+        "unsupportedTemplateKind": "本地 JS 模板工作流仅支持 JS Block 和 JS Page 模板；收到“{{kind}}”。其他类型请使用原始 API 命令。",
         "pullFilesMissing": "拉取响应必须包含完整的 files 数组。",
         "invalidWorkspacePath": "Workspace 路径无效：{{path}}",
         "nonUtf8Unsupported": "首版本地 Agent 工作流不支持二进制或非 UTF-8 文件：{{path}}。",
         "controlBytesUnsupported": "首版本地 Agent 工作流不支持二进制文件或包含 NUL/控制字节的源码：{{path}}。",
         "symlinkUnsupported": "JS 模板 Workspace 不支持符号链接：{{path}}",
         "stateVersion": "不支持的 JS 模板 Workspace 状态版本：{{version}}。请重新拉取 Workspace。",
-        "workspaceEntryKind": "不支持的 Workspace 入口类型：{{kind}}",
+        "workspaceTemplateKind": "不支持的 Workspace 模板类型：{{kind}}",
         "stateMissing": "在 {{statePath}} 未找到 JS 模板 Workspace 状态。请先运行 `nb js-template pull`。",
         "stateInvalid": "{{statePath}} 中的 JS 模板 Workspace 状态无效。",
         "duplicatePullPath": "拉取响应包含重复路径：{{path}}",
         "base64Unsupported": "首版本地 Agent 工作流不支持 Base64 或二进制文件：{{path}}。",
         "pullUtf8Missing": "拉取响应未包含 {{path}} 的 UTF-8 内容。",
-        "pullSelectionMismatch": "所选仓库、入口与拉取响应不匹配。",
-        "archivedRepository": "已归档的 JS 模板仓库不能进入本地 Agent 工作流。",
-        "entryFilesMissing": "拉取的仓库不包含所选入口的源码和描述文件。请修复仓库后再使用本地 Agent 工作流。",
+        "pullSelectionMismatch": "所选项目、模板与拉取响应不匹配。",
+        "archivedProject": "已归档的 JS 模板项目不能进入本地 Agent 工作流。",
+        "templateFilesMissing": "拉取的项目不包含所选模板的源码和描述文件。请修复项目后再使用本地 Agent 工作流。",
         "baselineMissing": "{{path}} 的 Pull 基线缺失。请重新拉取 Workspace 后再保存。",
         "baselineHashMismatch": "{{path}} 的 Pull 基线与 Workspace 状态不匹配。请重新拉取 Workspace 后再检查或保存修改。",
         "checkRequired": "当前本地快照尚未通过权威 Workspace 检查。请在最后一次文件修改后运行 `nb js-template check`。",
-        "saveRepoMismatch": "保存响应中的仓库与本地 Workspace 不匹配。",
+        "saveProjectMismatch": "保存响应中的项目与本地 Workspace 不匹配。",
         "unsafeDirectory": "拒绝使用不安全的 Workspace 目录：{{path}}"
       }
     },

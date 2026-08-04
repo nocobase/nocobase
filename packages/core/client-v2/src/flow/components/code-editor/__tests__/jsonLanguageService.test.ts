@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LIGHT_EXTENSION_ENTRY_SCHEMA_URI, lightExtensionEntryV1Schema } from '@nocobase/js-template-sdk/schema';
+import { JS_TEMPLATE_SCHEMA_URI, jsTemplateV1Schema } from '@nocobase/js-template-sdk/schema';
 import { EditorState } from '@codemirror/state';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -15,8 +15,8 @@ import type { CodeEditorJsonSchema } from '../jsonLanguageService';
 import { getJsonLanguageCompletions, getJsonLanguageDiagnostics, getJsonLanguageHover } from '../jsonLanguageService';
 
 const entryJsonSchema: CodeEditorJsonSchema = {
-  schema: lightExtensionEntryV1Schema,
-  uri: LIGHT_EXTENSION_ENTRY_SCHEMA_URI,
+  schema: jsTemplateV1Schema,
+  uri: JS_TEMPLATE_SCHEMA_URI,
 };
 
 async function getCompletionLabels(text: string, token: string, offset = token.length) {

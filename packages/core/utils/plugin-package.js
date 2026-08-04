@@ -9,15 +9,6 @@ const {
 
 const DEFAULT_PLUGIN_PACKAGE_PREFIXES = ['@nocobase/plugin-', '@nocobase/preset-'];
 const PRESET_PACKAGE_NAME = '@nocobase/preset-nocobase';
-const JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY = Object.freeze({
-  canonicalName: 'js-template',
-  canonicalPackageName: '@nocobase/plugin-js-template',
-  legacyName: 'light-extension',
-  legacyPackageName: '@nocobase/plugin-light-extension',
-  runtimeName: 'light-extension',
-  runtimePackageName: '@nocobase/plugin-light-extension',
-});
-
 function uniqStrings(values) {
   return [...new Set(values.filter(Boolean))];
 }
@@ -75,13 +66,10 @@ async function parsePluginName(nameOrPkg, options = {}) {
 
   const matchedPrefix = prefixes.find((prefix) => input.startsWith(prefix));
   if (matchedPrefix) {
-    return normalizePluginPackageCompatibility(
-      {
-        packageName: input,
-        name: input.slice(matchedPrefix.length),
-      },
-      options,
-    );
+    return {
+      packageName: input,
+      name: input.slice(matchedPrefix.length),
+    };
   }
 
   const nodeModulesPath = String(options.nodeModulesPath || process.env.NODE_MODULES_PATH || '').trim();
@@ -89,43 +77,12 @@ async function parsePluginName(nameOrPkg, options = {}) {
     for (const prefix of prefixes) {
       const candidate = `${prefix}${input}`;
       if (await fs.pathExists(path.resolve(nodeModulesPath, candidate, 'package.json'))) {
-        return normalizePluginPackageCompatibility({ name: input, packageName: candidate }, options);
+        return { name: input, packageName: candidate };
       }
     }
   }
 
-  return normalizePluginPackageCompatibility({ name: input, packageName: input }, options);
-}
-
-async function normalizePluginPackageCompatibility(identity, options = {}) {
-  const contract = JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY;
-  const names = [contract.canonicalName, contract.legacyName, contract.runtimeName];
-  const packageNames = [contract.canonicalPackageName, contract.legacyPackageName, contract.runtimePackageName];
-  if (!names.includes(identity.name) && !packageNames.includes(identity.packageName)) {
-    return identity;
-  }
-
-  const canonicalRequested =
-    identity.packageName === contract.canonicalPackageName || identity.name === contract.canonicalName;
-  if (canonicalRequested) {
-    const canonicalPackagePath = await resolvePluginPackagePath(contract.canonicalPackageName, options);
-    if (!canonicalPackagePath) {
-      return identity;
-    }
-    return {
-      name: contract.runtimeName,
-      packageName: contract.runtimePackageName,
-    };
-  }
-
-  if (identity.packageName === contract.legacyPackageName || identity.name === contract.legacyName) {
-    return {
-      packageName: contract.runtimePackageName,
-      name: contract.runtimeName,
-    };
-  }
-
-  return identity;
+  return { name: input, packageName: input };
 }
 
 function getPresetPackageJsonCandidates(options = {}) {
@@ -299,7 +256,6 @@ async function discoverPluginPackages(options = {}) {
 }
 
 exports.DEFAULT_PLUGIN_PACKAGE_PREFIXES = DEFAULT_PLUGIN_PACKAGE_PREFIXES;
-exports.JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY = JS_TEMPLATE_PLUGIN_PACKAGE_COMPATIBILITY;
 exports.getPluginPackagePrefixes = getPluginPackagePrefixes;
 exports.getPluginNameFromPackageName = getPluginNameFromPackageName;
 exports.getPresetNocoBasePackageJson = getPresetNocoBasePackageJson;

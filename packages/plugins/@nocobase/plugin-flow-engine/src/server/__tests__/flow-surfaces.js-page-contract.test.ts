@@ -723,7 +723,7 @@ describe('flowSurfaces JS page contract', () => {
     expect(readErrorMessage(removeNode)).toContain('destroyPage');
   });
 
-  it('destroys a JS page and runs the reference cleanup hook', async () => {
+  it('destroys a JS page and runs the JS Template usage cleanup hook', async () => {
     const page = await createJSPage(context, `Disposable JS page ${Date.now()}`);
     const calls: Array<{ rootUid: string; action?: string }> = [];
     const pluginManager = context.app.pm as typeof context.app.pm & {
@@ -731,9 +731,9 @@ describe('flowSurfaces JS page contract', () => {
     };
     const originalGet = pluginManager.get.bind(pluginManager);
     pluginManager.get = (name: string) =>
-      ['@nocobase/plugin-light-extension', 'light-extension', 'plugin-light-extension'].includes(name)
+      ['@nocobase/plugin-js-template', 'js-template', 'plugin-js-template'].includes(name)
         ? {
-            markFlowModelReferencesOwnerMissingForNodeTree: async (input: { rootUid: string; action?: string }) => {
+            markJsTemplateUsagesOwnerMissingForNodeTree: async (input: { rootUid: string; action?: string }) => {
               calls.push(input);
             },
           }

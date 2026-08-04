@@ -99,7 +99,6 @@ const external = [
   '@nocobase/runjs',
   '@nocobase/runjs-workspace',
   '@nocobase/js-template-sdk',
-  '@nocobase/light-extension-sdk',
   // @nocobase/auth
   'jsonwebtoken',
 

@@ -59,9 +59,9 @@ type UpdatePayload = {
 
 function sourceBinding(kind: SourceKind) {
   return {
-    type: 'light-extension-entry',
-    repoId: `repo_${kind}`,
-    entryId: `entry_${kind}`,
+    type: 'js-template-entry',
+    projectId: `jtp_${kind}`,
+    templateId: `jtt_${kind}`,
     kind,
   };
 }
@@ -122,7 +122,7 @@ describe('flowSurfaces JS source dispatcher matrix', () => {
     const target = { uid: `surface-${caseItem.kind}` };
     const binding = sourceBinding(caseItem.kind);
     const changes = {
-      ...(!('bindingOnly' in caseItem && caseItem.bindingOnly) ? { sourceMode: 'light-extension' } : {}),
+      ...(!('bindingOnly' in caseItem && caseItem.bindingOnly) ? { sourceMode: 'js-template' } : {}),
       sourceBinding: binding,
       settings: { locale: 'en-US' },
     };
@@ -131,7 +131,7 @@ describe('flowSurfaces JS source dispatcher matrix', () => {
 
     const payload = updateSettings.mock.calls[0][0] as UpdatePayload;
     expect(payload.stepParams?.[caseItem.group]?.runJs).toEqual({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: binding,
       settings: { locale: 'en-US' },
     });
@@ -150,14 +150,14 @@ describe('flowSurfaces JS source dispatcher matrix', () => {
     const { wrapperChanges, fieldChanges } = splitComposeFieldChanges(
       {
         label: 'Amount',
-        sourceBinding: { entryId: 'entry_new' },
+        sourceBinding: { templateId: 'jtt_new' },
         settings: { currency: 'USD' },
       },
       'FormItemModel',
     );
     expect(wrapperChanges).toEqual({ label: 'Amount' });
     expect(fieldChanges).toEqual({
-      sourceBinding: { entryId: 'entry_new' },
+      sourceBinding: { templateId: 'jtt_new' },
       settings: { currency: 'USD' },
     });
 
@@ -198,7 +198,7 @@ describe('flowSurfaces JS source dispatcher matrix', () => {
       currentRunJs: {
         code: "ctx.render('fallback');",
         version: 'v2',
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: sourceBinding('js-field'),
       },
       changes: { sourceMode: 'inline' },
@@ -239,7 +239,7 @@ describe('flowSurfaces JS source dispatcher matrix', () => {
     );
     expect(buildRunJsSourceChanges(changes)).toMatchObject(
       Object.prototype.hasOwnProperty.call(changes, 'sourceBinding')
-        ? { sourceMode: 'light-extension', sourceBinding: sourceBinding('js-field') }
+        ? { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') }
         : { sourceMode: 'inline' },
     );
   });

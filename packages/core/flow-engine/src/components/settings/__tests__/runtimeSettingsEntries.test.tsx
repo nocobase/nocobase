@@ -262,10 +262,10 @@ describe('runtime FlowSettings entries', () => {
   it('marks runtime settings unavailable and reports a diagnostic when dynamic visibility is invalid', async () => {
     class InvalidVisibilityError extends Error {
       readonly flowSettingsDiagnostic = {
-        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        code: 'JS_TEMPLATE_SETTINGS_CONDITION_INVALID',
         message: this.message,
         details: {
-          entryId: 'entry-1',
+          templateId: 'template-1',
           propertyPath: 'options',
           reason: 'invalid path',
         },
@@ -277,7 +277,7 @@ describe('runtime FlowSettings entries', () => {
         title: 'Runtime setting',
         hideInSettings: () => {
           throw new InvalidVisibilityError(
-            'Light extension entry "entry-1" setting "options" has an invalid x-visible-when condition: invalid path',
+            'JS Template "template-1" setting "options" has an invalid x-visible-when condition: invalid path',
           );
         },
         uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
@@ -295,12 +295,12 @@ describe('runtime FlowSettings entries', () => {
     );
     expect(getRuntimeFlowSettingDiagnostics(model)).toEqual([
       expect.objectContaining({
-        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        code: 'JS_TEMPLATE_SETTINGS_CONDITION_INVALID',
         flowKey: 'settings',
         stepKey: 'runtimeStep',
-        message: expect.stringContaining('entry-1'),
+        message: expect.stringContaining('template-1'),
         details: {
-          entryId: 'entry-1',
+          templateId: 'template-1',
           propertyPath: 'options',
           reason: 'invalid path',
         },
@@ -311,10 +311,10 @@ describe('runtime FlowSettings entries', () => {
   it('keeps embedded flow settings stable when a runtime visibility condition is invalid', async () => {
     class InvalidVisibilityError extends Error {
       readonly flowSettingsDiagnostic = {
-        code: 'LIGHT_EXTENSION_SETTINGS_CONDITION_INVALID',
+        code: 'JS_TEMPLATE_SETTINGS_CONDITION_INVALID',
         message: this.message,
         details: {
-          entryId: 'entry-embedded',
+          templateId: 'template-embedded',
           propertyPath: 'options',
           reason: 'invalid operator',
         },
@@ -325,7 +325,7 @@ describe('runtime FlowSettings entries', () => {
         key: 'runtimeStep',
         title: 'Runtime setting',
         hideInSettings: () => {
-          throw new InvalidVisibilityError('entry-embedded options invalid operator');
+          throw new InvalidVisibilityError('template-embedded options invalid operator');
         },
         uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
       },

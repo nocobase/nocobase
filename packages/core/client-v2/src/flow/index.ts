@@ -24,21 +24,15 @@ import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnosti
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 import { JSBlockSourceModeField } from './models/blocks/js-block/JSBlockSourceModeField';
 import {
-  JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JSPageSourceModeField,
 } from './models/base/PageModel/JSPageSourceModeField';
 import {
-  JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
+  JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JSActionSourceModeField,
 } from './models/actions/JSActionSourceModeField';
-import {
-  JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JSFieldSourceModeField,
-} from './models/fields/JSFieldSourceModeField';
-import {
-  JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD,
-  JSItemSourceModeField,
-} from './models/fields/JSItemSourceModeField';
+import { JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD, JSFieldSourceModeField } from './models/fields/JSFieldSourceModeField';
+import { JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD, JSItemSourceModeField } from './models/fields/JSItemSourceModeField';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
 
 const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
@@ -73,14 +67,14 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       IconPicker,
       DefaultValue,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
-      JSBlockLightExtensionSourceField: JSBlockSourceModeField,
-      [JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSPageSourceModeField,
-      JSActionLightExtensionSourceField: JSActionSourceModeField,
-      [JS_ACTION_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSActionSourceModeField,
-      JSFieldLightExtensionSourceField: JSFieldSourceModeField,
-      [JS_FIELD_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
-      JSItemLightExtensionSourceField: JSItemSourceModeField,
-      [JS_ITEM_LIGHT_EXTENSION_FULL_SOURCE_FIELD]: JSItemSourceModeField,
+      JSBlockJsTemplateSourceField: JSBlockSourceModeField,
+      [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSPageSourceModeField,
+      JSActionJsTemplateSourceField: JSActionSourceModeField,
+      [JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSActionSourceModeField,
+      JSFieldJsTemplateSourceField: JSFieldSourceModeField,
+      [JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
+      JSItemJsTemplateSourceField: JSItemSourceModeField,
+      [JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSItemSourceModeField,
     });
 
     // 动态流编辑入口
@@ -141,10 +135,9 @@ export * from './models';
 export * from './utils';
 export {
   JS_TEMPLATE_SOURCE_MODE,
-  LIGHT_EXTENSION_SOURCE_MODE,
   stableSerialize,
   type JsTemplateSourceMode,
-  type LightExtensionSourceMode,
+  type RunJSSourceMode,
 } from './models/utils/runjsSourceRuntimeCommon';
 export * from './actions';
 export { FieldAssignValueInput } from './components/FieldAssignValueInput';

@@ -25,7 +25,7 @@ describe('readRunJSRuntimeError', () => {
           data: {
             errors: [
               {
-                code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+                code: 'JS_TEMPLATE_BINDING_OUTDATED',
                 message: 'Refresh required',
                 details: { reasonCode: 'binding_changed' },
               },
@@ -34,7 +34,7 @@ describe('readRunJSRuntimeError', () => {
         },
       }),
     ).toEqual({
-      code: 'LIGHT_EXTENSION_BINDING_OUTDATED',
+      code: 'JS_TEMPLATE_BINDING_OUTDATED',
       status: 409,
       reasonCode: 'binding_changed',
       message: 'Refresh required',
@@ -64,12 +64,12 @@ describe('readRunJSRuntimeError', () => {
   it('keeps local and server settings paths for actionable runtime errors', () => {
     expect(
       readRunJSRuntimeError({
-        code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+        code: 'JS_TEMPLATE_SETTINGS_INVALID',
         message: 'Settings invalid',
         paths: ['count'],
       }),
     ).toEqual({
-      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      code: 'JS_TEMPLATE_SETTINGS_INVALID',
       message: 'Settings invalid',
       paths: ['count'],
     });
@@ -81,7 +81,7 @@ describe('readRunJSRuntimeError', () => {
           data: {
             errors: [
               {
-                code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+                code: 'JS_TEMPLATE_SETTINGS_INVALID',
                 details: {
                   reasonCode: 'settings_invalid',
                   issues: [{ path: '$.count', code: 'settings_type_mismatch' }],
@@ -92,7 +92,7 @@ describe('readRunJSRuntimeError', () => {
         },
       }),
     ).toMatchObject({
-      code: 'LIGHT_EXTENSION_SETTINGS_INVALID',
+      code: 'JS_TEMPLATE_SETTINGS_INVALID',
       paths: ['$.count'],
     });
   });

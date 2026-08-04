@@ -69,7 +69,7 @@ function readResolverErrorStatus(error: unknown): number | undefined {
 
 function canUseLastKnownGood(error: unknown): boolean {
   const code = readResolverErrorCode(error);
-  if (code === 'RUNJS_SOURCE_RESOLVER_NOT_FOUND' || code === 'LIGHT_EXTENSION_RUNTIME_UNAVAILABLE') {
+  if (code === 'RUNJS_SOURCE_RESOLVER_NOT_FOUND' || code === 'JS_TEMPLATE_RUNTIME_UNAVAILABLE') {
     return true;
   }
   if (code && /(DENIED|INVALID|FAILED|CONFLICT|OUTDATED|NOT_FOUND|REQUIRED)$/.test(code)) {

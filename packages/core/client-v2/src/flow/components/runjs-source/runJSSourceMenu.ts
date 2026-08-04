@@ -41,20 +41,14 @@ function getSourceBindingLabel(sourceBinding: unknown): string | undefined {
     return undefined;
   }
 
-  const repoLabel =
-    toNonEmptyString(sourceBinding.repoName) ||
-    toNonEmptyString(sourceBinding.repoTitle) ||
-    toNonEmptyString(sourceBinding.repoId);
-  const entryLabel =
-    toNonEmptyString(sourceBinding.entryName) ||
-    toNonEmptyString(sourceBinding.entryTitle) ||
-    toNonEmptyString(sourceBinding.entryId);
+  const projectLabel = toNonEmptyString(sourceBinding.projectId);
+  const templateLabel = toNonEmptyString(sourceBinding.templateId);
 
-  if (repoLabel && entryLabel) {
-    return `${repoLabel} / ${entryLabel}`;
+  if (projectLabel && templateLabel) {
+    return `${projectLabel} / ${templateLabel}`;
   }
 
-  return entryLabel || repoLabel;
+  return templateLabel || projectLabel;
 }
 
 function toNonEmptyString(value: unknown): string | undefined {
@@ -62,7 +56,7 @@ function toNonEmptyString(value: unknown): string | undefined {
 }
 
 function normalizeSourceMode(value: unknown): string {
-  return value === 'light-extension' ? 'light-extension' : INLINE_RUNJS_SOURCE_MODE;
+  return value === 'js-template' ? 'js-template' : INLINE_RUNJS_SOURCE_MODE;
 }
 
 function RunJSSourceBindingDisplayLabel(props: {
@@ -148,7 +142,7 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
     props: {
       searchPlaceholder: 'Search JS Templates',
       loadingLabel: 'Loading JS Templates',
-      emptyLabel: 'No JS Template entries',
+      emptyLabel: 'No JS Templates',
       errorLabel: 'Failed to load JS Templates',
       getDisplayLabel({ model, flowKey, params, t }) {
         const runJsParams = model?.getStepParams(options.sourceFlowKey || flowKey || '', 'runJs');

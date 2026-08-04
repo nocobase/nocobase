@@ -28,7 +28,7 @@ import {
   renderJSFieldRuntimeError,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
-} from './jsFieldLightExtensionRuntime';
+} from './jsFieldJsTemplateRuntime';
 
 const DEFAULT_CODE = `
 // Render an editable antd Input via JSX and keep it in sync with form value.

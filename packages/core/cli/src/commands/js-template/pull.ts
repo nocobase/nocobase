@@ -17,62 +17,62 @@ import {
 import {
   assertSafeWorkspaceDirectory,
   buildHttpError,
-  extractEntryRecord,
+  extractTemplateRecord,
   extractPullResult,
   inspectPullTarget,
-  LightExtensionCliError,
+  JsTemplateCliError,
   materializePulledWorkspace,
-  resolveLightExtensionTarget,
+  resolveJsTemplateTarget,
   unwrapResponseData,
-} from '../../lib/light-extension-workspace.js';
+} from '../../lib/js-template-workspace.js';
 
 export default class JsTemplatePull extends Command {
   protected apiPaths: JsTemplateWorkspaceApiPaths = JS_TEMPLATE_WORKSPACE_API_PATHS;
 
-  static override summary = translateCli('commands.light.pull.summary', undefined, {
+  static override summary = translateCli('commands.jsTemplate.pull.summary', undefined, {
     fallback: 'Pull a JS Template (JS Block or JS Page) into a local source workspace',
   });
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --repo ler_demo --entry lee_demo --dir ./light-demo',
-    '<%= config.bin %> <%= command.id %> --repo ler_demo --entry lee_demo --dir ./light-demo --json-output',
+    '<%= config.bin %> <%= command.id %> --project jtp_demo --template jtt_demo --dir ./js-template-demo',
+    '<%= config.bin %> <%= command.id %> --project jtp_demo --template jtt_demo --dir ./js-template-demo --json-output',
   ];
 
   static override flags = {
-    repo: Flags.string({
-      description: translateCli('commands.light.flags.repo', undefined, { fallback: 'JS Template repository id' }),
+    project: Flags.string({
+      description: translateCli('commands.jsTemplate.flags.project', undefined, { fallback: 'JS Template project id' }),
       required: true,
     }),
-    entry: Flags.string({
-      description: translateCli('commands.light.flags.entry', undefined, { fallback: 'JS Block or JS Page entry id' }),
+    template: Flags.string({
+      description: translateCli('commands.jsTemplate.flags.template', undefined, { fallback: 'JS Block or JS Page template id' }),
       required: true,
     }),
     dir: Flags.string({
-      description: translateCli('commands.light.flags.dir', undefined, { fallback: 'Local workspace directory' }),
+      description: translateCli('commands.jsTemplate.flags.dir', undefined, { fallback: 'Local workspace directory' }),
       required: true,
     }),
     env: Flags.string({
       char: 'e',
-      description: translateCli('commands.light.flags.env', undefined, { fallback: 'Environment name' }),
+      description: translateCli('commands.jsTemplate.flags.env', undefined, { fallback: 'Environment name' }),
     }),
     'api-base-url': Flags.string({
-      description: translateCli('commands.light.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
+      description: translateCli('commands.jsTemplate.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
     }),
     role: Flags.string({
-      description: translateCli('commands.light.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
+      description: translateCli('commands.jsTemplate.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
     }),
     authenticator: Flags.string({
-      description: translateCli('commands.light.flags.authenticator', undefined, {
+      description: translateCli('commands.jsTemplate.flags.authenticator', undefined, {
         fallback: 'Authenticator override, sent as X-Authenticator',
       }),
     }),
     token: Flags.string({
       char: 't',
-      description: translateCli('commands.light.flags.token', undefined, { fallback: 'API key override' }),
+      description: translateCli('commands.jsTemplate.flags.token', undefined, { fallback: 'API key override' }),
     }),
     'json-output': Flags.boolean({
       char: 'j',
-      description: translateCli('commands.light.flags.jsonOutput', undefined, {
+      description: translateCli('commands.jsTemplate.flags.jsonOutput', undefined, {
         fallback: 'Print machine-readable JSON',
       }),
       default: false,
@@ -87,14 +87,14 @@ export default class JsTemplatePull extends Command {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
       const inspection = await inspectPullTarget(workspaceRoot);
       if (inspection.dirty) {
-        throw new LightExtensionCliError(
+        throw new JsTemplateCliError(
           translateCli(
-            'commands.light.pull.dirtyRefusal',
+            'commands.jsTemplate.pull.dirtyRefusal',
             {
               paths:
                 inspection.changedPaths.join(', ') ||
                 inspection.stateError ||
-                translateCli('commands.light.pull.unknownLocalState', undefined, { fallback: 'unknown local state' }),
+                translateCli('commands.jsTemplate.pull.unknownLocalState', undefined, { fallback: 'unknown local state' }),
             },
             {
               fallback:
@@ -105,7 +105,7 @@ export default class JsTemplatePull extends Command {
         );
       }
 
-      const target = await resolveLightExtensionTarget({
+      const target = await resolveJsTemplateTarget({
         env: flags.env,
         apiBaseUrl: flags['api-base-url'],
       });
@@ -116,25 +116,25 @@ export default class JsTemplatePull extends Command {
         token: flags.token,
         headers: { 'x-authenticator': flags.authenticator },
       };
-      const entryResponse = await executeRawApiRequest({
+      const templateResponse = await executeRawApiRequest({
         ...requestOptions,
         method: 'POST',
-        path: this.apiPaths.entryGet,
-        body: { entryId: flags.entry },
+        path: this.apiPaths.templateGet,
+        body: { templateId: flags.template },
       });
-      if (!entryResponse.ok)
+      if (!templateResponse.ok)
         throw buildHttpError(
-          entryResponse.status,
-          entryResponse.data,
-          translateCli('commands.light.operations.entryRead', undefined, { fallback: 'JS Template entry read' }),
+          templateResponse.status,
+          templateResponse.data,
+          translateCli('commands.jsTemplate.operations.templateRead', undefined, { fallback: 'JS Template read' }),
         );
-      const entry = extractEntryRecord(unwrapResponseData(entryResponse.data));
-      if (entry.repoId !== flags.repo) {
-        throw new LightExtensionCliError(
+      const template = extractTemplateRecord(unwrapResponseData(templateResponse.data));
+      if (template.projectId !== flags.project) {
+        throw new JsTemplateCliError(
           translateCli(
-            'commands.light.pull.errors.entryRepoMismatch',
-            { entry: flags.entry, actualRepo: entry.repoId, selectedRepo: flags.repo },
-            { fallback: 'Entry "{{entry}}" belongs to repository "{{actualRepo}}", not "{{selectedRepo}}".' },
+            'commands.jsTemplate.pull.errors.templateProjectMismatch',
+            { template: flags.template, actualProject: template.projectId, selectedProject: flags.project },
+            { fallback: 'Template "{{template}}" belongs to project "{{actualProject}}", not "{{selectedProject}}".' },
           ),
         );
       }
@@ -143,20 +143,20 @@ export default class JsTemplatePull extends Command {
         ...requestOptions,
         method: 'POST',
         path: this.apiPaths.filesPull,
-        body: { repoId: flags.repo, ref: 'head', includeContent: 'all' },
+        body: { projectId: flags.project, ref: 'head', includeContent: 'all' },
       });
       if (!pullResponse.ok)
         throw buildHttpError(
           pullResponse.status,
           pullResponse.data,
-          translateCli('commands.light.operations.pull', undefined, { fallback: 'JS Template pull' }),
+          translateCli('commands.jsTemplate.operations.pull', undefined, { fallback: 'JS Template pull' }),
         );
       const pull = extractPullResult(unwrapResponseData(pullResponse.data));
       const state = await materializePulledWorkspace({
         workspaceRoot,
         target,
-        repoId: flags.repo,
-        entry,
+        projectId: flags.project,
+        template,
         pull,
         previousState: inspection.state,
       });
@@ -164,8 +164,8 @@ export default class JsTemplatePull extends Command {
       const output = {
         ok: true,
         workspace: workspaceRoot,
-        repo: state.repo,
-        entry: state.entry,
+        project: state.project,
+        template: state.template,
         baseHeadCommitId: state.baseHeadCommitId,
         treeHash: pull.tree?.hash ?? null,
         files: Object.keys(state.files),
@@ -175,14 +175,14 @@ export default class JsTemplatePull extends Command {
       } else {
         this.log(
           translateCli(
-            'commands.light.pull.success',
+            'commands.jsTemplate.pull.success',
             { count: Object.keys(state.files).length, workspace: workspaceRoot },
             { fallback: 'Pulled {{count}} files into {{workspace}}.' },
           ),
         );
         this.log(
           translateCli(
-            'commands.light.pull.baseHead',
+            'commands.jsTemplate.pull.baseHead',
             { head: state.baseHeadCommitId ?? 'null' },
             {
               fallback: 'Base Head: {{head}}',
@@ -192,9 +192,9 @@ export default class JsTemplatePull extends Command {
       }
     } catch (error: unknown) {
       const failure =
-        error instanceof LightExtensionCliError
+        error instanceof JsTemplateCliError
           ? error
-          : new LightExtensionCliError(error instanceof Error ? error.message : String(error), { cause: error });
+          : new JsTemplateCliError(error instanceof Error ? error.message : String(error), { cause: error });
       if (jsonOutput) this.logToStderr(JSON.stringify(failure.toJSON(), null, 2));
       else this.logToStderr(failure.message);
       this.exit(failure.exitCode);

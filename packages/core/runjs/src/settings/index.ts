@@ -12,26 +12,26 @@ export type RunJSSettingsRecord = Record<string, unknown>;
 export * from './condition';
 export * from './defaults';
 
-export interface LightExtensionSettingsDescriptorLike {
+export interface JsTemplateSettingsDescriptorLike {
   entryId: string;
   settingsSchemaHash: string | null;
   schema?: RunJSSettingsRecord | null;
   defaults?: RunJSSettingsRecord;
 }
 
-export interface NormalizeLightExtensionEntrySelectionInput {
+export interface NormalizeJsTemplateSelectionInput {
   currentBinding?: unknown;
   currentSettings?: unknown;
   submittedSettings?: unknown;
   nextBinding: unknown;
-  descriptor: LightExtensionSettingsDescriptorLike;
+  descriptor: JsTemplateSettingsDescriptorLike;
 }
 
-export function getLightExtensionEntryId(binding: unknown): string | undefined {
+export function getJsTemplateId(binding: unknown): string | undefined {
   if (!isRecord(binding)) {
     return undefined;
   }
-  return toNonEmptyString(binding.entryId);
+  return toNonEmptyString(binding.templateId);
 }
 
 export function getCanonicalRunJSSettings(runJs: unknown): RunJSSettingsRecord {
@@ -41,8 +41,8 @@ export function getCanonicalRunJSSettings(runJs: unknown): RunJSSettingsRecord {
   return cloneJsonValue(runJs.settings);
 }
 
-export function normalizeLightExtensionSettings(
-  descriptor: Pick<LightExtensionSettingsDescriptorLike, 'schema' | 'defaults'>,
+export function normalizeJsTemplateSettings(
+  descriptor: Pick<JsTemplateSettingsDescriptorLike, 'schema' | 'defaults'>,
   settings: unknown,
 ): RunJSSettingsRecord {
   const defaults = isRecord(descriptor.defaults) ? descriptor.defaults : {};
@@ -75,20 +75,18 @@ export function normalizeLightExtensionSettings(
   );
 }
 
-export function normalizeLightExtensionEntrySelection(
-  input: NormalizeLightExtensionEntrySelectionInput,
-): RunJSSettingsRecord {
-  const currentEntryId = getLightExtensionEntryId(input.currentBinding);
-  const nextEntryId = getLightExtensionEntryId(input.nextBinding) || input.descriptor.entryId;
-  return currentEntryId && currentEntryId === nextEntryId
-    ? pruneLightExtensionSettingsOverrides(
+export function normalizeJsTemplateSelection(input: NormalizeJsTemplateSelectionInput): RunJSSettingsRecord {
+  const currentTemplateId = getJsTemplateId(input.currentBinding);
+  const nextTemplateId = getJsTemplateId(input.nextBinding) || input.descriptor.entryId;
+  return currentTemplateId && currentTemplateId === nextTemplateId
+    ? pruneJsTemplateSettingsOverrides(
         input.descriptor.schema,
         mergeSettings(input.currentSettings, input.submittedSettings),
       )
     : {};
 }
 
-export function pruneLightExtensionSettingsOverrides(schema: unknown, settings: unknown): RunJSSettingsRecord {
+export function pruneJsTemplateSettingsOverrides(schema: unknown, settings: unknown): RunJSSettingsRecord {
   if (!isRecord(settings) || !getSchemaProperties(schema)) {
     return {};
   }
@@ -96,7 +94,7 @@ export function pruneLightExtensionSettingsOverrides(schema: unknown, settings: 
   return isRecord(pruned) ? pruned : {};
 }
 
-export function setLightExtensionTopLevelSetting(
+export function setJsTemplateTopLevelSetting(
   settings: unknown,
   propertyName: string,
   value: unknown,
@@ -110,10 +108,10 @@ export function setLightExtensionTopLevelSetting(
   return next;
 }
 
-export function getLightExtensionSettingStepKey(entryId: string, propertyPath: string): string {
+export function getJsTemplateSettingStepKey(entryId: string, propertyPath: string): string {
   const entryPart = sanitizeStepKeyPart(entryId);
   const pathPart = sanitizeStepKeyPart(propertyPath);
-  return `lightExtensionSetting__${entryPart}__${pathPart}__${shortHash(`${entryId}:${propertyPath}`)}`;
+  return `jsTemplateSetting__${entryPart}__${pathPart}__${shortHash(`${entryId}:${propertyPath}`)}`;
 }
 
 export function cloneJsonValue<T>(value: T): T {

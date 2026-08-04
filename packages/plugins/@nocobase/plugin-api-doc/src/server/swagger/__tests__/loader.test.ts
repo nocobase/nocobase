@@ -61,23 +61,23 @@ describe('loadSwagger', () => {
     expect(loadSwagger(packageRoot).paths).toHaveProperty('/source');
   });
 
-  test.each(['/lightExtensionFiles:saveSource', '/runJSSources:save', '/runJSSources:saveChanges'])(
-    'loads %s from the combined Light Extension Swagger entry',
+  test.each(['/jsTemplateFiles:saveSource', '/runJSSources:save', '/runJSSources:saveChanges'])(
+    'loads %s from the combined JS Template Swagger entry',
     (expectedPath) => {
-      const swagger = loadSwagger('@nocobase/plugin-light-extension');
+      const swagger = loadSwagger('@nocobase/plugin-js-template');
 
       expect(swagger.paths).toHaveProperty(expectedPath);
     },
   );
 
-  test('resolves the source Light Extension Swagger entry and declares its distribution export', () => {
+  test('resolves the source JS Template Swagger entry and declares its distribution export', () => {
     expect(
       require
-        .resolve('@nocobase/plugin-light-extension/src/swagger/index.ts')
-        .endsWith(join('@nocobase', 'plugin-light-extension', 'src', 'swagger', 'index.ts')),
+        .resolve('@nocobase/plugin-js-template/src/swagger/index.ts')
+        .endsWith(join('@nocobase', 'plugin-js-template', 'src', 'swagger', 'index.ts')),
     ).toBe(true);
 
-    const packageJsonPath = require.resolve('@nocobase/plugin-light-extension/package.json');
+    const packageJsonPath = require.resolve('@nocobase/plugin-js-template/package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as {
       exports?: Record<string, unknown>;
     };

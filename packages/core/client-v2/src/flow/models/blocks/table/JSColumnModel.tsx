@@ -39,7 +39,7 @@ import {
   renderJSFieldRuntimeError,
   resolveJSFieldRuntimeRunJS,
   runResolvedJSFieldCode,
-} from '../../fields/jsFieldLightExtensionRuntime';
+} from '../../fields/jsFieldJsTemplateRuntime';
 
 function getRecordRenderSignature(record: any) {
   if (!record || typeof record !== 'object') {

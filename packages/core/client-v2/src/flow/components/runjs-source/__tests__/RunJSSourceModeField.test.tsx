@@ -22,14 +22,14 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('RunJSSourceModeField', () => {
-  it('preserves a controlled light-extension value when its provider is unavailable', async () => {
+  it('preserves a controlled js-template value when its provider is unavailable', async () => {
     const form = createForm();
     const onChange = vi.fn();
-    const SourceModeField = createRunJSSourceModeField('MissingLightExtensionSourceField');
+    const SourceModeField = createRunJSSourceModeField('MissingJsTemplateSourceField');
 
     render(
       <FormProvider form={form}>
-        <SourceModeField value="light-extension" onChange={onChange} />
+        <SourceModeField value="js-template" onChange={onChange} />
       </FormProvider>,
     );
 

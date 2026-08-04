@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '@nocobase/plugin-light-extension/server';
-export { default } from '@nocobase/plugin-light-extension/server';
+export * from './server';
+export { default } from './server';

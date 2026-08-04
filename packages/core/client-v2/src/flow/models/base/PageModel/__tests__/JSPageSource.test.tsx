@@ -17,9 +17,9 @@ import { RunJSEditorRegistry } from '../../../../components/runjs-studio';
 import { JSPageModel } from '../JSPageModel';
 
 const SOURCE_BINDING = {
-  type: 'light-extension-entry' as const,
-  repoId: 'repo_sales',
-  entryId: 'entry_sales',
+  type: 'js-template-entry' as const,
+  projectId: 'jtp_sales',
+  templateId: 'jtt_sales',
   kind: 'js-page',
 };
 
@@ -32,10 +32,10 @@ describe('JSPageModel source authoring', () => {
 
   it('keeps settings isolated between pages bound to the same entry', async () => {
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: () => ({ code: '' }),
       getSettingsDescriptor: async () => ({
-        entryId: SOURCE_BINDING.entryId,
+        entryId: SOURCE_BINDING.templateId,
         settingsSchemaHash: 'schema-v1',
         defaults: { label: 'Default' },
         schema: { type: 'object', properties: { label: { type: 'string', title: 'Label' } } },
@@ -50,7 +50,7 @@ describe('JSPageModel source authoring', () => {
         stepParams: {
           jsSettings: {
             runJs: {
-              sourceMode: 'light-extension',
+              sourceMode: 'js-template',
               sourceBinding: SOURCE_BINDING,
               settings: { label },
             },

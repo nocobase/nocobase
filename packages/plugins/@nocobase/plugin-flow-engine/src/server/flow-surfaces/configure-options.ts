@@ -145,32 +145,32 @@ const JS_VERSION = stringOption('JS code version', {
 type JS_SOURCE_BINDING_KIND = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 
 const JS_SOURCE_MODE = stringOption('JS source mode', {
-  enum: ['inline', 'light-extension'],
-  example: 'light-extension',
+  enum: ['inline', 'js-template'],
+  example: 'js-template',
 });
 
 const JS_SOURCE_EXAMPLES: Record<
   JS_SOURCE_BINDING_KIND,
-  { repoId: string; entryId: string; settings: Record<string, unknown> }
+  { projectId: string; templateId: string; settings: Record<string, unknown> }
 > = {
   'js-block': {
-    repoId: 'repo_sales',
-    entryId: 'entry_kpi_cards',
+    projectId: 'jtp_sales',
+    templateId: 'jtt_kpi_cards',
     settings: { region: 'APAC' },
   },
   'js-field': {
-    repoId: 'repo_customer_fields',
-    entryId: 'entry_customer_level',
+    projectId: 'jtp_customer_fields',
+    templateId: 'jtt_customer_level',
     settings: { vipColor: '#d4380d' },
   },
   'js-action': {
-    repoId: 'repo_sales_actions',
-    entryId: 'entry_refresh_sales_kpi',
+    projectId: 'jtp_sales_actions',
+    templateId: 'jtt_refresh_sales_kpi',
     settings: { region: 'APAC' },
   },
   'js-item': {
-    repoId: 'repo_customer_items',
-    entryId: 'entry_show_level_label',
+    projectId: 'jtp_customer_items',
+    templateId: 'jtt_show_level_label',
     settings: { vipColor: '#d4380d' },
   },
 };
@@ -179,11 +179,11 @@ function createJSSourceOptions(kind: JS_SOURCE_BINDING_KIND): FlowSurfaceConfigu
   const example = JS_SOURCE_EXAMPLES[kind];
   return {
     sourceMode: JS_SOURCE_MODE,
-    sourceBinding: objectOption(`Light-extension repository entry binding for ${kind}`, {
+    sourceBinding: objectOption(`JS Template source binding for ${kind}`, {
       example: {
-        type: 'light-extension-entry',
-        repoId: example.repoId,
-        entryId: example.entryId,
+        type: 'js-template-entry',
+        projectId: example.projectId,
+        templateId: example.templateId,
         kind,
       },
     }),

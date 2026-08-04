@@ -89,7 +89,7 @@ describe('JSPageModel', () => {
   });
 
   it('preserves empty code, external binding, settings and unknown siblings', () => {
-    const sourceBinding = { entryId: 'entry-1' };
+    const sourceBinding = { templateId: 'jtt_1' };
     const model = createModel(createEngine(), {
       pageSettings: {
         general: {
@@ -101,7 +101,7 @@ describe('JSPageModel', () => {
         runJs: {
           code: '',
           version: 'v1',
-          sourceMode: 'light-extension',
+          sourceMode: 'js-template',
           sourceBinding,
           sourceRef: 'snapshot-1',
           settings: { color: 'blue' },
@@ -118,7 +118,7 @@ describe('JSPageModel', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toEqual({
       code: '',
       version: 'v1',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding,
       sourceRef: 'snapshot-1',
       settings: { color: 'blue' },

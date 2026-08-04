@@ -16,14 +16,14 @@ import React from 'react';
 
 import { RunJSSettingsDescriptorProviderRegistry, RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import {
-  createLightExtensionSettingStep,
-  createLightExtensionSourcePlumbing,
+  createJsTemplateSettingStep,
+  createJsTemplateSourcePlumbing,
   createRuntimeRunTracker,
-  getLightExtensionSettingsDescriptor,
-  normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceSettings,
-  normalizeLightExtensionSourceSettingsForBinding,
-  setCanonicalLightExtensionSource,
+  getJsTemplateSettingsDescriptor,
+  normalizeJsTemplateRuntimeError,
+  normalizeJsTemplateSourceSettings,
+  normalizeJsTemplateSourceSettingsForBinding,
+  setCanonicalJsTemplateSource,
   stableSerialize,
 } from '../runjsSourceRuntimeCommon';
 
@@ -77,16 +77,16 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('owns the shared source defaults, descriptor, title, and save plumbing', async () => {
-    const sourceBinding = { entryId: 'entry_1', repoId: 'repo_1' };
+    const sourceBinding = { templateId: 'jtt_1', projectId: 'jtp_1' };
     const getSettingsDescriptor = vi.fn(async () => ({
-      entryId: 'entry_1',
+      entryId: 'jtt_1',
       schema: null,
       defaults: {},
       settingsSchemaHash: null,
     }));
     const getBindingTitle = vi.fn(async () => 'Shared entry');
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: async () => ({ code: 'return true;' }),
       getSettingsDescriptor,
       getBindingTitle,
@@ -102,7 +102,7 @@ describe('runjsSourceRuntimeCommon', () => {
       },
     } as unknown as FlowModel;
     const afterParamsSave = vi.fn(async () => undefined);
-    const plumbing = createLightExtensionSourcePlumbing({
+    const plumbing = createJsTemplateSourcePlumbing({
       flowKey: 'jsSettings',
       stepKey: 'runJs',
       ownerKind: 'flowModel.blockSettings',
@@ -117,10 +117,10 @@ describe('runjsSourceRuntimeCommon', () => {
       settings: { stale: true },
     });
 
-    await plumbing.beforeParamsSave(ctx, { sourceMode: 'light-extension', sourceBinding, settings: {} });
+    await plumbing.beforeParamsSave(ctx, { sourceMode: 'js-template', sourceBinding, settings: {} });
 
     expect(runJs).toMatchObject({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding,
       settings: {},
       code: 'return false;',
@@ -139,8 +139,8 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('uses the step title without repeating it in the rendered FormItem', () => {
-    const [, step] = createLightExtensionSettingStep<FlowModel>({
-      entryId: 'entry_display',
+    const [, step] = createJsTemplateSettingStep<FlowModel>({
+      entryId: 'jtt_display',
       fieldName: 'displayOptions',
       fieldSchema: {
         type: 'object',
@@ -189,8 +189,8 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('renders boolean settings as an inline switch', () => {
-    const [, step] = createLightExtensionSettingStep<FlowModel>({
-      entryId: 'entry_boolean',
+    const [, step] = createJsTemplateSettingStep<FlowModel>({
+      entryId: 'jtt_boolean',
       fieldName: 'showCard',
       fieldSchema: {
         type: 'boolean',
@@ -214,8 +214,8 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('renders collection settings as an inline searchable select with all visible collections', async () => {
-    const [, step] = createLightExtensionSettingStep<FlowModel>({
-      entryId: 'entry_collection',
+    const [, step] = createJsTemplateSettingStep<FlowModel>({
+      entryId: 'jtt_collection',
       fieldName: 'collectionName',
       fieldSchema: {
         type: 'string',
@@ -251,8 +251,8 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('renders collection field settings from the selected collection as an inline select', async () => {
-    const [, step] = createLightExtensionSettingStep<FlowModel>({
-      entryId: 'entry_collection_field',
+    const [, step] = createJsTemplateSettingStep<FlowModel>({
+      entryId: 'jtt_collection_field',
       fieldName: 'displayField',
       fieldSchema: {
         type: 'string',
@@ -285,24 +285,24 @@ describe('runjsSourceRuntimeCommon', () => {
     });
   });
 
-  it('rejects light extension source saves when the settings descriptor is unavailable', () => {
+  it('rejects JS Template source saves when the settings descriptor is unavailable', () => {
     expect(() =>
-      normalizeLightExtensionSourceSettings({
-        currentRunJs: { sourceBinding: { entryId: 'old' }, settings: { mode: 2 } },
-        nextSourceMode: 'light-extension',
-        nextSourceBinding: { entryId: 'next' },
+      normalizeJsTemplateSourceSettings({
+        currentRunJs: { sourceBinding: { templateId: 'old' }, settings: { mode: 2 } },
+        nextSourceMode: 'js-template',
+        nextSourceBinding: { templateId: 'next' },
         nextSettings: { mode: 2 },
         descriptor: null,
       }),
-    ).toThrow('Light extension settings descriptor is required.');
+    ).toThrow('JS Template settings descriptor is required.');
   });
 
   it('accepts an explicit null schema hash when the entry has no settings schema', async () => {
     RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       resolve: async () => ({ code: 'return true;' }),
       getSettingsDescriptor: async () => ({
-        entryId: 'entry_without_schema',
+        entryId: 'jtt_without_schema',
         schema: null,
         defaults: {},
         settingsSchemaHash: null,
@@ -310,17 +310,17 @@ describe('runjsSourceRuntimeCommon', () => {
     });
 
     await expect(
-      getLightExtensionSettingsDescriptor({
+      getJsTemplateSettingsDescriptor({
         modelUid: 'model_1',
         ownerKind: 'flowModel.step',
         ownerLocator: { kind: 'flowModel.step' },
         params: {
-          sourceMode: 'light-extension',
-          sourceBinding: { entryId: 'entry_without_schema' },
+          sourceMode: 'js-template',
+          sourceBinding: { templateId: 'jtt_without_schema' },
         },
       }),
     ).resolves.toEqual({
-      entryId: 'entry_without_schema',
+      entryId: 'jtt_without_schema',
       schema: null,
       defaults: {},
       settingsSchemaHash: null,
@@ -340,7 +340,7 @@ describe('runjsSourceRuntimeCommon', () => {
       defaults: { title: 'Welcome' },
     }));
     RunJSSettingsDescriptorProviderRegistry.registerProvider({
-      key: 'inline-light-extension',
+      key: 'inline-js-template',
       canHandle: (input) => input.sourceMode === 'inline',
       getSettingsDescriptor,
     });
@@ -354,7 +354,7 @@ describe('runjsSourceRuntimeCommon', () => {
     };
 
     await expect(
-      getLightExtensionSettingsDescriptor({
+      getJsTemplateSettingsDescriptor({
         modelUid: 'model_1',
         ownerKind: 'flowModel.blockSettings',
         ownerLocator: { modelUid: 'model_1' },
@@ -396,10 +396,10 @@ describe('runjsSourceRuntimeCommon', () => {
     };
 
     expect(
-      normalizeLightExtensionSourceSettingsForBinding({
+      normalizeJsTemplateSourceSettingsForBinding({
         currentRunJs: {
-          sourceMode: 'light-extension',
-          sourceBinding: { entryId: 'entry_1' },
+          sourceMode: 'js-template',
+          sourceBinding: { templateId: 'jtt_1' },
           settings,
         },
         nextSourceMode: 'inline',
@@ -408,7 +408,7 @@ describe('runjsSourceRuntimeCommon', () => {
     ).toEqual({ settings, missingRequiredPaths: [] });
   });
 
-  it('preserves legacy inline fallback fields when binding a light extension', () => {
+  it('preserves legacy inline fallback fields when binding a JS Template', () => {
     const setStepParams = vi.fn();
     const sourceRef = { type: 'vsc-file', path: 'legacy/runjs.ts' };
     const model = {
@@ -420,14 +420,14 @@ describe('runjsSourceRuntimeCommon', () => {
       setStepParams,
     } as never;
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_1',
-      entryId: 'entry_1',
+      type: 'js-template-entry',
+      projectId: 'jtp_1',
+      templateId: 'jtt_1',
       kind: 'js-block',
     };
 
-    setCanonicalLightExtensionSource(model, 'jsSettings', {
-      sourceMode: 'light-extension',
+    setCanonicalJsTemplateSource(model, 'jsSettings', {
+      sourceMode: 'js-template',
       sourceBinding,
       settings: { region: 'APAC' },
     });
@@ -437,32 +437,32 @@ describe('runjsSourceRuntimeCommon', () => {
         code: 'ctx.render("legacy inline");',
         version: 'v1',
         sourceRef,
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding,
         settings: { region: 'APAC' },
       },
     });
   });
 
-  it('pins empty inline code when switching from a light-extension-only binding', () => {
+  it('pins empty inline code when switching from a js-template-only binding', () => {
     const setStepParams = vi.fn();
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_1',
-      entryId: 'entry_1',
+      type: 'js-template-entry',
+      projectId: 'jtp_1',
+      templateId: 'jtt_1',
       kind: 'js-block',
     };
     const model = {
       getStepParams: () => ({
         version: 'v2',
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding,
         settings: { title: 'Sales' },
       }),
       setStepParams,
     } as never;
 
-    setCanonicalLightExtensionSource(model, 'jsSettings', {
+    setCanonicalJsTemplateSource(model, 'jsSettings', {
       sourceMode: 'inline',
       sourceBinding: undefined,
       settings: { title: 'Sales' },
@@ -479,17 +479,17 @@ describe('runjsSourceRuntimeCommon', () => {
     expect(setStepParams.mock.calls[0][1].runJs).not.toHaveProperty('sourceBinding');
   });
 
-  it('keeps existing inline code when switching back from a light extension binding', () => {
+  it('keeps existing inline code when switching back from a JS Template binding', () => {
     const setStepParams = vi.fn();
     const model = {
       getStepParams: () => ({
         code: 'ctx.render("kept inline");',
         version: 'v1',
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'repo_1',
-          entryId: 'entry_1',
+          type: 'js-template-entry',
+          projectId: 'jtp_1',
+          templateId: 'jtt_1',
           kind: 'js-block',
         },
         settings: {},
@@ -497,7 +497,7 @@ describe('runjsSourceRuntimeCommon', () => {
       setStepParams,
     } as never;
 
-    setCanonicalLightExtensionSource(model, 'jsSettings', {
+    setCanonicalJsTemplateSource(model, 'jsSettings', {
       sourceMode: 'inline',
       settings: {},
     });
@@ -515,16 +515,16 @@ describe('runjsSourceRuntimeCommon', () => {
   it('rejects binding settings when the entry declares no settings schema', () => {
     let caught: unknown;
     try {
-      normalizeLightExtensionSourceSettingsForBinding({
+      normalizeJsTemplateSourceSettingsForBinding({
         currentRunJs: {
-          sourceBinding: { entryId: 'entry_without_schema' },
+          sourceBinding: { templateId: 'jtt_without_schema' },
           settings: { unexpected: true },
         },
-        nextSourceMode: 'light-extension',
-        nextSourceBinding: { entryId: 'entry_without_schema' },
+        nextSourceMode: 'js-template',
+        nextSourceBinding: { templateId: 'jtt_without_schema' },
         nextSettings: { unexpected: true },
         descriptor: {
-          entryId: 'entry_without_schema',
+          entryId: 'jtt_without_schema',
           schema: null,
           defaults: {},
           settingsSchemaHash: null,
@@ -534,17 +534,17 @@ describe('runjsSourceRuntimeCommon', () => {
       caught = error;
     }
 
-    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['unexpected'] });
+    expect(caught).toMatchObject({ code: 'JS_TEMPLATE_SETTINGS_INVALID', paths: ['unexpected'] });
   });
 
   it('allows missing required settings in binding mode and reports nested paths', () => {
-    const result = normalizeLightExtensionSourceSettingsForBinding({
+    const result = normalizeJsTemplateSourceSettingsForBinding({
       currentRunJs: {},
-      nextSourceMode: 'light-extension',
-      nextSourceBinding: { entryId: 'entry_required' },
+      nextSourceMode: 'js-template',
+      nextSourceBinding: { templateId: 'jtt_required' },
       nextSettings: {},
       descriptor: {
-        entryId: 'entry_required',
+        entryId: 'jtt_required',
         settingsSchemaHash: 'schema_required',
         defaults: {},
         schema: {
@@ -572,13 +572,13 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('reports nested required paths when the parent object exists', () => {
-    const result = normalizeLightExtensionSourceSettingsForBinding({
-      currentRunJs: { sourceBinding: { entryId: 'entry_nested' }, settings: { options: {} } },
-      nextSourceMode: 'light-extension',
-      nextSourceBinding: { entryId: 'entry_nested' },
+    const result = normalizeJsTemplateSourceSettingsForBinding({
+      currentRunJs: { sourceBinding: { templateId: 'jtt_nested' }, settings: { options: {} } },
+      nextSourceMode: 'js-template',
+      nextSourceBinding: { templateId: 'jtt_nested' },
       nextSettings: { options: {} },
       descriptor: {
-        entryId: 'entry_nested',
+        entryId: 'jtt_nested',
         settingsSchemaHash: 'schema_nested',
         defaults: {},
         schema: {
@@ -599,13 +599,13 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it('treats schema defaults as satisfying required settings without persisting them as overrides', () => {
-    const result = normalizeLightExtensionSourceSettingsForBinding({
+    const result = normalizeJsTemplateSourceSettingsForBinding({
       currentRunJs: {},
-      nextSourceMode: 'light-extension',
-      nextSourceBinding: { entryId: 'entry_defaults' },
+      nextSourceMode: 'js-template',
+      nextSourceBinding: { templateId: 'jtt_defaults' },
       nextSettings: {},
       descriptor: {
-        entryId: 'entry_defaults',
+        entryId: 'jtt_defaults',
         settingsSchemaHash: 'schema_defaults',
         defaults: {},
         schema: {
@@ -622,13 +622,13 @@ describe('runjsSourceRuntimeCommon', () => {
   it('rejects explicit invalid binding settings', () => {
     let caught: unknown;
     try {
-      normalizeLightExtensionSourceSettingsForBinding({
-        currentRunJs: { sourceBinding: { entryId: 'entry_invalid' }, settings: {} },
-        nextSourceMode: 'light-extension',
-        nextSourceBinding: { entryId: 'entry_invalid' },
+      normalizeJsTemplateSourceSettingsForBinding({
+        currentRunJs: { sourceBinding: { templateId: 'jtt_invalid' }, settings: {} },
+        nextSourceMode: 'js-template',
+        nextSourceBinding: { templateId: 'jtt_invalid' },
         nextSettings: { count: 'invalid' },
         descriptor: {
-          entryId: 'entry_invalid',
+          entryId: 'jtt_invalid',
           settingsSchemaHash: 'schema_invalid',
           defaults: {},
           schema: {
@@ -640,21 +640,21 @@ describe('runjsSourceRuntimeCommon', () => {
     } catch (error) {
       caught = error;
     }
-    expect(caught).toMatchObject({ code: 'LIGHT_EXTENSION_SETTINGS_INVALID', paths: ['count'] });
+    expect(caught).toMatchObject({ code: 'JS_TEMPLATE_SETTINGS_INVALID', paths: ['count'] });
   });
 
   it('prunes explicitly submitted and stored unknown paths for the same entry', () => {
     expect(
-      normalizeLightExtensionSourceSettingsForBinding({
+      normalizeJsTemplateSourceSettingsForBinding({
         currentRunJs: {
-          sourceBinding: { entryId: 'entry_existing_unknown' },
+          sourceBinding: { templateId: 'jtt_existing_unknown' },
           settings: { count: 1, unknown: 'stored' },
         },
-        nextSourceMode: 'light-extension',
-        nextSourceBinding: { entryId: 'entry_existing_unknown' },
+        nextSourceMode: 'js-template',
+        nextSourceBinding: { templateId: 'jtt_existing_unknown' },
         nextSettings: { count: 2, unknown: 'submitted' },
         descriptor: {
-          entryId: 'entry_existing_unknown',
+          entryId: 'jtt_existing_unknown',
           settingsSchemaHash: 'schema_existing_unknown',
           defaults: {},
           schema: {
@@ -667,31 +667,32 @@ describe('runjsSourceRuntimeCommon', () => {
   });
 
   it.each([
-    ['LIGHT_EXTENSION_BINDING_OUTDATED', 409, 'JS Template binding is outdated', 'Refresh this surface'],
-    ['LIGHT_EXTENSION_SETTINGS_INVALID', 422, 'JS Template settings are invalid', 'Fix settings'],
+    ['JS_TEMPLATE_BINDING_OUTDATED', 409, 'JS Template binding is outdated', 'Refresh this surface'],
+    ['JS_TEMPLATE_SETTINGS_INVALID', 422, 'JS Template settings are invalid', 'Fix settings'],
+    ['JS_TEMPLATE_NOT_FOUND', 404, 'JS Template missing', 'Choose an available template or restore this template.'],
     [
-      'LIGHT_EXTENSION_ENTRY_NOT_FOUND',
+      'JS_TEMPLATE_PROJECT_NOT_FOUND',
       404,
-      'JS Template entry missing',
-      'Choose an available entry or restore this entry.',
+      'JS Template project missing',
+      'Choose an available project or restore this project.',
     ],
     [
-      'LIGHT_EXTENSION_FORBIDDEN',
+      'JS_TEMPLATE_FORBIDDEN',
       403,
       'JS Template access denied',
       'Ask an administrator for permission to use this JS Template.',
     ],
     [
-      'LIGHT_EXTENSION_REPO_ARCHIVED',
+      'JS_TEMPLATE_PROJECT_ARCHIVED',
       409,
-      'JS Template repository is archived',
-      'Restore the repository or choose an entry from another repository.',
+      'JS Template project is archived',
+      'Restore the project or choose a template from another project.',
     ],
     [undefined, 403, 'JS Template access denied', 'Ask an administrator for permission to use this JS Template.'],
-    [undefined, 404, 'JS Template entry missing', 'Choose an available entry or restore this entry.'],
+    [undefined, 404, 'JS Template missing', 'Choose an available template or restore this template.'],
   ])('normalizes %s server errors into the shared UI state', (code, status, title, hint) => {
     const message = code || 'Request failed';
-    const result = normalizeLightExtensionRuntimeError(
+    const result = normalizeJsTemplateRuntimeError(
       {
         response: {
           status,

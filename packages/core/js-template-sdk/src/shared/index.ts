@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export interface LightExtensionSettingsContext<TSettings = unknown> {
+export interface JsTemplateSettingsContext<TSettings = unknown> {
   settings: TSettings;
 }
 
-export type LightExtensionRecord = Record<string, unknown>;
+export type JsTemplateContextRecord = Record<string, unknown>;
 
-export interface LightExtensionDataContext<TSettings = unknown> extends LightExtensionSettingsContext<TSettings> {
-  record?: LightExtensionRecord | null;
-  records?: LightExtensionRecord[];
-  values?: LightExtensionRecord;
+export interface JsTemplateDataContext<TSettings = unknown> extends JsTemplateSettingsContext<TSettings> {
+  record?: JsTemplateContextRecord | null;
+  records?: JsTemplateContextRecord[];
+  values?: JsTemplateContextRecord;
   collection?: unknown;
   collectionField?: unknown;
   dataSource?: unknown;

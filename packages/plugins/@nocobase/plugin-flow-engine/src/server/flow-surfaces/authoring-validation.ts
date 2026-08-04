@@ -268,7 +268,7 @@ const JS_BLOCK_ALLOWED_SETTINGS_KEYS = new Set([
 const JS_BLOCK_TOP_LEVEL_JS_KEYS = ['code', 'version', 'sourceRef'] as const;
 const JS_BLOCK_INTERNAL_AUTHORING_KEYS = ['props', 'decoratorProps', 'flowRegistry', 'stepParams'];
 const JS_BLOCK_REPAIR_HINT =
-  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, light-extension settings.sourceMode/settings.sourceBinding/settings.settings, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
+  'This is a jsBlock payload shape problem. Repair this jsBlock using inline settings.code/settings.version/settings.showBlockCard, js-template settings.sourceMode/settings.sourceBinding/settings.settings, or applyBlueprint assets.scripts.<key>.code plus block.script with optional settings.showBlockCard. Do not change this block type to table, chart, actionPanel, gridCard, or another block type.';
 const CHART_REPAIR_HINT =
   'This is a chart payload shape problem. Keep using chart and repair this chart using assets.charts.<key>.query/visual plus block.chart, or localized settings.query/settings.visual. Do not change this block type to table, jsBlock, actionPanel, gridCard, or another block type, and do not drop or defer the chart. KPI / summary numbers should use jsBlock; charts are for trends, distributions, rankings, and visual analysis.';
 const REPAIR_ALL_ERRORS_AGENT_INSTRUCTION =
@@ -4964,12 +4964,12 @@ function collectJsBlockPublicContractErrors(
     });
   }
 
-  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(settings);
-  if (hasOwn(block, 'script') && hasLightExtensionSourceInput) {
+  const hasJsTemplateSourceInput = hasJsBlockJsTemplateSourceInput(settings);
+  if (hasOwn(block, 'script') && hasJsTemplateSourceInput) {
     pushAuthoringError(errors, {
       path: `${path}.script`,
-      ruleId: 'jsBlock-mixed-script-and-light-extension',
-      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension settings.sourceBinding; use either applyBlueprint assets.scripts + block.script or light-extension settings.sourceBinding`,
+      ruleId: 'jsBlock-mixed-script-and-js-template',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with js-template settings.sourceBinding; use either applyBlueprint assets.scripts + block.script or js-template settings.sourceBinding`,
       details: withJsBlockRepairHint(),
     });
   }
@@ -4982,14 +4982,14 @@ function collectJsBlockPublicContractErrors(
   if (
     !hasInlineCode &&
     !hasLegacySourceRef &&
-    !hasLightExtensionSourceInput &&
+    !hasJsTemplateSourceInput &&
     !hasScriptReference &&
     !hasApplyBlueprintScriptInput
   ) {
     pushAuthoringError(errors, {
       path,
       ruleId: 'jsBlock-source-required',
-      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code/sourceRef, light-extension ${path}.settings.sourceMode + ${path}.settings.sourceBinding, or, for applyBlueprint only, a block.script asset reference`,
+      message: `flowSurfaces authoring ${path} jsBlock must include inline ${path}.settings.code/sourceRef, js-template ${path}.settings.sourceMode + ${path}.settings.sourceBinding, or, for applyBlueprint only, a block.script asset reference`,
       details: withJsBlockRepairHint(),
     });
   }
@@ -5037,12 +5037,12 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
     });
   }
 
-  const hasLightExtensionSourceInput = hasJsBlockLightExtensionSourceInput(changes);
-  if (hasOwn(changes, 'script') && hasLightExtensionSourceInput) {
+  const hasJsTemplateSourceInput = hasJsBlockJsTemplateSourceInput(changes);
+  if (hasOwn(changes, 'script') && hasJsTemplateSourceInput) {
     pushAuthoringError(errors, {
       path: `${path}.script`,
-      ruleId: 'jsBlock-mixed-script-and-light-extension',
-      message: `flowSurfaces authoring ${path} cannot combine script asset references with light-extension sourceBinding`,
+      ruleId: 'jsBlock-mixed-script-and-js-template',
+      message: `flowSurfaces authoring ${path} cannot combine script asset references with js-template sourceBinding`,
       details: withJsBlockRepairHint(),
     });
   }
@@ -5073,7 +5073,7 @@ function collectJsBlockConfigurePublicContractErrors(changes: any, path: string,
   });
 }
 
-function hasJsBlockLightExtensionSourceInput(settings: any) {
+function hasJsBlockJsTemplateSourceInput(settings: unknown) {
   return validateRunJsSourceBinding({
     source: settings,
     path: '$',
@@ -5081,11 +5081,11 @@ function hasJsBlockLightExtensionSourceInput(settings: any) {
     requireExplicitSourceModeForBinding: true,
     ruleIdPrefix: 'jsBlock',
     surfaceLabel: 'JS block',
-  }).hasLightExtensionSourceInput;
+  }).hasJsTemplateSourceInput;
 }
 
 function collectJsBlockSourceSettingErrors(
-  settings: any,
+  settings: unknown,
   path: string,
   errors: AuthoringErrorInput[],
   options: {
@@ -5141,11 +5141,11 @@ function collectRunJsSourceBindingErrors(
 
   const hasActiveScriptAsset =
     context.authoringActionName === 'applyBlueprint' && typeof spec?.script === 'string' && !!spec.script.trim();
-  if (hasActiveScriptAsset && result.hasLightExtensionSourceInput) {
+  if (hasActiveScriptAsset && result.hasJsTemplateSourceInput) {
     pushAuthoringError(errors, {
       path: `${path}.script`,
-      ruleId: 'runjs-mixed-script-and-light-extension',
-      message: `flowSurfaces authoring ${path} cannot combine an applyBlueprint script asset with light-extension sourceBinding`,
+      ruleId: 'runjs-mixed-script-and-js-template',
+      message: `flowSurfaces authoring ${path} cannot combine an applyBlueprint script asset with js-template sourceBinding`,
       details: {
         expectedKind,
       },
@@ -8042,7 +8042,7 @@ function collectActionErrors(
       hasApplyBlueprintRunnableScriptAssetReference(action.script, context) ||
       (typeof action.settings?.source === 'string' && action.settings.source.trim()) ||
       (typeof action.settings?.code === 'string' && action.settings.code.trim()) ||
-      sourceBindingResult?.hasRunnableLightExtensionSource;
+      sourceBindingResult?.hasRunnableJsTemplateSource;
     if (!hasRunnableSource) {
       pushAuthoringError(errors, {
         path,

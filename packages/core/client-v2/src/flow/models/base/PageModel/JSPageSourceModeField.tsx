@@ -9,13 +9,13 @@
 
 import { createRunJSSourceModeField, type RunJSSourceModeFieldProps } from '../../../components/runjs-source';
 
-export const JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD = 'JSPageLightExtensionFullSourceField';
-export const JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD = 'JSPageLightExtensionSettingsStepField';
-export const JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD = JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD;
-export const JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD = JS_PAGE_LIGHT_EXTENSION_SETTINGS_STEP_FIELD;
+export const JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD = 'JSPageJsTemplateFullSourceField';
+export const JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD = 'JSPageJsTemplateSettingsStepField';
+export const JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD = JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD;
+export const JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD = JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD;
 
 export type JSPageSourceModeFieldProps = RunJSSourceModeFieldProps;
 
-export const JSPageSourceModeField = createRunJSSourceModeField(JS_PAGE_LIGHT_EXTENSION_FULL_SOURCE_FIELD);
+export const JSPageSourceModeField = createRunJSSourceModeField(JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD);
 
 export default JSPageSourceModeField;

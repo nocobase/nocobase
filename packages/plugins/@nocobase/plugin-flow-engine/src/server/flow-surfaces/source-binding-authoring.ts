@@ -20,8 +20,8 @@ export interface RunJsSourceBindingAuthoringError {
 
 export interface RunJsSourceBindingValidationResult {
   errors: RunJsSourceBindingAuthoringError[];
-  hasLightExtensionSourceInput: boolean;
-  hasRunnableLightExtensionSource: boolean;
+  hasJsTemplateSourceInput: boolean;
+  hasRunnableJsTemplateSource: boolean;
 }
 
 interface ValidateRunJsSourceBindingInput {
@@ -35,9 +35,10 @@ interface ValidateRunJsSourceBindingInput {
 }
 
 const INLINE_SOURCE_MODE = 'inline';
-const LIGHT_EXTENSION_SOURCE_MODE = 'light-extension';
-const LIGHT_EXTENSION_BINDING_TYPE = 'light-extension-entry';
-const REQUIRED_BINDING_STRING_KEYS = ['type', 'repoId', 'entryId', 'kind'] as const;
+const JS_TEMPLATE_SOURCE_MODE = 'js-template';
+const JS_TEMPLATE_BINDING_TYPE = 'js-template-entry';
+const REQUIRED_BINDING_STRING_KEYS = ['type', 'projectId', 'templateId', 'kind'] as const;
+const JS_TEMPLATE_BINDING_KEYS = new Set<string>(REQUIRED_BINDING_STRING_KEYS);
 
 type PlainRecord = Record<string, unknown>;
 
@@ -60,8 +61,8 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
   if (!source) {
     return {
       errors,
-      hasLightExtensionSourceInput: false,
-      hasRunnableLightExtensionSource: false,
+      hasJsTemplateSourceInput: false,
+      hasRunnableJsTemplateSource: false,
     };
   }
 
@@ -79,21 +80,17 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
   const declaredSourceMode = hasSourceModeInput ? source.sourceMode : currentSource?.sourceMode;
   const hasEffectiveBinding = typeof effectiveBinding !== 'undefined' && effectiveBinding !== null;
   const effectiveSourceMode =
-    typeof declaredSourceMode === 'undefined' && hasEffectiveBinding ? LIGHT_EXTENSION_SOURCE_MODE : declaredSourceMode;
-  const hasLightExtensionSourceInput =
-    effectiveSourceMode === LIGHT_EXTENSION_SOURCE_MODE || hasSourceBindingInput || hasEffectiveBinding;
+    typeof declaredSourceMode === 'undefined' && hasEffectiveBinding ? JS_TEMPLATE_SOURCE_MODE : declaredSourceMode;
+  const hasJsTemplateSourceInput =
+    effectiveSourceMode === JS_TEMPLATE_SOURCE_MODE || hasSourceBindingInput || hasEffectiveBinding;
 
-  if (
-    hasSourceModeInput &&
-    source.sourceMode !== INLINE_SOURCE_MODE &&
-    source.sourceMode !== LIGHT_EXTENSION_SOURCE_MODE
-  ) {
+  if (hasSourceModeInput && source.sourceMode !== INLINE_SOURCE_MODE && source.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
     errors.push({
       path: `${input.path}.sourceMode`,
       ruleId: `${ruleIdPrefix}-sourceMode-invalid`,
-      message: `flowSurfaces authoring ${input.path}.sourceMode must be "inline" or "light-extension"`,
+      message: `flowSurfaces authoring ${input.path}.sourceMode must be "inline" or "js-template"`,
       details: {
-        allowedValues: [INLINE_SOURCE_MODE, LIGHT_EXTENSION_SOURCE_MODE],
+        allowedValues: [INLINE_SOURCE_MODE, JS_TEMPLATE_SOURCE_MODE],
       },
     });
   }
@@ -102,40 +99,40 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
     errors.push({
       path: `${input.path}.sourceBinding`,
       ruleId: `${ruleIdPrefix}-inline-sourceBinding-unsupported`,
-      message: `flowSurfaces authoring ${input.path}.sourceBinding requires ${input.path}.sourceMode="light-extension"; inline ${surfaceLabel} source uses code or source`,
+      message: `flowSurfaces authoring ${input.path}.sourceBinding requires ${input.path}.sourceMode="js-template"; inline ${surfaceLabel} source uses code or source`,
     });
   }
 
   if (
     hasSourceBindingInput &&
     input.requireExplicitSourceModeForBinding &&
-    source.sourceMode !== LIGHT_EXTENSION_SOURCE_MODE
+    source.sourceMode !== JS_TEMPLATE_SOURCE_MODE
   ) {
     errors.push({
       path: `${input.path}.sourceMode`,
       ruleId: `${ruleIdPrefix}-sourceMode-required-for-sourceBinding`,
-      message: `flowSurfaces authoring ${input.path}.sourceBinding requires ${input.path}.sourceMode="light-extension"`,
+      message: `flowSurfaces authoring ${input.path}.sourceBinding requires ${input.path}.sourceMode="js-template"`,
     });
   }
 
-  if (effectiveSourceMode === LIGHT_EXTENSION_SOURCE_MODE && !hasEffectiveBinding) {
+  if (effectiveSourceMode === JS_TEMPLATE_SOURCE_MODE && !hasEffectiveBinding) {
     errors.push({
       path: `${input.path}.sourceBinding`,
       ruleId: `${ruleIdPrefix}-sourceBinding-required`,
-      message: `flowSurfaces authoring ${input.path}.sourceBinding is required when ${input.path}.sourceMode="light-extension"`,
+      message: `flowSurfaces authoring ${input.path}.sourceBinding is required when ${input.path}.sourceMode="js-template"`,
     });
     return {
       errors,
-      hasLightExtensionSourceInput,
-      hasRunnableLightExtensionSource: false,
+      hasJsTemplateSourceInput,
+      hasRunnableJsTemplateSource: false,
     };
   }
 
   if (!hasEffectiveBinding) {
     return {
       errors,
-      hasLightExtensionSourceInput,
-      hasRunnableLightExtensionSource: false,
+      hasJsTemplateSourceInput,
+      hasRunnableJsTemplateSource: false,
     };
   }
 
@@ -148,8 +145,8 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
     });
     return {
       errors,
-      hasLightExtensionSourceInput,
-      hasRunnableLightExtensionSource: false,
+      hasJsTemplateSourceInput,
+      hasRunnableJsTemplateSource: false,
     };
   }
 
@@ -168,13 +165,28 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
     });
   });
 
-  if (nonEmptyString(binding.type) && binding.type !== LIGHT_EXTENSION_BINDING_TYPE) {
+  Object.keys(binding).forEach((key) => {
+    if (JS_TEMPLATE_BINDING_KEYS.has(key)) {
+      return;
+    }
+    errors.push({
+      path: `${input.path}.sourceBinding.${key}`,
+      ruleId: `${ruleIdPrefix}-sourceBinding-additional-key`,
+      message: `flowSurfaces authoring ${input.path}.sourceBinding.${key} is not supported`,
+      details: {
+        key,
+        allowedKeys: [...REQUIRED_BINDING_STRING_KEYS],
+      },
+    });
+  });
+
+  if (nonEmptyString(binding.type) && binding.type !== JS_TEMPLATE_BINDING_TYPE) {
     errors.push({
       path: `${input.path}.sourceBinding.type`,
       ruleId: `${ruleIdPrefix}-sourceBinding-type-invalid`,
-      message: `flowSurfaces authoring ${input.path}.sourceBinding.type must be "${LIGHT_EXTENSION_BINDING_TYPE}"`,
+      message: `flowSurfaces authoring ${input.path}.sourceBinding.type must be "${JS_TEMPLATE_BINDING_TYPE}"`,
       details: {
-        expectedType: LIGHT_EXTENSION_BINDING_TYPE,
+        expectedType: JS_TEMPLATE_BINDING_TYPE,
       },
     });
   }
@@ -192,12 +204,13 @@ export function validateRunJsSourceBinding(input: ValidateRunJsSourceBindingInpu
 
   const bindingIsValid =
     REQUIRED_BINDING_STRING_KEYS.every((key) => nonEmptyString(binding[key])) &&
-    binding.type === LIGHT_EXTENSION_BINDING_TYPE &&
+    Object.keys(binding).every((key) => JS_TEMPLATE_BINDING_KEYS.has(key)) &&
+    binding.type === JS_TEMPLATE_BINDING_TYPE &&
     binding.kind === input.expectedKind;
 
   return {
     errors,
-    hasLightExtensionSourceInput,
-    hasRunnableLightExtensionSource: effectiveSourceMode === LIGHT_EXTENSION_SOURCE_MODE && bindingIsValid,
+    hasJsTemplateSourceInput,
+    hasRunnableJsTemplateSource: effectiveSourceMode === JS_TEMPLATE_SOURCE_MODE && bindingIsValid,
   };
 }

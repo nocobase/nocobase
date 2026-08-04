@@ -8,31 +8,21 @@
  */
 
 export const JS_TEMPLATE_CLI_COMMAND_CONTRACT = {
-  canonicalWorkspaceTopic: 'js-template',
-  legacyWorkspaceTopic: 'light',
+  workspaceTopic: 'js-template',
   workspaceCommands: ['pull', 'check', 'save'],
-  canonicalApiModule: 'js-template',
-  legacyApiModule: 'light-extension',
+  apiModule: 'js-template',
 } as const;
 
 export interface JsTemplateWorkspaceApiPaths {
-  entryGet: string;
+  templateGet: string;
   filesPull: string;
   compileWorkspacePreview: string;
   filesSaveSource: string;
 }
 
 export const JS_TEMPLATE_WORKSPACE_API_PATHS: JsTemplateWorkspaceApiPaths = {
-  entryGet: '/jsTemplateEntries:get',
+  templateGet: '/jsTemplates:get',
   filesPull: '/jsTemplateFiles:pull',
   compileWorkspacePreview: '/jsTemplates:compileWorkspacePreview',
   filesSaveSource: '/jsTemplateFiles:saveSource',
-};
-
-/** Legacy paths remain available so `nb light` also works with servers that predate the canonical HTTP aliases. */
-export const LEGACY_LIGHT_EXTENSION_WORKSPACE_API_PATHS: JsTemplateWorkspaceApiPaths = {
-  entryGet: '/lightExtensionEntries:get',
-  filesPull: '/lightExtensionFiles:pull',
-  compileWorkspacePreview: '/lightExtensions:compileWorkspacePreview',
-  filesSaveSource: '/lightExtensionFiles:saveSource',
 };

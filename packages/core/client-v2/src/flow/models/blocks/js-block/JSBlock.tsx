@@ -29,15 +29,15 @@ import {
   createRunJSSourceCascadeMenuUIMode,
   shouldHideRunJSSourceMenu,
 } from '../../../components/runjs-source';
-import { JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
+import { JS_BLOCK_JS_TEMPLATE_SETTINGS_STEP_FIELD } from './JSBlockSourceModeField';
 import {
   createRunJSEditorEmbedUIMode,
-  createLightExtensionSettingSteps,
-  createLightExtensionSourcePlumbing,
+  createJsTemplateSettingSteps,
+  createJsTemplateSourcePlumbing,
   INLINE_SOURCE_MODE,
   isRecord,
-  normalizeLightExtensionRuntimeError,
-  normalizeLightExtensionSourceMode,
+  normalizeJsTemplateRuntimeError,
+  normalizeJsTemplateSourceMode,
   resolveEffectiveRunJSSettings,
   type RuntimeErrorInfo,
 } from '../../utils/runjsSourceRuntimeCommon';
@@ -98,11 +98,11 @@ const getPageHeader = (root: HTMLElement) => {
 };
 
 function normalizeRuntimeError(error: unknown): JSBlockRuntimeError {
-  return normalizeLightExtensionRuntimeError(error, {
+  return normalizeJsTemplateRuntimeError(error, {
     defaultTitle: 'JavaScript block runtime error',
     defaultHint: 'Check the JavaScript block configuration and retry.',
     defaultMessage: 'Failed to run JavaScript block',
-    outdatedHint: 'Refresh the block settings and choose the current entry.',
+    outdatedHint: 'Refresh the block settings and choose the current template.',
     invalidSettingsHint: 'Open the block settings and fix the JS Template settings.',
   });
 }
@@ -270,7 +270,7 @@ export class JSBlockModel extends BlockModel {
       return undefined;
     }
 
-    return getLightExtensionRuntimeSettingSteps(this);
+    return getJsTemplateRuntimeSettingSteps(this);
   }
 
   get showBlockCard() {
@@ -432,7 +432,7 @@ export class JSBlockModel extends BlockModel {
   }
 }
 
-const jsBlockSource = createLightExtensionSourcePlumbing<JSBlockModel>({
+const jsBlockSource = createJsTemplateSourcePlumbing<JSBlockModel>({
   flowKey: 'jsSettings',
   stepKey: 'runJs',
   ownerKind: JS_BLOCK_OWNER_KIND,
@@ -444,28 +444,28 @@ function getRunJsStepParams(model: JSBlockModel): Record<string, unknown> {
   return jsBlockSource.getRunJsStepParams(model);
 }
 
-async function getLightExtensionSettingsDescriptor(model: JSBlockModel, params: Record<string, unknown>) {
+async function getJsTemplateSettingsDescriptor(model: JSBlockModel, params: Record<string, unknown>) {
   return jsBlockSource.getSettingsDescriptor(model, params);
 }
 
-async function getLightExtensionRuntimeSettingSteps(
+async function getJsTemplateRuntimeSettingSteps(
   model: JSBlockModel,
 ): Promise<Record<string, StepDefinition> | undefined> {
   const params = getRunJsStepParams(model);
-  const descriptor = await getLightExtensionSettingsDescriptor(model, params);
+  const descriptor = await getJsTemplateSettingsDescriptor(model, params);
   if (!descriptor) {
     return undefined;
   }
-  return createLightExtensionSettingSteps<JSBlockModel>({
+  return createJsTemplateSettingSteps<JSBlockModel>({
     descriptor,
     settings: isRecord(params.settings) ? params.settings : {},
-    component: JS_BLOCK_LIGHT_EXTENSION_SETTINGS_STEP_FIELD,
+    component: JS_BLOCK_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     syncValue: jsBlockSource.syncSetting,
     afterParamsSave: refreshJSBlockAfterSettingsSave,
   });
 }
 
-const resolveLightExtensionRuntimeSettings = jsBlockSource.getRuntimeSettings;
+const resolveJsTemplateRuntimeSettings = jsBlockSource.getRuntimeSettings;
 
 async function refreshJSBlockAfterSettingsSave(ctx: FlowSettingsContext<JSBlockModel>) {
   ctx.model.invalidateFlowCache('beforeRender', true);
@@ -525,7 +525,7 @@ JSBlockModel.registerFlow({
           'x-component-props': {
             locatorFactory: 'flowModel.step',
             sourceMetadata: {
-              lightExtensionKind: 'js-block',
+              jsTemplateKind: 'js-block',
             },
             surfaceStyle: 'render',
             scene: 'block',
@@ -611,8 +611,8 @@ ctx.render(\`
       },
       async handler(ctx, params) {
         const model = ctx.model as JSBlockModel;
-        // Inline blocks resolve locally and never showed a loading state before light-extension existed
-        const handlerSourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
+        // Inline blocks resolve locally and never showed a loading state before js-template existed
+        const handlerSourceMode = normalizeJsTemplateSourceMode(params?.sourceMode);
         const runId = model.beginRuntimeRun(handlerSourceMode !== INLINE_SOURCE_MODE);
         const inlineRunJs = resolveRunJsParams(ctx, params);
 
@@ -630,10 +630,10 @@ ctx.render(\`
                 },
               },
             });
-            const storedSettings = resolveLightExtensionRuntimeSettings(params || {});
-            const sourceMode = normalizeLightExtensionSourceMode(params?.sourceMode);
+            const storedSettings = resolveJsTemplateRuntimeSettings(params || {});
+            const sourceMode = normalizeJsTemplateSourceMode(params?.sourceMode);
             const descriptor =
-              sourceMode === INLINE_SOURCE_MODE ? await getLightExtensionSettingsDescriptor(model, params || {}) : null;
+              sourceMode === INLINE_SOURCE_MODE ? await getJsTemplateSettingsDescriptor(model, params || {}) : null;
             const runtimeSettings = descriptor
               ? resolveEffectiveRunJSSettings(descriptor, storedSettings)
               : storedSettings;

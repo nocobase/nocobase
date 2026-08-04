@@ -255,21 +255,21 @@ function createRunJsSourceBindingSchema(kind: FlowSurfaceRunJsSourceBindingKind)
     properties: {
       type: {
         type: 'string',
-        enum: ['light-extension-entry'],
+        enum: ['js-template-entry'],
       },
-      repoId: STRING_SCHEMA,
-      entryId: STRING_SCHEMA,
+      projectId: STRING_SCHEMA,
+      templateId: STRING_SCHEMA,
       kind: {
         type: 'string',
         enum: [kind],
       },
     },
-    required: ['type', 'repoId', 'entryId', 'kind'],
+    required: ['type', 'projectId', 'templateId', 'kind'],
     additionalProperties: false,
   };
 }
 
-function createLightExtensionRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBindingKind) {
+function createJsTemplateRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBindingKind) {
   return {
     allowedPaths: [...RUN_JS_ALLOWED_PATHS, ...RUN_JS_SOURCE_ALLOWED_PATHS],
     mergeStrategy: 'deep' as const,
@@ -278,7 +278,7 @@ function createLightExtensionRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBind
       ...RUN_JS_SETTINGS_GROUP.pathSchemas,
       'runJs.sourceMode': {
         type: 'string',
-        enum: ['inline', 'light-extension'],
+        enum: ['inline', 'js-template'],
       },
       'runJs.sourceBinding': createRunJsSourceBindingSchema(kind),
       'runJs.settings': OBJECT_SCHEMA,
@@ -286,10 +286,10 @@ function createLightExtensionRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBind
   };
 }
 
-const JS_BLOCK_RUN_JS_SETTINGS_GROUP = createLightExtensionRunJsSettingsGroup('js-block');
-const JS_FIELD_RUN_JS_SETTINGS_GROUP = createLightExtensionRunJsSettingsGroup('js-field');
-const JS_ACTION_RUN_JS_SETTINGS_GROUP = createLightExtensionRunJsSettingsGroup('js-action');
-const JS_ITEM_RUN_JS_SETTINGS_GROUP = createLightExtensionRunJsSettingsGroup('js-item');
+const JS_BLOCK_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-block');
+const JS_FIELD_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-field');
+const JS_ACTION_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-action');
+const JS_ITEM_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-item');
 const JS_BLOCK_SETTINGS_GROUP = {
   allowedPaths: [...JS_BLOCK_RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
   mergeStrategy: 'deep' as const,

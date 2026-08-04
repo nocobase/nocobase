@@ -25,8 +25,8 @@ describe('runjsValue utils', () => {
       isRunJSValue({
         code: '',
         version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: { type: 'light-extension-entry' },
+        sourceMode: 'js-template',
+        sourceBinding: { type: 'js-template-entry' },
         settings: { currency: 'USD' },
       }),
     ).toBe(true);
@@ -50,15 +50,15 @@ describe('runjsValue utils', () => {
       normalizeRunJSValue({
         code: '',
         version: 'v2',
-        sourceMode: 'light-extension',
-        sourceBinding: { type: 'light-extension-entry' },
+        sourceMode: 'js-template',
+        sourceBinding: { type: 'js-template-entry' },
         settings: { currency: 'USD' },
       }),
     ).toEqual({
       code: '',
       version: 'v2',
-      sourceMode: 'light-extension',
-      sourceBinding: { type: 'light-extension-entry' },
+      sourceMode: 'js-template',
+      sourceBinding: { type: 'js-template-entry' },
       settings: { currency: 'USD' },
     });
   });

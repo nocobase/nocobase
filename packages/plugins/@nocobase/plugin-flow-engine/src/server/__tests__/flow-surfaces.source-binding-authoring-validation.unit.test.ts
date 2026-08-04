@@ -13,15 +13,15 @@ import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-va
 type SourceBindingKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 
 const sourceBinding = (kind: SourceBindingKind) => ({
-  type: 'light-extension-entry',
-  repoId: `repo_${kind}`,
-  entryId: `entry_${kind}`,
+  type: 'js-template-entry',
+  projectId: `jtp_${kind}`,
+  templateId: `jtt_${kind}`,
   kind,
 });
 
 function sourceSettings(kind: SourceBindingKind) {
   return {
-    sourceMode: 'light-extension',
+    sourceMode: 'js-template',
     sourceBinding: sourceBinding(kind),
   };
 }
@@ -86,13 +86,13 @@ describe('flowSurfaces source binding authoring validation', () => {
     );
   });
 
-  it('should require bindings for light-extension mode on every JS surface kind', async () => {
+  it('should require bindings for js-template mode on every JS surface kind', async () => {
     const errors = await collectFlowSurfaceAuthoringErrors('compose', {
       blocks: [
         {
           type: 'jsBlock',
           settings: {
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
           },
         },
         {
@@ -101,7 +101,7 @@ describe('flowSurfaces source binding authoring validation', () => {
             {
               type: 'jsColumn',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
               },
             },
           ],
@@ -109,13 +109,13 @@ describe('flowSurfaces source binding authoring validation', () => {
             {
               type: 'js',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
               },
             },
             {
               type: 'jsItem',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
               },
             },
           ],
@@ -154,10 +154,10 @@ describe('flowSurfaces source binding authoring validation', () => {
             {
               type: 'jsColumn',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
                 sourceBinding: {
                   type: 'file',
-                  repoId: '',
+                  projectId: '',
                   kind: 'js-block',
                 },
               },
@@ -170,11 +170,11 @@ describe('flowSurfaces source binding authoring validation', () => {
     expect(errors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: '$.blocks[0].fields[0].settings.sourceBinding.repoId',
+          path: '$.blocks[0].fields[0].settings.sourceBinding.projectId',
           ruleId: 'runjs-sourceBinding-required-key',
         }),
         expect.objectContaining({
-          path: '$.blocks[0].fields[0].settings.sourceBinding.entryId',
+          path: '$.blocks[0].fields[0].settings.sourceBinding.templateId',
           ruleId: 'runjs-sourceBinding-required-key',
         }),
         expect.objectContaining({
@@ -189,6 +189,40 @@ describe('flowSurfaces source binding authoring validation', () => {
           }),
         }),
       ]),
+    );
+  });
+
+  it('should reject display metadata in persisted JS Template bindings', async () => {
+    const errors = await collectFlowSurfaceAuthoringErrors('compose', {
+      blocks: [
+        {
+          type: 'jsBlock',
+          settings: {
+            sourceMode: 'js-template',
+            sourceBinding: {
+              ...sourceBinding('js-block'),
+              projectTitle: 'Sales project',
+              templateTitle: 'KPI cards',
+              entryPath: 'src/client/kpi-cards/index.tsx',
+            },
+          },
+        },
+      ],
+    });
+
+    expect(errors).toEqual(
+      expect.arrayContaining(
+        ['projectTitle', 'templateTitle', 'entryPath'].map((key) =>
+          expect.objectContaining({
+            path: `$.blocks[0].settings.sourceBinding.${key}`,
+            ruleId: 'jsBlock-sourceBinding-additional-key',
+            details: expect.objectContaining({
+              key,
+              allowedKeys: ['type', 'projectId', 'templateId', 'kind'],
+            }),
+          }),
+        ),
+      ),
     );
   });
 
@@ -209,7 +243,7 @@ describe('flowSurfaces source binding authoring validation', () => {
         {
           changes: {
             sourceBinding: {
-              entryId: 'entry_next',
+              templateId: 'jtt_next',
             },
           },
         },
@@ -235,7 +269,7 @@ describe('flowSurfaces source binding authoring validation', () => {
       {
         changes: {
           sourceBinding: {
-            entryId: 'entry_new',
+            templateId: 'jtt_new',
           },
         },
       },
@@ -249,7 +283,10 @@ describe('flowSurfaces source binding authoring validation', () => {
     expect(newBindingErrors).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ path: '$.changes.sourceBinding.type', ruleId: 'runjs-sourceBinding-required-key' }),
-        expect.objectContaining({ path: '$.changes.sourceBinding.repoId', ruleId: 'runjs-sourceBinding-required-key' }),
+        expect.objectContaining({
+          path: '$.changes.sourceBinding.projectId',
+          ruleId: 'runjs-sourceBinding-required-key',
+        }),
         expect.objectContaining({ path: '$.changes.sourceBinding.kind', ruleId: 'runjs-sourceBinding-required-key' }),
       ]),
     );
@@ -277,7 +314,7 @@ describe('flowSurfaces source binding authoring validation', () => {
                   type: 'jsColumn',
                   script: 'summary',
                   settings: {
-                    sourceMode: 'light-extension',
+                    sourceMode: 'js-template',
                     sourceBinding: binding,
                   },
                 },
@@ -311,7 +348,7 @@ describe('flowSurfaces source binding authoring validation', () => {
       expect.arrayContaining([
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].fields[0].script',
-          ruleId: 'runjs-mixed-script-and-light-extension',
+          ruleId: 'runjs-mixed-script-and-js-template',
         }),
         expect.objectContaining({
           path: '$.tabs[0].blocks[0].actions[0].settings.sourceBinding',
@@ -323,7 +360,7 @@ describe('flowSurfaces source binding authoring validation', () => {
         }),
         expect.objectContaining({
           path: '$.tabs[0].blocks[1].script',
-          ruleId: 'jsBlock-mixed-script-and-light-extension',
+          ruleId: 'jsBlock-mixed-script-and-js-template',
         }),
       ]),
     );
@@ -335,7 +372,7 @@ describe('flowSurfaces source binding authoring validation', () => {
       {
         changes: {
           sourceBinding: {
-            entryId: 'entry_next',
+            templateId: 'jtt_next',
           },
         },
       },

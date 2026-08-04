@@ -203,12 +203,12 @@ function expectSourceOptions(use: string, kind: string) {
       version: expect.objectContaining({ type: 'string' }),
       sourceMode: expect.objectContaining({
         type: 'string',
-        enum: ['inline', 'light-extension'],
+        enum: ['inline', 'js-template'],
       }),
       sourceBinding: expect.objectContaining({
         type: 'object',
         example: expect.objectContaining({
-          type: 'light-extension-entry',
+          type: 'js-template-entry',
           kind,
         }),
       }),
@@ -230,10 +230,10 @@ function expectSourceContract(use: string, groupKey: 'jsSettings' | 'clickSettin
   expect(group?.allowedPaths).not.toEqual(expect.arrayContaining(['sourceMode', 'sourceBinding', 'settings.*']));
   expect(group?.pathSchemas?.['runJs.sourceBinding']).toMatchObject({
     type: 'object',
-    required: ['type', 'repoId', 'entryId', 'kind'],
+    required: ['type', 'projectId', 'templateId', 'kind'],
     properties: {
       type: {
-        enum: ['light-extension-entry'],
+        enum: ['js-template-entry'],
       },
       kind: {
         enum: [kind],
@@ -418,7 +418,7 @@ describe('flowSurfaces public JS source contracts', () => {
       );
       expect(projected.configureOptions).toEqual(
         expect.objectContaining({
-          sourceMode: expect.objectContaining({ enum: ['inline', 'light-extension'] }),
+          sourceMode: expect.objectContaining({ enum: ['inline', 'js-template'] }),
           sourceBinding: expect.objectContaining({
             example: expect.objectContaining({ kind: 'js-field' }),
           }),

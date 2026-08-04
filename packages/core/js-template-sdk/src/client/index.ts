@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { LightExtensionDataContext, LightExtensionRecord } from '../shared';
+import type { JsTemplateDataContext, JsTemplateContextRecord } from '../shared';
 
-export type { LightExtensionDataContext, LightExtensionRecord, LightExtensionSettingsContext } from '../shared';
+export type { JsTemplateDataContext, JsTemplateContextRecord, JsTemplateSettingsContext } from '../shared';
 export { assertSettings, defineSettings } from '../shared';
 
-export interface JSBlockContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+export interface JSBlockContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> {
   element?: HTMLElement | null;
   render?: (node: unknown) => void;
   i18n?: {
@@ -31,21 +31,21 @@ export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSett
   page: JSPageRuntimeFacade;
 }
 
-export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> {
   value?: TValue;
 }
 
-export interface JSActionContext<TSettings = unknown> extends LightExtensionDataContext<TSettings> {
+export interface JSActionContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> {
   event?: unknown;
-  formValues?: LightExtensionRecord;
+  formValues?: JsTemplateContextRecord;
 }
 
-export interface JSItemContext<TSettings = unknown, TValue = unknown> extends LightExtensionDataContext<TSettings> {
+export interface JSItemContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> {
   value?: TValue;
 }
 
-export interface RunJSContext<TSettings = unknown, TInput = unknown> extends LightExtensionDataContext<TSettings> {
+export interface RunJSContext<TSettings = unknown, TInput = unknown> extends JsTemplateDataContext<TSettings> {
   input?: TInput;
   event?: unknown;
-  formValues?: LightExtensionRecord;
+  formValues?: JsTemplateContextRecord;
 }

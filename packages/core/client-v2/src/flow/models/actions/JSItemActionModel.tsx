@@ -20,7 +20,7 @@ import {
   INLINE_SOURCE_MODE,
   resetJSItemRuntimeElement,
   runJSItemRuntime,
-} from '../fields/jsItemLightExtensionRuntime';
+} from '../fields/jsItemJsTemplateRuntime';
 import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldModel/PopupSubTableFieldModel/actions/PopupSubTableFormSubmitActionModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 

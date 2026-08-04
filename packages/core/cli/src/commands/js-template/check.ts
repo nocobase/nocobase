@@ -22,24 +22,24 @@ import {
   extractRejectedWorkspaceCheckResult,
   extractWorkspaceCheckResult,
   getFirstError,
-  LIGHT_EXTENSION_EXIT_CODES,
-  LightExtensionCliError,
+  JS_TEMPLATE_EXIT_CODES,
+  JsTemplateCliError,
   loadWorkspaceState,
   readWorkspaceFiles,
   recordSuccessfulWorkspaceCheck,
-  resolveLightExtensionTarget,
+  resolveJsTemplateTarget,
   unwrapResponseData,
-  type LightExtensionWorkspaceCheckResult,
-} from '../../lib/light-extension-workspace.js';
+  type JsTemplateWorkspaceCheckResult,
+} from '../../lib/js-template-workspace.js';
 
-function formatDiagnostics(result: LightExtensionWorkspaceCheckResult): string {
+function formatDiagnostics(result: JsTemplateWorkspaceCheckResult): string {
   if (!result.diagnostics.length)
-    return translateCli('commands.light.check.noProblems', undefined, { fallback: 'No diagnostics.' });
+    return translateCli('commands.jsTemplate.check.noProblems', undefined, { fallback: 'No diagnostics.' });
   return result.diagnostics
     .map((diagnostic) => {
       const location = diagnostic.path
         ? `${diagnostic.path}${diagnostic.line ? `:${diagnostic.line}:${diagnostic.column || 1}` : ''}`
-        : translateCli('commands.light.check.workspaceLocation', undefined, { fallback: 'workspace' });
+        : translateCli('commands.jsTemplate.check.workspaceLocation', undefined, { fallback: 'workspace' });
       return `${diagnostic.severity.toUpperCase()} ${diagnostic.code} ${location} ${diagnostic.message}`;
     })
     .join('\n');
@@ -48,42 +48,42 @@ function formatDiagnostics(result: LightExtensionWorkspaceCheckResult): string {
 export default class JsTemplateCheck extends Command {
   protected apiPaths: JsTemplateWorkspaceApiPaths = JS_TEMPLATE_WORKSPACE_API_PATHS;
 
-  static override summary = translateCli('commands.light.check.summary', undefined, {
+  static override summary = translateCli('commands.jsTemplate.check.summary', undefined, {
     fallback: 'Run the authoritative check for a complete local JS Template workspace',
   });
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --dir ./light-demo',
-    '<%= config.bin %> <%= command.id %> --dir ./light-demo --json-output',
+    '<%= config.bin %> <%= command.id %> --dir ./js-template-demo',
+    '<%= config.bin %> <%= command.id %> --dir ./js-template-demo --json-output',
   ];
 
   static override flags = {
     dir: Flags.string({
-      description: translateCli('commands.light.flags.dir', undefined, { fallback: 'Local workspace directory' }),
+      description: translateCli('commands.jsTemplate.flags.dir', undefined, { fallback: 'Local workspace directory' }),
       default: '.',
     }),
     env: Flags.string({
       char: 'e',
-      description: translateCli('commands.light.flags.env', undefined, { fallback: 'Environment name' }),
+      description: translateCli('commands.jsTemplate.flags.env', undefined, { fallback: 'Environment name' }),
     }),
     'api-base-url': Flags.string({
-      description: translateCli('commands.light.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
+      description: translateCli('commands.jsTemplate.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
     }),
     role: Flags.string({
-      description: translateCli('commands.light.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
+      description: translateCli('commands.jsTemplate.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
     }),
     authenticator: Flags.string({
-      description: translateCli('commands.light.flags.authenticator', undefined, {
+      description: translateCli('commands.jsTemplate.flags.authenticator', undefined, {
         fallback: 'Authenticator override, sent as X-Authenticator',
       }),
     }),
     token: Flags.string({
       char: 't',
-      description: translateCli('commands.light.flags.token', undefined, { fallback: 'API key override' }),
+      description: translateCli('commands.jsTemplate.flags.token', undefined, { fallback: 'API key override' }),
     }),
     'json-output': Flags.boolean({
       char: 'j',
-      description: translateCli('commands.light.flags.jsonOutput', undefined, {
+      description: translateCli('commands.jsTemplate.flags.jsonOutput', undefined, {
         fallback: 'Print machine-readable JSON',
       }),
       default: false,
@@ -97,7 +97,7 @@ export default class JsTemplateCheck extends Command {
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
       const state = await loadWorkspaceState(workspaceRoot);
-      const target = await resolveLightExtensionTarget({
+      const target = await resolveJsTemplateTarget({
         env: flags.env ?? state.env.name,
         apiBaseUrl: flags['api-base-url'] ?? state.app.apiBaseUrl,
       });
@@ -113,7 +113,7 @@ export default class JsTemplateCheck extends Command {
         method: 'POST',
         path: this.apiPaths.compileWorkspacePreview,
         body: {
-          repoId: state.repo.id,
+          projectId: state.project.id,
           expectedHeadCommitId: state.baseHeadCommitId,
           files,
         },
@@ -124,18 +124,18 @@ export default class JsTemplateCheck extends Command {
         const output = {
           ok: false,
           httpStatus: 422,
-          exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+          exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
           error: getFirstError(response.data),
           check: result,
         };
-        throw new LightExtensionCliError(
+        throw new JsTemplateCliError(
           translateCli(
-            'commands.light.check.errors.rejected',
+            'commands.jsTemplate.check.errors.rejected',
             { snapshotId, problems: formatDiagnostics(result) },
             { fallback: 'Workspace check rejected snapshot {{snapshotId}}.\n{{problems}}' },
           ),
           {
-            exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+            exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
             httpStatus: 422,
             details: result,
             jsonOutput: output,
@@ -146,7 +146,7 @@ export default class JsTemplateCheck extends Command {
         throw buildHttpError(
           response.status,
           response.data,
-          translateCli('commands.light.operations.workspaceCheck', undefined, {
+          translateCli('commands.jsTemplate.operations.workspaceCheck', undefined, {
             fallback: 'JS Template workspace check',
           }),
         );
@@ -156,17 +156,17 @@ export default class JsTemplateCheck extends Command {
         const output = {
           ok: false,
           httpStatus: response.status,
-          exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+          exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
           check: result,
         };
-        throw new LightExtensionCliError(
+        throw new JsTemplateCliError(
           translateCli(
-            'commands.light.check.errors.notAccepted',
+            'commands.jsTemplate.check.errors.notAccepted',
             { snapshotId, problems: formatDiagnostics(result) },
             { fallback: 'Workspace check did not accept snapshot {{snapshotId}}.\n{{problems}}' },
           ),
           {
-            exitCode: LIGHT_EXTENSION_EXIT_CODES.rejected,
+            exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
             httpStatus: response.status,
             details: result,
             jsonOutput: output,
@@ -179,7 +179,7 @@ export default class JsTemplateCheck extends Command {
       else {
         this.log(
           translateCli(
-            'commands.light.check.success',
+            'commands.jsTemplate.check.success',
             { snapshotId },
             {
               fallback: 'Workspace check accepted snapshot {{snapshotId}}.',
@@ -188,7 +188,7 @@ export default class JsTemplateCheck extends Command {
         );
         this.log(
           translateCli(
-            'commands.light.check.baseHead',
+            'commands.jsTemplate.check.baseHead',
             { head: state.baseHeadCommitId ?? 'null' },
             {
               fallback: 'Base Head: {{head}}',
@@ -197,19 +197,19 @@ export default class JsTemplateCheck extends Command {
         );
         this.log(
           translateCli(
-            'commands.light.check.entriesAccepted',
-            { count: result.entries?.length || 0 },
+            'commands.jsTemplate.check.templatesAccepted',
+            { count: result.templates?.length || 0 },
             {
-              fallback: '{{count}} entries accepted.',
+              fallback: '{{count}} templates accepted.',
             },
           ),
         );
       }
     } catch (error: unknown) {
       const failure =
-        error instanceof LightExtensionCliError
+        error instanceof JsTemplateCliError
           ? error
-          : new LightExtensionCliError(error instanceof Error ? error.message : String(error), { cause: error });
+          : new JsTemplateCliError(error instanceof Error ? error.message : String(error), { cause: error });
       if (jsonOutput) this.logToStderr(JSON.stringify(failure.toJSON(), null, 2));
       else this.logToStderr(failure.message);
       this.exit(failure.exitCode);

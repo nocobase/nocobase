@@ -378,11 +378,11 @@ describe('flowSurfaces authoring validation unit', () => {
     expect(unsupportedSettingError?.details?.allowedKeys).toContain('showBlockCard');
   });
 
-  it('should accept light-extension JS block source binding and reject script mixing', async () => {
+  it('should accept js-template JS block source binding and reject script mixing', async () => {
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'repo_sales',
-      entryId: 'entry_sales_kpi',
+      type: 'js-template-entry',
+      projectId: 'jtp_sales',
+      templateId: 'jtt_sales_kpi',
       kind: 'js-block',
     };
 
@@ -395,7 +395,7 @@ describe('flowSurfaces authoring validation unit', () => {
             {
               type: 'jsBlock',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
                 sourceBinding,
                 settings: {
                   region: 'APAC',
@@ -427,7 +427,7 @@ describe('flowSurfaces authoring validation unit', () => {
               type: 'jsBlock',
               script: 'kpiScript',
               settings: {
-                sourceMode: 'light-extension',
+                sourceMode: 'js-template',
                 sourceBinding,
               },
             },
@@ -435,7 +435,7 @@ describe('flowSurfaces authoring validation unit', () => {
         },
       ],
     });
-    expect(mixedScriptErrors.map((error) => error.ruleId)).toContain('jsBlock-mixed-script-and-light-extension');
+    expect(mixedScriptErrors.map((error) => error.ruleId)).toContain('jsBlock-mixed-script-and-js-template');
   });
 
   it('should preserve aggregate authoring repair instructions through inline and batch wrappers', () => {

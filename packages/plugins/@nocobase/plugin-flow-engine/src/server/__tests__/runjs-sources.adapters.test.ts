@@ -10,7 +10,7 @@
 import { createMockServer, type MockServer } from '@nocobase/test';
 import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
 
-import PluginLightExtensionServer from '../../../../plugin-light-extension/src/server';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import FlowModelRepository from '../repository';
 import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
 
@@ -22,7 +22,7 @@ describe('flow-engine RunJS source adapters', () => {
   let repository: FlowModelRepository;
 
   beforeAll(async () => {
-    await resetApp([PluginLightExtensionServer, 'flow-engine']);
+    await resetApp([PluginJsTemplateServer, 'flow-engine']);
   });
 
   afterAll(async () => {
@@ -116,8 +116,8 @@ describe('flow-engine RunJS source adapters', () => {
       await stepAdapter.writeExternalBinding?.({
         locator,
         binding: {
-          sourceMode: 'light-extension',
-          sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_block' },
+          sourceMode: 'js-template',
+          sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_block' },
         },
         baseOwnerFingerprint: fingerprint,
         ctx,
@@ -129,8 +129,8 @@ describe('flow-engine RunJS source adapters', () => {
       code: 'ctx.render("inline fallback");',
       version: 'v2',
       sourceRef: { type: 'vsc-file', repoId: 'runjs_repo', commitId: 'runjs_commit' },
-      sourceMode: 'light-extension',
-      sourceBinding: { type: 'light-extension-entry', repoId: 'ler_1', entryId: 'lee_block' },
+      sourceMode: 'js-template',
+      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_block' },
     });
   });
 
@@ -280,8 +280,8 @@ describe('flow-engine RunJS source adapters', () => {
       await stepAdapter.writeExternalBinding?.({
         locator,
         binding: {
-          sourceMode: 'light-extension',
-          sourceBinding: { type: 'light-extension-entry', repoId: 'repo_1', entryId: 'entry_1' },
+          sourceMode: 'js-template',
+          sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_1' },
         },
         baseOwnerFingerprint,
         ctx,
@@ -298,8 +298,8 @@ describe('flow-engine RunJS source adapters', () => {
         commitId: save.body.data.commit.id,
         entry: 'src/main.tsx',
       },
-      sourceMode: 'light-extension',
-      sourceBinding: { type: 'light-extension-entry', repoId: 'repo_1', entryId: 'entry_1' },
+      sourceMode: 'js-template',
+      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_1' },
       settings: { theme: 'dark' },
       keep: 'preserved',
     });
@@ -502,21 +502,21 @@ describe('flow-engine RunJS source adapters', () => {
     );
   });
 
-  it('rejects RunJS workspace saves after light-extension source metadata changes without changing code', async () => {
+  it('rejects RunJS workspace saves after js-template source metadata changes without changing code', async () => {
     await repository.insertModel({
-      uid: 'js-step-light-extension-metadata-model',
-      title: 'Light extension metadata JS block',
+      uid: 'js-step-js-template-metadata-model',
+      title: 'JS Template metadata JS block',
       use: 'JSBlockModel',
       stepParams: {
         jsSettings: {
           runJs: {
             code: 'return oldValue;',
             version: 'v2',
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
             sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'repo_old',
-              entryId: 'entry_old',
+              type: 'js-template-entry',
+              projectId: 'jtp_old',
+              templateId: 'jtt_old',
               kind: 'js-block',
             },
             sourceRef: {
@@ -536,7 +536,7 @@ describe('flow-engine RunJS source adapters', () => {
 
     const locator: RunJSSourceLocator = {
       kind: 'flowModel.step',
-      modelUid: 'js-step-light-extension-metadata-model',
+      modelUid: 'js-step-js-template-metadata-model',
       flowKey: 'jsSettings',
       stepKey: 'runJs',
       paramPath: ['code'],
@@ -546,17 +546,17 @@ describe('flow-engine RunJS source adapters', () => {
     expect(open.status).toBe(403);
 
     await repository.patch({
-      uid: 'js-step-light-extension-metadata-model',
+      uid: 'js-step-js-template-metadata-model',
       stepParams: {
         jsSettings: {
           runJs: {
             code: 'return oldValue;',
             version: 'v2',
-            sourceMode: 'light-extension',
+            sourceMode: 'js-template',
             sourceBinding: {
-              type: 'light-extension-entry',
-              repoId: 'repo_new',
-              entryId: 'entry_new',
+              type: 'js-template-entry',
+              projectId: 'jtp_new',
+              templateId: 'jtt_new',
               kind: 'js-block',
             },
             sourceRef: {
@@ -579,17 +579,17 @@ describe('flow-engine RunJS source adapters', () => {
     expect(save.body.errors[0]).toMatchObject({
       code: 'RUNJS_SOURCE_READONLY',
       details: {
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
       },
     });
 
-    const updated = await repository.findModelById('js-step-light-extension-metadata-model');
+    const updated = await repository.findModelById('js-step-js-template-metadata-model');
     expect(getAtPath(updated, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
       code: 'return oldValue;',
       keep: 'preserved',
       sourceBinding: {
-        repoId: 'repo_new',
-        entryId: 'entry_new',
+        projectId: 'jtp_new',
+        templateId: 'jtt_new',
       },
       settings: {
         message: 'new',
@@ -1174,7 +1174,7 @@ describe('flow-engine RunJS source adapters', () => {
       skipSupervisor: true,
       registerActions: true,
       acl: true,
-      plugins: [...basePlugins, 'flow-engine', PluginLightExtensionServer],
+      plugins: [...basePlugins, 'flow-engine', PluginJsTemplateServer],
     });
 
     try {
@@ -1224,7 +1224,7 @@ describe('flow-engine RunJS source adapters', () => {
     }
   });
 
-  async function resetApp(runJSPlugins: Array<string | typeof PluginLightExtensionServer>) {
+  async function resetApp(runJSPlugins: Array<string | typeof PluginJsTemplateServer>) {
     app = await createMockServer({
       registerActions: true,
       acl: true,

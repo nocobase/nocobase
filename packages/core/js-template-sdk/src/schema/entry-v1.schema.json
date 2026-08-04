@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://schemas.nocobase.com/light-extension/entry-v1.schema.json",
-  "title": "NocoBase light extension entry.json v1",
-  "description": "Canonical descriptor for one NocoBase light extension client Entry.",
+  "$id": "https://schemas.nocobase.com/js-template/entry-v1.schema.json",
+  "title": "NocoBase JS Template entry.json v1",
+  "description": "Canonical descriptor for one NocoBase client JS Template.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "key"],
@@ -14,7 +14,7 @@
     "key": {
       "type": "string",
       "pattern": "^[a-z0-9][a-z0-9-]{0,62}$",
-      "description": "Stable technical identity. It must not change when the Entry directory is renamed."
+      "description": "Stable technical identity. It must not change when the template directory is renamed."
     },
     "title": {
       "type": "string",
@@ -43,7 +43,7 @@
       "type": "integer"
     },
     "settings": {
-      "description": "Settings field definitions for this light extension Entry. Each property becomes an independent settings menu.",
+      "description": "Settings field definitions for this JS Template. Each property becomes an independent settings menu.",
       "type": "object",
       "propertyNames": {
         "pattern": "^[A-Za-z_][A-Za-z0-9_-]{0,63}$",

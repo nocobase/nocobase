@@ -125,23 +125,23 @@ describe('RunJSEditorField FlowModel integration', () => {
 
   it.each([
     {
-      name: 'light extension binding',
+      name: 'JS Template binding',
       uid: 'fm_1',
       params: {
         code: 'ctx.render(<div />);',
         version: 'v2',
-        sourceMode: 'light-extension',
+        sourceMode: 'js-template',
         sourceBinding: {
-          type: 'light-extension-entry',
-          repoId: 'ler_example',
-          entryId: 'lee_example',
+          type: 'js-template-entry',
+          projectId: 'jtp_example',
+          templateId: 'jtt_example',
           kind: 'js-block',
         },
         settings: { title: 'Example' },
       },
       expected: {
-        sourceMode: 'light-extension',
-        sourceBinding: { repoId: 'ler_example', entryId: 'lee_example' },
+        sourceMode: 'js-template',
+        sourceBinding: { projectId: 'jtp_example', templateId: 'jtt_example' },
         settings: { title: 'Example' },
       },
     },
@@ -273,8 +273,8 @@ describe('RunJSEditorField FlowModel integration', () => {
         jsSettings: {
           runJs: {
             code: 'ctx.render("remote");',
-            sourceBinding: { type: 'light-extension-entry' },
-            sourceMode: 'light-extension',
+            sourceBinding: { type: 'js-template-entry' },
+            sourceMode: 'js-template',
             version: 'v2',
           },
         },
@@ -283,7 +283,7 @@ describe('RunJSEditorField FlowModel integration', () => {
     const { flowContext, model } = harness;
     flowContext.defineMethod('getStepFormValues', () => ({
       code: 'ctx.render("remote");',
-      sourceBinding: { type: 'light-extension-entry' },
+      sourceBinding: { type: 'js-template-entry' },
       sourceMode: 'inline',
       sourceRef: {
         type: 'vsc-file',
@@ -325,8 +325,8 @@ describe('RunJSEditorField FlowModel integration', () => {
       <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(1111);" />,
       {
         code: 'ctx.render("remote");',
-        sourceBinding: { type: 'light-extension-entry' },
-        sourceMode: 'light-extension',
+        sourceBinding: { type: 'js-template-entry' },
+        sourceMode: 'js-template',
         sourceRef: {
           type: 'vsc-file',
           repoId: 'repo_old',
@@ -341,7 +341,7 @@ describe('RunJSEditorField FlowModel integration', () => {
 
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'ctx.render(1111);',
-      sourceBinding: { type: 'light-extension-entry' },
+      sourceBinding: { type: 'js-template-entry' },
       sourceMode: 'inline',
       sourceRef: {
         type: 'vsc-file',
@@ -361,12 +361,12 @@ describe('RunJSEditorField FlowModel integration', () => {
     const initialValue = {
       code: 'ctx.render("remote");',
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'ler_1',
-        entryId: 'lee_1',
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
         kind: 'js-block',
       },
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       version: 'v2',
     };
     const pageModel = rootEngine.createModel<FlowModel>({
@@ -465,11 +465,11 @@ describe('RunJSEditorField FlowModel integration', () => {
           onClick={() =>
             props.onPersistedChange?.({
               ...props.value,
-              sourceMode: 'light-extension',
+              sourceMode: 'js-template',
               sourceBinding: {
-                type: 'light-extension-entry',
-                repoId: 'ler_1',
-                entryId: 'lee_1',
+                type: 'js-template-entry',
+                projectId: 'jtp_1',
+                templateId: 'jtt_1',
               },
               settings: { color: 'blue' },
             })
@@ -493,11 +493,11 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'ctx.render(1111);',
       version: 'v2',
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'ler_1',
-        entryId: 'lee_1',
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
       },
       settings: { color: 'blue' },
     });
@@ -509,12 +509,12 @@ describe('RunJSEditorField FlowModel integration', () => {
     const persistedValue = {
       code: 'ctx.render("remote");',
       sourceBinding: {
-        type: 'light-extension-entry',
-        repoId: 'ler_1',
-        entryId: 'lee_1',
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
         kind: 'js-block',
       },
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       settings: { color: 'blue' },
       version: 'v2',
     };
@@ -532,13 +532,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       uid: 'fm_external_source_sibling',
       stepParams: {
         clickSettings: {
-          runJs: {
-            ...persistedValue,
-            sourceBinding: {
-              ...persistedValue.sourceBinding,
-              entryTitle: 'Display metadata does not affect identity',
-            },
-          },
+          runJs: persistedValue,
         },
       },
     });
@@ -551,7 +545,7 @@ describe('RunJSEditorField FlowModel integration', () => {
             ...persistedValue,
             sourceBinding: {
               ...persistedValue.sourceBinding,
-              entryId: 'lee_2',
+              templateId: 'jtt_2',
             },
           },
         },
@@ -603,16 +597,16 @@ describe('RunJSEditorField FlowModel integration', () => {
   it('refreshes only path-aware RunJS hosts that share the persisted source binding', async () => {
     const engine = new FlowEngine();
     const sourceBinding = {
-      type: 'light-extension-entry',
-      repoId: 'ler_path_aware',
-      entryId: 'lee_path_aware',
+      type: 'js-template-entry',
+      projectId: 'jtp_path_aware',
+      templateId: 'jtt_path_aware',
       kind: 'js-block',
     };
     const persistedValue = {
       code: 'ctx.render("remote");',
       keep: true,
       sourceBinding,
-      sourceMode: 'light-extension',
+      sourceMode: 'js-template',
       version: 'v2',
     };
     const model = engine.createModel<FlowModel>({
@@ -624,7 +618,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       use: 'FlowModel',
       uid: 'fm_path_aware_script',
       stepParams: {
-        clickSettings: { runJs: { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'light-extension' } },
+        clickSettings: { runJs: { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'js-template' } },
       },
     });
     const keyedModel = engine.createModel<FlowModel>({
@@ -632,7 +626,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       uid: 'fm_path_aware_keyed',
       stepParams: {
         rules: {
-          runJs: [{ code: 'return 2;', key: 'rule-1', sourceBinding, sourceMode: 'light-extension' }],
+          runJs: [{ code: 'return 2;', key: 'rule-1', sourceBinding, sourceMode: 'js-template' }],
         },
       },
     });
@@ -640,7 +634,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       use: 'FlowModel',
       uid: 'fm_path_aware_config',
       stepParams: {
-        settings: { ordinary: { code: 'return 4;', sourceBinding, sourceMode: 'light-extension' } },
+        settings: { ordinary: { code: 'return 4;', sourceBinding, sourceMode: 'js-template' } },
       },
     });
     const inlineModel = engine.createModel<FlowModel>({
@@ -691,25 +685,25 @@ describe('RunJSEditorField FlowModel integration', () => {
 
   it.each([
     { changed: true, initialMode: 'inline', expectedDelayedRuns: 1 },
-    { changed: false, initialMode: 'light-extension', expectedDelayedRuns: 0 },
+    { changed: false, initialMode: 'js-template', expectedDelayedRuns: 0 },
   ])(
     'keeps current-model and fork refreshes single-path when changed=$changed',
     async ({ changed, initialMode, expectedDelayedRuns }) => {
       vi.useFakeTimers();
       const engine = new FlowEngine();
       const sourceBinding = {
-        type: 'light-extension-entry',
-        repoId: 'ler_fork',
-        entryId: 'lee_fork',
+        type: 'js-template-entry',
+        projectId: 'jtp_fork',
+        templateId: 'jtt_fork',
         kind: 'js-block',
       };
       const initialValue = {
         code: 'return 1;',
-        ...(initialMode === 'light-extension' ? { sourceBinding } : {}),
+        ...(initialMode === 'js-template' ? { sourceBinding } : {}),
         sourceMode: initialMode,
         version: 'v2',
       };
-      const persistedValue = { ...initialValue, sourceBinding, sourceMode: 'light-extension' };
+      const persistedValue = { ...initialValue, sourceBinding, sourceMode: 'js-template' };
       const model = engine.createModel<FlowModel>({
         use: 'FlowModel',
         uid: `fm_fork_${changed}`,

@@ -1556,7 +1556,7 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
         code: [
           'const collectionName = ctx.collection?.name || "customers";',
           'const recordId = ctx.record?.id;',
-          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.entryId;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.jsTemplate?.templateId;',
           'const resource = ctx.makeResource("MultiRecordResource");',
           'resource.setResourceName(collectionName);',
           'await resource.refresh({ params: { pageSize: 1 } });',
@@ -1606,7 +1606,7 @@ describe('flowSurfaces RunJS authoring unit validation', () => {
       const itemContextErrors = inspectRunJsAuthoringCode({
         code: [
           'const level = ctx.item?.index;',
-          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.lightExtension?.entryId;',
+          'const configuredTitle = ctx.settings?.title || ctx.runJsSource?.context?.jsTemplate?.templateId;',
           'ctx.render(String(configuredTitle ?? level ?? ""));',
         ].join('\n'),
         path: `$.runjs.${modelUse}.ctxValues.code`,

@@ -11,7 +11,7 @@ import type { Context } from '@nocobase/actions';
 import type { Database, Model, Transaction } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
-import { LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE } from '../../shared/constants';
+import { JS_TEMPLATE_PERSISTED_VSC_OWNER_TYPE } from '../../shared/constants';
 import { VscError, isVscError } from '../../shared/errors';
 import type { ListCommitsInput } from '../services/CommitService';
 import type { DiffCommitsInput, DiffFileEndpoint, DiffFileInput } from '../services/DiffService';
@@ -176,7 +176,7 @@ async function preflightProtectedOwner(
   }
   if (action === 'createRepository') {
     const ownerType = typeof input.ownerType === 'string' ? input.ownerType : undefined;
-    if (ownerType !== LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE && ownerType !== 'runjs-source') {
+    if (ownerType !== JS_TEMPLATE_PERSISTED_VSC_OWNER_TYPE && ownerType !== 'runjs-source') {
       return;
     }
     await permissionHooks.assertAllowed({
@@ -193,7 +193,7 @@ async function preflightProtectedOwner(
     return;
   }
   const repository = await new RepositoryService(db).getRepository(repoId, currentUser.transaction);
-  if (repository.ownerType !== LIGHT_EXTENSION_PERSISTED_VSC_OWNER_TYPE && repository.ownerType !== 'runjs-source') {
+  if (repository.ownerType !== JS_TEMPLATE_PERSISTED_VSC_OWNER_TYPE && repository.ownerType !== 'runjs-source') {
     return;
   }
   await permissionHooks.assertAllowed({

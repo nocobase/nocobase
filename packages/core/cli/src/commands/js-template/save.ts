@@ -22,68 +22,68 @@ import {
   buildHttpError,
   buildWorkspaceDelta,
   extractSaveResult,
-  LightExtensionCliError,
+  JsTemplateCliError,
   loadWorkspaceState,
   readWorkspaceFiles,
   recordSuccessfulSave,
-  resolveLightExtensionTarget,
+  resolveJsTemplateTarget,
   unwrapResponseData,
-} from '../../lib/light-extension-workspace.js';
+} from '../../lib/js-template-workspace.js';
 import { isInteractiveTerminal } from '../../lib/ui.js';
 
 export default class JsTemplateSave extends Command {
   protected apiPaths: JsTemplateWorkspaceApiPaths = JS_TEMPLATE_WORKSPACE_API_PATHS;
 
-  static override summary = translateCli('commands.light.save.summary', undefined, {
+  static override summary = translateCli('commands.jsTemplate.save.summary', undefined, {
     fallback: 'Review and save the checked local JS Template source delta',
   });
 
   static override examples = [
-    '<%= config.bin %> <%= command.id %> --dir ./light-demo',
-    '<%= config.bin %> <%= command.id %> --dir ./light-demo --message "Fix sales card" --yes',
-    '<%= config.bin %> <%= command.id %> --dir ./light-demo --yes --json-output',
+    '<%= config.bin %> <%= command.id %> --dir ./js-template-demo',
+    '<%= config.bin %> <%= command.id %> --dir ./js-template-demo --message "Fix sales card" --yes',
+    '<%= config.bin %> <%= command.id %> --dir ./js-template-demo --yes --json-output',
   ];
 
   static override flags = {
     dir: Flags.string({
-      description: translateCli('commands.light.flags.dir', undefined, { fallback: 'Local workspace directory' }),
+      description: translateCli('commands.jsTemplate.flags.dir', undefined, { fallback: 'Local workspace directory' }),
       default: '.',
     }),
     message: Flags.string({
-      description: translateCli('commands.light.save.flags.message', undefined, { fallback: 'Source commit message' }),
-      default: translateCli('commands.light.save.defaultMessage', undefined, {
+      description: translateCli('commands.jsTemplate.save.flags.message', undefined, { fallback: 'Source commit message' }),
+      default: translateCli('commands.jsTemplate.save.defaultMessage', undefined, {
         fallback: 'Update JS Template source',
       }),
     }),
     yes: Flags.boolean({
       char: 'y',
-      description: translateCli('commands.light.save.flags.yes', undefined, {
+      description: translateCli('commands.jsTemplate.save.flags.yes', undefined, {
         fallback: 'Confirm saving the displayed source delta',
       }),
       default: false,
     }),
     env: Flags.string({
       char: 'e',
-      description: translateCli('commands.light.flags.env', undefined, { fallback: 'Environment name' }),
+      description: translateCli('commands.jsTemplate.flags.env', undefined, { fallback: 'Environment name' }),
     }),
     'api-base-url': Flags.string({
-      description: translateCli('commands.light.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
+      description: translateCli('commands.jsTemplate.flags.apiBaseUrl', undefined, { fallback: 'NocoBase API base URL' }),
     }),
     role: Flags.string({
-      description: translateCli('commands.light.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
+      description: translateCli('commands.jsTemplate.flags.role', undefined, { fallback: 'Role override, sent as X-Role' }),
     }),
     authenticator: Flags.string({
-      description: translateCli('commands.light.flags.authenticator', undefined, {
+      description: translateCli('commands.jsTemplate.flags.authenticator', undefined, {
         fallback: 'Authenticator override, sent as X-Authenticator',
       }),
     }),
     token: Flags.string({
       char: 't',
-      description: translateCli('commands.light.flags.token', undefined, { fallback: 'API key override' }),
+      description: translateCli('commands.jsTemplate.flags.token', undefined, { fallback: 'API key override' }),
     }),
     'json-output': Flags.boolean({
       char: 'j',
-      description: translateCli('commands.light.flags.jsonOutput', undefined, {
+      description: translateCli('commands.jsTemplate.flags.jsonOutput', undefined, {
         fallback: 'Print machine-readable JSON',
       }),
       default: false,
@@ -97,7 +97,7 @@ export default class JsTemplateSave extends Command {
     try {
       const workspaceRoot = assertSafeWorkspaceDirectory(flags.dir);
       const state = await loadWorkspaceState(workspaceRoot);
-      const target = await resolveLightExtensionTarget({
+      const target = await resolveJsTemplateTarget({
         env: flags.env ?? state.env.name,
         apiBaseUrl: flags['api-base-url'] ?? state.app.apiBaseUrl,
       });
@@ -106,8 +106,8 @@ export default class JsTemplateSave extends Command {
       const snapshotId = assertWorkspaceReadyToSave(state, files);
       const delta = await buildWorkspaceDelta({ workspaceRoot, state, files });
       if (!delta.files.length)
-        throw new LightExtensionCliError(
-          translateCli('commands.light.save.errors.noChanges', undefined, {
+        throw new JsTemplateCliError(
+          translateCli('commands.jsTemplate.save.errors.noChanges', undefined, {
             fallback: 'There are no local source changes to save.',
           }),
         );
@@ -123,7 +123,7 @@ export default class JsTemplateSave extends Command {
       } else {
         this.log(
           translateCli(
-            'commands.light.save.deltaSummary',
+            'commands.jsTemplate.save.deltaSummary',
             {
               changedFiles: delta.summary.changedFiles,
               additions: delta.summary.additions,
@@ -136,21 +136,21 @@ export default class JsTemplateSave extends Command {
       }
       if (!flags.yes) {
         if (!isInteractiveTerminal()) {
-          throw new LightExtensionCliError(
-            translateCli('commands.light.save.errors.confirmationRequired', undefined, {
+          throw new JsTemplateCliError(
+            translateCli('commands.jsTemplate.save.errors.confirmationRequired', undefined, {
               fallback: 'Saving requires an interactive confirmation or the explicit --yes flag.',
             }),
           );
         }
         const accepted = await confirm({
-          message: translateCli('commands.light.save.confirm', undefined, {
-            fallback: 'Save this source delta to the JS Template repository?',
+          message: translateCli('commands.jsTemplate.save.confirm', undefined, {
+            fallback: 'Save this source delta to the JS Template project?',
           }),
           default: false,
         });
         if (!accepted)
-          throw new LightExtensionCliError(
-            translateCli('commands.light.save.errors.cancelled', undefined, { fallback: 'Save cancelled.' }),
+          throw new JsTemplateCliError(
+            translateCli('commands.jsTemplate.save.errors.cancelled', undefined, { fallback: 'Save cancelled.' }),
           );
       }
 
@@ -163,7 +163,7 @@ export default class JsTemplateSave extends Command {
         method: 'POST',
         path: this.apiPaths.filesSaveSource,
         body: {
-          repoId: state.repo.id,
+          projectId: state.project.id,
           expectedHeadCommitId: state.baseHeadCommitId,
           message: flags.message,
           files: delta.files,
@@ -173,12 +173,12 @@ export default class JsTemplateSave extends Command {
         const failure = buildHttpError(
           response.status,
           response.data,
-          translateCli('commands.light.operations.save', undefined, { fallback: 'JS Template save' }),
+          translateCli('commands.jsTemplate.operations.save', undefined, { fallback: 'JS Template save' }),
         );
         if (response.status === 409) {
-          throw new LightExtensionCliError(
+          throw new JsTemplateCliError(
             translateCli(
-              'commands.light.save.errors.conflict',
+              'commands.jsTemplate.save.errors.conflict',
               { message: failure.message },
               {
                 fallback:
@@ -210,7 +210,7 @@ export default class JsTemplateSave extends Command {
       else {
         this.log(
           translateCli(
-            'commands.light.save.success',
+            'commands.jsTemplate.save.success',
             { count: delta.summary.changedFiles, head: result.commit.id },
             { fallback: 'Saved {{count}} files at Head {{head}}.' },
           ),
@@ -218,9 +218,9 @@ export default class JsTemplateSave extends Command {
       }
     } catch (error: unknown) {
       const failure =
-        error instanceof LightExtensionCliError
+        error instanceof JsTemplateCliError
           ? error
-          : new LightExtensionCliError(error instanceof Error ? error.message : String(error), { cause: error });
+          : new JsTemplateCliError(error instanceof Error ? error.message : String(error), { cause: error });
       if (jsonOutput) this.logToStderr(JSON.stringify(failure.toJSON(), null, 2));
       else this.logToStderr(failure.message);
       this.exit(failure.exitCode);
