@@ -10,7 +10,7 @@
 import type WorkflowPlugin from '@nocobase/plugin-workflow';
 import { JOB_STATUS } from '@nocobase/plugin-workflow';
 
-import { JavaScriptJobMeta, JavaScriptTaskQueue } from './JavaScriptTaskQueue';
+import { JAVASCRIPT_TASK_CLAIM_TIMEOUT, JavaScriptJobMeta, JavaScriptTaskQueue } from './JavaScriptTaskQueue';
 
 const RECOVERY_BATCH_SIZE = 100;
 const RECOVERY_MAX_SCAN_SIZE = 1000;
@@ -21,6 +21,7 @@ type WorkflowJob = {
   status: number;
   meta?: JavaScriptJobMeta | null;
   startedAt?: Date | null;
+  updatedAt?: Date;
 };
 
 function hasJavaScriptSnapshot(job: WorkflowJob) {
@@ -86,13 +87,14 @@ export class JavaScriptTaskRecovery {
   private async republishQueuedJobs() {
     let cursor: number | string | null = null;
     let scanned = 0;
+    const staleBefore = new Date(Date.now() - JAVASCRIPT_TASK_CLAIM_TIMEOUT);
 
     while (scanned < RECOVERY_MAX_SCAN_SIZE) {
       const jobs = (await this.workflowPlugin.db.getRepository('jobs').find({
         filter: {
           ...(cursor == null ? {} : { id: { $gt: cursor } }),
           status: JOB_STATUS.PENDING,
-          startedAt: null,
+          'meta.javascript.version': 1,
         },
         sort: 'id',
         limit: Math.min(RECOVERY_BATCH_SIZE, RECOVERY_MAX_SCAN_SIZE - scanned),
@@ -103,9 +105,30 @@ export class JavaScriptTaskRecovery {
       }
 
       for (const job of jobs) {
-        if (hasJavaScriptSnapshot(job)) {
-          await this.taskQueue.publish(job.id);
+        if (!hasJavaScriptSnapshot(job)) {
+          continue;
         }
+        if (job.startedAt) {
+          if (!job.updatedAt || job.updatedAt > staleBefore) {
+            continue;
+          }
+          const JobModel = this.workflowPlugin.db.getModel('jobs');
+          const [affected] = await JobModel.update(
+            { startedAt: null },
+            {
+              where: {
+                id: job.id,
+                status: JOB_STATUS.PENDING,
+                startedAt: job.startedAt,
+                updatedAt: job.updatedAt,
+              },
+            },
+          );
+          if (!affected) {
+            continue;
+          }
+        }
+        await this.taskQueue.publish(job.id);
       }
 
       scanned += jobs.length;

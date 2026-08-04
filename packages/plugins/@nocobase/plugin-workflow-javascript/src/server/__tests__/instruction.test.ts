@@ -13,7 +13,12 @@ import http from 'node:http';
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, {
+  abortExecution,
+  EXECUTION_REASON,
+  EXECUTION_STATUS,
+  JOB_STATUS,
+} from '@nocobase/plugin-workflow';
 import { vi } from 'vitest';
 import winston from 'winston';
 import { CacheTransport } from '../cache-logger';
@@ -274,6 +279,84 @@ describe('workflow > instructions > script', () => {
         expect(job.status).toBe(JOB_STATUS.RESOLVED);
         expect(job.result).toBe('queued-result');
         expect(execution?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        runSpy.mockRestore();
+      }
+    });
+
+    it('should retry resuming a settled JavaScript job after publication fails', async () => {
+      const workflowPlugin = app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+      const resumeSpy = vi
+        .spyOn(workflowPlugin, 'resume')
+        .mockRejectedValueOnce(new Error('temporary resume publication failure'));
+
+      try {
+        await workflow.update({ sync: false });
+        await workflow.createNode({
+          type: 'script',
+          config: { content: 'return { retried: true, value: 1 };' },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        let job;
+        for (let i = 0; i < 40; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = execution ? await execution.getJobs() : [];
+          if (execution?.status === EXECUTION_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(resumeSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(execution?.status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(job?.status).toBe(JOB_STATUS.RESOLVED);
+        expect(job?.result).toEqual({ retried: true, value: 1 });
+      } finally {
+        resumeSpy.mockRestore();
+      }
+    });
+
+    it('should discard a worker result that arrives after manual cancellation', async () => {
+      let resolveRun: ((result: { status: number; result: string }) => void) | undefined;
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation(() => {
+        return new Promise((resolve) => {
+          resolveRun = resolve;
+        });
+      });
+
+      try {
+        await workflow.update({ sync: false });
+        await workflow.createNode({
+          type: 'script',
+          config: { content: 'return "late";' },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        let job;
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = execution ? await execution.getJobs() : [];
+          if (job?.startedAt && runSpy.mock.calls.length === 1) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        const workflowPlugin = app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+        await abortExecution(workflowPlugin, execution, { reason: EXECUTION_REASON.MANUAL_CANCEL });
+        resolveRun?.({ status: JOB_STATUS.RESOLVED, result: 'late' });
+        await sleep(100);
+        await execution.reload();
+        await job.reload();
+
+        expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+        expect(job.status).toBe(JOB_STATUS.ABORTED);
+        expect(job.result).not.toBe('late');
       } finally {
         runSpy.mockRestore();
       }

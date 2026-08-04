@@ -240,7 +240,7 @@ export default class PluginWorkflowServer extends Plugin {
   }
 
   public registerRunningExecution(executionId: number | string, abort: (reason?: string) => void) {
-    this.runningExecutionRegistry.register(executionId, { abort });
+    return this.runningExecutionRegistry.register(executionId, { abort });
   }
 
   public unregisterRunningExecution(executionId: number | string) {

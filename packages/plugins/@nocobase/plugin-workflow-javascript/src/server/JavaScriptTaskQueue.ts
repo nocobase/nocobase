@@ -35,6 +35,8 @@ export const WORKFLOW_JAVASCRIPT_ERROR_CODE = {
 const DEFAULT_QUEUE_CONCURRENCY = 2;
 const DEFAULT_MAX_PENDING = 10_000;
 const QUEUE_TASK_MAX_ATTEMPTS = 3;
+export const JAVASCRIPT_TASK_CLAIM_TIMEOUT = 120_000;
+export const JAVASCRIPT_TASK_HEARTBEAT_INTERVAL = 30_000;
 
 function readNonNegativeInteger(value: string | undefined, defaultValue: number) {
   const parsed = Number(value);
@@ -86,6 +88,7 @@ export class JavaScriptTaskQueue {
       filter: {
         status: JOB_STATUS.PENDING,
         startedAt: null,
+        'meta.javascript.version': 1,
       },
     });
     if (pending >= limit) {

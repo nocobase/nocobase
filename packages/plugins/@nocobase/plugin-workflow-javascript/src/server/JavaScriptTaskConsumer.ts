@@ -15,6 +15,7 @@ import type { QueueEventOptions } from '@nocobase/server';
 import { getJavaScriptProcessLimiter } from './JavaScriptProcessLimiter';
 import {
   getJavaScriptQueueMaxWait,
+  JAVASCRIPT_TASK_HEARTBEAT_INTERVAL,
   JavaScriptJobMeta,
   JavaScriptJobSnapshot,
   JavaScriptQueueTaskMessage,
@@ -33,7 +34,7 @@ type WorkflowJob = Model & {
   meta?: JavaScriptJobMeta | null;
   startedAt?: Date | null;
   createdAt?: Date;
-  set(values: { status?: number; result?: unknown; startedAt?: Date | null }): void;
+  updatedAt?: Date;
   reload(): Promise<WorkflowJob>;
   getExecution(): Promise<WorkflowExecution | null>;
 };
@@ -43,6 +44,7 @@ type WorkflowExecution = {
   workflowId: ID;
   status: number;
   expiresAt?: Date | null;
+  reload(): Promise<WorkflowExecution>;
 };
 
 function isTaskMessage(message: unknown): message is JavaScriptQueueTaskMessage {
@@ -70,18 +72,6 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
 
-function stringifyResult(result: unknown) {
-  if (typeof result === 'string') {
-    return result;
-  }
-
-  try {
-    return JSON.stringify(result);
-  } catch (error) {
-    return String(result);
-  }
-}
-
 function createExecutionAbortController(workflowPlugin: WorkflowPlugin, execution: WorkflowExecution) {
   const controller = new AbortController();
   let timeoutGuard: NodeJS.Timeout | null = null;
@@ -101,7 +91,7 @@ function createExecutionAbortController(workflowPlugin: WorkflowPlugin, executio
     }
   }
 
-  workflowPlugin.registerRunningExecution(execution.id, abort);
+  const unregister = workflowPlugin.registerRunningExecution(execution.id, abort);
 
   return {
     signal: controller.signal,
@@ -110,7 +100,7 @@ function createExecutionAbortController(workflowPlugin: WorkflowPlugin, executio
         clearTimeout(timeoutGuard);
         timeoutGuard = null;
       }
-      workflowPlugin.unregisterRunningExecution(execution.id);
+      unregister();
     },
   };
 }
@@ -135,14 +125,14 @@ export class JavaScriptTaskConsumer {
     await Promise.allSettled(Array.from(this.processing));
   }
 
-  readonly process: QueueEventOptions['process'] = async (message) => {
+  readonly process: QueueEventOptions['process'] = async (message, options) => {
     if (!isTaskMessage(message)) {
       this.workflowPlugin.getLogger('javascript').warn('invalid JavaScript queue job message ignored', { message });
       return;
     }
 
     const processing = getJavaScriptProcessLimiter().run(async () => {
-      await this.processWithPermit(message.jobId);
+      await this.processWithPermit(message.jobId, Boolean(options.retried));
     });
     this.processing.add(processing);
     try {
@@ -152,12 +142,34 @@ export class JavaScriptTaskConsumer {
     }
   };
 
-  private async processWithPermit(jobId: ID) {
+  private async processWithPermit(jobId: ID, retried: boolean) {
     if (this.closing) {
       return;
     }
 
-    const claimed = await this.claimJob(jobId);
+    const existingJob = (await this.workflowPlugin.db.getRepository('jobs').findOne({
+      filterByTk: jobId,
+    })) as WorkflowJob | null;
+    if (!existingJob) {
+      return;
+    }
+
+    const existingSnapshot = getJavaScriptSnapshot(existingJob);
+    if (!existingSnapshot) {
+      return;
+    }
+
+    if (existingJob.status !== JOB_STATUS.PENDING) {
+      if (retried) {
+        const execution = await existingJob.getExecution();
+        if (execution?.status === EXECUTION_STATUS.STARTED) {
+          await this.workflowPlugin.resume(existingJob);
+        }
+      }
+      return;
+    }
+
+    const claimed = await this.claimJob(existingJob, existingSnapshot);
     if (!claimed) {
       return;
     }
@@ -193,6 +205,8 @@ export class JavaScriptTaskConsumer {
     }
 
     const abortHandle = createExecutionAbortController(this.workflowPlugin, execution);
+    const stopHeartbeat = this.startClaimHeartbeat(job);
+    let values: { status: number; result: unknown };
 
     try {
       const result = await ScriptWorkerRunner.run(snapshot.content, snapshot.args, {
@@ -203,43 +217,45 @@ export class JavaScriptTaskConsumer {
 
       if (result.status === JOB_STATUS.RESOLVED) {
         logger.info(`script (#${job.nodeId}) get result success`);
-        job.set({ status: JOB_STATUS.RESOLVED, result: result.result });
+        values = { status: JOB_STATUS.RESOLVED, result: result.result };
         logger.info(`run script execution success, node id: ${job.nodeId},the result is ${result.result}`);
       } else if (snapshot.continue) {
         logger.warn(`script (#${job.nodeId}) get result failed, the reason is ${result.result}`);
-        job.set({ status: JOB_STATUS.RESOLVED, result: result.result });
+        values = { status: JOB_STATUS.RESOLVED, result: result.result };
       } else {
         logger.info(`script (#${job.nodeId}) get result failed, the reason is ${result.result}`);
-        job.set({ status: JOB_STATUS.ERROR, result: result.result });
+        values = { status: JOB_STATUS.ERROR, result: result.result };
       }
     } catch (error) {
       const message = getErrorMessage(error);
       logger.error(`script (#${job.nodeId}) get result failed, the reason is ${message}`);
-      job.set({
+      values = {
         status: isWorkflowTimeoutError(error) ? JOB_STATUS.ABORTED : JOB_STATUS.ERROR,
         result: message,
-      });
+      };
     } finally {
       abortHandle.dispose();
+      await stopHeartbeat();
     }
 
     try {
-      await this.workflowPlugin.resume(job);
+      await this.settleClaimedJob(job, execution, values, logger);
     } catch (error) {
       logger.error(`JavaScript job (${job.id}) failed to resume workflow execution (${job.executionId})`, { error });
+      await this.releaseClaim(job).catch((releaseError) => {
+        logger.error(`JavaScript job (${job.id}) failed to release its claim after settling failed`, {
+          error: releaseError,
+        });
+      });
+      throw error;
     }
   }
 
-  private async claimJob(jobId: ID): Promise<{ job: WorkflowJob; snapshot: JavaScriptJobSnapshot } | null> {
-    const job = (await this.workflowPlugin.db.getRepository('jobs').findOne({
-      filterByTk: jobId,
-    })) as WorkflowJob | null;
-    if (!job || job.status !== JOB_STATUS.PENDING || job.startedAt != null) {
-      return null;
-    }
-
-    const snapshot = getJavaScriptSnapshot(job);
-    if (!snapshot) {
+  private async claimJob(
+    job: WorkflowJob,
+    snapshot: JavaScriptJobSnapshot,
+  ): Promise<{ job: WorkflowJob; snapshot: JavaScriptJobSnapshot } | null> {
+    if (job.startedAt != null) {
       return null;
     }
 
@@ -254,6 +270,7 @@ export class JavaScriptTaskConsumer {
     const [affected] = await JobModel.update(
       {
         startedAt: now,
+        updatedAt: now,
       },
       {
         where: {
@@ -293,26 +310,108 @@ export class JavaScriptTaskConsumer {
     }
 
     await job.reload();
-    try {
-      await this.workflowPlugin.resume(job);
-    } catch (error) {
-      this.workflowPlugin
-        .getLogger('javascript')
-        .error(`JavaScript job (${job.id}) failed to resume queue timeout result`, { error });
-    }
+    await this.workflowPlugin.resume(job);
   }
 
   private async finishClaimedJob(job: WorkflowJob, values: { status: number; result: unknown }) {
-    job.set({
-      status: values.status,
-      result: stringifyResult(values.result),
-    });
-    try {
+    const updated = await this.updatePendingJob(job, values);
+    if (updated) {
       await this.workflowPlugin.resume(job);
-    } catch (error) {
-      this.workflowPlugin
-        .getLogger('javascript')
-        .error(`JavaScript job (${job.id}) failed to resume after claim failure`, { error });
     }
+  }
+
+  private async settleClaimedJob(
+    job: WorkflowJob,
+    execution: WorkflowExecution,
+    values: { status: number; result: unknown },
+    logger: ReturnType<WorkflowPlugin['getLogger']>,
+  ) {
+    if (!(await this.workflowPlugin.timeoutManager.shouldContinue(execution))) {
+      logger.warn(`script (#${job.nodeId}) result discarded because execution (${execution.id}) is ended`);
+      return;
+    }
+
+    await execution.reload();
+    await job.reload();
+    if (execution.status !== EXECUTION_STATUS.STARTED || job.status !== JOB_STATUS.PENDING) {
+      logger.warn(`script (#${job.nodeId}) result discarded because execution (${execution.id}) is ended`);
+      return;
+    }
+
+    const updated = await this.updatePendingJob(job, values);
+    if (updated) {
+      await this.workflowPlugin.resume(job);
+    }
+  }
+
+  private async updatePendingJob(job: WorkflowJob, values: { status: number; result: unknown }) {
+    const JobModel = this.workflowPlugin.db.getModel('jobs');
+    const [affected] = await JobModel.update(
+      {
+        status: values.status,
+        result: values.result,
+      },
+      {
+        where: {
+          id: job.id,
+          status: JOB_STATUS.PENDING,
+          startedAt: job.startedAt,
+        },
+      },
+    );
+    if (!affected) {
+      return false;
+    }
+
+    await job.reload();
+    return true;
+  }
+
+  private async releaseClaim(job: WorkflowJob) {
+    const JobModel = this.workflowPlugin.db.getModel('jobs');
+    await JobModel.update(
+      { startedAt: null },
+      {
+        where: {
+          id: job.id,
+          status: JOB_STATUS.PENDING,
+          startedAt: job.startedAt,
+        },
+      },
+    );
+  }
+
+  private startClaimHeartbeat(job: WorkflowJob) {
+    let heartbeat: Promise<void> | null = null;
+    const beat = () => {
+      if (heartbeat) {
+        return;
+      }
+      const JobModel = this.workflowPlugin.db.getModel('jobs');
+      heartbeat = JobModel.update(
+        { updatedAt: new Date() },
+        {
+          where: {
+            id: job.id,
+            status: JOB_STATUS.PENDING,
+            startedAt: job.startedAt,
+          },
+        },
+      )
+        .catch((error) => {
+          this.workflowPlugin.getLogger('javascript').error(`JavaScript job (${job.id}) claim heartbeat failed`, {
+            error,
+          });
+        })
+        .finally(() => {
+          heartbeat = null;
+        });
+    };
+    const timer = setInterval(beat, JAVASCRIPT_TASK_HEARTBEAT_INTERVAL);
+
+    return async () => {
+      clearInterval(timer);
+      await heartbeat;
+    };
   }
 }

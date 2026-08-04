@@ -88,6 +88,7 @@ export default class Processor {
   abortController = new AbortController();
   timeoutGuard: NodeJS.Timeout | null = null;
   private runningRegistered = false;
+  private unregisterRunningExecution?: () => void;
   private abortReason: string | null = null;
   private aborted = false;
 
@@ -676,7 +677,9 @@ export default class Processor {
     this.options.plugin.timeoutManager.clear(this.execution.id);
     this.abortReason = null;
     this.aborted = false;
-    this.options.plugin.registerRunningExecution(this.execution.id, (reason) => this.abortExecution(reason));
+    this.unregisterRunningExecution = this.options.plugin.registerRunningExecution(this.execution.id, (reason) =>
+      this.abortExecution(reason),
+    );
     this.runningRegistered = true;
 
     const remaining = this.execution.expiresAt ? this.execution.expiresAt.getTime() - Date.now() : null;
@@ -702,7 +705,8 @@ export default class Processor {
     if (!this.runningRegistered) {
       return;
     }
-    this.options.plugin.unregisterRunningExecution(this.execution.id);
+    this.unregisterRunningExecution?.();
+    this.unregisterRunningExecution = undefined;
     this.runningRegistered = false;
   }
 
