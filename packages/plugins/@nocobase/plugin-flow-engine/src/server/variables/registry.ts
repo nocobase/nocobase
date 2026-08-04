@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { ICollectionManager, IRepository } from '@nocobase/data-source-manager';
 import type { TargetKey } from '@nocobase/database';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
@@ -36,6 +36,10 @@ export interface VariableDef {
 export type VarUsage = {
   // map of variable name -> array of subpaths referenced (e.g. for record: ['roles[0].name','author.company.name'])
   [varName: string]: string[];
+};
+
+type RecordCollectionManager = Omit<ICollectionManager, 'getRepository'> & {
+  getRepository(name: string, sourceId?: TargetKey): IRepository;
 };
 
 class VariableRegistry {
@@ -209,12 +213,11 @@ async function fetchRecordWithRequestCache(
     }
     const cache = (kctx.state as { __varResolveBatchCache?: Map<string, unknown> }).__varResolveBatchCache || null;
     const ds = koaCtx.app.dataSourceManager.get(dataSourceKey || 'main');
-    const cm = ds.collectionManager as SequelizeCollectionManager;
-    if (!cm?.db) return undefined;
+    const cm = ds.collectionManager as RecordCollectionManager;
     const repo =
       associationName && typeof sourceId !== 'undefined'
-        ? cm.db.getRepository(associationName, sourceId as TargetKey)
-        : cm.db.getRepository(collection);
+        ? cm.getRepository(associationName, sourceId as TargetKey)
+        : cm.getRepository(collection);
 
     // 确保查询字段包含主键（仅当模型存在明确主键且该属性存在于 rawAttributes 中时）
     const modelInfo = (
