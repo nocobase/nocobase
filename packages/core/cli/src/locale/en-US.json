@@ -468,7 +468,7 @@
           "betaLabel": "beta",
           "betaHint": "Preview release. Good for trying upcoming features before general release.",
           "alphaLabel": "alpha",
-          "alphaHint": "Development release. Includes the newest changes, but may be incomplete or unstable.",
+          "alphaHint": "Choose this version to try the new features in 3.0.",
           "otherLabel": "Other",
           "otherHint": "Enter another package version, Docker tag, or Git ref manually, such as a branch name."
         },
