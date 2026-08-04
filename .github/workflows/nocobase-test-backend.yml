@@ -85,7 +85,9 @@ jobs:
           cache: 'yarn'
 
       - name: Install project dependencies
-        run: yarn install
+        run: |
+          yarn install
+          yarn add sqlite3 --no-save -W
       - name: Test with postgres
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
