@@ -9,9 +9,11 @@
 
 import { MockServer } from '@nocobase/test';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 import * as variableExpression from '../template/variable-expression';
 import { resolveVariablesTemplate } from '../variables/resolve';
+import FlowModelRepository from '../repository';
 
 describe('variables:resolve batch prefetch merges selects (integration)', () => {
   let app: MockServer;
@@ -19,15 +21,16 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     resetVariablesRegistryForTest();
   });
 
-  const execResolve = async (values: any, userId?: number) => {
+  const execResolve = async (values: any, userId?: number, options: { currentRole?: string; token?: string } = {}) => {
     const action = app.resourceManager.getAction('variables', 'resolve').clone();
+    const currentRole = options.currentRole || (userId ? 'root' : undefined);
     const ctx: any = {
       app,
       db: app.db,
-      headers: {},
+      headers: options.token ? { authorization: `Bearer ${options.token}` } : {},
       request: { method: 'POST', path: '/api/variables:resolve', query: {}, body: values },
-      auth: userId ? { user: { id: userId }, role: 'root' } : {},
-      state: userId ? { currentRole: 'root', currentRoles: ['root'] } : {},
+      auth: userId ? { user: { id: userId }, role: currentRole } : {},
+      state: currentRole ? { currentRole, currentRoles: [currentRole] } : {},
       getCurrentLocale: () => 'en-US',
     };
     ctx.get = (name: string) => ctx.headers?.[name] || ctx.headers?.[name?.toLowerCase?.()] || undefined;
@@ -47,6 +50,20 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       }
     }
     return ctx;
+  };
+
+  const createTokenSession = (userId = 1) => {
+    const signInTime = `variables-resolve-prefetch-${userId}`;
+    const payload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
+    return {
+      rd: (flowModelUid: string) => generateFlowModelRd(flowModelUid, `${userId}:${signInTime}`),
+      token: `test.${payload}.sig`,
+    };
+  };
+
+  const insertFlowModel = async (model: Record<string, unknown>) => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel(model);
   };
 
   beforeAll(async () => {
@@ -206,7 +223,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(relationCalls[0].options.fields).toEqual(['name']);
   });
 
-  it('rejects leaf and protected-root descriptors before querying records', async () => {
+  it('allows trusted leaf descriptors but rejects protected-root descriptors before querying records', async () => {
     const repository = app.db.getRepository('users');
     const findOne = vi.spyOn(repository, 'findOne');
 
@@ -219,7 +236,8 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         },
         1,
       );
-      expect(single.body).toEqual(leafTemplate);
+      expect(single.body.value).toHaveProperty('id', 1);
+      findOne.mockClear();
 
       const protectedTemplates = [
         { id: 'query', path: 'query.page' },
@@ -248,6 +266,9 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
   });
 
   it('keeps a moved-slot attack out of prefetch while resolving its legal sibling', async () => {
+    const session = createTokenSession();
+    const attackUid = 'batch-prefetch-moved-slot';
+    const legalUid = 'batch-prefetch-legal-sibling';
     const users = app.db.getRepository('users');
     const roles = app.db.getRepository('roles');
     const usersFindOne = vi.spyOn(users, 'findOne');
@@ -255,6 +276,8 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     const rolesFindOne = vi.spyOn(roles, 'findOne');
     const attackTemplate = { value: '{{ ctx.popup.record.roles.title }}' };
     const legalTemplate = { value: '{{ ctx.view.record.nickname }}' };
+    await insertFlowModel({ uid: attackUid, use: 'DetailsBlockModel', props: attackTemplate });
+    await insertFlowModel({ uid: legalUid, use: 'DetailsBlockModel', props: legalTemplate });
 
     try {
       const response = await execResolve(
@@ -262,17 +285,20 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
           batch: [
             {
               id: 'attack',
+              rd: session.rd(attackUid),
               template: attackTemplate,
               contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
             },
             {
               id: 'legal',
+              rd: session.rd(legalUid),
               template: legalTemplate,
               contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
             },
           ],
         },
         1,
+        { currentRole: 'member', token: session.token },
       );
 
       expect(response.body.results).toHaveLength(2);
@@ -280,7 +306,8 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       expect(response.body.results[1].id).toBe('legal');
       expect(response.body.results[1].data.value).not.toBe(legalTemplate.value);
       expect(usersFindOne).toHaveBeenCalledTimes(1);
-      expect(rolesFind).not.toHaveBeenCalled();
+      expect(rolesFind).toHaveBeenCalledTimes(1);
+      expect(rolesFind).toHaveBeenCalledWith({ fields: ['name', 'allowConfigure'], filter: { name: ['member'] } });
       expect(rolesFindOne).not.toHaveBeenCalled();
     } finally {
       usersFindOne.mockRestore();

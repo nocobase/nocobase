@@ -146,6 +146,36 @@ describe('query', () => {
 
       expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
     });
+
+    it('should resolve trusted record context params for filter values', async () => {
+      const user = await db.getRepository('users').findOne();
+      const context = {
+        ...ctx,
+        auth: { user },
+        get: () => '',
+        getCurrentLocale: () => 'en-US',
+        state: { currentUser: user },
+        action: {
+          params: {
+            values: {
+              contextParams: {
+                'chart.record': {
+                  collection: 'users',
+                  dataSourceKey: 'main',
+                  fields: ['id'],
+                  filterByTk: user.id,
+                },
+              },
+              filter: { userId: { $eq: '{{ ctx.chart.record.id }}' } },
+            },
+          },
+        },
+      };
+
+      await parseVariables(context, async () => {});
+
+      expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
+    });
   });
 
   describe('cacheMiddleware', () => {

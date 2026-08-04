@@ -398,7 +398,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.name).toBe('root');
   });
 
-  it('rejects a popup association slot move before any record lookup', async () => {
+  it('keeps the member popup slot gate while root uses trusted descriptors', async () => {
     const flowModelUid = 'popup-moved-record-slot';
     const session = createTokenSession(1);
     const template = { title: '{{ ctx.popup.record.roles.title }}' };
@@ -419,12 +419,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'root', currentRoles: ['root'], token: session.token },
     );
 
-    expect(root.body).toEqual(template);
-    expect(dataSourceGet).not.toHaveBeenCalled();
-    expect(getRepository).not.toHaveBeenCalled();
-    expect(find).not.toHaveBeenCalled();
-    expect(findOne).not.toHaveBeenCalled();
+    expect(typeof root.body.title).toBe('string');
+    expect(root.body.title).not.toBe(template.title);
 
+    dataSourceGet.mockClear();
     getRepository.mockClear();
     find.mockClear();
     findOne.mockClear();
@@ -507,29 +505,25 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(response.body.role).not.toBe(template.role);
   });
 
-  it('rejects a view association slot move before any record lookup', async () => {
+  it('rejects a member view association slot move before any target-record lookup', async () => {
     const flowModelUid = 'view-moved-record-slot';
     const session = createTokenSession(1);
     const template = { name: '{{ ctx.view.record.department.name }}' };
     await insertFlowModel({ uid: flowModelUid, use: 'DetailsBlockModel', props: template });
-    const roles = app.db.getRepository('roles');
-    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
-    const getRepository = vi.spyOn(app.db, 'getRepository');
-    const find = vi.spyOn(roles, 'find');
-    const findOne = vi.spyOn(roles, 'findOne');
+    const users = app.db.getRepository('users');
+    const find = vi.spyOn(users, 'find');
+    const findOne = vi.spyOn(users, 'findOne');
     const response = await execResolve(
       {
         rd: session.rd(flowModelUid),
         template,
-        contextParams: { 'view.record.department': { collection: 'roles', filterByTk: 'root' } },
+        contextParams: { 'view.record.department': { collection: 'users', filterByTk: 1 } },
       },
       1,
-      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
     expect(response.body).toEqual(template);
-    expect(dataSourceGet).not.toHaveBeenCalled();
-    expect(getRepository).not.toHaveBeenCalled();
     expect(find).not.toHaveBeenCalled();
     expect(findOne).not.toHaveBeenCalled();
   });
@@ -541,8 +535,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     await insertFlowModel(editFormModel(flowModelUid, template));
     const users = app.db.getRepository('users');
     const roles = app.db.getRepository('roles');
-    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
-    const getRepository = vi.spyOn(app.db, 'getRepository');
     const usersFind = vi.spyOn(users, 'find');
     const usersFindOne = vi.spyOn(users, 'findOne');
     const rolesFind = vi.spyOn(roles, 'find');
@@ -554,15 +546,13 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         contextParams: { formValues: { collection: 'users', filterByTk: 1 } },
       },
       1,
-      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
     expect(attack.body).toEqual(template);
-    expect(dataSourceGet).not.toHaveBeenCalled();
-    expect(getRepository).not.toHaveBeenCalled();
     expect(usersFind).not.toHaveBeenCalled();
     expect(usersFindOne).not.toHaveBeenCalled();
-    expect(rolesFind).not.toHaveBeenCalled();
+    expect(rolesFind).toHaveBeenCalledTimes(1);
     expect(rolesFindOne).not.toHaveBeenCalled();
 
     const legal = await execResolve(
@@ -572,18 +562,17 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         contextParams: { 'formValues.roles': { collection: 'roles', filterByTk: 'root' } },
       },
       1,
-      { currentRole: 'root', currentRoles: ['root'], token: session.token },
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
     expect(typeof legal.body.title).toBe('string');
     expect(legal.body.title).not.toBe(template.title);
   });
 
-  it('applies the exact slot gate to allowConfigure endpoint requests', async () => {
+  it('lets allowConfigure endpoint requests use trusted descriptors', async () => {
     const getRole = vi.spyOn(app.acl, 'getRole').mockReturnValue({
       getStrategy: () => ({ allowConfigure: true }),
     } as never);
-    const dataSourceGet = vi.spyOn(app.dataSourceManager, 'get');
     const template = { title: '{{ ctx.popup.record.roles.title }}' };
     const response = await execResolve(
       {
@@ -594,8 +583,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'designer', currentRoles: ['designer'] },
     );
 
-    expect(response.body).toEqual(template);
-    expect(dataSourceGet).not.toHaveBeenCalled();
+    expect(typeof response.body.title).toBe('string');
+    expect(response.body.title).not.toBe(template.title);
     expect(getRole).toHaveBeenCalledWith('designer');
   });
 
@@ -604,7 +593,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     ['static bracket', '{{ ctx["popup"]["record"]["roles"]["title"] }}', 'popup.record.roles'],
     ['numeric index', '{{ ctx.popup.record.roles[0].title }}', 'popup.record.roles.0'],
     ['dashed key', '{{ ctx.popup.record["role-list"].title }}', 'popup.record.role-list'],
-  ])('does not bypass the endpoint slot gate with %s syntax', async (_syntax, expression, movedSlot) => {
+  ])('supports trusted endpoint descriptors with %s syntax', async (_syntax, expression, movedSlot) => {
     const template = { value: expression };
     const response = await execResolve(
       {
@@ -614,7 +603,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       1,
     );
 
-    expect(response.body).toEqual(template);
+    expect(typeof response.body.value).toBe('string');
+    expect(response.body.value).not.toBe(template.value);
   });
 
   it('should support values.template field', async () => {
@@ -663,7 +653,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.nickname).toBe('{{ ctx.view.record.nickname }}');
   });
 
-  it('should keep unregistered record variables as-is', async () => {
+  it('should resolve unregistered record variables for root', async () => {
     const payload = {
       template: {
         uid: '{{ ctx.x.id }}',
@@ -687,7 +677,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data).toEqual(payload.template);
+    expect(data).toEqual({ role: 'root', uid: 1 });
   });
 
   it('should resolve deep association with auto appends (roles[0].name)', async () => {

@@ -332,7 +332,11 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     (koa as any).state = (koa as any).state || {};
     (koa as any).state.__varResolveBatchCache = new Map<string, unknown>();
     const cacheKey = JSON.stringify({ ds: 'main', c: 'users', tk: 1, f: ['id'], a: ['roles'] });
-    (koa as any).state.__varResolveBatchCache.set(cacheKey, { id: 1, roles: [{ name: 'admin' }] });
+    (koa as any).state.__varResolveBatchCache.set(cacheKey, {
+      id: 1,
+      roles: [{ name: 'admin' }],
+      secret: 'hidden',
+    });
 
     const template = {
       // 不同子路径：id 与 roles[0].name
@@ -341,6 +345,7 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     } as any;
     const contextParams = { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } } as any;
     await variables.attachUsedVariables(ctx, koa, template, contextParams);
+    await expect((ctx as any).view.record).resolves.not.toHaveProperty('secret');
     const out = await resolveJsonTemplate(template, ctx as any);
 
     expect(out.a).toBe(1);

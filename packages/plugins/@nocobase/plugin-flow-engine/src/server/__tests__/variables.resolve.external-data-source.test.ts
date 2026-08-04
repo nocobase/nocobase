@@ -8,6 +8,7 @@
  */
 
 import type { ResourcerContext } from '@nocobase/resourcer';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import * as variableExpression from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
@@ -83,6 +84,110 @@ describe('variables:resolve external data source records', () => {
     });
     expect(analyze).toHaveBeenCalledTimes(1);
     analyze.mockRestore();
+  });
+
+  it('projects wide plain JSON from an external source for a strict member binding', async () => {
+    const userId = 1;
+    const signInTime = 'variables-external-projection-1';
+    const uid = 'external-record-projection';
+    const tokenPayload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
+    const token = `test.${tokenPayload}.sig`;
+    const rd = generateFlowModelRd(uid, `${userId}:${signInTime}`);
+    const template = {
+      id: '{{ ctx.formValues.id }}',
+      owner: '{{ ctx.formValues.contacts[0].email }}',
+    };
+    const contacts = {
+      fields: { get: () => undefined },
+      getField: () => undefined,
+      model: { associations: {}, primaryKeyAttribute: 'id', rawAttributes: { email: {}, id: {} } },
+      name: 'contacts',
+    };
+    const contactField = {
+      isAssociationField: () => true,
+      isRelationField: () => true,
+      targetCollection: contacts,
+    };
+    const idField = { isAssociationField: () => false, isRelationField: () => false };
+    const getLeadField = (name: string) => (name === 'contacts' ? contactField : name === 'id' ? idField : undefined);
+    const leads = {
+      fields: { get: getLeadField },
+      filterTargetKey: 'id',
+      getField: getLeadField,
+      model: { associations: { contacts: {} }, primaryKeyAttribute: 'id', rawAttributes: { id: {} } },
+      name: 'leads',
+    };
+    const findOne = vi.fn(async () => ({
+      contacts: [{ email: 'hidden@example.test', id: 'contact-1' }],
+      id: 'lead-1',
+    }));
+    const dataSource = {
+      collectionManager: {
+        db: { getCollection: () => leads, getRepository: () => ({ collection: leads, findOne }) },
+        getCollection: () => leads,
+      },
+    };
+    const flowModel = {
+      props: template,
+      stepParams: { resourceSettings: { init: { collectionName: 'leads', dataSourceKey: 'crm_external' } } },
+      subModels: {
+        grid: {
+          subModels: {
+            items: [
+              {
+                stepParams: { fieldSettings: { init: { fieldPath: 'contacts' } } },
+                uid: `${uid}-contacts`,
+                use: 'FormItemModel',
+              },
+            ],
+          },
+          uid: `${uid}-grid`,
+          use: 'FormGridModel',
+        },
+      },
+      uid,
+      use: 'EditFormModel',
+    };
+    const context = {
+      app: {
+        acl: { getRole: () => ({ getStrategy: () => ({ allowConfigure: false }) }) },
+        dataSourceManager: { get: () => dataSource },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      db: {
+        getCollection: () => ({ repository: { findModelById: async () => flowModel } }),
+        getRepository: () => ({ find: async () => [] }),
+      },
+      get: (name: string) => (name.toLowerCase() === 'authorization' ? `Bearer ${token}` : undefined),
+      state: { currentRole: 'member', currentRoles: ['member'] },
+    } as unknown as ResourcerContext;
+
+    const authorization = await authorizeVariablesResolve(context, {
+      contextParams: {
+        formValues: {
+          appends: ['contacts'],
+          collection: 'leads',
+          dataSourceKey: 'crm_external',
+          fields: ['id'],
+          filterByTk: 'lead-1',
+        },
+      },
+      rd,
+      template,
+    });
+
+    expect(authorization.allowed).toBe(true);
+    if (!authorization.allowed) return;
+    await expect(
+      resolveAnalyzedVariablesTemplate(
+        context,
+        authorization.analysis,
+        authorization.policy,
+        authorization.bindingPlan,
+      ),
+    ).resolves.toEqual({ id: 'lead-1', owner: template.owner });
+    expect(findOne).toHaveBeenCalledTimes(1);
   });
 
   it('keeps external association repository runtime fields independent from the slot', async () => {
