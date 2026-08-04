@@ -94,7 +94,7 @@ jobs:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:11
+        image: qiuchenjun/hgdb-see:latest
         # Provide the password for postgres
         env:
           POSTGRES_USER: nocobase
