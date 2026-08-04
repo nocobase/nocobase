@@ -20,6 +20,7 @@ export const ENV_STRING_CONFIG_FLAG_MAP = {
   'app-public-path': 'appPublicPath',
   'cdn-base-url': 'cdnBaseUrl',
   'env-file': 'envFile',
+  'app-client-entry-mode': 'appClientEntryMode',
   'app-port': 'appPort',
   'app-key': 'appKey',
   timezone: 'timezone',

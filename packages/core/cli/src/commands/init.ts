@@ -15,6 +15,11 @@ import path from 'node:path';
 import { stdin as stdinStream, stdout as stdoutStream } from 'node:process';
 import { getEnv, type EnvConfigEntry, upsertEnv } from '../lib/auth-store.ts';
 import {
+  defaultAppClientEntryModeForDownloadVersion,
+  normalizePublicAppClientEntryMode,
+  PUBLIC_APP_CLIENT_ENTRY_MODES,
+} from '../lib/app-client-entry-mode.js';
+import {
   type PromptBlock,
   type PromptCatalogValues,
   type PromptInitialValues,
@@ -138,6 +143,17 @@ function resolveInitDownloadVersion(results: Record<string, string | number | bo
     return String(results.otherVersion ?? '').trim();
   }
   return preset;
+}
+
+function resolveInitAppClientEntryMode(
+  results: Record<string, string | number | boolean>,
+  explicitValue?: unknown,
+): string {
+  return (
+    normalizePublicAppClientEntryMode(explicitValue) ??
+    normalizePublicAppClientEntryMode(results.appClientEntryMode) ??
+    defaultAppClientEntryModeForDownloadVersion(resolveInitDownloadVersion(results))
+  );
 }
 
 function initVersionPromptValue(version: string): 'latest' | 'beta' | 'alpha' | 'other' {
@@ -578,6 +594,10 @@ Prompt modes:
     'skip-skills': Flags.boolean({
       description: 'Skip installing NocoBase AI coding skills during init',
       default: false,
+    }),
+    'app-client-entry-mode': Flags.string({
+      description: 'UI entry mode for this app env: modern-only, modern-default, or legacy-default',
+      options: [...PUBLIC_APP_CLIENT_ENTRY_MODES],
     }),
     'ui-host': Flags.string({
       description: 'Browser-accessible host for the --ui setup page URL (default: 127.0.0.1)',
@@ -1172,6 +1192,9 @@ Prompt modes:
     if (flags['app-public-path'] !== undefined && String(flags['app-public-path']).trim() !== '') {
       preset.appPublicPath = String(flags['app-public-path']).trim();
     }
+    if (flags['app-client-entry-mode'] !== undefined && String(flags['app-client-entry-mode']).trim() !== '') {
+      preset.appClientEntryMode = String(flags['app-client-entry-mode']).trim();
+    }
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
     }
@@ -1322,6 +1345,7 @@ Prompt modes:
     const existingEnv = await getEnv(envName, { scope: resolveDefaultConfigScope() });
     const appPort = String(results.appPort ?? '').trim();
     const appPublicPath = String(results.appPublicPath ?? '').trim();
+    const appClientEntryMode = resolveInitAppClientEntryMode(results, flags['app-client-entry-mode']);
     const source = String(results.source ?? '').trim();
     const version = resolveInitDownloadVersion(results);
     const dockerRegistry = String(results.dockerRegistry ?? '').trim();
@@ -1399,6 +1423,7 @@ Prompt modes:
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(appPort ? { appPort } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(appClientEntryMode ? { appClientEntryMode } : {}),
       ...(appKey ? { appKey } : {}),
       ...(timeZone ? { timezone: timeZone } : {}),
       ...(!skipDownload && results.devDependencies !== undefined
@@ -1466,6 +1491,7 @@ Prompt modes:
       'db-schema'?: string;
       'db-table-prefix'?: string;
       'db-underscored'?: boolean;
+      'app-client-entry-mode'?: string;
       'setup-mode'?: string;
       'prepare-only'?: boolean;
       'hook-script'?: string;
@@ -1568,6 +1594,11 @@ Prompt modes:
     const appPublicPath = String(results.appPublicPath ?? '').trim();
     if (appPublicPath) {
       argv.push('--app-public-path', appPublicPath);
+    }
+
+    const appClientEntryMode = resolveInitAppClientEntryMode(results, flags['app-client-entry-mode']);
+    if (appClientEntryMode) {
+      argv.push('--app-client-entry-mode', appClientEntryMode);
     }
 
     if (flags.force) {

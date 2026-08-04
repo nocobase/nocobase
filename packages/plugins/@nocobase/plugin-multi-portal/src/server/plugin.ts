@@ -74,8 +74,6 @@ const MAIN_APP_NAME = 'main';
 const UNION_ROLE_KEY = '__union__';
 const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
 const MULTI_PORTAL_MANIFEST_SYNC_MESSAGE_TYPE = 'multi-portal:app-manifest-changed';
-const DEFAULT_INIT_PORTAL_TYPE = 'ai';
-const DEFAULT_INIT_PORTAL_NAME = 'main';
 const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
@@ -85,7 +83,6 @@ const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
 const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
-const INIT_PORTAL_TYPES = ['no-code', 'ai'] as const;
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
   'multiPortals:get',
@@ -152,12 +149,12 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
-type InitPortalType = (typeof INIT_PORTAL_TYPES)[number];
+type MultiPortalSeedType = 'no-code' | 'ai';
 type DefaultMultiPortalRecord = {
   uid: string;
   title: string;
   icon: string;
-  portalType: InitPortalType;
+  portalType: MultiPortalSeedType;
   portalName: string;
   routePath: string;
   authCheck: boolean;
@@ -251,48 +248,18 @@ function trimString(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function isInitPortalType(value: string): value is InitPortalType {
-  return (INIT_PORTAL_TYPES as readonly string[]).includes(value);
-}
-
-function getInitPortalType() {
-  const portalType = trimString(process.env.INIT_PORTAL_TYPE) || DEFAULT_INIT_PORTAL_TYPE;
-  if (!isInitPortalType(portalType)) {
-    throw new Error('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
-  }
-  return portalType;
-}
-
-function getInitPortalName() {
-  const portalName = trimString(process.env.INIT_PORTAL_NAME) || DEFAULT_INIT_PORTAL_NAME;
-  if (!MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
-    throw new Error('INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.');
-  }
-  return portalName;
-}
-
 function getInitPortalTemplate() {
   return trimString(process.env.INIT_PORTAL_TEMPLATE) || DEFAULT_INIT_PORTAL_TEMPLATE;
 }
 
-function formatInitPortalTitle(portalName: string) {
-  const title = portalName
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((segment) => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
-    .join(' ');
-  return title || portalName;
-}
-
-function getDefaultMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
-  const portalName = getInitPortalName();
+function getDefaultAiMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
   return {
     uid: DEFAULT_MULTI_PORTAL_UID,
-    title: formatInitPortalTitle(portalName),
+    title: 'Main',
     icon: 'DesktopOutlined',
-    portalType: getInitPortalType(),
-    portalName,
-    routePath: `/${portalName}`,
+    portalType: 'ai',
+    portalName: 'main',
+    routePath: '/main',
     authCheck: true,
     enabled: true,
     ...(options.isDefault ? { isDefault: true } : {}),
@@ -301,7 +268,7 @@ function getDefaultMultiPortalRecord(options: { isDefault?: true } = {}): Defaul
 }
 
 function getFreshMultiPortalRecords(): DefaultMultiPortalRecord[] {
-  return [getDefaultMultiPortalRecord({ isDefault: true })];
+  return [getDefaultAiMultiPortalRecord({ isDefault: true }), ...getFixedLayoutMultiPortalRecords()];
 }
 
 function getFixedLayoutMultiPortalRecords(): DefaultMultiPortalRecord[] {
@@ -1356,9 +1323,7 @@ async function seedFreshMultiPortals(db: Database) {
 }
 
 async function seedHistoricalMultiPortals(db: Database) {
-  if (getInitPortalType() === 'ai') {
-    await createDefaultMultiPortalBestEffort(db, getDefaultMultiPortalRecord());
-  }
+  await createDefaultMultiPortalBestEffort(db, getDefaultAiMultiPortalRecord());
   for (const portal of getFixedLayoutMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
   }

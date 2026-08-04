@@ -281,8 +281,6 @@ describe('plugin-multi-portal server', () => {
     spawnMock.mockClear();
     storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-multi-portal-'));
     process.env.STORAGE_PATH = storagePath;
-    process.env.INIT_PORTAL_TYPE = 'no-code';
-    process.env.INIT_PORTAL_NAME = 'admin';
   });
 
   afterEach(async () => {
@@ -688,8 +686,7 @@ describe('plugin-multi-portal server', () => {
     ]);
   });
 
-  it('should initialize one INIT Portal for a fresh no-code app', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
+  it('should initialize the default AI Portal and fixed No-code Portals for a fresh app', async () => {
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -706,16 +703,31 @@ describe('plugin-multi-portal server', () => {
     expect(response.status).toBe(200);
     expect(defaultPortal?.get('uiLayoutUid')).toBe(DEFAULT_ADMIN_UI_LAYOUT.uid);
     expect(defaultPortal?.get('isDefault')).toBe(true);
-    expect(portals).toEqual([
-      expect.objectContaining({
-        uid: '__default_portal__',
-        title: 'Admin',
-        portalType: 'no-code',
-        portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
-        routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
-        isDefault: true,
-      }),
-    ]);
+    expect(portals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          uid: '__default_portal__',
+          title: 'Main',
+          portalType: 'ai',
+          portalName: 'main',
+          routePath: '/main',
+          isDefault: true,
+        }),
+        expect.objectContaining({
+          uid: '__default_admin__',
+          portalType: 'no-code',
+          portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
+          routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
+        }),
+        expect.objectContaining({
+          uid: '__default_mobile__',
+          portalType: 'no-code',
+          portalName: DEFAULT_MOBILE_UI_LAYOUT.routeName,
+          routePath: DEFAULT_MOBILE_UI_LAYOUT.routePath,
+        }),
+      ]),
+    );
+    expect(portals).toHaveLength(3);
   });
 
   it('should expose and manage one default Portal without inferring a replacement', async () => {
@@ -727,8 +739,8 @@ describe('plugin-multi-portal server', () => {
     expect(initialResponse.status).toBe(200);
     expect(initialResponse.body.data).toEqual({
       uid: '__default_portal__',
-      portalType: 'no-code',
-      routePath: '/admin',
+      portalType: 'ai',
+      routePath: '/main',
     });
 
     await repository.create({
@@ -827,7 +839,7 @@ describe('plugin-multi-portal server', () => {
     expect(response.body.data).toEqual({
       uid: '__default_portal__',
       portalType: 'no-code',
-      routePath: '/admin',
+      routePath: '/main',
     });
   });
 
@@ -1029,8 +1041,8 @@ describe('plugin-multi-portal server', () => {
     expect((await repository.findOne({ filterByTk: 'renamed-portal' }))?.get('portalName')).toBe('renamed-portal');
   });
 
-  it('should apply INIT_PORTAL_NAME to the fresh AI portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'ai';
+  it('should ignore deprecated INIT_PORTAL_TYPE and INIT_PORTAL_NAME for the fresh AI portal', async () => {
+    process.env.INIT_PORTAL_TYPE = 'no-code';
     process.env.INIT_PORTAL_NAME = 'workspace_home';
     app = await createMockServer({
       registerActions: true,
@@ -1042,15 +1054,14 @@ describe('plugin-multi-portal server', () => {
       filterByTk: '__default_portal__',
     });
 
-    expect(defaultPortal?.get('title')).toBe('Workspace Home');
-    expect(defaultPortal?.get('portalName')).toBe('workspace_home');
-    expect(defaultPortal?.get('routePath')).toBe('/workspace_home');
+    expect(defaultPortal?.get('title')).toBe('Main');
+    expect(defaultPortal?.get('portalType')).toBe('ai');
+    expect(defaultPortal?.get('portalName')).toBe('main');
+    expect(defaultPortal?.get('routePath')).toBe('/main');
   });
 
   it('should initialize an AI default portal with the init template', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
-    process.env.INIT_PORTAL_TYPE = 'ai';
-    process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
     app = await createMockServer({
       registerActions: true,
@@ -1058,22 +1069,22 @@ describe('plugin-multi-portal server', () => {
     });
 
     const appName = app.name || 'main';
-    const portalDir = path.join(storagePath as string, 'portals', appName, 'workspace');
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'main');
     const defaultPortal = await app.db.getRepository('multiPortals').findOne({
       filterByTk: '__default_portal__',
     });
 
     expect(defaultPortal?.get('portalType')).toBe('ai');
-    expect(defaultPortal?.get('portalName')).toBe('workspace');
+    expect(defaultPortal?.get('portalName')).toBe('main');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/workspace/');
+    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/main/');
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
       expect.objectContaining({
         cwd: portalDir,
         env: expect.objectContaining({
-          NOCOBASE_PORTAL_BASE: '/console/x/workspace/',
+          NOCOBASE_PORTAL_BASE: '/console/x/main/',
         }),
       }),
     );
@@ -1089,15 +1100,13 @@ describe('plugin-multi-portal server', () => {
       '.DS_Store': '',
       '._shadow': '',
     });
-    process.env.INIT_PORTAL_TYPE = 'ai';
-    process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
 
-    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
@@ -1122,15 +1131,13 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_TEMPLATE_TARBALL = await createPortalTemplateTarball(storagePath as string, templateDir);
-    process.env.INIT_PORTAL_TYPE = 'ai';
-    process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = '@nocobase/missing-portal-template';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
 
-    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
     await waitForPath(path.join(portalDir, 'dist', 'index.html'));
     expect(spawnMock).toHaveBeenNthCalledWith(
       1,
@@ -1155,26 +1162,24 @@ describe('plugin-multi-portal server', () => {
       'src/index.tsx': 'export default null;\n',
     });
     process.env.TEST_PORTAL_BUILD_FAIL = 'true';
-    process.env.INIT_PORTAL_TYPE = 'ai';
-    process.env.INIT_PORTAL_NAME = 'workspace';
     process.env.INIT_PORTAL_TEMPLATE = templateDir;
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
     });
 
-    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'workspace');
+    const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
     await expect(
       waitForFileContent(
-        path.join(storagePath as string, 'logs', 'portals', app.name || 'main', 'workspace.log'),
+        path.join(storagePath as string, 'logs', 'portals', app.name || 'main', 'main.log'),
         'Portal storage create task failed for',
       ),
     ).resolves.toContain('Portal storage create task failed for');
   });
 
-  it('should reject invalid init environment variables', async () => {
+  it('should ignore invalid deprecated init portal environment variables', async () => {
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -1184,17 +1189,18 @@ describe('plugin-multi-portal server', () => {
     await app.db.getCollection('applicationVersion').model.destroy({ truncate: true });
     expect(await app.version.get()).toBeNull();
     process.env.INIT_PORTAL_TYPE = 'invalid';
-    await expect(plugin.install()).rejects.toThrow('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
-
-    process.env.INIT_PORTAL_TYPE = 'ai';
     process.env.INIT_PORTAL_NAME = 'Admin';
-    await expect(plugin.install()).rejects.toThrow(
-      'INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.',
-    );
+
+    await expect(plugin.install()).resolves.toBeUndefined();
+    expect(
+      (await app.db.getRepository('multiPortals').findOne({ filterByTk: '__default_portal__' }))?.toJSON(),
+    ).toMatchObject({
+      portalType: 'ai',
+      portalName: 'main',
+    });
   });
 
   it('should allow deleting the fresh AI portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'ai';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -1222,7 +1228,6 @@ describe('plugin-multi-portal server', () => {
   });
 
   it('should treat the fresh AI portal uid as a normal editable portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'ai';
     app = await createMockServer({
       registerActions: true,
       plugins: ['ui-layout', 'multi-portal'],
@@ -1257,10 +1262,10 @@ describe('plugin-multi-portal server', () => {
     await app.db.sync();
     const defaultManifestItem = {
       uid: '__default_portal__',
-      title: 'Admin',
+      title: 'Main',
       icon: 'DesktopOutlined',
-      portalType: 'no-code',
-      routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
+      portalType: 'ai',
+      routePath: '/main',
       layout: DEFAULT_ADMIN_UI_LAYOUT.layoutType,
     };
 
@@ -4521,11 +4526,16 @@ describe('plugin-multi-portal server', () => {
     const portals = response.body.data as Array<Record<string, unknown>>;
 
     expect(response.status).toBe(200);
-    expect(portals.map((portal) => portal.uid)).toEqual([
-      '__default_portal__',
-      'desktop-runtime-portal',
-      'mobile-runtime-portal',
-    ]);
+    expect(portals.map((portal) => portal.uid)).toEqual(
+      expect.arrayContaining([
+        '__default_admin__',
+        '__default_mobile__',
+        '__default_portal__',
+        'desktop-runtime-portal',
+        'mobile-runtime-portal',
+      ]),
+    );
+    expect(portals).toHaveLength(5);
     for (const portal of portals) {
       expect(portal.enabled).toBe(true);
       expect(Object.keys(portal).sort()).toEqual([...MULTI_PORTAL_RUNTIME_FIELDS].sort());
@@ -4533,10 +4543,10 @@ describe('plugin-multi-portal server', () => {
       expect(portal).not.toHaveProperty('uiLayout');
     }
     expect(portals.find((portal) => portal.uid === '__default_portal__')).toMatchObject({
-      title: 'Admin',
-      portalType: 'no-code',
-      portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
-      routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
+      title: 'Main',
+      portalType: 'ai',
+      portalName: 'main',
+      routePath: '/main',
       uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
     expect(portals.find((portal) => portal.uid === 'desktop-runtime-portal')).toMatchObject({
@@ -4750,6 +4760,8 @@ describe('plugin-multi-portal server', () => {
     expect(unionResponse.status).toBe(200);
     expect(noAccessResponse.status).toBe(200);
     expect(rootPortals.map((portal) => portal.uid).sort()).toEqual([
+      '__default_admin__',
+      '__default_mobile__',
       '__default_portal__',
       'accessible-alpha-portal',
       'accessible-beta-portal',
@@ -4780,9 +4792,9 @@ describe('plugin-multi-portal server', () => {
     });
     expect(rootPortals.find((portal) => portal.uid === '__default_portal__')).toMatchObject({
       icon: 'DesktopOutlined',
-      portalType: 'no-code',
-      portalName: DEFAULT_ADMIN_UI_LAYOUT.routeName,
-      routePath: DEFAULT_ADMIN_UI_LAYOUT.routePath,
+      portalType: 'ai',
+      portalName: 'main',
+      routePath: '/main',
       uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
     });
   });

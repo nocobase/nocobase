@@ -28,6 +28,7 @@ import {
   resolveConfiguredStoragePath,
 } from './env-paths.js';
 import { ENV_CONFIG_SCHEMA_VERSION, normalizeEnvConfigSchemaVersion } from './env-config.js';
+import type { AppClientEntryMode } from './app-client-entry-mode.js';
 import {
   normalizeEnvPortalsConfig,
   type EnvPortalConfigEntry,
@@ -102,6 +103,8 @@ export interface EnvConfigEntry {
   cdnBaseUrl?: string;
   /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
+  /** Client entry mode (APP_CLIENT_ENTRY_MODE). */
+  appClientEntryMode?: AppClientEntryMode;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
   /** Application secret key (APP_KEY). */
@@ -112,10 +115,6 @@ export interface EnvConfigEntry {
   setupState?: 'prepared' | 'installed';
   /** Initial install language saved for prepare/install flows. */
   lang?: string;
-  /** Initial portal type (INIT_PORTAL_TYPE). */
-  portalType?: string;
-  /** Initial portal name (INIT_PORTAL_NAME). */
-  portalName?: string;
   /** Initial portal template npm package or local path (INIT_PORTAL_TEMPLATE). */
   portalTemplate?: string;
   /** Local AI portal source workspace directories keyed by portal name. */
@@ -576,6 +575,7 @@ export class Env {
     put('APP_PORT', this.appPort);
     put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
     put('CDN_BASE_URL', this.config.cdnBaseUrl);
+    put('APP_CLIENT_ENTRY_MODE', this.config.appClientEntryMode);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);

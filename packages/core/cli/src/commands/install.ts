@@ -64,6 +64,11 @@ import { commandOutput, commandSucceeds, ensureDockerDaemonRunning, run, runNoco
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
+import {
+  defaultAppClientEntryModeForDownloadVersion,
+  normalizePublicAppClientEntryMode,
+  PUBLIC_APP_CLIENT_ENTRY_MODES,
+} from '../lib/app-client-entry-mode.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
@@ -105,10 +110,7 @@ const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
-const DEFAULT_INSTALL_PORTAL_TYPE = 'ai';
-const DEFAULT_INSTALL_PORTAL_NAME = 'main';
 const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
-const INSTALL_PORTAL_TYPES = ['no-code', 'ai'] as const;
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -255,10 +257,6 @@ function defaultBuiltinDbImageForDialect(value: PromptValue | undefined, options
 
 function defaultDbDatabaseForDialect(value: PromptValue | undefined): string {
   return String(value ?? '').trim() === 'kingbase' ? 'kingbase' : DEFAULT_INSTALL_DB_DATABASE;
-}
-
-function isAiMode(values: PromptCatalogValues | Record<string, unknown>): boolean {
-  return String(values.portalType ?? DEFAULT_INSTALL_PORTAL_TYPE).trim() === 'ai';
 }
 
 function supportsDbSchemaPrompt(value: PromptValue | undefined): boolean {
@@ -436,8 +434,7 @@ type InstallParsedFlags = {
   'app-port'?: string;
   'storage-path'?: string;
   'app-public-path'?: string;
-  'portal-type'?: string;
-  'portal-name'?: string;
+  'app-client-entry-mode'?: string;
   'portal-template'?: string;
   'root-username'?: string;
   'root-email'?: string;
@@ -647,15 +644,12 @@ export default class Install extends Command {
     'app-public-path': Flags.string({
       description: 'Public path for the local app, for example / or /console/',
     }),
-    'portal-type': Flags.string({
-      description: 'Initial portal type for the installed app',
-      options: [...INSTALL_PORTAL_TYPES],
-    }),
-    'portal-name': Flags.string({
-      description: 'Initial portal name',
+    'app-client-entry-mode': Flags.string({
+      description: 'UI entry mode for this app env: modern-only, modern-default, or legacy-default',
+      options: [...PUBLIC_APP_CLIENT_ENTRY_MODES],
     }),
     'portal-template': Flags.string({
-      description: 'Initial portal template npm package or local path when --portal-type ai is used',
+      description: 'Template npm package or local path for the default AI Portal "main"',
     }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
@@ -768,39 +762,11 @@ export default class Install extends Command {
         yesInitialValue: '/',
         validate: validateAppPublicPath,
       },
-      portalType: {
-        type: 'select',
-        message: installText('prompts.portalType.message'),
-        options: [
-          {
-            value: 'no-code',
-            label: installText('prompts.portalType.noCodeLabel'),
-            hint: installText('prompts.portalType.noCodeHint'),
-          },
-          {
-            value: 'ai',
-            label: installText('prompts.portalType.aiLabel'),
-            hint: installText('prompts.portalType.aiHint'),
-          },
-        ],
-        initialValue: DEFAULT_INSTALL_PORTAL_TYPE,
-        yesInitialValue: DEFAULT_INSTALL_PORTAL_TYPE,
-        required: true,
-      },
-      portalName: {
-        type: 'text',
-        message: installText('prompts.portalName.message'),
-        placeholder: DEFAULT_INSTALL_PORTAL_NAME,
-        initialValue: DEFAULT_INSTALL_PORTAL_NAME,
-        yesInitialValue: DEFAULT_INSTALL_PORTAL_NAME,
-        required: true,
-      },
       portalTemplate: {
         type: 'text',
         message: installText('prompts.portalTemplate.message'),
         placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
         yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
-        hidden: (values) => !isAiMode(values),
         required: true,
       },
     };
@@ -1090,17 +1056,10 @@ export default class Install extends Command {
       }
     }
 
-    if (flags['portal-type'] !== undefined) {
-      const v = String(flags['portal-type'] ?? '').trim();
+    if (flags['app-client-entry-mode'] !== undefined) {
+      const v = normalizePublicAppClientEntryMode(flags['app-client-entry-mode']);
       if (v) {
-        preset.portalType = v;
-      }
-    }
-
-    if (flags['portal-name'] !== undefined) {
-      const v = String(flags['portal-name'] ?? '').trim();
-      if (v) {
-        preset.portalName = v;
+        preset.appClientEntryMode = v;
       }
     }
 
@@ -1211,8 +1170,7 @@ export default class Install extends Command {
       'appPort',
       'storagePath',
       'appPublicPath',
-      'portalType',
-      'portalName',
+      'appClientEntryMode',
       'portalTemplate',
     ]);
   }
@@ -1537,8 +1495,6 @@ export default class Install extends Command {
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
     const lang = Install.toOptionalPromptString(config.lang);
-    const portalType = Install.toOptionalPromptString(config.portalType);
-    const portalName = Install.toOptionalPromptString(config.portalName);
     const portalTemplate = Install.toOptionalPromptString(config.portalTemplate);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
     const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
@@ -1550,8 +1506,6 @@ export default class Install extends Command {
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
-      ...(portalType ? { portalType } : {}),
-      ...(portalName ? { portalName } : {}),
       ...(portalTemplate ? { portalTemplate } : {}),
       ...(hookScript ? { hookScript } : {}),
     };
@@ -1991,8 +1945,6 @@ export default class Install extends Command {
         rootEmail: String(params.rootResults.rootEmail ?? ''),
         rootPassword: String(params.rootResults.rootPassword ?? ''),
         rootNickname: String(params.rootResults.rootNickname ?? ''),
-        portalType: String(params.appResults.portalType ?? ''),
-        portalName: String(params.appResults.portalName ?? ''),
         portalTemplate: String(params.appResults.portalTemplate ?? ''),
       },
       options,
@@ -2444,6 +2396,7 @@ export default class Install extends Command {
     const extractClientAssets = resolveExtractClientAssetsDefaultEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const appClientEntryMode = Install.toOptionalPromptString(params.appResults.appClientEntryMode);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
@@ -2454,12 +2407,10 @@ export default class Install extends Command {
       params.envName,
       configuredEnvFile ? { envFile: configuredEnvFile } : undefined,
     );
-    const initEnvVars = Install.buildInitAppEnvVars(
-      {
-        appResults: params.appResults,
-        rootResults: params.rootResults,
-      },
-    );
+    const initEnvVars = Install.buildInitAppEnvVars({
+      appResults: params.appResults,
+      rootResults: params.rootResults,
+    });
     const containerPort = resolveDockerImageContainerPort(imageRef);
     const args = [
       'run',
@@ -2501,6 +2452,7 @@ export default class Install extends Command {
       `${storagePath}:/app/nocobase/storage`,
     );
     pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath);
+    pushOptionalEnvArg(args, 'APP_CLIENT_ENTRY_MODE', appClientEntryMode);
     pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
     pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
     pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
@@ -2858,14 +2810,17 @@ export default class Install extends Command {
         String(params.dbResults.dbDatabase ?? DEFAULT_INSTALL_DB_DATABASE).trim() || DEFAULT_INSTALL_DB_DATABASE,
       DB_USER: String(params.dbResults.dbUser ?? DEFAULT_INSTALL_DB_USER).trim() || DEFAULT_INSTALL_DB_USER,
       DB_PASSWORD: String(params.dbResults.dbPassword ?? DEFAULT_INSTALL_DB_PASSWORD) || DEFAULT_INSTALL_DB_PASSWORD,
-      ...Install.buildInitAppEnvVars(
-        {
-          appResults: params.appResults,
-          rootResults: params.rootResults,
-        },
-      ),
+      ...Install.buildInitAppEnvVars({
+        appResults: params.appResults,
+        rootResults: params.rootResults,
+      }),
     };
     setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
+    setOptionalEnvVar(
+      env,
+      'APP_CLIENT_ENTRY_MODE',
+      Install.toOptionalPromptString(params.appResults.appClientEntryMode),
+    );
     setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
     setOptionalEnvVar(env, 'DB_TABLE_PREFIX', optionalEnvString(params.dbResults.dbTablePrefix));
     setOptionalEnvVar(env, 'DB_UNDERSCORED', optionalEnvBoolean(params.dbResults.dbUnderscored));
@@ -3205,8 +3160,7 @@ export default class Install extends Command {
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
-    const portalType = Install.toOptionalPromptString(params.appResults.portalType);
-    const portalName = Install.toOptionalPromptString(params.appResults.portalName);
+    const appClientEntryMode = Install.toOptionalPromptString(params.appResults.appClientEntryMode);
     const portalTemplate = Install.toOptionalPromptString(params.appResults.portalTemplate);
     const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
     const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : undefined;
@@ -3241,10 +3195,9 @@ export default class Install extends Command {
       appPort,
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(appClientEntryMode ? { appClientEntryMode } : {}),
       ...(envFile ? { envFile } : {}),
       lang: params.appResults.lang,
-      portalType,
-      portalName,
       portalTemplate,
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
@@ -3323,6 +3276,9 @@ export default class Install extends Command {
     };
     downloadOpts.yes = yes;
     const downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
+    appResults.appClientEntryMode =
+      normalizePublicAppClientEntryMode(appResults.appClientEntryMode) ??
+      defaultAppClientEntryModeForDownloadVersion(downloadResultsValue(downloadResults, 'version'));
     if (parsed['skip-download']) {
       delete downloadResults.outputDir;
       delete downloadResults.replace;
