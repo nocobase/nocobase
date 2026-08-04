@@ -658,7 +658,7 @@
           "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
         },
         "appClientEntryMode": {
-          "message": "应用界面入口模式",
+          "message": "应用界面入口",
           "modernOnlyLabel": "仅使用新版界面",
           "modernOnlyHint": "只能进入新版界面，不可进入旧版界面。",
           "modernDefaultLabel": "默认进入新版界面",
