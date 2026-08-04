@@ -170,12 +170,18 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(ctx.runAction).toHaveBeenCalledTimes(1);
   });
 
-  it('runs the configured after-success action when refresh fails after updating selected records', async () => {
+  it('runs the configured after-success action before refresh settles and logs a later refresh failure', async () => {
     const engine = new FlowEngine();
     const model = new BulkUpdateActionModel({ uid: 'bulk-update-action-success', flowEngine: engine } as any);
     const update = vi.fn(async () => ({}));
     const refreshError = new Error('refresh failed');
-    const refresh = vi.fn().mockRejectedValue(refreshError);
+    let rejectRefresh: ((reason?: unknown) => void) | undefined;
+    const refresh = vi.fn(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectRefresh = reject;
+        }),
+    );
     const runAction = vi.fn(async () => {});
     const warn = vi.fn();
     const setProps = vi.fn();
@@ -224,14 +230,14 @@ describe('BulkUpdateActionModel apply action', () => {
     };
     const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
 
-    await handler(ctx, { assignedValues: { status: 'active' } });
+    const handlerPromise = handler(ctx, { assignedValues: { status: 'active' } });
+
+    await vi.waitFor(() => {
+      expect(runAction).toHaveBeenCalledTimes(2);
+    });
 
     expect(update).toHaveBeenCalled();
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(
-      { err: refreshError },
-      'Failed to refresh the block after a successful bulk update',
-    );
     expect(runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: false });
     expect(runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
       successMessage: 'Records updated',
@@ -241,6 +247,16 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(ctx.message.success).not.toHaveBeenCalled();
     expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
+
+    expect(rejectRefresh).toBeTypeOf('function');
+    rejectRefresh?.(refreshError);
+    await handlerPromise;
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(
+        { err: refreshError },
+        'Failed to refresh the block after a successful bulk update',
+      );
+    });
   });
 
   it('does not run the after-success action when no records are selected', async () => {

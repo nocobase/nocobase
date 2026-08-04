@@ -172,10 +172,14 @@ BulkUpdateActionModel.registerFlow({
           }
         }
 
-        try {
-          await ctx.blockModel?.resource?.refresh?.();
-        } catch (error) {
+        const logRefreshError = (error: unknown) => {
           ctx.logger?.warn?.({ err: error }, 'Failed to refresh the block after a successful bulk update');
+        };
+        try {
+          const refreshPromise = ctx.blockModel?.resource?.refresh?.();
+          refreshPromise?.catch?.(logRefreshError);
+        } catch (error) {
+          logRefreshError(error);
         }
         const savedAfterSuccess = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'afterSuccess') || {};
         await ctx.runAction('afterSuccess', {
