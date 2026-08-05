@@ -9,6 +9,7 @@
 
 import { ChildPageModel, DataBlockModel, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client-v2';
 import {
+  buildFlowModelResolveDescriptor,
   collectContextParamsForTemplate,
   createCollectionContextMeta,
   SQLResource,
@@ -218,12 +219,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       return query;
     }
     const contextParams = await collectContextParamsForTemplate(this.context, query);
-    if (!contextParams) {
-      return query;
-    }
     return {
       ...query,
-      contextParams,
+      rd: buildFlowModelResolveDescriptor(this.context, this.uid),
+      ...(contextParams ? { contextParams } : {}),
     };
   }
 
