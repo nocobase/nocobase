@@ -45,8 +45,10 @@ function getModelOptions(value: unknown): FlowModelOptions | undefined {
   return (isObject(value.options) ? value.options : value) as FlowModelOptions;
 }
 
-function getNodeString(value: unknown, key: 'parentId' | 'subKey' | 'uid') {
-  return isObject(value) && typeof value[key] === 'string' && value[key] ? value[key] : undefined;
+function getNodeString(value: unknown, key: 'parentId' | 'subKey' | 'uid'): string | undefined {
+  if (!isObject(value)) return undefined;
+  const nodeValue = value[key];
+  return typeof nodeValue === 'string' && nodeValue ? nodeValue : undefined;
 }
 
 function getStepInit(options: FlowModelOptions, flowKey: string) {
