@@ -46,6 +46,8 @@ export type FlowSurfaceTemplateListValues = {
 export type FlowSurfaceTemplateListPopupActionContext = {
   hasCurrentRecord?: boolean;
   currentRecordFilterTargetKey?: string;
+  defaultType?: 'addNew' | 'view' | 'edit';
+  semanticActionUse?: 'AddNewActionModel' | 'ViewActionModel' | 'EditActionModel';
 };
 
 export const FLOW_TEMPLATE_SUPPORTED_TYPES = new Set(['block', 'popup']);

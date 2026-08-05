@@ -14,6 +14,7 @@ import {
   normalizeComposeActionSpec,
   normalizeComposeFieldSpec,
 } from '../flow-surfaces/service-utils';
+import { FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY } from '../flow-surfaces/blueprint/defaults';
 
 describe('flowSurfaces compose key guards', () => {
   it('should allow dotted keys and reject empty keys', () => {
@@ -82,5 +83,32 @@ describe('flowSurfaces compose key guards', () => {
         0,
       ),
     ).toThrow('target must be a string block key');
+  });
+
+  it('should preserve trusted internally compiled compose field metadata', () => {
+    const normalized = normalizeComposeFieldSpec(
+      {
+        key: 'project',
+        fieldPath: 'project',
+        __autoPopupForRelationField: true,
+        [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: {
+          source: 'applyBlueprint',
+        },
+      },
+      0,
+      {
+        allowInternalMetadata: true,
+      },
+    );
+
+    expect(normalized).toMatchObject({
+      index: 1,
+      key: 'project',
+      fieldPath: 'project',
+      __autoPopupForRelationField: true,
+      [FLOW_SURFACE_APPLY_BLUEPRINT_POPUP_DEFAULTS_KEY]: {
+        source: 'applyBlueprint',
+      },
+    });
   });
 });

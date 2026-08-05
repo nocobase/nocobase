@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { getNodeContract } from './catalog';
+import { getNodeContract, hasNodeContract } from './catalog';
 import { throwBadRequest } from './errors';
 import {
   FLOW_SURFACE_EMPTY_FILTER_GROUP,
@@ -19,6 +19,10 @@ import {
 import type { FlowSurfaceDomainContract, FlowSurfaceDomainGroupContract, FlowSurfaceNodeDomain } from './types';
 
 const EMPTY_GRID_ITEM_UID = '__EMPTY__';
+
+type FlowSurfaceContractNode = Partial<
+  Record<'use' | 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels', unknown>
+>;
 
 export class FlowSurfaceContractGuard {
   mergeDomainValue(
@@ -247,35 +251,46 @@ export class FlowSurfaceContractGuard {
     }
   }
 
-  validateNodeTreeAgainstContract(node: any) {
-    if (!node?.use) {
+  validateNodeTreeAgainstContract(
+    node: FlowSurfaceContractNode | undefined,
+    options: { allowUnknownUses?: boolean } = {},
+  ) {
+    if (typeof node?.use !== 'string' || !node.use) {
       return;
     }
+    const use = node.use;
 
-    const contract = getNodeContract(node.use);
-    (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
-      if (_.isUndefined(node[domain])) {
-        return;
-      }
-      if (_.isPlainObject(node[domain]) && !Object.keys(node[domain]).length) {
-        return;
-      }
-      if (!contract.editableDomains.includes(domain)) {
-        throwBadRequest(`flowSurfaces create tree domain '${domain}' is not editable on '${node.use}'`);
-      }
-      const domainContract = contract.domains[domain];
-      if (!domainContract) {
-        throwBadRequest(`flowSurfaces create tree domain '${domain}' is not supported by '${node.use}'`);
-      }
-      node[domain] = this.mergeDomainValue(domain, undefined, node[domain], domainContract, node.use);
-    });
+    if (!options.allowUnknownUses || hasNodeContract(use)) {
+      const contract = getNodeContract(use);
+      (['props', 'decoratorProps', 'stepParams', 'flowRegistry'] as FlowSurfaceNodeDomain[]).forEach((domain) => {
+        if (_.isUndefined(node[domain])) {
+          return;
+        }
+        if (_.isPlainObject(node[domain]) && !Object.keys(node[domain]).length) {
+          return;
+        }
+        if (!contract.editableDomains.includes(domain)) {
+          throwBadRequest(`flowSurfaces create tree domain '${domain}' is not editable on '${use}'`);
+        }
+        const domainContract = contract.domains[domain];
+        if (!domainContract) {
+          throwBadRequest(`flowSurfaces create tree domain '${domain}' is not supported by '${use}'`);
+        }
+        node[domain] = this.mergeDomainValue(domain, undefined, node[domain], domainContract, use);
+      });
 
-    if (_.isPlainObject(node.flowRegistry) && Object.keys(node.flowRegistry).length) {
-      this.validateFlowRegistry(node, node.flowRegistry);
+      if (_.isPlainObject(node.flowRegistry) && Object.keys(node.flowRegistry).length) {
+        this.validateFlowRegistry(node, node.flowRegistry);
+      }
     }
 
-    Object.values(node.subModels || {}).forEach((value) => {
-      _.castArray(value as any).forEach((child) => this.validateNodeTreeAgainstContract(child));
+    const subModels = _.isPlainObject(node.subModels) ? (node.subModels as Record<string, unknown>) : {};
+    Object.values(subModels).forEach((value) => {
+      _.castArray(value).forEach((child) => {
+        if (_.isPlainObject(child)) {
+          this.validateNodeTreeAgainstContract(child as FlowSurfaceContractNode, options);
+        }
+      });
     });
   }
 }

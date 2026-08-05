@@ -265,13 +265,17 @@ export class GanttBlockModel extends TableBlockModel {
 
   getDefaultStartFieldName() {
     const options = this.getFieldOptions(DATE_FIELD_TYPES);
-    return options.find((item) => item.value === 'createdAt')?.value || options[0]?.value;
+    return options.find((item) => item.value !== 'createdAt' && item.value !== 'updatedAt')?.value || options[0]?.value;
   }
 
   getDefaultEndFieldName() {
     const startFieldName = this.getDefaultStartFieldName();
+    const options = this.getFieldOptions(DATE_FIELD_TYPES);
     return (
-      this.getFieldOptions(DATE_FIELD_TYPES).find((item) => item.value !== startFieldName)?.value || startFieldName
+      options.find((item) => item.value !== startFieldName && item.value !== 'createdAt' && item.value !== 'updatedAt')
+        ?.value ||
+      options.find((item) => item.value !== startFieldName)?.value ||
+      startFieldName
     );
   }
 

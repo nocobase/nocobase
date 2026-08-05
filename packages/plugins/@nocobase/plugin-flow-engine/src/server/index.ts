@@ -7,6 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
+export { default, PluginFlowEngineServer } from './plugin';
+export { FlowSurfaceCapabilityProviderRegistry } from './flow-surfaces/capability-provider';
+export type {
+  FlowSurfaceCapabilitiesProvider,
+  FlowSurfaceCapabilityManifestItem,
+  FlowSurfacePlacementSummary,
+} from './flow-surfaces/types';
 export { FlowModelRepository } from './repository';
 export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';

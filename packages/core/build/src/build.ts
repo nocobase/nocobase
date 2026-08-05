@@ -15,6 +15,7 @@ import { buildClient } from './buildClient';
 import { buildDeclaration } from './buildDeclaration';
 import { buildEsm } from './buildEsm';
 import { buildPlugin } from './buildPlugin';
+import { buildFlowSurfaceArtifact } from './flowSurfaceArtifacts';
 import {
   CORE_APP,
   CORE_CLIENT,
@@ -339,6 +340,12 @@ async function buildPackageSourceLifecycle(
       log('afterBuild');
       await runPhase('afterBuild', async () => {
         await userConfig.afterBuild(log);
+      });
+    }
+
+    if (targetDir === 'dist' || pkg.location === CORE_CLIENT_V2) {
+      await runPhase('flowSurfaceArtifacts', async () => {
+        await buildFlowSurfaceArtifact(pkg.location, log);
       });
     }
 

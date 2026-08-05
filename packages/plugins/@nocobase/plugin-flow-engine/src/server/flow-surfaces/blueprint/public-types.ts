@@ -243,7 +243,8 @@ export type FlowSurfaceApplyBlueprintBlockType =
   | 'recordHistory'
   | 'actionPanel'
   | 'jsBlock'
-  | 'tree';
+  | 'tree'
+  | (string & {});
 
 export type FlowSurfaceApplyBlueprintBlockSpec = {
   key?: string;
@@ -258,6 +259,7 @@ export type FlowSurfaceApplyBlueprintBlockSpec = {
   binding?: FlowSurfaceResourceBindingKey;
   associationField?: string;
   resource?: FlowSurfaceApplyBlueprintBlockResource;
+  initParams?: Record<string, unknown>;
   template?: Record<string, any>;
   settings?: Record<string, any>;
   fields?: FlowSurfaceApplyBlueprintFieldSpec[];

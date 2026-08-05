@@ -7,22 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { PluginFlowEngineServer } from '@nocobase/plugin-flow-engine/server';
 import { InstallOptions, Plugin } from '@nocobase/server';
+import { ganttFlowSurfaceCapabilitiesProvider } from './flow-surface-provider';
 
 export class PluginGanttServer extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
 
-  async load() {}
+  async load() {
+    const flowEnginePlugin = (this.app.pm.get('@nocobase/plugin-flow-engine') || this.app.pm.get('flow-engine')) as
+      | PluginFlowEngineServer
+      | undefined;
+    flowEnginePlugin?.flowSurfaceCapabilityProviders.registerProvider(ganttFlowSurfaceCapabilitiesProvider);
+  }
 
   async install(options?: InstallOptions) {}
 
   async afterEnable() {}
 
-  async afterDisable() {}
+  async afterDisable() {
+    const flowEnginePlugin = (this.app.pm.get('@nocobase/plugin-flow-engine') || this.app.pm.get('flow-engine')) as
+      | PluginFlowEngineServer
+      | undefined;
+    flowEnginePlugin?.flowSurfaceCapabilityProviders.unregisterProvider(
+      ganttFlowSurfaceCapabilitiesProvider.ownerPlugin,
+    );
+  }
 
-  async remove() {}
+  async remove() {
+    await this.afterDisable();
+  }
 }
 
 export default PluginGanttServer;
