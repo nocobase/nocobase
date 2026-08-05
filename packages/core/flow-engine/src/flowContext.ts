@@ -221,6 +221,8 @@ export interface MetaTreeNode {
   // 变量禁用状态与原因（用于变量选择器 UI 展示）
   disabled?: boolean | (() => boolean);
   disabledReason?: string | (() => string | undefined);
+  // 允许节点仅用于展开子级，而不能作为变量值被选中
+  selectable?: boolean;
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 

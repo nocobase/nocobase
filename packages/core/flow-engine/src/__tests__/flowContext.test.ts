@@ -16,6 +16,7 @@ import { RunJSContextRegistry } from '../runjs-context/registry';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { DATA_SOURCE_DIRTY_EVENT } from '../views/viewEvents';
+import { serializeCtxDateExpressionConfig } from '../utils/dateVariable';
 
 describe('FlowContext properties and methods', () => {
   it('should return static property value', () => {
@@ -2068,10 +2069,16 @@ describe('getPropertyMetaTree with deep delegate meta', () => {
 describe('FlowContext resolveOnServer selective server resolution', () => {
   it('resolves ctx.date expressions on client context', async () => {
     const engine = new FlowEngine();
+    const formattedToday = serializeCtxDateExpressionConfig({
+      kind: 'preset',
+      preset: 'today',
+      format: 'YYYY/MM/DD',
+    });
     const out = await (engine.context as any).resolveJsonTemplate({
       today: '{{ ctx.date.preset.today }}',
       next12: '{{ ctx.date.relative.next.day.n12 }}',
       now: '{{ ctx.date.preset.now }}',
+      formattedToday,
     });
 
     expect(typeof out.today).toBe('string');
@@ -2080,6 +2087,7 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     expect(out.next12).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(typeof out.now).toBe('string');
     expect(out.now.length).toBeGreaterThan(0);
+    expect(out.formattedToday).toMatch(/^\d{4}\/\d{2}\/\d{2}$/);
   });
 
   it('does not call server by default (no resolveOnServer set)', async () => {
