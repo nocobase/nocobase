@@ -10,3 +10,18 @@
 export { default } from './plugin';
 export { FlowModelRepository } from './repository';
 export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
+export {
+  createNestedRecordSlotResolver,
+  getRecordSlotResolverRegistry,
+  normalizeRecordSlotTarget,
+  RecordSlotResolverRegistry,
+} from './variables/record-slot-resolvers';
+export type {
+  RecordSlotFixedTarget,
+  RecordSlotResolved,
+  RecordSlotResolverInput,
+  RecordSlotResolverRegistration,
+  RecordSlotResolverResult,
+  RecordSlotTargetCapability,
+  RecordSlotTargetContract,
+} from './variables/record-slot-resolvers';
