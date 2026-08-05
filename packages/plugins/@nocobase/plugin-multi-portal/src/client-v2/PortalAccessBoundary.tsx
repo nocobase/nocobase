@@ -290,7 +290,30 @@ export function PortalAccessRuntimeProvider({ children, controller }: PortalAcce
       return;
     }
 
-    const changedPortal = previousRouteKey !== undefined && previousRouteKey !== routeKey;
+    const runPortalCheck = () => {
+      runCheck().catch((error) => {
+        console.error('[NocoBase] Failed to refresh Portal access.', error);
+      });
+    };
+    const isInitialRoute = previousRouteKey === undefined;
+    if (isInitialRoute) {
+      if (aclRefresh) {
+        // ACLRolesCheckProvider owns the initial roles:check; the controller interceptor records its Portal result.
+        return;
+      }
+
+      let active = true;
+      queueMicrotask(() => {
+        if (active && controller.needsCheck(portal.portalName, role)) {
+          runPortalCheck();
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    const changedPortal = previousRouteKey !== routeKey;
     if (changedPortal) {
       controller.invalidate(portal.portalName, role);
     }
@@ -298,10 +321,8 @@ export function PortalAccessRuntimeProvider({ children, controller }: PortalAcce
       return;
     }
 
-    runCheck().catch((error) => {
-      console.error('[NocoBase] Failed to refresh Portal access.', error);
-    });
-  }, [app, controller, location.pathname, portal, role, routeKey, runCheck]);
+    runPortalCheck();
+  }, [aclRefresh, app, controller, location.pathname, portal, role, routeKey, runCheck]);
 
   const value = useMemo<PortalAccessRuntimeContextValue>(() => ({ controller, retry }), [controller, retry]);
   return <PortalAccessRuntimeContext.Provider value={value}>{children}</PortalAccessRuntimeContext.Provider>;
