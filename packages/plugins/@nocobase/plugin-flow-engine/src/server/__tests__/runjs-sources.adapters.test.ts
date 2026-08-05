@@ -117,7 +117,12 @@ describe('flow-engine RunJS source adapters', () => {
         locator,
         binding: {
           sourceMode: 'js-template',
-          sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_block' },
+          sourceBinding: {
+            type: 'js-template-entry',
+            projectId: 'jtp_1',
+            templateId: 'jtt_block',
+            kind: 'js-block',
+          },
         },
         baseOwnerFingerprint: fingerprint,
         ctx,
@@ -130,7 +135,12 @@ describe('flow-engine RunJS source adapters', () => {
       version: 'v2',
       sourceRef: { type: 'vsc-file', repoId: 'runjs_repo', commitId: 'runjs_commit' },
       sourceMode: 'js-template',
-      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_block' },
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_block',
+        kind: 'js-block',
+      },
     });
   });
 
@@ -281,7 +291,12 @@ describe('flow-engine RunJS source adapters', () => {
         locator,
         binding: {
           sourceMode: 'js-template',
-          sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_1' },
+          sourceBinding: {
+            type: 'js-template-entry',
+            projectId: 'jtp_1',
+            templateId: 'jtt_1',
+            kind: 'js-page',
+          },
         },
         baseOwnerFingerprint,
         ctx,
@@ -299,7 +314,12 @@ describe('flow-engine RunJS source adapters', () => {
         entry: 'src/main.tsx',
       },
       sourceMode: 'js-template',
-      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_1', templateId: 'jtt_1' },
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
+        kind: 'js-page',
+      },
       settings: { theme: 'dark' },
       keep: 'preserved',
     });

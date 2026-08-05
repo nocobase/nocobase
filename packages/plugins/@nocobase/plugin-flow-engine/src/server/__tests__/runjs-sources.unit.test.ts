@@ -258,7 +258,12 @@ describe('flow-engine RunJS source registration', () => {
       throw new Error('FlowModel step source is unavailable');
     }
     source.sourceMode = 'js-template';
-    source.sourceBinding = { type: 'js-template-entry', projectId: 'jtp_extension', templateId: 'jtt_1' };
+    source.sourceBinding = {
+      type: 'js-template-entry',
+      projectId: 'jtp_shared',
+      templateId: 'jtt_1',
+      kind: 'js-block',
+    };
     await expect(adapter.assertCanRead({ locator, ctx })).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
 
     const transitionCtx: RunJSSourceAdapterContext = { ...ctx, sourceTransition: 'external-to-inline' };
@@ -274,7 +279,12 @@ describe('flow-engine RunJS source registration', () => {
     expect(getAtPath(model, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
       code: 'ctx.render("inline again");',
       sourceMode: 'js-template',
-      sourceBinding: { type: 'js-template-entry', projectId: 'jtp_extension', templateId: 'jtt_1' },
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_shared',
+        templateId: 'jtt_1',
+        kind: 'js-block',
+      },
     });
   });
 

@@ -48,7 +48,7 @@ export interface RunJSAuthoringCapabilities {
     entryKinds: RunJSExternalizationEntryKind[];
     destinationTypes: RunJSExternalizationDestinationType[];
     supportsIdempotency: boolean;
-    supportsMoveToInline: boolean;
+    supportsDetachToInline: boolean;
   };
 }
 
@@ -57,7 +57,7 @@ export interface RunJSExternalizationCapabilityContribution {
   entryKinds: readonly RunJSExternalizationEntryKind[];
   destinationTypes: readonly RunJSExternalizationDestinationType[];
   supportsIdempotency: boolean;
-  supportsMoveToInline: boolean;
+  supportsDetachToInline: boolean;
 }
 
 export const runJSAuthoringContractV1 = manifest as RunJSAuthoringCapabilities;
@@ -81,14 +81,14 @@ export function createRunJSAuthoringCapabilities(
           entryKinds: [...externalization.entryKinds],
           destinationTypes: [...externalization.destinationTypes],
           supportsIdempotency: externalization.supportsIdempotency,
-          supportsMoveToInline: externalization.supportsMoveToInline,
+          supportsDetachToInline: externalization.supportsDetachToInline,
         }
       : {
           available: false,
           entryKinds: [],
           destinationTypes: [],
           supportsIdempotency: false,
-          supportsMoveToInline: false,
+          supportsDetachToInline: false,
         },
   };
 }

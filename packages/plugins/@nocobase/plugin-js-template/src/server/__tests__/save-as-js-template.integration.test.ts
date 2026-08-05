@@ -183,7 +183,7 @@ describe('SaveAsJsTemplateService', () => {
         templateId: 'jtt_origin',
         kind,
       };
-      const transaction = { id: 'tx_move', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      const transaction = { id: 'tx_save_as', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       const lockFlowModel = vi.fn();
       const findFlowModelById = vi.fn(async () => ({
         stepParams: {
@@ -197,7 +197,7 @@ describe('SaveAsJsTemplateService', () => {
       }));
       const assertApplicationOwnership = vi.fn();
       const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
-      const movedEntry: JsTemplate = {
+      const savedTemplate: JsTemplate = {
         ...entry,
         kind,
         entryPath: `${entryRoot}/sales-kpi/index.ts`,
@@ -247,8 +247,8 @@ describe('SaveAsJsTemplateService', () => {
       const recordLifecycleEvent = vi.fn(async () => undefined);
       const listTemplates = vi
         .fn()
-        .mockResolvedValueOnce([{ ...movedEntry, id: 'jtt_existing_source_key', templateName: 'welcome-card' }])
-        .mockResolvedValueOnce([movedEntry]);
+        .mockResolvedValueOnce([{ ...savedTemplate, id: 'jtt_existing_source_key', templateName: 'welcome-card' }])
+        .mockResolvedValueOnce([savedTemplate]);
       const operationModel = createJsTemplateSourceOperationModel();
       const service = new SaveAsJsTemplateService(
         {
@@ -316,7 +316,7 @@ describe('SaveAsJsTemplateService', () => {
         },
         {
           actorUserId: '1',
-          requestId: 'req_move_existing',
+          requestId: 'req_save_as_existing',
           adapterContext: {},
         },
       );
@@ -362,7 +362,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceBinding: {
             type: 'js-template-entry',
             projectId: project.id,
-            templateId: movedEntry.id,
+            templateId: savedTemplate.id,
             kind,
           },
         },
@@ -375,7 +375,7 @@ describe('SaveAsJsTemplateService', () => {
       expect(result.binding).toEqual({
         type: 'js-template-entry',
         projectId: project.id,
-        templateId: movedEntry.id,
+        templateId: savedTemplate.id,
         kind,
       });
       expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
@@ -383,10 +383,10 @@ describe('SaveAsJsTemplateService', () => {
         projectId: project.id,
         action: 'saveAsJsTemplate',
         result: 'success',
-        requestId: 'req_move_existing',
+        requestId: 'req_save_as_existing',
         actorUserId: '1',
         message: 'RunJS source saved as a JS Template',
-        details: { destinationType: 'existing', templateId: movedEntry.id, kind },
+        details: { destinationType: 'existing', templateId: savedTemplate.id, kind },
         transaction,
       });
     },
@@ -479,11 +479,11 @@ describe('SaveAsJsTemplateService', () => {
         sourceHeadCommitId: null,
         entryPath: 'src/main.tsx',
         version: 'v2',
-        files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Moved</div>);' }],
+        files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Saved</div>);' }],
         destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
         templateName: 'sales-kpi',
       },
-      { adapterContext: {}, requestId: 'req_move_new' },
+      { adapterContext: {}, requestId: 'req_save_as_new' },
     );
 
     const createInput = createProject.mock.calls[0][0];
@@ -519,7 +519,7 @@ describe('SaveAsJsTemplateService', () => {
       projectId: reservedProjectId,
       action: 'saveAsJsTemplate',
       result: 'success',
-      requestId: 'req_move_new',
+      requestId: 'req_save_as_new',
       actorUserId: undefined,
       message: 'RunJS source saved as a JS Template',
       details: { destinationType: 'new', templateId: createdEntry.id, kind: 'js-page' },
@@ -816,7 +816,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         createSaveAsJsTemplateInput({
-          idempotencyKey: 'move-existing-sales-kpi',
+          idempotencyKey: 'save-as-existing-sales-kpi',
         }),
         { adapterContext: {} },
       ),
@@ -845,7 +845,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         createSaveAsJsTemplateInput({
-          idempotencyKey: 'move-stale-existing-sales-kpi',
+          idempotencyKey: 'save-as-stale-existing-sales-kpi',
         }),
         { adapterContext: {} },
       ),
@@ -931,7 +931,7 @@ describe('SaveAsJsTemplateService', () => {
 
     const input = createSaveAsJsTemplateInput({
       destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
-      idempotencyKey: 'move-new-sales-kpi',
+      idempotencyKey: 'save-as-new-sales-kpi',
     });
     const first = await service.saveAsJsTemplate(input, { adapterContext: {} });
     const replay = await service.saveAsJsTemplate(input, { adapterContext: {} });
@@ -995,7 +995,7 @@ describe('SaveAsJsTemplateService', () => {
     const operationModel = createJsTemplateSourceOperationModel();
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const service = createFailureService({ saveSource, operationModel });
-    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'move-sales-kpi-v1' });
+    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'save-as-sales-kpi-v1' });
 
     await service.saveAsJsTemplate(input, { adapterContext: {} });
     await expect(
@@ -1012,7 +1012,7 @@ describe('SaveAsJsTemplateService', () => {
       .mockResolvedValueOnce({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] });
     const listTemplates = vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([entry]);
     const service = createFailureService({ saveSource, operationModel, listTemplates });
-    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'move-sales-kpi-retry' });
+    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'save-as-sales-kpi-retry' });
 
     await expect(service.saveAsJsTemplate(input, { adapterContext: {} })).rejects.toThrow('compile failed');
     await expect(service.saveAsJsTemplate(input, { adapterContext: {} })).resolves.toMatchObject({
@@ -1027,7 +1027,7 @@ describe('SaveAsJsTemplateService', () => {
     const operationModel = createJsTemplateSourceOperationModel();
     const store = new JsTemplateSourceOperationStore(createJsTemplateSourceOperationDatabase(operationModel), 'main');
     const descriptor = {
-      idempotencyKey: 'shared-move-key',
+      idempotencyKey: 'shared-save-detach-key',
       request: { locator, version: 'v2' },
       parseResult: (value: unknown) => value,
     };
@@ -1044,7 +1044,7 @@ describe('SaveAsJsTemplateService', () => {
     const db = createJsTemplateSourceOperationDatabase(operationModel);
     const descriptor = {
       action: 'detach-to-inline',
-      idempotencyKey: 'concurrent-move-inline',
+      idempotencyKey: 'concurrent-detach-to-inline',
       request: { locator, version: 'v2' },
       parseResult: (value: unknown) => value,
     };
@@ -1067,7 +1067,7 @@ describe('SaveAsJsTemplateService', () => {
     const store = new JsTemplateSourceOperationStore(createJsTemplateSourceOperationDatabase(operationModel), 'main');
     const descriptor = {
       action: 'detach-to-inline',
-      idempotencyKey: 'retry-move-inline',
+      idempotencyKey: 'retry-detach-to-inline',
       request: { locator, version: 'v2' },
       parseResult: (value: unknown) => value,
     };
@@ -1155,7 +1155,7 @@ describe('SaveAsJsTemplateService', () => {
     const transaction = { id: 'tx_rollback', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
     let committed = false;
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
-    const movedPageEntry = {
+    const savedPageTemplate = {
       ...entry,
       kind: 'js-page' as const,
       entryPath: 'src/client/js-pages/sales-kpi/index.ts',
@@ -1164,7 +1164,7 @@ describe('SaveAsJsTemplateService', () => {
     const service = createFailureService({
       transaction,
       modelUse: 'JSPageModel',
-      movedEntry: movedPageEntry,
+      savedTemplate: savedPageTemplate,
       saveSource,
       writeExternalBinding: vi.fn(async () => {
         throw new Error('host binding failed');
@@ -1202,7 +1202,7 @@ function createFailureService(options: {
   transaction?: Transaction;
   destinationProject?: JsTemplateProject;
   modelUse?: string;
-  movedEntry?: JsTemplate;
+  savedTemplate?: JsTemplate;
   saveSource: ReturnType<typeof vi.fn>;
   writeExternalBinding?: ReturnType<typeof vi.fn>;
   assertCanWrite?: ReturnType<typeof vi.fn>;
@@ -1271,7 +1271,7 @@ function createFailureService(options: {
         vi
           .fn()
           .mockResolvedValueOnce([])
-          .mockResolvedValueOnce([options.movedEntry || entry]),
+          .mockResolvedValueOnce([options.savedTemplate || entry]),
     } as never,
     {
       prepareSaveSource: vi.fn(async () => ({ candidate: { projectId: project.id } })),
@@ -1488,7 +1488,7 @@ describe('detach to inline integration', () => {
   // detach-to-inline / runjs + JSColumnModel -> host-kind support matrix below.
   // detach-to-inline / reserves the RunJS manifest file slot before opening a database transaction -> file-limit matrix below.
   // detach-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> file-limit matrix below.
-  // detach-to-inline / moves a JS Page inline with its snapshot and settings while removing the active usage -> this suite.
+  // detach-to-inline / detaches a JS Page with its snapshot and settings while removing the active usage -> this suite.
   // detach-to-inline / rejects a host that no longer points to the selected JS Template entry -> this suite.
   // New owner: detach late failure rolls back the external binding, RunJS repository Head, and usage index.
 
@@ -1896,7 +1896,7 @@ describe('detach to inline integration', () => {
       await expect(
         service.detachToInline(
           {
-            idempotencyKey: 'move-inline-file-limit',
+            idempotencyKey: 'detach-to-inline-file-limit',
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -1945,7 +1945,7 @@ describe('detach to inline integration', () => {
       await expect(
         fixture.service.detachToInline(
           {
-            idempotencyKey: `move-inline-preflight-${expectedCode}-${files[0].content.length}`,
+            idempotencyKey: `detach-to-inline-preflight-${expectedCode}-${files[0].content.length}`,
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -1981,7 +1981,7 @@ describe('detach to inline integration', () => {
       await expect(
         fixture.service.detachToInline(
           {
-            idempotencyKey: 'move-inline-target-head-changed',
+            idempotencyKey: 'detach-to-inline-target-head-changed',
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -2286,7 +2286,7 @@ describe('detach to inline integration', () => {
       );
 
       const input = {
-        idempotencyKey: 'move-inline-page',
+        idempotencyKey: 'detach-to-inline-page',
         expectedProjectHeadCommitId: pageEntry.compiledCommitId,
         locator: pageLocator,
         projectId: pageBinding.projectId,
@@ -2306,7 +2306,7 @@ describe('detach to inline integration', () => {
       };
       const serviceContext = {
         actorUserId: '1',
-        requestId: 'req_move_inline',
+        requestId: 'req_detach_inline',
         adapterContext: {},
       };
       const result = await service.detachToInline(input, serviceContext);
@@ -2504,7 +2504,7 @@ describe('detach to inline integration', () => {
         projectId: pageBinding.projectId,
         action: 'detachJsTemplateToInline',
         result: 'success',
-        requestId: 'req_move_inline',
+        requestId: 'req_detach_inline',
         actorUserId: '1',
         message: 'JS Template detached to inline RunJS',
         details: {
@@ -2540,7 +2540,7 @@ describe('detach to inline integration', () => {
       await expect(
         fixture.service.detachToInline(
           {
-            idempotencyKey: `move-inline-${failureStage}-rollback`,
+            idempotencyKey: `detach-to-inline-${failureStage}-rollback`,
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -2909,7 +2909,7 @@ describe('detach to inline integration', () => {
       await expect(
         service.detachToInline(
           {
-            idempotencyKey: 'move-inline-rollback',
+            idempotencyKey: 'detach-to-inline-rollback',
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -2989,7 +2989,7 @@ describe('detach to inline integration', () => {
       await expect(
         service.detachToInline(
           {
-            idempotencyKey: 'move-inline-stale-binding',
+            idempotencyKey: 'detach-to-inline-stale-binding',
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -3224,7 +3224,7 @@ describe('JS Template conversion resource integration', () => {
         action: {
           params: {
             values: {
-              idempotencyKey: '  move-inline-sales-v1  ',
+              idempotencyKey: '  detach-to-inline-sales-v1  ',
               expectedProjectHeadCommitId: 'commit_template_head',
               locator,
               projectId: binding.projectId,
@@ -3240,7 +3240,7 @@ describe('JS Template conversion resource integration', () => {
         can,
         request: {
           headers: {
-            'x-request-id': 'req_move_inline',
+            'x-request-id': 'req_detach_inline',
             'x-request-source': 'unit-resource',
           },
         },
@@ -3250,7 +3250,7 @@ describe('JS Template conversion resource integration', () => {
 
       expect(detachToInline).toHaveBeenCalledWith(
         {
-          idempotencyKey: 'move-inline-sales-v1',
+          idempotencyKey: 'detach-to-inline-sales-v1',
           expectedProjectHeadCommitId: 'commit_template_head',
           locator,
           projectId: binding.projectId,
@@ -3269,7 +3269,7 @@ describe('JS Template conversion resource integration', () => {
         },
         expect.objectContaining({
           actorUserId: '9',
-          requestId: 'req_move_inline',
+          requestId: 'req_detach_inline',
           requestSource: 'unit-resource',
           can,
           adapterContext: expect.objectContaining({ currentUser: { id: 9 } }),
@@ -3300,7 +3300,7 @@ describe('JS Template conversion resource integration', () => {
         action: {
           params: {
             values: {
-              idempotencyKey: 'move-inline-error-v1',
+              idempotencyKey: 'detach-to-inline-error-v1',
               expectedProjectHeadCommitId: 'commit_template_head',
               locator,
               projectId: binding.projectId,

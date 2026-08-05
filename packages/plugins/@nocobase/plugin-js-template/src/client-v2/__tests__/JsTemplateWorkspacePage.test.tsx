@@ -687,7 +687,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     await screen.findByTestId('runjs-code-tab');
     fireEvent.change(screen.getByLabelText('Edit file content'), {
-      target: { value: 'ctx.render(<div>unsaved inline move</div>);\n' },
+      target: { value: 'ctx.render(<div>unsaved inline detach</div>);\n' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Detach to Inline' }));
 
@@ -707,7 +707,7 @@ describe('JsTemplateWorkspacePage', () => {
         files: [
           expect.objectContaining({
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
-            content: 'ctx.render(<div>unsaved inline move</div>);\n',
+            content: 'ctx.render(<div>unsaved inline detach</div>);\n',
           }),
         ],
       }),

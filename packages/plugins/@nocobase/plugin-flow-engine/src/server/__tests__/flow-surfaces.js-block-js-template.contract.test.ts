@@ -193,7 +193,7 @@ describe('flowSurfaces JS block js-template contract', () => {
     expect(readback.tree.stepParams?.jsSettings?.runJs?.sourceBinding?.settings).toBeUndefined();
   });
 
-  it('should apply template-backed compose settings before deciding whether to bootstrap a workspace', async () => {
+  it('should apply canonical compose bindings and reject direct JS Template detach', async () => {
     const page = await createPage(rootAgent, {
       title: 'JS block template compose page',
       tabTitle: 'Main',
@@ -260,11 +260,6 @@ describe('flowSurfaces JS block js-template contract', () => {
               },
             },
           },
-          {
-            key: 'movedInline',
-            template: { uid: jsTemplateTemplate.uid, mode: 'copy' },
-            settings: { code: "ctx.render('Moved inline after compose');", sourceMode: 'inline' },
-          },
         ],
       },
     });
@@ -277,24 +272,17 @@ describe('flowSurfaces JS block js-template contract', () => {
     }>;
     const inlineOverride = blocks.find((item) => item.key === 'inlineOverride');
     const externalizedCopy = blocks.find((item) => item.key === 'externalizedCopy');
-    const movedInline = blocks.find((item) => item.key === 'movedInline');
     expect(inlineOverride).toMatchObject({ workspaceStatus: 'ready', workspaceRetryable: false });
     expect(externalizedCopy).not.toHaveProperty('workspaceStatus');
-    expect(movedInline).toMatchObject({ workspaceStatus: 'ready', workspaceRetryable: false });
 
-    for (const [block, expectedSource] of [
-      [inlineOverride, "ctx.render('Inline compose override');"],
-      [movedInline, "ctx.render('Moved inline after compose');"],
-    ] as const) {
-      const readback = await getSurface(rootAgent, { uid: block?.uid });
-      const locator = readback.tree.runJSLocator;
-      const openedResponse = await rootAgent.resource('runJSSources').open({ values: { locator } });
-      expect(openedResponse.status, readErrorMessage(openedResponse)).toBe(200);
-      const opened = getData(openedResponse);
-      expect(opened.files.find((file: { path: string }) => file.path === 'src/client/index.tsx')?.content).toBe(
-        expectedSource,
-      );
-    }
+    const inlineReadback = await getSurface(rootAgent, { uid: inlineOverride?.uid });
+    const locator = inlineReadback.tree.runJSLocator;
+    const openedResponse = await rootAgent.resource('runJSSources').open({ values: { locator } });
+    expect(openedResponse.status, readErrorMessage(openedResponse)).toBe(200);
+    const opened = getData(openedResponse);
+    expect(opened.files.find((file: { path: string }) => file.path === 'src/client/index.tsx')?.content).toBe(
+      "ctx.render('Inline compose override');",
+    );
 
     const externalizedReadback = await getSurface(rootAgent, { uid: externalizedCopy?.uid });
     expect(externalizedReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
@@ -303,6 +291,23 @@ describe('flowSurfaces JS block js-template contract', () => {
         templateId: 'jtt_template_externalized',
       },
     });
+
+    const directDetachResponse = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.tabSchemaUid },
+        blocks: [
+          {
+            key: 'directDetach',
+            template: { uid: jsTemplateTemplate.uid, mode: 'copy' },
+            settings: { code: "ctx.render('Detached inline after compose');", sourceMode: 'inline' },
+          },
+        ],
+      },
+    });
+    expect(directDetachResponse.status).toBe(409);
+    expect(readErrorMessage(directDetachResponse)).toContain(
+      'JS Template sources must be detached through jsTemplates:detachToInline',
+    );
   });
 
   it('should export a multi-file workspace runtime artifact as a portable fallback without its sourceRef', async () => {

@@ -173,7 +173,7 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
       assertOwnerFingerprintMatches(buildStepFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
       const nextStepParams = cloneJsonRecord(getAtPath(model, ['stepParams']));
       const bindingRootPath = [locator.flowKey, locator.stepKey, ...locator.paramPath.slice(0, -1)];
-      assertSourceCanMoveToExternalBinding(getAtPath(nextStepParams, bindingRootPath), locator.kind);
+      assertSourceCanApplyExternalBinding(getAtPath(nextStepParams, bindingRootPath), locator.kind);
 
       setAtPath(nextStepParams, [...bindingRootPath, 'sourceMode'], binding.sourceMode);
       setAtPath(nextStepParams, [...bindingRootPath, 'sourceBinding'], cloneJsonRecord(binding.sourceBinding));
@@ -696,7 +696,7 @@ function throwNestedPathNotFound(path: JsonPath): never {
   });
 }
 
-function assertSourceCanMoveToExternalBinding(value: unknown, kind: string): void {
+function assertSourceCanApplyExternalBinding(value: unknown, kind: string): void {
   if (!isRecord(value)) {
     return;
   }
@@ -704,9 +704,13 @@ function assertSourceCanMoveToExternalBinding(value: unknown, kind: string): voi
   if (!sourceMode || sourceMode === 'inline') {
     return;
   }
-  throw new RunJSSourceError('RUNJS_SOURCE_OWNER_OUTDATED', 'RunJS source binding changed before the move completed', {
-    details: { kind, sourceMode },
-  });
+  throw new RunJSSourceError(
+    'RUNJS_SOURCE_OWNER_OUTDATED',
+    'RunJS source binding changed before the binding update completed',
+    {
+      details: { kind, sourceMode },
+    },
+  );
 }
 
 function resolveVersionPath(paramPath: string[], versionPath?: string[]): string[] {

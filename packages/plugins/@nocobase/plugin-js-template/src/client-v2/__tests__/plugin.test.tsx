@@ -257,7 +257,7 @@ describe('PluginJsTemplateClientV2', () => {
     });
     const locator = {
       kind: 'flowModel.step' as const,
-      modelUid: 'fm_moved_inline',
+      modelUid: 'fm_inline_workspace',
       flowKey: 'jsSettings',
       stepKey: 'runJs',
       paramPath: ['code'],
@@ -269,13 +269,13 @@ describe('PluginJsTemplateClientV2', () => {
           locatorKind: 'flowModel.step',
           repositoryIdentity: {
             ownerType: 'runjs-source',
-            ownerId: 'fm_moved_inline:jsSettings:runJs:code',
+            ownerId: 'fm_inline_workspace:jsSettings:runJs:code',
             name: 'source',
           },
           legacy: {
-            code: 'ctx.render(<div>Moved inline</div>);',
+            code: 'ctx.render(<div>Inline workspace</div>);',
             version: 'v2',
-            label: 'Moved inline block / Write JavaScript',
+            label: 'Inline workspace block / Write JavaScript',
             surfaceStyle: 'render',
             language: 'typescript',
             entryPath: 'src/client/index.tsx',
@@ -283,7 +283,7 @@ describe('PluginJsTemplateClientV2', () => {
           },
           ownerFingerprint: 'owner-fingerprint-1',
           source: {
-            label: 'Moved inline block / Write JavaScript',
+            label: 'Inline workspace block / Write JavaScript',
             kind: 'flowModel.step',
             surfaceStyle: 'render',
             runtimeVersion: 'v2',
@@ -295,7 +295,7 @@ describe('PluginJsTemplateClientV2', () => {
             id: 'repo-inline-1',
             repoId: 'repo-inline-1',
             ownerType: 'runjs-source',
-            ownerId: 'fm_moved_inline:jsSettings:runJs:code',
+            ownerId: 'fm_inline_workspace:jsSettings:runJs:code',
             name: 'source',
             status: 'active',
             defaultRef: 'head',
@@ -305,7 +305,7 @@ describe('PluginJsTemplateClientV2', () => {
           files: [
             {
               path: 'src/client/index.tsx',
-              content: 'ctx.render(<div>Moved inline</div>);',
+              content: 'ctx.render(<div>Inline workspace</div>);',
               blobHash: 'a'.repeat(64),
               size: 43,
               managed: false,
@@ -347,7 +347,7 @@ describe('PluginJsTemplateClientV2', () => {
           sourceMetadata={{ jsTemplateKind: 'js-block' }}
           surfaceStyle="render"
           value={{
-            code: 'ctx.render(<div>Moved inline</div>);',
+            code: 'ctx.render(<div>Inline workspace</div>);',
             version: 'v2',
             sourceMode: 'inline',
             sourceRef: {

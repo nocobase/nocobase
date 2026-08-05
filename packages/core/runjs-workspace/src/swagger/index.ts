@@ -39,7 +39,7 @@ export const runJSAuthoringCapabilitySchema = {
     },
     externalization: {
       type: 'object',
-      required: ['available', 'entryKinds', 'destinationTypes', 'supportsIdempotency', 'supportsMoveToInline'],
+      required: ['available', 'entryKinds', 'destinationTypes', 'supportsIdempotency', 'supportsDetachToInline'],
       properties: {
         available: { type: 'boolean' },
         entryKinds: {
@@ -51,7 +51,7 @@ export const runJSAuthoringCapabilitySchema = {
           items: { type: 'string', enum: [...externalization.destinationTypes] },
         },
         supportsIdempotency: { type: 'boolean' },
-        supportsMoveToInline: { type: 'boolean' },
+        supportsDetachToInline: { type: 'boolean' },
       },
     },
   },

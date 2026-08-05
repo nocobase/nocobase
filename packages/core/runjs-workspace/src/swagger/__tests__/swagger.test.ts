@@ -34,5 +34,19 @@ describe('RunJS workspace Swagger', () => {
     expect(schema.properties.externalization.properties.destinationTypes.items.enum).toEqual(
       manifest.externalization.destinationTypes,
     );
+    expect(schema.properties.externalization.required).toEqual([
+      'available',
+      'entryKinds',
+      'destinationTypes',
+      'supportsIdempotency',
+      'supportsDetachToInline',
+    ]);
+    expect(Object.keys(schema.properties.externalization.properties)).toEqual([
+      'available',
+      'entryKinds',
+      'destinationTypes',
+      'supportsIdempotency',
+      'supportsDetachToInline',
+    ]);
   });
 });

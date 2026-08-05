@@ -32,7 +32,7 @@ const externalization: RunJSExternalizationCapabilityContribution = {
   entryKinds: RUNJS_EXTERNALIZATION_ENTRY_KINDS,
   destinationTypes: RUNJS_EXTERNALIZATION_DESTINATION_TYPES,
   supportsIdempotency: true,
-  supportsMoveToInline: true,
+  supportsDetachToInline: true,
 };
 
 describe('runJSSources:capabilities', () => {
@@ -48,7 +48,7 @@ describe('runJSSources:capabilities', () => {
         entryKinds: [],
         destinationTypes: [],
         supportsIdempotency: false,
-        supportsMoveToInline: false,
+        supportsDetachToInline: false,
       },
     });
     expect(result.withoutDataWrapping).toBe(true);

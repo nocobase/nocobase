@@ -613,13 +613,13 @@ describe('RunJSJsTemplateEditorProvider', () => {
         vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:detachToInline'),
       ).toHaveLength(3);
     });
-    const moveRequests = vi
+    const detachRequests = vi
       .mocked(api.request)
       .mock.calls.filter(([options]) => options.url === 'jsTemplates:detachToInline')
       .map(([options]) => options.data as { idempotencyKey: string });
-    expect(moveRequests[0].idempotencyKey).toMatch(/^detach-to-inline-/);
-    expect(moveRequests[1].idempotencyKey).toBe(moveRequests[0].idempotencyKey);
-    expect(moveRequests[2].idempotencyKey).not.toBe(moveRequests[0].idempotencyKey);
+    expect(detachRequests[0].idempotencyKey).toMatch(/^detach-to-inline-/);
+    expect(detachRequests[1].idempotencyKey).toBe(detachRequests[0].idempotencyKey);
+    expect(detachRequests[2].idempotencyKey).not.toBe(detachRequests[0].idempotencyKey);
     expect(onPersistedChange).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(

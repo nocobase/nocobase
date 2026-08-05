@@ -141,7 +141,12 @@ describe('RunJSEditorField FlowModel integration', () => {
       },
       expected: {
         sourceMode: 'js-template',
-        sourceBinding: { projectId: 'jtp_example', templateId: 'jtt_example' },
+        sourceBinding: {
+          type: 'js-template-entry',
+          projectId: 'jtp_example',
+          templateId: 'jtt_example',
+          kind: 'js-block',
+        },
         settings: { title: 'Example' },
       },
     },
@@ -273,7 +278,12 @@ describe('RunJSEditorField FlowModel integration', () => {
         jsSettings: {
           runJs: {
             code: 'ctx.render("remote");',
-            sourceBinding: { type: 'js-template-entry' },
+            sourceBinding: {
+              type: 'js-template-entry',
+              projectId: 'jtp_1',
+              templateId: 'jtt_1',
+              kind: 'js-block',
+            },
             sourceMode: 'js-template',
             version: 'v2',
           },
@@ -283,7 +293,12 @@ describe('RunJSEditorField FlowModel integration', () => {
     const { flowContext, model } = harness;
     flowContext.defineMethod('getStepFormValues', () => ({
       code: 'ctx.render("remote");',
-      sourceBinding: { type: 'js-template-entry' },
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
+        kind: 'js-block',
+      },
       sourceMode: 'inline',
       sourceRef: {
         type: 'vsc-file',
@@ -325,7 +340,12 @@ describe('RunJSEditorField FlowModel integration', () => {
       <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(1111);" />,
       {
         code: 'ctx.render("remote");',
-        sourceBinding: { type: 'js-template-entry' },
+        sourceBinding: {
+          type: 'js-template-entry',
+          projectId: 'jtp_1',
+          templateId: 'jtt_1',
+          kind: 'js-block',
+        },
         sourceMode: 'js-template',
         sourceRef: {
           type: 'vsc-file',
@@ -341,7 +361,12 @@ describe('RunJSEditorField FlowModel integration', () => {
 
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'ctx.render(1111);',
-      sourceBinding: { type: 'js-template-entry' },
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_1',
+        templateId: 'jtt_1',
+        kind: 'js-block',
+      },
       sourceMode: 'inline',
       sourceRef: {
         type: 'vsc-file',
@@ -371,7 +396,7 @@ describe('RunJSEditorField FlowModel integration', () => {
     };
     const pageModel = rootEngine.createModel<FlowModel>({
       use: 'FlowModel',
-      uid: 'fm_scoped_move_inline',
+      uid: 'fm_scoped_detach_inline',
       stepParams: { jsSettings: { runJs: initialValue } },
     });
     const settingsModel = settingsEngine.createModel<FlowModel>({
@@ -386,7 +411,7 @@ describe('RunJSEditorField FlowModel integration', () => {
     let persistedChange: Promise<void> | undefined;
 
     RunJSEditorRegistry.registerProvider({
-      key: 'scoped-move-inline-provider',
+      key: 'scoped-detach-inline-provider',
       canHandle: (props) => props.locator?.kind === 'flowModel.step',
       renderEditor: (props) => (
         <button
@@ -408,7 +433,7 @@ describe('RunJSEditorField FlowModel integration', () => {
             );
           }}
         >
-          move inline
+          detach inline
         </button>
       ),
     });
@@ -421,7 +446,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       </FlowContextProvider>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'move inline' }));
+    fireEvent.click(screen.getByRole('button', { name: 'detach inline' }));
     await persistedChange;
 
     expect(pageModel.getStepParams('jsSettings', 'runJs')).toMatchObject({
@@ -439,7 +464,7 @@ describe('RunJSEditorField FlowModel integration', () => {
 
   it('syncs a server-persisted external binding into FlowModel step params', async () => {
     const harness = createFlowModelHarness({
-      uid: 'fm_move_source',
+      uid: 'fm_save_as_js_template',
       stepParams: {
         jsSettings: {
           runJs: {
@@ -470,12 +495,13 @@ describe('RunJSEditorField FlowModel integration', () => {
                 type: 'js-template-entry',
                 projectId: 'jtp_1',
                 templateId: 'jtt_1',
+                kind: 'js-block',
               },
               settings: { color: 'blue' },
             })
           }
         >
-          move
+          save as JS template
         </button>
       ),
     });
@@ -488,7 +514,7 @@ describe('RunJSEditorField FlowModel integration', () => {
       },
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'move' }));
+    fireEvent.click(screen.getByRole('button', { name: 'save as JS template' }));
 
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'ctx.render(1111);',
@@ -498,6 +524,7 @@ describe('RunJSEditorField FlowModel integration', () => {
         type: 'js-template-entry',
         projectId: 'jtp_1',
         templateId: 'jtt_1',
+        kind: 'js-block',
       },
       settings: { color: 'blue' },
     });

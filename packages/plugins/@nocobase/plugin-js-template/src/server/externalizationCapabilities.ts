@@ -18,5 +18,5 @@ export const jsTemplateExternalizationCapabilities: RunJSExternalizationCapabili
   entryKinds: RUNJS_EXTERNALIZATION_ENTRY_KINDS,
   destinationTypes: RUNJS_EXTERNALIZATION_DESTINATION_TYPES,
   supportsIdempotency: true,
-  supportsMoveToInline: true,
+  supportsDetachToInline: true,
 };
