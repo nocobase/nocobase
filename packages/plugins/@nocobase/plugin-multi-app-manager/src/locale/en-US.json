@@ -8,7 +8,6 @@
   "Automatically generate a JWT secret": "Automatically generate a JWT secret",
   "Custom domain": "Custom domain",
   "JWT secret": "JWT secret",
-  "Identifiers must start with an English letter and contain only English letters, numbers, and underscores.": "Identifiers must start with an English letter and contain only English letters, numbers, and underscores.",
   "Manage applications": "Manage applications",
   "Migrate data": "Migrate data",
   "Migrate data to new multi-app": "Migrate data to new multi-app",

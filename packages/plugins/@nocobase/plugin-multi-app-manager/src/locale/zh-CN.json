@@ -8,7 +8,6 @@
   "Automatically generate a JWT secret": "自动生成 JWT 密钥",
   "Custom domain": "自定义域名",
   "JWT secret": "JWT 密钥",
-  "Identifiers must start with an English letter and contain only English letters, numbers, and underscores.": "标识符必须以英文字母开头，且只能包含英文字母、数字和下划线。",
   "Manage applications": "管理应用",
   "Migrate data": "迁移数据",
   "Migrate data to new multi-app": "迁移数据至新多应用",

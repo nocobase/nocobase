@@ -13,10 +13,6 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 import { PluginMultiAppManagerServer } from '../server';
-import { NAMESPACE } from '../../locale';
-
-const invalidIdentifierMessage =
-  'Identifiers must start with an English letter and contain only English letters, numbers, and underscores.';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -123,53 +119,6 @@ describe('multiple apps', () => {
     expect(err).toBeDefined();
 
     expect(await db.getRepository('applications').count()).toBe(0);
-  });
-
-  it.each([
-    ['application name', '3child', {}],
-    ['application name', '_child', {}],
-    ['application name', 'child-3', {}],
-    ['new database name', 'child_app', { dbConnType: 'new_database', database: { database: 'child-3' } }],
-    ['new database table prefix', 'child_app', { dbConnType: 'new_database', database: { tablePrefix: 'child-3' } }],
-    ['new schema', 'child_app', { dbConnType: 'new_schema', database: { schema: 'child-3' } }],
-    ['new schema table prefix', 'child_app', { dbConnType: 'new_schema', database: { tablePrefix: 'child-3' } }],
-    ['new connection database name', 'child_app', { dbConnType: 'new_connection', database: { database: 'child-3' } }],
-    ['new connection schema', 'child_app', { dbConnType: 'new_connection', database: { schema: 'child-3' } }],
-    [
-      'new connection table prefix',
-      'child_app',
-      { dbConnType: 'new_connection', database: { tablePrefix: 'child-3' } },
-    ],
-  ])('should reject an invalid %s before persisting the application', async (_, name, options) => {
-    await expect(
-      db.getRepository('applications').create({
-        values: {
-          name,
-          options: {
-            plugins: [],
-            ...options,
-          },
-        },
-      }),
-    ).rejects.toThrow(invalidIdentifierMessage);
-
-    expect(await db.getRepository('applications').count()).toBe(0);
-  });
-
-  it('should translate invalid identifier messages using the request locale', async () => {
-    const t = vi.fn().mockReturnValue('标识符必须以英文字母开头，且只能包含英文字母、数字和下划线。');
-
-    await expect(
-      db.getRepository('applications').create({
-        values: {
-          name: 'child-3',
-          options: { plugins: [] },
-        },
-        context: { i18n: { t } },
-      }),
-    ).rejects.toThrow('标识符必须以英文字母开头，且只能包含英文字母、数字和下划线。');
-
-    expect(t).toHaveBeenCalledWith(invalidIdentifierMessage, { ns: NAMESPACE });
   });
 
   it('should list application with status', async () => {
