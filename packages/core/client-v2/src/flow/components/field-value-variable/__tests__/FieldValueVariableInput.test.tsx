@@ -130,6 +130,23 @@ describe('FieldValueVariableInput', () => {
     ).toBeUndefined();
   });
 
+  it('restores a legacy Now value for a pure date field without allowing it to be selected again', async () => {
+    const dateComponentProps: DateVariableComponentProps = {
+      ...DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
+      exactNormalizeMode: 'date',
+    };
+    renderInput({ value: '{{ ctx.date.preset.now }}', isDateLikeField: true, dateComponentProps });
+
+    const tree = await resolveMetaTree();
+    const dateNode = tree[2];
+    const nowNode = (dateNode.children as MetaTreeNode[]).find((node) => node.name === 'now');
+    expect(nowNode).toMatchObject({ disabled: true, selectable: false });
+    expect(mocks.variableInputProps?.converters?.resolvePathFromValue?.(mocks.variableInputProps.value)).toEqual([
+      'date',
+      'now',
+    ]);
+  });
+
   it('restores legacy date expressions under Date without changing Constant semantics', () => {
     renderInput({ value: '{{ ctx.date.preset.today }}', isDateLikeField: true });
 

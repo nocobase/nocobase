@@ -161,11 +161,17 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
     return Component;
   }, [dateComponentProps, isDateLikeField]);
 
+  const parsedDateConfig = parseCtxDateExpressionConfig(value);
+  const restoreLegacyNowForPureDate =
+    dateComponentProps.exactNormalizeMode === 'date' &&
+    parsedDateConfig?.kind === 'preset' &&
+    parsedDateConfig.preset === 'now';
+
   const metaTree = React.useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       const base = typeof baseMetaTree === 'function' ? await baseMetaTree() : baseMetaTree;
       const presetNodes =
-        dateComponentProps.exactNormalizeMode === 'date'
+        dateComponentProps.exactNormalizeMode === 'date' && !restoreLegacyNowForPureDate
           ? DATE_PRESET_NODES.filter((item) => item.name !== 'now')
           : DATE_PRESET_NODES;
       const dateChildren: MetaTreeNode[] = [
@@ -195,6 +201,9 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           name,
           type: 'date',
           paths: ['date', name],
+          ...(name === 'now' && dateComponentProps.exactNormalizeMode === 'date'
+            ? { disabled: true, selectable: false }
+            : {}),
           render: (props) => <DateEditor {...props} />,
         })),
       ];
@@ -239,9 +248,9 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
     RunJSComponent,
     baseMetaTree,
     dateComponentProps.exactNormalizeMode,
+    restoreLegacyNowForPureDate,
   ]);
 
-  const parsedDateConfig = parseCtxDateExpressionConfig(value);
   const displayValue = parsedDateConfig ? createDateVariableEditConfig(parsedDateConfig, 'restored') : value;
 
   const handleChange = React.useCallback(
