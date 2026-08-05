@@ -9,7 +9,7 @@
 
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { decodeJwtSessionPayload, getFlowModelRdSessionId, resolveFlowModelUidFromRd } from '@nocobase/utils';
-import FlowModelRepository from '../repository';
+import FlowModelRepository, { type FlowModelNodeSnapshot } from '../repository';
 import {
   analyzeVariableTemplate,
   type AnalyzeTemplateMode,
@@ -17,17 +17,12 @@ import {
   type ResolvePathPolicy,
 } from '../template/variable-expression';
 import type { JSONValue } from '../template/resolver';
+import { planRecordBindings, type RecordBindingPlan, type RecordBindingUsage } from './record-bindings';
 import {
-  planRecordBindings,
-  type RecordBindingPlannerMode,
-  type RecordBindingPlan,
-  type RecordBindingUsage,
-} from './record-bindings';
-import {
+  compileRecordSlotPolicies,
   createFlowModelVariableContract,
   type FlowModelVariableContract,
   type RecordSlotPolicies,
-  type ResolveFlowModelFieldKind,
 } from './record-slot-policy';
 import {
   isSafeRecordBinding,
@@ -57,17 +52,6 @@ type AclWithRoles = {
 type RoleRecord = {
   allowConfigure?: unknown;
   get?: (key: string) => unknown;
-};
-
-type RecordSlotCollection = {
-  fields?: { get?: (name: string) => RecordSlotCollectionField | undefined };
-  getField?: (name: string) => RecordSlotCollectionField | undefined;
-};
-
-type RecordSlotCollectionField = {
-  isAssociationField?: () => boolean;
-  isRelationField?: () => boolean;
-  targetCollection?: RecordSlotCollection | (() => RecordSlotCollection | undefined);
 };
 
 type AuthorizationResultBase = {
@@ -105,8 +89,10 @@ export function analyzeVariableTemplateSafely(
   return { ok: true, analysis };
 }
 
-type FlowModelCacheValue = Promise<Record<string, unknown> | null> | Record<string, unknown> | null;
+type FlowModelCacheValue = Promise<FlowModelNodeSnapshot | null> | FlowModelNodeSnapshot | null;
 type FlowModelContractCacheValue = Promise<FlowModelVariableContract | null> | FlowModelVariableContract | null;
+
+const MAX_FLOW_MODEL_ANCESTORS = 64;
 
 export function clearVariableAllowListCache(app?: object) {
   // Kept as a stable invalidation hook for callers; allow-lists are request-local to avoid stale cross-request caches.
@@ -174,15 +160,11 @@ function getRequestState(ctx: ResourcerContext): Record<string, unknown> {
   return request.state;
 }
 
-function getFlowModelParentId(model: Record<string, unknown>) {
-  return typeof model.parentId === 'string' && model.parentId ? model.parentId : undefined;
-}
-
 function getFlowModelRepository(ctx: ResourcerContext) {
   return ctx.db.getCollection('flowModels').repository as FlowModelRepository;
 }
 
-async function getFlowModel(ctx: ResourcerContext, flowModelUid: string): Promise<Record<string, unknown> | null> {
+async function getFlowModelNode(ctx: ResourcerContext, flowModelUid: string): Promise<FlowModelNodeSnapshot | null> {
   const state = getRequestState(ctx);
   const cacheKey = '__variableResolveFlowModelCache';
   const cache =
@@ -190,33 +172,46 @@ async function getFlowModel(ctx: ResourcerContext, flowModelUid: string): Promis
   state[cacheKey] = cache;
   if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
 
-  const load = (async () => {
-    const model = await getFlowModelRepository(ctx).findModelById(flowModelUid, { includeAsyncNode: true });
-    return isObject(model) ? model : null;
-  })();
+  const load = getFlowModelRepository(ctx).findModelNodeSnapshotById(flowModelUid);
   cache.set(flowModelUid, load);
   const model = await load;
   cache.set(flowModelUid, model);
   return model;
 }
 
-function createFieldKindResolver(ctx: ResourcerContext): ResolveFlowModelFieldKind {
-  return (dataSourceKey, collectionName, fieldPath) => {
-    let collection = (
-      dataSourceKey === 'main'
-        ? ctx.db.getCollection(collectionName)
-        : ctx.app.dataSourceManager.get(dataSourceKey)?.collectionManager?.getCollection?.(collectionName)
-    ) as RecordSlotCollection | undefined;
-    const segments = fieldPath.split('.').filter(Boolean);
-    for (let index = 0; index < segments.length; index++) {
-      const field = collection?.getField?.(segments[index]) ?? collection?.fields?.get?.(segments[index]);
-      if (!field) return undefined;
-      const association = field.isAssociationField?.() === true || field.isRelationField?.() === true;
-      if (index === segments.length - 1) return association ? 'association' : 'field';
-      if (!association || !field.targetCollection) return undefined;
-      collection = typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+async function loadFlowModelAncestors(ctx: ResourcerContext, currentNode: FlowModelNodeSnapshot) {
+  const ancestors: FlowModelNodeSnapshot[] = [];
+  const seen = new Set([currentNode.uid]);
+  let parentId = currentNode.parentId;
+  while (parentId) {
+    if (seen.has(parentId) || ancestors.length >= MAX_FLOW_MODEL_ANCESTORS) {
+      throw new Error('Invalid FlowModel ancestor chain');
     }
-    return undefined;
+    seen.add(parentId);
+    const parent = await getFlowModelNode(ctx, parentId);
+    if (!parent) throw new Error('Missing FlowModel ancestor');
+    ancestors.push(parent);
+    parentId = parent.parentId;
+  }
+  return Object.freeze(ancestors);
+}
+
+function createRecordSlotCompilerOptions(ctx: ResourcerContext, currentNode?: FlowModelNodeSnapshot) {
+  let ancestors: Promise<readonly FlowModelNodeSnapshot[]> | undefined;
+  return {
+    app: ctx.app,
+    ctx,
+    currentNode,
+    getCollection: (dataSourceKey: string, collection: string) =>
+      dataSourceKey === 'main'
+        ? ctx.db.getCollection(collection)
+        : ctx.app.dataSourceManager.get(dataSourceKey)?.collectionManager?.getCollection?.(collection),
+    loadAncestors: currentNode
+      ? () => {
+          ancestors ||= loadFlowModelAncestors(ctx, currentNode);
+          return ancestors;
+        }
+      : undefined,
   };
 }
 
@@ -232,37 +227,19 @@ async function getFlowModelVariableContract(
   state[cacheKey] = cache;
   if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
 
-  const load = (async () => {
-    const model = await getFlowModel(ctx, flowModelUid);
-    if (!model) return null;
-    const result = analyzeVariableTemplateSafely(model, { mode: 'flow-model' });
-    if (!result.ok) {
-      return createFlowModelVariableContract(analyzeVariableTemplate({}, { mode: 'flow-model' }));
-    }
-
-    const ancestorModels: Record<string, unknown>[] = [];
-    if (result.analysis.paths.some((path) => path.varName === 'formValues' || path.varName === 'item')) {
-      const seen = new Set([flowModelUid]);
-      let parentId = getFlowModelParentId(model);
-      while (parentId && !seen.has(parentId)) {
-        seen.add(parentId);
-        const parent = await getFlowModel(ctx, parentId);
-        if (!parent) break;
-        ancestorModels.push(parent);
-        parentId = getFlowModelParentId(parent);
-      }
-    }
-
-    return createFlowModelVariableContract(result.analysis, {
-      ancestorModels,
-      flowModel: model,
-      resolveFieldKind: createFieldKindResolver(ctx),
-    });
-  })();
+  const load = createFlowModelVariableContractFromNode(ctx, flowModelUid);
   cache.set(flowModelUid, load);
   const contract = await load;
   cache.set(flowModelUid, contract);
   return contract;
+}
+
+async function createFlowModelVariableContractFromNode(ctx: ResourcerContext, flowModelUid: string) {
+  const node = await getFlowModelNode(ctx, flowModelUid);
+  if (!node) return null;
+  const result = analyzeVariableTemplateSafely(node.options, { mode: 'flow-model' });
+  const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
+  return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, node));
 }
 
 function getCurrentRoleNames(ctx: ResourcerContext): string[] {
@@ -362,13 +339,13 @@ function denied(
   return { allowed: false, analysis, contextParams, flowModelUid, policy, recordSlotPolicies };
 }
 
-function createRecordBindingPlan(
+async function createRecordBindingPlan(
+  ctx: ResourcerContext,
   contextParams: Readonly<Record<string, unknown>>,
   usage: RecordBindingUsage,
-  mode: RecordBindingPlannerMode = 'strict',
   recordSlotPolicies?: RecordSlotPolicies,
-): RecordBindingPlan {
-  return planRecordBindings({ contextParams, mode, policies: recordSlotPolicies, usage });
+): Promise<RecordBindingPlan> {
+  return await planRecordBindings({ contextParams, koaCtx: ctx, policies: recordSlotPolicies, usage });
 }
 
 function recordBindingPlanAllowed(plan: RecordBindingPlan) {
@@ -393,7 +370,7 @@ export async function authorizeVariablesResolve(
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
     return {
       allowed: false,
-      contextParams: createRecordBindingPlan(contextParams, {}).contextParams,
+      contextParams: (await createRecordBindingPlan(ctx, contextParams, {})).contextParams,
       flowModelUid: flowModelUid || undefined,
       policy,
       recordSlotPolicies,
@@ -405,7 +382,7 @@ export async function authorizeVariablesResolve(
     contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
     return denied(
       analysis,
-      createRecordBindingPlan(contextParams, analysis.usage).contextParams,
+      (await createRecordBindingPlan(ctx, contextParams, analysis.usage)).contextParams,
       policy,
       recordSlotPolicies,
       flowModelUid || undefined,
@@ -429,7 +406,7 @@ export async function authorizeVariablesResolve(
       contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
       return denied(
         analysis,
-        createRecordBindingPlan(contextParams, analysis.usage).contextParams,
+        (await createRecordBindingPlan(ctx, contextParams, analysis.usage)).contextParams,
         policy,
         recordSlotPolicies,
         flowModelUid || undefined,
@@ -440,11 +417,17 @@ export async function authorizeVariablesResolve(
   }
 
   contextParams = sanitizeContextParams(sanitizeRegisteredVariableContextParams(contextParams));
-  let bindingPlan = createRecordBindingPlan(contextParams, analysis.usage);
+  let bindingPlan = await createRecordBindingPlan(ctx, contextParams, analysis.usage);
+  const configureRole = await currentRoleAllowsConfigure(ctx);
+  const currentNode = flowModelUid ? await getFlowModelNode(ctx, flowModelUid) : null;
 
-  if (await currentRoleAllowsConfigure(ctx)) {
+  if (configureRole) {
     policy = createPolicy(true, new Set(), unrestrictedVariables);
-    bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, 'trusted');
+    recordSlotPolicies = await compileRecordSlotPolicies(
+      analysis,
+      createRecordSlotCompilerOptions(ctx, currentNode || undefined),
+    );
+    bindingPlan = await createRecordBindingPlan(ctx, contextParams, analysis.usage, recordSlotPolicies);
     return recordBindingPlanAllowed(bindingPlan)
       ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy, recordSlotPolicies }
       : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
@@ -469,7 +452,20 @@ export async function authorizeVariablesResolve(
     }
   }
 
-  bindingPlan = createRecordBindingPlan(contextParams, analysis.usage, 'strict', recordSlotPolicies);
+  if (unrestrictedVariables.size) {
+    const requestPolicies = await compileRecordSlotPolicies(
+      analysis,
+      createRecordSlotCompilerOptions(ctx, currentNode || undefined),
+    );
+    const mergedPolicies = new Map(recordSlotPolicies);
+    for (const path of analysis.paths) {
+      if (!unrestrictedVariables.has(path.varName)) continue;
+      const requestPolicy = requestPolicies.get(path.canonicalKey);
+      if (requestPolicy) mergedPolicies.set(path.canonicalKey, requestPolicy);
+    }
+    recordSlotPolicies = mergedPolicies;
+  }
+  bindingPlan = await createRecordBindingPlan(ctx, contextParams, analysis.usage, recordSlotPolicies);
   return recordBindingPlanAllowed(bindingPlan)
     ? {
         allowed: true,

@@ -12,6 +12,8 @@ import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
 import type { VariablePathRef } from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
+import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
+import { createNestedRecordSlotResolver, getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { variables } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
 
@@ -19,7 +21,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
-  findModelById?: (uid: string) => Promise<unknown>;
+  findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
   token?: string;
@@ -52,7 +54,7 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
     getField: (name: string) => fields[name],
   };
 
-  return {
+  const ctx = {
     app: {
       acl: {
         getRole: () => ({
@@ -72,7 +74,8 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
-              findModelById: options.findModelById || (async (uid: string) => models[uid] || null),
+              findModelNodeSnapshotById:
+                options.findModelNodeSnapshotById || (async (uid: string) => models[uid] || null),
             },
           };
         }
@@ -91,44 +94,52 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
       currentRoles: [currentRole],
     },
   } as unknown as ResourcerContext;
+  const registry = getRecordSlotResolverRegistry(ctx.app);
+  createBuiltInRecordSlotResolvers().forEach((resolver) => registry.register(resolver));
+  return ctx;
 }
 
 function createFlowModel(uid: string, template: unknown) {
   return {
     uid,
-    use: 'DetailsBlockModel',
-    stepParams: {
-      resourceSettings: {
-        init: { dataSourceKey: 'main', collectionName: 'users' },
+    options: {
+      use: 'DetailsBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
+        },
       },
+      props: template,
     },
-    props: template,
+    parentId: null,
+    subKey: null,
+    async: false,
   };
 }
 
 function createEditFormModel(uid: string, template: unknown, configuredFields: string[]) {
   return {
     uid,
-    use: 'EditFormModel',
-    stepParams: {
-      resourceSettings: {
-        init: { dataSourceKey: 'main', collectionName: 'users' },
-      },
-    },
-    subModels: {
-      grid: {
-        uid: `${uid}-grid`,
-        use: 'FormGridModel',
-        subModels: {
-          items: configuredFields.map((fieldPath, index) => ({
-            uid: `${uid}-field-${index}`,
-            use: 'FormItemModel',
-            stepParams: { fieldSettings: { init: { fieldPath } } },
-          })),
+    options: {
+      use: 'EditFormModel',
+      stepParams: {
+        resourceSettings: {
+          init: { dataSourceKey: 'main', collectionName: 'users' },
         },
       },
+      configuredFields: configuredFields.map((fieldPath, index) => ({
+        uid: `${uid}-field-${index}`,
+        stepParams: {
+          fieldSettings: {
+            init: { fieldPath },
+          },
+        },
+      })),
+      props: template,
     },
-    props: template,
+    parentId: null,
+    subKey: null,
+    async: false,
   };
 }
 
@@ -222,7 +233,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.contextParams).not.toHaveProperty('user.profile');
   });
 
-  it('does not include runtime record sources in path authorization', async () => {
+  it('keeps runtime record sources out of path authorization and strips targets without a server contract', async () => {
     const session = createTokenSession();
     const modelUid = 'strict-view-record-source';
     const ctx = createFakeCtx({
@@ -248,13 +259,8 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings[0].params).toEqual({
-      associationName: 'users.roles',
-      collection: 'roles',
-      dataSourceKey: 'secondary',
-      filterByTk: ['root'],
-      sourceId: 9,
-    });
+    expect(result.bindingPlan.bindings).toEqual([]);
+    expect(result.contextParams).toEqual({});
   });
 
   it('keeps dash field names intact when matching requested keys', async () => {
@@ -374,7 +380,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
   });
 
-  it('keeps legal strict siblings when another slot descriptor is missing or misplaced', async () => {
+  it('strips Form descriptors without an owning resolver while preserving path authorization', async () => {
     const session = createTokenSession();
     const modelUid = 'strict-descriptor-tolerance';
     const template = ['{{ ctx.formValues.status }}', '{{ ctx.formValues.department.name }}'];
@@ -397,7 +403,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(true);
     expect(result.contextParams).toEqual({});
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([expect.objectContaining({ prefix: [], relativePaths: [['status']] })]);
+    expect(result.bindingPlan.bindings).toEqual([]);
   });
 
   it('rejects missing, invalid, and model-external paths for ordinary roles', async () => {
@@ -422,7 +428,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect([missingRd.allowed, invalidRd.allowed, externalPath.allowed]).toEqual([false, false, false]);
   });
 
-  it('collects paths from the whole model while ignoring unsupported client expressions', async () => {
+  it('recursively collects paths from the current node options while ignoring unsupported expressions', async () => {
     const session = createTokenSession();
     const modelUid = 'whole-model-collection';
     const ctx = createFakeCtx({
@@ -442,6 +448,34 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     expect(result.policy.allowedPaths.has(result.analysis.paths[0].canonicalKey)).toBe(true);
+  });
+
+  it('isolates parent, child, sibling, and async node allow-lists', async () => {
+    const session = createTokenSession();
+    const parent = createFlowModel('scope-parent', '{{ ctx.parentOnly }}');
+    const child = { ...createFlowModel('scope-child', '{{ ctx.childOnly }}'), parentId: parent.uid };
+    const sibling = { ...createFlowModel('scope-sibling', '{{ ctx.siblingOnly }}'), parentId: parent.uid };
+    const asyncChild = {
+      ...createFlowModel('scope-async-child', '{{ ctx.asyncOnly }}'),
+      parentId: parent.uid,
+      async: true,
+    };
+    const ctx = createFakeCtx({
+      models: Object.fromEntries([parent, child, sibling, asyncChild].map((model) => [model.uid, model])),
+      token: session.token,
+    });
+
+    for (const [uid, ownPath, foreignPath] of [
+      [parent.uid, 'parentOnly', 'childOnly'],
+      [child.uid, 'childOnly', 'parentOnly'],
+      [sibling.uid, 'siblingOnly', 'childOnly'],
+      [asyncChild.uid, 'asyncOnly', 'parentOnly'],
+    ]) {
+      const rd = session.rd(uid);
+      const own = await authorizeVariablesResolve(ctx, { rd, template: `{{ ctx.${ownPath} }}` });
+      const foreign = await authorizeVariablesResolve(ctx, { rd, template: `{{ ctx.${foreignPath} }}` });
+      expect([own.allowed, foreign.allowed]).toEqual([true, false]);
+    }
   });
 
   it('uses exact whole-object, numeric wildcard, and literal dotted-key canonical paths', async () => {
@@ -548,10 +582,10 @@ describe('variables:resolve allow-list authorization', () => {
     const session = createTokenSession();
     const modelUid = 'request-cache-model';
     const findRoles = vi.fn(async () => []);
-    const findModelById = vi.fn(async (uid: string) =>
+    const findModelNodeSnapshotById = vi.fn(async (uid: string) =>
       uid === modelUid ? createFlowModel(modelUid, '{{ctx.user.id}}') : null,
     );
-    const ctx = createFakeCtx({ findModelById, findRoles, token: session.token });
+    const ctx = createFakeCtx({ findModelNodeSnapshotById, findRoles, token: session.token });
     const rd = session.rd(modelUid);
     const missingRd = session.rd('missing-model');
 
@@ -561,7 +595,7 @@ describe('variables:resolve allow-list authorization', () => {
     await authorizeVariablesResolve(ctx, { rd: missingRd, template: '{{ctx.user.id}}' });
 
     expect(findRoles).toHaveBeenCalledTimes(1);
-    expect(findModelById).toHaveBeenCalledTimes(2);
+    expect(findModelNodeSnapshotById).toHaveBeenCalledTimes(2);
   });
 
   it('fails closed only around request template analysis', async () => {
@@ -629,7 +663,7 @@ describe('variables:resolve allow-list authorization', () => {
       authorizeVariablesResolve(
         createFakeCtx({
           token: session.token,
-          findModelById: async () => {
+          findModelNodeSnapshotById: async () => {
             throw modelError;
           },
         }),
@@ -638,7 +672,7 @@ describe('variables:resolve allow-list authorization', () => {
     ).rejects.toBe(modelError);
   });
 
-  it('authorizes a record descriptor at a trusted prefix', async () => {
+  it('does not bind a root descriptor without a server target contract', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template: '{{ ctx.view.record.name }}',
       contextParams: {
@@ -648,13 +682,11 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([
-      expect.objectContaining({ prefix: ['record'], relativePaths: [['name']], preferFullRecord: false }),
-    ]);
+    expect(result.bindingPlan.bindings).toEqual([]);
     expect(result.contextParams).toEqual({});
   });
 
-  it('allows a trusted record descriptor attached to the scalar leaf', async () => {
+  it('does not let root move a descriptor to a scalar leaf', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template: '{{ ctx.view.record.name }}',
       contextParams: {
@@ -665,9 +697,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(true);
     expect(result.contextParams).toEqual({});
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([
-      expect.objectContaining({ prefix: ['record', 'name'], relativePaths: [[]], preferFullRecord: true }),
-    ]);
+    expect(result.bindingPlan.bindings).toEqual([]);
   });
 
   it('strips malformed trusted descriptors without creating a binding', async () => {
@@ -688,7 +718,7 @@ describe('variables:resolve allow-list authorization', () => {
     ['member', { currentRole: 'member' }],
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('keeps popup contracts strict only for the %s lane', async (_lane, roleOptions) => {
+  ] as const)('keeps popup Slot and target contracts strict for the %s lane', async (_lane, roleOptions) => {
     const session = createTokenSession();
     const modelUid = `popup-slot-${_lane}`;
     const model = createFlowModel(modelUid, '{{ ctx.popup.record.roles.title }}');
@@ -710,7 +740,9 @@ describe('variables:resolve allow-list authorization', () => {
     expect(attack.contextParams).toEqual({});
     expect(legal.allowed).toBe(true);
     if (!attack.allowed) return;
-    expect(attack.bindingPlan.bindings).toHaveLength(_lane === 'member' ? 0 : 1);
+    expect(attack.bindingPlan.bindings).toHaveLength(0);
+    if (!legal.allowed) return;
+    expect(legal.bindingPlan.bindings).toHaveLength(0);
   });
 
   it.each([
@@ -718,7 +750,7 @@ describe('variables:resolve allow-list authorization', () => {
     ['static bracket', '{{ ctx["popup"]["record"]["roles"]["title"] }}', 'popup.record.roles'],
     ['numeric index', '{{ ctx.popup.record.roles[0].title }}', 'popup.record.roles.0'],
     ['dashed key', '{{ ctx.popup.record["role-list"].title }}', 'popup.record.role-list'],
-  ])('allows a trusted descriptor at a %s path prefix', async (_syntax, template, movedSlot) => {
+  ])('does not let root move a descriptor to a %s path prefix', async (_syntax, template, movedSlot) => {
     const descriptor = { collection: 'roles', filterByTk: 'root' };
     const attack = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template,
@@ -731,13 +763,16 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(attack.allowed).toBe(true);
     expect(legal.allowed).toBe(true);
+    if (!attack.allowed || !legal.allowed) return;
+    expect(attack.bindingPlan.bindings).toEqual([]);
+    expect(legal.bindingPlan.bindings).toEqual([]);
   });
 
   it.each([
     ['member', { currentRole: 'member' }],
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('keeps Form association contracts strict only for the %s lane', async (_lane, roleOptions) => {
+  ] as const)('requires an owning Form resolver for the %s lane', async (_lane, roleOptions) => {
     const session = createTokenSession();
     const modelUid = `form-association-slot-${_lane}`;
     const model = createEditFormModel(modelUid, '{{ ctx.formValues.roles.title }}', ['roles']);
@@ -763,10 +798,12 @@ describe('variables:resolve allow-list authorization', () => {
     expect(attack.allowed).toBe(true);
     expect(legal.allowed).toBe(true);
     if (!attack.allowed) return;
-    expect(attack.bindingPlan.bindings).toHaveLength(_lane === 'member' ? 0 : 1);
+    expect(attack.bindingPlan.bindings).toHaveLength(0);
+    if (!legal.allowed) return;
+    expect(legal.bindingPlan.bindings).toHaveLength(0);
   });
 
-  it('lets trusted roles use descriptors without a persisted slot policy', async () => {
+  it('strips root descriptors without a registered Slot policy', async () => {
     const descriptor = { collection: 'roles', filterByTk: 'root' };
     const unknown = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template: '{{ ctx.unregistered.record.name }}',
@@ -780,17 +817,17 @@ describe('variables:resolve allow-list authorization', () => {
     expect(unknown.allowed).toBe(true);
     expect(dynamicWithoutRd.allowed).toBe(true);
     if (!unknown.allowed || !dynamicWithoutRd.allowed) return;
-    expect(unknown.bindingPlan.bindings).toHaveLength(1);
-    expect(dynamicWithoutRd.bindingPlan.bindings).toHaveLength(1);
+    expect(unknown.bindingPlan.bindings).toHaveLength(0);
+    expect(dynamicWithoutRd.bindingPlan.bindings).toHaveLength(0);
   });
 
   it.each([
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('does not load FlowModel contracts for the %s trusted lane', async (_lane, roleOptions) => {
+  ] as const)('loads the current node for exact Slot resolution in the %s lane', async (_lane, roleOptions) => {
     const session = createTokenSession();
-    const findModelById = vi.fn(async () => createFlowModel('unused', '{{ ctx.other.value }}'));
-    const ctx = createFakeCtx({ ...roleOptions, findModelById, token: session.token });
+    const findModelNodeSnapshotById = vi.fn(async () => createFlowModel('unused', '{{ ctx.other.value }}'));
+    const ctx = createFakeCtx({ ...roleOptions, findModelNodeSnapshotById, token: session.token });
 
     const result = await authorizeVariablesResolve(ctx, {
       rd: session.rd('unused'),
@@ -799,9 +836,140 @@ describe('variables:resolve allow-list authorization', () => {
     });
 
     expect(result.allowed).toBe(true);
-    expect(findModelById).not.toHaveBeenCalled();
+    expect(findModelNodeSnapshotById).toHaveBeenCalledOnce();
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toHaveLength(1);
+    expect(result.bindingPlan.bindings).toHaveLength(0);
+  });
+
+  it.each([
+    ['member', { currentRole: 'member' }],
+    ['root', { currentRole: 'root' }],
+    ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
+  ] as const)('uses the same registered exact Slot and target in the %s lane', async (_lane, roleOptions) => {
+    const session = createTokenSession();
+    const modelUid = `registered-backend-${_lane}`;
+    const ctx = createFakeCtx({
+      ...roleOptions,
+      models: { [modelUid]: createFlowModel(modelUid, '{{ ctx.backend.record.name }}') },
+      token: session.token,
+    });
+    getRecordSlotResolverRegistry(ctx.app).register(
+      createNestedRecordSlotResolver({
+        owner: 'test',
+        id: `backend-${_lane}`,
+        varName: 'backend',
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
+    );
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.backend.record.name }}',
+      contextParams: { 'backend.record': { collection: 'roles', dataSourceKey: 'secondary', filterByTk: 1 } },
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) return;
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', dataSourceKey: 'main', filterByTk: 1 }),
+        prefix: ['record'],
+        relativePaths: [['name']],
+      }),
+    ]);
+  });
+
+  it('loads ancestors only for an opt-in resolver without adding their paths', async () => {
+    const session = createTokenSession();
+    const parent = {
+      ...createFlowModel('ancestor-parent', '{{ ctx.parentOnly }}'),
+      options: { provider: true, props: '{{ ctx.parentOnly }}' },
+    };
+    const child = { ...createFlowModel('ancestor-child', '{{ ctx.backend.record.name }}'), parentId: parent.uid };
+    const findModelNodeSnapshotById = vi.fn(async (uid: string) =>
+      uid === parent.uid ? parent : uid === child.uid ? child : null,
+    );
+    const ctx = createFakeCtx({ findModelNodeSnapshotById, token: session.token });
+    getRecordSlotResolverRegistry(ctx.app).register({
+      owner: 'test',
+      id: 'ancestor-provider',
+      needsAncestors: true,
+      match: (path) => path.varName === 'backend',
+      resolve: async ({ loadAncestors }) => {
+        const ancestors = await loadAncestors?.();
+        return ancestors?.some((node) => (node as { options?: { provider?: boolean } }).options?.provider === true)
+          ? {
+              status: 'resolved',
+              slot: ['record'],
+              target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+            }
+          : { status: 'abstain' };
+      },
+    });
+    const rd = session.rd(child.uid);
+
+    const backend = await authorizeVariablesResolve(ctx, {
+      rd,
+      template: '{{ ctx.backend.record.name }}',
+      contextParams: { 'backend.record': { collection: 'roles', filterByTk: 1 } },
+    });
+    const parentPath = await authorizeVariablesResolve(ctx, { rd, template: '{{ ctx.parentOnly }}' });
+
+    expect(backend.allowed).toBe(true);
+    if (!backend.allowed) return;
+    expect(backend.bindingPlan.bindings).toHaveLength(1);
+    expect(parentPath.allowed).toBe(false);
+    expect(findModelNodeSnapshotById.mock.calls.map(([uid]) => uid)).toEqual([child.uid, parent.uid]);
+  });
+
+  it.each([
+    [
+      'cyclic',
+      () => {
+        const child = { ...createFlowModel('cycle-child', '{{ ctx.backend.record.name }}'), parentId: 'cycle-parent' };
+        const parent = { ...createFlowModel('cycle-parent', {}), parentId: child.uid };
+        return { current: child, models: { [child.uid]: child, [parent.uid]: parent } };
+      },
+    ],
+    [
+      'over-deep',
+      () => {
+        const nodes = Array.from({ length: 66 }, (_, index) => ({
+          ...createFlowModel(`deep-${index}`, index === 0 ? '{{ ctx.backend.record.name }}' : {}),
+          parentId: index < 65 ? `deep-${index + 1}` : null,
+        }));
+        return { current: nodes[0], models: Object.fromEntries(nodes.map((node) => [node.uid, node])) };
+      },
+    ],
+  ] as const)('fails closed for a %s ancestor chain', async (_case, createModels) => {
+    const session = createTokenSession();
+    const { current, models } = createModels();
+    const ctx = createFakeCtx({ models, token: session.token });
+    getRecordSlotResolverRegistry(ctx.app).register({
+      owner: 'test',
+      id: `ancestor-${_case}`,
+      needsAncestors: true,
+      match: (path) => path.varName === 'backend',
+      resolve: async ({ loadAncestors }) => {
+        await loadAncestors?.();
+        return {
+          status: 'resolved',
+          slot: ['record'],
+          target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+        };
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(current.uid),
+      template: '{{ ctx.backend.record.name }}',
+      contextParams: { 'backend.record': { collection: 'users', filterByTk: 1 } },
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) return;
+    expect(result.bindingPlan.bindings).toEqual([]);
+    expect(result.contextParams).toEqual({});
   });
 
   it.each(['query.page', 'headers.authorization', 'locale', 'now', 'env.PUBLIC_VALUE', 'defineProperty.value'])(

@@ -166,20 +166,29 @@ describe('server template resolver: dashed keys in dot-only path', () => {
     }
   });
 
-  it('keeps explicit indexes and implicit dot-path aggregation', async () => {
+  it('keeps explicit indexes and aggregates equivalent dot and static bracket paths', async () => {
     const ctx = new ServerBaseContext();
     ctx.defineProperty('items', { value: [{ values: [1, 2] }, { values: [3] }] });
+    ctx.defineProperty('records', { value: [{ 'a.b': 1 }, { 'a.b': 2 }] });
 
     const out = await resolveJsonTemplate(
       {
         first: '{{ ctx.items[0].values[1] }}',
         aggregate: '{{ ctx.items.values }}',
+        bracketAggregate: '{{ ctx["items"]["values"] }}',
+        literalDottedKey: '{{ ctx.records["a.b"] }}',
         length: '{{ ctx.items.length }}',
       },
       ctx,
     );
 
-    expect(out).toEqual({ first: 2, aggregate: [1, 2, 3], length: 2 });
+    expect(out).toEqual({
+      first: 2,
+      aggregate: [1, 2, 3],
+      bracketAggregate: [1, 2, 3],
+      literalDottedKey: [1, 2],
+      length: 2,
+    });
   });
 
   it('isolates compartment globals and failures between placeholders', async () => {

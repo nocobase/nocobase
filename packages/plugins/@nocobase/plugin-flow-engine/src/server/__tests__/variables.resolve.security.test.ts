@@ -12,6 +12,7 @@ import { MockServer } from '@nocobase/test';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
 import FlowModelRepository from '../repository';
+import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 type ResolveResult = {
@@ -29,26 +30,6 @@ describe('variables:resolve record slot projection security', () => {
       token: `test.${payload}.sig`,
     };
   })();
-
-  const formModel = (uid: string, template: unknown, configuredFields = ['roles']) => ({
-    uid,
-    use: 'EditFormModel',
-    stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
-    subModels: {
-      grid: {
-        uid: `${uid}-grid`,
-        use: 'FormGridModel',
-        subModels: {
-          items: configuredFields.map((fieldPath) => ({
-            uid: `${uid}-${fieldPath}`,
-            use: 'FormItemModel',
-            stepParams: { fieldSettings: { init: { fieldPath } } },
-          })),
-        },
-      },
-    },
-    props: template,
-  });
 
   const insertFlowModel = async (model: Record<string, unknown>) => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
@@ -88,10 +69,20 @@ describe('variables:resolve record slot projection security', () => {
     await app.destroy();
   });
 
-  it('blocks a configured association path from a wide root provider while keeping legal siblings', async () => {
+  it('blocks a moved Slot while normalizing the registered target', async () => {
     const uid = 'record-projection-single';
-    const template = { id: '{{ ctx.formValues.id }}', role: '{{ ctx.formValues.roles.title }}' };
-    await insertFlowModel(formModel(uid, template));
+    const template = { id: '{{ ctx.backend.record.id }}', role: '{{ ctx.backend.record.roles[0].title }}' };
+    await insertFlowModel({ uid, use: 'DetailsBlockModel', props: template });
+    getRecordSlotResolverRegistry(app).register({
+      owner: 'test',
+      id: 'backend-record',
+      match: (path) => path.varName === 'backend' && path.runtimeSegments[0] === 'record',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['record'],
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
+    });
 
     const users = app.db.getRepository('users');
     const wide = await users.findOne({ appends: ['roles'], filterByTk: 1 });
@@ -99,18 +90,17 @@ describe('variables:resolve record slot projection security', () => {
 
     const attack = await execResolve({
       contextParams: {
-        formValues: { appends: ['roles'], collection: 'users', fields: ['id'], filterByTk: 1 },
+        'backend.record.roles': { collection: 'roles', filterByTk: 'root' },
       },
       rd: session.rd(uid),
       template,
     });
 
-    expect(attack).toEqual({ id: 1, role: template.role });
+    expect(attack).toEqual(template);
 
     const legal = await execResolve({
       contextParams: {
-        formValues: { collection: 'users', filterByTk: 1 },
-        'formValues.roles': { collection: 'roles', filterByTk: 'root' },
+        'backend.record': { collection: 'roles', dataSourceKey: 'secondary', filterByTk: 1 },
       },
       rd: session.rd(uid),
       template,
@@ -122,25 +112,42 @@ describe('variables:resolve record slot projection security', () => {
 
   it('projects each binding after batch prefetch fills a full-record cache', async () => {
     const wholeUid = 'record-projection-full-cache';
-    const formUid = 'record-projection-batch';
-    const formTemplate = { id: '{{ ctx.formValues.id }}', nickname: '{{ ctx.formValues.nickname }}' };
-    await insertFlowModel({ uid: wholeUid, use: 'DetailsBlockModel', props: '{{ ctx.view.record }}' });
-    await insertFlowModel(formModel(formUid, formTemplate, ['nickname']));
+    const narrowUid = 'record-projection-batch';
+    const narrowTemplate = { id: '{{ ctx.narrow.record.id }}', nickname: '{{ ctx.narrow.record.nickname }}' };
+    await insertFlowModel({ uid: wholeUid, use: 'DetailsBlockModel', props: '{{ ctx.wide.record }}' });
+    await insertFlowModel({ uid: narrowUid, use: 'DetailsBlockModel', props: narrowTemplate });
+    const target = { kind: 'fixed' as const, collection: 'users', dataSourceKey: 'main' };
+    const registry = getRecordSlotResolverRegistry(app);
+    registry.register({
+      owner: 'test',
+      id: 'wide-record',
+      match: (path) => path.varName === 'wide' && path.runtimeSegments[0] === 'record',
+      resolve: () => ({ status: 'resolved', slot: ['record'], target }),
+    });
+    registry.register({
+      owner: 'test',
+      id: 'narrow-record',
+      match: (path) => path.varName === 'narrow',
+      resolve: ({ path }) =>
+        path.runtimeSegments[0] === 'record' && path.runtimeSegments[1] === 'id'
+          ? { status: 'resolved', slot: ['record'], target }
+          : { status: 'abstain' },
+    });
 
     const usersFindOne = vi.spyOn(app.db.getRepository('users'), 'findOne');
     const response = await execResolve({
       batch: [
         {
-          contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
+          contextParams: { 'wide.record': { collection: 'users', filterByTk: 1 } },
           id: 'full',
           rd: session.rd(wholeUid),
-          template: { value: '{{ ctx.view.record }}' },
+          template: { value: '{{ ctx.wide.record }}' },
         },
         {
-          contextParams: { formValues: { collection: 'users', filterByTk: 1 } },
+          contextParams: { 'narrow.record': { collection: 'users', filterByTk: 1 } },
           id: 'projected',
-          rd: session.rd(formUid),
-          template: formTemplate,
+          rd: session.rd(narrowUid),
+          template: narrowTemplate,
         },
       ],
     });
@@ -148,7 +155,7 @@ describe('variables:resolve record slot projection security', () => {
     expect(response.results?.[0].data.value).toHaveProperty('nickname');
     expect(response.results?.[1]).toEqual({
       id: 'projected',
-      data: { id: 1, nickname: formTemplate.nickname },
+      data: { id: 1, nickname: narrowTemplate.nickname },
     });
     expect(usersFindOne).toHaveBeenCalledTimes(1);
   });

@@ -13,6 +13,11 @@ import { generateFlowModelRd } from '@nocobase/utils';
 import * as variableExpression from '../template/variable-expression';
 import { inferSelectsFromUsage } from '../variables/registry';
 import FlowModelRepository from '../repository';
+import {
+  createNestedRecordSlotResolver,
+  getRecordSlotResolverRegistry,
+  type RecordSlotFixedTarget,
+} from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -71,6 +76,33 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     return repository.insertModel(model);
   };
+
+  const registerViewRecordTarget = (target: RecordSlotFixedTarget) =>
+    getRecordSlotResolverRegistry(app).register(
+      createNestedRecordSlotResolver({
+        owner: '@nocobase/plugin-flow-engine',
+        id: 'view:record',
+        varName: 'view',
+        target,
+      }),
+    );
+
+  const registerPopupRecordTarget = (target: RecordSlotFixedTarget) =>
+    getRecordSlotResolverRegistry(app).register({
+      owner: '@nocobase/plugin-flow-engine',
+      id: 'popup:record',
+      match: (path) => {
+        if (path.varName !== 'popup') return false;
+        let index = 0;
+        while (path.runtimeSegments[index] === 'parent') index += 1;
+        return path.runtimeSegments[index] === 'record' || path.runtimeSegments[index] === 'sourceRecord';
+      },
+      resolve: ({ path }) => {
+        let index = 0;
+        while (path.runtimeSegments[index] === 'parent') index += 1;
+        return { status: 'resolved', slot: path.runtimeSegments.slice(0, index + 1), target };
+      },
+    });
 
   const editFormModel = (uid: string, template: unknown) => ({
     uid,
@@ -142,6 +174,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         'flow-engine',
       ],
     });
+    const usersTarget = { kind: 'fixed' as const, collection: 'users', dataSourceKey: 'main' };
+    registerViewRecordTarget(usersTarget);
+    registerPopupRecordTarget(usersTarget);
   });
 
   afterEach(async () => {
@@ -327,7 +362,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
-  it('should authorize the path independently from the runtime record source', async () => {
+  it('should normalize an allow-listed view Record to its registered target', async () => {
     const flowModelUid = 'strict-view-record-source';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -339,18 +374,18 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         },
       },
       props: {
-        title: '{{ ctx.view.record.name }}',
+        title: '{{ ctx.view.record.id }}',
       },
     });
 
     const payload = {
       rd: session.rd(flowModelUid),
-      template: { name: '{{ ctx.view.record.name }}' },
+      template: { id: '{{ ctx.view.record.id }}' },
       contextParams: {
         'view.record': {
-          dataSourceKey: 'main',
+          dataSourceKey: 'secondary',
           collection: 'roles',
-          filterByTk: 'root',
+          filterByTk: 1,
         },
       },
     };
@@ -360,10 +395,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       token: session.token,
     });
     const data = res.body?.data ?? res.body;
-    expect(data.name).toBe('root');
+    expect(data.id).toBe(1);
   });
 
-  it('should resolve an allow-listed popup path from the submitted runtime source', async () => {
+  it('should normalize an allow-listed popup Record to its registered target', async () => {
     const flowModelUid = 'popup-template-source-skip';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -375,18 +410,18 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         },
       },
       props: {
-        title: '{{ ctx.popup.parent.record.name }}',
+        title: '{{ ctx.popup.parent.record.id }}',
       },
     });
 
     const payload = {
       rd: session.rd(flowModelUid),
-      template: { name: '{{ ctx.popup.parent.record.name }}' },
+      template: { id: '{{ ctx.popup.parent.record.id }}' },
       contextParams: {
         'popup.parent.record': {
-          dataSourceKey: 'main',
+          dataSourceKey: 'secondary',
           collection: 'roles',
-          filterByTk: 'root',
+          filterByTk: 1,
         },
       },
     };
@@ -396,10 +431,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       token: session.token,
     });
     const data = res.body?.data ?? res.body;
-    expect(data.name).toBe('root');
+    expect(data.id).toBe(1);
   });
 
-  it('keeps the member popup slot gate while root uses trusted descriptors', async () => {
+  it('keeps the exact popup Slot gate for member and root roles', async () => {
     const flowModelUid = 'popup-moved-record-slot';
     const session = createTokenSession(1);
     const template = { title: '{{ ctx.popup.record.roles.title }}' };
@@ -420,8 +455,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'root', currentRoles: ['root'], token: session.token },
     );
 
-    expect(typeof root.body.title).toBe('string');
-    expect(root.body.title).not.toBe(template.title);
+    expect(root.body).toEqual(template);
 
     dataSourceGet.mockClear();
     getRepository.mockClear();
@@ -442,8 +476,8 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(findOne).not.toHaveBeenCalled();
     expect(find).toHaveBeenCalledTimes(1);
     expect(find).toHaveBeenCalledWith({ fields: ['name', 'allowConfigure'], filter: { name: ['member'] } });
-    expect(getRepository).toHaveBeenCalledTimes(1);
     expect(getRepository).toHaveBeenCalledWith('roles');
+    expect(getRepository).not.toHaveBeenCalledWith('users');
   });
 
   it.each([
@@ -480,7 +514,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(rolesFind).toHaveBeenCalledTimes(1);
   });
 
-  it('resolves item associations confirmed by the persisted owner and collection metadata', async () => {
+  it('keeps item associations unresolved without an owning resolver', async () => {
     const flowModelUid = 'item-confirmed-association-slots';
     const session = createTokenSession(1);
     const template = {
@@ -502,8 +536,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'root', currentRoles: ['root'], token: session.token },
     );
 
-    expect(response.body.user).not.toBe(template.user);
-    expect(response.body.role).not.toBe(template.role);
+    expect(response.body).toEqual(template);
   });
 
   it('rejects a member view association slot move before any target-record lookup', async () => {
@@ -529,7 +562,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('keeps configured Form associations on their persisted slot', async () => {
+  it('keeps configured Form associations unresolved without an owning resolver', async () => {
     const flowModelUid = 'form-values-moved-record-slot';
     const session = createTokenSession(1);
     const template = { title: '{{ ctx.formValues.roles.title }}' };
@@ -566,11 +599,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
-    expect(typeof legal.body.title).toBe('string');
-    expect(legal.body.title).not.toBe(template.title);
+    expect(legal.body).toEqual(template);
   });
 
-  it('lets allowConfigure endpoint requests use trusted descriptors', async () => {
+  it('does not let allowConfigure endpoint requests move descriptors', async () => {
     const getRole = vi.spyOn(app.acl, 'getRole').mockReturnValue({
       getStrategy: () => ({ allowConfigure: true }),
     } as never);
@@ -584,8 +616,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'designer', currentRoles: ['designer'] },
     );
 
-    expect(typeof response.body.title).toBe('string');
-    expect(response.body.title).not.toBe(template.title);
+    expect(response.body).toEqual(template);
     expect(getRole).toHaveBeenCalledWith('designer');
   });
 
@@ -594,7 +625,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     ['static bracket', '{{ ctx["popup"]["record"]["roles"]["title"] }}', 'popup.record.roles'],
     ['numeric index', '{{ ctx.popup.record.roles[0].title }}', 'popup.record.roles.0'],
     ['dashed key', '{{ ctx.popup.record["role-list"].title }}', 'popup.record.role-list'],
-  ])('supports trusted endpoint descriptors with %s syntax', async (_syntax, expression, movedSlot) => {
+  ])('rejects moved endpoint descriptors with %s syntax', async (_syntax, expression, movedSlot) => {
     const template = { value: expression };
     const response = await execResolve(
       {
@@ -604,8 +635,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       1,
     );
 
-    expect(typeof response.body.value).toBe('string');
-    expect(response.body.value).not.toBe(template.value);
+    expect(response.body).toEqual(template);
   });
 
   it('should support values.template field', async () => {
@@ -654,7 +684,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.nickname).toBe('{{ ctx.view.record.nickname }}');
   });
 
-  it('should resolve unregistered record variables for root', async () => {
+  it('should keep unregistered record variables unresolved for root', async () => {
     const payload = {
       template: {
         uid: '{{ ctx.x.id }}',
@@ -678,7 +708,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
     const res = await execResolve(payload, 1);
     const data = res.body?.data ?? res.body;
-    expect(data).toEqual({ role: 'root', uid: 1 });
+    expect(data).toEqual(payload.template);
   });
 
   it('should resolve deep association with auto appends (roles[0].name)', async () => {
@@ -807,6 +837,16 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
     const template = { titles: '{{ ctx.formValues.roles.title }}' };
     await insertFlowModel(editFormModel(flowModelUid, template));
+    getRecordSlotResolverRegistry(app).register({
+      owner: 'variables.resolve.test',
+      id: 'form-values-roles',
+      match: (path) => path.varName === 'formValues' && path.runtimeSegments[0] === 'roles',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['roles'],
+        target: { kind: 'fixed', collection: 'roles', dataSourceKey: 'main' },
+      }),
+    });
     const payload = {
       batch: [
         {
@@ -1153,6 +1193,11 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       await app.db.sync();
       await app.db.getRepository(hospitalCustomersCollection).create({
         values: { id: '323538', hospital_customer: 'HC-Name-323538' },
+      });
+      registerPopupRecordTarget({
+        kind: 'fixed',
+        collection: hospitalCustomersCollection,
+        dataSourceKey: 'main',
       });
     });
 
@@ -1586,6 +1631,12 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     }
 
     const repoSpy = vi.spyOn(app.db as any, 'getRepository');
+    registerPopupRecordTarget({
+      kind: 'fixed',
+      associationName: 'users.roles',
+      collection: 'roles',
+      dataSourceKey: 'main',
+    });
 
     const payload = {
       template: {

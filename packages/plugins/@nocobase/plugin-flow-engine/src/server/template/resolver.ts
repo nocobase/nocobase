@@ -398,10 +398,13 @@ async function appendAggregatedValue(scope: SandboxScope, result: unknown[], val
   }
 }
 
-function isDotOnlyPath(expression: AnalyzedExpression) {
+function isStandalonePath(expression: AnalyzedExpression) {
+  const path = expression.paths[0];
   return (
+    !!path &&
     expression.paths.length === 1 &&
-    /^ctx\.[a-zA-Z_$][a-zA-Z0-9_$]*(?:\.[a-zA-Z_$][a-zA-Z0-9_$-]*)+$/.test(expression.source.trim())
+    !expression.source.slice(0, path.span.start - expression.expressionSpan.start).trim() &&
+    !expression.source.slice(path.span.end - expression.expressionSpan.start).trim()
   );
 }
 
@@ -430,7 +433,7 @@ async function evaluateAnalyzedExpression(
   if (!expression.supported) return undefined;
   try {
     const scope = createSandboxScope();
-    const aggregateArrays = isDotOnlyPath(expression);
+    const aggregateArrays = isStandalonePath(expression);
     const helper = createGuardedCallable((varName, segments) =>
       resolveGuardedPath(scope, ctx, policy, aggregateArrays, varName, segments),
     );
