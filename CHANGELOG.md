@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.36](https://github.com/nocobase/nocobase/compare/v2.1.35...v2.1.36) - 2026-08-05
+
+### 🐛 Bug Fixes
+
+- **[Data source manager]** Prevented clearing a field interface directly from the Configure fields table. ([#10288](https://github.com/nocobase/nocobase/pull/10288)) by @hongboji
+
+- **[Auth: LDAP]** Fixed LDAP login when a user DN mixes UTF-8 escapes with escaped syntax characters such as commas. by @hongboji
+
 ## [v2.1.35](https://github.com/nocobase/nocobase/compare/v2.1.34...v2.1.35) - 2026-08-05
 
 ### 🚀 Improvements

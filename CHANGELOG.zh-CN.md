@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.1.36](https://github.com/nocobase/nocobase/compare/v2.1.35...v2.1.36) - 2026-08-05
+
+### 🐛 修复
+
+- **[数据源管理]** 修复配置字段表格中 UI 类型可被直接清空的问题。 ([#10288](https://github.com/nocobase/nocobase/pull/10288)) by @hongboji
+
+- **[认证：LDAP]** 修复 LDAP 用户 DN 同时包含 UTF-8 转义和逗号等语法转义时无法登录的问题。 by @hongboji
+
 ## [v2.1.35](https://github.com/nocobase/nocobase/compare/v2.1.34...v2.1.35) - 2026-08-05
 
 ### 🚀 优化
