@@ -148,6 +148,7 @@ class ConnectForeignData extends CollectionTemplate {
   title = `{{t("Connect to foreign data",{ ns: "${NAMESPACE}" })}}`;
   order = 5;
   color = 'yellow';
+  deprecated = true;
   default = {
     fields: [],
     autoGenId: false,

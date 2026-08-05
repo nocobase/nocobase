@@ -66,6 +66,8 @@ export abstract class CollectionTemplate {
   availableFieldInterfaces?: AvailableFieldInterfacesInclude & AvailableFieldInterfacesExclude;
   /** Whether it is a divider */
   divider?: boolean;
+  /** Whether it is deprecated */
+  deprecated?: boolean;
   /** Template description */
   description?: string;
   /** Configure buttons in the configuration fields */

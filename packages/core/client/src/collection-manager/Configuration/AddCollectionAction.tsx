@@ -11,7 +11,7 @@ import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd-v5';
 import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, MenuProps } from 'antd';
+import { Button, Dropdown, MenuProps, Space, Tag } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -166,12 +166,17 @@ export const AddCollectionAction = (props) => {
         });
       }
       result.push({
-        label: compile(item.title),
+        label: (
+          <Space size={4}>
+            {compile(item.title)}
+            {item.deprecated ? <Tag color="warning">{t('Deprecated')}</Tag> : null}
+          </Space>
+        ),
         key: item.name,
       });
     });
     return result;
-  }, [collectionTemplates]);
+  }, [collectionTemplates, compile, t]);
   const {
     state: { category },
   } = useResourceActionContext();
@@ -189,7 +194,7 @@ export const AddCollectionAction = (props) => {
       },
       items,
     };
-  }, [category, items]);
+  }, [category, compile, getTemplate, items]);
   return (
     <RecordProvider record={record}>
       <ActionContextProvider value={{ visible, setVisible }}>

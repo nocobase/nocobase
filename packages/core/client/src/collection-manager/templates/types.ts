@@ -29,6 +29,8 @@ export interface ICollectionTemplate {
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
   /** 是否分割线 */
   divider?: boolean;
+  /** 是否已弃用 */
+  deprecated?: boolean;
   /** 模板描述 */
   description?: string;
   /**配置字段中的操作按钮 */
