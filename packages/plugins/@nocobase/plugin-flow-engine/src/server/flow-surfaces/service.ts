@@ -1376,7 +1376,9 @@ export function resolveRunJsSettingsGroupKey(use: unknown): RunJsSettingsGroupKe
     return 'clickSettings';
   }
   if (
-    ['JSBlockModel', 'JSItemModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(normalizedUse) ||
+    ['JSBlockModel', 'JSPageModel', 'JSItemModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(
+      normalizedUse,
+    ) ||
     JS_ITEM_ACTION_USES.has(normalizedUse)
   ) {
     return 'jsSettings';
@@ -1419,6 +1421,24 @@ export function shouldSyncJsTemplateUsages(
       getRunJsReferenceSourceState(currentOptions?.stepParams, currentGroupKey),
       getRunJsReferenceSourceState(nextOptions?.stepParams, nextGroupKey),
     )
+  );
+}
+
+export function assertNoDirectJsTemplateDetach(
+  currentOptions: Record<string, unknown>,
+  nextOptions: Record<string, unknown>,
+): void {
+  const currentGroupKey = resolveRunJsSettingsGroupKey(currentOptions?.use);
+  if (!hasJsTemplateSourceMode(currentOptions?.stepParams, currentGroupKey)) {
+    return;
+  }
+  const nextGroupKey = resolveRunJsSettingsGroupKey(nextOptions?.use);
+  if (hasJsTemplateSourceMode(nextOptions?.stepParams, nextGroupKey)) {
+    return;
+  }
+  throwConflict(
+    'JS Template sources must be detached through jsTemplates:detachToInline',
+    'FLOW_SURFACE_JS_TEMPLATE_DETACH_REQUIRED',
   );
 }
 
@@ -1650,6 +1670,7 @@ export class FlowSurfacesService {
       ...currentOptions,
       ...this.normalizeFlowSurfaceModelOptionsPatch(values),
     };
+    assertNoDirectJsTemplateDetach(currentOptions, nextOptions);
     delete nextOptions.uid;
     delete nextOptions.name;
     delete nextOptions.options;

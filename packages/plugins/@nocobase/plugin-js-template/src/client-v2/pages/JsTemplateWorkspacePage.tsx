@@ -29,7 +29,7 @@ import {
   type RunJSWorkspaceFile,
   useVscFileT,
 } from '../vsc-file/public-api';
-import { Flex, Modal, Space, Typography, message } from 'antd';
+import { Alert, Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -72,6 +72,7 @@ import {
   readJsTemplateWorkspaceArchive,
 } from '../workspace/jsTemplateWorkspaceArchive';
 import { resolveJsTemplateWorkspaceJsonSchema } from '../workspace/jsTemplateWorkspaceJsonSchema';
+import { listJsTemplateUsageLocations, type ApiClientLike } from '../api/jsTemplatesRequests';
 import {
   InitialProjectLoadingState,
   MissingProjectState,
@@ -99,6 +100,7 @@ interface JsTemplateWorkspacePageProps {
 }
 
 export interface DetachJsTemplateToInlineRequest {
+  expectedProjectHeadCommitId: string;
   entryPath: string;
   files: RunJSWorkspaceFile[];
   version: string;
@@ -150,6 +152,7 @@ function JsTemplateWorkspacePage({
 }: JsTemplateWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
+  const apiClient = app.apiClient as ApiClientLike | undefined;
   const studioT = useVscFileT();
   const [searchParams] = useSearchParams();
   const projectId = projectIdProp || searchParams.get('projectId') || '';
@@ -181,7 +184,7 @@ function JsTemplateWorkspacePage({
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [previewing, setPreviewing] = useState(false);
-  const [movingToInline, setMovingToInline] = useState(false);
+  const [detachingToInline, setDetachingToInline] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [versionMessage, setVersionMessage] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -196,6 +199,7 @@ function JsTemplateWorkspacePage({
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
+  const [saveImpactCount, setSaveImpactCount] = useState<number | null>(null);
   const workspaceFullscreen = useFullscreenOverlay();
   const embeddedSaveRequestRef = useRef<{
     resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
@@ -294,6 +298,35 @@ function JsTemplateWorkspacePage({
     loadWorkspace();
   }, [loadWorkspace]);
 
+  useEffect(() => {
+    let active = true;
+    if (!templateScoped || !templateId || !apiClient?.request) {
+      setSaveImpactCount(null);
+      return () => {
+        active = false;
+      };
+    }
+    setSaveImpactCount(null);
+    listJsTemplateUsageLocations(apiClient, {
+      templateId,
+      page: 1,
+      pageSize: 1,
+    })
+      .then((result) => {
+        if (active) {
+          setSaveImpactCount(result.meta.effectiveCount);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSaveImpactCount(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiClient, templateId, templateScoped]);
+
   const activeFile = files.find((file) => file.path === activePath);
   const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files }), [files]);
   const activeEntryContext = useMemo(
@@ -317,7 +350,8 @@ function JsTemplateWorkspacePage({
   const checkSnapshotKey = useMemo(() => buildWorkspacePreviewSnapshot(files, workspaceScope), [files, workspaceScope]);
   latestCheckSnapshotRef.current = checkSnapshotKey;
   const canPreview = templateScoped && Boolean(onPreview);
-  const canDetachJsTemplateToInline = templateScoped && Boolean(onDetachJsTemplateToInline);
+  const canDetachJsTemplateToInline =
+    templateScoped && Boolean(onDetachJsTemplateToInline) && Boolean(baseHeadCommitId);
   const authoringSurfaceId =
     workspaceScope.mode === 'template' && canWrite
       ? buildJsTemplateAuthoringSurfaceId(projectId, workspaceScope, templateId)
@@ -995,14 +1029,20 @@ function JsTemplateWorkspacePage({
   ]);
 
   const detachToInline = useCallback(async () => {
-    if (!canDetachJsTemplateToInline || workspaceScope.mode !== 'template' || !onDetachJsTemplateToInline) {
+    if (
+      !canDetachJsTemplateToInline ||
+      !baseHeadCommitId ||
+      workspaceScope.mode !== 'template' ||
+      !onDetachJsTemplateToInline
+    ) {
       return;
     }
 
-    setMovingToInline(true);
+    setDetachingToInline(true);
     setNotice(null);
     try {
       await onDetachJsTemplateToInline({
+        expectedProjectHeadCommitId: baseHeadCommitId,
         entryPath: workspaceScope.entryPath,
         files: files.map((file) => ({ ...file })),
         version: 'v2',
@@ -1010,21 +1050,21 @@ function JsTemplateWorkspacePage({
     } catch (error) {
       setNotice({
         type: 'error',
-        message: error instanceof Error ? error.message : t('Failed to move source to inline code'),
+        message: error instanceof Error ? error.message : t('Failed to detach to Inline'),
       });
       throw error;
     } finally {
-      setMovingToInline(false);
+      setDetachingToInline(false);
     }
-  }, [canDetachJsTemplateToInline, files, onDetachJsTemplateToInline, t, workspaceScope]);
+  }, [baseHeadCommitId, canDetachJsTemplateToInline, files, onDetachJsTemplateToInline, t, workspaceScope]);
 
   const confirmDetachJsTemplateToInline = useCallback(() => {
     Modal.confirm({
-      title: t('Move to inline code?'),
+      title: t('Detach to Inline?'),
       content: t(
         'The current working copy of this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.',
       ),
-      okText: t('Move to inline code'),
+      okText: t('Detach to Inline'),
       cancelText: t('Cancel'),
       transitionName: '',
       maskTransitionName: '',
@@ -1156,6 +1196,26 @@ function JsTemplateWorkspacePage({
       />
 
       <WorkspaceNotice notice={notice} onClose={() => setNotice(null)} />
+      {project && saveImpactCount !== null ? (
+        <Alert
+          message={
+            project?.lifecycleStatus === 'archived'
+              ? t(
+                  'This JS Template has {{count}} effective usages. Its Source Project is archived and read-only.',
+                ).replace('{{count}}', String(saveImpactCount))
+              : project?.lifecycleStatus === 'disabled'
+                ? t('This JS Template has {{count}} effective usages. Its Source Project is disabled.').replace(
+                    '{{count}}',
+                    String(saveImpactCount),
+                  )
+                : t(
+                    'This JS Template is used in {{count}} locations; after save those locations immediately use the new code.',
+                  ).replace('{{count}}', String(saveImpactCount))
+          }
+          showIcon
+          type="info"
+        />
+      ) : null}
       <WorkspaceLoadingStrip label={t('Loading source')} loading={loading} />
 
       <WorkspaceStudio
@@ -1223,8 +1283,8 @@ function JsTemplateWorkspacePage({
         detachToInline={
           canDetachJsTemplateToInline
             ? {
-                label: t('Move to inline code'),
-                loading: movingToInline,
+                label: t('Detach to Inline'),
+                loading: detachingToInline,
                 onClick: confirmDetachJsTemplateToInline,
               }
             : undefined

@@ -14,6 +14,7 @@ import { vi } from 'vitest';
 import type { JsTemplateUsageOwnerLocator, JsTemplateRuntimeSourceBinding } from '../../shared/types';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateUsageService } from '../services/JsTemplateUsageService';
 
 type FixtureRepositoryInput = {
@@ -49,8 +50,33 @@ export function createJsTemplateUsageServiceFixture(
   const flowModelTrees = { ...(input.flowModelTrees || {}) };
   const repositories = {
     flowModels: createRepository({ records: input.flowModels || [] }),
-    jsTemplateProjects: createRepository({ records: input.projects || [] }),
-    jsTemplates: createRepository({ records: input.templates || [] }),
+    jsTemplateProjects: createRepository({
+      records: (
+        input.projects ?? [
+          {
+            id: 'jtp_sales',
+            lifecycleStatus: 'active',
+            headCommitId: 'commit_sales',
+          },
+        ]
+      ).map((project) => ({ applicationName: 'main', ...project })),
+    }),
+    jsTemplates: createRepository({
+      records: input.templates ?? [
+        {
+          id: 'jtt_sales_kpi',
+          projectId: 'jtp_sales',
+          kind: 'js-block',
+          healthStatus: 'ready',
+        },
+        {
+          id: 'jtt_sales_page',
+          projectId: 'jtp_sales',
+          kind: 'js-page',
+          healthStatus: 'ready',
+        },
+      ],
+    }),
     jsTemplateUsages: createRepository({ records: input.usages || [] }),
     jsTemplateLogs: createRepository(),
     flowModelTemplates: createRepository({ records: input.flowModelTemplates || [] }),
@@ -121,7 +147,8 @@ export function createJsTemplateUsageServiceFixture(
   const auditService = new JsTemplateAuditService(db);
   const recordUsageEvent = vi.spyOn(auditService, 'recordUsageEvent').mockResolvedValue(undefined);
   const permissionService = new JsTemplatePermissionService(auditService);
-  const service = new JsTemplateUsageService(db, auditService, permissionService);
+  const projectService = new JsTemplateProjectService(db, auditService, permissionService);
+  const service = new JsTemplateUsageService(db, auditService, permissionService, projectService);
 
   return {
     db,
@@ -129,6 +156,7 @@ export function createJsTemplateUsageServiceFixture(
     repositories,
     flowModelTrees,
     auditService,
+    projectService,
     recordUsageEvent,
   };
 }
@@ -159,9 +187,11 @@ export function createRepository(input: FixtureRepositoryInput = {}) {
   const records = (input.records || []).map((record) => createMutableModel(record));
   return {
     records,
-    find: vi.fn(async (options: { filter?: Record<string, unknown> } = {}) =>
-      records.filter((record) => matchesFilter(record, options.filter)),
-    ),
+    find: vi.fn(async (options: { filter?: Record<string, unknown>; limit?: number; offset?: number } = {}) => {
+      const matched = records.filter((record) => matchesFilter(record, options.filter));
+      const offset = options.offset || 0;
+      return matched.slice(offset, typeof options.limit === 'number' ? offset + options.limit : undefined);
+    }),
     findOne: vi.fn(
       async (options: { filterByTk?: string; filter?: Record<string, unknown> } = {}) =>
         records.find(
@@ -669,6 +699,9 @@ function matchesFilterEntry(record: MutableModel, key: string, value: unknown): 
   const recordValue = record.get(key);
   if (isPlainRecord(value) && Array.isArray(value.$in)) {
     return value.$in.includes(recordValue);
+  }
+  if (isPlainRecord(value) && '$ne' in value) {
+    return recordValue !== value.$ne;
   }
   return recordValue === value;
 }

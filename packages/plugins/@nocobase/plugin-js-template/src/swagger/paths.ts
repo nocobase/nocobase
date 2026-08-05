@@ -164,36 +164,46 @@ export const jsTemplatePaths = {
   '/jsTemplateUsages:listUsages': {
     post: {
       tags: ['jsTemplateUsages'],
-      summary: 'List visible JS Template usages',
+      summary: 'List visible usage locations for one JS Template',
       description:
-        'List usage rows filtered by Project, Template, or owner locator. Usages whose owners are not visible to the current user are omitted.',
+        'Return one paginated Template-level Usage list. owner_missing rows are excluded. Hidden owners are omitted from data and represented only by aggregate hiddenCount.',
       requestBody: {
-        required: false,
+        required: true,
         content: {
           'application/json': {
             schema: {
               type: 'object',
+              required: ['templateId'],
               properties: {
-                projectId: {
-                  type: 'string',
-                },
                 templateId: {
                   type: 'string',
+                  minLength: 1,
                 },
-                ownerLocator: {
-                  $ref: '#/components/schemas/JsTemplateUsageOwnerLocator',
+                page: {
+                  type: 'integer',
+                  minimum: 1,
+                  default: 1,
+                },
+                pageSize: {
+                  type: 'integer',
+                  minimum: 1,
+                  maximum: 100,
+                  default: 20,
                 },
               },
+              additionalProperties: false,
             },
           },
         },
       },
       responses: {
         200: {
-          description: 'Visible usages.',
+          description: 'Paginated visible usage locations and visibility-safe aggregate metadata.',
           content: jsonContent('JsTemplateUsageListEnvelope'),
         },
+        400: errorResponse('templateId or pagination is invalid.'),
         403: errorResponse('The current user cannot read JS Template usages.'),
+        404: errorResponse('The requested JS Template does not exist in the current application.'),
       },
     },
   },
@@ -429,10 +439,11 @@ export const jsTemplatePaths = {
   '/jsTemplates:saveAsJsTemplate': {
     post: {
       tags: ['jsTemplates'],
-      summary: 'Move an inline RunJS workspace to a JS Template',
+      summary: 'Save an inline RunJS workspace as a JS Template',
       description: [
-        'Atomically compile and externalize a complete inline RunJS workspace into a JS Template, then bind its Host to that Template.',
-        'Pass the root business payload directly and use --body-file for multi-file source. destination must select an existing Project or describe a new Project. idempotencyKey can make retries stable. HTTP 409 reports stale owner/source Head, Template, Project, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance Project or Host state.',
+        'Save an inline RunJS workspace as a JS Template.',
+        'Atomically compile and save a complete inline RunJS workspace as a reusable Template Entry, then bind its Host to that JS Template.',
+        'Pass the root business payload directly and use --body-file for multi-file source. destination must select an existing Source Project or describe a new Source Project. idempotencyKey is required: the same complete request replays its durable result, while a different request with the same key returns a conflict. HTTP 409 reports stale owner/source Head, Template, Source Project, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance the Source Project or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -442,16 +453,16 @@ export const jsTemplatePaths = {
       },
       responses: {
         200: {
-          description: 'Source was committed, compiled, and atomically bound to the Host.',
+          description: 'The JS Template was committed, compiled, and atomically bound to the Host.',
           content: jsonContent('SaveAsJsTemplateEnvelope'),
         },
         400: errorResponse('The locator, workspace, destination, Template identity, or idempotency key is invalid.'),
-        403: errorResponse('The current user cannot write the RunJS Host or the selected JS Template Project.'),
+        403: errorResponse('The current user cannot write the RunJS Host or the selected Source Project.'),
         404: errorResponse(
-          'The RunJS Host, source Repository, destination Project, origin Template, or created Template was not found.',
+          'The RunJS Host, source Repository, destination Source Project, origin Template, or created Template was not found.',
         ),
         409: errorResponse(
-          'The owner fingerprint or source Head is stale, or a Project, Template, binding, operation, or idempotency conflict prevents the move. No persistent state is advanced.',
+          'The owner fingerprint or source Head is stale, or a Source Project, Template, binding, operation, or idempotency conflict prevents the save. No persistent state is advanced.',
         ),
         422: errorResponse(
           'The complete destination workspace failed validation or compilation. No persistent state is advanced.',
@@ -462,10 +473,11 @@ export const jsTemplatePaths = {
   '/jsTemplates:detachToInline': {
     post: {
       tags: ['jsTemplates'],
-      summary: 'Move a JS Template workspace back inline',
+      summary: 'Detach a JS Template workspace to Inline',
       description: [
-        'Compile and relocate a complete reachable JS Template workspace into its bound RunJS Host, then remove that Host binding.',
-        'Pass the root business payload directly and use --body-file for multi-file source. idempotencyKey is required: the same complete request replays its first result, while a different request with the same key returns a conflict. HTTP 409 reports stale binding, Project, source, owner, or idempotency state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
+        'Detach a JS Template workspace to Inline.',
+        'Compile and copy a complete reachable JS Template workspace into its bound RunJS Host, then remove that Host binding.',
+        'Pass the root business payload directly and use --body-file for multi-file source. idempotencyKey and expectedProjectHeadCommitId are required: the same complete request replays its first result, while a different request with the same key returns a conflict. HTTP 409 reports stale binding, Source Project Head, source, owner, or idempotency state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -474,7 +486,7 @@ export const jsTemplatePaths = {
       },
       responses: {
         200: {
-          description: 'Reachable source files were committed to RunJS and the Host was atomically moved inline.',
+          description: 'Reachable source files were committed to RunJS and the Host was atomically detached to Inline.',
           content: jsonContent('DetachJsTemplateToInlineEnvelope'),
         },
         400: errorResponse(
@@ -482,14 +494,51 @@ export const jsTemplatePaths = {
         ),
         403: errorResponse('The current user cannot read the Template or write the bound RunJS Host.'),
         404: errorResponse(
-          'The bound RunJS Host, Project, Template, source commit, or required source file was not found.',
+          'The bound RunJS Host, Source Project, Template, source commit, or required source file was not found.',
         ),
         409: errorResponse(
-          'The binding, owner, Project, Template, source, operation, or idempotency state prevents the move. No persistent state is advanced.',
+          'The binding, owner, Source Project Head, Template, source, operation, or idempotency state prevents the detach. No persistent state is advanced.',
         ),
         422: errorResponse(
           'The relocated inline workspace failed validation or compilation. No persistent state is advanced.',
         ),
+      },
+    },
+  },
+  '/jsTemplates:delete': {
+    post: {
+      tags: ['jsTemplates'],
+      summary: 'Delete one JS Template entry',
+      description:
+        'Delete only the selected Template Entry source and unreferenced artifact data. Effective usages block deletion; owner_missing usages do not. Source Project deletion remains a separate operation.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['templateId'],
+              properties: {
+                templateId: {
+                  type: 'string',
+                  minLength: 1,
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'The Template Entry and only its unreferenced records were deleted.',
+          content: jsonContent('DeleteJsTemplateEnvelope'),
+        },
+        400: errorResponse('templateId is invalid.'),
+        403: errorResponse('The current user cannot delete this JS Template.'),
+        404: errorResponse('The JS Template or Source Project was not found.'),
+        409: errorResponse('The Template has effective usages, its Source Project is archived, or source changed.'),
+        422: errorResponse('The remaining Source Project failed validation or compilation.'),
       },
     },
   },

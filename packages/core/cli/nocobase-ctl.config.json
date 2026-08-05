@@ -373,7 +373,7 @@
           },
           "jsTemplates": {
             "name": "js-templates",
-            "description": "Inspect, discover, compile, save, and detach reusable JS Templates.",
+            "description": "Inspect, discover, compile, save, detach, and delete reusable JS Templates.",
             "topLevel": true,
             "operations": {
               "includes": [
@@ -381,13 +381,14 @@
                 "jsTemplates:listSelectable",
                 "jsTemplates:compileWorkspacePreview",
                 "jsTemplates:saveAsJsTemplate",
-                "jsTemplates:detachToInline"
+                "jsTemplates:detachToInline",
+                "jsTemplates:delete"
               ]
             }
           },
           "jsTemplateUsages": {
             "name": "js-template-usages",
-            "description": "Inspect visible JS Template usages.",
+            "description": "Inspect paginated visible usage locations for one JS Template.",
             "topLevel": true,
             "operations": {
               "includes": ["jsTemplateUsages:listUsages"]

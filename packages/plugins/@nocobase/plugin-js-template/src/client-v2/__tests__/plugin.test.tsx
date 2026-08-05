@@ -247,7 +247,7 @@ describe('PluginJsTemplateClientV2', () => {
     }
   });
 
-  it('renders a moved inline JS block through the modern multi-file Studio with its move-back action', async () => {
+  it('renders an Inline JS block through the modern multi-file Studio with its Save as JS Template action', async () => {
     const app = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine' }],
@@ -366,7 +366,7 @@ describe('PluginJsTemplateClientV2', () => {
     expect(screen.getByRole('button', { name: 'Expand files' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'src/client/index.tsx' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Move to JS Template' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save as JS Template' })).toBeInTheDocument();
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
         url: 'runJSSources:open',

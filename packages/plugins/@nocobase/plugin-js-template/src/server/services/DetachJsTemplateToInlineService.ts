@@ -34,10 +34,9 @@ import type {
   SaveAsJsTemplateWorkspaceFile,
   DetachJsTemplateToInlineInput,
   DetachJsTemplateToInlineResult,
-  JsTemplateRuntimeSourceBinding,
 } from '../../shared/types';
 import { JsTemplateError } from '../../shared/errors';
-import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
+import { isJsTemplateRuntimeSourceBinding, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { JsTemplateService } from './JsTemplateService';
 import { getUsageOwnerAdapterByUse } from './JsTemplateUsageOwnerRegistry';
@@ -123,8 +122,8 @@ export class DetachJsTemplateToInlineService {
   ): Promise<DetachJsTemplateToInlineResult> {
     let operation: JsTemplateSourceOperationReservation | undefined;
     try {
-      assertDetachJsTemplateToInlineInputSupported(input);
-      const descriptor = createDetachJsTemplateToInlineOperationDescriptor(input);
+      const idempotencyKey = assertDetachJsTemplateToInlineInputSupported(input);
+      const descriptor = createDetachJsTemplateToInlineOperationDescriptor(input, idempotencyKey);
       const inspected = await this.sourceOperationStore.inspect(descriptor);
       if (inspected.replayResult) {
         await this.assertCanReplayDetachJsTemplateToInline(input, inspected.replayResult, ctx);
@@ -226,6 +225,8 @@ export class DetachJsTemplateToInlineService {
     const currentModel = await getFlowModel(this.db, locator.modelUid);
     assertCurrentJsTemplateBinding(currentModel, locator, input);
     await this.projectService.assertApplicationOwnership(input.projectId, this.applicationName, serviceContext);
+    const project = await this.projectService.getProject(input.projectId, serviceContext);
+    assertExpectedProjectHead(project.headCommitId, input);
     const template = await this.templateService.getTemplate(input.templateId, serviceContext);
     assertCurrentTemplate(template, input);
 
@@ -382,11 +383,14 @@ export class DetachJsTemplateToInlineService {
     };
 
     await adapter.assertCanWrite({ locator: prepared.locator, ctx: adapterContext });
+    await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
     assertCurrentJsTemplateBinding(
       await getFlowModel(this.db, prepared.locator.modelUid, transaction),
       prepared.locator,
       input,
     );
+    const project = await this.projectService.lockInternalProjectForUpdate(input.projectId, serviceContext);
+    assertExpectedProjectHead(project.headCommitId, input);
     const template = await this.templateService.getTemplate(input.templateId, serviceContext);
     assertCurrentTemplate(template, input);
     const legacy = await adapter.readLegacy({ locator: prepared.locator, ctx: adapterContext });
@@ -401,7 +405,7 @@ export class DetachJsTemplateToInlineService {
       {
         identity: prepared.repositoryIdentity,
         expectedRepository: prepared.expectedRepository,
-        message: `Move JS Template ${input.templateId} to inline code`.slice(0, 200),
+        message: `Detach JS Template ${input.templateId} to inline code`.slice(0, 200),
         files: prepared.changes,
         allowEmptyCommit: true,
         authorId: ctx.actorUserId,
@@ -410,7 +414,6 @@ export class DetachJsTemplateToInlineService {
       vscContext,
     );
 
-    await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
     assertCurrentJsTemplateBinding(
       await getFlowModel(this.db, prepared.locator.modelUid, transaction),
       prepared.locator,
@@ -475,11 +478,11 @@ export class DetachJsTemplateToInlineService {
   ): Promise<void> {
     await this.auditService.recordLifecycleEvent({
       projectId: input.projectId,
-      action: 'saveAsJsTemplate',
+      action: 'detachJsTemplateToInline',
       result: 'success',
       requestId: ctx.requestId || randomUUID(),
       actorUserId: ctx.actorUserId,
-      message: 'JS Template moved to inline RunJS',
+      message: 'JS Template detached to inline RunJS',
       details: {
         destinationType: 'inline',
         templateId: input.templateId,
@@ -837,7 +840,7 @@ function assertCurrentJsTemplateBinding(
     throw bindingOutdated(input);
   }
   const sourceBinding = sourceRoot.sourceBinding;
-  if (!isJsTemplateBinding(sourceBinding)) {
+  if (!isJsTemplateRuntimeSourceBinding(sourceBinding)) {
     throw bindingOutdated(input);
   }
   if (
@@ -861,10 +864,31 @@ function assertCurrentTemplate(
   ) {
     throw new JsTemplateError(
       'JS_TEMPLATE_BINDING_OUTDATED',
-      'The selected JS Template changed before it could be moved to inline code',
+      'The selected JS Template changed before it could be detached to inline code',
       { status: 409, details: input },
     );
   }
+}
+
+function assertExpectedProjectHead(
+  currentHeadCommitId: string | null,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'expectedProjectHeadCommitId'>,
+): void {
+  if (currentHeadCommitId === input.expectedProjectHeadCommitId) {
+    return;
+  }
+  throw new JsTemplateError(
+    'JS_TEMPLATE_SOURCE_OUTDATED',
+    'The Source Project Head changed before the JS Template could be detached to inline code',
+    {
+      details: {
+        projectId: input.projectId,
+        templateId: input.templateId,
+        expectedProjectHeadCommitId: input.expectedProjectHeadCommitId,
+        currentProjectHeadCommitId: currentHeadCommitId,
+      },
+    },
+  );
 }
 
 async function setFlowModelSourceModeInline(
@@ -975,29 +999,30 @@ function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function isJsTemplateBinding(value: unknown): value is JsTemplateRuntimeSourceBinding {
-  return (
-    isRecord(value) &&
-    value.type === JS_TEMPLATE_SOURCE_BINDING_TYPE &&
-    typeof value.projectId === 'string' &&
-    typeof value.templateId === 'string' &&
-    typeof value.kind === 'string'
-  );
+function assertDetachJsTemplateToInlineInputSupported(input: DetachJsTemplateToInlineInput): string {
+  if (typeof input.idempotencyKey !== 'string') {
+    throw invalidInput('Detach to inline idempotency key must be a non-empty string');
+  }
+  const idempotencyKey = input.idempotencyKey.trim();
+  if (!idempotencyKey) {
+    throw invalidInput('Detach to inline idempotency key must be a non-empty string');
+  }
+  if (idempotencyKey.length > 255) {
+    throw invalidInput('Detach to inline idempotency key must be at most 255 characters');
+  }
+  if (typeof input.expectedProjectHeadCommitId !== 'string' || !input.expectedProjectHeadCommitId.trim()) {
+    throw invalidInput('expectedProjectHeadCommitId must be a non-empty string');
+  }
+  return idempotencyKey;
 }
 
-function assertDetachJsTemplateToInlineInputSupported(input: DetachJsTemplateToInlineInput): void {
-  if (typeof input.idempotencyKey !== 'string' || !input.idempotencyKey.trim()) {
-    throw invalidInput('Move to inline idempotency key must be a non-empty string');
-  }
-  if (input.idempotencyKey.length > 255) {
-    throw invalidInput('Move to inline idempotency key must be at most 255 characters');
-  }
-}
-
-function createDetachJsTemplateToInlineOperationDescriptor(input: DetachJsTemplateToInlineInput) {
+function createDetachJsTemplateToInlineOperationDescriptor(
+  input: DetachJsTemplateToInlineInput,
+  idempotencyKey: string,
+) {
   return {
     action: 'detach-to-inline',
-    idempotencyKey: input.idempotencyKey,
+    idempotencyKey,
     request: { ...input, idempotencyKey: undefined },
     parseResult: readDetachJsTemplateToInlineOperationResult,
   };
@@ -1020,7 +1045,7 @@ function readDetachJsTemplateToInlineOperationResult(value: unknown): DetachJsTe
     value.sourceRef.commitId !== value.commitId ||
     value.sourceRef.entry !== value.entryPath
   ) {
-    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Move to inline operation has an invalid completed result');
+    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Detach to inline operation has an invalid completed result');
   }
   return value as unknown as DetachJsTemplateToInlineResult;
 }
@@ -1030,7 +1055,7 @@ function bindingOutdated(
 ): JsTemplateError {
   return new JsTemplateError(
     'JS_TEMPLATE_BINDING_OUTDATED',
-    'The RunJS source binding changed before it could be moved to inline code',
+    'The RunJS source binding changed before it could be detached to inline code',
     {
       status: 409,
       details: input,
@@ -1039,7 +1064,7 @@ function bindingOutdated(
 }
 
 function unsupportedLocator(locator: RunJSSourceLocator): JsTemplateError {
-  return new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'This RunJS source cannot be moved to inline code', {
+  return new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'This RunJS source cannot be detached to inline code', {
     details: {
       locatorKind: locator.kind,
     },

@@ -80,7 +80,9 @@ export async function createGitSyncAcceptanceFixture(): Promise<GitSyncAcceptanc
   const templateService = new JsTemplateService(app.db, fileService, projectService, validator);
   const compilerBridge = new JsTemplateWorkspaceCompilerBridge();
   const runtimeCompileService = new JsTemplateCompileService(app.db, fileService, templateService, compilerBridge);
-  runtimeCompileService.useJsTemplateUsageService(new JsTemplateUsageService(app.db, auditService, permissionService));
+  runtimeCompileService.useJsTemplateUsageService(
+    new JsTemplateUsageService(app.db, auditService, permissionService, projectService),
+  );
   const adapter = new DeterministicRemoteAdapter({
     initialRevision: 'remote-base',
     initialFiles: validGitSyncFiles(),

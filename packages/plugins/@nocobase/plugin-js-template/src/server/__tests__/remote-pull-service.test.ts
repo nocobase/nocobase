@@ -62,7 +62,7 @@ describe('JsTemplateRemotePullService', () => {
     const templateService = new JsTemplateService(app.db, fileService, projectService, validator);
     const compilerBridge = new JsTemplateWorkspaceCompilerBridge();
     runtimeCompileService = new JsTemplateCompileService(app.db, fileService, templateService, compilerBridge);
-    const usageService = new JsTemplateUsageService(app.db, auditService, permissionService);
+    const usageService = new JsTemplateUsageService(app.db, auditService, permissionService, projectService);
     runtimeCompileService.useJsTemplateUsageService(usageService);
     adapter = new DeterministicRemoteAdapter({ initialRevision: 'remote-base', initialFiles: baselineFiles() });
     registry = new RemoteSyncAdapterRegistry();

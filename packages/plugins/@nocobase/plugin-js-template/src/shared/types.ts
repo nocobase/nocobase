@@ -500,7 +500,7 @@ export type SaveAsJsTemplateOriginBinding = Pick<
 >;
 
 export interface SaveAsJsTemplateInput {
-  idempotencyKey?: string;
+  idempotencyKey: string;
   locator: RunJSSourceLocator;
   expectedOwnerFingerprint: string;
   sourceRepoId: string;
@@ -526,6 +526,7 @@ export interface DetachJsTemplateToInlineInput {
   locator: RunJSSourceLocator;
   projectId: string;
   templateId: string;
+  expectedProjectHeadCommitId: string;
   entryPath: string;
   kind: JsTemplateKind;
   version: string;
@@ -546,6 +547,15 @@ export interface DetachJsTemplateToInlineResult {
     commitId: string;
     entry: string;
   };
+}
+
+export interface DeleteJsTemplateInput {
+  templateId: string;
+}
+
+export interface DeleteJsTemplateResult {
+  project: JsTemplateProject;
+  templateId: string;
 }
 
 export interface JsTemplateRuntimeResolveInput {
@@ -627,10 +637,30 @@ export interface JsTemplateUsage {
   updatedAt?: string | null;
 }
 
+export interface JsTemplateUsageLocation extends JsTemplateUsage {
+  ownerTitle: string;
+  locationTitle: string;
+  routeId: string | null;
+}
+
 export interface JsTemplateUsageListInput {
-  projectId?: string;
-  templateId?: string;
-  ownerLocator?: Partial<JsTemplateUsageOwnerLocator>;
+  templateId: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface JsTemplateUsageListMeta {
+  page: number;
+  pageSize: number;
+  count: number;
+  totalPage: number;
+  effectiveCount: number;
+  hiddenCount: number;
+}
+
+export interface JsTemplateUsageListResult {
+  data: JsTemplateUsageLocation[];
+  meta: JsTemplateUsageListMeta;
 }
 
 export interface JsTemplateUsageRebuildInput {

@@ -44,7 +44,7 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
@@ -62,11 +62,11 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
-  it('does not render Move Source for legacy nested RunJS locators', () => {
+  it('does not render Save as JS Template for legacy nested RunJS locators', () => {
     const context = createContext(vi.fn());
     const locator = {
       kind: 'flowModel.nestedRunJS',
@@ -83,10 +83,10 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
   });
 
-  it('does not render Move Source for non-step locators', () => {
+  it('does not render Save as JS Template for non-step locators', () => {
     const context = createContext(vi.fn());
     const locator = {
       kind: 'chart.option',
@@ -97,19 +97,19 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
   });
 
-  it('does not render Move Source for generic flow steps', () => {
+  it('does not render Save as JS Template for generic flow steps', () => {
     const context = createContext(vi.fn());
     context.workspace.source.metadata = { modelUse: 'GenericRunJSModel' };
 
     render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
 
-    expect(screen.queryByRole('button', { name: 'Move to JS Template' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
   });
 
-  it('only contributes the Move action for writable JS Page sources', () => {
+  it('only contributes Save as JS Template for writable JS Page sources', () => {
     const contribution = createSaveAsJsTemplateContribution({ request: vi.fn() });
     const context = createContext(vi.fn());
     context.workspace.source.metadata = { modelUse: 'JSPageModel' };
@@ -135,21 +135,21 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
     expect(screen.getAllByRole('radio').map((radio) => radio.getAttribute('value'))).toEqual(['existing', 'new']);
-    fireEvent.click(await screen.findByRole('radio', { name: 'Existing JS Template' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing Source Project' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     expect(await screen.findByText('enabled-project')).toBeTruthy();
     expect(screen.queryByText('disabled-project')).toBeNull();
     expect(screen.queryByText('archived-project')).toBeNull();
   });
 
-  it('cancels without submitting a move request', async () => {
+  it('cancels without submitting a Save as JS Template request', async () => {
     const request = vi.fn(async () => ({ data: { data: [] } }));
 
     render(<SaveAsJsTemplate api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => expect(screen.queryByLabelText('JS Block name')).toBeNull());
@@ -177,7 +177,7 @@ describe('SaveAsJsTemplate', () => {
     );
   });
 
-  it('submits the current unsaved workspace to an existing JS Template', async () => {
+  it('saves the current unsaved workspace in an existing Source Project', async () => {
     const onExternalBindingPersisted = vi.fn(async () => undefined);
     const request = vi.fn(async ({ url }: { url: string }) => {
       if (url === 'jsTemplateProjects:list') {
@@ -228,21 +228,22 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
     await waitFor(() =>
       expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplateProjects:list' })),
     );
-    fireEvent.click(screen.getByRole('radio', { name: 'Existing JS Template' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Existing Source Project' }));
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(await screen.findByText('Shared tools'));
-    fireEvent.click(screen.getByRole('button', { name: 'Move' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'jsTemplates:saveAsJsTemplate',
           data: expect.objectContaining({
+            idempotencyKey: expect.stringMatching(/^save-as-js-template-/),
             expectedOwnerFingerprint: 'owner_before',
             sourceRepoId: 'runjs_repo',
             sourceHeadCommitId: 'runjs_commit',
@@ -302,19 +303,20 @@ describe('SaveAsJsTemplate', () => {
     context.workspace.source.label = 'JavaScript page / Write JavaScript';
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
-    fireEvent.click(await screen.findByRole('radio', { name: 'Create new JS Template' }));
-    await screen.findByLabelText('JS Template name');
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Create new Source Project' }));
+    await screen.findByLabelText('Source Project name');
     expect(screen.queryByLabelText('JS Template title')).toBeNull();
-    fireEvent.change(screen.getByLabelText('JS Template name'), { target: { value: '销售工具' } });
+    fireEvent.change(screen.getByLabelText('Source Project name'), { target: { value: '销售工具' } });
     fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: '销售页面' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Move' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
       expect(request).toHaveBeenCalledWith(
         expect.objectContaining({
           url: 'jsTemplates:saveAsJsTemplate',
           data: expect.objectContaining({
+            idempotencyKey: expect.stringMatching(/^save-as-js-template-/),
             destination: {
               type: 'new',
               name: expect.stringMatching(/^js-template-[a-z0-9]+$/),
@@ -328,7 +330,7 @@ describe('SaveAsJsTemplate', () => {
     });
   });
 
-  it('shows the server move error instead of the generic request error', async () => {
+  it('shows the server Save as JS Template error instead of the generic request error', async () => {
     const requestError = Object.assign(new Error('Request failed with status code 409'), {
       response: {
         data: {
@@ -359,11 +361,11 @@ describe('SaveAsJsTemplate', () => {
 
     render(<SaveAsJsTemplate api={{ request }} context={createContext(vi.fn())} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Move to JS Template' }));
-    fireEvent.click(await screen.findByRole('radio', { name: 'Existing JS Template' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
+    fireEvent.click(await screen.findByRole('radio', { name: 'Existing Source Project' }));
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     fireEvent.click(await screen.findByText('shared-tools'));
-    fireEvent.click(screen.getByRole('button', { name: 'Move' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => expect(showError).toHaveBeenCalledWith('JS Template entry already exists'));
     showError.mockRestore();

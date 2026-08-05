@@ -17,6 +17,9 @@ import type {
   DetachJsTemplateToInlineResult,
   JsTemplateSelectableTemplateSummary,
   JsTemplateSelectableTemplatesInput,
+  JsTemplateUsageListInput,
+  JsTemplateUsageListResult,
+  DeleteJsTemplateResult,
 } from '../../shared/types';
 import {
   getOrLoadJsTemplateSelectableCatalog,
@@ -72,6 +75,30 @@ export async function listJsTemplateProjects(api: ApiClientLike): Promise<JsTemp
     method: 'post',
   });
   return unwrapResourceResponse(response) || [];
+}
+
+export async function listJsTemplateUsageLocations(
+  api: ApiClientLike,
+  input: JsTemplateUsageListInput,
+): Promise<JsTemplateUsageListResult> {
+  const response = await api.request<ResourceResponse<JsTemplateUsageListResult>>({
+    url: 'jsTemplateUsages:listUsages',
+    method: 'post',
+    data: input,
+  });
+  return unwrapResourceResponse(response);
+}
+
+export async function deleteJsTemplate(api: ApiClientLike, templateId: string): Promise<DeleteJsTemplateResult> {
+  const response = await api.request<ResourceResponse<DeleteJsTemplateResult>>({
+    url: 'jsTemplates:delete',
+    method: 'post',
+    data: { templateId },
+  });
+  const result = unwrapResourceResponse(response);
+  invalidateJsTemplateSettingsDescriptorCache(api, result.project.id);
+  invalidateJsTemplateRuntimeCache(api, result.project.id);
+  return result;
 }
 
 export async function saveAsJsTemplate(

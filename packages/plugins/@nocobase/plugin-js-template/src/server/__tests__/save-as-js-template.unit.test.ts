@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { relocateRunJSWorkspace } from '../services/SaveAsJsTemplateService';
+import { createJsTemplateWorkspaceFromRunJS } from '../services/SaveAsJsTemplateService';
 import { collectAndRelocateInlineFiles } from '../services/DetachJsTemplateToInlineService';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 
@@ -20,7 +20,7 @@ import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspa
 const entryPath = 'src/client/js-blocks/sales/index.tsx';
 const descriptorPath = 'src/client/js-blocks/sales/entry.json';
 
-describe('move source relocation', () => {
+describe('Save as JS Template source relocation', () => {
   it('prepares JS Template compiler input and metadata without producing a runtime artifact', () => {
     const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
       projectId: 'jtp_sales',
@@ -239,7 +239,7 @@ describe('move source relocation', () => {
   });
 
   it('relocates the current multi-file workspace and rewrites relative imports', () => {
-    const files = relocateRunJSWorkspace({
+    const files = createJsTemplateWorkspaceFromRunJS({
       kind: 'js-block',
       templateName: 'sales-kpi',
       templateTitle: 'Sales KPI',
@@ -300,7 +300,7 @@ describe('move source relocation', () => {
         },
       },
     };
-    const files = relocateRunJSWorkspace({
+    const files = createJsTemplateWorkspaceFromRunJS({
       kind,
       templateName: 'normalize-order',
       templateTitle: 'Normalize order',

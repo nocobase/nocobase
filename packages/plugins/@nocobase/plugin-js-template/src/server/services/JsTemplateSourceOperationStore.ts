@@ -24,7 +24,7 @@ export interface JsTemplateSourceOperationReservation {
 
 export interface JsTemplateSourceOperationDescriptor<TResult> {
   action: string;
-  idempotencyKey?: string;
+  idempotencyKey: string;
   request: unknown;
   parseResult: (value: unknown) => TResult;
 }
@@ -44,9 +44,6 @@ export class JsTemplateSourceOperationStore {
     descriptor: JsTemplateSourceOperationDescriptor<TResult>,
   ): Promise<JsTemplateSourceOperationResolution<TResult>> {
     const identity = this.resolveIdentity(descriptor);
-    if (!identity) {
-      return {};
-    }
     const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.sourceOperations).model.findOne({
       where: { identityHash: identity.identityHash },
     });
@@ -68,9 +65,6 @@ export class JsTemplateSourceOperationStore {
     descriptor: JsTemplateSourceOperationDescriptor<TResult>,
   ): Promise<JsTemplateSourceOperationResolution<TResult>> {
     const identity = this.resolveIdentity(descriptor);
-    if (!identity) {
-      return {};
-    }
     const attemptId = randomUUID();
     const operationRepository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.sourceOperations);
     const [record, created] = await operationRepository.model.findOrCreate({
@@ -169,7 +163,7 @@ export class JsTemplateSourceOperationStore {
         },
       );
     } catch {
-      // Preserve the original move failure if the best-effort operation status update also fails.
+      // Preserve the original source operation failure if the best-effort status update also fails.
     }
   }
 
@@ -177,10 +171,7 @@ export class JsTemplateSourceOperationStore {
     applicationName: string;
     identityHash: string;
     requestHash: string;
-  } | null {
-    if (!descriptor.idempotencyKey) {
-      return null;
-    }
+  } {
     const applicationName = this.applicationName.trim();
     if (!applicationName) {
       throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Application identity is required');

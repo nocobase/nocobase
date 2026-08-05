@@ -29,6 +29,7 @@ export * from './services/JsTemplateRuntimeService';
 export * from './services/JsTemplateUsageService';
 export * from './services/SaveAsJsTemplateService';
 export * from './services/DetachJsTemplateToInlineService';
+export * from './services/DeleteJsTemplateService';
 export * from './services/errorContract';
 export * from './vsc-file';
 export * from '../shared/errors';

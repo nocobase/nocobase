@@ -17,7 +17,6 @@ import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { defineSettings } from '@nocobase/js-template-sdk/client';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { Modal } from 'antd';
 import fs from 'fs';
 import path from 'path';
 import React from 'react';
@@ -354,120 +353,19 @@ function registerSourceModeRoundTripTests() {
       expect(form.values).toEqual(originalValues);
     });
 
-    it('copies current runtime code when switching back to inline', async () => {
-      let copyPromise: Promise<unknown> | undefined;
-      const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
-        copyPromise = Promise.resolve(config.onOk?.(() => undefined));
-        return createModalInstance();
-      });
+    it('keeps detach-to-inline out of the source selector so the CAS-protected editor action remains canonical', async () => {
       const form = createRunJSForm();
+      const originalValues = cloneValues(form.values);
 
       renderSourceModeField(form);
-      await selectCodeSource('Inline code');
-      await copyPromise;
-
-      expect(confirmSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          okText: 'Copy code',
-          cancelText: 'Keep existing code',
-        }),
+      await waitFor(() =>
+        expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:listSelectable' })),
       );
-      expect(form.values).toMatchObject({
-        sourceMode: 'inline',
-        code: 'ctx.render("copied runtime");',
-        version: 'v2',
-        settings: { title: 'Revenue' },
-        sourceRef: {
-          type: 'vsc-file',
-          repoId: 'old_inline_repo',
-          commitId: 'old_inline_commit',
-          entry: 'src/client/index.tsx',
-        },
-        sourceBinding,
-      });
-      expect(mocks.request.mock.calls.filter(([options]) => options.url === 'jsTemplateRuntime:resolve')).toHaveLength(
-        1,
-      );
-      expect(
-        mocks.request.mock.calls.filter(([options]) => options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`),
-      ).toHaveLength(1);
-    });
+      fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
 
-    it('keeps the existing inline snapshot when the user declines copying', async () => {
-      const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
-        config.onCancel?.(() => undefined);
-        return createModalInstance();
-      });
-      const form = createRunJSForm();
-      const originalSnapshot = cloneValues(form.values);
-
-      renderSourceModeField(form);
-      await selectCodeSource('Inline code');
-
-      expect(confirmSpy).toHaveBeenCalled();
-      expect(form.values).toEqual({ ...originalSnapshot, sourceMode: 'inline' });
-      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:listSelectable' }));
+      expect(screen.queryByText('Inline code')).toBeNull();
+      expect(form.values).toEqual(originalValues);
       expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
-    });
-
-    it('keeps the external binding and fallback snapshot when copying current code fails', async () => {
-      const copyError = new Error('resolve failed');
-      mocks.request.mockImplementation((options: { url: string }) => {
-        if (options.url === 'jsTemplateRuntime:resolve') {
-          return Promise.reject(copyError);
-        }
-        return successfulRequest(options);
-      });
-      let copyPromise: Promise<unknown> | undefined;
-      vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
-        copyPromise = Promise.resolve(config.onOk?.(() => undefined));
-        copyPromise.catch(() => undefined);
-        return createModalInstance();
-      });
-      const form = createRunJSForm();
-      const originalValues = cloneValues(form.values);
-
-      renderSourceModeField(form);
-      await selectCodeSource('Inline code');
-
-      await expect(copyPromise).rejects.toBe(copyError);
-      expect(form.values).toEqual(originalValues);
-      expect(mocks.request.mock.calls.filter(([options]) => options.url === 'jsTemplateRuntime:resolve')).toHaveLength(
-        1,
-      );
-      expect(
-        mocks.request.mock.calls.filter(([options]) => options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`),
-      ).toHaveLength(0);
-    });
-
-    it('keeps the external binding and fallback snapshot when fetching the artifact fails', async () => {
-      const copyError = new Error('artifact request failed');
-      mocks.request.mockImplementation((options: { url: string }) => {
-        if (options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`) {
-          return Promise.reject(copyError);
-        }
-        return successfulRequest(options);
-      });
-      let copyPromise: Promise<unknown> | undefined;
-      vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
-        copyPromise = Promise.resolve(config.onOk?.(() => undefined));
-        copyPromise.catch(() => undefined);
-        return createModalInstance();
-      });
-      const form = createRunJSForm();
-      const originalValues = cloneValues(form.values);
-
-      renderSourceModeField(form);
-      await selectCodeSource('Inline code');
-
-      await expect(copyPromise).rejects.toBe(copyError);
-      expect(form.values).toEqual(originalValues);
-      expect(mocks.request.mock.calls.filter(([options]) => options.url === 'jsTemplateRuntime:resolve')).toHaveLength(
-        1,
-      );
-      expect(
-        mocks.request.mock.calls.filter(([options]) => options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`),
-      ).toHaveLength(1);
     });
   });
 
@@ -595,13 +493,6 @@ function registerSourceModeRoundTripTests() {
       return Promise.resolve({ data: { data: [template] } });
     }
     return Promise.reject(new Error(`Unexpected request: ${options.url}`));
-  }
-
-  function createModalInstance(): ReturnType<typeof Modal.confirm> {
-    return {
-      destroy: vi.fn(),
-      update: vi.fn(),
-    } as ReturnType<typeof Modal.confirm>;
   }
 
   function cloneValues(values: RunJSFormValues): RunJSFormValues {

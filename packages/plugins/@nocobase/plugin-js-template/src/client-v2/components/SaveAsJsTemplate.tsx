@@ -23,12 +23,12 @@ import { type ApiClientLike, listJsTemplateProjects, saveAsJsTemplate } from '..
 import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
 import { useT } from '../locale';
 
-type MoveDestinationType = 'existing' | 'new';
+type SourceProjectDestinationType = 'existing' | 'new';
 
 interface SaveAsJsTemplateFormValues {
-  destinationType: MoveDestinationType;
+  destinationType: SourceProjectDestinationType;
   projectId?: string;
-  projectTitle?: string;
+  sourceProjectTitle?: string;
   templateTitle: string;
 }
 
@@ -85,7 +85,7 @@ export const SaveAsJsTemplate: React.FC<{
   const [form] = Form.useForm<SaveAsJsTemplateFormValues>();
   const [open, setOpen] = React.useState(false);
   const [loadingProjects, setLoadingProjects] = React.useState(false);
-  const [moving, setMoving] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
   const [projects, setProjects] = React.useState<JsTemplateProject[]>([]);
   const destinationType = Form.useWatch('destinationType', form) || 'existing';
   const kind = resolveJsTemplateKind(context);
@@ -113,7 +113,7 @@ export const SaveAsJsTemplate: React.FC<{
     form.setFieldsValue({
       destinationType: 'existing',
       templateTitle: suggestedName,
-      projectTitle: suggestedName,
+      sourceProjectTitle: suggestedName,
     });
     setOpen(true);
     await loadProjects();
@@ -132,10 +132,10 @@ export const SaveAsJsTemplate: React.FC<{
         ? ({ type: 'existing', projectId: String(values.projectId || '') } as const)
         : ({
             type: 'new',
-            name: createTechnicalName(String(values.projectTitle || ''), 'js-template', technicalNameSalt),
-            title: values.projectTitle?.trim() || null,
+            name: createTechnicalName(String(values.sourceProjectTitle || ''), 'js-template', technicalNameSalt),
+            title: values.sourceProjectTitle?.trim() || null,
           } as const);
-    const moveInput = {
+    const saveInput = {
       locator: context.locator,
       expectedOwnerFingerprint: context.workspace.ownerFingerprint,
       sourceRepoId: context.workspace.repository.repoId,
@@ -148,19 +148,19 @@ export const SaveAsJsTemplate: React.FC<{
       templateName,
       templateTitle,
     };
-    setMoving(true);
+    setSaving(true);
     try {
       const result = await saveAsJsTemplate(api, {
-        ...moveInput,
-        idempotencyKey: createSaveAsJsTemplateIdempotencyKey(moveInput),
+        ...saveInput,
+        idempotencyKey: createSaveAsJsTemplateIdempotencyKey(saveInput),
       });
       setOpen(false);
-      message.success(t('Moved to JS Template'));
+      message.success(t('Saved as JS Template'));
       await context.onExternalBindingPersisted(serializeJsTemplateRunJSPersistence(result.binding));
     } catch (error) {
-      message.error(formatError(error, t('Failed to move source to JS Template')));
+      message.error(formatError(error, t('Failed to save as JS Template')));
     } finally {
-      setMoving(false);
+      setSaving(false);
     }
   };
 
@@ -170,31 +170,31 @@ export const SaveAsJsTemplate: React.FC<{
 
   return (
     <>
-      <Tooltip title={t('Move to JS Template')}>
-        <Button aria-label={t('Move to JS Template')} icon={<ExportOutlined />} onClick={showModal} size="small" />
+      <Tooltip title={t('Save as JS Template')}>
+        <Button aria-label={t('Save as JS Template')} icon={<ExportOutlined />} onClick={showModal} size="small" />
       </Tooltip>
       <Modal
         destroyOnClose
-        maskClosable={!moving}
-        okButtonProps={{ loading: moving }}
-        okText={t('Move')}
+        maskClosable={!saving}
+        okButtonProps={{ loading: saving }}
+        okText={t('Save')}
         onCancel={() => setOpen(false)}
         onOk={submit}
         open={open}
-        title={t('Move to JS Template')}
+        title={t('Save as JS Template')}
       >
         <Form form={form} layout="vertical" preserve={false}>
           <Form.Item label={t('Destination')} name="destinationType">
             <Radio.Group>
-              <Radio value="existing">{t('Existing JS Template')}</Radio>
-              <Radio value="new">{t('Create new JS Template')}</Radio>
+              <Radio value="existing">{t('Existing Source Project')}</Radio>
+              <Radio value="new">{t('Create new Source Project')}</Radio>
             </Radio.Group>
           </Form.Item>
           {destinationType === 'existing' ? (
             <Form.Item
-              label={t('JS Template')}
+              label={t('Source Project')}
               name="projectId"
-              rules={[{ required: true, message: t('Select a JS Template') }]}
+              rules={[{ required: true, message: t('Select a Source Project') }]}
             >
               <Select
                 loading={loadingProjects}
@@ -202,16 +202,16 @@ export const SaveAsJsTemplate: React.FC<{
                   label: project.title || project.name,
                   value: project.id,
                 }))}
-                placeholder={t('Select a JS Template')}
+                placeholder={t('Select a Source Project')}
                 showSearch
                 optionFilterProp="label"
               />
             </Form.Item>
           ) : destinationType === 'new' ? (
             <Form.Item
-              label={t('JS Template name')}
-              name="projectTitle"
-              rules={displayNameRules(t, t('JS Template name'))}
+              label={t('Source Project name')}
+              name="sourceProjectTitle"
+              rules={displayNameRules(t, t('Source Project name'))}
             >
               <Input autoComplete="off" />
             </Form.Item>

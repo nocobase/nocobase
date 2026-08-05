@@ -7,11 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EnvironmentOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { DEFAULT_PAGE_SIZE, Table } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { Alert, Button, Card, Empty, Flex, Form, Input, Modal, Select, Space, Tag, Typography, theme } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  Empty,
+  Flex,
+  Form,
+  Input,
+  List,
+  Modal,
+  Pagination,
+  Popconfirm,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  Tooltip,
+  Typography,
+  theme,
+} from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -19,8 +38,18 @@ import { useTranslation } from 'react-i18next';
 
 import { JS_TEMPLATE_KEY_PATTERN, JS_TEMPLATE_SUPPORTED_KINDS, NAMESPACE, type JsTemplateKind } from '../../constants';
 import { createJsTemplateEntryStarter } from '../../shared/jsTemplateEntryStarter';
-import type { JsTemplateCatalogEntry, JsTemplateCatalogStatus, JsTemplateCreateJobSummary } from '../../shared/types';
-import { listJsTemplateCatalog, type ApiClientLike } from '../api/jsTemplatesRequests';
+import type {
+  JsTemplateCatalogEntry,
+  JsTemplateCatalogStatus,
+  JsTemplateCreateJobSummary,
+  JsTemplateUsageListResult,
+} from '../../shared/types';
+import {
+  deleteJsTemplate,
+  listJsTemplateCatalog,
+  listJsTemplateUsageLocations,
+  type ApiClientLike,
+} from '../api/jsTemplatesRequests';
 import { useJsTemplateCreateJobs } from '../hooks/useJsTemplateCreateJobs';
 import { useJsTemplateProject } from '../hooks/useJsTemplateProject';
 import { getJsTemplateSyncErrorTranslationKey } from '../hooks/useJsTemplateSync';
@@ -45,6 +74,7 @@ interface Notice {
 }
 
 const catalogStatuses: JsTemplateCatalogStatus[] = ['ready', 'missing', 'disabled', 'archived'];
+const USAGE_PAGE_SIZE = 10;
 
 export function JsTemplateCatalogPage() {
   const { t } = useTranslation(NAMESPACE);
@@ -67,7 +97,14 @@ export function JsTemplateCatalogPage() {
   const [kind, setKind] = useState<JsTemplateKind>();
   const [status, setStatus] = useState<JsTemplateCatalogStatus>();
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [usageEntry, setUsageEntry] = useState<JsTemplateCatalogEntry | null>(null);
+  const [usageResult, setUsageResult] = useState<JsTemplateUsageListResult | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
+  const [usageError, setUsageError] = useState<string | null>(null);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
   const observedCreateJobs = useRef<Map<string, JsTemplateCreateJobSummary> | null>(null);
+  const usageRequestSeq = useRef(0);
+  const usageRequestedPage = useRef(1);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -204,6 +241,73 @@ export function JsTemplateCatalogPage() {
     [navigate],
   );
 
+  const loadUsageLocations = useCallback(
+    async (entry: JsTemplateCatalogEntry, page: number) => {
+      const requestSeq = usageRequestSeq.current + 1;
+      usageRequestSeq.current = requestSeq;
+      usageRequestedPage.current = page;
+      setUsageLoading(true);
+      setUsageError(null);
+      try {
+        const result = await listJsTemplateUsageLocations(flowContext.api, {
+          templateId: entry.id,
+          page,
+          pageSize: USAGE_PAGE_SIZE,
+        });
+        if (usageRequestSeq.current === requestSeq) {
+          setUsageResult(result);
+        }
+      } catch (error) {
+        if (usageRequestSeq.current === requestSeq) {
+          setUsageError(error instanceof Error ? error.message : t('Failed to load usage locations'));
+        }
+      } finally {
+        if (usageRequestSeq.current === requestSeq) {
+          setUsageLoading(false);
+        }
+      }
+    },
+    [flowContext.api, t],
+  );
+
+  const openUsageLocations = useCallback(
+    (entry: JsTemplateCatalogEntry) => {
+      setUsageEntry(entry);
+      setUsageResult(null);
+      loadUsageLocations(entry, 1);
+    },
+    [loadUsageLocations],
+  );
+
+  const closeUsageLocations = useCallback(() => {
+    usageRequestSeq.current += 1;
+    usageRequestedPage.current = 1;
+    setUsageEntry(null);
+    setUsageResult(null);
+    setUsageError(null);
+    setUsageLoading(false);
+  }, []);
+
+  const removeTemplate = useCallback(
+    async (entry: JsTemplateCatalogEntry) => {
+      setDeletingTemplateId(entry.id);
+      setNotice(null);
+      try {
+        await deleteJsTemplate(flowContext.api, entry.id);
+        setNotice({
+          type: 'success',
+          message: t('JS Template deleted: {{name}}').replace('{{name}}', entry.title || entry.templateName),
+        });
+        await loadCatalog();
+      } catch (error) {
+        setNotice({ type: 'error', message: getDeleteErrorMessage(error, t) });
+      } finally {
+        setDeletingTemplateId(null);
+      }
+    },
+    [flowContext.api, loadCatalog, t],
+  );
+
   const filteredEntries = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     return entries.filter((entry) => {
@@ -259,6 +363,17 @@ export function JsTemplateCatalogPage() {
         align: 'right',
         sorter: (left, right) => left.usageCount - right.usageCount,
         width: 130,
+        render: (value: number, entry) => (
+          <Button
+            aria-label={t('View usage locations for {{name}}').replace('{{name}}', entry.title || entry.templateName)}
+            icon={<EnvironmentOutlined />}
+            onClick={() => openUsageLocations(entry)}
+            size="small"
+            type="link"
+          >
+            {value}
+          </Button>
+        ),
       },
       {
         title: t('Source Project'),
@@ -281,15 +396,42 @@ export function JsTemplateCatalogPage() {
       {
         title: t('Actions'),
         key: 'actions',
-        width: 130,
+        width: 300,
         render: (_value, entry) => (
-          <Button onClick={() => openSourceProject(entry)} size="small" type="link">
-            {t('Manage Source Project')}
-          </Button>
+          <Space size="small" wrap>
+            <Button onClick={() => openUsageLocations(entry)} size="small" type="link">
+              {t('Usage locations')}
+            </Button>
+            <Button onClick={() => openSourceProject(entry)} size="small" type="link">
+              {t('Manage Source Project')}
+            </Button>
+            <Tooltip title={getDeleteDisabledReason(entry, t)}>
+              <span>
+                <Popconfirm
+                  cancelText={t('Cancel')}
+                  disabled={Boolean(getDeleteDisabledReason(entry, t))}
+                  okButtonProps={{ danger: true, loading: deletingTemplateId === entry.id }}
+                  okText={t('Delete')}
+                  onConfirm={() => removeTemplate(entry)}
+                  title={t('Delete this JS Template?')}
+                >
+                  <Button
+                    aria-label={t('Delete JS Template {{name}}').replace('{{name}}', entry.title || entry.templateName)}
+                    danger
+                    disabled={Boolean(getDeleteDisabledReason(entry, t))}
+                    icon={<DeleteOutlined />}
+                    loading={deletingTemplateId === entry.id}
+                    size="small"
+                    type="text"
+                  />
+                </Popconfirm>
+              </span>
+            </Tooltip>
+          </Space>
         ),
       },
     ],
-    [openSourceProject, t],
+    [deletingTemplateId, openSourceProject, openUsageLocations, removeTemplate, t],
   );
 
   return (
@@ -408,6 +550,96 @@ export function JsTemplateCatalogPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      <Modal
+        footer={<Button onClick={closeUsageLocations}>{t('Close')}</Button>}
+        onCancel={closeUsageLocations}
+        open={Boolean(usageEntry)}
+        title={
+          usageEntry
+            ? t('Usage locations for {{name}}').replace('{{name}}', usageEntry.title || usageEntry.templateName)
+            : t('Usage locations')
+        }
+      >
+        {usageEntry?.status === 'disabled' || usageEntry?.status === 'archived' ? (
+          <Alert
+            message={
+              usageEntry.status === 'archived'
+                ? t('This JS Template belongs to an archived Source Project and is read-only.')
+                : t('This JS Template belongs to a disabled Source Project.')
+            }
+            showIcon
+            style={{ marginBottom: token.marginSM }}
+            type="warning"
+          />
+        ) : null}
+        {usageResult?.meta.hiddenCount ? (
+          <Alert
+            message={t('{{count}} usage locations are hidden by permissions.').replace(
+              '{{count}}',
+              String(usageResult.meta.hiddenCount),
+            )}
+            showIcon
+            style={{ marginBottom: token.marginSM }}
+            type="info"
+          />
+        ) : null}
+        {usageError ? (
+          <Alert
+            action={
+              usageEntry ? (
+                <Button onClick={() => loadUsageLocations(usageEntry, usageRequestedPage.current)} size="small">
+                  {t('Retry')}
+                </Button>
+              ) : null
+            }
+            message={usageError}
+            showIcon
+            type="error"
+          />
+        ) : usageLoading && !usageResult ? (
+          <Flex align="center" justify="center" style={{ minHeight: 180 }}>
+            <Spin aria-label={t('Loading usage locations')} />
+          </Flex>
+        ) : (
+          <>
+            <List
+              dataSource={usageResult?.data || []}
+              locale={{
+                emptyText: <Empty description={t('No usage locations')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+              }}
+              loading={usageLoading}
+              renderItem={(usage) => (
+                <List.Item key={usage.id}>
+                  <List.Item.Meta
+                    description={
+                      <Space size="small" wrap>
+                        <Typography.Text type="secondary">{usage.ownerTitle}</Typography.Text>
+                        <Tag>{t(usage.kind)}</Tag>
+                        <Tag color={usage.resolvedStatus === 'active' ? 'success' : 'warning'}>
+                          {t(usage.resolvedStatus)}
+                        </Tag>
+                      </Space>
+                    }
+                    title={usage.locationTitle}
+                  />
+                </List.Item>
+              )}
+            />
+            {usageResult && usageResult.meta.count > usageResult.meta.pageSize ? (
+              <Flex justify="flex-end" style={{ marginTop: token.marginSM }}>
+                <Pagination
+                  current={usageResult.meta.page}
+                  onChange={(page) => usageEntry && loadUsageLocations(usageEntry, page)}
+                  pageSize={usageResult.meta.pageSize}
+                  showSizeChanger={false}
+                  total={usageResult.meta.count}
+                />
+              </Flex>
+            ) : null}
+          </>
+        )}
+      </Modal>
     </Card>
   );
 }
@@ -444,6 +676,41 @@ function getStatusColor(status: JsTemplateCatalogStatus): string {
     return 'default';
   }
   return 'warning';
+}
+
+function getDeleteDisabledReason(entry: JsTemplateCatalogEntry, t: (key: string) => string): string | undefined {
+  if (entry.status === 'archived') {
+    return t('Archived JS Templates cannot be deleted.');
+  }
+  if (entry.usageCount > 0) {
+    return t('Detach all effective usages before deleting this JS Template.');
+  }
+  return undefined;
+}
+
+function getDeleteErrorMessage(error: unknown, t: (key: string) => string): string {
+  const response = isRecord(error) && isRecord(error.response) ? error.response : null;
+  const data = response && isRecord(response.data) ? response.data : null;
+  const errors = data && Array.isArray(data.errors) ? data.errors : [];
+  const serverError = errors.find(isRecord);
+  if (serverError?.code === 'JS_TEMPLATE_USAGE_EXISTS') {
+    const details = isRecord(serverError.details) ? serverError.details : null;
+    const usageCount = typeof details?.usageCount === 'number' ? details.usageCount : null;
+    if (usageCount !== null) {
+      return t(
+        'This JS Template is still used in {{count}} locations. Detach those usages before deleting it.',
+      ).replace('{{count}}', String(usageCount));
+    }
+    return t('Detach all effective usages before deleting this JS Template.');
+  }
+  if (serverError?.code === 'JS_TEMPLATE_PROJECT_ARCHIVED') {
+    return t('Archived JS Templates cannot be deleted.');
+  }
+  return t('Failed to delete JS Template');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 export default JsTemplateCatalogPage;

@@ -18,9 +18,9 @@ export default {
     version: '1.0.0',
   },
   tags: [
-    { name: 'jsTemplateProjects', description: 'Discover existing JS Template projects.' },
-    { name: 'jsTemplates', description: 'Inspect, compile, and move reusable JS Templates.' },
-    { name: 'jsTemplateUsages', description: 'Inspect visible JS Template usages.' },
+    { name: 'jsTemplateProjects', description: 'Discover existing Source Projects.' },
+    { name: 'jsTemplates', description: 'Inspect, compile, save, detach, and delete reusable JS Templates.' },
+    { name: 'jsTemplateUsages', description: 'Inspect paginated visible usage locations for one JS Template.' },
     { name: 'jsTemplateFiles', description: 'Read and save JS Template source files.' },
     ...vscFileSwagger.tags,
   ],

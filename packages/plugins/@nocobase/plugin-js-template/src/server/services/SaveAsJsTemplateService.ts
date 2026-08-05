@@ -27,6 +27,8 @@ import { createJsTemplateBaseTemplate } from '../../shared/default-template';
 import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import {
   createJsTemplateRuntimeSourceBinding,
+  isJsTemplateRuntimeSourceBinding,
+  JS_TEMPLATE_SOURCE_MODE,
   serializeJsTemplateRunJSPersistence,
 } from '../../shared/jsTemplateRunJSPersistence';
 import type {
@@ -72,6 +74,13 @@ export interface SaveAsJsTemplateServiceContext extends JsTemplateServiceContext
 }
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
+
+type FlowModelRepositoryLike = {
+  findModelById: (
+    uidValue: string,
+    options?: { transaction?: Transaction; includeAsyncNode?: boolean },
+  ) => Promise<Record<string, unknown> | null>;
+};
 
 interface SaveAsJsTemplateSourceSnapshotInput {
   locator: RunJSSourceLocator;
@@ -172,8 +181,8 @@ export class SaveAsJsTemplateService {
   ): Promise<SaveAsJsTemplateResult> {
     let operation: JsTemplateSourceOperationReservation | undefined;
     try {
-      assertSaveAsJsTemplateInputSupported(input);
-      const descriptor = createSaveAsJsTemplateOperationDescriptor(input);
+      const idempotencyKey = assertSaveAsJsTemplateInputSupported(input);
+      const descriptor = createSaveAsJsTemplateOperationDescriptor(input, idempotencyKey);
       const inspected = await this.sourceOperationStore.inspect(descriptor);
       if (inspected.replayResult) {
         await this.assertCanReplaySaveAsJsTemplate(input, ctx);
@@ -236,7 +245,7 @@ export class SaveAsJsTemplateService {
     operation?: JsTemplateSourceOperationReservation,
   ): Promise<SaveAsJsTemplateResult> {
     if (input.destination.type !== 'existing') {
-      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Existing JS Template destination is required');
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Existing Source Project destination is required');
     }
     const registry = this.getAdapterRegistry();
     if (!registry) {
@@ -251,14 +260,14 @@ export class SaveAsJsTemplateService {
     const legacy = await adapter.readLegacy({ locator: input.locator, ctx: prepareAdapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, legacy.ownerFingerprint);
     const kind = resolveJsTemplateKind(input.locator, legacy);
-    const originSettingsSchema = await this.loadOriginSettingsSchema(input.originBinding, kind, ctx);
-    const templateFiles = relocateRunJSWorkspace({
+    const originSettingsSchema = await this.loadOriginSettingsSchema(input.originBinding, kind, input.locator, ctx);
+    const templateFiles = createJsTemplateWorkspaceFromRunJS({
       files: input.files,
       entryPath: input.entryPath,
       kind,
       templateName: input.templateName,
       templateTitle: input.templateTitle,
-      category: resolveMovedTemplateCategory(kind, legacy),
+      category: resolveSavedTemplateCategory(kind, legacy),
       settingsSchema: originSettingsSchema,
     });
     const entryKey = getRelocatedEntryKey(templateFiles, kind, input.templateName);
@@ -281,7 +290,7 @@ export class SaveAsJsTemplateService {
       {
         projectId: input.destination.projectId,
         expectedHeadCommitId: current.commit?.id || null,
-        message: buildMoveCommitMessage(input),
+        message: buildSaveAsCommitMessage(input),
         files: templateFiles,
       },
       {
@@ -290,14 +299,14 @@ export class SaveAsJsTemplateService {
       },
     );
     return this.db.sequelize.transaction(async (transaction) => {
-      const result = await this.publishExistingMove(input, ctx, adapter, kind, entryKey, prepared, transaction);
-      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
+      const result = await this.publishExistingSave(input, ctx, adapter, kind, entryKey, prepared, transaction);
+      await this.recordSaveAsSuccessAudit(input, result, ctx, transaction);
       await this.sourceOperationStore.complete(operation, result, transaction);
       return result;
     });
   }
 
-  private async publishExistingMove(
+  private async publishExistingSave(
     input: SaveAsJsTemplateInput,
     ctx: SaveAsJsTemplateServiceContext,
     adapter: ExternalBindingAdapter,
@@ -308,9 +317,11 @@ export class SaveAsJsTemplateService {
   ): Promise<SaveAsJsTemplateResult> {
     const adapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext, transaction };
     const serviceContext: JsTemplateServiceContext = { ...ctx, transaction };
+    await lockFlowModel(this.db, getFlowModelUid(input.locator), transaction);
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
+    await this.assertOriginBindingCurrent(input.originBinding, kind, input.locator, serviceContext);
     await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
     const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
     const template = await this.requireTemplate(saved.project.id, kind, entryKey, serviceContext);
@@ -347,7 +358,7 @@ export class SaveAsJsTemplateService {
       throw templateConflict(projectId, kind, entryKey);
     }
     if (!templateFiles.some((file) => file.path.startsWith(`${entryRoot}/`))) {
-      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Moved JS Template workspace is incomplete');
+      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Saved JS Template workspace is incomplete');
     }
   }
 
@@ -357,7 +368,7 @@ export class SaveAsJsTemplateService {
     operation?: JsTemplateSourceOperationReservation,
   ): Promise<SaveAsJsTemplateResult> {
     if (input.destination.type !== 'new') {
-      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'New JS Template destination is required');
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'New Source Project destination is required');
     }
     const registry = this.getAdapterRegistry();
     if (!registry) {
@@ -378,9 +389,14 @@ export class SaveAsJsTemplateService {
     await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input));
 
     const kind = resolveJsTemplateKind(input.locator, legacy);
-    const category = resolveMovedTemplateCategory(kind, legacy);
-    const originSettingsSchema = await this.loadOriginSettingsSchema(input.originBinding, kind, serviceContext);
-    const templateFiles = relocateRunJSWorkspace({
+    const category = resolveSavedTemplateCategory(kind, legacy);
+    const originSettingsSchema = await this.loadOriginSettingsSchema(
+      input.originBinding,
+      kind,
+      input.locator,
+      serviceContext,
+    );
+    const templateFiles = createJsTemplateWorkspaceFromRunJS({
       files: input.files,
       entryPath: input.entryPath,
       kind,
@@ -390,7 +406,7 @@ export class SaveAsJsTemplateService {
       settingsSchema: originSettingsSchema,
     });
     const entryKey = getRelocatedEntryKey(templateFiles, kind, input.templateName);
-    const commitMessage = buildMoveCommitMessage(input);
+    const commitMessage = buildSaveAsCommitMessage(input);
     const projectId = `jtp_${uid()}`;
     const initialFiles = [...createJsTemplateBaseTemplate(), ...templateFiles.map(toInitialTreeEntry)];
     const prepared = await this.runtimeCompileService.prepareInitialWorkspace(
@@ -402,7 +418,7 @@ export class SaveAsJsTemplateService {
     );
 
     return this.db.sequelize.transaction(async (transaction) => {
-      const result = await this.publishNewMove(
+      const result = await this.publishNewSave(
         input,
         ctx,
         adapter,
@@ -414,13 +430,13 @@ export class SaveAsJsTemplateService {
         prepared,
         transaction,
       );
-      await this.recordMoveSuccessAudit(input, result, ctx, transaction);
+      await this.recordSaveAsSuccessAudit(input, result, ctx, transaction);
       await this.sourceOperationStore.complete(operation, result, transaction);
       return result;
     });
   }
 
-  private async publishNewMove(
+  private async publishNewSave(
     input: SaveAsJsTemplateInput,
     ctx: SaveAsJsTemplateServiceContext,
     adapter: ExternalBindingAdapter,
@@ -433,18 +449,22 @@ export class SaveAsJsTemplateService {
     transaction: Transaction,
   ): Promise<SaveAsJsTemplateResult> {
     if (input.destination.type !== 'new') {
-      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'New JS Template destination is required');
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'New Source Project destination is required');
     }
     const adapterContext: RunJSSourceAdapterContext = { ...ctx.adapterContext, transaction };
     const serviceContext: JsTemplateServiceContext = { ...ctx, transaction };
+    if (input.originBinding) {
+      await lockFlowModel(this.db, getFlowModelUid(input.locator), transaction);
+    }
     await adapter.assertCanWrite({ locator: input.locator, ctx: adapterContext });
     const currentLegacy = await adapter.readLegacy({ locator: input.locator, ctx: adapterContext });
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
+    await this.assertOriginBindingCurrent(input.originBinding, preparedKind, input.locator, serviceContext);
     await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
     if (resolveJsTemplateKind(input.locator, currentLegacy) !== preparedKind) {
       throw new JsTemplateError(
         'JS_TEMPLATE_BINDING_OUTDATED',
-        'RunJS source kind changed before it could be moved to a JS Template',
+        'RunJS source kind changed before it could be saved as a JS Template',
       );
     }
 
@@ -483,7 +503,7 @@ export class SaveAsJsTemplateService {
     return { project: compiled.project, template, binding, ownerFingerprint };
   }
 
-  private async recordMoveSuccessAudit(
+  private async recordSaveAsSuccessAudit(
     input: SaveAsJsTemplateInput,
     result: SaveAsJsTemplateResult,
     ctx: SaveAsJsTemplateServiceContext,
@@ -495,7 +515,7 @@ export class SaveAsJsTemplateService {
       result: 'success',
       requestId: ctx.requestId || randomUUID(),
       actorUserId: ctx.actorUserId,
-      message: 'RunJS source moved to a JS Template',
+      message: 'RunJS source saved as a JS Template',
       details: {
         destinationType: input.destination.type,
         templateId: result.template.id,
@@ -517,7 +537,7 @@ export class SaveAsJsTemplateService {
         candidate.kind === kind && candidate.templateName === templateName && candidate.healthStatus === 'ready',
     );
     if (!template) {
-      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', 'Moved JS Template was not created', {
+      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', 'Saved JS Template was not created', {
         details: { projectId, kind, templateName },
       });
     }
@@ -527,11 +547,13 @@ export class SaveAsJsTemplateService {
   private async loadOriginSettingsSchema(
     originBinding: SaveAsJsTemplateOriginBinding | undefined,
     kind: JsTemplateKind,
+    locator: RunJSSourceLocator,
     ctx: JsTemplateServiceContext,
   ): Promise<Record<string, unknown> | null> {
     if (!originBinding || originBinding.kind !== kind) {
       return null;
     }
+    await this.assertOriginBindingCurrent(originBinding, kind, locator, ctx);
     try {
       const originTemplate = await this.templateService.getTemplate(originBinding.templateId, ctx);
       if (originTemplate.projectId !== originBinding.projectId || originTemplate.kind !== kind) {
@@ -545,6 +567,31 @@ export class SaveAsJsTemplateService {
       throw error;
     }
   }
+
+  private async assertOriginBindingCurrent(
+    originBinding: SaveAsJsTemplateOriginBinding | undefined,
+    kind: JsTemplateKind,
+    locator: RunJSSourceLocator,
+    ctx: JsTemplateServiceContext,
+  ): Promise<void> {
+    if (!originBinding) {
+      return;
+    }
+    const currentBinding = await readCurrentHostBinding(this.db, locator, ctx.transaction);
+    if (
+      !currentBinding ||
+      originBinding.kind !== kind ||
+      currentBinding.projectId !== originBinding.projectId ||
+      currentBinding.templateId !== originBinding.templateId ||
+      currentBinding.kind !== originBinding.kind
+    ) {
+      throw new JsTemplateError(
+        'JS_TEMPLATE_BINDING_OUTDATED',
+        'The requested origin binding does not match the current JS Template Host binding',
+      );
+    }
+    await this.projectService.assertApplicationOwnership(originBinding.projectId, this.applicationName, ctx);
+  }
 }
 
 function assertDestinationProjectEnabled(project: SaveAsJsTemplateResult['project']): void {
@@ -554,18 +601,18 @@ function assertDestinationProjectEnabled(project: SaveAsJsTemplateResult['projec
   if (project.lifecycleStatus === 'archived') {
     throw new JsTemplateError(
       'JS_TEMPLATE_PROJECT_ARCHIVED',
-      'Archived JS Template projects cannot receive moved source',
+      'Archived JS Template projects cannot receive a saved Template Entry',
       { details: { projectId: project.id, lifecycleStatus: project.lifecycleStatus } },
     );
   }
   throw new JsTemplateError(
     'JS_TEMPLATE_PROJECT_DISABLED',
-    'Disabled JS Template projects cannot receive moved source',
+    'Disabled JS Template projects cannot receive a saved Template Entry',
     { details: { projectId: project.id, lifecycleStatus: project.lifecycleStatus } },
   );
 }
 
-export function relocateRunJSWorkspace(input: {
+export function createJsTemplateWorkspaceFromRunJS(input: {
   files: SaveAsJsTemplateWorkspaceFile[];
   entryPath: string;
   kind: JsTemplateKind;
@@ -681,7 +728,7 @@ function assertCanonicalModelSourceLocator(
   }
 }
 
-function resolveMovedTemplateCategory(kind: JsTemplateKind, legacy: RunJSLegacySource): string | null {
+function resolveSavedTemplateCategory(kind: JsTemplateKind, legacy: RunJSLegacySource): string | null {
   if (kind !== 'js-field') {
     return null;
   }
@@ -711,24 +758,80 @@ function getFlowModelUid(locator: RunJSSourceLocator): string {
   throw unsupportedLocator(locator);
 }
 
-function assertSaveAsJsTemplateInputSupported(input: SaveAsJsTemplateInput): void {
-  if (typeof input.idempotencyKey !== 'undefined') {
-    if (!input.idempotencyKey.trim()) {
-      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Move source idempotency key must be a non-empty string');
-    }
-    if (input.idempotencyKey.length > 255) {
-      throw new JsTemplateError(
-        'JS_TEMPLATE_INVALID_INPUT',
-        'Move source idempotency key must be at most 255 characters',
-      );
-    }
+async function lockFlowModel(db: Database, modelUid: string, transaction: Transaction): Promise<void> {
+  await db.getCollection('flowModels').model.findByPk(modelUid, {
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+}
+
+function assertSaveAsJsTemplateInputSupported(input: SaveAsJsTemplateInput): string {
+  if (typeof input.idempotencyKey !== 'string') {
+    throw new JsTemplateError(
+      'JS_TEMPLATE_INVALID_INPUT',
+      'Save as JS Template idempotency key must be a non-empty string',
+    );
+  }
+  const idempotencyKey = input.idempotencyKey.trim();
+  if (!idempotencyKey) {
+    throw new JsTemplateError(
+      'JS_TEMPLATE_INVALID_INPUT',
+      'Save as JS Template idempotency key must be a non-empty string',
+    );
+  }
+  if (idempotencyKey.length > 255) {
+    throw new JsTemplateError(
+      'JS_TEMPLATE_INVALID_INPUT',
+      'Save as JS Template idempotency key must be at most 255 characters',
+    );
   }
   if (input.locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(input.locator);
   }
-  if (input.originBinding && !(JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(input.originBinding.kind)) {
+  if (
+    input.originBinding &&
+    (!isJsTemplateRuntimeSourceBinding(input.originBinding) ||
+      !(JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(input.originBinding.kind))
+  ) {
     throw unsupportedLocator(input.locator, undefined, input.originBinding.kind);
   }
+  return idempotencyKey;
+}
+
+async function readCurrentHostBinding(
+  db: Database,
+  locator: RunJSSourceLocator,
+  transaction?: Transaction,
+): Promise<JsTemplateRuntimeSourceBinding | undefined> {
+  if (locator.kind !== 'flowModel.step') {
+    return undefined;
+  }
+  const repository = db.getCollection('flowModels').repository as unknown as FlowModelRepositoryLike;
+  const model = await repository.findModelById(locator.modelUid, {
+    transaction,
+    includeAsyncNode: true,
+  });
+  const sourceRoot = getAtPath(model, [
+    'stepParams',
+    locator.flowKey,
+    locator.stepKey,
+    ...locator.paramPath.slice(0, -1),
+  ]);
+  if (!isRecord(sourceRoot) || sourceRoot.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
+    return undefined;
+  }
+  return isJsTemplateRuntimeSourceBinding(sourceRoot.sourceBinding) ? sourceRoot.sourceBinding : undefined;
+}
+
+function getAtPath(root: unknown, path: readonly string[]): unknown {
+  let current = root;
+  for (const segment of path) {
+    if (!isRecord(current)) {
+      return undefined;
+    }
+    current = current[segment];
+  }
+  return current;
 }
 
 function assertOwnerFingerprint(expected: string, current: string): void {
@@ -737,7 +840,7 @@ function assertOwnerFingerprint(expected: string, current: string): void {
   }
   throw new JsTemplateError(
     'JS_TEMPLATE_BINDING_OUTDATED',
-    'RunJS source changed before it could be moved to a JS Template',
+    'RunJS source changed before it could be saved as a JS Template',
     {
       details: {
         expectedOwnerFingerprint: expected,
@@ -758,14 +861,14 @@ function unsupportedLocator(
   modelUse?: string,
   originBindingKind?: string,
 ): JsTemplateError {
-  return new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'This RunJS source cannot be moved to a JS Template', {
+  return new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'This RunJS source cannot be saved as a JS Template', {
     details: { locatorKind: locator.kind, modelUse, originBindingKind },
   });
 }
 
-function buildMoveCommitMessage(input: SaveAsJsTemplateInput): string {
+function buildSaveAsCommitMessage(input: SaveAsJsTemplateInput): string {
   const sourceVersion = input.sourceHeadCommitId || 'working-copy';
-  return `Move RunJS source ${input.sourceRepoId}@${sourceVersion} to ${input.templateName}`.slice(0, 200);
+  return `Save RunJS source ${input.sourceRepoId}@${sourceVersion} as ${input.templateName}`.slice(0, 200);
 }
 
 function toInitialTreeEntry(file: JsTemplateFileChange) {
@@ -829,7 +932,7 @@ function getRelocatedEntryKey(files: JsTemplateFileChange[], kind: JsTemplateKin
   const descriptorPath = `${getEntryRoot(kind, entryDirectory)}/entry.json`;
   const descriptorFile = files.find((file) => file.path === descriptorPath);
   if (!descriptorFile) {
-    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Moved JS Template descriptor is missing', {
+    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Saved JS Template descriptor is missing', {
       details: { descriptorPath },
     });
   }
@@ -883,7 +986,7 @@ function sourceSnapshotOutdated(
 ): JsTemplateError {
   return new JsTemplateError(
     'JS_TEMPLATE_SOURCE_OUTDATED',
-    'RunJS workspace Head changed before it could be moved to a JS Template',
+    'RunJS workspace Head changed before it could be saved as a JS Template',
     {
       details: {
         sourceRepoId: input.sourceRepoId,
@@ -902,15 +1005,18 @@ function readSaveAsJsTemplateOperationResult(value: unknown): SaveAsJsTemplateRe
     !isRecord(value.binding) ||
     typeof value.ownerFingerprint !== 'string'
   ) {
-    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Move source operation has an invalid completed result');
+    throw new JsTemplateError(
+      'JS_TEMPLATE_SOURCE_ERROR',
+      'Save as JS Template operation has an invalid completed result',
+    );
   }
   return value as unknown as SaveAsJsTemplateResult;
 }
 
-function createSaveAsJsTemplateOperationDescriptor(input: SaveAsJsTemplateInput) {
+function createSaveAsJsTemplateOperationDescriptor(input: SaveAsJsTemplateInput, idempotencyKey: string) {
   return {
     action: 'save-as-js-template',
-    idempotencyKey: input.idempotencyKey,
+    idempotencyKey,
     request: { ...input, idempotencyKey: undefined },
     parseResult: readSaveAsJsTemplateOperationResult,
   };
@@ -927,7 +1033,7 @@ function normalizeSaveAsJsTemplateError(error: unknown): unknown {
   if (error.code === 'RUNJS_SOURCE_OWNER_OUTDATED') {
     return new JsTemplateError(
       'JS_TEMPLATE_BINDING_OUTDATED',
-      'RunJS source changed before it could be moved to a JS Template',
+      'RunJS source changed before it could be saved as a JS Template',
       { details: error.details },
     );
   }
@@ -936,7 +1042,7 @@ function normalizeSaveAsJsTemplateError(error: unknown): unknown {
       details: error.details,
     });
   }
-  return new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'RunJS source could not be moved', {
+  return new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'RunJS source could not be saved as a JS Template', {
     status: error.status,
     details: {
       sourceCode: error.code,

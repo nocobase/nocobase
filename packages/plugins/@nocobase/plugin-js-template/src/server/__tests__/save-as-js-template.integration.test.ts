@@ -13,14 +13,18 @@ import { createHash } from 'crypto';
 import { describe, expect, it, vi } from 'vitest';
 
 import { JsTemplateError } from '../../shared/errors';
-import type { JsTemplate, SaveAsJsTemplateInput, JsTemplateProject } from '../../shared/types';
+import type {
+  JsTemplate,
+  SaveAsJsTemplateInput,
+  SaveAsJsTemplateOriginBinding,
+  JsTemplateProject,
+} from '../../shared/types';
 import swaggerDocument from '../../swagger';
 import { createJsTemplatesResource } from '../resources/jsTemplates';
 import type { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
 import {
   SaveAsJsTemplateService,
   PersistentSaveAsJsTemplateSnapshotValidator,
-  relocateRunJSWorkspace,
 } from '../services/SaveAsJsTemplateService';
 import { JsTemplateSourceOperationStore } from '../services/JsTemplateSourceOperationStore';
 import {
@@ -146,6 +150,19 @@ describe('PersistentSaveAsJsTemplateSnapshotValidator', () => {
 });
 
 describe('SaveAsJsTemplateService', () => {
+  it('requires a non-empty idempotency key before reading or writing source state', async () => {
+    const fixture = createFailFastService();
+    const input = createSaveAsJsTemplateInput();
+    delete (input as Partial<SaveAsJsTemplateInput>).idempotencyKey;
+
+    await expect(fixture.service.saveAsJsTemplate(input, { adapterContext: {} })).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_INVALID_INPUT',
+      message: 'Save as JS Template idempotency key must be a non-empty string',
+    });
+    expect(fixture.registryRequire).not.toHaveBeenCalled();
+    expectFailFastWritesNotCalled(fixture);
+  });
+
   it.each([
     ['JSBlockModel', 'js-block', 'src/client/js-blocks'],
     ['JSPageModel', 'js-page', 'src/client/js-pages'],
@@ -154,13 +171,31 @@ describe('SaveAsJsTemplateService', () => {
     ['JSColumnModel', 'js-field', 'src/client/js-fields'],
     ['JSItemModel', 'js-item', 'src/client/js-items'],
   ] as const)(
-    'moves a %s source into an existing project and writes the host binding in the same transaction',
+    'saves a %s source in an existing project and writes the host binding in the same transaction',
     async (modelUse, kind, entryRoot) => {
       const sourceLocator = {
         ...locator,
         flowKey: kind === 'js-action' ? 'clickSettings' : 'jsSettings',
       } as const;
-      const transaction = { id: 'tx_move' } as unknown as Transaction;
+      const originBinding = {
+        type: 'js-template-entry' as const,
+        projectId: 'jtp_origin',
+        templateId: 'jtt_origin',
+        kind,
+      };
+      const transaction = { id: 'tx_move', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
+      const lockFlowModel = vi.fn();
+      const findFlowModelById = vi.fn(async () => ({
+        stepParams: {
+          [sourceLocator.flowKey]: {
+            runJs: {
+              sourceMode: 'js-template',
+              sourceBinding: originBinding,
+            },
+          },
+        },
+      }));
+      const assertApplicationOwnership = vi.fn();
       const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
       const movedEntry: JsTemplate = {
         ...entry,
@@ -214,15 +249,26 @@ describe('SaveAsJsTemplateService', () => {
         .fn()
         .mockResolvedValueOnce([{ ...movedEntry, id: 'jtt_existing_source_key', templateName: 'welcome-card' }])
         .mockResolvedValueOnce([movedEntry]);
+      const operationModel = createJsTemplateSourceOperationModel();
       const service = new SaveAsJsTemplateService(
         {
           sequelize: {
             transaction: (run: (transaction: Transaction) => Promise<unknown>) => run(transaction),
           },
+          getRepository: (name: string) => {
+            if (name !== 'jsTemplateSourceOperations') {
+              throw new Error(`Unexpected repository: ${name}`);
+            }
+            return { model: operationModel.model };
+          },
+          getCollection: () => ({
+            model: { findByPk: lockFlowModel },
+            repository: { findModelById: findFlowModelById },
+          }),
         } as unknown as Database,
         {
           lockInternalProjectForUpdate: vi.fn(async () => ({ ...project, vscRepoId: 'vsc_repo' })),
-          assertApplicationOwnership: vi.fn(),
+          assertApplicationOwnership,
         } as never,
         {
           pull: vi.fn(async () => ({
@@ -244,6 +290,7 @@ describe('SaveAsJsTemplateService', () => {
 
       const result = await service.saveAsJsTemplate(
         {
+          idempotencyKey: `save-as-${kind}-${modelUse}`,
           locator: sourceLocator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -262,12 +309,7 @@ describe('SaveAsJsTemplateService', () => {
               }),
             },
           ],
-          originBinding: {
-            type: 'js-template-entry',
-            projectId: 'jtp_origin',
-            templateId: 'jtt_origin',
-            kind,
-          },
+          originBinding,
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-kpi',
           templateTitle: 'Sales KPI',
@@ -288,6 +330,11 @@ describe('SaveAsJsTemplateService', () => {
         expect.not.objectContaining({ transaction: expect.anything() }),
       );
       expect(publishPreparedSave).toHaveBeenCalledWith(preparedSave, expect.objectContaining({ transaction }));
+      expect(lockFlowModel).toHaveBeenCalledWith(sourceLocator.modelUid, {
+        transaction,
+        lock: 'UPDATE',
+      });
+      expect(lockFlowModel.mock.invocationCallOrder[0]).toBeLessThan(publishPreparedSave.mock.invocationCallOrder[0]);
       const savedFiles = prepareSaveSource.mock.calls[0][0].files as Array<{ path: string; content: string }>;
       const descriptor = JSON.parse(
         savedFiles.find((file) => file.path === `${entryRoot}/sales-kpi/entry.json`)?.content || '{}',
@@ -305,12 +352,19 @@ describe('SaveAsJsTemplateService', () => {
       expect(descriptor.settings).toEqual(originSettingsSchema.properties);
       expect(descriptor).not.toHaveProperty('settingsSchema');
       expect(getTemplate).toHaveBeenCalledWith('jtt_origin', expect.anything());
+      expect(assertApplicationOwnership).toHaveBeenCalledWith('jtp_origin', 'main', expect.anything());
+      expect(findFlowModelById).toHaveBeenCalledTimes(2);
       expect(writeExternalBinding).toHaveBeenCalledWith({
         locator: sourceLocator,
         baseOwnerFingerprint: 'owner_before',
         binding: {
           sourceMode: 'js-template',
-          sourceBinding: expect.objectContaining({ projectId: project.id, templateId: movedEntry.id, kind }),
+          sourceBinding: {
+            type: 'js-template-entry',
+            projectId: project.id,
+            templateId: movedEntry.id,
+            kind,
+          },
         },
         ctx: expect.objectContaining({ transaction }),
       });
@@ -318,7 +372,12 @@ describe('SaveAsJsTemplateService', () => {
         expect.objectContaining({ rootUid: sourceLocator.modelUid }),
         expect.objectContaining({ transaction }),
       );
-      expect(result.binding).toMatchObject({ projectId: project.id, templateId: movedEntry.id, kind });
+      expect(result.binding).toEqual({
+        type: 'js-template-entry',
+        projectId: project.id,
+        templateId: movedEntry.id,
+        kind,
+      });
       expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
       expect(recordLifecycleEvent).toHaveBeenCalledWith({
         projectId: project.id,
@@ -326,7 +385,7 @@ describe('SaveAsJsTemplateService', () => {
         result: 'success',
         requestId: 'req_move_existing',
         actorUserId: '1',
-        message: 'RunJS source moved to a JS Template',
+        message: 'RunJS source saved as a JS Template',
         details: { destinationType: 'existing', templateId: movedEntry.id, kind },
         transaction,
       });
@@ -365,10 +424,17 @@ describe('SaveAsJsTemplateService', () => {
         diagnostics: [],
       };
     });
+    const operationModel = createJsTemplateSourceOperationModel();
     const service = new SaveAsJsTemplateService(
       {
         sequelize: {
           transaction: (run: (currentTransaction: Transaction) => Promise<unknown>) => run(transaction),
+        },
+        getRepository: (name: string) => {
+          if (name !== 'jsTemplateSourceOperations') {
+            throw new Error(`Unexpected repository: ${name}`);
+          }
+          return { model: operationModel.model };
         },
       } as unknown as Database,
       { createProjectForCompositeUseCase: createProject, assertApplicationOwnership: vi.fn() } as never,
@@ -406,6 +472,7 @@ describe('SaveAsJsTemplateService', () => {
 
     const result = await service.saveAsJsTemplate(
       {
+        idempotencyKey: 'save-as-new-sales-kpi-page',
         locator,
         expectedOwnerFingerprint: 'owner_before',
         sourceRepoId: 'runjs_repo',
@@ -454,7 +521,7 @@ describe('SaveAsJsTemplateService', () => {
       result: 'success',
       requestId: 'req_move_new',
       actorUserId: undefined,
-      message: 'RunJS source moved to a JS Template',
+      message: 'RunJS source saved as a JS Template',
       details: { destinationType: 'new', templateId: createdEntry.id, kind: 'js-page' },
       transaction,
     });
@@ -462,11 +529,18 @@ describe('SaveAsJsTemplateService', () => {
 
   it('rejects an existing template instead of overwriting it', async () => {
     const saveSource = vi.fn();
+    const operationModel = createJsTemplateSourceOperationModel();
     const service = new SaveAsJsTemplateService(
       {
         sequelize: {
           transaction: (run: (transaction: Transaction) => Promise<unknown>) =>
             run({ id: 'tx_conflict' } as unknown as Transaction),
+        },
+        getRepository: (name: string) => {
+          if (name !== 'jsTemplateSourceOperations') {
+            throw new Error(`Unexpected repository: ${name}`);
+          }
+          return { model: operationModel.model };
         },
       } as unknown as Database,
       { lockInternalProjectForUpdate: vi.fn(async () => project), assertApplicationOwnership: vi.fn() } as never,
@@ -506,6 +580,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-existing-conflict',
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -532,6 +607,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-stale-owner',
           locator,
           expectedOwnerFingerprint: 'owner_stale',
           sourceRepoId: 'runjs_repo',
@@ -562,6 +638,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       fixture.service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-nested-runjs',
           locator: nestedLocator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -634,6 +711,68 @@ describe('SaveAsJsTemplateService', () => {
     expectFailFastWritesNotCalled(fixture);
   });
 
+  it('rejects an origin binding that does not match the current Host binding', async () => {
+    const saveSource = vi.fn();
+    const getTemplate = vi.fn();
+    const service = createFailureService({
+      saveSource,
+      getTemplate,
+      currentSourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_current',
+        templateId: 'jtt_current',
+        kind: 'js-block',
+      },
+    });
+
+    await expect(
+      service.saveAsJsTemplate(
+        createSaveAsJsTemplateInput({
+          originBinding: {
+            type: 'js-template-entry',
+            projectId: 'jtp_forged',
+            templateId: 'jtt_forged',
+            kind: 'js-block',
+          },
+        }),
+        { adapterContext: {} },
+      ),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+
+    expect(getTemplate).not.toHaveBeenCalled();
+    expect(saveSource).not.toHaveBeenCalled();
+  });
+
+  it('rejects a matching origin binding outside the current application before reading its schema', async () => {
+    const originBinding = {
+      type: 'js-template-entry' as const,
+      projectId: 'jtp_other_application',
+      templateId: 'jtt_other_application',
+      kind: 'js-block',
+    };
+    const saveSource = vi.fn();
+    const getTemplate = vi.fn();
+    const assertApplicationOwnership = vi.fn(async (projectId: string) => {
+      if (projectId === originBinding.projectId) {
+        throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Source Project belongs to another application');
+      }
+    });
+    const service = createFailureService({
+      saveSource,
+      getTemplate,
+      currentSourceBinding: originBinding,
+      assertApplicationOwnership,
+    });
+
+    await expect(
+      service.saveAsJsTemplate(createSaveAsJsTemplateInput({ originBinding }), { adapterContext: {} }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_PERMISSION_DENIED', status: 403 });
+
+    expect(assertApplicationOwnership).toHaveBeenCalledWith(originBinding.projectId, 'main', expect.anything());
+    expect(getTemplate).not.toHaveBeenCalled();
+    expect(saveSource).not.toHaveBeenCalled();
+  });
+
   it('requires host write permission before changing the destination', async () => {
     const saveSource = vi.fn();
     const service = createFailureService({
@@ -646,6 +785,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-permission-denied',
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -833,16 +973,19 @@ describe('SaveAsJsTemplateService', () => {
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
     const service = createFailureService({ saveSource, writeExternalBinding, operationModel });
-    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'move-sales-kpi-v1' });
+    const input = createSaveAsJsTemplateInput({ idempotencyKey: '  save-sales-kpi-v1  ' });
 
     const first = await service.saveAsJsTemplate(input, { adapterContext: {} });
-    const replay = await service.saveAsJsTemplate(input, { adapterContext: {} });
+    const replay = await service.saveAsJsTemplate(
+      { ...input, idempotencyKey: 'save-sales-kpi-v1' },
+      { adapterContext: {} },
+    );
 
     expect(replay).toEqual(first);
     expect(saveSource).toHaveBeenCalledTimes(1);
     expect(writeExternalBinding).toHaveBeenCalledTimes(1);
     expect(operationModel.getValues()).toMatchObject({
-      idempotencyKey: 'move-sales-kpi-v1',
+      idempotencyKey: 'save-sales-kpi-v1',
       status: 'completed',
       result: first,
     });
@@ -955,6 +1098,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: `save-as-${lifecycleStatus}-project`,
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -989,6 +1133,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-compile-failure',
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -1007,7 +1152,7 @@ describe('SaveAsJsTemplateService', () => {
   });
 
   it('keeps destination and host writes under one rejected transaction when binding fails', async () => {
-    const transaction = { id: 'tx_rollback' } as unknown as Transaction;
+    const transaction = { id: 'tx_rollback', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
     let committed = false;
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const movedPageEntry = {
@@ -1032,6 +1177,7 @@ describe('SaveAsJsTemplateService', () => {
     await expect(
       service.saveAsJsTemplate(
         {
+          idempotencyKey: 'save-as-host-write-rollback',
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_repo',
@@ -1065,8 +1211,13 @@ function createFailureService(options: {
   operationModel?: ReturnType<typeof createJsTemplateSourceOperationModel>;
   listTemplates?: ReturnType<typeof vi.fn>;
   sourceSnapshotValidator?: { assertCurrent: ReturnType<typeof vi.fn> };
+  currentSourceBinding?: SaveAsJsTemplateOriginBinding;
+  assertApplicationOwnership?: ReturnType<typeof vi.fn>;
+  getTemplate?: ReturnType<typeof vi.fn>;
 }): SaveAsJsTemplateService {
-  const transaction = options.transaction || ({ id: 'tx_failure' } as unknown as Transaction);
+  const transaction =
+    options.transaction || ({ id: 'tx_failure', LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction);
+  const operationModel = options.operationModel || createJsTemplateSourceOperationModel();
   return new SaveAsJsTemplateService(
     {
       sequelize: {
@@ -1077,15 +1228,32 @@ function createFailureService(options: {
         },
       },
       getRepository: (name: string) => {
-        if (name !== 'jsTemplateSourceOperations' || !options.operationModel) {
+        if (name !== 'jsTemplateSourceOperations') {
           throw new Error(`Unexpected repository: ${name}`);
         }
-        return { model: options.operationModel.model };
+        return { model: operationModel.model };
       },
+      getCollection: () => ({
+        model: { findByPk: vi.fn() },
+        repository: {
+          findModelById: vi.fn(async () => ({
+            stepParams: {
+              jsSettings: {
+                runJs: options.currentSourceBinding
+                  ? {
+                      sourceMode: 'js-template',
+                      sourceBinding: options.currentSourceBinding,
+                    }
+                  : { sourceMode: 'inline' },
+              },
+            },
+          })),
+        },
+      }),
     } as unknown as Database,
     {
       lockInternalProjectForUpdate: vi.fn(async () => options.destinationProject || project),
-      assertApplicationOwnership: vi.fn(),
+      assertApplicationOwnership: options.assertApplicationOwnership || vi.fn(),
     } as never,
     {
       pull: vi.fn(async () => ({
@@ -1097,6 +1265,7 @@ function createFailureService(options: {
       })),
     } as never,
     {
+      getTemplate: options.getTemplate,
       listTemplates:
         options.listTemplates ||
         vi
@@ -1211,6 +1380,7 @@ function createSnapshotDatabase(input: {
 
 function createSaveAsJsTemplateInput(overrides: Partial<SaveAsJsTemplateInput> = {}): SaveAsJsTemplateInput {
   return {
+    idempotencyKey: 'save-as-sales-kpi',
     locator,
     expectedOwnerFingerprint: 'owner_before',
     sourceRepoId: 'runjs_repo',
@@ -1252,8 +1422,17 @@ function createFailFastService(modelUse = 'JSBlockModel') {
     writeExternalBinding,
     getFingerprint: vi.fn(),
   }));
+  const operationModel = createJsTemplateSourceOperationModel();
   const service = new SaveAsJsTemplateService(
-    { sequelize: { transaction } } as unknown as Database,
+    {
+      sequelize: { transaction },
+      getRepository: (name: string) => {
+        if (name !== 'jsTemplateSourceOperations') {
+          throw new Error(`Unexpected repository: ${name}`);
+        }
+        return { model: operationModel.model };
+      },
+    } as unknown as Database,
     { createProject, assertApplicationOwnership: vi.fn() } as never,
     { pull } as never,
     { getTemplate, listTemplates } as never,
@@ -1295,7 +1474,7 @@ function expectFailFastWritesNotCalled(fixture: ReturnType<typeof createFailFast
   expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
 }
 
-describe('move to inline integration', () => {
+describe('detach to inline integration', () => {
   // Old case -> new owner:
   // detach-to-inline / js-block + JSBlockModel -> host-kind support matrix below.
   // detach-to-inline / js-field + JSFieldModel -> host-kind support matrix below.
@@ -1311,7 +1490,7 @@ describe('move to inline integration', () => {
   // detach-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> file-limit matrix below.
   // detach-to-inline / moves a JS Page inline with its snapshot and settings while removing the active usage -> this suite.
   // detach-to-inline / rejects a host that no longer points to the selected JS Template entry -> this suite.
-  // New owner: reverse-move late failure rolls back the external binding, RunJS repository Head, and usage index.
+  // New owner: detach late failure rolls back the external binding, RunJS repository Head, and usage index.
 
   const locator = {
     kind: 'flowModel.step',
@@ -1358,6 +1537,11 @@ describe('move to inline integration', () => {
     healthStatus: 'ready',
     diagnostics: [],
   };
+  const detachProject = {
+    ...project,
+    id: binding.projectId,
+    headCommitId: 'commit_light',
+  };
 
   function createDetachJsTemplateToInlinePreflightFixture(
     options: {
@@ -1366,6 +1550,8 @@ describe('move to inline integration', () => {
       compileAccepted?: boolean;
       targetRepository?: VscRepositoryRecord;
       ensureError?: Error;
+      projectHeadCommitId?: string;
+      lockedProjectHeadCommitId?: string;
     } = {},
   ) {
     const operationModel = createJsTemplateSourceOperationModel();
@@ -1428,7 +1614,17 @@ describe('move to inline integration', () => {
     });
     const service = new DetachJsTemplateToInlineService(
       db,
-      { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+      {
+        assertApplicationOwnership: vi.fn(async () => undefined),
+        getProject: vi.fn(async () => ({
+          ...detachProject,
+          headCommitId: options.projectHeadCommitId || detachProject.headCommitId,
+        })),
+        lockInternalProjectForUpdate: vi.fn(async () => ({
+          ...detachProject,
+          headCommitId: options.lockedProjectHeadCommitId || options.projectHeadCommitId || detachProject.headCommitId,
+        })),
+      } as never,
       { getTemplate } as never,
       { prepareEntry } as never,
       { syncFlowModelUsagesForNodeTree: vi.fn() } as never,
@@ -1549,7 +1745,7 @@ describe('move to inline integration', () => {
           parentCommitId: null,
           treeHash: 'tree_created_in_transaction',
           hash: 'commit_hash',
-          message: 'Move to inline',
+          message: 'Detach to inline',
           authorId: '1',
           metadata: {},
         },
@@ -1603,7 +1799,11 @@ describe('move to inline integration', () => {
     });
     const service = new DetachJsTemplateToInlineService(
       db,
-      { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+      {
+        assertApplicationOwnership: vi.fn(async () => undefined),
+        getProject: vi.fn(async () => detachProject),
+        lockInternalProjectForUpdate: vi.fn(async () => detachProject),
+      } as never,
       { getTemplate: vi.fn(async () => entry) } as never,
       {
         prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
@@ -1642,7 +1842,7 @@ describe('move to inline integration', () => {
       ['js-page', 'JSBlockModel', false],
       ['js-block', 'JSColumnModel', false],
       ['runjs', 'JSColumnModel', false],
-    ])('checks whether %s can move from %s back to inline code', (kind, modelUse, expected) => {
+    ])('checks whether %s can detach from %s back to inline code', (kind, modelUse, expected) => {
       expect(isDetachJsTemplateToInlineHostSupported(kind, modelUse)).toBe(expected);
     });
 
@@ -1697,6 +1897,7 @@ describe('move to inline integration', () => {
         service.detachToInline(
           {
             idempotencyKey: 'move-inline-file-limit',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
@@ -1745,6 +1946,7 @@ describe('move to inline integration', () => {
         fixture.service.detachToInline(
           {
             idempotencyKey: `move-inline-preflight-${expectedCode}-${files[0].content.length}`,
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
@@ -1780,6 +1982,7 @@ describe('move to inline integration', () => {
         fixture.service.detachToInline(
           {
             idempotencyKey: 'move-inline-target-head-changed',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
@@ -1806,7 +2009,70 @@ describe('move to inline integration', () => {
       expect(fixture.prepareEntry).toHaveBeenCalledOnce();
     });
 
-    it('moves a JS Page inline with its snapshot and settings while removing the active usage', async () => {
+    it('rejects a stale Source Project Head before copying or mutating any Host state', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({ projectHeadCommitId: 'commit_newer' });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-stale-project-head',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+            entryPath: entry.entryPath,
+            kind: 'js-block',
+            version: 'v2',
+            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_SOURCE_OUTDATED',
+        status: 409,
+        details: {
+          projectId: binding.projectId,
+          templateId: binding.templateId,
+          expectedProjectHeadCommitId: detachProject.headCommitId,
+          currentProjectHeadCommitId: 'commit_newer',
+        },
+      });
+      expect(fixture.transaction).not.toHaveBeenCalled();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+      expect(fixture.prepareEntry).not.toHaveBeenCalled();
+    });
+
+    it('rechecks the Source Project Head under lock before publishing Inline source', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({
+        lockedProjectHeadCommitId: 'commit_changed_during_detach',
+      });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-project-head-race',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+            entryPath: entry.entryPath,
+            kind: 'js-block',
+            version: 'v2',
+            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_SOURCE_OUTDATED',
+        status: 409,
+        details: { currentProjectHeadCommitId: 'commit_changed_during_detach' },
+      });
+      expect(fixture.transaction).toHaveBeenCalledOnce();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+    });
+
+    it('detaches a JS Page to Inline with its snapshot and settings while removing the active usage', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       const operationModel = createJsTemplateSourceOperationModel();
       const pageLocator = { ...locator, modelUid: 'fm_js_page' };
@@ -1964,7 +2230,7 @@ describe('move to inline integration', () => {
             parentCommitId: runJSRepo.headCommitId,
             treeHash: 'tree_hash',
             hash: 'commit_hash',
-            message: 'Move to inline',
+            message: 'Detach to inline',
             authorId: '1',
             metadata: pushInput.metadata,
           },
@@ -2002,9 +2268,14 @@ describe('move to inline integration', () => {
       const assertApplicationOwnership = vi.fn(async () => undefined);
       const getTemplate = vi.fn(async () => pageEntry);
       const recordLifecycleEvent = vi.fn(async () => undefined);
+      const lockProject = vi.fn(async () => ({ ...detachProject, id: pageBinding.projectId }));
       const service = new DetachJsTemplateToInlineService(
         db,
-        { assertApplicationOwnership } as never,
+        {
+          assertApplicationOwnership,
+          getProject: vi.fn(async () => ({ ...detachProject, id: pageBinding.projectId })),
+          lockInternalProjectForUpdate: lockProject,
+        } as never,
         { getTemplate } as never,
         compilerBridge,
         { syncFlowModelUsagesForNodeTree: syncUsages } as never,
@@ -2016,6 +2287,7 @@ describe('move to inline integration', () => {
 
       const input = {
         idempotencyKey: 'move-inline-page',
+        expectedProjectHeadCommitId: pageEntry.compiledCommitId,
         locator: pageLocator,
         projectId: pageBinding.projectId,
         templateId: pageBinding.templateId,
@@ -2040,7 +2312,7 @@ describe('move to inline integration', () => {
       const result = await service.detachToInline(input, serviceContext);
       getTemplate.mockResolvedValue({ ...entry, entryPath: 'src/client/js-blocks/changed/index.tsx' });
       const modifiedEntryReplay = await service.detachToInline(input, serviceContext);
-      getTemplate.mockRejectedValue(new Error('source entry was deleted after the completed move'));
+      getTemplate.mockRejectedValue(new Error('source entry was deleted after the completed detach'));
       const deletedEntryReplay = await service.detachToInline(input, serviceContext);
 
       await expect(
@@ -2149,6 +2421,7 @@ describe('move to inline integration', () => {
       expect(findRepositoryByIdentity.mock.invocationCallOrder[0]).toBeLessThan(
         lockFlowModelRecord.mock.invocationCallOrder[0],
       );
+      expect(lockFlowModelRecord.mock.invocationCallOrder[0]).toBeLessThan(lockProject.mock.invocationCallOrder[0]);
       expect(modifiedEntryReplay).toEqual(result);
       expect(deletedEntryReplay).toEqual(result);
       expect(getVscFileService).toHaveBeenCalledTimes(4);
@@ -2229,11 +2502,11 @@ describe('move to inline integration', () => {
       expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
       expect(recordLifecycleEvent).toHaveBeenCalledWith({
         projectId: pageBinding.projectId,
-        action: 'saveAsJsTemplate',
+        action: 'detachJsTemplateToInline',
         result: 'success',
         requestId: 'req_move_inline',
         actorUserId: '1',
-        message: 'JS Template moved to inline RunJS',
+        message: 'JS Template detached to inline RunJS',
         details: {
           destinationType: 'inline',
           templateId: pageBinding.templateId,
@@ -2268,6 +2541,7 @@ describe('move to inline integration', () => {
         fixture.service.detachToInline(
           {
             idempotencyKey: `move-inline-${failureStage}-rollback`,
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
@@ -2367,7 +2641,7 @@ describe('move to inline integration', () => {
             parentCommitId: null,
             treeHash: 'tree_race',
             hash: 'commit_hash_race',
-            message: 'Move to inline',
+            message: 'Detach to inline',
             authorId: '1',
             metadata: {},
           },
@@ -2406,7 +2680,11 @@ describe('move to inline integration', () => {
       };
       const service = new DetachJsTemplateToInlineService(
         db,
-        { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+        {
+          assertApplicationOwnership: vi.fn(async () => undefined),
+          getProject: vi.fn(async () => detachProject),
+          lockInternalProjectForUpdate: vi.fn(async () => detachProject),
+        } as never,
         { getTemplate: vi.fn(async () => entry) } as never,
         {
           prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
@@ -2424,6 +2702,7 @@ describe('move to inline integration', () => {
         { recordLifecycleEvent: vi.fn(async () => undefined) } as never,
       );
       const input = {
+        expectedProjectHeadCommitId: detachProject.headCommitId,
         locator,
         projectId: binding.projectId,
         templateId: binding.templateId,
@@ -2576,7 +2855,7 @@ describe('move to inline integration', () => {
         parentCommitId: null,
         treeHash: 'tree_hash_after',
         hash: 'commit_hash_after',
-        message: 'Move to inline',
+        message: 'Detach to inline',
         authorId: '1',
         metadata: {},
       };
@@ -2611,7 +2890,11 @@ describe('move to inline integration', () => {
       });
       const service = new DetachJsTemplateToInlineService(
         db,
-        { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
+        {
+          assertApplicationOwnership: vi.fn(async () => undefined),
+          getProject: vi.fn(async () => detachProject),
+          lockInternalProjectForUpdate: vi.fn(async () => detachProject),
+        } as never,
         { getTemplate: vi.fn(async () => entry) } as never,
         {
           prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
@@ -2627,13 +2910,14 @@ describe('move to inline integration', () => {
         service.detachToInline(
           {
             idempotencyKey: 'move-inline-rollback',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
             version: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render("inline after move");' }],
+            files: [{ path: entry.entryPath, content: 'ctx.render("inline after detach");' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2706,6 +2990,7 @@ describe('move to inline integration', () => {
         service.detachToInline(
           {
             idempotencyKey: 'move-inline-stale-binding',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
@@ -2729,7 +3014,7 @@ describe('move to inline integration', () => {
   }
 });
 
-describe('move resource integration', () => {
+describe('JS Template conversion resource integration', () => {
   // Old case -> new owner:
   // detach-to-inline / normalizes the detachToInline resource input and request context -> this suite.
   // New owner: service errors are mapped to the stable HTTP response contract by the public resource.
@@ -2752,11 +3037,12 @@ describe('move resource integration', () => {
   const entryPath = 'src/client/js-blocks/sales/index.tsx';
 
   describe('detach-to-inline resource', () => {
-    it('keeps the public move request schemas aligned with the normalized resource inputs', () => {
+    it('keeps the public conversion request schemas aligned with the normalized resource inputs', () => {
       const saveAsJsTemplateRequest = swaggerDocument.components.schemas.SaveAsJsTemplateRequest;
       const detachToInlineRequest = swaggerDocument.components.schemas.DetachJsTemplateToInlineRequest;
 
       expect(saveAsJsTemplateRequest.required).toEqual([
+        'idempotencyKey',
         'locator',
         'expectedOwnerFingerprint',
         'sourceRepoId',
@@ -2788,13 +3074,24 @@ describe('move resource integration', () => {
         'locator',
         'projectId',
         'templateId',
+        'expectedProjectHeadCommitId',
         'entryPath',
         'kind',
         'version',
         'files',
       ]);
       expect(Object.keys(detachToInlineRequest.properties).sort()).toEqual(
-        ['idempotencyKey', 'locator', 'projectId', 'templateId', 'entryPath', 'kind', 'version', 'files'].sort(),
+        [
+          'idempotencyKey',
+          'locator',
+          'projectId',
+          'templateId',
+          'expectedProjectHeadCommitId',
+          'entryPath',
+          'kind',
+          'version',
+          'files',
+        ].sort(),
       );
     });
 
@@ -2824,7 +3121,7 @@ describe('move resource integration', () => {
         action: {
           params: {
             values: {
-              idempotencyKey: 'externalize-sales-page-v1',
+              idempotencyKey: 'save-as-js-template-sales-page-v1',
               locator,
               expectedOwnerFingerprint: 'owner_before',
               sourceRepoId: 'runjs_sales_page',
@@ -2839,21 +3136,21 @@ describe('move resource integration', () => {
         },
         auth: { user: { id: 9 } },
         can,
-        request: { headers: { 'x-request-id': 'req_externalize', 'x-request-source': 'resource-contract' } },
+        request: { headers: { 'x-request-id': 'req_save_as_js_template', 'x-request-source': 'resource-contract' } },
       } as unknown as Context;
 
       await resource.actions?.saveAsJsTemplate?.(ctx, async () => undefined);
 
       expect(saveAsJsTemplate).toHaveBeenCalledWith(
         expect.objectContaining({
-          idempotencyKey: 'externalize-sales-page-v1',
+          idempotencyKey: 'save-as-js-template-sales-page-v1',
           destination,
           templateName: 'sales-page',
           files: [expect.objectContaining({ path: 'src/client/index.tsx', content: 'ctx.render(null);' })],
         }),
         expect.objectContaining({
           actorUserId: '9',
-          requestId: 'req_externalize',
+          requestId: 'req_save_as_js_template',
           requestSource: 'resource-contract',
           can,
         }),
@@ -2879,6 +3176,7 @@ describe('move resource integration', () => {
           { saveAsJsTemplate } as unknown as SaveAsJsTemplateService,
         );
         const values: Record<string, unknown> = {
+          idempotencyKey: 'save-as-invalid-destination',
           locator,
           expectedOwnerFingerprint: 'owner_before',
           sourceRepoId: 'runjs_sales_page',
@@ -2927,6 +3225,7 @@ describe('move resource integration', () => {
           params: {
             values: {
               idempotencyKey: '  move-inline-sales-v1  ',
+              expectedProjectHeadCommitId: 'commit_template_head',
               locator,
               projectId: binding.projectId,
               templateId: binding.templateId,
@@ -2952,6 +3251,7 @@ describe('move resource integration', () => {
       expect(detachToInline).toHaveBeenCalledWith(
         {
           idempotencyKey: 'move-inline-sales-v1',
+          expectedProjectHeadCommitId: 'commit_template_head',
           locator,
           projectId: binding.projectId,
           templateId: binding.templateId,
@@ -2981,7 +3281,7 @@ describe('move resource integration', () => {
     it('maps detach-to-inline service errors to the public HTTP response contract', async () => {
       const error = new JsTemplateError(
         'JS_TEMPLATE_BINDING_OUTDATED',
-        'The binding changed before the move completed',
+        'The binding changed before the detach completed',
         {
           details: { projectId: binding.projectId, templateId: binding.templateId },
         },
@@ -3001,6 +3301,7 @@ describe('move resource integration', () => {
           params: {
             values: {
               idempotencyKey: 'move-inline-error-v1',
+              expectedProjectHeadCommitId: 'commit_template_head',
               locator,
               projectId: binding.projectId,
               templateId: binding.templateId,

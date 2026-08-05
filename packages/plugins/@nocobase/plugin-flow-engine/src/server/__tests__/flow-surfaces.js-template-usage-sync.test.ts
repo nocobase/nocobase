@@ -11,11 +11,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { FlowSurfacesService } from '../flow-surfaces/service';
 
 type FlowModelOptions = Record<string, unknown>;
-type RunJsStepParams = {
-  jsSettings: {
-    runJs: Record<string, unknown>;
-  };
-};
 
 type FlowModelRecord = {
   get(key: 'options'): FlowModelOptions;
@@ -51,7 +46,7 @@ function runJsOptions(source: FlowModelOptions) {
   };
 }
 
-function createHarness(initialOptions: FlowModelOptions) {
+function createHarness(initialOptions: FlowModelOptions, options: { providerAvailable?: boolean } = {}) {
   let persistedOptions = structuredClone(initialOptions);
   const syncUsages = vi.fn().mockResolvedValue(undefined);
   const markMissing = vi.fn().mockResolvedValue(undefined);
@@ -84,10 +79,15 @@ function createHarness(initialOptions: FlowModelOptions) {
     db,
     app: {
       pm: {
-        get: vi.fn(() => ({
-          syncJsTemplateUsagesForNodeTree: syncUsages,
-          markJsTemplateUsagesOwnerMissingForNodeTree: markMissing,
-        })),
+        get: vi.fn(() => {
+          if (options.providerAvailable === false) {
+            throw new Error('plugin is not enabled');
+          }
+          return {
+            syncJsTemplateUsagesForNodeTree: syncUsages,
+            markJsTemplateUsagesOwnerMissingForNodeTree: markMissing,
+          };
+        }),
       },
     },
   };
@@ -148,7 +148,7 @@ describe('flowSurfaces JS Template usage synchronization', () => {
     expect(harness.markMissing).not.toHaveBeenCalled();
   });
 
-  it('synchronizes inline transition cleanup but skips unrelated inline code changes', async () => {
+  it('rejects a direct inline transition before persistence or optional Usage synchronization', async () => {
     const binding = {
       type: 'js-template-entry',
       projectId: 'jtp_sales',
@@ -162,27 +162,34 @@ describe('flowSurfaces JS Template usage synchronization', () => {
         sourceMode: 'js-template',
         sourceBinding: binding,
       }),
+      { providerAvailable: false },
     );
 
-    await cleanupHarness.service.patchFlowSurfaceModelOptions({
-      uid: 'owner-1',
-      ...runJsOptions({
-        code: "ctx.render('fallback');",
-        version: 'v2',
-        sourceMode: 'inline',
+    await expect(
+      cleanupHarness.service.patchFlowSurfaceModelOptions({
+        uid: 'owner-1',
+        ...runJsOptions({
+          code: "ctx.render('fallback');",
+          version: 'v2',
+          sourceMode: 'inline',
+        }),
       }),
+    ).rejects.toMatchObject({
+      code: 'FLOW_SURFACE_JS_TEMPLATE_DETACH_REQUIRED',
+      status: 409,
     });
 
     expect(cleanupHarness.readOptions()).toMatchObject(
       runJsOptions({
-        sourceMode: 'inline',
+        sourceMode: 'js-template',
+        sourceBinding: binding,
       }),
     );
-    expect((cleanupHarness.readOptions().stepParams as RunJsStepParams).jsSettings.runJs).not.toHaveProperty(
-      'sourceBinding',
-    );
-    expect(cleanupHarness.syncUsages).toHaveBeenCalledTimes(1);
+    expect(cleanupHarness.model.save).not.toHaveBeenCalled();
+    expect(cleanupHarness.syncUsages).not.toHaveBeenCalled();
+  });
 
+  it('skips Usage synchronization for unrelated Inline code changes', async () => {
     const inlineHarness = createHarness(
       runJsOptions({
         code: "ctx.render('before');",

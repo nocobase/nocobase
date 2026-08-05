@@ -12,7 +12,11 @@ import {
   markJsTemplateUsagesOwnerMissingForNodeTree,
   syncJsTemplateUsagesForNodeTree,
 } from '../flow-surfaces/js-template-usage-integration';
-import { resolveRunJsSettingsGroupKey, shouldSyncJsTemplateUsages } from '../flow-surfaces/service';
+import {
+  assertNoDirectJsTemplateDetach,
+  resolveRunJsSettingsGroupKey,
+  shouldSyncJsTemplateUsages,
+} from '../flow-surfaces/service';
 
 function createOptions(use: string, sourceMode: string, settings: Record<string, unknown> = {}) {
   const groupKey = resolveRunJsSettingsGroupKey(use);
@@ -34,6 +38,7 @@ function createOptions(use: string, sourceMode: string, settings: Record<string,
 
 const JS_OWNER_USES = [
   'JSBlockModel',
+  'JSPageModel',
   'JSItemModel',
   'JSItemActionModel',
   'JSFieldModel',
@@ -66,10 +71,10 @@ function inlineCodeOptions(use: string, code: string) {
 
 describe('flowSurfaces js-template usage sync', () => {
   it('maps every public JS owner use to its canonical settings group', () => {
-    for (const use of JS_OWNER_USES.slice(0, 6)) {
+    for (const use of JS_OWNER_USES.slice(0, 7)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('jsSettings');
     }
-    for (const use of JS_OWNER_USES.slice(6)) {
+    for (const use of JS_OWNER_USES.slice(7)) {
       expect(resolveRunJsSettingsGroupKey(use), use).toBe('clickSettings');
     }
   });
@@ -125,6 +130,22 @@ describe('flowSurfaces js-template usage sync', () => {
         ),
         use,
       ).toBe(false);
+    }
+  });
+
+  it('requires the canonical detach operation for every JS Template Host kind', () => {
+    for (const use of JS_OWNER_USES) {
+      expect(() =>
+        assertNoDirectJsTemplateDetach(createOptions(use, 'js-template'), createOptions(use, 'inline')),
+      ).toThrow(
+        expect.objectContaining({
+          code: 'FLOW_SURFACE_JS_TEMPLATE_DETACH_REQUIRED',
+          status: 409,
+        }),
+      );
+      expect(() =>
+        assertNoDirectJsTemplateDetach(createOptions(use, 'js-template'), createOptions(use, 'js-template')),
+      ).not.toThrow();
     }
   });
 

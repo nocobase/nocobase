@@ -90,7 +90,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
   const binding = isJsTemplateRuntimeSourceBinding(props.value.sourceBinding) ? props.value.sourceBinding : null;
   const [currentBinding, setCurrentBinding] = React.useState(binding);
   const [currentEntryPath, setCurrentEntryPath] = React.useState<string | null>(null);
-  const [movedInlineValue, setMovedInlineValue] = React.useState<RunJSValue | null>(null);
+  const [detachedInlineValue, setDetachedInlineValue] = React.useState<RunJSValue | null>(null);
   const [footerActions, setFooterActions] = React.useState<JsTemplateWorkspaceFooterActions | null>(null);
   const flowContext = useFlowContext<JsTemplateEditorFlowContext | null>();
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
@@ -206,7 +206,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
         throw new Error(translate?.('RunJS source service is unavailable') || 'RunJS source service is unavailable');
       }
 
-      const moveInput = {
+      const detachInput = {
         locator: {
           ...effectiveLocator,
           paramPath: [...effectiveLocator.paramPath],
@@ -214,12 +214,13 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
         },
         projectId: currentBinding.projectId,
         templateId: currentBinding.templateId,
+        expectedProjectHeadCommitId: request.expectedProjectHeadCommitId,
         entryPath: request.entryPath,
         kind: workspaceScope.kind,
         version: request.version,
         files: request.files,
       };
-      const requestFingerprint = JSON.stringify(moveInput);
+      const requestFingerprint = JSON.stringify(detachInput);
       const existingAttempt = detachToInlineAttemptRef.current;
       const attempt =
         existingAttempt?.requestFingerprint === requestFingerprint
@@ -227,7 +228,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
           : { requestFingerprint, idempotencyKey: createDetachJsTemplateToInlineIdempotencyKey() };
       detachToInlineAttemptRef.current = attempt;
       const result = await detachJsTemplateToInline(api, {
-        ...moveInput,
+        ...detachInput,
         idempotencyKey: attempt.idempotencyKey,
       });
       detachToInlineAttemptRef.current = null;
@@ -241,8 +242,8 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
       };
       persistedValueRef.current = nextValue;
       previewAppliedRef.current = false;
-      setMovedInlineValue(nextValue);
-      (props.onPersistedChange || props.onChange)?.(nextValue);
+      setDetachedInlineValue(nextValue);
+      await (props.onPersistedChange || props.onChange)?.(nextValue);
     },
     [currentBinding, api, effectiveLocator, props.onChange, props.onPersistedChange, translate, value, workspaceScope],
   );
@@ -334,8 +335,8 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
     };
   }, [editorView, footerActions, translate]);
 
-  if (movedInlineValue) {
-    return <InlineJsTemplateWorkspaceEditor {...props} value={movedInlineValue} />;
+  if (detachedInlineValue) {
+    return <InlineJsTemplateWorkspaceEditor {...props} value={detachedInlineValue} />;
   }
 
   if (!currentBinding || !workspaceScope) {

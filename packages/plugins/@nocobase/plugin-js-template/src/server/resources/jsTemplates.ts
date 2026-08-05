@@ -27,6 +27,7 @@ import type { JsTemplateServiceContext } from '../services/JsTemplateProjectServ
 import { JsTemplateRuntimeService } from '../services/JsTemplateRuntimeService';
 import { SaveAsJsTemplateService, type SaveAsJsTemplateServiceContext } from '../services/SaveAsJsTemplateService';
 import { DetachJsTemplateToInlineService } from '../services/DetachJsTemplateToInlineService';
+import { DeleteJsTemplateService } from '../services/DeleteJsTemplateService';
 import {
   createTypedResourceAction,
   getServiceContext,
@@ -45,6 +46,7 @@ export const jsTemplateActionNames = [
   'compileWorkspacePreview',
   'saveAsJsTemplate',
   'detachToInline',
+  'delete',
 ] as const;
 
 type JsTemplateActionName = (typeof jsTemplateActionNames)[number];
@@ -60,6 +62,7 @@ interface JsTemplateActionServices {
   compilePreviewService: JsTemplateCompilePreviewService;
   saveAsJsTemplateService?: SaveAsJsTemplateService;
   detachToInlineService?: DetachJsTemplateToInlineService;
+  deleteJsTemplateService?: DeleteJsTemplateService;
 }
 
 const resourceActionRunners: Record<JsTemplateActionName, ResourceActionRunner> = {
@@ -80,15 +83,21 @@ const resourceActionRunners: Record<JsTemplateActionName, ResourceActionRunner> 
     services.compilePreviewService.compileWorkspacePreview(normalizeWorkspacePreviewInput(input), currentUser),
   saveAsJsTemplate: (services, input, currentUser) => {
     if (!services.saveAsJsTemplateService) {
-      throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'Move source service is unavailable');
+      throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'Save as JS Template service is unavailable');
     }
     return services.saveAsJsTemplateService.saveAsJsTemplate(normalizeSaveAsJsTemplateInput(input), currentUser);
   },
   detachToInline: (services, input, currentUser) => {
     if (!services.detachToInlineService) {
-      throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'Move to inline service is unavailable');
+      throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'Detach to Inline service is unavailable');
     }
     return services.detachToInlineService.detachToInline(normalizeDetachJsTemplateToInlineInput(input), currentUser);
+  },
+  delete: (services, input, currentUser) => {
+    if (!services.deleteJsTemplateService) {
+      throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'Delete JS Template service is unavailable');
+    }
+    return services.deleteJsTemplateService.deleteTemplate({ templateId: requireTemplateId(input) }, currentUser);
   },
 };
 
@@ -98,6 +107,7 @@ export function createJsTemplatesResource(
   compilePreviewService: JsTemplateCompilePreviewService,
   saveAsJsTemplateService?: SaveAsJsTemplateService,
   detachToInlineService?: DetachJsTemplateToInlineService,
+  deleteJsTemplateService?: DeleteJsTemplateService,
 ): ResourceOptions {
   const services = {
     templateService,
@@ -105,6 +115,7 @@ export function createJsTemplatesResource(
     compilePreviewService,
     saveAsJsTemplateService,
     detachToInlineService,
+    deleteJsTemplateService,
   };
 
   return {
@@ -149,7 +160,7 @@ function normalizeWorkspacePreviewInput(input: ResourceActionInput): JsTemplateW
 
 function normalizeSaveAsJsTemplateInput(input: ResourceActionInput): SaveAsJsTemplateInput {
   return {
-    idempotencyKey: optionalIdempotencyKey(input),
+    idempotencyKey: requireIdempotencyKey(input),
     locator: normalizeRunJSSourceLocator(input.locator),
     expectedOwnerFingerprint: requireString(input, 'expectedOwnerFingerprint'),
     sourceRepoId: requireString(input, 'sourceRepoId'),
@@ -164,11 +175,8 @@ function normalizeSaveAsJsTemplateInput(input: ResourceActionInput): SaveAsJsTem
   };
 }
 
-function optionalIdempotencyKey(input: ResourceActionInput): string | undefined {
+function requireIdempotencyKey(input: ResourceActionInput): string {
   const value = input.idempotencyKey;
-  if (typeof value === 'undefined') {
-    return undefined;
-  }
   if (typeof value !== 'string' || !value.trim()) {
     throw invalidInput('idempotencyKey must be a non-empty string');
   }
@@ -201,19 +209,12 @@ function normalizeDetachJsTemplateToInlineInput(input: ResourceActionInput): Det
     locator: normalizeRunJSSourceLocator(input.locator),
     projectId: requireProjectId(input),
     templateId: requireString(input, 'templateId'),
+    expectedProjectHeadCommitId: requireString(input, 'expectedProjectHeadCommitId'),
     entryPath: requireString(input, 'entryPath'),
     kind: requireJsTemplateKind(input, 'kind'),
     version: requireString(input, 'version'),
     files: requireArray(input, 'files', normalizeSaveAsJsTemplateFile),
   };
-}
-
-function requireIdempotencyKey(input: ResourceActionInput): string {
-  const idempotencyKey = optionalIdempotencyKey(input);
-  if (!idempotencyKey) {
-    throw invalidInput('idempotencyKey must be a non-empty string');
-  }
-  return idempotencyKey;
 }
 
 function getSaveAsJsTemplateServiceContext(ctx: JsTemplateResourceContext): SaveAsJsTemplateServiceContext {

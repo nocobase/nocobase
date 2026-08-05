@@ -40,7 +40,14 @@ export interface JsTemplateRawResourceDeniedPayload {
 
 export interface JsTemplateLifecycleAuditInput {
   projectId: string;
-  action: 'projectCreate' | 'projectUpdate' | 'projectLifecycleChange' | 'projectDelete' | 'saveAsJsTemplate';
+  action:
+    | 'projectCreate'
+    | 'projectUpdate'
+    | 'projectLifecycleChange'
+    | 'projectDelete'
+    | 'templateDelete'
+    | 'saveAsJsTemplate'
+    | 'detachJsTemplateToInline';
   result: 'success' | 'blocked';
   requestId: string;
   actorUserId?: string | null;

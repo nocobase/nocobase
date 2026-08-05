@@ -63,6 +63,7 @@ import { JsTemplateRuntimeService } from './services/JsTemplateRuntimeService';
 import { JsTemplateUsageService } from './services/JsTemplateUsageService';
 import { SaveAsJsTemplateService } from './services/SaveAsJsTemplateService';
 import { DetachJsTemplateToInlineService } from './services/DetachJsTemplateToInlineService';
+import { DeleteJsTemplateService } from './services/DeleteJsTemplateService';
 
 type AppWithPluginEvents = {
   log?: unknown;
@@ -145,6 +146,8 @@ export class PluginJsTemplateServer extends Plugin {
   private saveAsJsTemplateService?: SaveAsJsTemplateService;
 
   private detachToInlineService?: DetachJsTemplateToInlineService;
+
+  private deleteJsTemplateService?: DeleteJsTemplateService;
 
   private unregisterVscPermissionHook?: () => void;
 
@@ -287,7 +290,7 @@ export class PluginJsTemplateServer extends Plugin {
       this.workspaceCompilerBridge,
       this.validator,
     );
-    this.usageService = new JsTemplateUsageService(db, this.auditService, this.permissionService);
+    this.usageService = new JsTemplateUsageService(db, this.auditService, this.permissionService, this.projectService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
     this.runtimeService = new JsTemplateRuntimeService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
     this.compileWorkerPool = new JsTemplateCompileWorkerPool();
@@ -352,6 +355,16 @@ export class PluginJsTemplateServer extends Plugin {
       () => workspaceModule.getRunJSSourceAdapterRegistry(),
       this.app.name,
     );
+    this.deleteJsTemplateService = new DeleteJsTemplateService(
+      db,
+      this.projectService,
+      this.fileService,
+      this.templateService,
+      this.runtimeCompileService,
+      this.usageService,
+      this.permissionService,
+      this.auditService,
+    );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(
       createJsTemplatesResource(
         this.templateService,
@@ -359,6 +372,7 @@ export class PluginJsTemplateServer extends Plugin {
         this.compilePreviewService,
         this.saveAsJsTemplateService,
         this.detachToInlineService,
+        this.deleteJsTemplateService,
       ),
     );
     (this.app as unknown as AppWithPluginEvents).resourceManager?.define?.(

@@ -23,6 +23,7 @@ const publicActions = {
     'compileWorkspacePreview',
     'saveAsJsTemplate',
     'detachToInline',
+    'delete',
   ],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
@@ -148,17 +149,19 @@ describe('js-template swagger', () => {
     ]);
   });
 
-  it('keeps source relocation and reusable Template contracts public', () => {
+  it('keeps canonical conversion, deletion, and reusable Template contracts public', () => {
     const schemas = swaggerDocument.components.schemas;
     const saveAsJsTemplate = swaggerDocument.paths['/jsTemplates:saveAsJsTemplate'].post;
     const detachToInline = swaggerDocument.paths['/jsTemplates:detachToInline'].post;
+    const deleteTemplate = swaggerDocument.paths['/jsTemplates:delete'].post;
+    const listUsages = swaggerDocument.paths['/jsTemplateUsages:listUsages'].post;
     const listSelectable = swaggerDocument.paths['/jsTemplates:listSelectable'].post;
 
     expect(saveAsJsTemplate.requestBody.content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/SaveAsJsTemplateRequest',
     });
     expect(schemas.SaveAsJsTemplateRequest.required).toEqual(
-      expect.arrayContaining(['locator', 'files', 'destination', 'templateName']),
+      expect.arrayContaining(['idempotencyKey', 'locator', 'files', 'destination', 'templateName']),
     );
     expect(schemas.SaveAsJsTemplateDestination.oneOf).toEqual([
       expect.objectContaining({ required: ['type', 'projectId'] }),
@@ -166,7 +169,7 @@ describe('js-template swagger', () => {
     ]);
     expect(schemas.SaveAsJsTemplateDestination.oneOf[0].properties.projectId).toEqual({
       type: 'string',
-      description: 'Existing destination JS Template Project id.',
+      description: 'Existing destination Source Project id.',
     });
     expect(schemas.SaveAsJsTemplateDestination.oneOf[0].properties).not.toHaveProperty('repoId');
 
@@ -174,6 +177,7 @@ describe('js-template swagger', () => {
       $ref: '#/components/schemas/DetachJsTemplateToInlineRequest',
     });
     expect(schemas.DetachJsTemplateToInlineRequest.required).toContain('idempotencyKey');
+    expect(schemas.DetachJsTemplateToInlineRequest.required).toContain('expectedProjectHeadCommitId');
     expect(schemas.DetachJsTemplateToInlineResult.required).toContain('filesHash');
     expect(schemas.DetachJsTemplateToInlineResult.properties.filesHash).toEqual({
       type: 'string',
@@ -192,6 +196,16 @@ describe('js-template swagger', () => {
       expect(operation.responses).toHaveProperty('422');
     }
     expect(listSelectable.responses).toHaveProperty('200');
+    expect(deleteTemplate.responses).toHaveProperty('409');
+    expect(schemas.DeleteJsTemplateEnvelope.properties.data).toEqual({
+      $ref: '#/components/schemas/DeleteJsTemplateResult',
+    });
+    expect(listUsages.requestBody.content['application/json'].schema.required).toEqual(['templateId']);
+    expect(listUsages.responses).toHaveProperty('403');
+    expect(listUsages.responses).toHaveProperty('404');
+    expect(schemas.JsTemplateUsageListEnvelope.properties.data).toEqual({
+      $ref: '#/components/schemas/JsTemplateUsageListResult',
+    });
   });
 
   it('documents the entry-centric catalog projection', () => {

@@ -82,9 +82,9 @@ function getJsTemplateUsageServiceContext(ctx: JsTemplateResourceContext): JsTem
 
 function normalizeListInput(input: ResourceActionInput): JsTemplateUsageListInput {
   return {
-    projectId: optionalString(input, 'projectId'),
-    templateId: optionalString(input, 'templateId'),
-    ownerLocator: normalizeOwnerLocator(input.ownerLocator),
+    templateId: requireString(input, 'templateId'),
+    page: positiveInteger(input, 'page', 1),
+    pageSize: positiveInteger(input, 'pageSize', 20, 100),
   };
 }
 
@@ -97,7 +97,7 @@ function normalizeRebuildInput(input: ResourceActionInput): JsTemplateUsageRebui
   };
 }
 
-function normalizeOwnerLocator(value: unknown): JsTemplateUsageListInput['ownerLocator'] {
+function normalizeOwnerLocator(value: unknown): JsTemplateUsageRebuildInput['ownerLocator'] {
   const normalized = normalizeUsageOwnerLocator(value);
   if (normalized) {
     return normalized;
@@ -107,6 +107,27 @@ function normalizeOwnerLocator(value: unknown): JsTemplateUsageListInput['ownerL
   }
   const modelUid = optionalString(value as ResourceActionInput, 'modelUid');
   return modelUid ? { modelUid } : undefined;
+}
+
+function requireString(input: ResourceActionInput, key: string): string {
+  const value = optionalString(input, key);
+  if (!value) {
+    throw invalidInput(`${key} must be a non-empty string`);
+  }
+  return value;
+}
+
+function positiveInteger(input: ResourceActionInput, key: string, fallback: number, maximum?: number): number {
+  const value = input[key];
+  if (typeof value === 'undefined' || value === null || value === '') {
+    return fallback;
+  }
+  const parsed = typeof value === 'string' && value.trim() ? Number(value) : value;
+  if (!Number.isInteger(parsed) || (parsed as number) < 1 || (maximum && (parsed as number) > maximum)) {
+    const suffix = maximum ? ` between 1 and ${maximum}` : ' greater than zero';
+    throw invalidInput(`${key} must be an integer${suffix}`);
+  }
+  return parsed as number;
 }
 
 function optionalString(input: ResourceActionInput, key: string): string | undefined {

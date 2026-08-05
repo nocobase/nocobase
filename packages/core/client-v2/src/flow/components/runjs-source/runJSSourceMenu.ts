@@ -55,6 +55,10 @@ function toNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+function isJsTemplateEntryBinding(value: RunJSSourceBinding | undefined): boolean {
+  return value?.type === 'js-template-entry';
+}
+
 function normalizeSourceMode(value: unknown): string {
   return value === 'js-template' ? 'js-template' : INLINE_RUNJS_SOURCE_MODE;
 }
@@ -162,23 +166,28 @@ export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMe
         const input = getMenuInput(params, options, t);
         const inlineSelected = normalizeSourceMode(params.sourceMode) === INLINE_RUNJS_SOURCE_MODE;
         const sourceItems = await loadRunJSSourceMenuItems(input);
+        const allowInlineSelection = inlineSelected || !isJsTemplateEntryBinding(input.sourceBinding);
 
         return [
-          {
-            key: INLINE_RUNJS_SOURCE_MODE,
-            label: t('Inline code'),
-            searchText: t('Inline code'),
-            selected: inlineSelected,
-            onSelect() {
-              return {
-                ...defaultParams,
-                ...params,
-                sourceMode: INLINE_RUNJS_SOURCE_MODE,
-                sourceBinding: undefined,
-                settings: cloneRecord(params.settings),
-              };
-            },
-          },
+          ...(allowInlineSelection
+            ? [
+                {
+                  key: INLINE_RUNJS_SOURCE_MODE,
+                  label: t('Inline code'),
+                  searchText: t('Inline code'),
+                  selected: inlineSelected,
+                  onSelect() {
+                    return {
+                      ...defaultParams,
+                      ...params,
+                      sourceMode: INLINE_RUNJS_SOURCE_MODE,
+                      sourceBinding: undefined,
+                      settings: cloneRecord(params.settings),
+                    };
+                  },
+                },
+              ]
+            : []),
           ...sourceItems,
         ];
       },

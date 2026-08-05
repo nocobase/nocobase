@@ -48,6 +48,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
     workspaceScope?: { kind?: string };
     templateId?: string | null;
     onDetachJsTemplateToInline?: (input: {
+      expectedProjectHeadCommitId: string;
       entryPath: string;
       files: Array<{ path: string; content: string }>;
       version: string;
@@ -60,9 +61,10 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
       await onSaved?.();
       await onRequestClose?.();
     };
-    const moveWorkspaceToInline = async () => {
+    const detachWorkspaceToInline = async () => {
       try {
         await onDetachJsTemplateToInline?.({
+          expectedProjectHeadCommitId: 'project_head_1',
           entryPath: initialPath || '',
           files: [
             { path: initialPath || '', content: workspacePageMockState.detachToInlineCode },
@@ -80,8 +82,8 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
       <div>
         workspace:{projectId}:{templateId}:{initialPath}:{workspaceScope?.kind}
         {onDetachJsTemplateToInline ? (
-          <button type="button" onClick={moveWorkspaceToInline}>
-            move workspace to inline
+          <button type="button" onClick={detachWorkspaceToInline}>
+            detach workspace to Inline
           </button>
         ) : null}
         {onPreview ? (
@@ -389,7 +391,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
-  it('moves a JS Page workspace back to inline once while preserving settings and the new source snapshot', async () => {
+  it('waits for Host persistence when detaching a JS Page workspace to Inline', async () => {
     const provider = createJsTemplateRunJSEditorProvider();
     let resolveHostRefresh: (() => void) | undefined;
     const onPersistedChange = vi.fn(
@@ -484,7 +486,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
       </EditorViewHarness>,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'detach workspace to Inline' }));
 
     await waitFor(() => {
       expect(api.request).toHaveBeenCalledWith({
@@ -501,6 +503,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
           },
           projectId: 'jtp_example',
           templateId: 'jtt_example',
+          expectedProjectHeadCommitId: 'project_head_1',
           entryPath: 'src/client/js-pages/example/index.tsx',
           kind: 'js-page',
           version: 'v2',
@@ -523,12 +526,15 @@ describe('RunJSJsTemplateEditorProvider', () => {
       sourceRef,
     });
     expect(onPersistedChange).toHaveBeenCalledTimes(1);
+    expect(workspacePageMockState.detachToInlineCompleted).toBe(false);
+    await act(async () => {
+      resolveHostRefresh?.();
+    });
     await waitFor(() => expect(workspacePageMockState.detachToInlineCompleted).toBe(true));
-    expect(screen.queryByRole('button', { name: 'move workspace to inline' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'detach workspace to Inline' })).not.toBeInTheDocument();
     expect(screen.getByText('inline workspace editor')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
     expect(runtimeInvalidator.invalidateProject).toHaveBeenCalledWith('jtp_example');
-    resolveHostRefresh?.();
   });
 
   it('reuses the detach-to-inline key for an exact retry and rotates it after the request changes', async () => {
@@ -589,19 +595,19 @@ describe('RunJSJsTemplateEditorProvider', () => {
       </EditorViewHarness>,
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'move workspace to inline' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'detach workspace to Inline' }));
 
     await waitFor(() => {
       expect(api.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:detachToInline' }));
     });
-    fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
+    fireEvent.click(screen.getByRole('button', { name: 'detach workspace to Inline' }));
     await waitFor(() => {
       expect(
         vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:detachToInline'),
       ).toHaveLength(2);
     });
     workspacePageMockState.detachToInlineCode = 'ctx.render(<div>changed working copy</div>);';
-    fireEvent.click(screen.getByRole('button', { name: 'move workspace to inline' }));
+    fireEvent.click(screen.getByRole('button', { name: 'detach workspace to Inline' }));
     await waitFor(() => {
       expect(
         vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:detachToInline'),
@@ -775,7 +781,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     );
 
     expect(await screen.findByText(`workspace:jtp_example:jtt_${kind}:${entryPath}:${kind}`)).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'move workspace to inline' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'detach workspace to Inline' })).toBeInTheDocument();
   });
 
   it('refreshes the entry path by templateId before applying workspace access after a directory rename', async () => {

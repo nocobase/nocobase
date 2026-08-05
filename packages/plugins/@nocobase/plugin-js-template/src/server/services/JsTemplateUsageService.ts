@@ -20,10 +20,13 @@ import type {
   JsTemplateUsageRebuildInput,
   JsTemplateUsageRebuildResult,
   JsTemplateUsage,
+  JsTemplateUsageListInput,
+  JsTemplateUsageListResult,
+  JsTemplateUsageLocation,
   JsTemplateUsageResolvedStatus,
   JsTemplateRuntimeSourceBinding,
 } from '../../shared/types';
-import { isJsTemplateError } from '../../shared/errors';
+import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import {
   createJsTemplateRuntimeSourceBinding,
   isJsTemplateRuntimeSourceBinding,
@@ -32,7 +35,7 @@ import {
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { JsTemplatePermissionService } from './JsTemplatePermissionService';
 import type { JsTemplateCanFunction } from './JsTemplatePermissionService';
-import type { JsTemplateServiceContext } from './JsTemplateProjectService';
+import { JsTemplateProjectService, type JsTemplateServiceContext } from './JsTemplateProjectService';
 import { templateFromModel } from './JsTemplateService';
 import {
   JS_BLOCK_USAGE_OWNER_ADAPTER,
@@ -99,6 +102,12 @@ type JsTemplateUsageServiceContext = JsTemplateServiceContext & {
 
 type UsagePermissionResult = false | { role?: string; params?: Record<string, unknown> };
 
+type UsageOwnerVisibility = {
+  unrestricted: boolean;
+  filter?: Filter;
+  accessibleRouteIds?: Set<string>;
+};
+
 type UsageUpsertSummary = {
   scanned: number;
   upserted: number;
@@ -131,12 +140,15 @@ type UsageOwnerSource = {
 };
 
 const EMPTY_SETTINGS_HASH = stableJsonHash({});
+const USAGE_VISIBILITY_BATCH_SIZE = 100;
+const USAGE_VISIBILITY_BATCH_CONCURRENCY = 4;
 
 export class JsTemplateUsageService {
   constructor(
     private readonly db: Database,
     private readonly auditService: JsTemplateAuditService,
     private readonly permissionService: JsTemplatePermissionService,
+    private readonly projectService: JsTemplateProjectService,
     private readonly settingsResolver = new JsTemplateSettingsService(),
   ) {}
 
@@ -150,6 +162,15 @@ export class JsTemplateUsageService {
     }
 
     const requestId = ctx.requestId || randomUUID();
+    if (!ctx.transaction && !ctx.dryRun) {
+      return this.db.sequelize.transaction((transaction) =>
+        this.syncFlowModelUsagesForNodeTree(input, {
+          ...ctx,
+          requestId,
+          transaction,
+        }),
+      );
+    }
     const scopeProjectId = normalizeString(ctx.scopeProjectId);
     const node = await this.loadFlowModelTree(rootUid, ctx);
     if (!node?.uid) {
@@ -170,7 +191,11 @@ export class JsTemplateUsageService {
     const modelUids = collectModelUids(node);
     const templateOwnerUids = await this.collectTemplateTargetOwnerUids(ctx, new Set(modelUids));
     const seenOwnerHashes = new Set<string>();
-    const owners = collectUsageOwnerNodes(node);
+    const owners: UsageOwnerSource[] = collectUsageOwnerNodes(node).map((owner) => ({
+      ...owner,
+      source: readRunJsSource(owner.node, owner.adapter),
+    }));
+    await this.lockAuthoringBindingProjects(owners, input.action || 'flowModels.save', ctx);
     for (const owner of owners) {
       const modelUid = normalizeString(owner.node.uid);
       if (modelUid) {
@@ -395,62 +420,156 @@ export class JsTemplateUsageService {
   }
 
   async listUsages(
-    input: {
-      projectId?: string;
-      templateId?: string;
-      ownerLocator?: Partial<JsTemplateUsageOwnerLocator>;
-    } = {},
+    input: JsTemplateUsageListInput,
     ctx: JsTemplateUsageServiceContext = {},
-  ): Promise<JsTemplateUsage[]> {
+  ): Promise<JsTemplateUsageListResult> {
+    const normalizedInput = normalizeUsageListInput(input);
     const requestId = ctx.requestId || randomUUID();
     await this.assertUsageActionAllowed({
       permissionAction: 'readUsages',
       auditAction: 'listUsages',
       requestId,
       ctx,
-      projectId: normalizeString(input.projectId),
-      templateId: normalizeString(input.templateId),
-      ownerLocatorHash: buildInputOwnerLocatorHash(input),
+      templateId: normalizedInput.templateId,
     });
+    await this.assertTemplateApplicationOwnership(normalizedInput.templateId, ctx);
 
-    const filter: Record<string, unknown> = {};
-    for (const key of ['projectId', 'templateId'] as const) {
-      const value = normalizeString(input[key]);
-      if (value) {
-        filter[key] = value;
+    const filter = {
+      templateId: normalizedInput.templateId,
+      resolvedStatus: { $ne: 'owner_missing' },
+    };
+    const [effectiveCount, visibility] = await Promise.all([
+      this.countEffectiveUsages(normalizedInput.templateId, ctx),
+      this.resolveUsageOwnerVisibility(ctx),
+    ]);
+    const start = (normalizedInput.page - 1) * normalizedInput.pageSize;
+    let data: JsTemplateUsageLocation[] = [];
+    let count = 0;
+    let hiddenCount = 0;
+    let projectId: string | undefined;
+
+    if (visibility.unrestricted) {
+      const records = await this.findUsageModelsPage(filter, ctx, normalizedInput.pageSize, start);
+      const usages = records.map(usageFromModel);
+      data = await this.resolveVisibleUsageLocations(usages, ctx, visibility);
+      count = effectiveCount;
+      projectId = usages[0]?.projectId;
+    } else {
+      const offsets = Array.from(
+        { length: Math.ceil(effectiveCount / USAGE_VISIBILITY_BATCH_SIZE) },
+        (_, index) => index * USAGE_VISIBILITY_BATCH_SIZE,
+      );
+      const batches = await mapWithConcurrency(
+        offsets,
+        USAGE_VISIBILITY_BATCH_CONCURRENCY,
+        async (offset): Promise<{ usages: JsTemplateUsage[]; visible: JsTemplateUsageLocation[] }> => {
+          const records = await this.findUsageModelsPage(filter, ctx, USAGE_VISIBILITY_BATCH_SIZE, offset);
+          const usages = records.map(usageFromModel);
+          return {
+            usages,
+            visible: await this.resolveVisibleUsageLocations(usages, ctx, visibility),
+          };
+        },
+      );
+      const visibleUsages: JsTemplateUsageLocation[] = [];
+      for (const batch of batches) {
+        projectId ||= batch.usages[0]?.projectId;
+        hiddenCount += batch.usages.length - batch.visible.length;
+        visibleUsages.push(...batch.visible);
       }
-    }
-    const ownerLocatorHash = buildInputOwnerLocatorHash(input);
-    if (ownerLocatorHash) {
-      filter.ownerLocatorHash = ownerLocatorHash;
+      count = visibleUsages.length;
+      data = visibleUsages.slice(start, start + normalizedInput.pageSize);
     }
 
-    const records = await this.findUsageModels(filter, ctx);
-    const visible: JsTemplateUsage[] = [];
-
-    for (const record of records) {
-      const usage = usageFromModel(record);
-      if (await this.canReadUsageOwner(usage.ownerLocator, ctx)) {
-        visible.push(usage);
-        continue;
-      }
-
+    if (hiddenCount > 0) {
       await this.recordUsageAuditBestEffort({
-        projectId: usage.projectId,
-        templateId: usage.templateId,
+        projectId,
+        templateId: normalizedInput.templateId,
         action: 'listUsages',
         result: 'denied',
         requestId,
         actorUserId: ctx.actorUserId,
-        ownerKind: usage.ownerKind,
-        ownerLocatorHash: usage.ownerLocatorHash,
+        usageCount: hiddenCount,
         reasonCode: 'owner_not_visible',
-        message: 'JS Template usage owner is not visible to the reader',
+        message: 'Some JS Template usage owners are not visible to the reader',
         transaction: ctx.transaction,
       });
     }
 
-    return visible;
+    return {
+      data,
+      meta: {
+        page: normalizedInput.page,
+        pageSize: normalizedInput.pageSize,
+        count,
+        totalPage: count === 0 ? 0 : Math.ceil(count / normalizedInput.pageSize),
+        effectiveCount,
+        hiddenCount,
+      },
+    };
+  }
+
+  async countEffectiveUsages(templateId: string, ctx: JsTemplateServiceContext = {}): Promise<number> {
+    const normalizedTemplateId = normalizeString(templateId);
+    if (!normalizedTemplateId) {
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'templateId must be a non-empty string');
+    }
+    return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).count({
+      filter: {
+        templateId: normalizedTemplateId,
+        resolvedStatus: { $ne: 'owner_missing' },
+      },
+      transaction: ctx.transaction,
+    });
+  }
+
+  private async assertTemplateApplicationOwnership(
+    templateId: string,
+    ctx: JsTemplateUsageServiceContext,
+  ): Promise<void> {
+    const template = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
+      filterByTk: templateId,
+      transaction: ctx.transaction,
+    });
+    if (!template) {
+      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+    }
+    const projectId = normalizeString(template.get('projectId'));
+    if (!projectId) {
+      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+    }
+    await this.projectService.getProject(projectId, ctx);
+  }
+
+  private async lockAuthoringBindingProjects(
+    owners: UsageOwnerSource[],
+    action: UsageSyncAction,
+    ctx: JsTemplateUsageServiceContext,
+  ): Promise<void> {
+    if (action === 'usageRebuild' || ctx.dryRun) {
+      return;
+    }
+    const projectIds = Array.from(
+      new Set(
+        owners
+          .map((owner) => owner.source?.sourceBinding?.projectId)
+          .map(normalizeString)
+          .filter(Boolean),
+      ),
+    ).sort();
+    for (const projectId of projectIds) {
+      try {
+        await this.projectService.lockInternalProjectForUpdate(projectId, ctx);
+      } catch (error) {
+        if (
+          isJsTemplateError(error) &&
+          (error.code === 'JS_TEMPLATE_PROJECT_NOT_FOUND' || error.code === 'JS_TEMPLATE_PERMISSION_DENIED')
+        ) {
+          throw bindingTargetOutdated(projectId);
+        }
+        throw error;
+      }
+    }
   }
 
   async refreshUsages(
@@ -564,6 +683,13 @@ export class JsTemplateUsageService {
     summary: UsageUpsertSummary,
     limitProjectId?: string,
   ): Promise<void> {
+    if (!ctx.transaction && !ctx.dryRun) {
+      await this.db.sequelize.transaction(async (transaction) =>
+        this.syncJsTemplateUsage(owner, action, requestId, { ...ctx, transaction }, summary, limitProjectId),
+      );
+      return;
+    }
+
     const { adapter, node } = owner;
     const modelUid = normalizeString(node.uid);
     if (!modelUid) {
@@ -582,6 +708,21 @@ export class JsTemplateUsageService {
     const source = owner.source || readRunJsSource(node, adapter);
     const scopeProjectId = normalizeString(limitProjectId);
     if (source.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
+      if (action !== 'usageRebuild' && action !== 'jsTemplates.detachToInline') {
+        const existingUsage = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).findOne({
+          filter: {
+            ownerLocatorHash,
+            resolvedStatus: { $ne: 'owner_missing' },
+          },
+          transaction: ctx.transaction,
+        });
+        if (existingUsage) {
+          throw new JsTemplateError(
+            'JS_TEMPLATE_CONFLICT',
+            'A JS Template Host must be detached through the canonical detach-to-inline operation',
+          );
+        }
+      }
       const removed = await this.removeUsagesForOwner(ownerLocatorHash, action, requestId, ctx, {
         projectId: scopeProjectId,
       });
@@ -608,7 +749,13 @@ export class JsTemplateUsageService {
       return;
     }
 
-    const resolution = await this.resolveUsageFromBinding(source.sourceBinding, source.settings, ctx, adapter.kind);
+    const resolution = await this.resolveUsageFromBinding(
+      source.sourceBinding,
+      source.settings,
+      ctx,
+      adapter.kind,
+      action !== 'usageRebuild' && !ctx.dryRun,
+    );
     if (scopeProjectId && resolution.projectId !== scopeProjectId) {
       const removed = await this.removeUsagesForOwner(ownerLocatorHash, action, requestId, ctx, {
         projectId: scopeProjectId,
@@ -661,6 +808,7 @@ export class JsTemplateUsageService {
     settings: Record<string, unknown>,
     ctx: JsTemplateUsageServiceContext,
     expectedKind: JsTemplateKind,
+    rejectOutdatedTarget = false,
   ): Promise<{
     projectId: string;
     templateId: string;
@@ -669,6 +817,9 @@ export class JsTemplateUsageService {
     conflictReason?: string;
   }> {
     if (sourceBinding.kind !== expectedKind) {
+      if (rejectOutdatedTarget) {
+        throw bindingTargetOutdated(sourceBinding.projectId, sourceBinding.templateId);
+      }
       return {
         projectId: sourceBinding.projectId,
         templateId: sourceBinding.templateId,
@@ -680,11 +831,21 @@ export class JsTemplateUsageService {
     const project = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
       filterByTk: sourceBinding.projectId,
       transaction: ctx.transaction,
+      ...(ctx.transaction ? { lock: ctx.transaction.LOCK.UPDATE } : {}),
     });
     const template = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
       filterByTk: sourceBinding.templateId,
       transaction: ctx.transaction,
     });
+    if (
+      rejectOutdatedTarget &&
+      (!project ||
+        !template ||
+        normalizeString(template.get('projectId')) !== sourceBinding.projectId ||
+        normalizeString(template.get('kind')) !== sourceBinding.kind)
+    ) {
+      throw bindingTargetOutdated(sourceBinding.projectId, sourceBinding.templateId);
+    }
     return this.resolveUsageFromLoadedModels(sourceBinding, settings, project, template);
   }
 
@@ -1128,125 +1289,169 @@ export class JsTemplateUsageService {
     );
   }
 
-  async canReadUsageOwner(
-    ownerLocator: JsTemplateUsageOwnerLocator,
-    ctx: JsTemplateUsageServiceContext,
-  ): Promise<boolean> {
-    const modelUid = getUsageOwnerModelUid(ownerLocator);
-    if (!modelUid) {
-      return false;
+  private async resolveUsageOwnerVisibility(ctx: JsTemplateUsageServiceContext): Promise<UsageOwnerVisibility> {
+    if (isRootContext(ctx) || !ctx.can) {
+      return { unrestricted: true };
     }
-
-    if (isRootContext(ctx)) {
-      return true;
-    }
-
-    if (await this.canReadOwnerByAccessibleDesktopRoute(modelUid, ctx)) {
-      return true;
-    }
-
-    if (!ctx.can) {
-      return true;
-    }
-
     const permission = await resolveCan(ctx.can, {
       resource: 'flowModels',
       action: 'findOne',
     });
-    if (!permission) {
-      return false;
+    if (permission && isRootPermission(permission)) {
+      return { unrestricted: true };
     }
-    if (isRootPermission(permission)) {
-      return true;
+    if (!permission || !permission.params?.filter) {
+      return {
+        unrestricted: false,
+        accessibleRouteIds: await this.loadCurrentRoleRouteIds(ctx),
+      };
     }
-    if (!permission.params?.filter) {
-      return false;
-    }
-
-    const filter = await this.parsePermissionFilter('flowModels', permission.params?.filter, ctx);
-    const record = await this.db.getRepository('flowModels').findOne({
-      filterByTk: modelUid,
-      ...(filter ? { filter } : {}),
-      transaction: ctx.transaction,
-    });
-    return Boolean(record);
+    return {
+      unrestricted: false,
+      filter: await this.parsePermissionFilter('flowModels', permission.params.filter, ctx),
+      accessibleRouteIds: await this.loadCurrentRoleRouteIds(ctx),
+    };
   }
 
-  private async canReadOwnerByAccessibleDesktopRoute(
-    modelUid: string,
+  private async resolveVisibleUsageLocations(
+    usages: JsTemplateUsage[],
     ctx: JsTemplateUsageServiceContext,
-  ): Promise<boolean> {
+    visibility: UsageOwnerVisibility,
+  ): Promise<JsTemplateUsageLocation[]> {
+    const modelUids = Array.from(
+      new Set(usages.map((usage) => getUsageOwnerModelUid(usage.ownerLocator)).filter(Boolean)),
+    );
+    if (modelUids.length === 0) {
+      return [];
+    }
+
+    const flowModelsRepository = this.db.getRepository('flowModels');
+    const [ownerRecords, accessibleRoutes] = await Promise.all([
+      flowModelsRepository.find({
+        filter: { uid: { $in: modelUids } },
+        fields: ['uid', 'options'],
+        transaction: ctx.transaction,
+      }),
+      this.loadAccessibleUsageRoutes(modelUids, ctx, visibility),
+    ]);
+    const ownerByUid = new Map<string, Model>(
+      ownerRecords
+        .map((record): [string, Model] => [normalizeFlowModelUid(record), record])
+        .filter(([modelUid]) => Boolean(modelUid)),
+    );
+    const visibleModelUids = new Set(accessibleRoutes.keys());
+
+    if (visibility.unrestricted) {
+      modelUids.forEach((modelUid) => visibleModelUids.add(modelUid));
+    } else if (visibility.filter) {
+      const matchedOwners = await flowModelsRepository.find({
+        filter: {
+          $and: [{ uid: { $in: modelUids } }, visibility.filter],
+        },
+        fields: ['uid'],
+        transaction: ctx.transaction,
+      });
+      matchedOwners.forEach((record) => visibleModelUids.add(normalizeFlowModelUid(record)));
+    }
+
+    return usages.flatMap((usage): JsTemplateUsageLocation[] => {
+      const modelUid = getUsageOwnerModelUid(usage.ownerLocator);
+      if (!modelUid || !visibleModelUids.has(modelUid)) {
+        return [];
+      }
+      const ownerTitle = resolveUsageOwnerTitle(usage, ownerByUid.get(modelUid));
+      const route = accessibleRoutes.get(modelUid);
+      return [
+        {
+          ...usage,
+          ownerTitle,
+          locationTitle: route?.title || ownerTitle,
+          routeId: route?.id || null,
+        },
+      ];
+    });
+  }
+
+  private async loadAccessibleUsageRoutes(
+    modelUids: string[],
+    ctx: JsTemplateUsageServiceContext,
+    visibility: UsageOwnerVisibility,
+  ): Promise<Map<string, { id: string; title: string }>> {
+    const desktopRoutesRepository = this.getRepositoryIfExists('desktopRoutes');
+    if (!desktopRoutesRepository?.find) {
+      return new Map();
+    }
+
+    const ancestorsByModelUid = new Map(modelUids.map((modelUid) => [modelUid, new Set([modelUid])]));
+    const treePathRepository = this.getRepositoryIfExists('flowModelTreePath');
+    if (treePathRepository?.find) {
+      const treePaths = await treePathRepository.find({
+        filter: { descendant: { $in: modelUids } },
+        fields: ['ancestor', 'descendant'],
+        transaction: ctx.transaction,
+      });
+      for (const treePath of treePaths) {
+        const descendant = normalizeString(treePath.get('descendant'));
+        const ancestor = normalizeString(treePath.get('ancestor'));
+        if (descendant && ancestor && ancestorsByModelUid.has(descendant)) {
+          ancestorsByModelUid.get(descendant)?.add(ancestor);
+        }
+      }
+    }
+
+    const ancestorUids = Array.from(new Set(Array.from(ancestorsByModelUid.values()).flatMap((uids) => [...uids])));
+    const routes = await desktopRoutesRepository.find({
+      filter: { schemaUid: { $in: ancestorUids } },
+      fields: ['id', 'schemaUid', 'title'],
+      transaction: ctx.transaction,
+    });
+    const accessibleRouteIds = visibility.unrestricted
+      ? new Set(routes.map(normalizeRouteId).filter(Boolean))
+      : visibility.accessibleRouteIds || new Set<string>();
+    const routesBySchemaUid = new Map<string, Model[]>();
+    for (const route of routes) {
+      const routeId = normalizeRouteId(route);
+      const schemaUid = normalizeString(route.get('schemaUid'));
+      if (!routeId || !schemaUid || !accessibleRouteIds.has(routeId)) {
+        continue;
+      }
+      const candidates = routesBySchemaUid.get(schemaUid) || [];
+      candidates.push(route);
+      routesBySchemaUid.set(schemaUid, candidates);
+    }
+
+    const accessibleByModelUid = new Map<string, { id: string; title: string }>();
+    for (const [modelUid, ancestors] of ancestorsByModelUid) {
+      const route = [...ancestors].flatMap((ancestor) => routesBySchemaUid.get(ancestor) || [])[0];
+      if (!route) {
+        continue;
+      }
+      accessibleByModelUid.set(modelUid, {
+        id: normalizeRouteId(route),
+        title: normalizeString(route.get('title')) || modelUid,
+      });
+    }
+    return accessibleByModelUid;
+  }
+
+  private async loadCurrentRoleRouteIds(ctx: JsTemplateUsageServiceContext): Promise<Set<string>> {
     const currentRoles = getCurrentRoleNames(ctx.state);
-    if (!currentRoles.length) {
-      return false;
+    if (currentRoles.length === 0) {
+      return new Set();
     }
-    if (currentRoles.includes('root')) {
-      return true;
-    }
-
-    const routeIds = await this.findRouteIdsForOwnerUid(modelUid, ctx);
-    if (!routeIds.length) {
-      return false;
-    }
-
     const rolesRepository = this.getRepositoryIfExists('roles');
     if (!rolesRepository?.find) {
-      return false;
+      return new Set();
     }
-
     const roleRecords = await rolesRepository.find({
       filterByTk: currentRoles,
       appends: ['desktopRoutes'],
       transaction: ctx.transaction,
     });
-    const accessibleRouteIds = new Set<string>();
-    for (const role of roleRecords) {
-      for (const route of await normalizeMaybePromiseArray(role.get('desktopRoutes'))) {
-        const routeId = normalizeRouteId(route);
-        if (routeId) {
-          accessibleRouteIds.add(routeId);
-        }
-      }
-    }
-
-    return routeIds.some((routeId) => accessibleRouteIds.has(routeId));
-  }
-
-  private async findRouteIdsForOwnerUid(modelUid: string, ctx: JsTemplateUsageServiceContext): Promise<string[]> {
-    const desktopRoutesRepository = this.getRepositoryIfExists('desktopRoutes');
-    if (!desktopRoutesRepository?.find) {
-      return [];
-    }
-
-    const ancestorUids = await this.findFlowModelAncestorUids(modelUid, ctx);
-    if (!ancestorUids.length) {
-      return [];
-    }
-
-    const routes = await desktopRoutesRepository.find({
-      filter: {
-        schemaUid: {
-          $in: ancestorUids,
-        },
-      },
-      transaction: ctx.transaction,
-    });
-    return routes.map((route) => normalizeRouteId(route)).filter(Boolean);
-  }
-
-  private async findFlowModelAncestorUids(modelUid: string, ctx: JsTemplateUsageServiceContext): Promise<string[]> {
-    const treePathRepository = this.getRepositoryIfExists('flowModelTreePath');
-    if (!treePathRepository?.find) {
-      return [modelUid];
-    }
-    const treePaths = await treePathRepository.find({
-      filter: {
-        descendant: modelUid,
-      },
-      transaction: ctx.transaction,
-    });
-    const ancestors = treePaths.map((treePath) => normalizeString(treePath.get('ancestor'))).filter(Boolean);
-    return ancestors.length ? Array.from(new Set(ancestors)) : [modelUid];
+    const routeLists = await Promise.all(
+      roleRecords.map((role) => normalizeMaybePromiseArray(role.get('desktopRoutes'))),
+    );
+    return new Set(routeLists.flat().map(normalizeRouteId).filter(Boolean));
   }
 
   private async collectTemplateTargetOwnerUids(
@@ -1355,6 +1560,21 @@ export class JsTemplateUsageService {
     });
   }
 
+  private async findUsageModelsPage(
+    filter: Record<string, unknown>,
+    ctx: JsTemplateUsageServiceContext,
+    limit: number,
+    offset: number,
+  ): Promise<Model[]> {
+    return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).find({
+      filter,
+      sort: ['projectId', 'templateId', 'ownerLocatorHash'],
+      limit,
+      offset,
+      transaction: ctx.transaction,
+    });
+  }
+
   private async assertUsageActionAllowed(input: {
     permissionAction: 'readUsages' | 'updateUsages';
     auditAction: Parameters<JsTemplateAuditService['recordUsageEvent']>[0]['action'];
@@ -1421,6 +1641,27 @@ export class JsTemplateUsageService {
   }
 }
 
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) {
+    return [];
+  }
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+  const runWorker = async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()));
+  return results;
+}
+
 async function resolveCan(
   can: JsTemplateCanFunction,
   input: { resource: string; action: string },
@@ -1473,6 +1714,25 @@ function normalizeRouteId(route: unknown): string {
   const get = route.get;
   const routeId = typeof get === 'function' ? get.call(route, 'id') : route.id;
   return typeof routeId === 'number' ? String(routeId) : normalizeString(routeId);
+}
+
+function normalizeFlowModelUid(record: Model): string {
+  const options = parseOptions(record.get('options'));
+  return normalizeString(record.get('uid') || record.get('name') || options.uid);
+}
+
+function resolveUsageOwnerTitle(usage: JsTemplateUsage, owner?: Model): string {
+  const options = owner ? parseOptions(owner.get('options')) : {};
+  const props = isPlainRecord(options.props) ? options.props : {};
+  const adapter = getUsageOwnerAdapterByOwnerKind(usage.ownerKind);
+  return (
+    normalizeString(options.title) ||
+    normalizeString(props.title) ||
+    normalizeString(options.name) ||
+    adapter?.title ||
+    getUsageOwnerModelUid(usage.ownerLocator) ||
+    usage.ownerKind
+  );
 }
 
 function readRunJsSource(node: FlowModelNode, adapter?: UsageOwnerAdapter): NormalizedJsBlockSource {
@@ -1632,6 +1892,37 @@ function normalizeOwnerKind(value: unknown): JsTemplateUsage['ownerKind'] {
   const normalized = normalizeString(value);
   const adapter = normalized ? listUsageOwnerAdapters().find((item) => item.ownerKind === normalized) : null;
   return adapter?.ownerKind || JS_BLOCK_USAGE_OWNER_ADAPTER.ownerKind;
+}
+
+function normalizeUsageListInput(input: JsTemplateUsageListInput): JsTemplateUsageListInput {
+  const templateId = normalizeString(input.templateId);
+  if (!templateId) {
+    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'templateId must be a non-empty string');
+  }
+  if (!Number.isInteger(input.page) || input.page < 1) {
+    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'page must be an integer greater than zero');
+  }
+  if (!Number.isInteger(input.pageSize) || input.pageSize < 1 || input.pageSize > 100) {
+    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'pageSize must be an integer between 1 and 100');
+  }
+  return {
+    templateId,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
+}
+
+function bindingTargetOutdated(projectId: string, templateId?: string): JsTemplateError {
+  return new JsTemplateError(
+    'JS_TEMPLATE_BINDING_OUTDATED',
+    'The JS Template binding target changed before the Host could be saved',
+    {
+      details: {
+        projectId,
+        ...(templateId ? { templateId } : {}),
+      },
+    },
+  );
 }
 
 function normalizeUsageRefreshScope(plan: UsageRefreshScope): UsageRefreshScope {

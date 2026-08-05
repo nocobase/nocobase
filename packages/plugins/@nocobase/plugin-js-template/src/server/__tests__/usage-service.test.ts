@@ -14,6 +14,7 @@ import {
   createJsBlockNode,
   createJsFieldTemplateRecord,
   createJsFieldNode,
+  createJsFieldSourceBinding,
   createJsItemTemplateRecord,
   createJsItemNode,
   createJsPageTemplateRecord,
@@ -81,6 +82,9 @@ describe('plugin-js-template usage service', () => {
       settingsHash: stableJsonHash({ threshold: 7, region: 'EMEA' }),
       resolvedStatus: 'active',
     });
+    expect(repositories.jsTemplateProjects.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({ filterByTk: 'jtp_pages', lock: 'UPDATE' }),
+    );
 
     flowModelTrees.flow_js_page = createJsPageNode({
       settings: {
@@ -111,13 +115,13 @@ describe('plugin-js-template usage service', () => {
     flowModelTrees.flow_js_page = createJsPageNode({ sourceMode: 'inline' });
     const inlineResult = await service.syncFlowModelUsagesForNodeTree({
       rootUid: 'flow_js_page',
-      action: 'flowModels.save',
+      action: 'jsTemplates.detachToInline',
     });
     expect(inlineResult).toMatchObject({ scanned: 1, removed: 1 });
     expect(repositories.jsTemplateUsages.records).toHaveLength(0);
   });
 
-  it('derives JS Page status from project, template, runtime, and settings state', async () => {
+  it('derives JS Page rebuild status from project, template, runtime, and settings state', async () => {
     const cases: Array<{
       name: string;
       project: Record<string, unknown>;
@@ -180,7 +184,7 @@ describe('plugin-js-template usage service', () => {
         templates: [testCase.template],
       });
 
-      await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+      await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_page', action: 'usageRebuild' });
 
       expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus'), testCase.name).toBe(testCase.expected);
       if (testCase.expected === 'settings_invalid') {
@@ -263,15 +267,23 @@ describe('plugin-js-template usage service', () => {
       resolvedStatus: 'active',
     });
 
-    repositories.flowModels.findModelById.mockResolvedValueOnce(
+    repositories.flowModels.findModelById.mockResolvedValue(
       createJsBlockNode({
         sourceMode: 'inline',
       }),
     );
 
+    await expect(
+      service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_block',
+        action: 'flowModels.save',
+      }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_CONFLICT', status: 409 });
+    expect(repositories.jsTemplateUsages.records).toHaveLength(1);
+
     const inlineResult = await service.syncFlowModelUsagesForNodeTree({
       rootUid: 'flow_js_block',
-      action: 'flowModels.save',
+      action: 'jsTemplates.detachToInline',
     });
 
     expect(inlineResult).toMatchObject({
@@ -402,7 +414,7 @@ describe('plugin-js-template usage service', () => {
     expect(getUsageOwnerAdapterByUse('FormJSFieldItemModel')).toBeUndefined();
   });
 
-  it('records project_missing and binding_outdated without blocking usage synchronization', async () => {
+  it('records project_missing and binding_outdated during an explicit usage rebuild', async () => {
     const missingRepoFixture = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
         flow_js_field: createJsFieldNode(),
@@ -413,7 +425,7 @@ describe('plugin-js-template usage service', () => {
     await expect(
       missingRepoFixture.service.syncFlowModelUsagesForNodeTree({
         rootUid: 'flow_js_field',
-        action: 'flowSurfaces.updateSettings',
+        action: 'usageRebuild',
       }),
     ).resolves.toMatchObject({
       statusCounts: {
@@ -441,7 +453,7 @@ describe('plugin-js-template usage service', () => {
     await expect(
       outdatedFixture.service.syncFlowModelUsagesForNodeTree({
         rootUid: 'flow_js_field',
-        action: 'flowSurfaces.updateSettings',
+        action: 'usageRebuild',
       }),
     ).resolves.toMatchObject({
       statusCounts: {
@@ -451,6 +463,74 @@ describe('plugin-js-template usage service', () => {
     expect(outdatedFixture.repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
       resolvedStatus: 'binding_outdated',
     });
+  });
+
+  it('rejects an authoring save when its Project or Template target disappeared', async () => {
+    const missingProjectFixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_field: createJsFieldNode(),
+      },
+      projects: [],
+      templates: [],
+    });
+    await expect(
+      missingProjectFixture.service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_field',
+        action: 'flowSurfaces.updateSettings',
+      }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+    expect(missingProjectFixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+
+    const missingTemplateFixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_field: createJsFieldNode(),
+      },
+      projects: [createProjectRecord({ id: 'jtp_fields' })],
+      templates: [],
+    });
+    await expect(
+      missingTemplateFixture.service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_field',
+        action: 'flowModels.save',
+      }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+    expect(missingTemplateFixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+  });
+
+  it('locks all authoring Source Projects once in canonical order before synchronizing owners', async () => {
+    const { service, projectService } = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_root: {
+          uid: 'flow_root',
+          subModels: {
+            fields: [
+              createJsFieldNode({
+                uid: 'flow_project_z',
+                sourceBinding: createJsFieldSourceBinding({ projectId: 'jtp_z', templateId: 'jtt_z' }),
+              }),
+              createJsFieldNode({
+                uid: 'flow_project_a',
+                sourceBinding: createJsFieldSourceBinding({ projectId: 'jtp_a', templateId: 'jtt_a' }),
+              }),
+              createJsFieldNode({
+                uid: 'flow_project_z_duplicate',
+                sourceBinding: createJsFieldSourceBinding({ projectId: 'jtp_z', templateId: 'jtt_z' }),
+              }),
+            ],
+          },
+        },
+      },
+      projects: [createProjectRecord({ id: 'jtp_z' }), createProjectRecord({ id: 'jtp_a' })],
+      templates: [
+        createJsFieldTemplateRecord({ id: 'jtt_z', projectId: 'jtp_z' }),
+        createJsFieldTemplateRecord({ id: 'jtt_a', projectId: 'jtp_a' }),
+      ],
+    });
+    const lockProject = vi.spyOn(projectService, 'lockInternalProjectForUpdate');
+
+    await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_root', action: 'flowModels.save' });
+
+    expect(lockProject.mock.calls.map(([projectId]) => projectId)).toEqual(['jtp_a', 'jtp_z']);
   });
 
   it('indexes JSColumnModel as a js-field usage owner', async () => {

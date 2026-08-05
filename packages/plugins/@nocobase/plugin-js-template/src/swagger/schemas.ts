@@ -503,6 +503,53 @@ export const jsTemplateSchemas = {
       updatedAt: nullableDateTime,
     },
   },
+  JsTemplateUsageLocation: {
+    allOf: [
+      {
+        $ref: '#/components/schemas/JsTemplateUsage',
+      },
+      {
+        type: 'object',
+        required: ['ownerTitle', 'locationTitle', 'routeId'],
+        properties: {
+          ownerTitle: {
+            type: 'string',
+          },
+          locationTitle: {
+            type: 'string',
+          },
+          routeId: nullableString,
+        },
+      },
+    ],
+  },
+  JsTemplateUsageListMeta: {
+    type: 'object',
+    required: ['page', 'pageSize', 'count', 'totalPage', 'effectiveCount', 'hiddenCount'],
+    properties: {
+      page: { type: 'integer', minimum: 1 },
+      pageSize: { type: 'integer', minimum: 1, maximum: 100 },
+      count: { type: 'integer', minimum: 0, description: 'Visible effective usage count.' },
+      totalPage: { type: 'integer', minimum: 0 },
+      effectiveCount: { type: 'integer', minimum: 0, description: 'All effective usages, including hidden owners.' },
+      hiddenCount: { type: 'integer', minimum: 0 },
+    },
+  },
+  JsTemplateUsageListResult: {
+    type: 'object',
+    required: ['data', 'meta'],
+    properties: {
+      data: {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/JsTemplateUsageLocation',
+        },
+      },
+      meta: {
+        $ref: '#/components/schemas/JsTemplateUsageListMeta',
+      },
+    },
+  },
   JsTemplateCommit: {
     type: 'object',
     required: ['id', 'projectId', 'hash', 'seq', 'parentCommitId', 'treeHash', 'message', 'authorId', 'metadata'],
@@ -844,7 +891,7 @@ export const jsTemplateSchemas = {
           },
           projectId: {
             type: 'string',
-            description: 'Existing destination JS Template Project id.',
+            description: 'Existing destination Source Project id.',
           },
         },
         additionalProperties: false,
@@ -859,7 +906,7 @@ export const jsTemplateSchemas = {
           },
           name: {
             type: 'string',
-            description: 'Unique slug for the new destination JS Template Project.',
+            description: 'Unique slug for the new destination Source Project.',
           },
           title: nullableString,
           description: nullableString,
@@ -867,11 +914,12 @@ export const jsTemplateSchemas = {
         additionalProperties: false,
       },
     ],
-    description: 'Destination selection: an existing JS Template Project or a new JS Template Project.',
+    description: 'Supporting Source Project selection: use an existing Source Project or create a new one.',
   },
   SaveAsJsTemplateRequest: {
     type: 'object',
     required: [
+      'idempotencyKey',
       'locator',
       'expectedOwnerFingerprint',
       'sourceRepoId',
@@ -887,7 +935,7 @@ export const jsTemplateSchemas = {
         type: 'string',
         minLength: 1,
         maxLength: 255,
-        description: 'Optional retry key. Reusing it with a different request returns an idempotency conflict.',
+        description: 'Required retry key. Reusing it with a different request returns an idempotency conflict.',
       },
       locator: {
         $ref: '#/components/schemas/RunJSSourceLocator',
@@ -960,7 +1008,17 @@ export const jsTemplateSchemas = {
   },
   DetachJsTemplateToInlineRequest: {
     type: 'object',
-    required: ['idempotencyKey', 'locator', 'projectId', 'templateId', 'entryPath', 'kind', 'version', 'files'],
+    required: [
+      'idempotencyKey',
+      'locator',
+      'projectId',
+      'templateId',
+      'expectedProjectHeadCommitId',
+      'entryPath',
+      'kind',
+      'version',
+      'files',
+    ],
     properties: {
       idempotencyKey: {
         type: 'string',
@@ -979,6 +1037,11 @@ export const jsTemplateSchemas = {
         type: 'string',
         minLength: 1,
       },
+      expectedProjectHeadCommitId: {
+        type: 'string',
+        minLength: 1,
+        description: 'Exact Source Project Head observed with the workspace being copied to Inline.',
+      },
       entryPath: {
         type: 'string',
         minLength: 1,
@@ -990,7 +1053,7 @@ export const jsTemplateSchemas = {
       version: {
         type: 'string',
         minLength: 1,
-        description: 'Compiled JS Template source version being moved inline.',
+        description: 'Compiled JS Template source version being detached to Inline.',
       },
       files: {
         type: 'array',
@@ -1051,6 +1114,18 @@ export const jsTemplateSchemas = {
       },
     },
   },
+  DeleteJsTemplateResult: {
+    type: 'object',
+    required: ['project', 'templateId'],
+    properties: {
+      project: {
+        $ref: '#/components/schemas/JsTemplateProject',
+      },
+      templateId: {
+        type: 'string',
+      },
+    },
+  },
   JsTemplateSelectableTemplate: {
     type: 'object',
     required: [
@@ -1074,7 +1149,7 @@ export const jsTemplateSchemas = {
       },
       projectId: {
         type: 'string',
-        description: 'Stable JS Template Project id used as sourceBinding.projectId.',
+        description: 'Stable Source Project id used as sourceBinding.projectId.',
       },
       projectName: nullableString,
       projectTitle: nullableString,
@@ -1155,10 +1230,7 @@ export const jsTemplateSchemas = {
     required: ['data'],
     properties: {
       data: {
-        type: 'array',
-        items: {
-          $ref: '#/components/schemas/JsTemplateUsage',
-        },
+        $ref: '#/components/schemas/JsTemplateUsageListResult',
       },
     },
   },
@@ -1213,6 +1285,15 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/DetachJsTemplateToInlineResult',
+      },
+    },
+  },
+  DeleteJsTemplateEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/DeleteJsTemplateResult',
       },
     },
   },

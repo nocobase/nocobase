@@ -245,7 +245,7 @@ describe('JSBlockModel JS Template source', () => {
     );
   });
 
-  it('loads inline and resolver-backed source menu items for JS Block', async () => {
+  it('loads resolver-backed source items without bypassing canonical detach for a bound JS Template', async () => {
     const listSourceMenuItems = vi.fn(async () => [
       {
         key: 'js-template',
@@ -286,6 +286,24 @@ describe('JSBlockModel JS Template source', () => {
     });
 
     expect(items?.map((item) => item.key)).toEqual(['inline', 'js-template']);
+    const boundItems = await sourceModeStep.uiMode?.props?.loadItems?.({
+      params: {
+        sourceMode: 'js-template',
+        sourceBinding: SOURCE_BINDING,
+      },
+      defaultParams: {},
+      t: (key) => key,
+    });
+    expect(boundItems?.map((item) => item.key)).toEqual(['js-template']);
+    const nonTemplateBindingItems = await sourceModeStep.uiMode?.props?.loadItems?.({
+      params: {
+        sourceMode: 'js-template',
+        sourceBinding: { type: 'custom-source', sourceId: 'source-1' },
+      },
+      defaultParams: {},
+      t: (key) => key,
+    });
+    expect(nonTemplateBindingItems?.map((item) => item.key)).toEqual(['inline', 'js-template']);
     expect(listSourceMenuItems).toHaveBeenCalledWith(
       expect.objectContaining({
         kind: 'js-block',

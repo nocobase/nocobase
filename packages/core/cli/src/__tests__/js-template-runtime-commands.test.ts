@@ -59,6 +59,7 @@ describe('JS Template runtime commands', () => {
       'js-template-projects list',
       'js-template-usages list-usages',
       'js-templates compile-workspace-preview',
+      'js-templates delete',
       'js-templates detach-to-inline',
       'js-templates get',
       'js-templates list-selectable',
@@ -68,6 +69,7 @@ describe('JS Template runtime commands', () => {
       expect.arrayContaining([
         '/jsTemplates:listSelectable',
         '/jsTemplates:saveAsJsTemplate',
+        '/jsTemplates:delete',
         '/jsTemplates:detachToInline',
         '/jsTemplateFiles:pull',
         '/jsTemplateFiles:saveSource',
@@ -88,15 +90,15 @@ describe('JS Template runtime commands', () => {
     }
   });
 
-  it('generates action help for externalization with explicit destinations, idempotency, and body-file examples', async () => {
+  it('generates Save as JS Template help with explicit Source Project support and mandatory idempotency', async () => {
     const commands = await generateJsTemplateCommands();
     const saveAsJsTemplate = findCommand(commands, 'js-templates save-as-js-template');
 
-    expect(saveAsJsTemplate.summary).toContain('externalize a complete inline RunJS workspace');
+    expect(saveAsJsTemplate.summary).toContain('Save an inline RunJS workspace as a JS Template');
     expect(saveAsJsTemplate.description).toContain(
-      'destination must select an existing Project or describe a new Project',
+      'destination must select an existing Source Project or describe a new Source Project',
     );
-    expect(saveAsJsTemplate.description).toContain('idempotencyKey');
+    expect(saveAsJsTemplate.description).toContain('idempotencyKey is required');
     expect(saveAsJsTemplate.description).toContain('HTTP POST /jsTemplates:saveAsJsTemplate');
     expect(saveAsJsTemplate.examples).toEqual(['nb api js-templates save-as-js-template --body-file <path>']);
     expect(saveAsJsTemplate.parameters.map((parameter) => parameter.flagName)).toEqual(
@@ -124,16 +126,21 @@ describe('JS Template runtime commands', () => {
     expect(flags['body-file'].helpGroup).toBe('Raw JSON Body');
   });
 
-  it('generates idempotent move-back and reusable Template help', async () => {
+  it('generates idempotent detach CAS and reusable Template help', async () => {
     const commands = await generateJsTemplateCommands();
     const detachToInline = findCommand(commands, 'js-templates detach-to-inline');
     const listSelectable = findCommand(commands, 'js-templates list-selectable');
 
-    expect(detachToInline.summary).toContain('relocate a complete reachable JS Template workspace');
-    expect(detachToInline.description).toContain('idempotencyKey is required');
+    expect(detachToInline.summary).toContain('Detach a JS Template workspace to Inline');
+    expect(detachToInline.description).toContain('idempotencyKey and expectedProjectHeadCommitId are required');
     expect(detachToInline.parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'idempotencyKey', flagName: 'idempotency-key', required: true }),
+        expect.objectContaining({
+          name: 'expectedProjectHeadCommitId',
+          flagName: 'expected-project-head-commit-id',
+          required: true,
+        }),
       ]),
     );
     expect(detachToInline.examples).toEqual(['nb api js-templates detach-to-inline --body-file <path>']);

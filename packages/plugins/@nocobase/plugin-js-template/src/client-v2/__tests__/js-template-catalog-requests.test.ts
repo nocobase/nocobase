@@ -9,7 +9,12 @@
 
 import { vi } from 'vitest';
 
-import { listJsTemplateCatalog, type ApiClientLike } from '../api/jsTemplatesRequests';
+import {
+  deleteJsTemplate,
+  listJsTemplateCatalog,
+  listJsTemplateUsageLocations,
+  type ApiClientLike,
+} from '../api/jsTemplatesRequests';
 
 describe('JS Template catalog requests', () => {
   it('loads the dedicated entry-centric catalog action without reusing the runtime selectable catalog', async () => {
@@ -35,6 +40,39 @@ describe('JS Template catalog requests', () => {
     expect(request).toHaveBeenCalledWith({
       url: 'jsTemplates:listCatalog',
       method: 'post',
+    });
+  });
+
+  it('loads one paginated template-level Usage list', async () => {
+    const result = {
+      data: [],
+      meta: { page: 2, pageSize: 10, count: 11, totalPage: 2, effectiveCount: 13, hiddenCount: 2 },
+    };
+    const request = vi.fn(async () => ({ data: { data: result } }));
+
+    await expect(
+      listJsTemplateUsageLocations({ request } as ApiClientLike, {
+        templateId: 'jtt_entry',
+        page: 2,
+        pageSize: 10,
+      }),
+    ).resolves.toEqual(result);
+    expect(request).toHaveBeenCalledWith({
+      url: 'jsTemplateUsages:listUsages',
+      method: 'post',
+      data: { templateId: 'jtt_entry', page: 2, pageSize: 10 },
+    });
+  });
+
+  it('deletes one Template Entry through the authoritative server action', async () => {
+    const result = { project: { id: 'jtp_source' }, templateId: 'jtt_entry' };
+    const request = vi.fn(async () => ({ data: { data: result } }));
+
+    await expect(deleteJsTemplate({ request } as ApiClientLike, 'jtt_entry')).resolves.toEqual(result);
+    expect(request).toHaveBeenCalledWith({
+      url: 'jsTemplates:delete',
+      method: 'post',
+      data: { templateId: 'jtt_entry' },
     });
   });
 });

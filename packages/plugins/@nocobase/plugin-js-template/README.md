@@ -11,7 +11,7 @@
 - Runtime resolution is available to logged-in page users; authoring and project management require `pm.js-template`
 - The legacy admin shell only provides the settings-page bridge needed during the client-v2 transition
 
-JS Templates does not create projects or move inline code automatically. Both operations require an explicit authoring action.
+JS Templates does not create Source Projects or detach code to Inline automatically. Both operations require an explicit authoring action.
 
 ## Template and UI contract
 
@@ -73,13 +73,13 @@ nb js-template check --dir ./workspace --json-output
 nb js-template save --dir ./workspace --yes --json-output
 ```
 
-## Move RunJS source
+## Save and detach RunJS sources
 
-**Move to JS Template** moves the complete current workspace, including unsaved files, into a new or existing project. The server derives the Template kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
+**Save as JS Template** saves the complete current workspace, including unsaved files, as a Template Entry in a new or existing Source Project. The server derives the Template kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
 
-**Move to inline** copies the current reachable Template files back to the owner and clears the external binding. It copies current project source; it does not silently restore the older fallback snapshot.
+**Detach to Inline** copies the current reachable Template files back to the owner and clears the external binding. It copies current Source Project content; it does not silently restore the older fallback snapshot.
 
-Both directions support `flowModel.step` owners for JS Block, JS Page, JS Field/Column, JS Action, and JS Item. Unsupported or permission-denied hosts do not expose the move action. A failed move leaves destination source, artifacts, host state, and usages unchanged.
+Both directions support `flowModel.step` owners for JS Block, JS Page, JS Field/Column, JS Action, and JS Item. Unsupported or permission-denied Hosts do not expose the conversion actions. A failed conversion leaves Source Project source, artifacts, Host state, and usages unchanged.
 
 ## Workspace ZIP safety
 
@@ -120,6 +120,6 @@ The UI closes the creation dialog after acceptance and shows the job in a separa
 
 ## Operational guarantees
 
-- Failed saves and moves are transactional
+- Failed saves and conversion operations are transactional
 - Revert a successful source version by saving the desired historical source as a new commit
-- Grant authoring ACL separately from runtime access, then verify Check, Save, Move, ZIP, Git, and bound runtime resolution
+- Grant authoring ACL separately from runtime access, then verify Check, Save as JS Template, Detach to Inline, ZIP, Git, and bound runtime resolution

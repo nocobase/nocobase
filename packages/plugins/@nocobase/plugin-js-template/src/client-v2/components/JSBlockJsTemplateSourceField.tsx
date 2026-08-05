@@ -402,11 +402,15 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
         : INLINE_SOURCE_SELECT_VALUE;
   const sourceSelectOptions = React.useMemo<SourceSelectOption[]>(() => {
     const options: SourceSelectOption[] = [
-      {
-        label: t('Inline code'),
-        value: INLINE_SOURCE_SELECT_VALUE,
-        searchText: t('Inline code'),
-      },
+      ...(sourceMode === JS_TEMPLATE_SOURCE_MODE && sourceBinding
+        ? []
+        : [
+            {
+              label: t('Inline code'),
+              value: INLINE_SOURCE_SELECT_VALUE,
+              searchText: t('Inline code'),
+            },
+          ]),
       ...sourceTemplates.map((template) => {
         const label = getJsTemplateLabel(template);
         return {
