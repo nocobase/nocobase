@@ -147,7 +147,7 @@ describe('query', () => {
       expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
     });
 
-    it('should resolve trusted record context params for filter values', async () => {
+    it('should not resolve unregistered Record context params', async () => {
       const user = await db.getRepository('users').findOne();
       const context = {
         ...ctx,
@@ -174,7 +174,7 @@ describe('query', () => {
 
       await parseVariables(context, async () => {});
 
-      expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
+      expect(context.action.params.values.filter.userId.$eq).toBeNull();
     });
   });
 

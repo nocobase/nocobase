@@ -17,6 +17,7 @@ import {
   resolveVariablesBatch,
   resolveVariablesTemplate,
 } from '../variables/resolve';
+import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables:resolve external data source records', () => {
@@ -24,7 +25,7 @@ describe('variables:resolve external data source records', () => {
     resetVariablesRegistryForTest();
   });
 
-  it('resolves a popup record field when the repository returns plain JSON', async () => {
+  it('resolves a registered external record field when the repository returns plain JSON', async () => {
     const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate');
     const findOne = vi.fn(async () => ({ id: 'lead-1', email: 'acme@example.test' }));
     const repository = { findOne };
@@ -54,14 +55,24 @@ describe('variables:resolve external data source records', () => {
       db: { getRepository: vi.fn() },
       state: { currentRole: 'root', currentRoles: ['root'] },
     } as unknown as ResourcerContext;
+    const dispose = getRecordSlotResolverRegistry(koaContext.app).register({
+      owner: 'test',
+      id: 'external-backend',
+      match: (path) => path.varName === 'backend' && path.runtimeSegments[0] === 'record',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['record'],
+        target: { kind: 'fixed', collection: 'leads', dataSourceKey: 'crm_external' },
+      }),
+    });
 
-    const template = { value: '{{ ctx.popup.record.email }}' };
+    const template = { value: '{{ ctx.backend.record.email }}' };
     const authorization = await authorizeVariablesResolve(koaContext, {
       template,
       contextParams: {
-        'popup.record': {
-          dataSourceKey: 'crm_external',
-          collection: 'leads',
+        'backend.record': {
+          dataSourceKey: 'main',
+          collection: 'secrets',
           filterByTk: 'lead-1',
         },
       },
@@ -84,9 +95,10 @@ describe('variables:resolve external data source records', () => {
     });
     expect(analyze).toHaveBeenCalledTimes(1);
     analyze.mockRestore();
+    dispose();
   });
 
-  it('projects wide plain JSON from an external source for a strict member binding', async () => {
+  it('does not query an external Form descriptor without an owning resolver', async () => {
     const userId = 1;
     const signInTime = 'variables-external-projection-1';
     const uid = 'external-record-projection';
@@ -97,66 +109,27 @@ describe('variables:resolve external data source records', () => {
       id: '{{ ctx.formValues.id }}',
       owner: '{{ ctx.formValues.contacts[0].email }}',
     };
-    const contacts = {
-      fields: { get: () => undefined },
-      getField: () => undefined,
-      model: { associations: {}, primaryKeyAttribute: 'id', rawAttributes: { email: {}, id: {} } },
-      name: 'contacts',
-    };
-    const contactField = {
-      isAssociationField: () => true,
-      isRelationField: () => true,
-      targetCollection: contacts,
-    };
-    const idField = { isAssociationField: () => false, isRelationField: () => false };
-    const getLeadField = (name: string) => (name === 'contacts' ? contactField : name === 'id' ? idField : undefined);
-    const leads = {
-      fields: { get: getLeadField },
-      filterTargetKey: 'id',
-      getField: getLeadField,
-      model: { associations: { contacts: {} }, primaryKeyAttribute: 'id', rawAttributes: { id: {} } },
-      name: 'leads',
-    };
-    const findOne = vi.fn(async () => ({
-      contacts: [{ email: 'hidden@example.test', id: 'contact-1' }],
-      id: 'lead-1',
-    }));
-    const dataSource = {
-      collectionManager: {
-        db: { getCollection: () => leads, getRepository: () => ({ collection: leads, findOne }) },
-        getCollection: () => leads,
-      },
-    };
+    const findOne = vi.fn();
     const flowModel = {
-      props: template,
-      stepParams: { resourceSettings: { init: { collectionName: 'leads', dataSourceKey: 'crm_external' } } },
-      subModels: {
-        grid: {
-          subModels: {
-            items: [
-              {
-                stepParams: { fieldSettings: { init: { fieldPath: 'contacts' } } },
-                uid: `${uid}-contacts`,
-                use: 'FormItemModel',
-              },
-            ],
-          },
-          uid: `${uid}-grid`,
-          use: 'FormGridModel',
-        },
-      },
       uid,
-      use: 'EditFormModel',
+      options: {
+        props: template,
+        stepParams: { resourceSettings: { init: { collectionName: 'leads', dataSourceKey: 'crm_external' } } },
+        use: 'EditFormModel',
+      },
+      parentId: null,
+      subKey: null,
+      async: false,
     };
     const context = {
       app: {
         acl: { getRole: () => ({ getStrategy: () => ({ allowConfigure: false }) }) },
-        dataSourceManager: { get: () => dataSource },
+        dataSourceManager: { get: () => undefined },
         environment: { getVariables: () => ({}) },
         logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
       },
       db: {
-        getCollection: () => ({ repository: { findModelById: async () => flowModel } }),
+        getCollection: () => ({ repository: { findModelNodeSnapshotById: async () => flowModel } }),
         getRepository: () => ({ find: async () => [] }),
       },
       get: (name: string) => (name.toLowerCase() === 'authorization' ? `Bearer ${token}` : undefined),
@@ -186,11 +159,11 @@ describe('variables:resolve external data source records', () => {
         authorization.policy,
         authorization.bindingPlan,
       ),
-    ).resolves.toEqual({ id: 'lead-1', owner: template.owner });
-    expect(findOne).toHaveBeenCalledTimes(1);
+    ).resolves.toEqual(template);
+    expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('keeps external association repository runtime fields independent from the slot', async () => {
+  it('normalizes an external association target independently from runtime fields', async () => {
     const targetCollection = {
       name: 'contacts',
       filterTargetKey: 'id',
@@ -226,12 +199,27 @@ describe('variables:resolve external data source records', () => {
       db: { getRepository: vi.fn() },
       state: { currentRole: 'root', currentRoles: ['root'] },
     } as unknown as ResourcerContext;
-    const template = { value: '{{ ctx.popup.record.email }}' };
+    const dispose = getRecordSlotResolverRegistry(context.app).register({
+      owner: 'test',
+      id: 'external-association',
+      match: (path) => path.varName === 'backend' && path.runtimeSegments[0] === 'record',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['record'],
+        target: {
+          kind: 'fixed',
+          associationName: 'accounts.contacts',
+          collection: 'contacts',
+          dataSourceKey: 'crm_external',
+        },
+      }),
+    });
+    const template = { value: '{{ ctx.backend.record.email }}' };
     const authorization = await authorizeVariablesResolve(context, {
       template,
       contextParams: {
-        'popup.record': {
-          associationName: 'accounts.contacts',
+        'backend.record': {
+          associationName: 'secrets.contacts',
           collection: 'runtime-placeholder',
           dataSourceKey: 'crm_external',
           filterByTk: 'contact-3',
@@ -252,11 +240,12 @@ describe('variables:resolve external data source records', () => {
     ).resolves.toEqual({ value: 'owner@example.test' });
     expect(getRepository).toHaveBeenCalledWith('accounts.contacts', 'account-9');
     expect(findOne).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'contact-3' }));
+    dispose();
   });
 
-  it('keeps a declared multi-level popup record as a whole object', async () => {
+  it('keeps a registered request-bound Record slot as a whole object', async () => {
     const findOne = vi.fn(async () => ({ email: 'parent@example.test', id: 'parent-1' }));
-    const collection = { filterTargetKey: 'id', model: { primaryKeyAttribute: 'id' } };
+    const collection = { name: 'leads', filterTargetKey: 'id', model: { primaryKeyAttribute: 'id' } };
     const context = {
       app: {
         dataSourceManager: {
@@ -271,14 +260,24 @@ describe('variables:resolve external data source records', () => {
       },
       state: {},
     } as unknown as ResourcerContext;
+    const dispose = getRecordSlotResolverRegistry(context.app).register({
+      owner: 'test',
+      id: 'backend-record',
+      match: (path) => path.varName === 'backend' && path.runtimeSegments[0] === 'record',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['record'],
+        target: { kind: 'fixed', collection: 'leads', dataSourceKey: 'crm_external' },
+      }),
+    });
 
     const result = await resolveVariablesTemplate(
       context,
-      { value: '{{ ctx.popup.parent.parent.record }}' },
+      { value: '{{ ctx.backend.record }}' },
       {
-        'popup.parent.parent.record': {
-          collection: 'leads',
-          dataSourceKey: 'crm_external',
+        'backend.record': {
+          collection: 'secrets',
+          dataSourceKey: 'main',
           filterByTk: 'parent-1',
         },
       },
@@ -286,6 +285,7 @@ describe('variables:resolve external data source records', () => {
 
     expect(result).toEqual({ value: { email: 'parent@example.test', id: 'parent-1' } });
     expect(findOne).toHaveBeenCalledWith({ filterByTk: 'parent-1', fields: undefined, appends: undefined });
+    dispose();
   });
 
   it('isolates public wrapper analysis failures and hides the lexical helper', async () => {

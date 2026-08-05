@@ -12,11 +12,15 @@ import {
   SERVER_CONTEXT_INTERNAL_KEYS,
   SERVER_CONTEXT_PROTOTYPE_KEYS,
 } from '../template/context-keys';
+import type { ResourcerContext } from '@nocobase/resourcer';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
 import { isRecordParams, type RecordParams } from './records';
 import type { RecordSlotPolicies } from './record-slot-policy';
-
-export type RecordBindingPlannerMode = 'strict' | 'trusted';
+import {
+  normalizeRecordSlotTarget,
+  sameRecordSlotTargetContract,
+  type RecordSlotTargetContract,
+} from './record-slot-resolvers';
 
 export type AuthorizedRecordBinding = Readonly<{
   params: RecordParams;
@@ -48,7 +52,7 @@ export type RecordBindingUsage = Readonly<Record<string, readonly VariablePathRe
 
 export type PlanRecordBindingsOptions = Readonly<{
   contextParams?: Readonly<Record<string, unknown>>;
-  mode?: RecordBindingPlannerMode;
+  koaCtx: ResourcerContext;
   policies?: RecordSlotPolicies;
   usage: RecordBindingUsage;
 }>;
@@ -73,10 +77,6 @@ function normalizeFlatSegment(segment: string): PathSegment {
 function splitFlatContextKey(key: string): readonly [string, ...PathSegment[]] {
   const [varName, ...prefix] = key.split('.');
   return [varName, ...prefix.map(normalizeFlatSegment)];
-}
-
-function startsWithSegments(path: readonly PathSegment[], prefix: readonly PathSegment[]) {
-  return prefix.length <= path.length && prefix.every((segment, index) => path[index] === segment);
 }
 
 function cloneRecordParams(params: RecordParams): RecordParams {
@@ -196,10 +196,17 @@ function hasValidParams(descriptor: RecordDescriptor): descriptor is ValidRecord
   return !!descriptor.params;
 }
 
-function createBinding(descriptor: ValidRecordDescriptor, paths: readonly VariablePathRef[]): AuthorizedRecordBinding {
+async function createBinding(
+  descriptor: ValidRecordDescriptor,
+  paths: readonly VariablePathRef[],
+  target: RecordSlotTargetContract,
+  koaCtx: ResourcerContext,
+): Promise<AuthorizedRecordBinding | undefined> {
+  const params = await normalizeRecordSlotTarget(target, koaCtx, descriptor.params);
+  if (!params) return undefined;
   const relativePaths = paths.map((path) => Object.freeze(path.runtimeSegments.slice(descriptor.prefix.length)));
   return Object.freeze({
-    params: descriptor.params,
+    params: cloneRecordParams(params),
     varName: descriptor.varName,
     prefix: descriptor.prefix,
     relativePaths: Object.freeze(relativePaths),
@@ -209,75 +216,73 @@ function createBinding(descriptor: ValidRecordDescriptor, paths: readonly Variab
   });
 }
 
-function planStrictBindings(
+async function planStrictBindings(
   options: PlanRecordBindingsOptions,
   descriptorGroups: ReadonlyMap<string, readonly RecordDescriptor[]>,
 ) {
-  const groups = new Map<string, { descriptorKey: string; paths: VariablePathRef[] }>();
+  const blockedDescriptors = new Set<RecordDescriptor>();
+  const rejections: RecordBindingRejection[] = [];
+  for (const descriptors of descriptorGroups.values()) {
+    for (const descriptor of descriptors) {
+      const reason = isProtectedServerContextKey(descriptor.varName)
+        ? 'protected-context-root'
+        : hasBlockedSegment(descriptor.prefix)
+          ? 'protected-context-key'
+          : undefined;
+      if (!reason) continue;
+      blockedDescriptors.add(descriptor);
+      rejections.push(createRejection(descriptor, reason));
+    }
+  }
+
+  const groups = new Map<
+    string,
+    {
+      conflicting: boolean;
+      descriptorKey: string;
+      paths: VariablePathRef[];
+      target: RecordSlotTargetContract;
+    }
+  >();
   for (const refs of Object.values(options.usage)) {
     for (const ref of refs) {
-      const slot = options.policies?.get(ref.canonicalKey)?.slot;
-      if (!slot) continue;
-      const descriptorKey = getDescriptorKey(ref.varName, slot);
-      const group = groups.get(descriptorKey) || { descriptorKey, paths: [] };
+      const policy = options.policies?.get(ref.canonicalKey);
+      if (!policy) continue;
+      const descriptorKey = getDescriptorKey(ref.varName, policy.slot);
+      const existing = groups.get(descriptorKey);
+      const group = existing || {
+        conflicting: false,
+        descriptorKey,
+        paths: [],
+        target: policy.target,
+      };
+      if (existing && !sameRecordSlotTargetContract(existing.target, policy.target)) group.conflicting = true;
       group.paths.push(ref);
       groups.set(descriptorKey, group);
     }
   }
 
   const bindings: AuthorizedRecordBinding[] = [];
-  const rejections: RecordBindingRejection[] = [];
   for (const group of groups.values()) {
+    if (group.conflicting) continue;
     const candidates = descriptorGroups.get(group.descriptorKey) || [];
     if (candidates.length !== 1 || !hasValidParams(candidates[0])) continue;
     const descriptor = candidates[0];
-    if (isProtectedServerContextKey(descriptor.varName)) {
-      rejections.push(createRejection(descriptor, 'protected-context-root'));
-      continue;
-    }
-    if (hasBlockedSegment(descriptor.prefix) || group.paths.some((path) => hasBlockedSegment(path.runtimeSegments))) {
+    if (blockedDescriptors.has(descriptor)) continue;
+    if (group.paths.some((path) => hasBlockedSegment(path.runtimeSegments))) {
       rejections.push(createRejection(descriptor, 'protected-context-key'));
       continue;
     }
-    bindings.push(createBinding(descriptor, group.paths));
+    const binding = await createBinding(descriptor, group.paths, group.target, options.koaCtx);
+    if (binding) bindings.push(binding);
   }
   return { bindings, rejections };
 }
 
-function planTrustedBindings(
-  usage: RecordBindingUsage,
-  descriptorGroups: ReadonlyMap<string, readonly RecordDescriptor[]>,
-) {
-  const bindings: AuthorizedRecordBinding[] = [];
-  const rejections: RecordBindingRejection[] = [];
-  for (const candidates of descriptorGroups.values()) {
-    if (candidates.length !== 1 || !hasValidParams(candidates[0])) continue;
-    const descriptor = candidates[0];
-    const paths = (usage[descriptor.varName] || []).filter((path) =>
-      startsWithSegments(path.runtimeSegments, descriptor.prefix),
-    );
-    if (!paths.length) continue;
-    if (isProtectedServerContextKey(descriptor.varName)) {
-      rejections.push(createRejection(descriptor, 'protected-context-root'));
-      continue;
-    }
-    if (hasBlockedSegment(descriptor.prefix) || paths.some((path) => hasBlockedSegment(path.runtimeSegments))) {
-      rejections.push(createRejection(descriptor, 'protected-context-key'));
-      continue;
-    }
-    bindings.push(createBinding(descriptor, paths));
-  }
-  return { bindings, rejections };
-}
-
-export function planRecordBindings(options: PlanRecordBindingsOptions): RecordBindingPlan {
-  const mode = options.mode ?? 'strict';
+export async function planRecordBindings(options: PlanRecordBindingsOptions): Promise<RecordBindingPlan> {
   const { contextParams, descriptors } = collectDescriptorsAndContextParams(options.contextParams ?? {});
   const descriptorGroups = groupDescriptors(descriptors);
-  const { bindings, rejections } =
-    mode === 'trusted'
-      ? planTrustedBindings(options.usage, descriptorGroups)
-      : planStrictBindings(options, descriptorGroups);
+  const { bindings, rejections } = await planStrictBindings(options, descriptorGroups);
 
   return Object.freeze({
     bindings: Object.freeze(bindings),

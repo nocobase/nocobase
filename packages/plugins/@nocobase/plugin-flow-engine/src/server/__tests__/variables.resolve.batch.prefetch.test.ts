@@ -16,6 +16,7 @@ import type { AuthorizedRecordBinding } from '../variables/record-bindings';
 import { projectRecord } from '../variables/record-projection';
 import { fetchRecordWithRequestCache } from '../variables/records';
 import { resolveVariablesTemplate } from '../variables/resolve';
+import { createNestedRecordSlotResolver, getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { prefetchRecordsForResolve } from '../variables/utils';
 import FlowModelRepository from '../repository';
 
@@ -87,6 +88,14 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     const db = cm.db;
     const originalGetRepository = db.getRepository.bind(db);
     const analyze = vi.spyOn(variableExpression, 'analyzeVariableTemplate');
+    const dispose = getRecordSlotResolverRegistry(app).register(
+      createNestedRecordSlotResolver({
+        owner: 'test',
+        id: 'batch-backend',
+        varName: 'backend',
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
+    );
     let calls = 0;
     (db as any).getRepository = (collection: string) => {
       const repo = originalGetRepository(collection);
@@ -105,13 +114,13 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         batch: [
           {
             id: 't1',
-            template: { a: '{{ ctx.view.record.id }}' },
-            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+            template: { a: '{{ ctx.backend.record.id }}' },
+            contextParams: { 'backend.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
           },
           {
             id: 't2',
-            template: { b: '{{ ctx.view.record.roles[0].name }}' },
-            contextParams: { 'view.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
+            template: { b: '{{ ctx.backend.record.roles[0].name }}' },
+            contextParams: { 'backend.record': { dataSourceKey: 'main', collection: 'users', filterByTk: 1 } },
           },
         ],
       };
@@ -129,6 +138,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       expect(analyze).toHaveBeenCalledTimes(2);
     } finally {
       analyze.mockRestore();
+      dispose();
       db.getRepository = originalGetRepository;
     }
   });
@@ -192,14 +202,22 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       },
       state: {},
     } as unknown as ResourcerContext;
+    const dispose = getRecordSlotResolverRegistry(context.app).register(
+      createNestedRecordSlotResolver({
+        owner: 'test',
+        id: 'backend-role',
+        varName: 'backend',
+        target: { kind: 'fixed', associationName: 'users.roles', collection: 'roles', dataSourceKey: 'main' },
+      }),
+    );
 
     const result = await resolveVariablesTemplate(
       context,
-      { role: '{{ ctx.popup.record.name }}' },
+      { role: '{{ ctx.backend.record.name }}' },
       {
-        'popup.record': {
-          associationName: 'users.roles',
-          collection: 'users',
+        'backend.record': {
+          associationName: 'secrets.roles',
+          collection: 'secrets',
           filterByTk: 'root',
           sourceId: 1,
         },
@@ -209,11 +227,11 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(result.role).toBe('root');
     const second = await resolveVariablesTemplate(
       context,
-      { role: '{{ ctx.popup.record.name }}' },
+      { role: '{{ ctx.backend.record.name }}' },
       {
-        'popup.record': {
-          associationName: 'users.roles',
-          collection: 'users',
+        'backend.record': {
+          associationName: 'secrets.roles',
+          collection: 'secrets',
           filterByTk: 'member',
           sourceId: 2,
         },
@@ -225,6 +243,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(relationCalls).toHaveLength(2);
     expect(relationCalls.map((call) => call.sourceId)).toEqual([1, 2]);
     expect(relationCalls[0].options.fields).toEqual(['name']);
+    dispose();
   });
 
   it('reuses a wide prefetch entry for a later strict batch group', async () => {
@@ -280,7 +299,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     expect(projectRecord(strict, [['id']])).toEqual({ id: 1 });
   });
 
-  it('allows trusted leaf descriptors but rejects protected-root descriptors before querying records', async () => {
+  it('strips moved leaf and protected-root descriptors before querying records', async () => {
     const repository = app.db.getRepository('users');
     const findOne = vi.spyOn(repository, 'findOne');
 
@@ -293,8 +312,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         },
         1,
       );
-      expect(single.body.value).toHaveProperty('id', 1);
-      findOne.mockClear();
+      expect(single.body).toEqual(leafTemplate);
 
       const protectedTemplates = [
         { id: 'query', path: 'query.page' },
@@ -332,7 +350,15 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     const rolesFind = vi.spyOn(roles, 'find');
     const rolesFindOne = vi.spyOn(roles, 'findOne');
     const attackTemplate = { value: '{{ ctx.popup.record.roles.title }}' };
-    const legalTemplate = { value: '{{ ctx.view.record.nickname }}' };
+    const legalTemplate = { value: '{{ ctx.backend.record.nickname }}' };
+    const dispose = getRecordSlotResolverRegistry(app).register(
+      createNestedRecordSlotResolver({
+        owner: 'test',
+        id: 'legal-backend',
+        varName: 'backend',
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
+    );
     await insertFlowModel({ uid: attackUid, use: 'DetailsBlockModel', props: attackTemplate });
     await insertFlowModel({ uid: legalUid, use: 'DetailsBlockModel', props: legalTemplate });
 
@@ -350,7 +376,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
               id: 'legal',
               rd: session.rd(legalUid),
               template: legalTemplate,
-              contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
+              contextParams: { 'backend.record': { collection: 'users', filterByTk: 1 } },
             },
           ],
         },
@@ -370,6 +396,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       usersFindOne.mockRestore();
       rolesFind.mockRestore();
       rolesFindOne.mockRestore();
+      dispose();
     }
   });
 });

@@ -7,584 +7,218 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Application } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { generateFlowModelRd } from '@nocobase/utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { analyzeVariableTemplate } from '../template/variable-expression';
-import { authorizeVariablesResolve, type AuthorizationResult } from '../variables/allow-list';
-import { createFlowModelVariableContract, type ResolveFlowModelFieldKind } from '../variables/record-slot-policy';
-import { resetVariablesRegistryForTest } from './test-utils';
+import {
+  createBuiltInRecordSlotResolvers,
+  createFlowModelVariableContract,
+  type CompileRecordSlotPoliciesOptions,
+  type RecordSlotPolicies,
+} from '../variables/record-slot-policy';
+import {
+  createNestedRecordSlotResolver,
+  getRecordSlotResolverRegistry,
+  normalizeRecordSlotTarget,
+  type RecordSlotResolverRegistration,
+} from '../variables/record-slot-resolvers';
 
-const resolveFieldKind: ResolveFlowModelFieldKind = (_dataSourceKey, collectionName, fieldPath) => {
-  if (collectionName === 'users') {
-    return ['roles', 'roles.users'].includes(fieldPath) ? 'association' : 'field';
-  }
-  if (fieldPath === 'metadataMissing') return undefined;
-  return ['customer', 'customer.owner', 'department', 'owner'].includes(fieldPath) ? 'association' : 'field';
-};
+const ordersTarget = { kind: 'fixed', dataSourceKey: 'main', collection: 'orders' } as const;
 
-function compile(flowModel: unknown) {
-  const analysis = analyzeVariableTemplate(flowModel, { mode: 'flow-model' });
-  const contract = createFlowModelVariableContract(analysis, { flowModel, resolveFieldKind });
-  return { analysis, contract, policies: contract.recordSlots };
+function createApp(): Application {
+  return {} as Application;
 }
 
-function getPolicy(flowModel: unknown, expression: string) {
-  const { policies } = compile(flowModel);
-  const key = analyzeVariableTemplate(expression).paths[0].canonicalKey;
-  return policies.get(key);
+function installBuiltIns(app: Application) {
+  const registry = getRecordSlotResolverRegistry(app);
+  const disposers = createBuiltInRecordSlotResolvers().map((resolver) => registry.register(resolver));
+  return () => disposers.forEach((dispose) => dispose());
 }
 
-function getFirstCanonicalKey(result: AuthorizationResult) {
-  const key = result.analysis?.paths[0]?.canonicalKey;
-  if (!key) throw new Error('Expected analyzed variable path');
-  return key;
-}
-
-function formModel(
-  use: string,
-  props: unknown,
-  configuredFields: Array<string | { associationPathName: string; fieldPath: string }> = [],
+async function compile(
+  app: Application,
+  flowModel: unknown,
+  options: Omit<CompileRecordSlotPoliciesOptions, 'app'> = {},
 ) {
-  return {
-    uid: `${use}-1`,
-    use,
-    stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
-    subModels: {
-      grid: {
-        uid: `${use}-grid`,
-        use: 'FormGridModel',
-        subModels: {
-          items: configuredFields.map((field, index) => ({
-            uid: `${use}-item-${index}`,
-            use: 'FormItemModel',
-            stepParams: { fieldSettings: { init: typeof field === 'string' ? { fieldPath: field } : field } },
-          })),
-        },
-      },
-    },
-    props,
-  };
+  const analysis = analyzeVariableTemplate(flowModel, { mode: 'flow-model' });
+  return await createFlowModelVariableContract(analysis, { app, currentNode: flowModel, ...options });
+}
+
+function getPolicy(policies: RecordSlotPolicies, expression: string) {
+  const key = analyzeVariableTemplate(expression).paths[0]?.canonicalKey;
+  return key ? policies.get(key) : undefined;
 }
 
 describe('record slot policy compiler', () => {
-  beforeEach(() => {
-    resetVariablesRegistryForTest();
-  });
-
-  it('compiles fixed direct, view, and popup parent slots per canonical path', () => {
-    const model = {
-      use: 'FlowModel',
-      uid: 'fixed-slots',
+  it('compiles exact direct, view, and popup slots from registered built-ins', async () => {
+    const app = createApp();
+    const dispose = installBuiltIns(app);
+    const contract = await compile(app, {
       props: [
         '{{ ctx.record.name }}',
         '{{ ctx.responseRecord.id }}',
         '{{ ctx.clickedRowRecord.title }}',
         '{{ ctx.view.record.department.name }}',
+        '{{ ctx.popup.parent.record.title }}',
         '{{ ctx.popup.parent.parent.sourceRecord.name }}',
       ],
-    };
+    });
 
-    expect(getPolicy(model, '{{ ctx.record.name }}')).toMatchObject({ slot: [], source: 'direct-record' });
-    expect(getPolicy(model, '{{ ctx.responseRecord.id }}')?.slot).toEqual([]);
-    expect(getPolicy(model, '{{ ctx.clickedRowRecord.title }}')?.slot).toEqual([]);
-    expect(getPolicy(model, '{{ ctx.view.record.department.name }}')?.slot).toEqual(['record']);
-    expect(getPolicy(model, '{{ ctx.popup.parent.parent.sourceRecord.name }}')?.slot).toEqual([
+    expect(getPolicy(contract.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.responseRecord.id }}')?.slot).toEqual([]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.clickedRowRecord.title }}')?.slot).toEqual([]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.view.record.department.name }}')?.slot).toEqual(['record']);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.popup.parent.record.title }}')?.slot).toEqual(['parent', 'record']);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.popup.parent.parent.sourceRecord.name }}')?.slot).toEqual([
       'parent',
       'parent',
       'sourceRecord',
     ]);
+    dispose();
   });
 
-  it('proves item associations from the persisted owner and server collection metadata', () => {
-    const model = {
-      uid: 'roles-wrapper',
-      use: 'FormItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-        },
-      },
-      subModels: {
-        field: {
-          uid: 'roles-popup-sub-table',
-          use: 'PopupSubTableFieldModel',
-          parentId: 'roles-wrapper',
-          subModels: {
-            popup: {
-              uid: 'roles-popup-grid',
-              use: 'BlockGridModel',
-              parentId: 'roles-popup-sub-table',
-              subModels: {
-                blocks: [
-                  {
-                    uid: 'roles-popup-form',
-                    use: 'PopupSubTableFormModel',
-                    parentId: 'roles-popup-grid',
-                    props: [
-                      '{{ ctx.item.value.users.nickname }}',
-                      '{{ ctx.item.parentItem.value.roles.title }}',
-                      '{{ ctx.item.value.title.name }}',
-                      '{{ ctx.item.value.strategy.actions }}',
-                      '{{ ctx.item.value.users }}',
-                    ],
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-    };
+  it('keeps built-in slots but refuses a client-selected database target', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const contract = await compile(app, '{{ ctx.view.record.name }}');
+    const policy = getPolicy(contract.recordSlots, '{{ ctx.view.record.name }}');
+    if (!policy) throw new Error('Expected a built-in view Record policy');
 
-    expect(getPolicy(model, '{{ ctx.item.value.users.nickname }}')).toMatchObject({
-      slot: ['value', 'users'],
-      source: 'item-association',
-    });
-    expect(getPolicy(model, '{{ ctx.item.parentItem.value.roles.title }}')?.slot).toEqual([
-      'parentItem',
-      'value',
-      'roles',
-    ]);
-    expect(getPolicy(model, '{{ ctx.item.value.title.name }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.item.value.strategy.actions }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.item.value.users }}')).toBeUndefined();
+    expect(
+      await normalizeRecordSlotTarget(policy.target, {} as ResourcerContext, {
+        collection: 'secrets',
+        dataSourceKey: 'external',
+        filterByTk: 1,
+      }),
+    ).toBeUndefined();
   });
 
-  it('counts only persisted item context boundaries, not association field owners', () => {
-    const directField = {
-      uid: 'direct-popup-field',
-      use: 'PopupSubTableFieldModel',
-      stepParams: {
-        fieldSettings: {
-          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-        },
-      },
-      props: '{{ ctx.item.value.users.nickname }}',
-    };
-    const subTable = {
-      uid: 'sub-table-wrapper',
-      use: 'FormItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-        },
-      },
-      subModels: {
-        field: {
-          uid: 'sub-table-field',
-          use: 'SubTableFieldModel',
-          subModels: {
-            columns: [
-              {
-                uid: 'sub-table-column',
-                use: 'SubTableColumnModel',
-                props: '{{ ctx.item.value.users.nickname }}',
-              },
-            ],
-          },
-        },
-      },
-    };
-    expect(getPolicy(directField, '{{ ctx.item.value.users.nickname }}')).toBeUndefined();
-    expect(getPolicy(subTable, '{{ ctx.item.value.users.nickname }}')?.slot).toEqual(['value', 'users']);
+  it('does not compile fixed slots when the plugin registrations are absent or disposed', async () => {
+    const app = createApp();
+    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(0);
+
+    const dispose = installBuiltIns(app);
+    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(1);
+    dispose();
+    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(0);
+
+    const disposeReloaded = installBuiltIns(app);
+    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(1);
+    disposeReloaded();
   });
 
-  it.each(['RecordPickerFieldModel', 'PopupSubTableFieldModel', 'SubTableFieldModel', 'SubFormListFieldModel'])(
-    'counts the disabled picker popup item context for %s',
-    (use) => {
-      const wrapperUid = `${use}-wrapper`;
-      const fieldUid = `${use}-field`;
-      const model = {
-        uid: wrapperUid,
-        use: 'FormItemModel',
-        stepParams: {
-          fieldSettings: {
-            init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-          },
-        },
-        subModels: {
-          field: {
-            uid: fieldUid,
-            use,
-            parentId: wrapperUid,
-            subModels: {
-              'grid-block': {
-                uid: `${use}-picker-grid`,
-                use: 'BlockGridModel',
-                parentId: fieldUid,
-                subKey: 'grid-block',
-                props: [
-                  '{{ ctx.item.value.users.nickname }}',
-                  '{{ ctx.item.parentItem.value.users.nickname }}',
-                  '{{ ctx.item.parentItem.value.roles.title }}',
-                  '{{ ctx.item.parentItem.parentItem.value.roles.title }}',
-                ],
-              },
-            },
-          },
-        },
-      };
-
-      expect(getPolicy(model, '{{ ctx.item.value.users.nickname }}')).toBeUndefined();
-      if (use === 'SubFormListFieldModel') {
-        expect(getPolicy(model, '{{ ctx.item.parentItem.value.users.nickname }}')?.slot).toEqual([
-          'parentItem',
-          'value',
-          'users',
-        ]);
-        expect(getPolicy(model, '{{ ctx.item.parentItem.parentItem.value.roles.title }}')?.slot).toEqual([
-          'parentItem',
-          'parentItem',
-          'value',
-          'roles',
-        ]);
-      } else {
-        expect(getPolicy(model, '{{ ctx.item.parentItem.value.roles.title }}')?.slot).toEqual([
-          'parentItem',
-          'value',
-          'roles',
-        ]);
-        expect(getPolicy(model, '{{ ctx.item.parentItem.parentItem.value.roles.title }}')).toBeUndefined();
-      }
-    },
-  );
-
-  it('rejects parent and root slots across a scalar picker owner', () => {
-    const model = {
-      uid: 'outer-wrapper',
-      use: 'FormItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-        },
-      },
-      subModels: {
-        field: {
-          uid: 'outer-sub-form',
-          use: 'SubFormFieldModel',
-          parentId: 'outer-wrapper',
-          subModels: {
-            item: {
-              uid: 'scalar-wrapper',
-              use: 'FormItemModel',
-              stepParams: {
-                fieldSettings: {
-                  init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'status' },
-                },
-              },
-              subModels: {
-                field: {
-                  uid: 'scalar-picker',
-                  use: 'RecordPickerFieldModel',
-                  parentId: 'scalar-wrapper',
-                  subModels: {
-                    'grid-block': {
-                      uid: 'scalar-picker-grid',
-                      use: 'BlockGridModel',
-                      parentId: 'scalar-picker',
-                      subKey: 'grid-block',
-                      props: [
-                        '{{ ctx.item.value.users.nickname }}',
-                        '{{ ctx.item.parentItem.value.users.nickname }}',
-                        '{{ ctx.item.parentItem.parentItem.value.roles.title }}',
-                      ],
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    };
-
-    expect(getPolicy(model, '{{ ctx.item.value.users.nickname }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.item.parentItem.value.users.nickname }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.item.parentItem.parentItem.value.roles.title }}')).toBeUndefined();
-  });
-
-  it('ignores config objects that imitate FlowModel item hosts outside subModels', () => {
-    const model = {
-      uid: 'config-host-imitation',
-      use: 'FlowModel',
-      stepParams: {
-        arbitraryConfig: {
-          use: 'SubFormFieldModel',
-          stepParams: {
-            fieldSettings: {
-              init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-            },
-          },
-          props: '{{ ctx.item.value.users.nickname }}',
-        },
-      },
-    };
-
-    expect(getPolicy(model, '{{ ctx.item.value.users.nickname }}')).toBeUndefined();
-  });
-
-  it('uses the longest configured Form field and supports whole associations', () => {
-    const model = formModel(
-      'EditFormModel',
-      {
-        nested: '{{ ctx.formValues.customer.owner.name }}',
-        whole: '{{ ctx.formValues.department }}',
-        scalar: '{{ ctx.formValues.status }}',
-        missing: '{{ ctx.formValues.metadataMissing.name }}',
-        unconfigured: '{{ ctx.formValues.priority }}',
-      },
-      ['customer', { associationPathName: 'customer', fieldPath: 'owner' }, 'department', 'status', 'metadataMissing'],
+  it('materializes nested Record only for a server-registered variable and target', async () => {
+    const app = createApp();
+    getRecordSlotResolverRegistry(app).register(
+      createNestedRecordSlotResolver({
+        owner: 'test-extension',
+        id: 'backend',
+        varName: 'backend',
+        target: ordersTarget,
+      }),
     );
-
-    expect(getPolicy(model, '{{ ctx.formValues.customer.owner.name }}')).toMatchObject({
-      slot: ['customer', 'owner'],
-      source: 'form-association',
+    const contract = await compile(app, {
+      props: ['{{ ctx.backend.record.customer.name }}', '{{ ctx.unknown.record.customer.name }}'],
     });
-    expect(getPolicy(model, '{{ ctx.formValues.department }}')).toMatchObject({
-      slot: ['department'],
-      source: 'form-association',
-    });
-    expect(getPolicy(model, '{{ ctx.formValues.status }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.formValues.metadataMissing.name }}')).toBeUndefined();
-    expect(getPolicy(model, '{{ ctx.formValues.priority }}')).toMatchObject({ slot: [], source: 'form-record' });
 
-    const { contract } = compile(model);
-    for (const expression of ['{{ ctx.formValues.status }}', '{{ ctx.formValues.metadataMissing.name }}']) {
-      const canonicalKey = analyzeVariableTemplate(expression).paths[0].canonicalKey;
-      expect(contract.allowedPaths.has(canonicalKey)).toBe(true);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.backend.record.customer.name }}')).toMatchObject({
+      slot: ['record'],
+      target: ordersTarget,
+    });
+    expect(getPolicy(contract.recordSlots, '{{ ctx.unknown.record.customer.name }}')).toBeUndefined();
+  });
+
+  it('fails closed for Form and item model names without an owning resolver', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    for (const use of ['EditFormModel', 'CreateFormModel', 'FilterFormBlockModel', 'SubFormFieldModel']) {
+      const contract = await compile(app, {
+        use,
+        stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
+        props: [
+          '{{ ctx.formValues.customer.name }}',
+          '{{ ctx.formValues.status }}',
+          '{{ ctx.item.value.owner.name }}',
+          '{{ ctx.item.parentItem.value.users.name }}',
+        ],
+        subModels: {
+          grid: {
+            use: 'FormGridModel',
+            subModels: {
+              items: [
+                { use: 'FilterFormItemModel', stepParams: { fieldSettings: { init: { fieldPath: 'customer' } } } },
+                { use: 'SubFormListFieldModel', stepParams: { fieldSettings: { init: { fieldPath: 'owner' } } } },
+              ],
+            },
+          },
+        },
+      });
+
+      for (const expression of [
+        '{{ ctx.formValues.customer.name }}',
+        '{{ ctx.formValues.status }}',
+        '{{ ctx.item.value.owner.name }}',
+        '{{ ctx.item.parentItem.value.users.name }}',
+      ]) {
+        expect(getPolicy(contract.recordSlots, expression)).toBeUndefined();
+      }
     }
   });
 
-  it('does not invent record slots for unconfigured CreateForm fields or unknown model types', () => {
-    const createForm = formModel('CreateFormModel', '{{ ctx.formValues.status }}');
-    const unknownForm = formModel('UnknownFormModel', '{{ ctx.formValues.customer.name }}', ['customer']);
+  it('allows a custom provider without adding its use name to core', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const node = { use: 'MyPrivateProvider', props: ['{{ ctx.formValues.customer.name }}', '{{ ctx.record.name }}'] };
+    const customResolver: RecordSlotResolverRegistration = {
+      owner: 'test-extension',
+      id: 'private-form-provider',
+      match: (path) => path.varName === 'formValues' && path.runtimeSegments[0] === 'customer',
+      resolve: ({ currentNode }) =>
+        currentNode === node ? { status: 'resolved', slot: ['customer'], target: ordersTarget } : { status: 'abstain' },
+    };
+    const dispose = getRecordSlotResolverRegistry(app).register(customResolver);
 
-    expect(getPolicy(createForm, '{{ ctx.formValues.status }}')).toBeUndefined();
-    expect(getPolicy(unknownForm, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
+    const enabled = await compile(app, node);
+    expect(getPolicy(enabled.recordSlots, '{{ ctx.formValues.customer.name }}')).toMatchObject({
+      slot: ['customer'],
+      target: ordersTarget,
+    });
+    expect(getPolicy(enabled.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
+
+    dispose();
+    const disabled = await compile(app, node);
+    expect(getPolicy(disabled.recordSlots, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
+    expect(getPolicy(disabled.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
   });
 
-  it('uses the longest persisted FilterForm field name regardless of grid order', () => {
-    const model = {
-      uid: 'filter-form',
-      use: 'FilterFormBlockModel',
-      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
-      subModels: {
-        grid: {
-          uid: 'filter-grid',
-          use: 'FormGridModel',
-          subModels: {
-            items: [
-              {
-                uid: 'customer-filter',
-                use: 'FilterFormItemModel',
-                props: { name: 'criteria' },
-                stepParams: { fieldSettings: { init: { fieldPath: 'customer' } } },
-              },
-              {
-                uid: 'owner-filter',
-                use: 'FilterFormItemModel',
-                props: { name: 'criteria.owner' },
-                stepParams: { fieldSettings: { init: { fieldPath: 'owner' } } },
-              },
-            ],
-          },
-        },
+  it('keeps valid siblings when metadata is missing or a resolver throws', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const registry = getRecordSlotResolverRegistry(app);
+    registry.register({
+      owner: 'test-extension',
+      id: 'metadata-dependent-form',
+      match: (path) => path.varName === 'formValues',
+      resolve: ({ getCollection }) =>
+        getCollection?.('main', 'orders')
+          ? { status: 'resolved', slot: ['customer'], target: ordersTarget }
+          : { status: 'abstain' },
+    });
+    registry.register({
+      owner: 'test-extension',
+      id: 'broken-item-provider',
+      match: (path) => path.varName === 'item',
+      resolve: () => {
+        throw new Error('metadata unavailable');
       },
-      props: '{{ ctx.formValues.criteria.owner.name }}',
-    };
-
-    expect(getPolicy(model, '{{ ctx.formValues.criteria.owner.name }}')).toMatchObject({
-      slot: ['criteria', 'owner'],
-      source: 'filter-form',
     });
-  });
-
-  it('fails closed when one canonical path has different persisted slots', () => {
-    const model = {
-      uid: 'ambiguous-page',
-      use: 'PageModel',
-      subModels: {
-        blocks: [
-          formModel('EditFormModel', '{{ ctx.formValues.customer.name }}', ['customer']),
-          formModel('EditFormModel', '{{ ctx.formValues.customer.name }}'),
-        ],
-      },
-    };
-
-    expect(getPolicy(model, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
-  });
-
-  it('keeps configure roles on the trusted lane without compiling request slots', async () => {
-    const ctx = createFakeCtx({ currentRole: 'root' });
-    const view = await authorizeVariablesResolve(ctx, { template: '{{ ctx.view.record.name }}' });
-    const form = await authorizeVariablesResolve(ctx, { template: '{{ ctx.formValues.customer.name }}' });
-    const item = await authorizeVariablesResolve(ctx, { template: '{{ ctx.item.value.owner.name }}' });
-
-    expect([view.allowed, form.allowed, item.allowed]).toEqual([true, true, true]);
-    expect([view.recordSlotPolicies.size, form.recordSlotPolicies.size, item.recordSlotPolicies.size]).toEqual([
-      0, 0, 0,
-    ]);
-  });
-
-  it('loads and caches the persisted ancestor Form contract', async () => {
-    const session = createTokenSession();
-    const child = {
-      uid: 'form-action',
-      use: 'FormActionModel',
-      parentId: 'form-grid',
-      props: { value: '{{ ctx.formValues.customer.name }}' },
-    };
-    const grid = { uid: 'form-grid', use: 'FormGridModel', parentId: 'edit-form' };
-    const form = formModel('EditFormModel', {}, ['customer']);
-    form.uid = 'edit-form';
-    const models: Record<string, unknown> = { [child.uid]: child, [grid.uid]: grid, [form.uid]: form };
-    const findModelById = vi.fn(async (uid: string) => models[uid]);
-    const ctx = createFakeCtx({ findModelById, token: session.token });
-
-    const first = await authorizeVariablesResolve(ctx, {
-      rd: session.rd(child.uid),
-      template: '{{ ctx.formValues.customer.name }}',
-    });
-    const second = await authorizeVariablesResolve(ctx, {
-      rd: session.rd(child.uid),
-      template: '{{ ctx.formValues.customer.name }}',
+    const contract = await compile(app, {
+      props: ['{{ ctx.formValues.customer.name }}', '{{ ctx.item.value.owner.name }}', '{{ ctx.view.record.name }}'],
     });
 
-    expect(first.allowed).toBe(true);
-    expect(first.recordSlotPolicies.get(getFirstCanonicalKey(first))?.slot).toEqual(['customer']);
-    expect(second.recordSlotPolicies.get(getFirstCanonicalKey(second))?.slot).toEqual(['customer']);
-    expect(findModelById.mock.calls.map(([uid]) => uid)).toEqual(['form-action', 'form-grid', 'edit-form']);
-  });
-
-  it('loads a persisted item owner from the ancestor chain', async () => {
-    const session = createTokenSession();
-    const child = {
-      uid: 'item-action',
-      use: 'FormActionModel',
-      parentId: 'roles-popup-form',
-      props: { value: '{{ ctx.item.value.users.nickname }}' },
-    };
-    const popupForm = {
-      uid: 'roles-popup-form',
-      use: 'PopupSubTableFormModel',
-      parentId: 'roles-popup-grid',
-    };
-    const popupGrid = {
-      uid: 'roles-popup-grid',
-      use: 'BlockGridModel',
-      parentId: 'roles-field',
-    };
-    const owner = {
-      uid: 'roles-field',
-      use: 'PopupSubTableFieldModel',
-      parentId: 'roles-wrapper',
-    };
-    const wrapper = {
-      uid: 'roles-wrapper',
-      use: 'FormItemModel',
-      stepParams: {
-        fieldSettings: {
-          init: { dataSourceKey: 'main', collectionName: 'users', fieldPath: 'roles' },
-        },
-      },
-      subModels: { field: { uid: owner.uid, use: owner.use } },
-    };
-    const models: Record<string, unknown> = {
-      [child.uid]: child,
-      [popupForm.uid]: popupForm,
-      [popupGrid.uid]: popupGrid,
-      [owner.uid]: owner,
-      [wrapper.uid]: wrapper,
-    };
-    const findModelById = vi.fn(async (uid: string) => models[uid]);
-    const ctx = createFakeCtx({ findModelById, token: session.token });
-
-    const result = await authorizeVariablesResolve(ctx, {
-      rd: session.rd(child.uid),
-      template: '{{ ctx.item.value.users.nickname }}',
-      contextParams: { 'item.value.users': { collection: 'users', filterByTk: 1 } },
-    });
-
-    expect(result.allowed).toBe(true);
-    expect(result.recordSlotPolicies.get(getFirstCanonicalKey(result))?.slot).toEqual(['value', 'users']);
-    expect(findModelById.mock.calls.map(([uid]) => uid)).toEqual([
-      'item-action',
-      'roles-popup-form',
-      'roles-popup-grid',
-      'roles-field',
-      'roles-wrapper',
-    ]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.value.owner.name }}')).toBeUndefined();
+    expect(getPolicy(contract.recordSlots, '{{ ctx.view.record.name }}')?.slot).toEqual(['record']);
   });
 });
-
-function createTokenSession(userId = 1) {
-  const signInTime = `variables-record-slot-policy-${userId}`;
-  const payload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
-  return {
-    rd: (flowModelUid: string) => generateFlowModelRd(flowModelUid, `${userId}:${signInTime}`),
-    token: `test.${payload}.sig`,
-  };
-}
-
-function createFakeCtx(
-  options: {
-    currentRole?: string;
-    findModelById?: (uid: string) => Promise<unknown>;
-    token?: string;
-  } = {},
-) {
-  const headers = options.token ? { authorization: `Bearer ${options.token}` } : {};
-  type TestCollection = {
-    fields: { get: (name: string) => TestField | undefined };
-    getField: (name: string) => TestField | undefined;
-  };
-  type TestField = {
-    isRelationField: () => boolean;
-    targetCollection?: TestCollection;
-  };
-  const fields: Record<string, TestField> = {
-    customer: { isRelationField: () => true },
-    status: { isRelationField: () => false },
-  };
-  const collection = {
-    fields: { get: (name: string) => fields[name] },
-    getField: (name: string) => fields[name],
-  };
-  const userFields: Record<string, TestField> = {};
-  const roleFields: Record<string, TestField> = {
-    title: { isRelationField: () => false },
-    strategy: { isRelationField: () => false },
-  };
-  const usersCollection: TestCollection = {
-    fields: { get: (name) => userFields[name] },
-    getField: (name) => userFields[name],
-  };
-  const rolesCollection: TestCollection = {
-    fields: { get: (name) => roleFields[name] },
-    getField: (name) => roleFields[name],
-  };
-  userFields.roles = { isRelationField: () => true, targetCollection: rolesCollection };
-  roleFields.users = { isRelationField: () => true, targetCollection: usersCollection };
-  const collections: Record<string, TestCollection> = { users: usersCollection, roles: rolesCollection };
-  return {
-    app: {
-      acl: { getRole: () => ({ getStrategy: () => ({ allowConfigure: false }) }) },
-      dataSourceManager: {
-        get: () => ({ collectionManager: { getCollection: () => collection } }),
-      },
-    },
-    db: {
-      getCollection: (name: string) =>
-        name === 'flowModels'
-          ? { repository: { findModelById: options.findModelById || (async () => null) } }
-          : collections[name] || collection,
-      getRepository: () => ({ find: async () => [] }),
-    },
-    get: (name: string) => headers[name.toLowerCase() as keyof typeof headers],
-    state: {
-      currentRole: options.currentRole || 'member',
-      currentRoles: [options.currentRole || 'member'],
-    },
-  } as unknown as ResourcerContext;
-}

@@ -14,6 +14,7 @@ import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
 import { analyzeVariableTemplateSafely } from './allow-list';
 import { planRecordBindings, type RecordBindingPlan } from './record-bindings';
 import { variables } from './registry';
+import { compileRecordSlotPolicies } from './record-slot-policy';
 import { prefetchRecordsForResolve } from './utils';
 
 export type ResolveBatchItem = {
@@ -29,7 +30,7 @@ export type AnalyzedResolveBatchItem = ResolveBatchItem & {
 };
 
 const GLOBAL_CONTEXT_KEY = Symbol.for('nocobase.flow-engine.variables.global-context');
-const TRUSTED_RESOLVE_POLICY: ResolvePathPolicy = {
+const REQUEST_BOUND_RESOLVE_POLICY: ResolvePathPolicy = {
   allowAll: true,
   allowedPaths: new Set(),
   unrestrictedVariables: new Set(),
@@ -48,16 +49,22 @@ export async function resolveVariablesTemplate(
   template: JSONValue,
   contextParams: Record<string, unknown> = {},
 ) {
-  const result = analyzeVariableTemplateSafely(template);
+  const result = analyzeVariableTemplateSafely(template, { mode: 'untrusted-request' });
   if (!result.ok) return template;
-  const bindingPlan = createTrustedRecordBindingPlan(result.analysis, contextParams);
-  return resolveAnalyzedVariablesTemplate(ctx, result.analysis, TRUSTED_RESOLVE_POLICY, bindingPlan);
+  const bindingPlan = await createRequestBoundRecordBindingPlan(ctx, result.analysis, contextParams);
+  return resolveAnalyzedVariablesTemplate(ctx, result.analysis, REQUEST_BOUND_RESOLVE_POLICY, bindingPlan);
 }
 
-function createTrustedRecordBindingPlan(analysis: AnalyzedTemplate, contextParams: Readonly<Record<string, unknown>>) {
+async function createRequestBoundRecordBindingPlan(
+  ctx: ResourcerContext,
+  analysis: AnalyzedTemplate,
+  contextParams: Readonly<Record<string, unknown>>,
+) {
+  const policies = await compileRecordSlotPolicies(analysis, { app: ctx.app, ctx });
   return planRecordBindings({
     contextParams,
-    mode: 'trusted',
+    koaCtx: ctx,
+    policies,
     usage: analysis.usage,
   });
 }
@@ -88,7 +95,7 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
   const analyzedItems: AnalyzedResolveBatchItem[] = [];
   const results: Array<{ id?: string | number; data: unknown } | undefined> = [];
   for (const [index, item] of items.entries()) {
-    const result = analyzeVariableTemplateSafely(item?.template ?? {});
+    const result = analyzeVariableTemplateSafely(item?.template ?? {}, { mode: 'untrusted-request' });
     if (!result.ok) {
       results[index] = { id: item?.id, data: item?.template ?? {} };
       continue;
@@ -97,8 +104,8 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
       ...item,
       id: index,
       analysis: result.analysis,
-      bindingPlan: createTrustedRecordBindingPlan(result.analysis, item.contextParams || {}),
-      policy: TRUSTED_RESOLVE_POLICY,
+      bindingPlan: await createRequestBoundRecordBindingPlan(ctx, result.analysis, item.contextParams || {}),
+      policy: REQUEST_BOUND_RESOLVE_POLICY,
     });
   }
 

@@ -91,7 +91,7 @@ function normalizeResolved(result: RecordSlotResolverResult): RecordSlotResolved
   return target ? Object.freeze({ status: 'resolved', slot: Object.freeze([...result.slot]), target }) : undefined;
 }
 
-function sameTarget(left: RecordSlotTargetContract, right: RecordSlotTargetContract) {
+export function sameRecordSlotTargetContract(left: RecordSlotTargetContract, right: RecordSlotTargetContract) {
   if (left.kind !== right.kind) return false;
   if (left.kind === 'capability' && right.kind === 'capability') {
     return left.id === right.id && left.normalize === right.normalize;
@@ -110,7 +110,7 @@ function sameResolved(left: RecordSlotResolved, right: RecordSlotResolved) {
   return (
     left.slot.length === right.slot.length &&
     left.slot.every((segment, index) => segment === right.slot[index]) &&
-    sameTarget(left.target, right.target)
+    sameRecordSlotTargetContract(left.target, right.target)
   );
 }
 

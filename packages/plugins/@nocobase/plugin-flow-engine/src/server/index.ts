@@ -15,6 +15,7 @@ export {
   getRecordSlotResolverRegistry,
   normalizeRecordSlotTarget,
   RecordSlotResolverRegistry,
+  sameRecordSlotTargetContract,
 } from './variables/record-slot-resolvers';
 export type {
   RecordSlotFixedTarget,

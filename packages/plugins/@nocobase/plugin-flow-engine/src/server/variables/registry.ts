@@ -114,12 +114,17 @@ class VariableRegistry {
     usage: VarUsage,
     contextParams: Record<string, unknown>,
   ) {
+    const policies = await compileRecordSlotPolicies(
+      { paths: Object.values(usage).flat() },
+      { app: koaCtx.app, ctx: koaCtx },
+    );
     const plan = planRecordBindings({
       contextParams,
-      mode: 'trusted',
+      koaCtx,
+      policies,
       usage,
     });
-    return this.attachUsedVariablesFromPlan(ctx, koaCtx, usage, plan);
+    return this.attachUsedVariablesFromPlan(ctx, koaCtx, usage, await plan);
   }
 
   async attachUsedVariablesFromPlan(
@@ -185,10 +190,6 @@ export function sanitizeRegisteredVariableContextParams(
     }
   }
   return next;
-}
-
-export function getRecordBindingPolicies(usage: VarUsage): RecordSlotPolicies {
-  return compileRecordSlotPolicies({ paths: Object.values(usage).flat() });
 }
 
 /**

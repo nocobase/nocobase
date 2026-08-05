@@ -242,6 +242,11 @@ export function resolveRecordTarget(koaCtx: ResourcerContext, params: RecordPara
     return undefined;
   }
 
+  if (usesAssociation && collection.name !== params.collection) {
+    targets.set(requestKey, undefined);
+    return undefined;
+  }
+
   const rawAttributes = collection.model?.rawAttributes as Record<string, unknown> | undefined;
   const pkAttr = collection.model?.primaryKeyAttribute;
   const pkIsValid = !!(pkAttr && rawAttributes && Object.prototype.hasOwnProperty.call(rawAttributes, pkAttr));

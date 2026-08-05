@@ -16,9 +16,13 @@ import { JSONValue } from './template/resolver';
 import type { AnalyzedTemplate, ResolvePathPolicy } from './template/variable-expression';
 import { authorizeVariablesResolve } from './variables/allow-list';
 import type { RecordBindingPlan } from './variables/record-bindings';
+import { createBuiltInRecordSlotResolvers } from './variables/record-slot-policy';
+import { getRecordSlotResolverRegistry } from './variables/record-slot-resolvers';
 import { resolveAnalyzedVariablesBatch, resolveAnalyzedVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
+  private recordSlotResolverDisposers: Array<() => void> = [];
+
   async afterAdd() {}
 
   async beforeLoad() {
@@ -52,6 +56,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
+    this.disposeRecordSlotResolvers();
+    const registry = getRecordSlotResolverRegistry(this.app);
+    this.recordSlotResolverDisposers = createBuiltInRecordSlotResolvers().map((resolver) =>
+      registry.register(resolver),
+    );
     registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
@@ -227,9 +236,18 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async afterEnable() {}
 
-  async afterDisable() {}
+  async afterDisable() {
+    this.disposeRecordSlotResolvers();
+  }
 
-  async remove() {}
+  async remove() {
+    this.disposeRecordSlotResolvers();
+  }
+
+  private disposeRecordSlotResolvers() {
+    this.recordSlotResolverDisposers.forEach((dispose) => dispose());
+    this.recordSlotResolverDisposers = [];
+  }
 }
 
 export default PluginFlowEngineServer;
