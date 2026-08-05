@@ -16,6 +16,10 @@ import { createFormItemRecordSlotResolvers } from '../variables/form-item-record
 import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
 import { createNestedRecordSlotResolver, getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { variables } from '../variables/registry';
+import {
+  MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES,
+  MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH,
+} from '../variables/runjs-variable-dependencies';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 type FakeCtxOptions = {
@@ -534,6 +538,24 @@ describe('variables:resolve allow-list authorization', () => {
     ['dynamic argument', `const path = 'ctx.popup.record.name'; await ctx.getVar(path);`],
     ['shadowed ctx', `(ctx) => ctx.getVar('ctx.popup.record.name');`],
     ['plain string', `const text = "ctx.getVar('ctx.popup.record.name')";`],
+    ['multiple paths', `await ctx.getVar('ctx.user.id || ctx.popup.record.name');`],
+    ['placeholder injection', `await ctx.getVar('ctx.user.id }} {{ ctx.popup.record.name');`],
+    ['ctx rewrite', `ctx.getVar = () => {}; ctx.getVar('ctx.popup.record.name');`],
+    [
+      'indirect ctx rewrite',
+      `Object.defineProperty(ctx, 'getVar', { value: () => {} }); ctx.getVar('ctx.popup.record.name');`,
+    ],
+    ['ctx alias rewrite', `const alias = ctx; alias.getVar = () => {}; ctx.getVar('ctx.popup.record.name');`],
+    [
+      'destructured ctx alias rewrite',
+      `const [alias] = [ctx]; alias.getVar = () => {}; ctx.getVar('ctx.popup.record.name');`,
+    ],
+    [
+      'constructor ctx escape',
+      `class Mutator { constructor(target) { target.getVar = () => {}; } } new Mutator(ctx); ctx.getVar('ctx.popup.record.name');`,
+    ],
+    ['dynamic with scope', `with ({ ctx: { getVar() {} } }) ctx.getVar('ctx.popup.record.name');`],
+    ['later ctx parameter', `function f(value = ctx.getVar('ctx.popup.record.name'), ctx) {}`],
   ])('does not authorize persisted RunJS with a %s', async (_title, code) => {
     const session = createTokenSession();
     const modelUid = `runjs-denied-${Buffer.from(code).toString('hex').slice(0, 12)}`;
@@ -541,6 +563,73 @@ describe('variables:resolve allow-list authorization', () => {
       token: session.token,
       models: { [modelUid]: createJsBlockModel(modelUid, code) },
     });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.name }}',
+      contextParams: {
+        'popup.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'member' },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+  });
+
+  it('does not authorize Handlebars-looking text inside v2 RunJS code', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-v2-template-text';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createJsBlockModel(
+          modelUid,
+          `// {{ ctx.user.password }}\nconst marker = '{{ ctx.popup.record.name }}';`,
+        ),
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.name }}',
+      contextParams: {
+        'popup.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'member' },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+  });
+
+  it('does not authorize Handlebars-looking comments inside v1 RunJS code', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-v1-comment-text';
+    const model = createJsBlockModel(modelUid, `// {{ ctx.popup.record.name }}\nreturn 1;`);
+    model.options.stepParams.jsSettings.runJs.version = 'v1';
+    const ctx = createFakeCtx({ token: session.token, models: { [modelUid]: model } });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.name }}',
+      contextParams: {
+        'popup.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'member' },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+  });
+
+  it('does not treat an unrelated code/version object as persisted RunJS', async () => {
+    const session = createTokenSession();
+    const modelUid = 'unrelated-code-object';
+    const model = createFlowModel(modelUid, {});
+    Object.defineProperty(model, 'options', {
+      value: {
+        metadata: {
+          code: `await ctx.getVar('ctx.popup.record.name');`,
+          version: 'v2',
+        },
+      },
+    });
+    const ctx = createFakeCtx({ token: session.token, models: { [modelUid]: model } });
 
     const result = await authorizeVariablesResolve(ctx, {
       rd: session.rd(modelUid),
@@ -725,14 +814,16 @@ describe('variables:resolve allow-list authorization', () => {
     const session = createTokenSession();
     const modelUid = 'throwing-model-analysis';
     const model = createFlowModel(modelUid, {});
-    model.props = new Proxy(
-      {},
-      {
-        ownKeys: () => {
-          throw new TypeError('untrusted flow model');
+    Object.defineProperty(model, 'options', {
+      value: new Proxy(
+        {},
+        {
+          ownKeys: () => {
+            throw new TypeError('untrusted flow model');
+          },
         },
-      },
-    );
+      ),
+    });
     const ctx = createFakeCtx({
       token: session.token,
       models: { [modelUid]: model },
@@ -741,6 +832,50 @@ describe('variables:resolve allow-list authorization', () => {
     const result = await authorizeVariablesResolve(ctx, {
       rd: session.rd(modelUid),
       template: '{{ctx.user.id}}',
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.policy.allowedPaths.size).toBe(0);
+  });
+
+  it('uses an empty allow-list when flow model options exceed the preparation limit', async () => {
+    const session = createTokenSession();
+    const modelUid = 'oversized-model-options';
+    const model = createFlowModel(modelUid, '{{ ctx.user.id }}');
+    Object.defineProperty(model, 'options', {
+      value: {
+        allowed: '{{ ctx.user.id }}',
+        ...Object.fromEntries(
+          Array.from({ length: MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES }, (_, index) => [`node${index}`, index]),
+        ),
+      },
+    });
+    const ctx = createFakeCtx({ token: session.token, models: { [modelUid]: model } });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.user.id }}',
+    });
+
+    expect(result.allowed).toBe(false);
+    expect(result.policy.allowedPaths.size).toBe(0);
+  });
+
+  it('uses an empty allow-list when flow model text exceeds the preparation limit', async () => {
+    const session = createTokenSession();
+    const modelUid = 'oversized-model-text';
+    const model = createFlowModel(modelUid, '{{ ctx.user.id }}');
+    Object.defineProperty(model, 'options', {
+      value: {
+        allowed: '{{ ctx.user.id }}',
+        oversized: 'x'.repeat(MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH + 1),
+      },
+    });
+    const ctx = createFakeCtx({ token: session.token, models: { [modelUid]: model } });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.user.id }}',
     });
 
     expect(result.allowed).toBe(false);
