@@ -129,9 +129,17 @@ describe('multiple apps', () => {
     ['application name', '3child', {}],
     ['application name', '_child', {}],
     ['application name', 'child-3', {}],
-    ['database name', 'child_app', { database: { database: 'child-3' } }],
-    ['schema', 'child_app', { database: { schema: 'child-3' } }],
-    ['table prefix', 'child_app', { database: { tablePrefix: 'child-3' } }],
+    ['new database name', 'child_app', { dbConnType: 'new_database', database: { database: 'child-3' } }],
+    ['new database table prefix', 'child_app', { dbConnType: 'new_database', database: { tablePrefix: 'child-3' } }],
+    ['new schema', 'child_app', { dbConnType: 'new_schema', database: { schema: 'child-3' } }],
+    ['new schema table prefix', 'child_app', { dbConnType: 'new_schema', database: { tablePrefix: 'child-3' } }],
+    ['new connection database name', 'child_app', { dbConnType: 'new_connection', database: { database: 'child-3' } }],
+    ['new connection schema', 'child_app', { dbConnType: 'new_connection', database: { schema: 'child-3' } }],
+    [
+      'new connection table prefix',
+      'child_app',
+      { dbConnType: 'new_connection', database: { tablePrefix: 'child-3' } },
+    ],
   ])('should reject an invalid %s before persisting the application', async (_, name, options) => {
     await expect(
       db.getRepository('applications').create({

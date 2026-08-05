@@ -44,14 +44,19 @@ function validateDatabaseIdentifiers(
     schema?: unknown;
     tablePrefix?: unknown;
   } = {},
+  dbConnType: unknown,
   message: string,
 ) {
   const { dialect, database, schema, tablePrefix } = databaseOptions;
 
-  if (dialect !== 'sqlite') {
+  if (dbConnType === 'new_schema') {
+    validateDatabaseIdentifier(schema, message);
+  } else if (dbConnType === 'new_connection') {
+    validateDatabaseIdentifier(database, message);
+    validateDatabaseIdentifier(schema, message);
+  } else if (dialect !== 'sqlite') {
     validateDatabaseIdentifier(database, message);
   }
-  validateDatabaseIdentifier(schema, message);
   validateDatabaseIdentifier(tablePrefix, message);
 }
 
@@ -207,7 +212,7 @@ export class PluginMultiAppManagerServer extends Plugin {
         INVALID_DATABASE_IDENTIFIER_MESSAGE;
 
       validateDatabaseIdentifier(appName, message);
-      validateDatabaseIdentifiers(appOptions.database, message);
+      validateDatabaseIdentifiers(appOptions.database, appOptions.dbConnType, message);
     });
 
     // after application created
