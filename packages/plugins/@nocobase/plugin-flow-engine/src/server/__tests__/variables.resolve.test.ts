@@ -480,7 +480,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(rolesFind).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps item associations unresolved without an owning resolver', async () => {
+  it('resolves item associations from the persisted association field chain', async () => {
     const flowModelUid = 'item-confirmed-association-slots';
     const session = createTokenSession(1);
     const template = {
@@ -502,7 +502,9 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       { currentRole: 'root', currentRoles: ['root'], token: session.token },
     );
 
-    expect(response.body).toEqual(template);
+    expect(response.body).toEqual({ role: expect.any(String), user: expect.any(String) });
+    expect(response.body.role).not.toBe(template.role);
+    expect(response.body.user).not.toBe(template.user);
   });
 
   it('rejects a member view association slot move before any target-record lookup', async () => {

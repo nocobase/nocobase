@@ -243,6 +243,52 @@ describe('RecordPickerFieldModel item context', () => {
     expect(associationOpts.serverOnlyWhenContextParams).toBe(true);
   });
 
+  it('builds whole-association descriptors for current and recursive parent item values', async () => {
+    const people = {
+      name: 'people',
+      dataSourceKey: 'main',
+      filterTargetKey: 'id',
+      getFields: () => [],
+      getField: () => undefined,
+    } as any;
+    const owner = {
+      name: 'owner',
+      target: 'people',
+      targetCollection: people,
+      isAssociationField: () => true,
+    } as any;
+    const collection = {
+      name: 'tasks',
+      dataSourceKey: 'main',
+      getFields: () => [owner],
+      getField: (name: string) => (name === 'owner' ? owner : undefined),
+    } as any;
+    const options = createAssociationItemChainContextPropertyOptions({
+      t: (value) => value,
+      title: 'Current item',
+      collectionAccessor: () => collection,
+      propertiesAccessor: (ctx) => ctx.item.value,
+      resolverPropertiesAccessor: () => ({ owner: { id: 7 } }),
+      parentCollectionAccessor: () => collection,
+      parentAccessors: {
+        parentPropertiesAccessor: () => ({ owner: { id: 8 } }),
+        parentItemMetaAccessor: () => undefined,
+        parentItemResolverAccessor: () => undefined,
+      },
+    });
+    const meta = await options.meta();
+    const params = await meta.buildVariablesParams({
+      item: { value: { owner: { id: 7 } }, parentItem: { value: { owner: { id: 8 } } } },
+    });
+
+    expect(params).toEqual({
+      parentItem: { value: { owner: { collection: 'people', dataSourceKey: 'main', filterByTk: 8 } } },
+      value: { owner: { collection: 'people', dataSourceKey: 'main', filterByTk: 7 } },
+    });
+    expect(options.resolveOnServer('value.owner.name')).toBe(true);
+    expect(options.resolveOnServer('parentItem.value.owner.name')).toBe(true);
+  });
+
   it('disables current item attributes for select-record popup item context', async () => {
     const parentCtx = new FlowContext();
     const departmentsCollection = {

@@ -321,6 +321,11 @@ function resolveFlowModelUidFromRequestRd(ctx: ResourcerContext, rd?: string | n
   return flowModelUid;
 }
 
+export async function resolveFlowModelNodeFromRequestRd(ctx: ResourcerContext, rd?: string | number) {
+  const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, rd);
+  return flowModelUid ? getFlowModelNode(ctx, flowModelUid) : null;
+}
+
 function createPolicy(
   allowAll = false,
   allowedPaths: ReadonlySet<string> = new Set(),
@@ -429,7 +434,15 @@ export async function authorizeVariablesResolve(
     );
     bindingPlan = await createRecordBindingPlan(ctx, contextParams, analysis.usage, recordSlotPolicies);
     return recordBindingPlanAllowed(bindingPlan)
-      ? { allowed: true, analysis, bindingPlan, contextParams: bindingPlan.contextParams, policy, recordSlotPolicies }
+      ? {
+          allowed: true,
+          analysis,
+          bindingPlan,
+          contextParams: bindingPlan.contextParams,
+          ...(currentNode ? { flowModelUid: currentNode.uid } : {}),
+          policy,
+          recordSlotPolicies,
+        }
       : denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
   }
 

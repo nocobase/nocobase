@@ -31,7 +31,12 @@ export { defineAction } from './flow-definitions';
 export { isInheritedFrom } from './inheritance';
 
 // 参数解析器
-export { resolveCreateModelOptions, resolveDefaultParams, resolveExpressions } from './params-resolvers';
+export {
+  buildFlowModelResolveDescriptor,
+  resolveCreateModelOptions,
+  resolveDefaultParams,
+  resolveExpressions,
+} from './params-resolvers';
 
 // Schema 工具
 export {

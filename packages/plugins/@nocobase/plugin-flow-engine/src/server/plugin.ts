@@ -17,9 +17,14 @@ import { JSONValue } from './template/resolver';
 import type { AnalyzedTemplate, ResolvePathPolicy } from './template/variable-expression';
 import { authorizeVariablesResolve } from './variables/allow-list';
 import type { RecordBindingPlan } from './variables/record-bindings';
+import { createFormItemRecordSlotResolvers } from './variables/form-item-record-slot-resolvers';
 import { createBuiltInRecordSlotResolvers } from './variables/record-slot-policy';
 import { getRecordSlotResolverRegistry } from './variables/record-slot-resolvers';
-import { resolveAnalyzedVariablesBatch, resolveAnalyzedVariablesTemplate } from './variables/resolve';
+import {
+  resolveAnalyzedVariablesBatch,
+  resolveAnalyzedVariablesTemplate,
+  resolveFlowModelVariablesTemplate,
+} from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private recordSlotResolverDisposers: Array<() => void> = [];
@@ -53,6 +58,14 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     }
 
     return await cm.db.runSQL(sql, options);
+  }
+
+  async resolveFlowModelVariablesTemplate(
+    ctx: ResourcerContext,
+    options: { contextParams?: Record<string, unknown>; rd?: string | number; template: JSONValue },
+  ) {
+    this.ensureRecordSlotResolvers(ctx.app);
+    return await resolveFlowModelVariablesTemplate(ctx, options);
   }
 
   async load() {
@@ -256,7 +269,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   private ensureRecordSlotResolvers(app: Application) {
     const registry = getRecordSlotResolverRegistry(app);
-    for (const resolver of createBuiltInRecordSlotResolvers()) {
+    for (const resolver of [...createBuiltInRecordSlotResolvers(), ...createFormItemRecordSlotResolvers()]) {
       if (!registry.has(resolver.owner, resolver.id)) {
         this.recordSlotResolverDisposers.push(registry.register(resolver));
       }

@@ -14,7 +14,7 @@ import { NoPermissionError } from '@nocobase/acl';
 import { applyQueryPermission } from '@nocobase/plugin-acl';
 import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
-import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
+import PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 
 const getQueryDatabase = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
@@ -69,12 +69,23 @@ export const queryData = async (ctx: Context, next: Next) => {
 };
 
 export const parseVariables = async (ctx: Context, next: Next) => {
-  const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
+  const { mode, contextParams, rd, ...values } = ctx.action.params.values as QueryParams;
   if (mode !== 'sql') {
-    const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {});
+    const resolvedValues = await (
+      ctx.app.pm.get('flow-engine') as PluginFlowEngineServer
+    ).resolveFlowModelVariablesTemplate(ctx, {
+      contextParams,
+      rd,
+      template: values,
+    });
+    if (!resolvedValues) {
+      ctx.body = [];
+      return;
+    }
     ctx.action.params.values = {
-      ...ctx.action.params.values,
-      ...(resolvedValues as Record<string, any>),
+      mode,
+      ...values,
+      ...(resolvedValues as Record<string, unknown>),
     };
   }
 
@@ -87,26 +98,29 @@ export const parseVariables = async (ctx: Context, next: Next) => {
 };
 
 export const cacheMiddleware = async (ctx: Context, next: Next) => {
-  const { uid, cache: cacheConfig, refresh } = ctx.action.params.values as QueryParams;
-  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
+  const { uid, cache: cacheConfig, refresh, ...query } = ctx.action.params.values as QueryParams;
   const useCache = cacheConfig?.enabled && uid;
+  if (!useCache) {
+    await next();
+    return;
+  }
+  const cache = ctx.app.cacheManager.getCache('data-visualization') as Cache;
+  const cacheKey = JSON.stringify([uid, query]);
 
-  if (useCache && !refresh) {
-    const data = await cache.get(uid);
+  if (!refresh) {
+    const data = await cache.get(cacheKey);
     if (data) {
       ctx.body = data;
       return;
     }
   }
   await next();
-  if (useCache) {
-    await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
-  }
+  await cache.set(cacheKey, ctx.body, cacheConfig?.ttl * 1000);
 };
 
 export const queryDataAction = async (ctx: Context, next: Next) => {
   try {
-    await compose([checkPermission, cacheMiddleware, parseVariables, queryData])(ctx, next);
+    await compose([checkPermission, parseVariables, cacheMiddleware, queryData])(ctx, next);
   } catch (err) {
     ctx.throw(500, err);
   }

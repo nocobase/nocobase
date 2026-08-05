@@ -34,16 +34,16 @@ describe('variables:resolve persisted Form provider tree', () => {
 
   const formModel = (uid: string, template: unknown, configuredFields: FieldConfig[]) => ({
     uid,
-    use: 'EditFormModel',
+    use: 'CustomFormWithRecordProvider',
     stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
     subModels: {
       grid: {
         uid: `${uid}-grid`,
-        use: 'FormGridModel',
+        use: 'CustomFormGrid',
         subModels: {
           items: configuredFields.map((field, index) => ({
             uid: `${uid}-field-${index}`,
-            use: 'FormItemModel',
+            use: 'CustomFormField',
             stepParams: { fieldSettings: { init: typeof field === 'string' ? { fieldPath: field } : field } },
           })),
         },
@@ -105,6 +105,7 @@ describe('variables:resolve persisted Form provider tree', () => {
   it('resolves parent and child exact slots through the single action with one query per provider', async () => {
     const uid = 'provider-tree-single';
     const template = {
+      wholeRole: '{{ ctx.formValues.roles }}',
       role: '{{ ctx.formValues.roles.name }}',
       user: '{{ ctx.formValues.roles.users.nickname }}',
     };
@@ -122,9 +123,13 @@ describe('variables:resolve persisted Form provider tree', () => {
         template,
       });
 
-      expect(response).toEqual({ role: 'root', user: childNickname });
+      expect(response).toEqual({
+        wholeRole: expect.objectContaining({ name: 'root' }),
+        role: 'root',
+        user: childNickname,
+      });
       expect(rolesFindOne).toHaveBeenCalledTimes(1);
-      expect(rolesFindOne).toHaveBeenCalledWith(expect.objectContaining({ appends: ['users'] }));
+      expect(rolesFindOne).toHaveBeenCalledWith({ filterByTk: 'root' });
       expect(usersFindOne).toHaveBeenCalledTimes(1);
     } finally {
       rolesFindOne.mockRestore();

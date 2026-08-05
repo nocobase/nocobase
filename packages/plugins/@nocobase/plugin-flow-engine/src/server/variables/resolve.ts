@@ -11,7 +11,11 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { GlobalContext, HttpRequestContext } from '../template/contexts';
 import { type AnalyzedTemplate, type ResolvePathPolicy } from '../template/variable-expression';
 import { JSONValue, resolveAnalyzedJsonTemplate } from '../template/resolver';
-import { analyzeVariableTemplateSafely } from './allow-list';
+import {
+  analyzeVariableTemplateSafely,
+  authorizeVariablesResolve,
+  resolveFlowModelNodeFromRequestRd,
+} from './allow-list';
 import { planRecordBindings, type RecordBindingPlan } from './record-bindings';
 import { variables } from './registry';
 import { compileRecordSlotPolicies } from './record-slot-policy';
@@ -53,6 +57,28 @@ export async function resolveVariablesTemplate(
   if (!result.ok) return template;
   const bindingPlan = await createRequestBoundRecordBindingPlan(ctx, result.analysis, contextParams);
   return resolveAnalyzedVariablesTemplate(ctx, result.analysis, REQUEST_BOUND_RESOLVE_POLICY, bindingPlan);
+}
+
+export async function resolveFlowModelVariablesTemplate(
+  ctx: ResourcerContext,
+  options: {
+    contextParams?: Record<string, unknown>;
+    rd?: string | number;
+    template: JSONValue;
+  },
+) {
+  if (!(await resolveFlowModelNodeFromRequestRd(ctx, options.rd))) return;
+  const authorization = await authorizeVariablesResolve(ctx, options);
+  if (!authorization.allowed || !authorization.flowModelUid) return;
+  const resolved = await resolveAnalyzedVariablesTemplate(
+    ctx,
+    authorization.analysis,
+    authorization.policy,
+    authorization.bindingPlan,
+  );
+  const remaining = analyzeVariableTemplateSafely(resolved, { mode: 'untrusted-request' });
+  if (!remaining.ok || remaining.analysis.paths.length) return;
+  return resolved;
 }
 
 async function createRequestBoundRecordBindingPlan(

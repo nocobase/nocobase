@@ -8,14 +8,12 @@
  */
 
 import type { Application } from '@nocobase/server';
-import FlowModelRepository from '../repository';
 import type { AnalyzedTemplate } from '../template/variable-expression';
 import {
   getRecordSlotResolverRegistry,
   type RecordSlotResolved,
   type RecordSlotResolverInput,
   type RecordSlotResolverRegistration,
-  type RecordSlotResolverResult,
 } from './record-slot-resolvers';
 
 export type RecordSlotPolicy = RecordSlotResolved;
@@ -30,8 +28,6 @@ export type CompileRecordSlotPoliciesOptions = Omit<RecordSlotResolverInput, 'pa
 
 type FlowModelOptions = Readonly<{
   stepParams?: unknown;
-  subModels?: unknown;
-  use?: unknown;
 }>;
 
 type ResourceTarget = Readonly<{
@@ -45,15 +41,6 @@ type FixedResourceTarget = Readonly<{
   dataSourceKey: string;
   kind: 'fixed';
 }>;
-
-const FORM_USES = new Set([
-  'CreateFormModel',
-  'EditFormModel',
-  'FormBlockModel',
-  'FormModel',
-  'PopupSubTableFormModel',
-]);
-const FORM_RECORD_USES = new Set(['EditFormModel', 'PopupSubTableFormModel']);
 
 function resolved(slot: readonly (string | number)[]) {
   return { status: 'resolved' as const, slot };
@@ -110,29 +97,6 @@ async function resolveNearestResourceTarget(input: RecordSlotResolverInput) {
   return undefined;
 }
 
-function getSubModel(options: FlowModelOptions, name: string): unknown {
-  return isObject(options.subModels) ? options.subModels[name] : undefined;
-}
-
-function getFormItems(form: FlowModelOptions): readonly FlowModelOptions[] {
-  const grid = getModelOptions(getSubModel(form, 'grid'));
-  const items = grid && getSubModel(grid, 'items');
-  return Array.isArray(items) ? items.map(getModelOptions).filter((item): item is FlowModelOptions => !!item) : [];
-}
-
-function getFormFieldPath(item: FlowModelOptions) {
-  const init = getStepInit(item, 'fieldSettings');
-  const fieldPath = typeof init?.fieldPath === 'string' ? init.fieldPath.trim() : '';
-  const associationPath = typeof init?.associationPathName === 'string' ? init.associationPathName.trim() : '';
-  return associationPath && fieldPath && !fieldPath.includes('.')
-    ? `${associationPath}.${fieldPath}`
-    : fieldPath || undefined;
-}
-
-function pathStartsWith(path: readonly (string | number)[], prefix: readonly string[]) {
-  return prefix.length <= path.length && prefix.every((segment, index) => path[index] === segment);
-}
-
 function callMethod(target: unknown, name: string, ...args: unknown[]) {
   if (!isObject(target) || typeof target[name] !== 'function') return undefined;
   return (target[name] as (...methodArgs: unknown[]) => unknown).apply(target, args);
@@ -176,48 +140,6 @@ function resolveAssociationTarget(
   return undefined;
 }
 
-async function loadFormModel(input: RecordSlotResolverInput, node: unknown) {
-  const options = getModelOptions(node);
-  if (options && getFormItems(options).length) return options;
-  const uid = isObject(node) && typeof node.uid === 'string' ? node.uid : undefined;
-  if (!uid || !input.ctx) return options;
-  const repository = input.ctx.db.getCollection('flowModels').repository as FlowModelRepository;
-  return getModelOptions(await repository.findModelById(uid, { includeAsyncNode: true }));
-}
-
-async function resolveFormValues(input: RecordSlotResolverInput): Promise<RecordSlotResolverResult> {
-  const owner = (await getLineage(input)).find((node) => FORM_USES.has(String(getModelOptions(node)?.use || '')));
-  const ownerOptions = getModelOptions(owner);
-  const resource = ownerOptions && getResourceTarget(ownerOptions);
-  const fixedResource = resource && toFixedTarget(input, resource);
-  if (!owner || !ownerOptions || !fixedResource) return { status: 'abstain' };
-
-  const form = await loadFormModel(input, owner);
-  if (!form) return { status: 'deny' };
-  let configured: { fieldPath: string; slot: string[] } | undefined;
-  for (const item of getFormItems(form)) {
-    const fieldPath = getFormFieldPath(item);
-    const slot = fieldPath?.split('.').filter(Boolean);
-    if (!fieldPath || !slot?.length || !pathStartsWith(input.path.runtimeSegments, slot)) continue;
-    if (!configured || slot.length > configured.slot.length) configured = { fieldPath, slot };
-  }
-  if (configured) {
-    const target = resolveAssociationTarget(input, fixedResource, configured.fieldPath);
-    return target ? resolved(configured.slot) : { status: 'deny' };
-  }
-
-  const top = input.path.runtimeSegments[0];
-  const collection = input.getCollection?.(fixedResource.dataSourceKey, fixedResource.collection);
-  if (
-    typeof top === 'string' &&
-    FORM_RECORD_USES.has(String(ownerOptions.use || '')) &&
-    callMethod(collection, 'getField', top)
-  ) {
-    return resolved([]);
-  }
-  return { status: 'abstain' };
-}
-
 export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverRegistration[] {
   return [
     ...['record', 'responseRecord', 'clickedRowRecord'].map(
@@ -252,13 +174,6 @@ export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverR
         while (path.runtimeSegments[index] === 'parent') index += 1;
         return resolved(path.runtimeSegments.slice(0, index + 1));
       },
-    },
-    {
-      owner: '@nocobase/plugin-flow-engine',
-      id: 'form:values',
-      match: (path) => path.varName === 'formValues',
-      needsAncestors: true,
-      resolve: resolveFormValues,
     },
   ];
 }

@@ -9,7 +9,9 @@
 
 import type { Application } from '@nocobase/server';
 import { describe, expect, it } from 'vitest';
+import PluginFlowEngineServer from '../plugin';
 import { analyzeVariableTemplate } from '../template/variable-expression';
+import { createFormItemRecordSlotResolvers } from '../variables/form-item-record-slot-resolvers';
 import {
   createBuiltInRecordSlotResolvers,
   createFlowModelVariableContract,
@@ -28,7 +30,9 @@ function createApp(): Application {
 
 function installBuiltIns(app: Application) {
   const registry = getRecordSlotResolverRegistry(app);
-  const disposers = createBuiltInRecordSlotResolvers().map((resolver) => registry.register(resolver));
+  const disposers = [...createBuiltInRecordSlotResolvers(), ...createFormItemRecordSlotResolvers()].map((resolver) =>
+    registry.register(resolver),
+  );
   return () => disposers.forEach((dispose) => dispose());
 }
 
@@ -108,7 +112,7 @@ describe('record slot policy compiler', () => {
     const contract = await compile(
       app,
       {
-        use: 'EditFormModel',
+        use: 'CustomPersistedForm',
         stepParams: {
           resourceSettings: {
             init: { associationName: 'users.roles', collectionName: 'users', dataSourceKey: 'main' },
@@ -136,6 +140,139 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.permissions.name }}')?.slot).toEqual(['permissions']);
   });
 
+  it('derives item and parent item slots from association field provenance', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const permissions = { name: 'permissions' };
+    const roles = {
+      name: 'roles',
+      getField: (name: string) =>
+        name === 'permissions'
+          ? { isAssociationField: () => true, targetCollection: permissions }
+          : name === 'title'
+            ? {}
+            : undefined,
+    };
+    const users = {
+      name: 'users',
+      getField: (name: string) =>
+        name === 'roles' ? { isAssociationField: () => true, targetCollection: roles } : undefined,
+    };
+    const currentNode = {
+      use: 'CustomAssociationField',
+      stepParams: {
+        fieldSettings: { init: { collectionName: 'users', dataSourceKey: 'main', fieldPath: 'roles' } },
+      },
+      props: [
+        '{{ ctx.item.value.permissions }}',
+        '{{ ctx.item.value.permissions.name }}',
+        '{{ ctx.item.parentItem.value.roles.title }}',
+        '{{ ctx.item.value.title }}',
+      ],
+    };
+    const contract = await compile(app, currentNode, {
+      getCollection: (_dataSourceKey, collection) => {
+        if (collection === 'users') return users;
+        if (collection === 'roles') return roles;
+        return permissions;
+      },
+      loadAncestors: async () => [],
+    });
+
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.value.permissions.name }}')?.slot).toEqual([
+      'value',
+      'permissions',
+    ]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.value.permissions }}')?.slot).toEqual(['value', 'permissions']);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.parentItem.value.roles.title }}')?.slot).toEqual([
+      'parentItem',
+      'value',
+      'roles',
+    ]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.value.title }}')).toBeUndefined();
+  });
+
+  it('keeps configured scalars and JSON values out of Form Record slots', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const collection = {
+      getField: (name: string) => {
+        if (name === 'status') return { type: 'string' };
+        if (name === 'payload') return { type: 'json' };
+        if (name === 'unconfigured') return { type: 'string' };
+        return undefined;
+      },
+    };
+    const contract = await compile(
+      app,
+      {
+        use: 'CustomForm',
+        stepParams: { resourceSettings: { init: { collectionName: 'orders', dataSourceKey: 'main' } } },
+        subModels: {
+          grid: {
+            use: 'CustomGrid',
+            subModels: {
+              items: [
+                {
+                  use: 'CustomField',
+                  stepParams: {
+                    fieldSettings: { init: { collectionName: 'orders', dataSourceKey: 'main', fieldPath: 'status' } },
+                  },
+                },
+              ],
+            },
+          },
+        },
+        props: [
+          '{{ ctx.formValues.status }}',
+          '{{ ctx.formValues.payload.value }}',
+          '{{ ctx.formValues.unconfigured }}',
+        ],
+      },
+      { getCollection: () => collection },
+    );
+
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.status }}')).toBeUndefined();
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.payload.value }}')).toBeUndefined();
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.unconfigured }}')?.slot).toEqual([]);
+  });
+
+  it('fails closed when an item parent collection has ambiguous provenance', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const targets: Record<string, string> = { lines: 'lines', owner: 'people', tasks: 'tasks' };
+    const collections: Record<string, { name: string; getField: (fieldName: string) => unknown }> = {};
+    for (const name of ['lines', 'people', 'projects', 'tasks', 'users']) {
+      collections[name] = {
+        name,
+        getField: (fieldName) => {
+          const target = targets[fieldName];
+          return target ? { isAssociationField: () => true, targetCollection: collections[target] } : undefined;
+        },
+      };
+    }
+    const current = {
+      subKey: 'grid',
+      stepParams: { fieldSettings: { init: { collectionName: 'tasks', fieldPath: 'lines' } } },
+      props: '{{ ctx.item.value.owner.name }}',
+    };
+    const contract = await compile(app, current, {
+      getCollection: (_dataSourceKey, name) => collections[name],
+      loadAncestors: async () => [
+        {
+          stepParams: { fieldSettings: { init: { collectionName: 'users', fieldPath: 'tasks' } } },
+          subKey: 'grid',
+        },
+        {
+          stepParams: { fieldSettings: { init: { collectionName: 'projects', fieldPath: 'tasks' } } },
+          subKey: 'grid',
+        },
+      ],
+    });
+
+    expect(getPolicy(contract.recordSlots, '{{ ctx.item.value.owner.name }}')).toBeUndefined();
+  });
+
   it('does not compile fixed slots when the plugin registrations are absent or disposed', async () => {
     const app = createApp();
     const model = {
@@ -153,6 +290,28 @@ describe('record slot policy compiler', () => {
     const disposeReloaded = installBuiltIns(app);
     expect((await compile(app, model, options)).recordSlots.size).toBe(1);
     disposeReloaded();
+  });
+
+  it('disposes Form and item registrations across the plugin lifecycle', async () => {
+    const app = createApp();
+    const plugin = Object.create(PluginFlowEngineServer.prototype) as PluginFlowEngineServer;
+    Object.defineProperties(plugin, {
+      app: { value: app },
+      recordSlotResolverDisposers: { configurable: true, value: [], writable: true },
+    });
+    const lifecycle = plugin as unknown as { registerRecordSlotResolvers: () => void };
+    const registry = getRecordSlotResolverRegistry(app);
+
+    lifecycle.registerRecordSlotResolvers();
+    expect(registry.has('@nocobase/plugin-flow-engine', 'form:values')).toBe(true);
+    expect(registry.has('@nocobase/plugin-flow-engine', 'form:item')).toBe(true);
+
+    await plugin.afterDisable();
+    expect(registry.has('@nocobase/plugin-flow-engine', 'form:values')).toBe(false);
+    await plugin.afterEnable();
+    expect(registry.has('@nocobase/plugin-flow-engine', 'form:item')).toBe(true);
+    await plugin.remove();
+    expect(registry.has('@nocobase/plugin-flow-engine', 'form:item')).toBe(false);
   });
 
   it('materializes nested Record only for a server-registered variable', async () => {

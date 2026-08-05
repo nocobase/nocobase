@@ -12,6 +12,7 @@ import { generateFlowModelRd } from '@nocobase/utils';
 import { vi } from 'vitest';
 import type { VariablePathRef } from '../template/variable-expression';
 import { authorizeVariablesResolve } from '../variables/allow-list';
+import { createFormItemRecordSlotResolvers } from '../variables/form-item-record-slot-resolvers';
 import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
 import { createNestedRecordSlotResolver, getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { variables } from '../variables/registry';
@@ -46,6 +47,8 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
       {
         isAssociationField: () => kind === 'association',
         isRelationField: () => kind === 'association',
+        target: `${name}Target`,
+        targetCollection: { dataSourceKey: 'main', name: `${name}Target` },
       },
     ]),
   );
@@ -95,7 +98,9 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
     },
   } as unknown as ResourcerContext;
   const registry = getRecordSlotResolverRegistry(ctx.app);
-  createBuiltInRecordSlotResolvers().forEach((resolver) => registry.register(resolver));
+  [...createBuiltInRecordSlotResolvers(), ...createFormItemRecordSlotResolvers()].forEach((resolver) =>
+    registry.register(resolver),
+  );
   return ctx;
 }
 
@@ -127,14 +132,20 @@ function createEditFormModel(uid: string, template: unknown, configuredFields: s
           init: { dataSourceKey: 'main', collectionName: 'users' },
         },
       },
-      configuredFields: configuredFields.map((fieldPath, index) => ({
-        uid: `${uid}-field-${index}`,
-        stepParams: {
-          fieldSettings: {
-            init: { fieldPath },
+      subModels: {
+        grid: {
+          subModels: {
+            items: configuredFields.map((fieldPath, index) => ({
+              uid: `${uid}-field-${index}`,
+              stepParams: {
+                fieldSettings: {
+                  init: { collectionName: 'users', dataSourceKey: 'main', fieldPath },
+                },
+              },
+            })),
           },
         },
-      })),
+      },
       props: template,
     },
     parentId: null,
@@ -391,7 +402,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(false);
   });
 
-  it('strips Form descriptors without an owning resolver while preserving path authorization', async () => {
+  it('binds persisted Form descriptors while stripping moved and unrelated descriptors', async () => {
     const session = createTokenSession();
     const modelUid = 'strict-descriptor-tolerance';
     const template = ['{{ ctx.formValues.status }}', '{{ ctx.formValues.department.name }}'];
@@ -406,7 +417,7 @@ describe('variables:resolve allow-list authorization', () => {
       template,
       contextParams: {
         formValues: { collection: 'users', filterByTk: 1 },
-        'formValues.department.name': { collection: 'roles', filterByTk: 2 },
+        'formValues.department': { collection: 'roles', filterByTk: 2 },
         'unrelated.record': { collection: 'roles', filterByTk: 3 },
       },
     });
@@ -414,7 +425,16 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.allowed).toBe(true);
     expect(result.contextParams).toEqual({});
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([]);
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'users', filterByTk: 1 }),
+        prefix: [],
+      }),
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'roles', filterByTk: 2 }),
+        prefix: ['department'],
+      }),
+    ]);
   });
 
   it('rejects missing, invalid, and model-external paths for ordinary roles', async () => {
@@ -792,7 +812,7 @@ describe('variables:resolve allow-list authorization', () => {
     ['member', { currentRole: 'member' }],
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('requires an owning Form resolver for the %s lane', async (_lane, roleOptions) => {
+  ] as const)('uses the persisted Form exact Slot with a dynamic target in the %s lane', async (_lane, roleOptions) => {
     const session = createTokenSession();
     const modelUid = `form-association-slot-${_lane}`;
     const model = createEditFormModel(modelUid, '{{ ctx.formValues.roles.title }}', ['roles']);
@@ -820,7 +840,12 @@ describe('variables:resolve allow-list authorization', () => {
     if (!attack.allowed) return;
     expect(attack.bindingPlan.bindings).toHaveLength(0);
     if (!legal.allowed) return;
-    expect(legal.bindingPlan.bindings).toHaveLength(0);
+    expect(legal.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'roles', filterByTk: 'root' }),
+        prefix: ['roles'],
+      }),
+    ]);
   });
 
   it('strips root descriptors without a registered Slot policy', async () => {
