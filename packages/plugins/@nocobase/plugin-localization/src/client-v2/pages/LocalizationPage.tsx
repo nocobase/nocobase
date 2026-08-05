@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import { Schema } from '@formily/react';
 import { languageCodes } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
-import { AIEmployeeShortcut, formatModelLabel } from '@nocobase/plugin-ai/client-v2';
+import { AIEmployeeShortcut, formatModelLabel, getGlobalChatBoxRuntime } from '@nocobase/plugin-ai/client-v2';
 import type { AIEmployee, Task } from '@nocobase/plugin-ai/client-v2';
 import { useRequest } from 'ahooks';
 import {
@@ -817,6 +817,7 @@ function LinaEmployee(props: { selectedRowKeys: React.Key[] }) {
     <AIEmployeeShortcut
       aiEmployee={lina}
       tasks={tasks}
+      runtime={getGlobalChatBoxRuntime()}
       size={32}
       mask={false}
       onTaskClick={(task) => createTask(task as LocalizationTask)}
