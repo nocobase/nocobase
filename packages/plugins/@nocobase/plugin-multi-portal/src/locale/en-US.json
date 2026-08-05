@@ -157,7 +157,9 @@
   "Full permissions": "Full permissions",
   "No access to this Portal": "No access to this Portal",
   "Please switch to a role that can access this Portal.": "Please switch to a role that can access this Portal.",
+  "Portal access will be checked again after switching.": "Portal access will be checked again after switching.",
   "Retry": "Retry",
+  "Select role": "Select role",
   "Switch role": "Switch role",
   "Unable to verify whether the current role can access this Portal.": "Unable to verify whether the current role can access this Portal."
 }

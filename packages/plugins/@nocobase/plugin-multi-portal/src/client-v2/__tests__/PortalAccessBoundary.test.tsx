@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App as AntdApp, ConfigProvider } from 'antd';
 import React from 'react';
 import { getPortalUserRoles, PortalAccessView, type PortalAccessViewProps } from '../PortalAccessBoundary';
+import zhCN from '../../locale/zh-CN.json';
 
 const translations: Record<string, string> = {
   Anonymous: 'Anonymous',
@@ -21,7 +22,9 @@ const translations: Record<string, string> = {
   'Full permissions': 'Full permissions',
   'No access to this Portal': 'No access to this Portal',
   'Please switch to a role that can access this Portal.': 'Please switch to a role that can access this Portal.',
+  'Portal access will be checked again after switching.': 'Portal access will be checked again after switching.',
   Retry: 'Retry',
+  'Select role': 'Select role',
   'Switch role': 'Switch role',
   'Unable to verify whether the current role can access this Portal.':
     'Unable to verify whether the current role can access this Portal.',
@@ -105,15 +108,32 @@ describe('PortalAccessView', () => {
 
   it('renders a full-page Portal denial with a direct role selector and without normal Layout content', () => {
     const { renderAllowed } = renderView();
+    const roleCard = screen.getByRole('region', { name: 'Switch role' });
 
     expect(screen.getByText('No access to this Portal')).toBeInTheDocument();
-    expect(screen.getByText('Current role')).toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: 'Switch role' })).toBeInTheDocument();
-    expect(screen.getByText('Admin')).toBeInTheDocument();
+    expect(within(roleCard).getByText('Current role')).toBeInTheDocument();
+    expect(within(roleCard).getByText('Select role')).toBeInTheDocument();
+    expect(within(roleCard).getByText('Portal access will be checked again after switching.')).toBeInTheDocument();
+    expect(within(roleCard).getByRole('combobox', { name: 'Switch role' })).toBeInTheDocument();
+    expect(within(roleCard).getAllByText('Admin')).not.toHaveLength(0);
     expect(screen.queryByText('Portal content')).not.toBeInTheDocument();
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(within(roleCard).queryByRole('button')).not.toBeInTheDocument();
     expect(renderAllowed).not.toHaveBeenCalled();
+  });
+
+  it('uses the Settings terminology for Portal access messages in Chinese', () => {
+    expect(zhCN['Checking Portal access']).toBe('正在检查门户访问权限');
+    expect(zhCN['Failed to check Portal access']).toBe('门户访问权限检查失败');
+    expect(zhCN['No access to this Portal']).toBe('无权访问此门户');
+    expect(zhCN['Please switch to a role that can access this Portal.']).toBe(
+      '当前角色没有访问权限，请切换角色后重试。',
+    );
+    expect(zhCN['Portal access will be checked again after switching.']).toBe('切换后将重新检查门户访问权限');
+    expect(zhCN['Unable to verify whether the current role can access this Portal.']).toBe(
+      '暂时无法确认当前角色是否有权访问此门户。',
+    );
   });
 
   it('adds the union role in allow-use-union mode and reloads after a successful switch', async () => {

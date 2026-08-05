@@ -150,14 +150,16 @@
   "Device": "设备",
   "No-code portals render with the components of this device; AI portals use it for grouping.": "无代码门户按此选择组件形态；AI 门户用它做归类。",
   "Anonymous": "匿名用户",
-  "Checking Portal access": "正在检查 Portal 访问权限",
+  "Checking Portal access": "正在检查门户访问权限",
   "Current role": "当前角色",
-  "Failed to check Portal access": "Portal 访问权限检查失败",
+  "Failed to check Portal access": "门户访问权限检查失败",
   "Failed to switch role": "切换角色失败",
   "Full permissions": "全部权限",
-  "No access to this Portal": "无权访问此 Portal",
-  "Please switch to a role that can access this Portal.": "请切换到有权访问此 Portal 的角色。",
+  "No access to this Portal": "无权访问此门户",
+  "Please switch to a role that can access this Portal.": "当前角色没有访问权限，请切换角色后重试。",
+  "Portal access will be checked again after switching.": "切换后将重新检查门户访问权限",
   "Retry": "重试",
+  "Select role": "选择角色",
   "Switch role": "切换角色",
-  "Unable to verify whether the current role can access this Portal.": "暂时无法确认当前角色是否有权访问此 Portal。"
+  "Unable to verify whether the current role can access this Portal.": "暂时无法确认当前角色是否有权访问此门户。"
 }

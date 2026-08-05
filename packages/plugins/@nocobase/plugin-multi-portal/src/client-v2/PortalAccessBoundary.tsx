@@ -14,7 +14,7 @@ import {
   type Application,
   type CurrentRoleOption,
 } from '@nocobase/client-v2';
-import { Alert, Button, Result, Select, Space, Spin, theme, Typography } from 'antd';
+import { Alert, Button, Card, Result, Select, Space, Spin, Tag, theme, Typography } from 'antd';
 import React, {
   createContext,
   useCallback,
@@ -88,6 +88,7 @@ type PortalDeniedRoleSwitcherProps = {
 
 export function PortalDeniedRoleSwitcher(props: PortalDeniedRoleSwitcherProps) {
   const { apiClient, denied, reload, t, userRoles } = props;
+  const { token } = theme.useToken();
   const roles = useMemo(() => getRoleOptions(denied, userRoles, t), [denied, t, userRoles]);
   const initialRole = getCurrentRole(denied, apiClient, roles);
   const [currentRole, setCurrentRole] = useState(initialRole);
@@ -121,28 +122,41 @@ export function PortalDeniedRoleSwitcher(props: PortalDeniedRoleSwitcherProps) {
   );
 
   const canSwitch = roles.length > 1 && denied.roleMode !== 'only-use-union';
-  const roleControl = canSwitch ? (
-    <Select
-      aria-label={t('Switch role')}
-      disabled={switching}
-      loading={switching}
-      onChange={handleRoleChange}
-      options={roles.map((role) => ({ label: role.title || role.name, value: role.name }))}
-      value={currentRole}
-      style={{ minWidth: 200 }}
-    />
-  ) : (
-    <Typography.Text strong>{getRoleLabel(currentRole, roles, t)}</Typography.Text>
-  );
-
   return (
-    <Space direction="vertical" size="middle" align="center">
-      <Space size="small" wrap>
-        <Typography.Text type="secondary">{t('Current role')}</Typography.Text>
-        {roleControl}
+    <Card
+      aria-label={t('Switch role')}
+      extra={
+        <Space size="small">
+          <Typography.Text type="secondary">{t('Current role')}</Typography.Text>
+          <Tag style={{ marginInlineEnd: 0 }}>{getRoleLabel(currentRole, roles, t)}</Tag>
+        </Space>
+      }
+      role="region"
+      style={{ textAlign: 'start', width: '100%' }}
+      styles={{ title: { fontWeight: 'normal' } }}
+      title={t('Switch role')}
+    >
+      <Space direction="vertical" size={token.marginXS} style={{ width: '100%' }}>
+        {canSwitch ? (
+          <>
+            <Typography.Text>{t('Select role')}</Typography.Text>
+            <Select
+              aria-label={t('Switch role')}
+              disabled={switching}
+              loading={switching}
+              onChange={handleRoleChange}
+              options={roles.map((role) => ({ label: role.title || role.name, value: role.name }))}
+              value={currentRole}
+              style={{ width: '100%' }}
+            />
+            <Typography.Text type="secondary">
+              {t('Portal access will be checked again after switching.')}
+            </Typography.Text>
+          </>
+        ) : null}
+        {switchError ? <Alert showIcon type="error" message={switchError} /> : null}
       </Space>
-      {switchError ? <Alert showIcon type="error" message={switchError} /> : null}
-    </Space>
+    </Card>
   );
 }
 
@@ -171,6 +185,11 @@ export function PortalAccessView(props: PortalAccessViewProps) {
     }),
     [token.colorBgLayout, token.paddingLG],
   );
+  const resultStyle = useMemo<React.CSSProperties>(() => ({ width: '100%' }), []);
+  const roleCardStyle = useMemo<React.CSSProperties>(
+    () => ({ marginInline: 'auto', maxWidth: token.screenXS, width: '100%' }),
+    [token.screenXS],
+  );
 
   const handleRetry = useCallback(async () => {
     setRetrying(true);
@@ -197,17 +216,20 @@ export function PortalAccessView(props: PortalAccessViewProps) {
     return (
       <main style={pageStyle}>
         <Result
+          style={resultStyle}
           status="403"
           title={t('No access to this Portal')}
           subTitle={t('Please switch to a role that can access this Portal.')}
           extra={
-            <PortalDeniedRoleSwitcher
-              apiClient={apiClient}
-              denied={access.denied}
-              reload={reload}
-              t={t}
-              userRoles={userRoles}
-            />
+            <div style={roleCardStyle}>
+              <PortalDeniedRoleSwitcher
+                apiClient={apiClient}
+                denied={access.denied}
+                reload={reload}
+                t={t}
+                userRoles={userRoles}
+              />
+            </div>
           }
         />
       </main>
@@ -217,6 +239,7 @@ export function PortalAccessView(props: PortalAccessViewProps) {
   return (
     <main style={pageStyle}>
       <Result
+        style={resultStyle}
         status="error"
         title={t('Failed to check Portal access')}
         subTitle={t('Unable to verify whether the current role can access this Portal.')}
