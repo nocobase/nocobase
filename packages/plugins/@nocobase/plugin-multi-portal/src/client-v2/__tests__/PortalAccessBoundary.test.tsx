@@ -186,29 +186,39 @@ describe('PortalAccessView', () => {
     expect(document.querySelector('.ant-select-selection-item')).toHaveTextContent('Admin');
   });
 
-  it.each([
-    ['only-use-union', '__union__', 'Full permissions'],
-    ['default', 'admin', 'Admin'],
-  ])('renders a read-only current role for %s when switching is unavailable', (roleMode, role, label) => {
+  it('does not render the role switcher when the user only has one role', () => {
+    renderView({
+      userRoles: [{ name: 'admin', title: 'Admin' }],
+    });
+
+    expect(screen.getByText('No access to this Portal')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Switch role' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Switch role' })).not.toBeInTheDocument();
+  });
+
+  it('renders a read-only union role when the user has multiple roles in only-use-union mode', () => {
     renderView({
       access: {
         generation: 1,
         portalName: 'customer',
-        role,
+        role: '__union__',
         status: 'denied',
         denied: {
           portalName: 'customer',
-          role,
-          roles: role === '__union__' ? ['admin', 'member'] : ['admin'],
-          roleMode,
+          role: '__union__',
+          roles: ['admin', 'member'],
+          roleMode: 'only-use-union',
           allowAnonymous: false,
         },
       },
-      userRoles: roleMode === 'default' ? [{ name: 'admin', title: 'Admin' }] : [{ name: 'admin', title: 'Admin' }],
+      userRoles: [
+        { name: 'admin', title: 'Admin' },
+        { name: 'member', title: 'Member' },
+      ],
     });
 
     expect(screen.queryByRole('combobox', { name: 'Switch role' })).not.toBeInTheDocument();
-    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getByText('Full permissions')).toBeInTheDocument();
   });
 
   it('keeps ordinary errors separate and exposes a retry action', async () => {

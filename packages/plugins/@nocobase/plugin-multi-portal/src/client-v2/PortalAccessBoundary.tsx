@@ -190,6 +190,7 @@ export function PortalAccessView(props: PortalAccessViewProps) {
     () => ({ marginInline: 'auto', maxWidth: token.screenXS, width: '100%' }),
     [token.screenXS],
   );
+  const hasMultipleUserRoles = userRoles.filter((role) => role.name !== '__union__').length > 1;
 
   const handleRetry = useCallback(async () => {
     setRetrying(true);
@@ -221,15 +222,17 @@ export function PortalAccessView(props: PortalAccessViewProps) {
           title={t('No access to this Portal')}
           subTitle={t('Please switch to a role that can access this Portal.')}
           extra={
-            <div style={roleCardStyle}>
-              <PortalDeniedRoleSwitcher
-                apiClient={apiClient}
-                denied={access.denied}
-                reload={reload}
-                t={t}
-                userRoles={userRoles}
-              />
-            </div>
+            hasMultipleUserRoles ? (
+              <div style={roleCardStyle}>
+                <PortalDeniedRoleSwitcher
+                  apiClient={apiClient}
+                  denied={access.denied}
+                  reload={reload}
+                  t={t}
+                  userRoles={userRoles}
+                />
+              </div>
+            ) : undefined
           }
         />
       </main>
