@@ -814,6 +814,22 @@ export class Collection<
     return Array.isArray(val) ? val.map((v) => snakeCase(v)) : snakeCase(val);
   }
 
+  private findAttributeByIndexField(field: string) {
+    const attributes = this.model.getAttributes();
+    const normalizedField = this.normalizeFieldName(field);
+
+    return Object.entries(attributes).find(([name, attribute]) => {
+      return this.normalizeFieldName(name) === normalizedField || attribute.field === normalizedField;
+    })?.[1];
+  }
+
+  private normalizeIndexFields(fields: readonly string[]) {
+    return fields.map((field) => {
+      const attribute = this.findAttributeByIndexField(field);
+      return attribute?.field || this.normalizeFieldName(field);
+    });
+  }
+
   addIndex(
     index:
       | string
@@ -849,23 +865,28 @@ export class Collection<
       indexName = index.fields;
     }
 
-    if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
+    const normalizedIndexName = this.normalizeIndexFields(indexName);
+    const normalizedPrimaryKeyAttributes = this.normalizeIndexFields(this.model.primaryKeyAttributes);
+
+    if (lodash.isEqual(normalizedPrimaryKeyAttributes, normalizedIndexName)) {
       return;
     }
 
-    const name: string = this.model.primaryKeyAttributes.join(',');
+    const name: string = normalizedPrimaryKeyAttributes.join(',');
 
-    if (name.startsWith(`${indexName.join(',')},`)) {
+    if (name.startsWith(`${normalizedIndexName.join(',')},`)) {
       return;
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(this.normalizeFieldName(item.fields), this.normalizeFieldName(indexName))) {
+      const normalizedFields = this.normalizeIndexFields(item.fields);
+
+      if (lodash.isEqual(normalizedFields, normalizedIndexName)) {
         return;
       }
 
-      const name: string = item.fields.join(',');
-      if (name.startsWith(`${indexName.join(',')},`)) {
+      const name: string = normalizedFields.join(',');
+      if (name.startsWith(`${normalizedIndexName.join(',')},`)) {
         return;
       }
     }
@@ -915,6 +936,7 @@ export class Collection<
     const attributes = {};
     for (const [name, field] of Object.entries(this.model.getAttributes())) {
       attributes[this.normalizeFieldName(name)] = field;
+      attributes[field.field] = field;
     }
 
     // @ts-ignore
