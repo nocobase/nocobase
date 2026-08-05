@@ -92,6 +92,7 @@ export { isRunJSValue, normalizeRunJSValue, extractUsedVariablePathsFromRunJS, t
 
 // RunJS helpers
 export { resolveRunJSObjectValues } from './resolveRunJSObjectValues';
+export { runjsWithSafeGlobals } from './runjsWithSafeGlobals';
 
 // RunJS 代码兼容预处理（{{ }}）与 JSX 编译
 export { prepareRunJsCode, preprocessRunJsTemplates } from './runjsTemplateCompat';
