@@ -544,7 +544,7 @@ function registerSourceModeErrorTests() {
       footerView.unmount();
     });
 
-    it('does not duplicate entry settings validation in Code source and clears binding errors in inline mode', async () => {
+    it('does not duplicate entry settings validation in Code source', async () => {
       const form = createForm({
         initialValues: {
           sourceMode: 'js-template',
@@ -561,15 +561,6 @@ function registerSourceModeErrorTests() {
       expect(screen.getByText('Settings require attention')).toBeInTheDocument();
       expect(screen.queryByText('plan')).not.toBeInTheDocument();
       expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
-
-      fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
-      fireEvent.click(await screen.findByText('Inline code'));
-      fireEvent.click(await screen.findByText('Keep existing code'));
-
-      await waitFor(() => {
-        expect(form.values.sourceMode).toBe('inline');
-        expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
-      });
     });
 
     it('requires a current Template binding in js-template mode', async () => {

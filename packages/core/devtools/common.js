@@ -207,12 +207,8 @@ function generateV2Plugins() {
 }
 
 function generateAllPlugins() {
-  [
-    join(process.env.APP_PACKAGE_ROOT, 'client', 'src', '.plugins'),
-    join(process.env.APP_PACKAGE_ROOT, 'client-v2', 'src', '.plugins'),
-  ].forEach((outputPluginPath) => {
-    generatePluginsByOutputPath(outputPluginPath);
-  });
+  generatePlugins();
+  generateV2Plugins();
 }
 
 exports.getPackagePaths = getPackagePaths;
