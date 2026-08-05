@@ -212,7 +212,7 @@ export function resolveRecordTarget(koaCtx: ResourcerContext, params: RecordPara
   const targets = (context.state.__varResolveRecordTargets ??= new Map());
   const requestKey = JSON.stringify({
     ds: dataSourceKey,
-    c: usesAssociation ? undefined : params.collection,
+    c: params.collection,
     assoc: usesAssociation ? params.associationName : undefined,
     sid: usesAssociation ? params.sourceId : undefined,
   });

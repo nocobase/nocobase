@@ -246,6 +246,64 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     dispose();
   });
 
+  it('keeps association collection validation independent of prefetch order', async () => {
+    const run = async (collections: string[]) => {
+      const calls: unknown[] = [];
+      const targetCollection = {
+        name: 'roles',
+        filterTargetKey: 'name',
+        model: { primaryKeyAttribute: 'name', rawAttributes: { name: {} }, associations: {} },
+      };
+      const context = {
+        app: {
+          dataSourceManager: {
+            get: () => ({
+              collectionManager: {
+                db: {
+                  getCollection: () => targetCollection,
+                  getRepository: () => ({
+                    collection: targetCollection,
+                    targetCollection,
+                    findOne: async (options: unknown) => {
+                      calls.push(options);
+                      return { name: 'root' };
+                    },
+                  }),
+                },
+              },
+            }),
+          },
+          logger: { child: () => ({ debug: vi.fn() }) },
+        },
+        state: {},
+      } as unknown as ResourcerContext;
+      const binding = (collection: string): AuthorizedRecordBinding => ({
+        contextKey: 'view.record',
+        contextLocation: ['view.record'],
+        params: {
+          associationName: 'users.roles',
+          collection,
+          filterByTk: collection === 'roles' ? 'root' : 'secret',
+          sourceId: 1,
+        },
+        prefix: ['record'],
+        preferFullRecord: false,
+        relativePaths: [['name']],
+        varName: 'view',
+      });
+
+      await prefetchRecordsForResolve(context, collections.map(binding));
+      return calls;
+    };
+
+    await expect(run(['roles', 'secrets'])).resolves.toEqual([
+      { appends: undefined, fields: ['name'], filterByTk: 'root' },
+    ]);
+    await expect(run(['secrets', 'roles'])).resolves.toEqual([
+      { appends: undefined, fields: ['name'], filterByTk: 'root' },
+    ]);
+  });
+
   it('reuses a wide prefetch entry for a later strict batch group', async () => {
     const raw = { email: 'root@example.test', id: 1, name: 'Root' };
     const findOne = vi.fn(async () => raw);

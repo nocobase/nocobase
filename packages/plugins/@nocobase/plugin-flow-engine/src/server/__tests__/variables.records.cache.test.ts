@@ -169,7 +169,7 @@ describe('variable record request cache index', () => {
     expect(calls).toHaveLength(2);
   });
 
-  it('isolates association targets by source id and request', async () => {
+  it('isolates association targets by data source, source id, and request', async () => {
     const calls: unknown[] = [];
     const targetCollection = {
       filterTargetKey: 'name',
@@ -184,15 +184,15 @@ describe('variable record request cache index', () => {
       ({
         app: {
           dataSourceManager: {
-            get: () => ({
+            get: (dataSourceKey: string) => ({
               collectionManager: {
                 db: {
                   getCollection: () => targetCollection,
                   getRepository: (_name: string, sourceId: unknown) => ({
                     collection: targetCollection,
                     findOne: async (options: unknown) => {
-                      calls.push({ options, sourceId });
-                      return { name: 'root', sourceId, title: 'Root' };
+                      calls.push({ dataSourceKey, options, sourceId });
+                      return { dataSourceKey, name: 'root', sourceId, title: 'Root' };
                     },
                     targetCollection,
                   }),
@@ -210,11 +210,16 @@ describe('variable record request cache index', () => {
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name', 'title']);
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name'], undefined, true);
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 2 }, ['name']);
+    await fetchRecordWithRequestCache(firstRequest, { ...params, dataSourceKey: 'analytics', sourceId: 1 }, ['name']);
     await fetchRecordWithRequestCache(createAssociationContext(), { ...params, sourceId: 1 }, ['name']);
 
-    expect(calls).toHaveLength(3);
+    expect(calls).toHaveLength(4);
     expect(calls).toEqual(
-      expect.arrayContaining([expect.objectContaining({ sourceId: 1 }), expect.objectContaining({ sourceId: 2 })]),
+      expect.arrayContaining([
+        expect.objectContaining({ dataSourceKey: 'main', sourceId: 1 }),
+        expect.objectContaining({ dataSourceKey: 'main', sourceId: 2 }),
+        expect.objectContaining({ dataSourceKey: 'analytics', sourceId: 1 }),
+      ]),
     );
   });
 
