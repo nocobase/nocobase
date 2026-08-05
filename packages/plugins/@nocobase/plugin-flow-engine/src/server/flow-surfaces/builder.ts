@@ -1047,6 +1047,11 @@ function buildActionDefaults(options: {
       assignFieldValues: {
         assignedValues: {},
       },
+      afterSuccess: {
+        successMessage: '{{t("Saved successfully")}}',
+        manualClose: false,
+        actionAfterSuccess: 'stay',
+      },
     };
     stepParams.apply = {
       apply: {

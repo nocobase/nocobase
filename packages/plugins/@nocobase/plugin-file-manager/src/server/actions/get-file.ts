@@ -101,9 +101,11 @@ export async function getFile(ctx: Context, next: Next) {
   }
 
   const publicAccess = Boolean(plugin.storagesCache.get(storageId)?.options?.public);
+  const loggedInAttachmentAccess = collection.name === 'attachments' && Boolean(ctx.state.currentUser);
   if (
     !temporaryAccess &&
     !publicAccess &&
+    !loggedInAttachmentAccess &&
     !authorizedByExtension &&
     ctx.app.options.acl !== false &&
     ctx.dataSource.options?.useACL !== false &&
