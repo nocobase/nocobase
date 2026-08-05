@@ -69,7 +69,7 @@ describe('variables:resolve record slot projection security', () => {
     await app.destroy();
   });
 
-  it('blocks a moved Slot while normalizing the registered target', async () => {
+  it('blocks a moved Slot while resolving the descriptor in its exact Slot', async () => {
     const uid = 'record-projection-single';
     const template = { id: '{{ ctx.backend.record.id }}', role: '{{ ctx.backend.record.roles[0].title }}' };
     await insertFlowModel({ uid, use: 'DetailsBlockModel', props: template });
@@ -80,7 +80,6 @@ describe('variables:resolve record slot projection security', () => {
       resolve: () => ({
         status: 'resolved',
         slot: ['record'],
-        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
       }),
     });
 
@@ -100,7 +99,7 @@ describe('variables:resolve record slot projection security', () => {
 
     const legal = await execResolve({
       contextParams: {
-        'backend.record': { collection: 'roles', dataSourceKey: 'secondary', filterByTk: 1 },
+        'backend.record': { collection: 'users', dataSourceKey: 'main', filterByTk: 1 },
       },
       rd: session.rd(uid),
       template,
@@ -116,13 +115,12 @@ describe('variables:resolve record slot projection security', () => {
     const narrowTemplate = { id: '{{ ctx.narrow.record.id }}', nickname: '{{ ctx.narrow.record.nickname }}' };
     await insertFlowModel({ uid: wholeUid, use: 'DetailsBlockModel', props: '{{ ctx.wide.record }}' });
     await insertFlowModel({ uid: narrowUid, use: 'DetailsBlockModel', props: narrowTemplate });
-    const target = { kind: 'fixed' as const, collection: 'users', dataSourceKey: 'main' };
     const registry = getRecordSlotResolverRegistry(app);
     registry.register({
       owner: 'test',
       id: 'wide-record',
       match: (path) => path.varName === 'wide' && path.runtimeSegments[0] === 'record',
-      resolve: () => ({ status: 'resolved', slot: ['record'], target }),
+      resolve: () => ({ status: 'resolved', slot: ['record'] }),
     });
     registry.register({
       owner: 'test',
@@ -130,7 +128,7 @@ describe('variables:resolve record slot projection security', () => {
       match: (path) => path.varName === 'narrow',
       resolve: ({ path }) =>
         path.runtimeSegments[0] === 'record' && path.runtimeSegments[1] === 'id'
-          ? { status: 'resolved', slot: ['record'], target }
+          ? { status: 'resolved', slot: ['record'] }
           : { status: 'abstain' },
     });
 

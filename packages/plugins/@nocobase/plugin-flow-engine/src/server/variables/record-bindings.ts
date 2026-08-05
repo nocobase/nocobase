@@ -16,11 +16,6 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
 import { isRecordParams, type RecordParams } from './records';
 import type { RecordSlotPolicies } from './record-slot-policy';
-import {
-  normalizeRecordSlotTarget,
-  sameRecordSlotTargetContract,
-  type RecordSlotTargetContract,
-} from './record-slot-resolvers';
 
 export type AuthorizedRecordBinding = Readonly<{
   params: RecordParams;
@@ -196,17 +191,10 @@ function hasValidParams(descriptor: RecordDescriptor): descriptor is ValidRecord
   return !!descriptor.params;
 }
 
-async function createBinding(
-  descriptor: ValidRecordDescriptor,
-  paths: readonly VariablePathRef[],
-  target: RecordSlotTargetContract,
-  koaCtx: ResourcerContext,
-): Promise<AuthorizedRecordBinding | undefined> {
-  const params = await normalizeRecordSlotTarget(target, koaCtx, descriptor.params);
-  if (!params) return undefined;
+function createBinding(descriptor: ValidRecordDescriptor, paths: readonly VariablePathRef[]): AuthorizedRecordBinding {
   const relativePaths = paths.map((path) => Object.freeze(path.runtimeSegments.slice(descriptor.prefix.length)));
   return Object.freeze({
-    params: cloneRecordParams(params),
+    params: cloneRecordParams(descriptor.params),
     varName: descriptor.varName,
     prefix: descriptor.prefix,
     relativePaths: Object.freeze(relativePaths),
@@ -238,10 +226,8 @@ async function planStrictBindings(
   const groups = new Map<
     string,
     {
-      conflicting: boolean;
       descriptorKey: string;
       paths: VariablePathRef[];
-      target: RecordSlotTargetContract;
     }
   >();
   for (const refs of Object.values(options.usage)) {
@@ -251,12 +237,9 @@ async function planStrictBindings(
       const descriptorKey = getDescriptorKey(ref.varName, policy.slot);
       const existing = groups.get(descriptorKey);
       const group = existing || {
-        conflicting: false,
         descriptorKey,
         paths: [],
-        target: policy.target,
       };
-      if (existing && !sameRecordSlotTargetContract(existing.target, policy.target)) group.conflicting = true;
       group.paths.push(ref);
       groups.set(descriptorKey, group);
     }
@@ -264,7 +247,6 @@ async function planStrictBindings(
 
   const bindings: AuthorizedRecordBinding[] = [];
   for (const group of groups.values()) {
-    if (group.conflicting) continue;
     const candidates = descriptorGroups.get(group.descriptorKey) || [];
     if (candidates.length !== 1 || !hasValidParams(candidates[0])) continue;
     const descriptor = candidates[0];
@@ -273,8 +255,7 @@ async function planStrictBindings(
       rejections.push(createRejection(descriptor, 'protected-context-key'));
       continue;
     }
-    const binding = await createBinding(descriptor, group.paths, group.target, options.koaCtx);
-    if (binding) bindings.push(binding);
+    bindings.push(createBinding(descriptor, group.paths));
   }
   return { bindings, rejections };
 }

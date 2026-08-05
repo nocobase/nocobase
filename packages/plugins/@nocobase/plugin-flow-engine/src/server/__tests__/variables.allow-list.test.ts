@@ -233,7 +233,7 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.contextParams).not.toHaveProperty('user.profile');
   });
 
-  it('keeps runtime record sources out of path authorization and strips targets without a server contract', async () => {
+  it('keeps runtime record sources out of path authorization and preserves exact-slot targets', async () => {
     const session = createTokenSession();
     const modelUid = 'strict-view-record-source';
     const ctx = createFakeCtx({
@@ -259,7 +259,18 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([]);
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({
+          associationName: 'users.roles',
+          collection: 'roles',
+          dataSourceKey: 'secondary',
+          filterByTk: ['root'],
+          sourceId: 9,
+        }),
+        prefix: ['record'],
+      }),
+    ]);
     expect(result.contextParams).toEqual({});
   });
 
@@ -672,7 +683,7 @@ describe('variables:resolve allow-list authorization', () => {
     ).rejects.toBe(modelError);
   });
 
-  it('does not bind a root descriptor without a server target contract', async () => {
+  it('binds a root descriptor by exact slot without rewriting its target', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
       template: '{{ ctx.view.record.name }}',
       contextParams: {
@@ -682,7 +693,9 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     if (!result.allowed) return;
-    expect(result.bindingPlan.bindings).toEqual([]);
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({ params: expect.objectContaining({ collection: 'users', filterByTk: 1 }) }),
+    ]);
     expect(result.contextParams).toEqual({});
   });
 
@@ -718,32 +731,37 @@ describe('variables:resolve allow-list authorization', () => {
     ['member', { currentRole: 'member' }],
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('keeps popup Slot and target contracts strict for the %s lane', async (_lane, roleOptions) => {
-    const session = createTokenSession();
-    const modelUid = `popup-slot-${_lane}`;
-    const model = createFlowModel(modelUid, '{{ ctx.popup.record.roles.title }}');
-    const request = {
-      rd: session.rd(modelUid),
-      template: '{{ ctx.popup.record.roles.title }}',
-    };
-    const options = { ...roleOptions, models: { [modelUid]: model }, token: session.token };
-    const attack = await authorizeVariablesResolve(createFakeCtx(options), {
-      ...request,
-      contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
-    });
-    const legal = await authorizeVariablesResolve(createFakeCtx(options), {
-      ...request,
-      contextParams: { 'popup.record': { collection: 'users', filterByTk: 1 } },
-    });
+  ] as const)(
+    'keeps popup exact Slot strict while accepting its dynamic target in the %s lane',
+    async (_lane, roleOptions) => {
+      const session = createTokenSession();
+      const modelUid = `popup-slot-${_lane}`;
+      const model = createFlowModel(modelUid, '{{ ctx.popup.record.roles.title }}');
+      const request = {
+        rd: session.rd(modelUid),
+        template: '{{ ctx.popup.record.roles.title }}',
+      };
+      const options = { ...roleOptions, models: { [modelUid]: model }, token: session.token };
+      const attack = await authorizeVariablesResolve(createFakeCtx(options), {
+        ...request,
+        contextParams: { 'popup.record.roles': { collection: 'roles', filterByTk: 'root' } },
+      });
+      const legal = await authorizeVariablesResolve(createFakeCtx(options), {
+        ...request,
+        contextParams: { 'popup.record': { collection: 'users', filterByTk: 1 } },
+      });
 
-    expect(attack.allowed).toBe(true);
-    expect(attack.contextParams).toEqual({});
-    expect(legal.allowed).toBe(true);
-    if (!attack.allowed) return;
-    expect(attack.bindingPlan.bindings).toHaveLength(0);
-    if (!legal.allowed) return;
-    expect(legal.bindingPlan.bindings).toHaveLength(0);
-  });
+      expect(attack.allowed).toBe(true);
+      expect(attack.contextParams).toEqual({});
+      expect(legal.allowed).toBe(true);
+      if (!attack.allowed) return;
+      expect(attack.bindingPlan.bindings).toHaveLength(0);
+      if (!legal.allowed) return;
+      expect(legal.bindingPlan.bindings).toEqual([
+        expect.objectContaining({ params: expect.objectContaining({ collection: 'users', filterByTk: 1 }) }),
+      ]);
+    },
+  );
 
   it.each([
     ['dot', '{{ ctx.popup.record.roles.title }}', 'popup.record.roles'],
@@ -765,7 +783,9 @@ describe('variables:resolve allow-list authorization', () => {
     expect(legal.allowed).toBe(true);
     if (!attack.allowed || !legal.allowed) return;
     expect(attack.bindingPlan.bindings).toEqual([]);
-    expect(legal.bindingPlan.bindings).toEqual([]);
+    expect(legal.bindingPlan.bindings).toEqual([
+      expect.objectContaining({ params: expect.objectContaining(descriptor), prefix: ['record'] }),
+    ]);
   });
 
   it.each([
@@ -845,7 +865,7 @@ describe('variables:resolve allow-list authorization', () => {
     ['member', { currentRole: 'member' }],
     ['root', { currentRole: 'root' }],
     ['allowConfigure', { allowConfigure: true, currentRole: 'designer' }],
-  ] as const)('uses the same registered exact Slot and target in the %s lane', async (_lane, roleOptions) => {
+  ] as const)('uses the same registered exact Slot and dynamic target in the %s lane', async (_lane, roleOptions) => {
     const session = createTokenSession();
     const modelUid = `registered-backend-${_lane}`;
     const ctx = createFakeCtx({
@@ -858,7 +878,6 @@ describe('variables:resolve allow-list authorization', () => {
         owner: 'test',
         id: `backend-${_lane}`,
         varName: 'backend',
-        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
       }),
     );
 
@@ -872,7 +891,7 @@ describe('variables:resolve allow-list authorization', () => {
     if (!result.allowed) return;
     expect(result.bindingPlan.bindings).toEqual([
       expect.objectContaining({
-        params: expect.objectContaining({ collection: 'users', dataSourceKey: 'main', filterByTk: 1 }),
+        params: expect.objectContaining({ collection: 'roles', dataSourceKey: 'secondary', filterByTk: 1 }),
         prefix: ['record'],
         relativePaths: [['name']],
       }),
@@ -901,7 +920,6 @@ describe('variables:resolve allow-list authorization', () => {
           ? {
               status: 'resolved',
               slot: ['record'],
-              target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
             }
           : { status: 'abstain' };
       },
@@ -955,7 +973,6 @@ describe('variables:resolve allow-list authorization', () => {
         return {
           status: 'resolved',
           slot: ['record'],
-          target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
         };
       },
     });

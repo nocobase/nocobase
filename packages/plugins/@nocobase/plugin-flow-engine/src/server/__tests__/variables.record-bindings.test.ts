@@ -12,7 +12,6 @@ import { analyzeVariableTemplate, type PathSegment } from '../template/variable-
 import { planRecordBindings } from '../variables/record-bindings';
 
 const recordParams = (filterByTk = 1) => ({ collection: 'users', dataSourceKey: 'main', filterByTk });
-const usersTarget = { kind: 'fixed', dataSourceKey: 'main', collection: 'users' } as const;
 const koaCtx = {} as ResourcerContext;
 
 const usageOf = (template: unknown) => analyzeVariableTemplate(template).usage;
@@ -23,10 +22,7 @@ function strictOptions(template: unknown, slots: readonly (readonly PathSegment[
   const analysis = analyzeVariableTemplate(template);
   return {
     policies: new Map(
-      analysis.paths.map((path, index) => [
-        path.canonicalKey,
-        { slot: slots[index], source: 'direct-record' as const, target: usersTarget },
-      ]),
+      analysis.paths.map((path, index) => [path.canonicalKey, { status: 'resolved' as const, slot: slots[index] }]),
     ),
     usage: analysis.usage,
   };
@@ -52,69 +48,25 @@ describe('record binding planner', () => {
     expect(plan.rejections).toEqual([]);
   });
 
-  it('normalizes a descriptor to the server-owned fixed target', async () => {
-    const plan = await createPlan({
-      ...strictOptions('{{ ctx.view.record.name }}', [['record']]),
-      contextParams: {
-        'view.record': {
-          associationName: 'secrets.owner',
-          collection: 'secrets',
-          dataSourceKey: 'external',
-          filterByTk: 7,
-          sourceId: 9,
-        },
+  it('preserves each structured target submitted in the exact slot', async () => {
+    for (const params of [
+      { collection: 'users', dataSourceKey: 'main', filterByTk: 1 },
+      {
+        associationName: 'accounts.contacts',
+        collection: 'contacts',
+        dataSourceKey: 'external',
+        fields: ['id', 'name'],
+        filterByTk: 7,
+        sourceId: 9,
       },
-    });
+    ]) {
+      const plan = await createPlan({
+        ...strictOptions('{{ ctx.view.record.name }}', [['record']]),
+        contextParams: { 'view.record': params },
+      });
 
-    expect(plan.bindings[0]?.params).toEqual({
-      associationName: undefined,
-      collection: 'users',
-      dataSourceKey: 'main',
-      filterByTk: 7,
-      sourceId: undefined,
-    });
-  });
-
-  it('fails closed when paths sharing a slot have different target contracts', async () => {
-    const analysis = analyzeVariableTemplate(['{{ ctx.view.record.name }}', '{{ ctx.view.record.email }}']);
-    const plan = await createPlan({
-      contextParams: { 'view.record': recordParams() },
-      policies: new Map([
-        [analysis.paths[0].canonicalKey, { slot: ['record'], source: 'view-record' as const, target: usersTarget }],
-        [
-          analysis.paths[1].canonicalKey,
-          {
-            slot: ['record'],
-            source: 'view-record' as const,
-            target: { kind: 'fixed', dataSourceKey: 'main', collection: 'posts' } as const,
-          },
-        ],
-      ]),
-      usage: analysis.usage,
-    });
-
-    expect(plan.bindings).toEqual([]);
-    expect(plan.contextParams).toEqual({});
-  });
-
-  it('fails closed when a target capability cannot validate the descriptor', async () => {
-    const analysis = analyzeVariableTemplate('{{ ctx.view.record.name }}');
-    const plan = await createPlan({
-      contextParams: { 'view.record': recordParams() },
-      policies: new Map([
-        [
-          analysis.paths[0].canonicalKey,
-          {
-            slot: ['record'],
-            source: 'view-record' as const,
-            target: { kind: 'capability', id: 'deny', normalize: () => undefined } as const,
-          },
-        ],
-      ]),
-      usage: analysis.usage,
-    });
-
-    expect(plan.bindings).toEqual([]);
+      expect(plan.bindings[0]?.params).toEqual(params);
+    }
   });
 
   it('strips a descriptor moved to a scalar leaf in strict mode', async () => {
@@ -221,9 +173,7 @@ describe('record binding planner', () => {
   it('ignores a slot the contract cannot prove without blocking a legal sibling', async () => {
     const analysis = analyzeVariableTemplate(['{{ ctx.formValues.status }}', '{{ ctx.formValues.department.name }}']);
     const plan = await createPlan({
-      policies: new Map([
-        [analysis.paths[0].canonicalKey, { slot: [], source: 'form-record' as const, target: usersTarget }],
-      ]),
+      policies: new Map([[analysis.paths[0].canonicalKey, { status: 'resolved' as const, slot: [] }]]),
       usage: analysis.usage,
       contextParams: {
         formValues: recordParams(1),

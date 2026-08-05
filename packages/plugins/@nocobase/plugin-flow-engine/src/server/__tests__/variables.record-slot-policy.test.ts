@@ -8,7 +8,6 @@
  */
 
 import type { Application } from '@nocobase/server';
-import type { ResourcerContext } from '@nocobase/resourcer';
 import { describe, expect, it } from 'vitest';
 import { analyzeVariableTemplate } from '../template/variable-expression';
 import {
@@ -20,11 +19,8 @@ import {
 import {
   createNestedRecordSlotResolver,
   getRecordSlotResolverRegistry,
-  normalizeRecordSlotTarget,
   type RecordSlotResolverRegistration,
 } from '../variables/record-slot-resolvers';
-
-const ordersTarget = { kind: 'fixed', dataSourceKey: 'main', collection: 'orders' } as const;
 
 function createApp(): Application {
   return {} as Application;
@@ -83,20 +79,13 @@ describe('record slot policy compiler', () => {
     dispose();
   });
 
-  it('keeps built-in slots but refuses a client-selected database target', async () => {
+  it('keeps built-in policies limited to the exact slot', async () => {
     const app = createApp();
     installBuiltIns(app);
     const contract = await compile(app, '{{ ctx.view.record.name }}');
     const policy = getPolicy(contract.recordSlots, '{{ ctx.view.record.name }}');
-    if (!policy) throw new Error('Expected a built-in view Record policy');
 
-    expect(
-      await normalizeRecordSlotTarget(policy.target, {} as ResourcerContext, {
-        collection: 'secrets',
-        dataSourceKey: 'external',
-        filterByTk: 1,
-      }),
-    ).toBeUndefined();
+    expect(policy).toEqual({ status: 'resolved', slot: ['record'] });
   });
 
   it('derives Form slots from the target of a persisted association resource', async () => {
@@ -143,16 +132,8 @@ describe('record slot policy compiler', () => {
       },
     );
 
-    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.title }}')?.target).toEqual({
-      kind: 'fixed',
-      collection: 'roles',
-      dataSourceKey: 'main',
-    });
-    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.permissions.name }}')?.target).toEqual({
-      kind: 'fixed',
-      collection: 'permissions',
-      dataSourceKey: 'main',
-    });
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.title }}')?.slot).toEqual([]);
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.permissions.name }}')?.slot).toEqual(['permissions']);
   });
 
   it('does not compile fixed slots when the plugin registrations are absent or disposed', async () => {
@@ -174,24 +155,20 @@ describe('record slot policy compiler', () => {
     disposeReloaded();
   });
 
-  it('materializes nested Record only for a server-registered variable and target', async () => {
+  it('materializes nested Record only for a server-registered variable', async () => {
     const app = createApp();
     getRecordSlotResolverRegistry(app).register(
       createNestedRecordSlotResolver({
         owner: 'test-extension',
         id: 'backend',
         varName: 'backend',
-        target: ordersTarget,
       }),
     );
     const contract = await compile(app, {
       props: ['{{ ctx.backend.record.customer.name }}', '{{ ctx.unknown.record.customer.name }}'],
     });
 
-    expect(getPolicy(contract.recordSlots, '{{ ctx.backend.record.customer.name }}')).toMatchObject({
-      slot: ['record'],
-      target: ordersTarget,
-    });
+    expect(getPolicy(contract.recordSlots, '{{ ctx.backend.record.customer.name }}')?.slot).toEqual(['record']);
     expect(getPolicy(contract.recordSlots, '{{ ctx.unknown.record.customer.name }}')).toBeUndefined();
   });
 
@@ -245,15 +222,12 @@ describe('record slot policy compiler', () => {
       id: 'private-form-provider',
       match: (path) => path.varName === 'formValues' && path.runtimeSegments[0] === 'customer',
       resolve: ({ currentNode }) =>
-        currentNode === node ? { status: 'resolved', slot: ['customer'], target: ordersTarget } : { status: 'abstain' },
+        currentNode === node ? { status: 'resolved', slot: ['customer'] } : { status: 'abstain' },
     };
     const dispose = getRecordSlotResolverRegistry(app).register(customResolver);
 
     const enabled = await compile(app, node, { getCollection: () => ({}) });
-    expect(getPolicy(enabled.recordSlots, '{{ ctx.formValues.customer.name }}')).toMatchObject({
-      slot: ['customer'],
-      target: ordersTarget,
-    });
+    expect(getPolicy(enabled.recordSlots, '{{ ctx.formValues.customer.name }}')?.slot).toEqual(['customer']);
     expect(getPolicy(enabled.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
 
     dispose();
@@ -271,9 +245,7 @@ describe('record slot policy compiler', () => {
       id: 'metadata-dependent-form',
       match: (path) => path.varName === 'formValues',
       resolve: ({ getCollection }) =>
-        getCollection?.('main', 'orders')
-          ? { status: 'resolved', slot: ['customer'], target: ordersTarget }
-          : { status: 'abstain' },
+        getCollection?.('main', 'orders') ? { status: 'resolved', slot: ['customer'] } : { status: 'abstain' },
     });
     registry.register({
       owner: 'test-extension',

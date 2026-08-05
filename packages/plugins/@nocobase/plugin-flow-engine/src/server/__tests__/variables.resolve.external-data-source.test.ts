@@ -62,7 +62,6 @@ describe('variables:resolve external data source records', () => {
       resolve: () => ({
         status: 'resolved',
         slot: ['record'],
-        target: { kind: 'fixed', collection: 'leads', dataSourceKey: 'crm_external' },
       }),
     });
 
@@ -71,8 +70,8 @@ describe('variables:resolve external data source records', () => {
       template,
       contextParams: {
         'backend.record': {
-          dataSourceKey: 'main',
-          collection: 'secrets',
+          dataSourceKey: 'crm_external',
+          collection: 'leads',
           filterByTk: 'lead-1',
         },
       },
@@ -163,7 +162,7 @@ describe('variables:resolve external data source records', () => {
     expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('normalizes an external association target independently from runtime fields', async () => {
+  it('resolves the external association target submitted in the exact slot', async () => {
     const targetCollection = {
       name: 'contacts',
       filterTargetKey: 'id',
@@ -206,12 +205,6 @@ describe('variables:resolve external data source records', () => {
       resolve: () => ({
         status: 'resolved',
         slot: ['record'],
-        target: {
-          kind: 'fixed',
-          associationName: 'accounts.contacts',
-          collection: 'contacts',
-          dataSourceKey: 'crm_external',
-        },
       }),
     });
     const template = { value: '{{ ctx.backend.record.email }}' };
@@ -219,8 +212,8 @@ describe('variables:resolve external data source records', () => {
       template,
       contextParams: {
         'backend.record': {
-          associationName: 'secrets.contacts',
-          collection: 'runtime-placeholder',
+          associationName: 'accounts.contacts',
+          collection: 'contacts',
           dataSourceKey: 'crm_external',
           filterByTk: 'contact-3',
           sourceId: 'account-9',
@@ -267,7 +260,6 @@ describe('variables:resolve external data source records', () => {
       resolve: () => ({
         status: 'resolved',
         slot: ['record'],
-        target: { kind: 'fixed', collection: 'leads', dataSourceKey: 'crm_external' },
       }),
     });
 
@@ -276,8 +268,8 @@ describe('variables:resolve external data source records', () => {
       { value: '{{ ctx.backend.record }}' },
       {
         'backend.record': {
-          collection: 'secrets',
-          dataSourceKey: 'main',
+          collection: 'leads',
+          dataSourceKey: 'crm_external',
           filterByTk: 'parent-1',
         },
       },

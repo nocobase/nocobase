@@ -13,11 +13,7 @@ import { generateFlowModelRd } from '@nocobase/utils';
 import * as variableExpression from '../template/variable-expression';
 import { inferSelectsFromUsage } from '../variables/registry';
 import FlowModelRepository from '../repository';
-import {
-  createNestedRecordSlotResolver,
-  getRecordSlotResolverRegistry,
-  type RecordSlotFixedTarget,
-} from '../variables/record-slot-resolvers';
+import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -76,33 +72,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     return repository.insertModel(model);
   };
-
-  const registerViewRecordTarget = (target: RecordSlotFixedTarget) =>
-    getRecordSlotResolverRegistry(app).register(
-      createNestedRecordSlotResolver({
-        owner: '@nocobase/plugin-flow-engine',
-        id: 'view:record',
-        varName: 'view',
-        target,
-      }),
-    );
-
-  const registerPopupRecordTarget = (target: RecordSlotFixedTarget) =>
-    getRecordSlotResolverRegistry(app).register({
-      owner: '@nocobase/plugin-flow-engine',
-      id: 'popup:record',
-      match: (path) => {
-        if (path.varName !== 'popup') return false;
-        let index = 0;
-        while (path.runtimeSegments[index] === 'parent') index += 1;
-        return path.runtimeSegments[index] === 'record' || path.runtimeSegments[index] === 'sourceRecord';
-      },
-      resolve: ({ path }) => {
-        let index = 0;
-        while (path.runtimeSegments[index] === 'parent') index += 1;
-        return { status: 'resolved', slot: path.runtimeSegments.slice(0, index + 1), target };
-      },
-    });
 
   const editFormModel = (uid: string, template: unknown) => ({
     uid,
@@ -174,9 +143,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         'flow-engine',
       ],
     });
-    const usersTarget = { kind: 'fixed' as const, collection: 'users', dataSourceKey: 'main' };
-    registerViewRecordTarget(usersTarget);
-    registerPopupRecordTarget(usersTarget);
   });
 
   afterEach(async () => {
@@ -362,7 +328,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.userId).toBe(1);
   });
 
-  it('should normalize an allow-listed view Record to its registered target', async () => {
+  it('should preserve an allow-listed view Record target in its exact Slot', async () => {
     const flowModelUid = 'strict-view-record-source';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -374,18 +340,18 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         },
       },
       props: {
-        title: '{{ ctx.view.record.id }}',
+        title: '{{ ctx.view.record.name }}',
       },
     });
 
     const payload = {
       rd: session.rd(flowModelUid),
-      template: { id: '{{ ctx.view.record.id }}' },
+      template: { name: '{{ ctx.view.record.name }}' },
       contextParams: {
         'view.record': {
-          dataSourceKey: 'secondary',
+          dataSourceKey: 'main',
           collection: 'roles',
-          filterByTk: 1,
+          filterByTk: 'root',
         },
       },
     };
@@ -395,10 +361,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       token: session.token,
     });
     const data = res.body?.data ?? res.body;
-    expect(data.id).toBe(1);
+    expect(data.name).toBe('root');
   });
 
-  it('should normalize an allow-listed popup Record to its registered target', async () => {
+  it('should preserve an allow-listed popup Record target in its exact Slot', async () => {
     const flowModelUid = 'popup-template-source-skip';
     const session = createTokenSession(1);
     await insertFlowModel({
@@ -410,18 +376,18 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         },
       },
       props: {
-        title: '{{ ctx.popup.parent.record.id }}',
+        title: '{{ ctx.popup.parent.record.name }}',
       },
     });
 
     const payload = {
       rd: session.rd(flowModelUid),
-      template: { id: '{{ ctx.popup.parent.record.id }}' },
+      template: { name: '{{ ctx.popup.parent.record.name }}' },
       contextParams: {
         'popup.parent.record': {
-          dataSourceKey: 'secondary',
+          dataSourceKey: 'main',
           collection: 'roles',
-          filterByTk: 1,
+          filterByTk: 'root',
         },
       },
     };
@@ -431,7 +397,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       token: session.token,
     });
     const data = res.body?.data ?? res.body;
-    expect(data.id).toBe(1);
+    expect(data.name).toBe('root');
   });
 
   it('keeps the exact popup Slot gate for member and root roles', async () => {
@@ -562,10 +528,10 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('resolves a direct Record from the persisted resource target', async () => {
+  it('resolves a direct Record from the descriptor target in its exact Slot', async () => {
     const flowModelUid = 'direct-record-persisted-target';
     const session = createTokenSession(1);
-    const template = { id: '{{ ctx.record.id }}' };
+    const template = { name: '{{ ctx.record.name }}' };
     await insertFlowModel({
       uid: flowModelUid,
       use: 'DetailsBlockModel',
@@ -577,16 +543,16 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       {
         rd: session.rd(flowModelUid),
         template,
-        contextParams: { record: { collection: 'roles', dataSourceKey: 'attack_source', filterByTk: 1 } },
+        contextParams: { record: { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' } },
       },
       1,
       { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
-    expect(response.body).toEqual({ id: 1 });
+    expect(response.body).toEqual({ name: 'root' });
   });
 
-  it('resolves configured Form associations through the production resolver and locks their target', async () => {
+  it('resolves configured Form associations through the production exact Slot resolver', async () => {
     const flowModelUid = 'form-values-moved-record-slot';
     const session = createTokenSession(1);
     const template = { title: '{{ ctx.formValues.roles.title }}' };
@@ -618,7 +584,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         rd: session.rd(flowModelUid),
         template,
         contextParams: {
-          'formValues.roles': { collection: 'users', dataSourceKey: 'attack_source', filterByTk: 'root' },
+          'formValues.roles': { collection: 'roles', dataSourceKey: 'main', filterByTk: 'root' },
         },
       },
       1,
@@ -874,7 +840,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       resolve: () => ({
         status: 'resolved',
         slot: ['roles'],
-        target: { kind: 'fixed', collection: 'roles', dataSourceKey: 'main' },
       }),
     });
     const payload = {
@@ -1223,11 +1188,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       await app.db.sync();
       await app.db.getRepository(hospitalCustomersCollection).create({
         values: { id: '323538', hospital_customer: 'HC-Name-323538' },
-      });
-      registerPopupRecordTarget({
-        kind: 'fixed',
-        collection: hospitalCustomersCollection,
-        dataSourceKey: 'main',
       });
     });
 
@@ -1661,13 +1621,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     }
 
     const repoSpy = vi.spyOn(app.db as any, 'getRepository');
-    registerPopupRecordTarget({
-      kind: 'fixed',
-      associationName: 'users.roles',
-      collection: 'roles',
-      dataSourceKey: 'main',
-    });
-
     const payload = {
       template: {
         rid: '{{ ctx.popup.record.name }}',

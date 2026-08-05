@@ -12,13 +12,10 @@ import FlowModelRepository from '../repository';
 import type { AnalyzedTemplate } from '../template/variable-expression';
 import {
   getRecordSlotResolverRegistry,
-  sameRecordSlotTargetContract,
   type RecordSlotResolved,
   type RecordSlotResolverInput,
   type RecordSlotResolverRegistration,
   type RecordSlotResolverResult,
-  type RecordSlotTargetCapability,
-  type RecordSlotTargetContract,
 } from './record-slot-resolvers';
 
 export type RecordSlotPolicy = RecordSlotResolved;
@@ -58,14 +55,8 @@ const FORM_USES = new Set([
 ]);
 const FORM_RECORD_USES = new Set(['EditFormModel', 'PopupSubTableFormModel']);
 
-const requireServerTarget: RecordSlotTargetCapability = Object.freeze({
-  kind: 'capability',
-  id: 'flow-engine:server-target-required',
-  normalize: () => undefined,
-});
-
-function resolved(slot: readonly (string | number)[], target: RecordSlotTargetContract = requireServerTarget) {
-  return { status: 'resolved' as const, slot, target };
+function resolved(slot: readonly (string | number)[]) {
+  return { status: 'resolved' as const, slot };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -212,7 +203,7 @@ async function resolveFormValues(input: RecordSlotResolverInput): Promise<Record
   }
   if (configured) {
     const target = resolveAssociationTarget(input, fixedResource, configured.fieldPath);
-    return target ? resolved(configured.slot, target) : { status: 'deny' };
+    return target ? resolved(configured.slot) : { status: 'deny' };
   }
 
   const top = input.path.runtimeSegments[0];
@@ -222,7 +213,7 @@ async function resolveFormValues(input: RecordSlotResolverInput): Promise<Record
     FORM_RECORD_USES.has(String(ownerOptions.use || '')) &&
     callMethod(collection, 'getField', top)
   ) {
-    return resolved([], fixedResource);
+    return resolved([]);
   }
   return { status: 'abstain' };
 }
@@ -237,7 +228,7 @@ export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverR
         needsAncestors: true,
         resolve: async (input) => {
           const target = await resolveNearestResourceTarget(input);
-          return target ? resolved([], target) : { status: 'abstain' };
+          return target ? resolved([]) : { status: 'abstain' };
         },
       }),
     ),
@@ -273,11 +264,7 @@ export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverR
 }
 
 function samePolicy(left: RecordSlotPolicy, right: RecordSlotPolicy) {
-  return (
-    left.slot.length === right.slot.length &&
-    left.slot.every((segment, index) => segment === right.slot[index]) &&
-    sameRecordSlotTargetContract(left.target, right.target)
-  );
+  return left.slot.length === right.slot.length && left.slot.every((segment, index) => segment === right.slot[index]);
 }
 
 export async function compileRecordSlotPolicies(

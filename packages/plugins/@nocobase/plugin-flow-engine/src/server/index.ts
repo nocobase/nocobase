@@ -13,16 +13,11 @@ export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/res
 export {
   createNestedRecordSlotResolver,
   getRecordSlotResolverRegistry,
-  normalizeRecordSlotTarget,
   RecordSlotResolverRegistry,
-  sameRecordSlotTargetContract,
 } from './variables/record-slot-resolvers';
 export type {
-  RecordSlotFixedTarget,
   RecordSlotResolved,
   RecordSlotResolverInput,
   RecordSlotResolverRegistration,
   RecordSlotResolverResult,
-  RecordSlotTargetCapability,
-  RecordSlotTargetContract,
 } from './variables/record-slot-resolvers';

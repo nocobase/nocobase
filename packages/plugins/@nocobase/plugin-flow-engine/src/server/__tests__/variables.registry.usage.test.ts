@@ -150,7 +150,7 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     expect(calls).toEqual([]);
   });
 
-  it('attaches one exact nested Record provider with a server-owned target', async () => {
+  it('attaches one exact nested Record provider with the submitted target', async () => {
     const calls: Array<Record<string, unknown>> = [];
     const koa = makeKoaCtx((options) => calls.push(options));
     const dispose = getRecordSlotResolverRegistry(koa.app).register(
@@ -158,7 +158,6 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
         owner: 'test',
         id: 'backend',
         varName: 'backend',
-        target: { kind: 'fixed', dataSourceKey: 'main', collection: 'users' },
       }),
     );
     const ctx = new HttpRequestContext(koa);

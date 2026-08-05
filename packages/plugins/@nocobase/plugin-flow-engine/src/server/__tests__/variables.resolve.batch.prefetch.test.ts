@@ -93,7 +93,6 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         owner: 'test',
         id: 'batch-backend',
         varName: 'backend',
-        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
       }),
     );
     let calls = 0;
@@ -207,7 +206,6 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         owner: 'test',
         id: 'backend-role',
         varName: 'backend',
-        target: { kind: 'fixed', associationName: 'users.roles', collection: 'roles', dataSourceKey: 'main' },
       }),
     );
 
@@ -216,8 +214,8 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       { role: '{{ ctx.backend.record.name }}' },
       {
         'backend.record': {
-          associationName: 'secrets.roles',
-          collection: 'secrets',
+          associationName: 'users.roles',
+          collection: 'roles',
           filterByTk: 'root',
           sourceId: 1,
         },
@@ -230,8 +228,8 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       { role: '{{ ctx.backend.record.name }}' },
       {
         'backend.record': {
-          associationName: 'secrets.roles',
-          collection: 'secrets',
+          associationName: 'users.roles',
+          collection: 'roles',
           filterByTk: 'member',
           sourceId: 2,
         },
@@ -414,7 +412,6 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         owner: 'test',
         id: 'legal-backend',
         varName: 'backend',
-        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
       }),
     );
     await insertFlowModel({ uid: attackUid, use: 'DetailsBlockModel', props: attackTemplate });

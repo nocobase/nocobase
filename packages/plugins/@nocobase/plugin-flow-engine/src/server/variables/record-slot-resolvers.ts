@@ -8,31 +8,13 @@
  */
 
 import type { Application } from '@nocobase/server';
-import type { ResourcerContext } from '@nocobase/resourcer';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
-import type { RecordParams } from './records';
 
 type MaybePromise<T> = T | Promise<T>;
-
-export type RecordSlotFixedTarget = Readonly<{
-  kind: 'fixed';
-  dataSourceKey?: string;
-  collection: string;
-  associationName?: string;
-}>;
-
-export type RecordSlotTargetCapability = Readonly<{
-  kind: 'capability';
-  id: string;
-  normalize: (ctx: ResourcerContext, params: Readonly<RecordParams>) => MaybePromise<RecordParams | undefined>;
-}>;
-
-export type RecordSlotTargetContract = RecordSlotFixedTarget | RecordSlotTargetCapability;
 
 export type RecordSlotResolved = Readonly<{
   status: 'resolved';
   slot: readonly PathSegment[];
-  target: RecordSlotTargetContract;
 }>;
 
 export type RecordSlotResolverResult = RecordSlotResolved | Readonly<{ status: 'deny' | 'abstain' }>;
@@ -53,28 +35,6 @@ export type RecordSlotResolverRegistration = Readonly<{
   resolve: (input: RecordSlotResolverInput) => MaybePromise<RecordSlotResolverResult>;
 }>;
 
-function normalizeTarget(target: RecordSlotTargetContract): RecordSlotTargetContract | undefined {
-  if (target.kind === 'capability') {
-    const id = target.id.trim();
-    return id && typeof target.normalize === 'function'
-      ? Object.freeze({ kind: 'capability', id, normalize: target.normalize })
-      : undefined;
-  }
-
-  const dataSourceKey = (target.dataSourceKey || 'main').trim();
-  const collection = target.collection.trim();
-  const associationName = target.associationName?.trim();
-  if (!dataSourceKey || !collection || (typeof target.associationName === 'string' && !associationName)) {
-    return undefined;
-  }
-  return Object.freeze({
-    kind: 'fixed',
-    dataSourceKey,
-    collection,
-    ...(associationName ? { associationName } : {}),
-  });
-}
-
 function normalizeResolved(result: RecordSlotResolverResult): RecordSlotResolved | undefined {
   if (result.status !== 'resolved' || !Array.isArray(result.slot)) return undefined;
   if (
@@ -87,31 +47,11 @@ function normalizeResolved(result: RecordSlotResolverResult): RecordSlotResolved
   ) {
     return undefined;
   }
-  const target = normalizeTarget(result.target);
-  return target ? Object.freeze({ status: 'resolved', slot: Object.freeze([...result.slot]), target }) : undefined;
-}
-
-export function sameRecordSlotTargetContract(left: RecordSlotTargetContract, right: RecordSlotTargetContract) {
-  if (left.kind !== right.kind) return false;
-  if (left.kind === 'capability' && right.kind === 'capability') {
-    return left.id === right.id && left.normalize === right.normalize;
-  }
-  if (left.kind === 'fixed' && right.kind === 'fixed') {
-    return (
-      left.dataSourceKey === right.dataSourceKey &&
-      left.collection === right.collection &&
-      left.associationName === right.associationName
-    );
-  }
-  return false;
+  return Object.freeze({ status: 'resolved', slot: Object.freeze([...result.slot]) });
 }
 
 function sameResolved(left: RecordSlotResolved, right: RecordSlotResolved) {
-  return (
-    left.slot.length === right.slot.length &&
-    left.slot.every((segment, index) => segment === right.slot[index]) &&
-    sameRecordSlotTargetContract(left.target, right.target)
-  );
+  return left.slot.length === right.slot.length && left.slot.every((segment, index) => segment === right.slot[index]);
 }
 
 export class RecordSlotResolverRegistry {
@@ -182,55 +122,12 @@ export function createNestedRecordSlotResolver(
     owner: string;
     id: string;
     varName: string;
-    target: RecordSlotTargetContract;
   }>,
 ): RecordSlotResolverRegistration {
   return Object.freeze({
     owner: registration.owner,
     id: registration.id,
-    match: (path) =>
-      path.varName === registration.varName && path.runtimeSegments.length > 1 && path.runtimeSegments[0] === 'record',
-    resolve: () => ({ status: 'resolved' as const, slot: ['record'], target: registration.target }),
+    match: (path) => path.varName === registration.varName && path.runtimeSegments[0] === 'record',
+    resolve: () => ({ status: 'resolved' as const, slot: ['record'] }),
   });
-}
-
-export async function normalizeRecordSlotTarget(
-  target: RecordSlotTargetContract,
-  ctx: ResourcerContext,
-  params: Readonly<RecordParams>,
-): Promise<RecordParams | undefined> {
-  try {
-    const contract = normalizeTarget(target);
-    if (!contract) return undefined;
-    if (contract.kind === 'capability') {
-      const normalized = await contract.normalize(ctx, params);
-      const dataSourceKey = (normalized?.dataSourceKey || 'main').trim();
-      const collection = normalized?.collection.trim();
-      const associationName = normalized?.associationName?.trim();
-      if (
-        !normalized ||
-        !dataSourceKey ||
-        !collection ||
-        (typeof normalized.associationName === 'string' && !associationName)
-      ) {
-        return undefined;
-      }
-      return {
-        ...normalized,
-        dataSourceKey,
-        collection,
-        associationName,
-      };
-    }
-    if (contract.associationName && typeof params.sourceId === 'undefined') return undefined;
-    return {
-      ...params,
-      dataSourceKey: contract.dataSourceKey || 'main',
-      collection: contract.collection,
-      associationName: contract.associationName,
-      sourceId: contract.associationName ? params.sourceId : undefined,
-    };
-  } catch (_) {
-    return undefined;
-  }
 }

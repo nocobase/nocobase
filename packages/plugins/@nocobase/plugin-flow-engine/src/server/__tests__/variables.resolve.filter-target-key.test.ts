@@ -73,7 +73,6 @@ describe('variables:resolve filter target key projection', () => {
         owner: '@nocobase/plugin-flow-engine',
         id: 'view:record',
         varName: 'view',
-        target: { kind: 'fixed', collection: 'variableFilterTargetRecords', dataSourceKey: 'main' },
       }),
     );
     await repository.create({
