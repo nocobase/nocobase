@@ -10,6 +10,7 @@
 import type { CtxDateExpressionConfig, CtxDateRelativeUnit } from '@nocobase/flow-engine';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { AutoComplete, Input, InputNumber, Select, Space } from 'antd';
+import type { Dayjs } from 'dayjs';
 import React from 'react';
 import { FieldAssignExactDatePicker, type ExactDatePickerValue } from '../FieldAssignExactDatePicker';
 import { toExactPickerDisplayValue, type DateVariableComponentProps } from './dateValue';
@@ -50,7 +51,7 @@ export function serializeExactDatePickerValue(
   value: ExactDatePickerValue,
   showTime: boolean,
 ): string | [string, string] {
-  const serialize = (item: dayjs.Dayjs) => (showTime ? item.toISOString() : item.format('YYYY-MM-DD'));
+  const serialize = (item: Dayjs) => (showTime ? item.toISOString() : item.format('YYYY-MM-DD'));
   if (Array.isArray(value)) {
     return [serialize(value[0]), serialize(value[1])];
   }
@@ -67,14 +68,16 @@ type DateVariableEditorProps = {
 
 const DateFormatEditor: React.FC<{
   value: string;
+  placeholder: string;
   onChange: (value: string) => void;
-}> = ({ value, onChange }) => {
+}> = ({ value, placeholder, onChange }) => {
   const ctx = useFlowContext();
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Input value={ctx.t('Format')} readOnly tabIndex={-1} aria-hidden style={{ width: 88, pointerEvents: 'none' }} />
       <AutoComplete
         value={value}
+        placeholder={placeholder}
         options={DATE_FORMAT_OPTIONS}
         onChange={(nextValue) => onChange(nextValue.slice(0, 128))}
         style={{ flex: 1, minWidth: 0 }}
@@ -95,7 +98,7 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
   if (!value) return null;
 
   const updateFormat = (format: string) => onChange?.({ ...value, format });
-  const format = value.format || getDefaultDateVariableFormat(value);
+  const format = value.format || '';
 
   const renderValueEditor = () => {
     if (value.kind === 'exact') {
@@ -152,7 +155,9 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
   return (
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 8, width: '100%', minWidth: 0, ...style }}>
       {renderValueEditor()}
-      {!isDateLikeField && <DateFormatEditor value={format} onChange={updateFormat} />}
+      {!isDateLikeField && (
+        <DateFormatEditor value={format} placeholder={getDefaultDateVariableFormat(value)} onChange={updateFormat} />
+      )}
     </div>
   );
 };

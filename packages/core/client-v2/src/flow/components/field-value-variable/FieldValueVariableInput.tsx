@@ -21,6 +21,7 @@ import {
   type VariableInputProps,
 } from '@nocobase/flow-engine';
 import { dayjs } from '@nocobase/utils/client';
+import type { Dayjs } from 'dayjs';
 import React from 'react';
 import { DateVariableEditor, getDefaultDateVariableFormat } from './DateVariableEditor';
 import { normalizeDateVariableExactValue, type DateVariableComponentProps } from './dateValue';
@@ -89,6 +90,10 @@ function getDateNodeName(config: CtxDateExpressionConfig): string {
   return config.preset;
 }
 
+function isDayjsValue(value: unknown): value is Dayjs {
+  return dayjs.isDayjs(value);
+}
+
 function createInitialDateConfig(
   nodeName: string,
   isDateLikeField: boolean,
@@ -98,11 +103,14 @@ function createInitialDateConfig(
 
   if (nodeName === 'exact') {
     const normalized = normalizeDateVariableExactValue(dayjs(), componentProps);
-    const value = dayjs.isDayjs(normalized) ? normalized.format('YYYY-MM-DD') : String(normalized || '');
+    const value = isDayjsValue(normalized) ? normalized.format('YYYY-MM-DD') : String(normalized || '');
     config = { kind: 'exact', value };
   } else if (nodeName === 'past' || nodeName === 'next') {
     config = { kind: 'relative', direction: nodeName, amount: 1, unit: 'day' };
-  } else if (DATE_PRESET_NODES.some((item) => item.name === nodeName)) {
+  } else if (
+    DATE_PRESET_NODES.some((item) => item.name === nodeName) &&
+    !(nodeName === 'now' && componentProps.exactNormalizeMode === 'date')
+  ) {
     config = { kind: 'preset', preset: nodeName as CtxDatePreset };
   }
 
@@ -156,6 +164,10 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
   const metaTree = React.useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       const base = typeof baseMetaTree === 'function' ? await baseMetaTree() : baseMetaTree;
+      const presetNodes =
+        dateComponentProps.exactNormalizeMode === 'date'
+          ? DATE_PRESET_NODES.filter((item) => item.name !== 'now')
+          : DATE_PRESET_NODES;
       const dateChildren: MetaTreeNode[] = [
         {
           title: tExpr('Exact day'),
@@ -178,7 +190,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           paths: ['date', 'next'],
           render: (props) => <DateEditor {...props} />,
         },
-        ...DATE_PRESET_NODES.map<MetaTreeNode>(({ name, title }) => ({
+        ...presetNodes.map<MetaTreeNode>(({ name, title }) => ({
           title: tExpr(title),
           name,
           type: 'date',
@@ -220,7 +232,14 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
       ];
       return [...specialNodes, ...(Array.isArray(base) ? base : [])];
     };
-  }, [ConstantComponent, DateEditor, NullComponent, RunJSComponent, baseMetaTree]);
+  }, [
+    ConstantComponent,
+    DateEditor,
+    NullComponent,
+    RunJSComponent,
+    baseMetaTree,
+    dateComponentProps.exactNormalizeMode,
+  ]);
 
   const parsedDateConfig = parseCtxDateExpressionConfig(value);
   const displayValue = parsedDateConfig ? createDateVariableEditConfig(parsedDateConfig, 'restored') : value;

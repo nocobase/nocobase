@@ -18,6 +18,7 @@ import {
   DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
   isDateLikeField,
   resolveDateVariableComponentProps,
+  type DateVariableComponentProps,
 } from '../dateValue';
 import { FieldValueVariableInput } from '../FieldValueVariableInput';
 
@@ -45,7 +46,11 @@ const ConstantComponent: React.FC = () => <div>constant editor</div>;
 const NullComponent: React.FC = () => <div>null editor</div>;
 const RunJSComponent: React.FC = () => <div>runjs editor</div>;
 
-function renderInput(options?: { value?: unknown; isDateLikeField?: boolean }) {
+function renderInput(options?: {
+  value?: unknown;
+  isDateLikeField?: boolean;
+  dateComponentProps?: DateVariableComponentProps;
+}) {
   const onChange = vi.fn();
   render(
     <FieldValueVariableInput
@@ -56,7 +61,7 @@ function renderInput(options?: { value?: unknown; isDateLikeField?: boolean }) {
       nullComponent={NullComponent}
       runJSComponent={RunJSComponent}
       isDateLikeField={options?.isDateLikeField ?? false}
-      dateComponentProps={DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
     />,
   );
   return onChange;
@@ -103,6 +108,26 @@ describe('FieldValueVariableInput', () => {
       'nextYear',
     ]);
     expect(tree[4].name).toBe('currentUser');
+  });
+
+  it('does not allow Now for pure date fields', async () => {
+    const dateComponentProps: DateVariableComponentProps = {
+      ...DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
+      exactNormalizeMode: 'date',
+    };
+    renderInput({ isDateLikeField: true, dateComponentProps });
+
+    const tree = await resolveMetaTree();
+    const dateNode = tree[2];
+    expect((dateNode.children as MetaTreeNode[]).map((node) => node.name)).not.toContain('now');
+    expect(
+      mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+        name: 'now',
+        title: 'Now',
+        type: 'date',
+        paths: ['date', 'now'],
+      }),
+    ).toBeUndefined();
   });
 
   it('restores legacy date expressions under Date without changing Constant semantics', () => {
@@ -263,6 +288,20 @@ describe('DateVariableEditor Format', () => {
     );
 
     expect(screen.getByRole('combobox', { name: 'Format' })).toBeInTheDocument();
+  });
+
+  it('shows the default Format as a placeholder when a legacy expression has no Format', () => {
+    render(
+      <DateVariableEditor
+        value={{ kind: 'preset', preset: 'now' }}
+        isDateLikeField={false}
+        dateComponentProps={DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      />,
+    );
+
+    const formatInput = screen.getByRole('combobox', { name: 'Format' });
+    expect(formatInput).toHaveValue('');
+    expect(screen.getByText('YYYY-MM-DD HH:mm:ss')).toHaveClass('ant-select-selection-placeholder');
   });
 
   it('hides Format for date-like fields', () => {
