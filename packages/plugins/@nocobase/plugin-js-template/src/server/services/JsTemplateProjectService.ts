@@ -69,6 +69,10 @@ export interface JsTemplateCreateProjectOptions {
   projectId?: string;
 }
 
+export interface JsTemplateListProjectsOptions {
+  includeTemplateSummary?: boolean;
+}
+
 export class JsTemplateProjectService {
   private vscFileService: VscFileService;
 
@@ -244,13 +248,19 @@ export class JsTemplateProjectService {
     });
   }
 
-  async listProjects(ctx: JsTemplateServiceContext = {}): Promise<JsTemplateProject[]> {
+  async listProjects(
+    ctx: JsTemplateServiceContext = {},
+    options: JsTemplateListProjectsOptions = {},
+  ): Promise<JsTemplateProject[]> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).find({
         filter: { applicationName: this.requireApplicationName() },
         sort: ['name'],
         transaction,
       });
+      if (options.includeTemplateSummary === false) {
+        return records.map(projectFromModel);
+      }
       const projectIds = records.map((record) => String(record.get('id')));
       const templateRecords = projectIds.length
         ? await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).find({

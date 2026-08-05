@@ -377,6 +377,63 @@ export const jsTemplateSchemas = {
       updatedAt: nullableDateTime,
     },
   },
+  JsTemplateCatalogEntry: {
+    type: 'object',
+    required: [
+      'id',
+      'projectId',
+      'projectName',
+      'projectTitle',
+      'projectLifecycleStatus',
+      'kind',
+      'templateName',
+      'title',
+      'description',
+      'healthStatus',
+      'status',
+      'usageCount',
+    ],
+    properties: {
+      id: {
+        type: 'string',
+        description: 'Stable Template Entry id.',
+      },
+      projectId: {
+        type: 'string',
+        description: 'Source Project id.',
+      },
+      projectName: {
+        type: 'string',
+      },
+      projectTitle: nullableString,
+      projectLifecycleStatus: {
+        type: 'string',
+        enum: ['enabled', 'disabled', 'archived'],
+      },
+      kind: {
+        $ref: '#/components/schemas/JsTemplateKind',
+      },
+      templateName: {
+        type: 'string',
+      },
+      title: nullableString,
+      description: nullableString,
+      healthStatus: {
+        type: 'string',
+        enum: ['ready', 'missing'],
+      },
+      status: {
+        type: 'string',
+        enum: ['ready', 'missing', 'disabled', 'archived'],
+      },
+      usageCount: {
+        type: 'integer',
+        minimum: 0,
+      },
+      createdAt: nullableDateTime,
+      updatedAt: nullableDateTime,
+    },
+  },
   JsTemplateUsageOwnerLocator: {
     type: 'object',
     additionalProperties: true,
@@ -1078,6 +1135,18 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/JsTemplate',
+      },
+    },
+  },
+  JsTemplateCatalogEntryListEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/JsTemplateCatalogEntry',
+        },
       },
     },
   },

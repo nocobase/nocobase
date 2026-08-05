@@ -11,7 +11,8 @@ import type React from 'react';
 
 export * from './vsc-file/public-api';
 
-export { default as JsTemplateListPage } from '../client-v2/pages/JsTemplateListPage';
+export { default as JsTemplateCatalogPage } from '../client-v2/pages/JsTemplateCatalogPage';
+export { default as JsTemplateProjectsPage } from '../client-v2/pages/JsTemplateProjectsPage';
 export { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
 
 import { NAMESPACE } from '../constants';
@@ -19,7 +20,8 @@ import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from '../client-v2/jsTemplateRunJSIntegration';
-import JsTemplateListPage from '../client-v2/pages/JsTemplateListPage';
+import JsTemplateCatalogPage from '../client-v2/pages/JsTemplateCatalogPage';
+import JsTemplateProjectsPage from '../client-v2/pages/JsTemplateProjectsPage';
 import { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
 
@@ -30,11 +32,12 @@ export interface JsTemplateClientOptions {
 }
 
 interface ClientV1SettingsOptions {
-  icon: string;
+  icon?: string;
   title: string;
-  Component: React.ComponentType;
+  Component?: React.ComponentType;
   aclSnippet: string;
   hidden?: boolean;
+  sort?: number;
 }
 
 interface ClientV1SettingsManager {
@@ -109,10 +112,21 @@ export class PluginJsTemplateClient {
     const settingsOptions: ClientV1SettingsOptions = {
       icon: 'CodeOutlined',
       title: translate(this.app, JS_TEMPLATE_V2_UI_CONTRACT.productNameKey),
-      Component: JsTemplateListPage,
       aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
     };
     this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
+    this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.templates`, {
+      title: translate(this.app, 'Templates'),
+      Component: JsTemplateCatalogPage,
+      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+      sort: 1,
+    });
+    this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, {
+      title: translate(this.app, 'Source Projects'),
+      Component: JsTemplateProjectsPage,
+      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+      sort: 2,
+    });
     activeJsTemplateClientV1Instance = this;
   }
 }

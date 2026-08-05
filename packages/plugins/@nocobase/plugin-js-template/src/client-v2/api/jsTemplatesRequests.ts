@@ -9,6 +9,7 @@
 
 import type {
   JsTemplate,
+  JsTemplateCatalogEntry,
   JsTemplateProject,
   SaveAsJsTemplateInput,
   SaveAsJsTemplateResult,
@@ -55,6 +56,14 @@ export async function getJsTemplate(api: ApiClientLike, templateId: string): Pro
     data: { templateId },
   });
   return unwrapResourceResponse(response);
+}
+
+export async function listJsTemplateCatalog(api: ApiClientLike): Promise<JsTemplateCatalogEntry[]> {
+  const response = await api.request<ResourceResponse<JsTemplateCatalogEntry[]>>({
+    url: 'jsTemplates:listCatalog',
+    method: 'post',
+  });
+  return unwrapResourceResponse(response) || [];
 }
 
 export async function listJsTemplateProjects(api: ApiClientLike): Promise<JsTemplateProject[]> {

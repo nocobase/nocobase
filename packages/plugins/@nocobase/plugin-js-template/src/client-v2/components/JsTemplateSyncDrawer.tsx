@@ -338,7 +338,7 @@ export function JsTemplateSyncDrawer(props: JsTemplateSyncDrawerProps) {
             {loadState === 'ready' && plan?.state === 'unconfigured' ? (
               <>
                 <Alert
-                  description={t('Connect this JS Template to a Git repository to sync its code.')}
+                  description={t('Connect this Source Project to a Git repository to sync its code.')}
                   message={t('Sync source is not configured')}
                   role="alert"
                   showIcon
@@ -425,7 +425,7 @@ export function JsTemplateSyncDrawer(props: JsTemplateSyncDrawerProps) {
                   </Button>
                   <Popconfirm
                     cancelText={t('Cancel')}
-                    description={t('The saved sync source will be removed from this JS Template.')}
+                    description={t('The saved sync source will be removed from this Source Project.')}
                     disabled={actionsDisabled}
                     okText={t('Disconnect')}
                     onConfirm={runDisconnect}
@@ -483,7 +483,7 @@ function getStatusContent(plan: JsTemplateSyncPlan, t: ReturnType<typeof useT>):
   if (plan.state === 'remote-ahead') {
     return {
       message: t('Remote changes'),
-      description: t('Remote code can be pulled into this JS Template.'),
+      description: t('Remote code can be pulled into this Source Project.'),
       type: 'info',
     };
   }
@@ -504,7 +504,7 @@ function getStatusContent(plan: JsTemplateSyncPlan, t: ReturnType<typeof useT>):
   }
   return {
     message: t('Sync source is not configured'),
-    description: t('Connect this JS Template to a Git repository to sync its code.'),
+    description: t('Connect this Source Project to a Git repository to sync its code.'),
     type: 'info',
   };
 }

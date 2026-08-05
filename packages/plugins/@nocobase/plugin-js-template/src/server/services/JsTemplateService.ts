@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Model, Transaction } from '@nocobase/database';
+import { Op, type Database, type Model, type Transaction } from '@nocobase/database';
 import { stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
 import { extractRunJSSettingsDefault } from '@nocobase/runjs/settings';
@@ -19,8 +19,11 @@ import type {
   JsTemplateDiagnostic,
   JsTemplateHealthStatus,
   JsTemplate,
+  JsTemplateCatalogEntry,
+  JsTemplateCatalogStatus,
   CompiledJsTemplateArtifact,
   JsTemplateProject,
+  JsTemplateProjectLifecycleStatus,
 } from '../../shared/types';
 import { JsTemplateFileService } from './JsTemplateFileService';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
@@ -201,6 +204,53 @@ export class JsTemplateService {
     });
 
     return records.map(templateFromModel);
+  }
+
+  async listCatalog(ctx: JsTemplateServiceContext = {}): Promise<JsTemplateCatalogEntry[]> {
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const projects = await this.projectService.listProjects(
+        { ...ctx, transaction },
+        { includeTemplateSummary: false },
+      );
+      const projectById = new Map(projects.map((project) => [project.id, project]));
+      const projectIds = [...projectById.keys()];
+      if (projectIds.length === 0) {
+        return [];
+      }
+
+      const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).find({
+        filter: { projectId: { $in: projectIds } },
+        fields: [
+          'id',
+          'projectId',
+          'kind',
+          'templateName',
+          'title',
+          'description',
+          'healthStatus',
+          'createdAt',
+          'updatedAt',
+        ],
+        sort: ['kind', 'templateName'],
+        transaction,
+      });
+      const usageCounts = await this.loadCatalogUsageCounts(
+        records.map((record) => String(record.get('id'))),
+        transaction,
+      );
+
+      return records
+        .map((record) => {
+          const project = projectById.get(String(record.get('projectId')));
+          if (!project) {
+            return null;
+          }
+          const templateId = String(record.get('id'));
+          return toCatalogEntry(record, project, usageCounts.get(templateId) || 0);
+        })
+        .filter((entry): entry is JsTemplateCatalogEntry => Boolean(entry))
+        .sort(compareCatalogEntries);
+    });
   }
 
   async getTemplate(templateId: string, ctx: JsTemplateServiceContext = {}): Promise<JsTemplate> {
@@ -489,6 +539,23 @@ export class JsTemplateService {
 
     return this.db.sequelize.transaction(run);
   }
+
+  private async loadCatalogUsageCounts(templateIds: string[], transaction: Transaction): Promise<Map<string, number>> {
+    if (templateIds.length === 0) {
+      return new Map();
+    }
+
+    const UsageModel = this.db.getModel(JS_TEMPLATE_COLLECTIONS.usages);
+    const rows = (await UsageModel.findAll({
+      attributes: ['templateId', [UsageModel.sequelize.fn('COUNT', '*'), 'count']],
+      where: { templateId: templateIds, resolvedStatus: { [Op.ne]: 'owner_missing' } },
+      group: ['templateId'],
+      raw: true,
+      transaction,
+    })) as unknown as Array<{ templateId: unknown; count: unknown }>;
+
+    return new Map(rows.map((row) => [String(row.templateId), normalizeCatalogUsageCount(row.count)]));
+  }
 }
 
 const SETTINGS_FIELDS = new Set(['settingsSchema', 'settingsSchemaHash', 'settingsDefaultsHash']);
@@ -722,6 +789,47 @@ function compareTemplates(left: JsTemplate, right: JsTemplate): number {
   return [left.target, left.kind, left.templateName, left.id]
     .join('\u0000')
     .localeCompare([right.target, right.kind, right.templateName, right.id].join('\u0000'));
+}
+
+function toCatalogEntry(record: Model, project: JsTemplateProject, usageCount: number): JsTemplateCatalogEntry {
+  return {
+    id: String(record.get('id')),
+    projectId: String(record.get('projectId')),
+    projectName: project.name,
+    projectTitle: project.title || null,
+    projectLifecycleStatus: project.lifecycleStatus,
+    kind: String(record.get('kind')),
+    templateName: String(record.get('templateName')),
+    title: nullableString(record.get('title')),
+    description: nullableString(record.get('description')),
+    healthStatus: record.get('healthStatus') as JsTemplateHealthStatus,
+    status: getCatalogStatus(record.get('healthStatus') as JsTemplateHealthStatus, project.lifecycleStatus),
+    usageCount,
+    createdAt: normalizeDate(record.get('createdAt')),
+    updatedAt: normalizeDate(record.get('updatedAt')),
+  };
+}
+
+function getCatalogStatus(
+  healthStatus: JsTemplateHealthStatus,
+  lifecycleStatus: JsTemplateProjectLifecycleStatus,
+): JsTemplateCatalogStatus {
+  return lifecycleStatus === 'enabled' ? healthStatus : lifecycleStatus;
+}
+
+function compareCatalogEntries(left: JsTemplateCatalogEntry, right: JsTemplateCatalogEntry): number {
+  return [left.title || left.templateName, left.kind, left.projectTitle || left.projectName, left.id]
+    .join('\u0000')
+    .localeCompare(
+      [right.title || right.templateName, right.kind, right.projectTitle || right.projectName, right.id].join('\u0000'),
+      undefined,
+      { numeric: true, sensitivity: 'base' },
+    );
+}
+
+function normalizeCatalogUsageCount(value: unknown): number {
+  const count = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(count) && count > 0 ? count : 0;
 }
 
 function emptyRuntimeFields() {

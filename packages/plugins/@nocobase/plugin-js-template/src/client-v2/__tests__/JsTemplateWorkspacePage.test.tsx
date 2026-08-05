@@ -1265,7 +1265,7 @@ describe('JsTemplateWorkspacePage', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Empty project')).toBeInTheDocument();
+    expect(await screen.findByText('Empty Source Project')).toBeInTheDocument();
     expect(screen.queryByTestId('runjs-code-tab')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
     expect(mocks.api.saveSource).not.toHaveBeenCalled();

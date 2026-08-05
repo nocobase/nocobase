@@ -82,8 +82,8 @@ export function JsTemplateListToolbar({
             {t('Batch actions')} <DownOutlined />
           </Button>
         </Dropdown>
-        <Button aria-label={t('Add new')} icon={<PlusOutlined />} onClick={onAdd} type="primary">
-          {t('Add new')}
+        <Button aria-label={t('Add Source Project')} icon={<PlusOutlined />} onClick={onAdd} type="primary">
+          {t('Add Source Project')}
         </Button>
       </Space>
     </Flex>

@@ -35,7 +35,8 @@ import {
   JSBlockJsTemplateSourceField as ExportedJSBlockJsTemplateSourceField,
   JsTemplateCreateSourceSelector as ExportedJsTemplateCreateSourceSelector,
   JsTemplateCredentialInput as ExportedJsTemplateCredentialInput,
-  JsTemplateListPage as ExportedJsTemplateListPage,
+  JsTemplateCatalogPage as ExportedJsTemplateCatalogPage,
+  JsTemplateProjectsPage as ExportedJsTemplateProjectsPage,
   JsTemplateSyncDrawer as ExportedJsTemplateSyncDrawer,
   JsTemplateWorkspacePage as ExportedJsTemplateWorkspacePage,
   SaveAsJsTemplate as ExportedSaveAsJsTemplate,
@@ -45,18 +46,20 @@ import {
   useJsTemplateSync as exportedUseJsTemplateSync,
 } from '../index';
 import { JS_TEMPLATE_V2_UI_CONTRACT } from '../jsTemplateV2UIContract';
-import DirectJsTemplateListPage from '../pages/JsTemplateListPage';
+import DirectJsTemplateCatalogPage from '../pages/JsTemplateCatalogPage';
+import DirectJsTemplateProjectsPage from '../pages/JsTemplateProjectsPage';
 import DirectJsTemplateWorkspacePage from '../pages/JsTemplateWorkspacePage';
 import { PluginJsTemplateClientV2 as DirectPluginJsTemplateClientV2 } from '../plugin';
 
 const pluginCanonicalTranslations = {
   'Compiling JS Template': '正在编译 JS 模板',
-  'Connect this JS Template to a Git repository to sync its code.': '将此 JS 模板连接到 Git 仓库以同步代码。',
+  'Connect this Source Project to a Git repository to sync its code.': '将此源码项目连接到 Git 仓库以同步代码。',
   'Copy selected JS Template code': '复制所选 JS 模板代码',
   'Copying JS Template code': '正在复制 JS 模板代码',
   'Create JS Template': '创建 JS 模板',
   'Create new JS Template': '创建新 JS 模板',
-  'Edit JS Template': '编辑 JS 模板',
+  'Create Source Project': '创建源码项目',
+  'Edit Source Project': '编辑源码项目',
   'Existing JS Template': '已有 JS 模板',
   'Failed to move source to JS Template': '移入 JS 模板失败',
   'JS Template': 'JS 模板',
@@ -70,14 +73,14 @@ const pluginCanonicalTranslations = {
   'No JS Templates': '没有可用的 JS 模板',
   'No JS Templates yet': '暂无 JS 模板',
   'Other JS Templates are read-only here': '此编辑器中其他 JS 模板为只读',
-  'Remote code can be pulled into this JS Template.': '可以将远端代码拉取到此 JS 模板。',
+  'Remote code can be pulled into this Source Project.': '可以将远端代码拉取到此源码项目。',
   'Select a JS Template': '请选择 JS 模板',
   'Select a JS Template to configure settings': '请选择 JS 模板后配置',
-  'Select a project from the JS Templates list': '请从 JS 模板列表选择项目',
+  'Select a Source Project from Source Projects': '请从源码项目列表选择源码项目',
   'Selected JS Template is unavailable': '所选 JS 模板不可用',
   'The current working copy of this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.':
     '将把当前模板的工作副本及其实际引用的文件复制到内联代码；原 JS 模板保持不变。',
-  'The saved sync source will be removed from this JS Template.': '将从此 JS 模板中移除已保存的同步来源。',
+  'The saved sync source will be removed from this Source Project.': '将从此源码项目中移除已保存的同步来源。',
   'This page is rendered by a JS Template.': '此页面由 JS 模板渲染。',
   'You can copy the selected JS Template code into the inline editor, or keep the existing inline code.':
     '你可以将所选 JS 模板代码复制到内联编辑器，也可以保留现有内联代码。',
@@ -127,7 +130,8 @@ function collectProductionSources(directory: string): string[] {
 describe('JS Templates client-v2 UI contract', () => {
   it('exports the canonical client-v2 implementation', () => {
     expect(ExportedPluginJsTemplateClientV2).toBe(DirectPluginJsTemplateClientV2);
-    expect(ExportedJsTemplateListPage).toBe(DirectJsTemplateListPage);
+    expect(ExportedJsTemplateCatalogPage).toBe(DirectJsTemplateCatalogPage);
+    expect(ExportedJsTemplateProjectsPage).toBe(DirectJsTemplateProjectsPage);
     expect(ExportedJsTemplateWorkspacePage).toBe(DirectJsTemplateWorkspacePage);
     expect(ExportedJSActionJsTemplateSourceField).toBe(JSActionJsTemplateSourceField);
     expect(ExportedJSBlockJsTemplateSourceField).toBe(JSBlockJsTemplateSourceField);

@@ -128,15 +128,15 @@ export const jsTemplateProjectFilterCollection: CollectionOptions = {
 };
 const jsTemplateProjectFilterCollections = [jsTemplateProjectFilterCollection];
 
-function JsTemplateListPage() {
+function JsTemplateProjectsPage() {
   return (
     <ExtendCollectionsProvider collections={jsTemplateProjectFilterCollections}>
-      <JsTemplateListPageInner />
+      <JsTemplateProjectsPageInner />
     </ExtendCollectionsProvider>
   );
 }
 
-function JsTemplateListPageInner() {
+function JsTemplateProjectsPageInner() {
   const { t } = useTranslation(NAMESPACE);
   const flowContext = useFlowContext() as FlowContextWithApi;
   const compileT = useT();
@@ -199,7 +199,10 @@ function JsTemplateListPageInner() {
       setProjects(nextProjects);
       return true;
     } catch (error) {
-      setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load projects') });
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : t('Failed to load Source Projects'),
+      });
       return false;
     } finally {
       setLoading(false);
@@ -221,7 +224,7 @@ function JsTemplateListPageInner() {
         const job = jobs[jobs.length - 1];
         setNotice({
           type: 'success',
-          message: t('Creation succeeded: {{name}}').replace('{{name}}', job.title || job.name),
+          message: t('Source Project creation succeeded: {{name}}').replace('{{name}}', job.title || job.name),
         });
       }
     },
@@ -254,9 +257,10 @@ function JsTemplateListPageInner() {
       const errorKey = getJsTemplateSyncErrorTranslationKey(lastFailed.errorCode, lastFailed.errorReasonCode);
       setNotice({
         type: 'error',
-        message: `${t('Creation failed: {{name}}').replace('{{name}}', lastFailed.title || lastFailed.name)}: ${
-          errorKey ? t(errorKey) : lastFailed.errorMessage || t('JS Template creation failed')
-        }`,
+        message: `${t('Source Project creation failed: {{name}}').replace(
+          '{{name}}',
+          lastFailed.title || lastFailed.name,
+        )}: ${errorKey ? t(errorKey) : lastFailed.errorMessage || t('Source Project creation failed')}`,
       });
     }
   }, [createJobs, handleSucceededJobs, t]);
@@ -415,7 +419,7 @@ function JsTemplateListPageInner() {
           ? getJsTemplateSyncErrorTranslationKey(
               error.code,
               typeof error.details?.reasonCode === 'string' ? error.details.reasonCode : undefined,
-            ) || 'Failed to create project'
+            ) || 'Failed to create Source Project'
           : undefined;
       setNotice({
         type: 'error',
@@ -423,7 +427,7 @@ function JsTemplateListPageInner() {
           ? t(syncErrorKey)
           : error instanceof Error
             ? error.message
-            : t('Failed to create project'),
+            : t('Failed to create Source Project'),
       });
     } finally {
       setCreating(false);
@@ -453,11 +457,11 @@ function JsTemplateListPageInner() {
 
         const failedCount = results.length - updatedProjects.length;
         if (failedCount) {
-          setNotice({ type: 'warning', message: t('Some projects failed to update') });
+          setNotice({ type: 'warning', message: t('Some Source Projects failed to update') });
           return;
         }
 
-        setNotice({ type: 'success', message: t('Projects updated') });
+        setNotice({ type: 'success', message: t('Source Projects updated') });
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to change lifecycle') });
       } finally {
@@ -478,7 +482,7 @@ function JsTemplateListPageInner() {
       try {
         const updatedProject = await changeLifecycleRequest({ projectId: project.id, lifecycleStatus });
         setProjects((current) => current.map((item) => (item.id === updatedProject.id ? updatedProject : item)));
-        setNotice({ type: 'success', message: t('Projects updated') });
+        setNotice({ type: 'success', message: t('Source Projects updated') });
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to change lifecycle') });
       } finally {
@@ -508,12 +512,12 @@ function JsTemplateListPageInner() {
           nextSearchParams.delete('panel');
           setSearchParams(nextSearchParams, { replace: true });
         }
-        setNotice({ type: 'success', message: t('Project removed') });
+        setNotice({ type: 'success', message: t('Source Project removed') });
         return true;
       } catch (error) {
         setNotice({
           type: 'error',
-          message: error instanceof Error ? error.message : t('Failed to remove project'),
+          message: error instanceof Error ? error.message : t('Failed to remove Source Project'),
         });
         return false;
       } finally {
@@ -557,11 +561,11 @@ function JsTemplateListPageInner() {
         );
         setEditTarget(null);
         editForm.resetFields();
-        setNotice({ type: 'success', message: t('Project updated') });
+        setNotice({ type: 'success', message: t('Source Project updated') });
       } catch (error) {
         setNotice({
           type: 'error',
-          message: error instanceof Error ? error.message : t('Failed to update project'),
+          message: error instanceof Error ? error.message : t('Failed to update Source Project'),
         });
       } finally {
         setEditing(false);
@@ -1040,7 +1044,7 @@ export function matchesJsTemplateProjectFilter(project: JsTemplateProject, filte
 }
 
 export function createJsTemplateProjectName(): string {
-  return `l_${uid()}`;
+  return `jt_${uid()}`;
 }
 
-export default JsTemplateListPage;
+export default JsTemplateProjectsPage;

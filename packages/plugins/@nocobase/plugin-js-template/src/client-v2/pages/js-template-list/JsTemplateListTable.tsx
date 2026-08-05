@@ -48,7 +48,7 @@ export function JsTemplateListTable({
   const columns = useMemo<ColumnsType<JsTemplateListRow>>(
     () => [
       {
-        title: t('Title'),
+        title: t('Source Project'),
         dataIndex: 'name',
         sorter: (left, right) =>
           compareText(getListRowTitle(left), getListRowTitle(right)) ||
@@ -220,7 +220,7 @@ export function JsTemplateListTable({
       dataSource={rows}
       loading={loading}
       locale={{
-        emptyText: <Empty description={t('No JS Templates yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
+        emptyText: <Empty description={t('No Source Projects yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
       }}
       pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
       rowKey={(row) => (row.rowType === 'project' ? row.project.id : `create-job:${row.job.id}`)}

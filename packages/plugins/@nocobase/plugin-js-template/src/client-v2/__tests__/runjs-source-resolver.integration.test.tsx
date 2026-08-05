@@ -57,15 +57,23 @@ function registerRuntimeBoundaryTests() {
       await app.load();
 
       const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
+      const sourceProjectsPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, false);
       expect(app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false)).toMatchObject({
         key: JS_TEMPLATE_SETTINGS_KEY,
         title: 'JS Templates',
         aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-        showTabs: false,
       });
       expect(canonicalPage).toMatchObject({
         menuKey: JS_TEMPLATE_SETTINGS_KEY,
         pageKey: 'index',
+        title: 'Templates',
+        componentLoader: expect.any(Function),
+        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+      });
+      expect(sourceProjectsPage).toMatchObject({
+        menuKey: JS_TEMPLATE_SETTINGS_KEY,
+        pageKey: 'source-projects',
+        title: 'Source Projects',
         componentLoader: expect.any(Function),
         aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       });

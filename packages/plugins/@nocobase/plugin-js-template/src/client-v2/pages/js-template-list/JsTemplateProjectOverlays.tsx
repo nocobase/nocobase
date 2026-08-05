@@ -70,7 +70,7 @@ export function JsTemplateProjectOverlays({
           onCancel={onCancelCreate}
           onOk={onConfirmCreate}
           open
-          title={t('Create JS Template')}
+          title={t('Create Source Project')}
         >
           <Form form={createForm} layout="vertical">
             <Form.Item
@@ -100,7 +100,7 @@ export function JsTemplateProjectOverlays({
       ) : null}
 
       <Drawer
-        aria-label={t('Edit JS Template')}
+        aria-label={t('Edit Source Project')}
         destroyOnClose
         footer={
           <Flex justify="flex-end">
@@ -117,7 +117,7 @@ export function JsTemplateProjectOverlays({
         maskClosable={!editing}
         onClose={onCancelEdit}
         open={Boolean(editTarget)}
-        title={t('Edit JS Template')}
+        title={t('Edit Source Project')}
       >
         <Form form={editForm} id="js-template-edit-form" layout="vertical" onFinish={onUpdateProject}>
           <Form.Item
@@ -144,11 +144,11 @@ export function JsTemplateProjectOverlays({
         onCancel={onCancelRemove}
         onOk={onConfirmRemove}
         open={Boolean(removeTarget)}
-        title={t('Remove this project?')}
+        title={t('Remove this Source Project?')}
       >
         <Space direction="vertical" size={marginSM} style={{ width: '100%' }}>
           <Typography.Text>
-            {t('Project to remove')}:{' '}
+            {t('Source Project to remove')}:{' '}
             <Typography.Text strong>{removeTarget?.title || removeTarget?.name}</Typography.Text>
           </Typography.Text>
           <Alert message={t('This action cannot be undone')} showIcon type="warning" />

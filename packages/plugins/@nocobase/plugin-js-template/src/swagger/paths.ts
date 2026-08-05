@@ -75,6 +75,21 @@ export const jsTemplatePaths = {
       },
     },
   },
+  '/jsTemplates:listCatalog': {
+    post: {
+      tags: ['jsTemplates'],
+      summary: 'List JS Template catalog entries',
+      description:
+        'List one catalog row per reusable Template Entry, including its Source Project, effective status, and aggregate usage count.',
+      responses: {
+        200: {
+          description: 'Entry-centric JS Template catalog.',
+          content: jsonContent('JsTemplateCatalogEntryListEnvelope'),
+        },
+        403: errorResponse('The current user cannot read the JS Template catalog.'),
+      },
+    },
+  },
   '/jsTemplates:get': {
     post: {
       tags: ['jsTemplates'],

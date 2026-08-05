@@ -16,7 +16,14 @@ import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 
 const publicActions = {
   jsTemplateProjects: ['list', 'get'],
-  jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline'],
+  jsTemplates: [
+    'listCatalog',
+    'get',
+    'listSelectable',
+    'compileWorkspacePreview',
+    'saveAsJsTemplate',
+    'detachToInline',
+  ],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
@@ -185,5 +192,20 @@ describe('js-template swagger', () => {
       expect(operation.responses).toHaveProperty('422');
     }
     expect(listSelectable.responses).toHaveProperty('200');
+  });
+
+  it('documents the entry-centric catalog projection', () => {
+    const schemas = swaggerDocument.components.schemas;
+    const listCatalog = swaggerDocument.paths['/jsTemplates:listCatalog'].post;
+
+    expect(listCatalog.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/JsTemplateCatalogEntryListEnvelope',
+    });
+    expect(schemas.JsTemplateCatalogEntry.required).toEqual(
+      expect.arrayContaining(['id', 'projectId', 'templateName', 'kind', 'status', 'usageCount']),
+    );
+    expect(schemas.JsTemplateCatalogEntryListEnvelope.properties.data.items).toEqual({
+      $ref: '#/components/schemas/JsTemplateCatalogEntry',
+    });
   });
 });

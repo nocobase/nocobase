@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default as JsTemplateListPage } from './pages/JsTemplateListPage';
+export { default as JsTemplateCatalogPage } from './pages/JsTemplateCatalogPage';
+export { default as JsTemplateProjectsPage } from './pages/JsTemplateProjectsPage';
 export { default as JsTemplateWorkspacePage } from './pages/JsTemplateWorkspacePage';
 export {
   JSActionJsTemplateSourceField,

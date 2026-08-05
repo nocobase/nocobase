@@ -8,6 +8,7 @@
  */
 
 import { DEFAULT_JS_TEMPLATE_README, createDefaultJsTemplateTemplate } from '../../shared/default-template';
+import { createJsTemplateEntryStarter } from '../../shared/jsTemplateEntryStarter';
 import type { JsTemplateKind } from '../../shared/types';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
@@ -89,6 +90,32 @@ describe('plugin-js-template default source template', () => {
       );
       expect(result.diagnostics).toEqual([]);
       expect(result.artifact?.code).toEqual(expect.stringMatching(/[\s\S]*/u));
+    }
+  });
+
+  it('validates and compiles the single-entry starter for all five supported kinds', async () => {
+    const bridge = new JsTemplateWorkspaceCompilerBridge();
+
+    for (const kind of new Set(ENTRY_CASES.map((entry) => entry.kind))) {
+      const templateName = `starter-${kind}`;
+      const files = createJsTemplateEntryStarter({ kind, templateName, title: `Starter ${kind}` });
+      const entryFile = files.find((file) => !file.path.endsWith('/entry.json'));
+
+      expect(new JsTemplateValidator().validateInitialFiles({ files }), kind).toEqual([]);
+      if (!entryFile) {
+        throw new Error(`Starter source file is missing for ${kind}`);
+      }
+
+      const result = await bridge.compileEntry({
+        projectId: 'jtp_starter',
+        kind,
+        templateName,
+        entryPath: entryFile.path,
+        files,
+      });
+
+      expect(result.accepted, `${kind}\n${JSON.stringify(result.diagnostics, null, 2)}`).toBe(true);
+      expect(result.diagnostics).toEqual([]);
     }
   });
 });

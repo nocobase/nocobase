@@ -258,7 +258,7 @@ function JsTemplateWorkspacePage({
           setBaseHeadCommitId(null);
           setHistoryItems([]);
           setHistoryNextBeforeSeq(null);
-          setNotice({ type: 'warning', message: t('Archived projects are read-only') });
+          setNotice({ type: 'warning', message: t('Archived Source Projects are read-only') });
           return;
         }
 
@@ -1132,7 +1132,7 @@ function JsTemplateWorkspacePage({
   if (!projectId) {
     return (
       <MissingProjectState
-        description={t('Select a project from the JS Templates list')}
+        description={t('Select a Source Project from Source Projects')}
         embedded={embedded}
         title={t('Source workspace')}
       />
@@ -1183,7 +1183,7 @@ function JsTemplateWorkspacePage({
         }}
         diagnostics={diagnostics}
         embedded={embedded}
-        emptyProjectLabel={t('Empty project')}
+        emptyProjectLabel={t('Empty Source Project')}
         filesCollapsed={filesCollapsed}
         filesPanelProps={{
           activePath,

@@ -38,7 +38,8 @@ import pluginZhCN from '../../locale/zh-CN.json';
 import PluginJsTemplateClient, {
   JS_TEMPLATE_SETTINGS_KEY,
   JS_TEMPLATE_V2_UI_CONTRACT,
-  JsTemplateListPage,
+  JsTemplateCatalogPage,
+  JsTemplateProjectsPage,
   PluginJsTemplateClient as NamedPluginJsTemplateClient,
 } from '..';
 
@@ -103,11 +104,30 @@ describe('plugin-js-template legacy client boundary', () => {
       expect.objectContaining({
         icon: 'CodeOutlined',
         title: '@nocobase/plugin-js-template:JS Templates',
-        Component: expect.any(Function),
         aclSnippet: 'pm.js-template',
       }),
     );
-    expect(add).toHaveBeenCalledTimes(1);
+    expect(add).toHaveBeenNthCalledWith(
+      2,
+      `${JS_TEMPLATE_SETTINGS_KEY}.templates`,
+      expect.objectContaining({
+        title: '@nocobase/plugin-js-template:Templates',
+        Component: JsTemplateCatalogPage,
+        aclSnippet: 'pm.js-template',
+        sort: 1,
+      }),
+    );
+    expect(add).toHaveBeenNthCalledWith(
+      3,
+      `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`,
+      expect.objectContaining({
+        title: '@nocobase/plugin-js-template:Source Projects',
+        Component: JsTemplateProjectsPage,
+        aclSnippet: 'pm.js-template',
+        sort: 2,
+      }),
+    );
+    expect(add).toHaveBeenCalledTimes(3);
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeTruthy();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('js-template-runjs-value');
@@ -145,7 +165,7 @@ describe('plugin-js-template legacy client boundary', () => {
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
   });
 
-  it('exposes the canonical client entrypoint and one settings route', async () => {
+  it('exposes the canonical client entrypoint with entry and Source Project settings routes', async () => {
     const add = vi.fn();
     const plugin = new PluginJsTemplateClient(
       { name: 'js-template' },
@@ -160,8 +180,20 @@ describe('plugin-js-template legacy client boundary', () => {
     await plugin.load();
 
     expect(PluginJsTemplateClient).toBe(NamedPluginJsTemplateClient);
-    expect(add.mock.calls.map(([key]) => key)).toEqual([JS_TEMPLATE_SETTINGS_KEY]);
-    expect(add.mock.calls[0][1].Component).toBe(JsTemplateListPage);
+    expect(add.mock.calls.map(([key]) => key)).toEqual([
+      JS_TEMPLATE_SETTINGS_KEY,
+      `${JS_TEMPLATE_SETTINGS_KEY}.templates`,
+      `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`,
+    ]);
+    expect(add.mock.calls[0][1].Component).toBeUndefined();
+    expect(add.mock.calls[1][1].Component).toBe(JsTemplateCatalogPage);
+    expect(add.mock.calls[2][1].Component).toBe(JsTemplateProjectsPage);
+    expect(
+      add.mock.calls
+        .slice(1)
+        .sort((left, right) => left[1].sort - right[1].sort)
+        .map(([key]) => key),
+    ).toEqual([`${JS_TEMPLATE_SETTINGS_KEY}.templates`, `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`]);
     expect(pluginEnUS[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe('JS Templates');
     expect(pluginZhCN[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe(JS_TEMPLATE_V2_UI_CONTRACT.productNameZhCN);
   });

@@ -21,7 +21,8 @@ import { registerJsTemplateRuntimeAuthSession } from './resolvers/JsTemplateRunt
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
 let activeJsTemplateClientV2Instance: PluginJsTemplateClientV2 | null = null;
 
-const loadJsTemplateListPage = () => import('./pages/JsTemplateListPage');
+const loadJsTemplateCatalogPage = () => import('./pages/JsTemplateCatalogPage');
+const loadJsTemplateProjectsPage = () => import('./pages/JsTemplateProjectsPage');
 
 export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Application> {
   private readonly disposers: Array<() => void> = [];
@@ -45,15 +46,22 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
       title,
       icon: 'CodeOutlined',
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      showTabs: false,
     });
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: JS_TEMPLATE_SETTINGS_KEY,
       key: 'index',
-      title,
+      title: this.t('Templates'),
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      componentLoader: loadJsTemplateListPage,
+      componentLoader: loadJsTemplateCatalogPage,
+    });
+
+    this.pluginSettingsManager.addPageTabItem({
+      menuKey: JS_TEMPLATE_SETTINGS_KEY,
+      key: 'source-projects',
+      title: this.t('Source Projects'),
+      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+      componentLoader: loadJsTemplateProjectsPage,
     });
   }
 

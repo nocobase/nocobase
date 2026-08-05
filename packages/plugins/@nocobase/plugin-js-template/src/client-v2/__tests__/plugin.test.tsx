@@ -112,6 +112,7 @@ describe('PluginJsTemplateClientV2', () => {
     expect(PluginJsTemplateClientV2).toBe(NamedPluginJsTemplateClientV2);
     const canonicalMenu = app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
     const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
+    const sourceProjectsPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, false);
     expect(canonicalMenu).toMatchObject({
       key: JS_TEMPLATE_SETTINGS_KEY,
       title: 'JS Templates',
@@ -121,9 +122,18 @@ describe('PluginJsTemplateClientV2', () => {
     expect(canonicalPage).toMatchObject({
       menuKey: JS_TEMPLATE_SETTINGS_KEY,
       pageKey: 'index',
+      title: 'Templates',
       componentLoader: expect.any(Function),
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       path: '/admin/settings/js-templates',
+    });
+    expect(sourceProjectsPage).toMatchObject({
+      menuKey: JS_TEMPLATE_SETTINGS_KEY,
+      pageKey: 'source-projects',
+      title: 'Source Projects',
+      componentLoader: expect.any(Function),
+      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+      path: '/admin/settings/js-templates/source-projects',
     });
     expect(canonicalMenu?.hidden).toBeUndefined();
     expect(canonicalPage?.hidden).toBeUndefined();

@@ -181,7 +181,7 @@ describe('plugin-js-template project service', () => {
     ).resolves.toBe(1);
   });
 
-  it('reads only template fields required for project statistics', async () => {
+  it('reads only template fields required for project statistics and can skip the summary query', async () => {
     await service.createProject({ name: 'Project statistics' }, { requestId: 'req_project_statistics' });
     const templatesRepository = app.db.getRepository('jsTemplates');
     const findTemplates = vi.spyOn(templatesRepository, 'find');
@@ -191,6 +191,10 @@ describe('plugin-js-template project service', () => {
     expect(findTemplates).toHaveBeenCalledWith(
       expect.objectContaining({ fields: ['projectId', 'kind', 'healthStatus'] }),
     );
+
+    await service.listProjects({}, { includeTemplateSummary: false });
+
+    expect(findTemplates).toHaveBeenCalledTimes(1);
   });
 
   it('creates the default template as the first commit for an empty initialFiles array', async () => {

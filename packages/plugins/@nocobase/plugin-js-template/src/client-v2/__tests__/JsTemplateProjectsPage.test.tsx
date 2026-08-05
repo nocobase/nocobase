@@ -19,11 +19,11 @@ import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
 import type { JsTemplateCreateJobSummary } from '../../shared/types';
 import { JsTemplateSyncHookError, type UseJsTemplateSyncResult } from '../hooks/useJsTemplateSync';
-import JsTemplateListPage, {
+import JsTemplateProjectsPage, {
   JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES,
   jsTemplateProjectFilterCollection,
   matchesJsTemplateProjectFilter,
-} from '../pages/JsTemplateListPage';
+} from '../pages/JsTemplateProjectsPage';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -215,7 +215,7 @@ function renderListPage(initialEntry = '/admin/settings/js-template') {
   return render(
     <FlowEngineProvider engine={app.flowEngine}>
       <MemoryRouter initialEntries={[initialEntry]}>
-        <JsTemplateListPage />
+        <JsTemplateProjectsPage />
         <LocationSearch />
       </MemoryRouter>
     </FlowEngineProvider>,
@@ -226,7 +226,7 @@ function LocationSearch() {
   return <output data-testid="location-search">{useLocation().search}</output>;
 }
 
-describe('JsTemplateListPage', () => {
+describe('JsTemplateProjectsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createJobs.initialJobs = [];
@@ -321,18 +321,44 @@ describe('JsTemplateListPage', () => {
     expect(screen.queryByText('JS Template creation job request failed')).not.toBeInTheDocument();
   });
 
+  it('shows one advanced Source Project row for a project containing two Template Entries', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([
+      {
+        id: 'jtp_shared',
+        name: 'shared-source',
+        normalizedName: 'shared-source',
+        title: 'Shared source',
+        description: 'Contains two entries',
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'vscc_shared',
+        templateCount: 2,
+        templateKinds: { 'js-action': 1, 'js-block': 1 },
+      },
+    ]);
+
+    renderListPage('/admin/settings/js-templates/source-projects');
+
+    const projectRow = await screen.findByRole('row', { name: /Shared source shared-source/ });
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    expect(screen.getByRole('columnheader', { name: 'Source Project' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Templates' })).toBeInTheDocument();
+    expect(within(projectRow).getByText('js-block 1')).toBeInTheDocument();
+    expect(within(projectRow).getByText('js-action 1')).toBeInTheDocument();
+  });
+
   it('opens the create dialog from the query parameter', async () => {
     renderListPage('/admin/settings/js-template?create=1');
 
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
-    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/);
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
+    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^jt_[a-z0-9]+$/);
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Browser smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     await waitFor(() => expect(mocks.api.createProject).toHaveBeenCalledTimes(1));
     expect(mocks.api.createProject).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: expect.stringMatching(/^l_[a-z0-9]+$/),
+        name: expect.stringMatching(/^jt_[a-z0-9]+$/),
         title: 'Browser smoke',
         description: null,
       }),
@@ -345,7 +371,7 @@ describe('JsTemplateListPage', () => {
     expect(creationCells[3]).toBeEmptyDOMElement();
     expect(creationCells[4]).toBeEmptyDOMElement();
     expect(creationCells[5]).toBeEmptyDOMElement();
-    expect(screen.queryByRole('dialog', { name: 'Create JS Template' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create Source Project' })).not.toBeInTheDocument();
     expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
 
@@ -367,15 +393,15 @@ describe('JsTemplateListPage', () => {
     });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    await userEvent.click(await screen.findByRole('button', { name: /Add Source Project/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
     await userEvent.click(within(dialog).getByText('ZIP file'));
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['zip-source'], 'imported-smoke.zip', { type: 'application/zip' });
 
     await userEvent.upload(input, file);
     await waitFor(() =>
-      expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^l_[a-z0-9]+$/),
+      expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toMatch(/^jt_[a-z0-9]+$/),
     );
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Imported smoke');
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
@@ -383,20 +409,20 @@ describe('JsTemplateListPage', () => {
     await waitFor(() => expect(mocks.api.createProject).toHaveBeenCalledTimes(1));
     expect(mocks.api.createProject).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: expect.stringMatching(/^l_[a-z0-9]+$/),
+        name: expect.stringMatching(/^jt_[a-z0-9]+$/),
         title: 'Imported smoke',
         zipBase64: 'emlwLXNvdXJjZQ==',
       }),
     );
     expect(await screen.findByText('Creating')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog', { name: 'Create JS Template' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Create Source Project' })).not.toBeInTheDocument();
   });
 
   it('creates from Git with an exclusive safe source payload and updates the URL', async () => {
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    await userEvent.click(await screen.findByRole('button', { name: /Add Source Project/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -408,7 +434,7 @@ describe('JsTemplateListPage', () => {
 
     await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
     expect(mocks.sync.createFromGit).toHaveBeenCalledWith({
-      name: expect.stringMatching(/^l_[a-z0-9]+$/),
+      name: expect.stringMatching(/^jt_[a-z0-9]+$/),
       title: 'Git smoke',
       description: null,
       provider: 'git',
@@ -430,8 +456,8 @@ describe('JsTemplateListPage', () => {
     mocks.sync.createFromGit.mockRejectedValueOnce(new Error('Git source could not be created'));
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    await userEvent.click(await screen.findByRole('button', { name: /Add Source Project/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git smoke');
     await userEvent.click(within(dialog).getByText('Git source'));
     const repositoryInput = within(dialog).getByRole('textbox', { name: 'Git repository URL' });
@@ -440,7 +466,7 @@ describe('JsTemplateListPage', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('Git source could not be created')).toBeInTheDocument();
-    expect(screen.getByRole('dialog', { name: 'Create JS Template' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Create Source Project' })).toBeInTheDocument();
     expect(repositoryInput).toHaveValue('https://git.example.com/nocobase/example.git');
   });
 
@@ -455,8 +481,8 @@ describe('JsTemplateListPage', () => {
     );
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    await userEvent.click(await screen.findByRole('button', { name: /Add Source Project/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Git remote error');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -473,8 +499,8 @@ describe('JsTemplateListPage', () => {
   it('submits an unresolved branch and explains when an empty remote needs an explicit branch', async () => {
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: /Add new/ }));
-    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    await userEvent.click(await screen.findByRole('button', { name: /Add Source Project/ }));
+    const dialog = await screen.findByRole('dialog', { name: 'Create Source Project' });
     await userEvent.type(within(dialog).getByLabelText('Title'), 'Empty Git remote');
     await userEvent.click(within(dialog).getByText('Git source'));
     await userEvent.type(
@@ -506,7 +532,7 @@ describe('JsTemplateListPage', () => {
     });
     expect(
       await screen.findByText(
-        'Creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
+        'Source Project creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText('JS_TEMPLATE_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
@@ -535,7 +561,7 @@ describe('JsTemplateListPage', () => {
     });
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText('Creation succeeded: Demo')).toBeInTheDocument();
+    expect(await screen.findByText('Source Project creation succeeded: Demo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
     expect(screen.queryByText('Creating')).not.toBeInTheDocument();
     await act(async () => {
@@ -692,7 +718,7 @@ describe('JsTemplateListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     const titleInput = within(drawer).getByLabelText('Title');
     const descriptionInput = within(drawer).getByLabelText('Description');
     expect(titleInput).toHaveValue('Sales widgets');
@@ -731,7 +757,7 @@ describe('JsTemplateListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     await userEvent.clear(within(drawer).getByLabelText('Title'));
     await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
 
@@ -766,7 +792,7 @@ describe('JsTemplateListPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
 
-    const drawer = await screen.findByRole('dialog', { name: 'Edit JS Template' });
+    const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     await userEvent.clear(within(drawer).getByLabelText('Description'));
     await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
 
@@ -965,8 +991,8 @@ describe('JsTemplateListPage', () => {
 
     expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Remove this project?' });
-    expect(dialog).toHaveTextContent('Project to remove');
+    const dialog = await screen.findByRole('dialog', { name: 'Remove this Source Project?' });
+    expect(dialog).toHaveTextContent('Source Project to remove');
     expect(within(dialog).getByText('Sales widgets')).toBeInTheDocument();
     expect(within(dialog).getByText('This action cannot be undone')).toBeInTheDocument();
     expect(mocks.api.deleteProject).not.toHaveBeenCalled();
