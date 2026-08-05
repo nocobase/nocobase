@@ -4076,6 +4076,117 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(nextSecondary));
   });
 
+  it('materializes assigned proxies so later to-many rows continue updating', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const initialSecondary = { id: 2, name: 'Initial secondary', roleCodes: ['admin'] };
+    const nextSecondary = { id: 4, name: 'Next secondary', roleCodes: ['editor'] };
+    type UserRow = {
+      user: unknown;
+      secondaryUser: typeof initialSecondary | null;
+    };
+    const store: { users: UserRow[] } = {
+      users: [{ user: null, secondaryUser: initialSecondary }],
+    };
+    type FormNamePath = Parameters<FormInstance['getFieldValue']>[0];
+    const formStub = {
+      getFieldValue: (namePath: FormNamePath) => lodashGet(store, namePath),
+      setFieldValue: (namePath: FormNamePath, value: unknown) => lodashSet(store, namePath, value),
+      // Match Ant Form: the outer store is plain, but nested values may still be reactive proxies.
+      getFieldsValue: () => store,
+      setFieldsValue: (patch: Partial<typeof store>) => lodashMerge(store, patch),
+    };
+
+    const blockModel = {
+      uid: 'form-assign-assoc-to-many-later-row-reactive-proxy',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+      context: undefined as unknown,
+    };
+
+    const runtime = new FormValueRuntime({
+      model: blockModel as unknown as ConstructorParameters<typeof FormValueRuntime>[0]['model'],
+      getForm: () => formStub as unknown as FormInstance,
+    });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    const userCollection = { getField: () => null };
+    const userField = { isAssociationField: () => true, type: 'belongsTo', targetCollection: userCollection };
+    const usersItemCollection = {
+      getField: (name: string) => (name === 'user' || name === 'secondaryUser' ? userField : null),
+    };
+    const usersField = { isAssociationField: () => true, type: 'hasMany', targetCollection: usersItemCollection };
+    const collection = { getField: (name: string) => (name === 'users' ? usersField : null) };
+    blockCtx.defineProperty('collection', { value: collection });
+
+    const createRowModel = (index: number) => {
+      const forkId = `users:${index}`;
+      const rowCtx = createFieldContext(runtime);
+      const rowModel = {
+        uid: `users.user:${forkId}`,
+        isFork: true,
+        forkId,
+        subModels: { field: { context: { collectionField: userField } } },
+        getStepParams(flowKey: string, stepKey: string) {
+          if (flowKey === 'fieldSettings' && stepKey === 'init') return { fieldPath: 'users.user' };
+          return undefined;
+        },
+        context: rowCtx,
+      };
+      rowCtx.defineProperty('blockModel', { value: blockModel });
+      rowCtx.defineProperty('collection', { value: collection });
+      rowCtx.defineProperty('fieldIndex', { value: [forkId] });
+      rowCtx.defineProperty('model', { value: rowModel });
+      return rowModel;
+    };
+    const rowModels = [createRowModel(0)];
+
+    blockCtx.defineProperty('engine', {
+      value: { forEachModel: (callback: (model: unknown) => void) => rowModels.forEach(callback) },
+    });
+    blockModel.context = blockCtx;
+
+    runtime.syncAssignRules([
+      {
+        key: 'user-from-row-sibling',
+        enable: true,
+        targetPath: 'users.user',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '{{ ctx.item.parentItem.value.secondaryUser }}',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(initialSecondary));
+    const assignedUser = formStub.getFieldValue(['users', 0, 'user']);
+    const assignedRoleCodes = formStub.getFieldValue(['users', 0, 'user', 'roleCodes']);
+    expect(assignedUser.constructor).toBe(Object);
+    expect(Array.isArray(assignedRoleCodes)).toBe(true);
+    expect(assignedRoleCodes.constructor).toBe(Array);
+
+    const secondRow: UserRow = { user: null, secondaryUser: null };
+    store.users.push(secondRow);
+    const addedRows: Array<UserRow | undefined> = new Array(2);
+    addedRows[1] = secondRow;
+    expect(() => runtime.handleFormValuesChange({ users: addedRows }, store)).not.toThrow();
+
+    const row1 = createRowModel(1);
+    rowModels.push(row1);
+    engineEmitter.emit('model:mounted', { model: row1 });
+
+    secondRow.secondaryUser = nextSecondary;
+    const changedRows: Array<Partial<UserRow> | undefined> = new Array(2);
+    changedRows[1] = { secondaryUser: nextSecondary };
+    expect(0 in changedRows).toBe(false);
+
+    expect(() => runtime.handleFormValuesChange({ users: changedRows }, store)).not.toThrow();
+    await waitFor(() => expect(formStub.getFieldValue(['users', 1, 'user'])).toEqual(nextSecondary));
+    expect(formStub.getFieldValue(['users', 0, 'user'])).toEqual(initialSecondary);
+  });
+
   it('assigns a to-many association from a sibling association in the same to-many row', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
