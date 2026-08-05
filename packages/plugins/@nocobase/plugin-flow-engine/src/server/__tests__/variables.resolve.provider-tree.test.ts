@@ -12,6 +12,7 @@ import { MockServer } from '@nocobase/test';
 import { generateFlowModelRd } from '@nocobase/utils';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import FlowModelRepository from '../repository';
+import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 type FieldConfig = string | { associationPathName: string; fieldPath: string };
@@ -91,6 +92,39 @@ describe('variables:resolve provider prefix tree', () => {
     resetVariablesRegistryForTest();
     app = await createFlowEngineMockServer({
       plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'field-sort', 'flow-engine'],
+    });
+    const registry = getRecordSlotResolverRegistry(app);
+    registry.register({
+      owner: 'variables.resolve.provider-tree.test',
+      id: 'form-values-root',
+      match: (path) => path.varName === 'formValues' && path.runtimeSegments[0] !== 'roles',
+      resolve: () => ({
+        status: 'resolved',
+        slot: [],
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
+    });
+    registry.register({
+      owner: 'variables.resolve.provider-tree.test',
+      id: 'form-values-roles',
+      match: (path) =>
+        path.varName === 'formValues' && path.runtimeSegments[0] === 'roles' && path.runtimeSegments[1] !== 'users',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['roles'],
+        target: { kind: 'fixed', collection: 'roles', dataSourceKey: 'main' },
+      }),
+    });
+    registry.register({
+      owner: 'variables.resolve.provider-tree.test',
+      id: 'form-values-role-users',
+      match: (path) =>
+        path.varName === 'formValues' && path.runtimeSegments[0] === 'roles' && path.runtimeSegments[1] === 'users',
+      resolve: () => ({
+        status: 'resolved',
+        slot: ['roles', 'users'],
+        target: { kind: 'fixed', collection: 'users', dataSourceKey: 'main' },
+      }),
     });
     const child = await app.db.getRepository('users').create({
       values: { nickname: childNickname, username: 'provider-tree-exact-child' },

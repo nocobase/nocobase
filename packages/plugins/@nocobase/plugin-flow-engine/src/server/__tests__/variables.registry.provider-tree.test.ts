@@ -125,17 +125,6 @@ async function resolveBindings(
   };
 }
 
-async function resolveContextParams(
-  template: JSONValue,
-  contextParams: Record<string, unknown>,
-  fixtures: Readonly<Record<string, unknown>>,
-) {
-  const fixture = createFixtureContext(fixtures);
-  const flowCtx = new HttpRequestContext(fixture.koaCtx);
-  await variables.attachUsedVariables(flowCtx, fixture.koaCtx, template, contextParams);
-  return { ...fixture, data: await resolveJsonTemplate(template, flowCtx), flowCtx };
-}
-
 function requestCacheKey(collection: string, filterByTk: unknown) {
   return JSON.stringify({ ds: 'main', c: collection, tk: filterByTk, full: true });
 }
@@ -171,12 +160,12 @@ describe('record provider prefix tree', () => {
       nickname: '{{ ctx.formValues.customer.nickname }}',
       owner: '{{ ctx.formValues.customer.owner.name }}',
     };
-    const result = await resolveContextParams(
+    const result = await resolveBindings(
       template,
-      {
-        'formValues.customer': recordParams('customers'),
-        'formValues.customer.owner': recordParams('owners'),
-      },
+      [
+        binding('formValues', ['customer'], 'customers', [['name'], ['nickname']]),
+        binding('formValues', ['customer', 'owner'], 'owners', [['name']]),
+      ],
       {
         customers: customer,
         owners: { name: 'exact owner', secret: 'child raw' },
@@ -195,7 +184,7 @@ describe('record provider prefix tree', () => {
     );
   });
 
-  it('composes root, parent, and child identically across template, binding, and contextParams order', async () => {
+  it('composes root, parent, and child identically across template and binding order', async () => {
     const forwardTemplate = {
       status: '{{ ctx.formValues.status }}',
       customer: '{{ ctx.formValues.customer.name }}',
@@ -211,26 +200,13 @@ describe('record provider prefix tree', () => {
       customers: { name: 'Customer', owner: { name: 'raw owner' }, secret: 'parent raw' },
       owners: { name: 'Owner', secret: 'child raw' },
     };
-    const forward = await resolveContextParams(
-      forwardTemplate,
-      {
-        formValues: recordParams('roots'),
-        'formValues.customer': recordParams('customers'),
-        'formValues.customer.owner': recordParams('owners'),
-      },
-      fixtures,
-    );
-    const reverse = await resolveContextParams(
-      reverseTemplate,
-      Object.fromEntries(
-        Object.entries({
-          formValues: recordParams('roots'),
-          'formValues.customer': recordParams('customers'),
-          'formValues.customer.owner': recordParams('owners'),
-        }).reverse(),
-      ),
-      fixtures,
-    );
+    const forwardBindings = [
+      binding('formValues', [], 'roots', [['status']]),
+      binding('formValues', ['customer'], 'customers', [['name']]),
+      binding('formValues', ['customer', 'owner'], 'owners', [['name']]),
+    ];
+    const forward = await resolveBindings(forwardTemplate, forwardBindings, fixtures);
+    const reverse = await resolveBindings(reverseTemplate, [...forwardBindings].reverse(), fixtures);
     const expected = { status: 'active', customer: 'Customer', owner: 'Owner' };
 
     expect(forward.data).toEqual(expected);
@@ -242,9 +218,9 @@ describe('record provider prefix tree', () => {
   });
 
   it('keeps a numeric prefix structured when no root binding exists', async () => {
-    const result = await resolveContextParams(
+    const result = await resolveBindings(
       { name: '{{ ctx.rows[0].name }}' },
-      { 'rows.0': recordParams('first-row') },
+      [binding('rows', [0], 'first-row', [['name']])],
       { 'first-row': { name: 'first' } },
     );
 
@@ -253,11 +229,9 @@ describe('record provider prefix tree', () => {
   });
 
   it('preserves a whole-object relative path when the binding has no children', async () => {
-    const result = await resolveContextParams(
-      { record: '{{ ctx.record }}' },
-      { record: recordParams('records') },
-      { records: { id: 1, name: 'whole', secret: 'explicitly requested whole value' } },
-    );
+    const result = await resolveBindings({ record: '{{ ctx.record }}' }, [binding('record', [], 'records', [[]])], {
+      records: { id: 1, name: 'whole', secret: 'explicitly requested whole value' },
+    });
 
     expect(result.data).toEqual({
       record: { id: 1, name: 'whole', secret: 'explicitly requested whole value' },

@@ -11,6 +11,7 @@ import type { Repository } from '@nocobase/database';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { MockServer } from '@nocobase/test';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { createNestedRecordSlotResolver, getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
 type ResolveAction = {
@@ -67,6 +68,14 @@ describe('variables:resolve filter target key projection', () => {
     });
     await collection.sync();
     repository = collection.repository;
+    getRecordSlotResolverRegistry(app).register(
+      createNestedRecordSlotResolver({
+        owner: '@nocobase/plugin-flow-engine',
+        id: 'view:record',
+        varName: 'view',
+        target: { kind: 'fixed', collection: 'variableFilterTargetRecords', dataSourceKey: 'main' },
+      }),
+    );
     await repository.create({
       values: [
         { name: 'A', uuid: 'a' },

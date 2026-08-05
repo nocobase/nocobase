@@ -10,6 +10,7 @@
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { describe, expect, it, vi } from 'vitest';
 import { HttpRequestContext } from '../template/contexts';
+import { analyzeVariableTemplate } from '../template/variable-expression';
 import { projectRecord } from '../variables/record-projection';
 import { variables } from '../variables/registry';
 import { fetchRecordWithRequestCache, getRecordRequestCache } from '../variables/records';
@@ -163,7 +164,22 @@ describe('record projection', () => {
 
     await fetchRecordWithRequestCache(koaCtx, params, undefined, undefined, false, true);
     const flowCtx = new HttpRequestContext(koaCtx);
-    await variables.attachUsedVariables(flowCtx, koaCtx, '{{ ctx.formValues.status }}', { formValues: params });
+    const analysis = analyzeVariableTemplate('{{ ctx.formValues.status }}');
+    await variables.attachUsedVariablesFromPlan(flowCtx, koaCtx, analysis.usage, {
+      bindings: [
+        {
+          contextKey: 'formValues',
+          contextLocation: ['formValues'],
+          params,
+          prefix: [],
+          preferFullRecord: false,
+          relativePaths: [['status']],
+          varName: 'formValues',
+        },
+      ],
+      contextParams: {},
+      rejections: [],
+    });
 
     await expect(flowCtx.formValues).resolves.toEqual({ status: 'active' });
     expect(calls).toHaveLength(1);

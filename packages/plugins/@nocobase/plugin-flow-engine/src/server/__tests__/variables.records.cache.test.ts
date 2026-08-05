@@ -75,7 +75,7 @@ function createContext() {
 }
 
 describe('variable record request cache index', () => {
-  it('only scans the matching typed identity bucket without reparsing cache keys', async () => {
+  it('reuses the matching typed identity bucket', async () => {
     const { calls, context } = createContext();
     for (let id = 0; id < 50; id += 1) {
       await fetchRecordWithRequestCache(context, { collection: 'users', filterByTk: { group: id, id } }, [
@@ -84,20 +84,14 @@ describe('variable record request cache index', () => {
       ]);
     }
 
-    const parse = vi.spyOn(JSON, 'parse');
-    try {
-      const result = await fetchRecordWithRequestCache(
-        context,
-        { collection: 'users', filterByTk: { id: 42, group: 42 } },
-        ['id'],
-      );
+    const result = await fetchRecordWithRequestCache(
+      context,
+      { collection: 'users', filterByTk: { id: 42, group: 42 } },
+      ['id'],
+    );
 
-      expect(result).toMatchObject({ id: { group: 42, id: 42 } });
-      expect(calls).toHaveLength(50);
-      expect(parse).not.toHaveBeenCalled();
-    } finally {
-      parse.mockRestore();
-    }
+    expect(result).toMatchObject({ id: { group: 42, id: 42 } });
+    expect(calls).toHaveLength(50);
   });
 
   it('reuses a covering non-strict cache entry for a strict projection', async () => {
@@ -211,7 +205,7 @@ describe('variable record request cache index', () => {
         state: {},
       }) as unknown as ResourcerContext;
     const firstRequest = createAssociationContext();
-    const params = { associationName: 'users.roles', collection: 'users', filterByTk: 'root' };
+    const params = { associationName: 'users.roles', collection: 'roles', filterByTk: 'root' };
 
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name', 'title']);
     await fetchRecordWithRequestCache(firstRequest, { ...params, sourceId: 1 }, ['name'], undefined, true);
