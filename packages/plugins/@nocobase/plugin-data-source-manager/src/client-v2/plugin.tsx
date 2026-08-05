@@ -147,6 +147,7 @@ export interface CollectionTemplateOptions {
   order?: number;
   color?: string;
   divider?: boolean;
+  deprecated?: boolean;
   collection?: {
     options?: Record<string, any> | (() => Record<string, any>);
     fields?: CollectionTemplateField[] | (() => CollectionTemplateField[]);

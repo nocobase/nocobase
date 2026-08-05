@@ -57,6 +57,7 @@
   "Description": "描述",
   "Default value": "默认值",
   "Default value to current time": "默认为当前时间",
+  "Deprecated": "已弃用",
   "Double": "双精度",
   "Display name": "名称",
   "does not contain": "不包含",

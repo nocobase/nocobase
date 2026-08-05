@@ -2047,7 +2047,12 @@ function CollectionsPage(props: CollectionsPageProps) {
                   items: collectionTemplates.flatMap((template) => {
                     const item = {
                       key: template.name,
-                      label: compileLegacyTemplate(template.title, t),
+                      label: (
+                        <Space size={4}>
+                          {compileLegacyTemplate(template.title, t)}
+                          {template.deprecated ? <Tag color="warning">{t('Deprecated')}</Tag> : null}
+                        </Space>
+                      ),
                     };
                     return template.divider ? [{ type: 'divider' as const }, item] : [item];
                   }),
