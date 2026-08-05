@@ -20,7 +20,7 @@ import {
   type ResolvePathPolicy,
 } from './variable-expression';
 
-export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
+export type JSONValue = string | number | boolean | null | { [key: string]: JSONValue } | JSONValue[];
 
 type SandboxContextSource = {
   getSandboxKeys: () => string[];
