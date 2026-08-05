@@ -336,8 +336,11 @@ export function parseCtxDateExpressionConfig(value: unknown): CtxDateExpressionC
 
   const parsed = parseCtxDateExpression(value);
   const formatConfig = formatted.format ? { format: formatted.format } : {};
-  if (typeof parsed === 'string' || Array.isArray(parsed)) {
+  if (typeof parsed === 'string') {
     return { kind: 'exact', value: parsed, ...formatConfig };
+  }
+  if (Array.isArray(parsed) && parsed.length === 2 && typeof parsed[0] === 'string' && typeof parsed[1] === 'string') {
+    return { kind: 'exact', value: [parsed[0], parsed[1]], ...formatConfig };
   }
 
   if (!parsed || typeof parsed !== 'object') return undefined;
