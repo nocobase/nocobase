@@ -148,6 +148,97 @@ test('buildInstallArgv forwards app public path for new installs', () => {
   expect(argv).toContain('/console/');
 });
 
+test('buildInstallArgv defaults latest installs to legacy client entry mode', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'install-new',
+      appName: 'app7593',
+      authType: 'oauth',
+      source: 'docker',
+      version: 'latest',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-client-entry-mode');
+  expect(argv).toContain('legacy-default');
+});
+
+test('buildInstallArgv defaults non-latest installs to modern-only client entry mode', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: { yes?: boolean; force?: boolean; build?: boolean; verbose?: boolean },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'install-new',
+      appName: 'app7593',
+      authType: 'oauth',
+      source: 'docker',
+      version: 'beta',
+    },
+    {
+      yes: true,
+    },
+  );
+
+  expect(argv).toContain('--app-client-entry-mode');
+  expect(argv).toContain('modern-only');
+});
+
+test('buildInstallArgv forwards explicit client entry mode', () => {
+  const buildInstallArgv = (
+    Init.prototype as unknown as {
+      buildInstallArgv: (
+        results: Record<string, string | number | boolean>,
+        flags: {
+          yes?: boolean;
+          force?: boolean;
+          build?: boolean;
+          verbose?: boolean;
+          'app-client-entry-mode'?: string;
+        },
+      ) => string[];
+    }
+  ).buildInstallArgv;
+
+  const argv = buildInstallArgv.call(
+    Object.create(Init.prototype),
+    {
+      setupMode: 'install-new',
+      appName: 'app7593',
+      authType: 'oauth',
+      source: 'docker',
+      version: 'latest',
+    },
+    {
+      yes: true,
+      'app-client-entry-mode': 'modern-default',
+    },
+  );
+
+  expect(argv).toContain('--app-client-entry-mode');
+  expect(argv).toContain('modern-default');
+});
+
 test('buildInstallArgv does not forward portal init options for new installs', () => {
   const buildInstallArgv = (
     Init.prototype as unknown as {
@@ -170,8 +261,6 @@ test('buildInstallArgv does not forward portal init options for new installs', (
       version: 'beta',
       builtinDb: true,
       dbDialect: 'postgres',
-      portalType: 'no-code',
-      portalName: 'main',
     },
     {
       yes: true,

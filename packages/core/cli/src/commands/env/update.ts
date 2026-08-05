@@ -17,6 +17,8 @@ import { appendDiagnosticLogPath } from '../../lib/cli-entry-error.js';
 import { getActiveCommandLogFile } from '../../lib/command-log.js';
 import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
 import { buildStoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
+import { PUBLIC_APP_CLIENT_ENTRY_MODES } from '../../lib/app-client-entry-mode.js';
+import { upsertManagedEnvFileValues } from '../../lib/managed-env-file.js';
 import { validateApiBaseUrl } from '../../lib/prompt-validators.js';
 import {
   failTask,
@@ -48,6 +50,7 @@ const UPDATE_STRING_FLAGS = [
   'app-public-path',
   'cdn-base-url',
   'env-file',
+  'app-client-entry-mode',
   'app-port',
   'app-key',
   'timezone',
@@ -86,6 +89,7 @@ const APP_RESTART_FIELDS = new Set<string>([
   'storage-path',
   'app-public-path',
   'env-file',
+  'app-client-entry-mode',
   'app-port',
   'app-key',
   'timezone',
@@ -132,6 +136,7 @@ type EnvUpdateParsedFlags = {
   'app-public-path'?: string;
   'cdn-base-url'?: string;
   'env-file'?: string;
+  'app-client-entry-mode'?: string;
   'app-port'?: string;
   'app-key'?: string;
   timezone?: string;
@@ -333,6 +338,10 @@ export default class EnvUpdate extends Command {
     'env-file': Flags.string({
       hidden: true,
       description: 'Saved Docker --env-file path for this env',
+    }),
+    'app-client-entry-mode': Flags.string({
+      description: 'Saved UI entry mode for this env',
+      options: [...PUBLIC_APP_CLIENT_ENTRY_MODES],
     }),
     'app-port': Flags.string({
       description: 'Saved application HTTP port for this env',
@@ -539,6 +548,11 @@ export default class EnvUpdate extends Command {
     startTask(`Saving env config: ${envName}`);
     try {
       await replaceEnvConfig(envName, nextConfig, { scope: resolveDefaultConfigScope() });
+      if (providedFields.has('app-client-entry-mode') && nextConfig.appClientEntryMode) {
+        await upsertManagedEnvFileValues(envName, nextConfig, {
+          APP_CLIENT_ENTRY_MODE: nextConfig.appClientEntryMode,
+        });
+      }
       succeedTask(`Saved env config for "${envName}".`);
     } catch (error) {
       failTask(`Failed to save env config for "${envName}".`);

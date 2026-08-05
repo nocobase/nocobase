@@ -468,7 +468,7 @@
           "betaLabel": "beta",
           "betaHint": "Preview release. Good for trying upcoming features before general release.",
           "alphaLabel": "alpha",
-          "alphaHint": "Development release. Includes the newest changes, but may be incomplete or unstable.",
+          "alphaHint": "Choose this version to try the new features in 3.0.",
           "otherLabel": "Other",
           "otherHint": "Enter another package version, Docker tag, or Git ref manually, such as a branch name."
         },
@@ -656,6 +656,15 @@
         },
         "skipDownload": {
           "message": "Skip downloading NocoBase and reuse existing local app files or Docker images"
+        },
+        "appClientEntryMode": {
+          "message": "App client entry mode",
+          "modernOnlyLabel": "Modern UI only",
+          "modernOnlyHint": "Only the modern UI is available; the legacy UI cannot be accessed.",
+          "modernDefaultLabel": "Modern UI by default",
+          "modernDefaultHint": "Open the modern UI by default while keeping the legacy UI available.",
+          "legacyDefaultLabel": "Legacy UI by default",
+          "legacyDefaultHint": "Open the legacy UI by default while keeping the modern UI available."
         },
         "portalType": {
           "message": "Portal type",

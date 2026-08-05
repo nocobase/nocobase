@@ -436,6 +436,7 @@ test('install prompts expose the expected defaults and validators', () => {
   const langPrompt = Install.appPrompts.lang;
   const appPathPrompt = Install.appPrompts.appPath;
   const appPortPrompt = Install.appPrompts.appPort;
+  const portalTemplatePrompt = Install.appPrompts.portalTemplate;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
   const dbDialectPrompt = Install.dbPrompts.dbDialect;
   const builtinDbImagePrompt = Install.dbPrompts.builtinDbImage;
@@ -470,6 +471,10 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(appPortPrompt.initialValue).toBe(undefined);
   expect(appPortPrompt.yesInitialValue).toBe(undefined);
   expect(typeof appPortPrompt.validate).toBe('function');
+
+  expect(portalTemplatePrompt.type).toBe('text');
+  expect(portalTemplatePrompt.initialValue).toBe('@nocobase/portal-template-default');
+  expect(portalTemplatePrompt.yesInitialValue).toBe('@nocobase/portal-template-default');
 
   expect(builtinDbPrompt.type).toBe('boolean');
   expect(builtinDbPrompt.initialValue).toBe(true);
@@ -779,7 +784,7 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
         : undefined,
       { locale: 'zh-CN' },
     ),
-  ).toContain('开发版');
+  ).toContain('体验 3.0 新功能');
   expect(otherVersionPrompt.type).toBe('text');
   expect(otherVersionPrompt.hidden?.({ version: 'alpha' })).toBe(true);
   expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);

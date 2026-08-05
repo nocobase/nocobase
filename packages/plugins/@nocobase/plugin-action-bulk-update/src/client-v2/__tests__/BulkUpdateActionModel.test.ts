@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, tExpr } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
 import { PluginActionBulkUpdateClient } from '../index';
@@ -439,7 +439,7 @@ describe('BulkUpdateActionModel apply action', () => {
 
     await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
 
-    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: true, title: 'Confirm' });
+    expect(ctx.runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: true, title: 'Confirm' });
     expect(ctx.api.resource).toHaveBeenCalledWith('posts', null, {
       'x-data-source': 'main',
     });
@@ -460,7 +460,12 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+    expect(ctx.runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: tExpr('Saved successfully'),
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
   });
 
   it('updates all records with forceUpdate when the mode is all', async () => {
@@ -502,7 +507,7 @@ describe('BulkUpdateActionModel apply action', () => {
 
     await handler?.(ctx as never, { assignedValues: { status: 'archived' } } as never);
 
-    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: false });
+    expect(ctx.runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: false });
     expect(update).toHaveBeenCalledWith({
       values: {
         status: 'archived',
@@ -512,7 +517,12 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(ctx.blockModel.resource.refresh).toHaveBeenCalledTimes(1);
-    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+    expect(ctx.runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: tExpr('Saved successfully'),
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
   });
 
   it('exits early when assigned values are empty or collection metadata is missing', async () => {
