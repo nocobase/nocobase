@@ -10,9 +10,6 @@
 import { AppSupervisor } from '@nocobase/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 
-const originalInitPortalType = process.env.INIT_PORTAL_TYPE;
-const originalInitPortalName = process.env.INIT_PORTAL_NAME;
-
 async function createLifecycleServer() {
   return createMockServer({
     plugins: [
@@ -35,31 +32,15 @@ async function createLifecycleServer() {
 describe('Multi Portal seed lifecycle', () => {
   let app: MockServer | undefined;
 
-  beforeEach(() => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
-    process.env.INIT_PORTAL_NAME = 'admin';
-  });
-
   afterEach(async () => {
     if (app?.name) {
       await AppSupervisor.getInstance().removeAppManifest(app.name, 'multi-portal');
     }
     await app?.destroy();
     app = undefined;
-    if (originalInitPortalType === undefined) {
-      delete process.env.INIT_PORTAL_TYPE;
-    } else {
-      process.env.INIT_PORTAL_TYPE = originalInitPortalType;
-    }
-    if (originalInitPortalName === undefined) {
-      delete process.env.INIT_PORTAL_NAME;
-    } else {
-      process.env.INIT_PORTAL_NAME = originalInitPortalName;
-    }
   });
 
-  it('seeds one Portal-scoped INIT Portal on a fresh No-code install', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
+  it('seeds the default AI Portal and fixed No-code Portals on a fresh install', async () => {
     app = await createLifecycleServer();
 
     const portals = await app.db.getRepository('multiPortals').find({
@@ -73,10 +54,26 @@ describe('Multi Portal seed lifecycle', () => {
       })),
     ).toEqual([
       expect.objectContaining({
-        uid: '__default_portal__',
+        uid: '__default_admin__',
         portalName: 'admin',
         routePath: '/admin',
         portalType: 'no-code',
+        uiLayoutUid: 'admin-layout-model',
+        isDefault: null,
+      }),
+      expect.objectContaining({
+        uid: '__default_mobile__',
+        portalName: 'mobile',
+        routePath: '/mobile',
+        portalType: 'no-code',
+        uiLayoutUid: 'mobile-layout-model',
+        isDefault: null,
+      }),
+      expect.objectContaining({
+        uid: '__default_portal__',
+        portalName: 'main',
+        routePath: '/main',
+        portalType: 'ai',
         uiLayoutUid: 'admin-layout-model',
         isDefault: true,
       }),
@@ -87,16 +84,18 @@ describe('Multi Portal seed lifecycle', () => {
           filter: { multiPortalUid: portal.get('uid') },
         }),
       ).toBeGreaterThan(0);
-      expect(
-        await app.db.getRepository('rolesMultiPortalRoutePolicies').count({
-          filter: { multiPortalUid: portal.get('uid'), allowNewMenu: true },
-        }),
-      ).toBeGreaterThan(0);
+      const routePolicyCount = await app.db.getRepository('rolesMultiPortalRoutePolicies').count({
+        filter: { multiPortalUid: portal.get('uid'), allowNewMenu: true },
+      });
+      if (portal.get('portalType') === 'no-code') {
+        expect(routePolicyCount).toBeGreaterThan(0);
+      } else {
+        expect(routePolicyCount).toBe(0);
+      }
     }
   });
 
   it('does not recreate a deleted default portal during enable or reconcile', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({
       filterByTk: '__default_portal__',
@@ -112,26 +111,7 @@ describe('Multi Portal seed lifecycle', () => {
     ).toBe(0);
   });
 
-  it('keeps the single AI seed without route policies', async () => {
-    process.env.INIT_PORTAL_TYPE = 'ai';
-    app = await createLifecycleServer();
-
-    const portals = await app.db.getRepository('multiPortals').find({
-      fields: ['uid', 'portalType', 'isDefault'],
-    });
-    expect(portals).toHaveLength(1);
-    expect(portals[0].toJSON()).toMatchObject({
-      uid: '__default_portal__',
-      portalType: 'ai',
-      isDefault: true,
-    });
-    expect(await app.db.getRepository('rolesMultiPortals').count()).toBeGreaterThan(0);
-    expect(await app.db.getRepository('rolesMultiPortalRoutePolicies').count()).toBe(0);
-    expect(await app.db.getRepository('rolesMultiPortalDesktopRoutes').count()).toBe(0);
-  });
-
-  it('seeds the two fixed Layout-backed Portals when first installed on a historical No-code application', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
+  it('seeds the default AI Portal and fixed Layout-backed Portals when first installed on a historical application', async () => {
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({ truncate: true });
     await app.db.getRepository('roles').update({
@@ -187,6 +167,14 @@ describe('Multi Portal seed lifecycle', () => {
         uiLayoutUid: 'mobile-layout-model',
         isDefault: null,
       }),
+      expect.objectContaining({
+        uid: '__default_portal__',
+        portalName: 'main',
+        routePath: '/main',
+        portalType: 'ai',
+        uiLayoutUid: 'admin-layout-model',
+        isDefault: null,
+      }),
     ]);
     for (const portal of portals) {
       expect(
@@ -205,7 +193,6 @@ describe('Multi Portal seed lifecycle', () => {
   });
 
   it('silently skips an occupied Admin name while still creating the Mobile Portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({ truncate: true });
     await app.db.getRepository('multiPortals').create({
@@ -227,6 +214,7 @@ describe('Multi Portal seed lifecycle', () => {
 
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_admin__' } })).toBe(0);
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_mobile__' } })).toBe(1);
+    expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_portal__' } })).toBe(1);
     expect(
       await app.db
         .getRepository('multiPortals')
@@ -235,7 +223,6 @@ describe('Multi Portal seed lifecycle', () => {
   });
 
   it('silently skips an occupied Mobile name while still creating the Admin Portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({ truncate: true });
     await app.db.getRepository('multiPortals').create({
@@ -257,6 +244,7 @@ describe('Multi Portal seed lifecycle', () => {
 
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_admin__' } })).toBe(1);
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_mobile__' } })).toBe(0);
+    expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_portal__' } })).toBe(1);
     expect(
       await app.db
         .getRepository('multiPortals')
@@ -265,7 +253,6 @@ describe('Multi Portal seed lifecycle', () => {
   });
 
   it('keeps an existing fixed UID untouched while creating the other default Portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({ truncate: true });
     await app.db.getRepository('multiPortals').create({
@@ -293,10 +280,10 @@ describe('Multi Portal seed lifecycle', () => {
       enabled: false,
     });
     expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_mobile__' } })).toBe(1);
+    expect(await app.db.getRepository('multiPortals').count({ filter: { uid: '__default_portal__' } })).toBe(1);
   });
 
   it('repairs fixed Layout-backed Portals with a missing portal type', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     const repository = app.db.getRepository('multiPortals');
     await repository.destroy({ truncate: true });
@@ -354,11 +341,17 @@ describe('Multi Portal seed lifecycle', () => {
         routePath: '/mobile',
         uiLayoutUid: 'mobile-layout-model',
       }),
+      expect.objectContaining({
+        uid: '__default_portal__',
+        portalType: 'ai',
+        portalName: 'main',
+        routePath: '/main',
+        uiLayoutUid: 'admin-layout-model',
+      }),
     ]);
   });
 
-  it('creates the historical AI INIT Portal before best-effort fixed Portals', async () => {
-    process.env.INIT_PORTAL_TYPE = 'ai';
+  it('creates the historical default AI Portal before best-effort fixed Portals', async () => {
     app = await createLifecycleServer();
     await app.db.getRepository('multiPortals').destroy({ truncate: true });
     await app.version.update('2.2.0-alpha.11');
@@ -372,17 +365,22 @@ describe('Multi Portal seed lifecycle', () => {
     });
     expect(portals.map((portal) => portal.toJSON())).toEqual([
       expect.objectContaining({
+        uid: '__default_admin__',
+        portalType: 'no-code',
+        portalName: 'admin',
+        isDefault: null,
+      }),
+      expect.objectContaining({
         uid: '__default_mobile__',
         portalType: 'no-code',
         portalName: 'mobile',
         isDefault: null,
       }),
-      expect.objectContaining({ uid: '__default_portal__', portalType: 'ai', portalName: 'admin', isDefault: null }),
+      expect.objectContaining({ uid: '__default_portal__', portalType: 'ai', portalName: 'main', isDefault: null }),
     ]);
   });
 
   it('silently skips a concurrent unique conflict without preventing the other fixed Portal', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     const repository = app.db.getRepository('multiPortals');
     await repository.destroy({ truncate: true });
@@ -410,13 +408,13 @@ describe('Multi Portal seed lifecycle', () => {
 
     expect(await repository.count({ filter: { uid: '__default_admin__' } })).toBe(0);
     expect(await repository.count({ filter: { uid: '__default_mobile__' } })).toBe(1);
+    expect(await repository.count({ filter: { uid: '__default_portal__' } })).toBe(1);
     expect([...warnSpy.mock.calls, ...errorSpy.mock.calls].flat().join(' ')).not.toContain(
       'concurrent duplicate portal',
     );
   });
 
   it('preserves non-unique database errors while creating fixed Portals', async () => {
-    process.env.INIT_PORTAL_TYPE = 'no-code';
     app = await createLifecycleServer();
     const repository = app.db.getRepository('multiPortals');
     await repository.destroy({ truncate: true });
@@ -440,6 +438,7 @@ describe('Multi Portal seed lifecycle', () => {
 
     expect(await repository.count({ filter: { uid: '__default_admin__' } })).toBe(0);
     expect(await repository.count({ filter: { uid: '__default_mobile__' } })).toBe(0);
+    expect(await repository.count({ filter: { uid: '__default_portal__' } })).toBe(1);
   });
 
   it('does not expose a persisted route permission mode field', async () => {

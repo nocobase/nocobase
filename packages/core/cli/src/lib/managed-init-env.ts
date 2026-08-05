@@ -26,8 +26,6 @@ export function isPreparedSetupState(value: unknown): boolean {
 export function buildInitAppEnvVarsFromConfig(
   config?: Pick<EnvConfigEntry, 'rootUsername' | 'rootEmail' | 'rootPassword' | 'rootNickname'> & {
     lang?: string;
-    portalType?: string;
-    portalName?: string;
     portalTemplate?: string;
   },
   options: { includePortal?: boolean } = {},
@@ -46,8 +44,6 @@ export function buildInitAppEnvVarsFromConfig(
   put('INIT_ROOT_PASSWORD', config?.rootPassword);
   put('INIT_ROOT_NICKNAME', config?.rootNickname);
   if (options.includePortal !== false) {
-    put('INIT_PORTAL_TYPE', config?.portalType);
-    put('INIT_PORTAL_NAME', config?.portalName);
     put('INIT_PORTAL_TEMPLATE', config?.portalTemplate);
   }
   return out;

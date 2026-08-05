@@ -12,6 +12,7 @@ import { setCurrentEnv, upsertEnv } from '../../lib/auth-store.js';
 import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
 import { ENV_BOOLEAN_CONFIG_FLAG_MAP, ENV_STRING_CONFIG_FLAG_MAP } from '../../lib/env-command-config.js';
 import { buildStoredEnvConfig, type StoredEnvConfig, type StoredEnvConfigInput } from '../../lib/env-config.js';
+import { PUBLIC_APP_CLIENT_ENTRY_MODES } from '../../lib/app-client-entry-mode.js';
 import {
   runPromptCatalog,
   type PromptCatalogValues,
@@ -56,6 +57,7 @@ type EnvAddParsedFlags = {
   'storage-path'?: string;
   'app-public-path'?: string;
   'env-file'?: string;
+  'app-client-entry-mode'?: string;
   'app-port'?: string;
   'app-key'?: string;
   timezone?: string;
@@ -250,6 +252,11 @@ export default class EnvAdd extends Command {
     'env-file': Flags.string({
       hidden: true,
       description: 'Docker env file saved with this env',
+    }),
+    'app-client-entry-mode': Flags.string({
+      hidden: true,
+      description: 'UI entry mode saved with this env',
+      options: [...PUBLIC_APP_CLIENT_ENTRY_MODES],
     }),
     'app-port': Flags.string({
       hidden: true,

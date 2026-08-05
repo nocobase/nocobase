@@ -93,4 +93,25 @@ describe('database', () => {
     const indexes = (await db.sequelize.getQueryInterface().showIndex('users2')) as any[];
     expect(indexes.length).toBe(2);
   });
+
+  test('deduplicate indexes with attribute and column names', async () => {
+    const collection = db.collection({
+      name: 'rolesUsers',
+      underscored: true,
+      fields: [
+        {
+          type: 'bigInt',
+          name: 'userId',
+        },
+      ],
+    });
+
+    collection.addIndex(['userId']);
+    collection.addIndex(['user_id']);
+
+    // @ts-ignore
+    const indexes = collection.model._indexes;
+    expect(indexes).toHaveLength(1);
+    expect(indexes[0].fields).toEqual(['user_id']);
+  });
 });

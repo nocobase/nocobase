@@ -88,7 +88,7 @@ export type SelectPromptBlock = {
   hidden?: PromptHiddenPredicate;
   options: SelectOptionDef[];
   variant?: 'select' | 'radio';
-  initialValue?: string;
+  initialValue?: string | ((values: PromptCatalogValues) => string);
   yesInitialValue?: string;
   required?: boolean;
   validate?: PromptFieldValidateFn;
@@ -225,6 +225,7 @@ export function mergedSelect(
   def: SelectPromptBlock,
   iv: PromptInitialValues,
   useYesInitial: boolean,
+  valuesSoFar: PromptCatalogValues = {},
 ): string | undefined {
   const enabledValueList = enabledSelectOptionValues(def.options);
   if (hasIvKey(iv, key)) {
@@ -237,7 +238,7 @@ export function mergedSelect(
   if (useYesInitial && def.yesInitialValue !== undefined && enabledValueList.includes(def.yesInitialValue)) {
     return def.yesInitialValue;
   }
-  const d = def.initialValue;
+  const d = typeof def.initialValue === 'function' ? def.initialValue(valuesSoFar) : def.initialValue;
   if (d !== undefined && enabledValueList.includes(d)) {
     return d;
   }

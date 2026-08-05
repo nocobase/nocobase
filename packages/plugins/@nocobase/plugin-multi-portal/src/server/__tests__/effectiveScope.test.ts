@@ -42,7 +42,16 @@ async function createPortal(
     uiLayoutUid?: string;
   },
 ) {
-  return app.db.getRepository('multiPortals').create({
+  const repository = app.db.getRepository('multiPortals');
+  const existing = await repository.findOne({
+    filterByTk: values.uid,
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return repository.create({
     values: {
       title: values.uid,
       portalType: 'no-code',

@@ -264,8 +264,6 @@ test('install delegates portal initialization to app startup without Registry sy
     appResults: {
       appPort: '13080',
       storagePath: './app1/storage/',
-      portalType: 'ai',
-      portalName: 'admin',
       portalTemplate: '/tmp/portal-template',
     },
     downloadResults: {
