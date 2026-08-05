@@ -562,7 +562,31 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('keeps configured Form associations unresolved without an owning resolver', async () => {
+  it('resolves a direct Record from the persisted resource target', async () => {
+    const flowModelUid = 'direct-record-persisted-target';
+    const session = createTokenSession(1);
+    const template = { id: '{{ ctx.record.id }}' };
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'DetailsBlockModel',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
+      props: template,
+    });
+
+    const response = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template,
+        contextParams: { record: { collection: 'roles', dataSourceKey: 'attack_source', filterByTk: 1 } },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(response.body).toEqual({ id: 1 });
+  });
+
+  it('resolves configured Form associations through the production resolver and locks their target', async () => {
     const flowModelUid = 'form-values-moved-record-slot';
     const session = createTokenSession(1);
     const template = { title: '{{ ctx.formValues.roles.title }}' };
@@ -593,13 +617,19 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       {
         rd: session.rd(flowModelUid),
         template,
-        contextParams: { 'formValues.roles': { collection: 'roles', filterByTk: 'root' } },
+        contextParams: {
+          'formValues.roles': { collection: 'users', dataSourceKey: 'attack_source', filterByTk: 'root' },
+        },
       },
       1,
       { currentRole: 'member', currentRoles: ['member'], token: session.token },
     );
 
-    expect(legal.body).toEqual(template);
+    expect(typeof legal.body.title).toBe('string');
+    expect(legal.body.title).not.toBe(template.title);
+    expect(usersFind).not.toHaveBeenCalled();
+    expect(usersFindOne).not.toHaveBeenCalled();
+    expect(rolesFindOne).toHaveBeenCalledTimes(1);
   });
 
   it('does not let allowConfigure endpoint requests move descriptors', async () => {

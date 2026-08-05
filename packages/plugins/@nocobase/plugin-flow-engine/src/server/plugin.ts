@@ -9,6 +9,7 @@
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
+import type { Application } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import PluginUISchemaStorageServer from './server';
@@ -56,11 +57,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
-    this.disposeRecordSlotResolvers();
-    const registry = getRecordSlotResolverRegistry(this.app);
-    this.recordSlotResolverDisposers = createBuiltInRecordSlotResolvers().map((resolver) =>
-      registry.register(resolver),
-    );
+    this.registerRecordSlotResolvers();
     registerFlowSurfacesResource(this);
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
@@ -76,6 +73,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
       actions: {
         // 解析 JSON 模板中的 ctx 变量
         resolve: async (ctx, next) => {
+          this.ensureRecordSlotResolvers(ctx.app);
           // 仅保留两种提交方式：
           // 1) values.batch: [{ id?, template, contextParams }]
           // 2) values.template + values.contextParams
@@ -234,7 +232,9 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async install() {}
 
-  async afterEnable() {}
+  async afterEnable() {
+    this.registerRecordSlotResolvers();
+  }
 
   async afterDisable() {
     this.disposeRecordSlotResolvers();
@@ -247,6 +247,20 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private disposeRecordSlotResolvers() {
     this.recordSlotResolverDisposers.forEach((dispose) => dispose());
     this.recordSlotResolverDisposers = [];
+  }
+
+  private registerRecordSlotResolvers() {
+    this.disposeRecordSlotResolvers();
+    this.ensureRecordSlotResolvers(this.app);
+  }
+
+  private ensureRecordSlotResolvers(app: Application) {
+    const registry = getRecordSlotResolverRegistry(app);
+    for (const resolver of createBuiltInRecordSlotResolvers()) {
+      if (!registry.has(resolver.owner, resolver.id)) {
+        this.recordSlotResolverDisposers.push(registry.register(resolver));
+      }
+    }
   }
 }
 

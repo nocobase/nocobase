@@ -117,6 +117,10 @@ function sameResolved(left: RecordSlotResolved, right: RecordSlotResolved) {
 export class RecordSlotResolverRegistry {
   private readonly registrations = new Map<string, Map<string, RecordSlotResolverRegistration>>();
 
+  has(owner: string, id: string) {
+    return this.registrations.get(owner.trim())?.has(id.trim()) === true;
+  }
+
   register(registration: RecordSlotResolverRegistration) {
     const owner = registration.owner.trim();
     const id = registration.id.trim();
@@ -186,7 +190,7 @@ export function createNestedRecordSlotResolver(
     id: registration.id,
     match: (path) =>
       path.varName === registration.varName && path.runtimeSegments.length > 1 && path.runtimeSegments[0] === 'record',
-    resolve: () => ({ status: 'resolved', slot: ['record'], target: registration.target }),
+    resolve: () => ({ status: 'resolved' as const, slot: ['record'], target: registration.target }),
   });
 }
 

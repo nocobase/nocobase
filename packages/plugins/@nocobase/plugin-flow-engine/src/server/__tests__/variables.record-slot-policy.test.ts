@@ -54,16 +54,21 @@ describe('record slot policy compiler', () => {
   it('compiles exact direct, view, and popup slots from registered built-ins', async () => {
     const app = createApp();
     const dispose = installBuiltIns(app);
-    const contract = await compile(app, {
-      props: [
-        '{{ ctx.record.name }}',
-        '{{ ctx.responseRecord.id }}',
-        '{{ ctx.clickedRowRecord.title }}',
-        '{{ ctx.view.record.department.name }}',
-        '{{ ctx.popup.parent.record.title }}',
-        '{{ ctx.popup.parent.parent.sourceRecord.name }}',
-      ],
-    });
+    const contract = await compile(
+      app,
+      {
+        stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
+        props: [
+          '{{ ctx.record.name }}',
+          '{{ ctx.responseRecord.id }}',
+          '{{ ctx.clickedRowRecord.title }}',
+          '{{ ctx.view.record.department.name }}',
+          '{{ ctx.popup.parent.record.title }}',
+          '{{ ctx.popup.parent.parent.sourceRecord.name }}',
+        ],
+      },
+      { getCollection: () => ({}) },
+    );
 
     expect(getPolicy(contract.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
     expect(getPolicy(contract.recordSlots, '{{ ctx.responseRecord.id }}')?.slot).toEqual([]);
@@ -94,17 +99,78 @@ describe('record slot policy compiler', () => {
     ).toBeUndefined();
   });
 
+  it('derives Form slots from the target of a persisted association resource', async () => {
+    const app = createApp();
+    installBuiltIns(app);
+    const permissions = { name: 'permissions' };
+    const roles = {
+      name: 'roles',
+      getField: (name: string) => {
+        if (name === 'title') return {};
+        return name === 'permissions'
+          ? { isRelationField: () => true, targetCollection: () => permissions }
+          : undefined;
+      },
+    };
+    const users = {
+      getField: (name: string) =>
+        name === 'roles' ? { isRelationField: () => true, targetCollection: () => roles } : undefined,
+    };
+    const contract = await compile(
+      app,
+      {
+        use: 'EditFormModel',
+        stepParams: {
+          resourceSettings: {
+            init: { associationName: 'users.roles', collectionName: 'users', dataSourceKey: 'main' },
+          },
+        },
+        subModels: {
+          grid: {
+            subModels: {
+              items: [{ stepParams: { fieldSettings: { init: { fieldPath: 'permissions' } } } }],
+            },
+          },
+        },
+        props: ['{{ ctx.formValues.title }}', '{{ ctx.formValues.permissions.name }}'],
+      },
+      {
+        getCollection: (_dataSourceKey, collection) => {
+          if (collection === 'users') return users;
+          if (collection === 'roles') return roles;
+          return permissions;
+        },
+      },
+    );
+
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.title }}')?.target).toEqual({
+      kind: 'fixed',
+      collection: 'roles',
+      dataSourceKey: 'main',
+    });
+    expect(getPolicy(contract.recordSlots, '{{ ctx.formValues.permissions.name }}')?.target).toEqual({
+      kind: 'fixed',
+      collection: 'permissions',
+      dataSourceKey: 'main',
+    });
+  });
+
   it('does not compile fixed slots when the plugin registrations are absent or disposed', async () => {
     const app = createApp();
-    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(0);
+    const model = {
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
+      props: '{{ ctx.record.name }}',
+    };
+    const options = { getCollection: () => ({}) };
+    expect((await compile(app, model, options)).recordSlots.size).toBe(0);
 
     const dispose = installBuiltIns(app);
-    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(1);
+    expect((await compile(app, model, options)).recordSlots.size).toBe(1);
     dispose();
-    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(0);
+    expect((await compile(app, model, options)).recordSlots.size).toBe(0);
 
     const disposeReloaded = installBuiltIns(app);
-    expect((await compile(app, '{{ ctx.record.name }}')).recordSlots.size).toBe(1);
+    expect((await compile(app, model, options)).recordSlots.size).toBe(1);
     disposeReloaded();
   });
 
@@ -169,7 +235,11 @@ describe('record slot policy compiler', () => {
   it('allows a custom provider without adding its use name to core', async () => {
     const app = createApp();
     installBuiltIns(app);
-    const node = { use: 'MyPrivateProvider', props: ['{{ ctx.formValues.customer.name }}', '{{ ctx.record.name }}'] };
+    const node = {
+      use: 'MyPrivateProvider',
+      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
+      props: ['{{ ctx.formValues.customer.name }}', '{{ ctx.record.name }}'],
+    };
     const customResolver: RecordSlotResolverRegistration = {
       owner: 'test-extension',
       id: 'private-form-provider',
@@ -179,7 +249,7 @@ describe('record slot policy compiler', () => {
     };
     const dispose = getRecordSlotResolverRegistry(app).register(customResolver);
 
-    const enabled = await compile(app, node);
+    const enabled = await compile(app, node, { getCollection: () => ({}) });
     expect(getPolicy(enabled.recordSlots, '{{ ctx.formValues.customer.name }}')).toMatchObject({
       slot: ['customer'],
       target: ordersTarget,
@@ -187,7 +257,7 @@ describe('record slot policy compiler', () => {
     expect(getPolicy(enabled.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
 
     dispose();
-    const disabled = await compile(app, node);
+    const disabled = await compile(app, node, { getCollection: () => ({}) });
     expect(getPolicy(disabled.recordSlots, '{{ ctx.formValues.customer.name }}')).toBeUndefined();
     expect(getPolicy(disabled.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
   });
