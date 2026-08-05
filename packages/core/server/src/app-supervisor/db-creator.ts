@@ -11,38 +11,6 @@ import { Predicate } from './condition-registry';
 import type { AppDbCreator, AppDbCreatorOptions } from './types';
 import { loadMariadbDriver, loadMysqlDriver, loadPgModule } from './db-drivers';
 
-const DATABASE_IDENTIFIER_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
-
-type DatabaseOptions = {
-  dialect?: string;
-  database?: unknown;
-  schema?: unknown;
-  tablePrefix?: unknown;
-};
-
-function assertDatabaseIdentifier(value: unknown, name: string) {
-  if (value == null || value === '') {
-    return;
-  }
-
-  if (typeof value !== 'string' || !DATABASE_IDENTIFIER_PATTERN.test(value)) {
-    throw new Error(
-      `Invalid ${name}: identifiers must start with an English letter and contain only English letters, numbers, and underscores`,
-    );
-  }
-}
-
-export function validateDatabaseIdentifiers(options: DatabaseOptions) {
-  const { dialect, database, schema, tablePrefix } = options;
-
-  // SQLite uses a file path for its database option, not an SQL identifier.
-  if (dialect !== 'sqlite') {
-    assertDatabaseIdentifier(database, 'database name');
-  }
-  assertDatabaseIdentifier(schema, 'schema');
-  assertDatabaseIdentifier(tablePrefix, 'table prefix');
-}
-
 async function createMySQLDatabase({
   host,
   port,
@@ -102,9 +70,7 @@ export const createSchemaCondition: Predicate<AppDbCreatorOptions> = ({ appOptio
   appOptions.dbConnType === 'new_schema';
 
 export const createDatabase: AppDbCreator = async ({ app }) => {
-  const databaseOptions = app.options.database as any;
-  validateDatabaseIdentifiers(databaseOptions);
-  const { host, port, username, password, dialect, database } = databaseOptions;
+  const { host, port, username, password, dialect, database } = app.options.database as any;
 
   if (dialect === 'mysql') {
     const mysql = loadMysqlDriver();
@@ -142,9 +108,7 @@ export const createDatabase: AppDbCreator = async ({ app }) => {
 };
 
 export const createConnection: AppDbCreator = async ({ app }) => {
-  const databaseOptions = app.options.database as any;
-  validateDatabaseIdentifiers(databaseOptions);
-  const { host, port, username, password, dialect, database, schema } = databaseOptions;
+  const { host, port, username, password, dialect, database, schema } = app.options.database as any;
 
   if (dialect === 'mysql') {
     const mysql = loadMysqlDriver();
@@ -184,9 +148,7 @@ export const createConnection: AppDbCreator = async ({ app }) => {
 };
 
 export const createSchema: AppDbCreator = async ({ app }) => {
-  const databaseOptions = app.options.database as any;
-  validateDatabaseIdentifiers(databaseOptions);
-  const { host, port, username, password, dialect, schema, database } = databaseOptions;
+  const { host, port, username, password, dialect, schema, database } = app.options.database as any;
 
   if (!['postgres', 'kingbase'].includes(dialect)) {
     throw new Error('Schema is only supported for postgres/kingbase');

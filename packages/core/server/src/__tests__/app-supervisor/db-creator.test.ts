@@ -15,7 +15,6 @@ import {
   createDatabaseCondition,
   createSchema,
   createSchemaCondition,
-  validateDatabaseIdentifiers,
 } from '../../app-supervisor/db-creator';
 import { AppSupervisor } from '../../app-supervisor';
 
@@ -84,33 +83,6 @@ describe('app supervisor db creator predicates', () => {
   });
 });
 
-describe('database identifier validation', () => {
-  it('accepts identifiers that start with an English letter', () => {
-    expect(() =>
-      validateDatabaseIdentifiers({
-        database: 'tenant_3',
-        schema: 'child_3',
-        tablePrefix: 'app_3_',
-      }),
-    ).not.toThrow();
-  });
-
-  it.each([
-    ['database name', { database: 'child-3' }],
-    ['schema', { schema: 'child-3' }],
-    ['table prefix', { tablePrefix: 'child-3' }],
-    ['identifier starting with a number', { database: '3child' }],
-  ])('rejects an invalid %s', (_, databaseOptions) => {
-    expect(() => validateDatabaseIdentifiers(databaseOptions)).toThrow(
-      'identifiers must start with an English letter and contain only English letters, numbers, and underscores',
-    );
-  });
-
-  it('allows SQLite file paths', () => {
-    expect(() => validateDatabaseIdentifiers({ dialect: 'sqlite', database: 'storage/app-1.sqlite' })).not.toThrow();
-  });
-});
-
 describe('database creators', () => {
   beforeEach(() => {
     mysqlModule.createConnection = vi.fn();
@@ -140,13 +112,6 @@ describe('database creators', () => {
     });
     expect(connection.query).toHaveBeenCalledWith('CREATE DATABASE IF NOT EXISTS `tenant`');
     expect(connection.end).toHaveBeenCalled();
-  });
-
-  it('validates identifiers before creating a database', async () => {
-    await expect(createDatabase({ app: createApp({ database: 'child-3' }) } as any)).rejects.toThrow(
-      'Invalid database name',
-    );
-    expect(mysqlModule.createConnection).not.toHaveBeenCalled();
   });
 
   it('creates mariadb databases falling back to close()', async () => {

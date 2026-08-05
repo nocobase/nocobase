@@ -22,6 +22,37 @@ export type AppDbCreator = (
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
 
+const DATABASE_IDENTIFIER_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
+
+function validateDatabaseIdentifier(value: unknown, name: string) {
+  if (value == null || value === '') {
+    return;
+  }
+
+  if (typeof value !== 'string' || !DATABASE_IDENTIFIER_PATTERN.test(value)) {
+    throw new Error(
+      `Invalid ${name}: identifiers must start with an English letter and contain only English letters, numbers, and underscores`,
+    );
+  }
+}
+
+function validateDatabaseIdentifiers(
+  databaseOptions: {
+    dialect?: string;
+    database?: unknown;
+    schema?: unknown;
+    tablePrefix?: unknown;
+  } = {},
+) {
+  const { dialect, database, schema, tablePrefix } = databaseOptions;
+
+  if (dialect !== 'sqlite') {
+    validateDatabaseIdentifier(database, 'database name');
+  }
+  validateDatabaseIdentifier(schema, 'schema');
+  validateDatabaseIdentifier(tablePrefix, 'table prefix');
+}
+
 const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Application) => {
   const repository = mainApp.db.getRepository('applications');
   const findOptions = {};
@@ -163,6 +194,16 @@ export class PluginMultiAppManagerServer extends Plugin {
   async load() {
     const supervisor = AppSupervisor.getInstance();
     this.setMetrics();
+
+    this.db.on('applications.beforeCreate', async (model: ApplicationModel) => {
+      const appName = model.get('name') as string;
+      const appModelOptions = (model.get('options') as any) || {};
+      const defaultAppOptions = supervisor.appOptionsFactory(appName, this.app, appModelOptions);
+      const options = lodash.merge({}, defaultAppOptions, appModelOptions);
+
+      validateDatabaseIdentifier(appName, 'application name');
+      validateDatabaseIdentifiers(options.database);
+    });
 
     // after application created
     this.db.on(

@@ -121,6 +121,31 @@ describe('multiple apps', () => {
     expect(await db.getRepository('applications').count()).toBe(0);
   });
 
+  it.each([
+    ['application name', '3child', {}],
+    ['application name', '_child', {}],
+    ['application name', 'child-3', {}],
+    ['database name', 'child_app', { database: { database: 'child-3' } }],
+    ['schema', 'child_app', { database: { schema: 'child-3' } }],
+    ['table prefix', 'child_app', { database: { tablePrefix: 'child-3' } }],
+  ])('should reject an invalid %s before persisting the application', async (_, name, options) => {
+    await expect(
+      db.getRepository('applications').create({
+        values: {
+          name,
+          options: {
+            plugins: [],
+            ...options,
+          },
+        },
+      }),
+    ).rejects.toThrow(
+      'identifiers must start with an English letter and contain only English letters, numbers, and underscores',
+    );
+
+    expect(await db.getRepository('applications').count()).toBe(0);
+  });
+
   it('should list application with status', async () => {
     const sub1 = `td_${uid()}`;
     await db.getRepository('applications').create({
