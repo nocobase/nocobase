@@ -400,6 +400,41 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.name).toBe('root');
   });
 
+  it('resolves a persisted RunJS ctx.getVar path for a non-configure role', async () => {
+    const flowModelUid = 'runjs-get-var-member';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: `const roleName = await ctx.getVar('ctx.popup.record.name'); ctx.render(roleName);`,
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const res = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template: { name: '{{ ctx.popup.record.name }}' },
+        contextParams: {
+          'popup.record': {
+            dataSourceKey: 'main',
+            collection: 'roles',
+            filterByTk: 'root',
+          },
+        },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body).toEqual({ name: 'root' });
+  });
+
   it('keeps the exact popup Slot gate for member and root roles', async () => {
     const flowModelUid = 'popup-moved-record-slot';
     const session = createTokenSession(1);
@@ -537,7 +572,6 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     await insertFlowModel({
       uid: flowModelUid,
       use: 'DetailsBlockModel',
-      stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'users' } } },
       props: template,
     });
 

@@ -30,6 +30,7 @@ import {
   type ValidateContextParamsResult,
   variables,
 } from './registry';
+import { collectPersistedRunJsVariableTemplates } from './runjs-variable-dependencies';
 
 type RecordParams = {
   appends?: unknown;
@@ -237,7 +238,9 @@ async function getFlowModelVariableContract(
 async function createFlowModelVariableContractFromNode(ctx: ResourcerContext, flowModelUid: string) {
   const node = await getFlowModelNode(ctx, flowModelUid);
   if (!node) return null;
-  const result = analyzeVariableTemplateSafely(node.options, { mode: 'flow-model' });
+  const runJsTemplates = collectPersistedRunJsVariableTemplates(node.options);
+  const contractSource = runJsTemplates.length ? [node.options, ...runJsTemplates] : node.options;
+  const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
   const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
   return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, node));
 }

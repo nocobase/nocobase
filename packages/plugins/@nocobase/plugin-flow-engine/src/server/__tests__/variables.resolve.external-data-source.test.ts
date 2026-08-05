@@ -17,6 +17,7 @@ import {
   resolveVariablesBatch,
   resolveVariablesTemplate,
 } from '../variables/resolve';
+import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
 import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
 import { resetVariablesRegistryForTest } from './test-utils';
 
@@ -278,6 +279,58 @@ describe('variables:resolve external data source records', () => {
     expect(result).toEqual({ value: { email: 'parent@example.test', id: 'parent-1' } });
     expect(findOne).toHaveBeenCalledWith({ filterByTk: 'parent-1', fields: undefined, appends: undefined });
     dispose();
+  });
+
+  it('resolves a direct Record through the public helper without resource metadata', async () => {
+    const findOne = vi.fn(async () => ({ id: 'lead-1', name: 'Direct lead' }));
+    const collection = { name: 'leads', filterTargetKey: 'id', model: { primaryKeyAttribute: 'id' } };
+    const getCollection = vi.fn((name: string) => {
+      expect(name).toBe('leads');
+      return collection;
+    });
+    const getRepository = vi.fn((name: string) => {
+      expect(name).toBe('leads');
+      return { findOne };
+    });
+    const getDataSource = vi.fn((key: string) => {
+      expect(key).toBe('crm_external');
+      return {
+        collectionManager: {
+          db: { getCollection, getRepository },
+        },
+      };
+    });
+    const context = {
+      app: {
+        dataSourceManager: {
+          get: getDataSource,
+        },
+        environment: { getVariables: () => ({}) },
+        logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+    const registry = getRecordSlotResolverRegistry(context.app);
+    const disposers = createBuiltInRecordSlotResolvers().map((resolver) => registry.register(resolver));
+
+    const result = await resolveVariablesTemplate(
+      context,
+      { value: '{{ ctx.record.name }}' },
+      {
+        record: {
+          collection: 'leads',
+          dataSourceKey: 'crm_external',
+          filterByTk: 'lead-1',
+        },
+      },
+    );
+
+    expect(result).toEqual({ value: 'Direct lead' });
+    expect(getDataSource).toHaveBeenCalledWith('crm_external');
+    expect(getCollection).toHaveBeenCalledWith('leads');
+    expect(getRepository).toHaveBeenCalledWith('leads');
+    expect(findOne).toHaveBeenCalledWith({ filterByTk: 'lead-1', fields: undefined, appends: undefined });
+    disposers.forEach((dispose) => dispose());
   });
 
   it('isolates public wrapper analysis failures and hides the lexical helper', async () => {

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { ResourcerContext } from '@nocobase/resourcer';
 import type { Application } from '@nocobase/server';
 import type { PathSegment, VariablePathRef } from '../template/variable-expression';
 

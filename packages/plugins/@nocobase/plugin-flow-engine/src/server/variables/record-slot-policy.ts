@@ -26,118 +26,8 @@ export type FlowModelVariableContract = Readonly<{
 
 export type CompileRecordSlotPoliciesOptions = Omit<RecordSlotResolverInput, 'path'> & Readonly<{ app: Application }>;
 
-type FlowModelOptions = Readonly<{
-  stepParams?: unknown;
-}>;
-
-type ResourceTarget = Readonly<{
-  associationName?: string;
-  collection: string;
-  dataSourceKey: string;
-}>;
-
-type FixedResourceTarget = Readonly<{
-  collection: string;
-  dataSourceKey: string;
-  kind: 'fixed';
-}>;
-
 function resolved(slot: readonly (string | number)[]) {
   return { status: 'resolved' as const, slot };
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getModelOptions(value: unknown): FlowModelOptions | undefined {
-  if (!isObject(value)) return undefined;
-  return (isObject(value.options) ? value.options : value) as FlowModelOptions;
-}
-
-function getStepInit(options: FlowModelOptions, flowKey: string) {
-  if (!isObject(options.stepParams)) return undefined;
-  const step = options.stepParams[flowKey];
-  return isObject(step) && isObject(step.init) ? step.init : undefined;
-}
-
-function getResourceTarget(options: FlowModelOptions): ResourceTarget | undefined {
-  const init = getStepInit(options, 'resourceSettings');
-  const collection = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
-  const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : 'main';
-  const associationName = typeof init?.associationName === 'string' ? init.associationName.trim() : undefined;
-  if (!collection || !dataSourceKey || (typeof init?.associationName === 'string' && !associationName))
-    return undefined;
-  return { collection, dataSourceKey, ...(associationName ? { associationName } : {}) };
-}
-
-async function getLineage(input: RecordSlotResolverInput) {
-  const ancestors = input.loadAncestors ? await input.loadAncestors() : [];
-  return [input.currentNode, ...ancestors].filter((node): node is unknown => !!node);
-}
-
-function toFixedTarget(input: RecordSlotResolverInput, target: ResourceTarget): FixedResourceTarget | undefined {
-  if (target.associationName) {
-    const segments = target.associationName.split('.').filter(Boolean);
-    const collection = segments.length > 1 ? segments.shift() : target.collection;
-    const fieldPath = segments.join('.') || target.associationName;
-    return resolveAssociationTarget(input, { collection, dataSourceKey: target.dataSourceKey }, fieldPath);
-  }
-  if (!input.getCollection?.(target.dataSourceKey, target.collection)) return undefined;
-  return { kind: 'fixed', collection: target.collection, dataSourceKey: target.dataSourceKey };
-}
-
-async function resolveNearestResourceTarget(input: RecordSlotResolverInput) {
-  for (const node of await getLineage(input)) {
-    const options = getModelOptions(node);
-    const resource = options && getResourceTarget(options);
-    const target = resource && toFixedTarget(input, resource);
-    if (target) return target;
-  }
-  return undefined;
-}
-
-function callMethod(target: unknown, name: string, ...args: unknown[]) {
-  if (!isObject(target) || typeof target[name] !== 'function') return undefined;
-  return (target[name] as (...methodArgs: unknown[]) => unknown).apply(target, args);
-}
-
-function readString(target: unknown, key: string) {
-  if (!isObject(target)) return undefined;
-  const direct = target[key];
-  if (typeof direct === 'string' && direct.trim()) return direct.trim();
-  const options = target.options;
-  const nested = isObject(options) ? options[key] : undefined;
-  return typeof nested === 'string' && nested.trim() ? nested.trim() : undefined;
-}
-
-function resolveAssociationTarget(
-  input: RecordSlotResolverInput,
-  resource: ResourceTarget,
-  fieldPath: string,
-): FixedResourceTarget | undefined {
-  let dataSourceKey = resource.dataSourceKey;
-  let collection = input.getCollection?.(dataSourceKey, resource.collection);
-  const segments = fieldPath.split('.').filter(Boolean);
-  for (let index = 0; index < segments.length; index++) {
-    const field = callMethod(collection, 'getField', segments[index]);
-    const association =
-      callMethod(field, 'isAssociationField') === true || callMethod(field, 'isRelationField') === true;
-    if (!association) return undefined;
-
-    const rawTargetCollection = isObject(field) ? field.targetCollection : undefined;
-    const targetCollection =
-      typeof rawTargetCollection === 'function' ? rawTargetCollection.call(field) : rawTargetCollection;
-    const targetName = readString(targetCollection, 'name') || readString(field, 'target');
-    if (!targetName) return undefined;
-    dataSourceKey = readString(targetCollection, 'dataSourceKey') || dataSourceKey;
-    collection = targetCollection || input.getCollection?.(dataSourceKey, targetName);
-    if (!collection) return undefined;
-    if (index === segments.length - 1) {
-      return { kind: 'fixed', collection: targetName, dataSourceKey };
-    }
-  }
-  return undefined;
 }
 
 export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverRegistration[] {
@@ -147,11 +37,7 @@ export function createBuiltInRecordSlotResolvers(): readonly RecordSlotResolverR
         owner: '@nocobase/plugin-flow-engine',
         id: `direct:${varName}`,
         match: (path) => path.varName === varName,
-        needsAncestors: true,
-        resolve: async (input) => {
-          const target = await resolveNearestResourceTarget(input);
-          return target ? resolved([]) : { status: 'abstain' };
-        },
+        resolve: () => resolved([]),
       }),
     ),
     {

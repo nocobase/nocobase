@@ -51,24 +51,19 @@ function getPolicy(policies: RecordSlotPolicies, expression: string) {
 }
 
 describe('record slot policy compiler', () => {
-  it('compiles exact direct, view, and popup slots from registered built-ins', async () => {
+  it('compiles exact direct, view, and popup slots without resource metadata', async () => {
     const app = createApp();
     const dispose = installBuiltIns(app);
-    const contract = await compile(
-      app,
-      {
-        stepParams: { resourceSettings: { init: { dataSourceKey: 'main', collectionName: 'orders' } } },
-        props: [
-          '{{ ctx.record.name }}',
-          '{{ ctx.responseRecord.id }}',
-          '{{ ctx.clickedRowRecord.title }}',
-          '{{ ctx.view.record.department.name }}',
-          '{{ ctx.popup.parent.record.title }}',
-          '{{ ctx.popup.parent.parent.sourceRecord.name }}',
-        ],
-      },
-      { getCollection: () => ({}) },
-    );
+    const contract = await compile(app, {
+      props: [
+        '{{ ctx.record.name }}',
+        '{{ ctx.responseRecord.id }}',
+        '{{ ctx.clickedRowRecord.title }}',
+        '{{ ctx.view.record.department.name }}',
+        '{{ ctx.popup.parent.record.title }}',
+        '{{ ctx.popup.parent.parent.sourceRecord.name }}',
+      ],
+    });
 
     expect(getPolicy(contract.recordSlots, '{{ ctx.record.name }}')?.slot).toEqual([]);
     expect(getPolicy(contract.recordSlots, '{{ ctx.responseRecord.id }}')?.slot).toEqual([]);

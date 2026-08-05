@@ -122,6 +122,23 @@ function createFlowModel(uid: string, template: unknown) {
   };
 }
 
+function createJsBlockModel(uid: string, code: string) {
+  return {
+    uid,
+    options: {
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: { code, version: 'v2' },
+        },
+      },
+    },
+    parentId: null,
+    subKey: null,
+    async: false,
+  };
+}
+
 function createEditFormModel(uid: string, template: unknown, configuredFields: string[]) {
   return {
     uid,
@@ -481,6 +498,61 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.policy.allowedPaths.has(result.analysis.paths[0].canonicalKey)).toBe(true);
   });
 
+  it('authorizes a persisted RunJS ctx.getVar path for an ordinary role', async () => {
+    const session = createTokenSession();
+    const modelUid = 'runjs-get-var-path';
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: {
+        [modelUid]: createJsBlockModel(
+          modelUid,
+          `const roleName = await ctx.getVar('ctx.popup.record.name'); ctx.render(roleName);`,
+        ),
+      },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.name }}',
+      contextParams: {
+        'popup.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'member' },
+      },
+    });
+
+    expect(result.allowed).toBe(true);
+    if (!result.allowed) return;
+    expect(result.policy.allowedPaths.has(result.analysis.paths[0].canonicalKey)).toBe(true);
+    expect(result.bindingPlan.bindings).toEqual([
+      expect.objectContaining({
+        params: expect.objectContaining({ collection: 'roles', filterByTk: 'member' }),
+        prefix: ['record'],
+      }),
+    ]);
+  });
+
+  it.each([
+    ['dynamic argument', `const path = 'ctx.popup.record.name'; await ctx.getVar(path);`],
+    ['shadowed ctx', `(ctx) => ctx.getVar('ctx.popup.record.name');`],
+    ['plain string', `const text = "ctx.getVar('ctx.popup.record.name')";`],
+  ])('does not authorize persisted RunJS with a %s', async (_title, code) => {
+    const session = createTokenSession();
+    const modelUid = `runjs-denied-${Buffer.from(code).toString('hex').slice(0, 12)}`;
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: { [modelUid]: createJsBlockModel(modelUid, code) },
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      rd: session.rd(modelUid),
+      template: '{{ ctx.popup.record.name }}',
+      contextParams: {
+        'popup.record': { dataSourceKey: 'main', collection: 'roles', filterByTk: 'member' },
+      },
+    });
+
+    expect(result.allowed).toBe(false);
+  });
+
   it('isolates parent, child, sibling, and async node allow-lists', async () => {
     const session = createTokenSession();
     const parent = createFlowModel('scope-parent', '{{ ctx.parentOnly }}');
@@ -718,6 +790,32 @@ describe('variables:resolve allow-list authorization', () => {
     ]);
     expect(result.contextParams).toEqual({});
   });
+
+  it.each(['record', 'responseRecord', 'clickedRowRecord'] as const)(
+    'keeps the direct %s descriptor at the exact root Slot without rd or resource metadata',
+    async (varName) => {
+      const descriptor = { collection: 'users', filterByTk: 1 };
+      const template = `{{ ctx.${varName}.name }}`;
+      const legal = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+        template,
+        contextParams: { [varName]: descriptor },
+      });
+      const moved = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
+        template,
+        contextParams: { [`${varName}.name`]: descriptor },
+      });
+
+      expect(legal.allowed).toBe(true);
+      expect(moved.allowed).toBe(true);
+      if (!legal.allowed || !moved.allowed) return;
+      expect(legal.bindingPlan.bindings).toEqual([
+        expect.objectContaining({ params: expect.objectContaining(descriptor), prefix: [] }),
+      ]);
+      expect(legal.contextParams).toEqual({});
+      expect(moved.bindingPlan.bindings).toEqual([]);
+      expect(moved.contextParams).toEqual({});
+    },
+  );
 
   it('does not let root move a descriptor to a scalar leaf', async () => {
     const result = await authorizeVariablesResolve(createFakeCtx({ currentRole: 'root' }), {
