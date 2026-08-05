@@ -14,6 +14,7 @@ import path from 'path';
 import { ApplicationModel } from '../server';
 import { Meter } from '@nocobase/telemetry';
 import { LegacyAdapter } from './adapters/legacy-adapter';
+import { NAMESPACE } from '../locale';
 
 export type AppDbCreator = (
   app: Application,
@@ -23,16 +24,16 @@ export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;
 
 const DATABASE_IDENTIFIER_PATTERN = /^[A-Za-z][A-Za-z0-9_]*$/;
+const INVALID_DATABASE_IDENTIFIER_MESSAGE =
+  'Identifiers must start with an English letter and contain only English letters, numbers, and underscores.';
 
-function validateDatabaseIdentifier(value: unknown, name: string) {
+function validateDatabaseIdentifier(value: unknown, message: string) {
   if (value == null || value === '') {
     return;
   }
 
   if (typeof value !== 'string' || !DATABASE_IDENTIFIER_PATTERN.test(value)) {
-    throw new Error(
-      `Invalid ${name}: identifiers must start with an English letter and contain only English letters, numbers, and underscores`,
-    );
+    throw new Error(message);
   }
 }
 
@@ -43,14 +44,15 @@ function validateDatabaseIdentifiers(
     schema?: unknown;
     tablePrefix?: unknown;
   } = {},
+  message: string,
 ) {
   const { dialect, database, schema, tablePrefix } = databaseOptions;
 
   if (dialect !== 'sqlite') {
-    validateDatabaseIdentifier(database, 'database name');
+    validateDatabaseIdentifier(database, message);
   }
-  validateDatabaseIdentifier(schema, 'schema');
-  validateDatabaseIdentifier(tablePrefix, 'table prefix');
+  validateDatabaseIdentifier(schema, message);
+  validateDatabaseIdentifier(tablePrefix, message);
 }
 
 const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Application) => {
@@ -195,14 +197,17 @@ export class PluginMultiAppManagerServer extends Plugin {
     const supervisor = AppSupervisor.getInstance();
     this.setMetrics();
 
-    this.db.on('applications.beforeCreate', async (model: ApplicationModel) => {
+    this.db.on('applications.beforeCreate', async (model: ApplicationModel, options) => {
       const appName = model.get('name') as string;
       const appModelOptions = (model.get('options') as any) || {};
       const defaultAppOptions = supervisor.appOptionsFactory(appName, this.app, appModelOptions);
-      const options = lodash.merge({}, defaultAppOptions, appModelOptions);
+      const appOptions = lodash.merge({}, defaultAppOptions, appModelOptions);
+      const message =
+        options.context?.i18n?.t?.(INVALID_DATABASE_IDENTIFIER_MESSAGE, { ns: NAMESPACE }) ??
+        INVALID_DATABASE_IDENTIFIER_MESSAGE;
 
-      validateDatabaseIdentifier(appName, 'application name');
-      validateDatabaseIdentifiers(options.database);
+      validateDatabaseIdentifier(appName, message);
+      validateDatabaseIdentifiers(appOptions.database, message);
     });
 
     // after application created

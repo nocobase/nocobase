@@ -13,6 +13,10 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { vi } from 'vitest';
 import { PluginMultiAppManagerServer } from '../server';
+import { NAMESPACE } from '../../locale';
+
+const invalidIdentifierMessage =
+  'Identifiers must start with an English letter and contain only English letters, numbers, and underscores.';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -139,11 +143,25 @@ describe('multiple apps', () => {
           },
         },
       }),
-    ).rejects.toThrow(
-      'identifiers must start with an English letter and contain only English letters, numbers, and underscores',
-    );
+    ).rejects.toThrow(invalidIdentifierMessage);
 
     expect(await db.getRepository('applications').count()).toBe(0);
+  });
+
+  it('should translate invalid identifier messages using the request locale', async () => {
+    const t = vi.fn().mockReturnValue('标识符必须以英文字母开头，且只能包含英文字母、数字和下划线。');
+
+    await expect(
+      db.getRepository('applications').create({
+        values: {
+          name: 'child-3',
+          options: { plugins: [] },
+        },
+        context: { i18n: { t } },
+      }),
+    ).rejects.toThrow('标识符必须以英文字母开头，且只能包含英文字母、数字和下划线。');
+
+    expect(t).toHaveBeenCalledWith(invalidIdentifierMessage, { ns: NAMESPACE });
   });
 
   it('should list application with status', async () => {
