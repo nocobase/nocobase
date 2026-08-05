@@ -221,7 +221,10 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
   return p;
 }
 
-export function buildFlowModelResolveDescriptor(ctx: FlowRuntimeContext, flowModelUid?: string | number | null) {
+export function buildFlowModelResolveDescriptor(
+  ctx: Pick<FlowModelContext, 'api'>,
+  flowModelUid?: string | number | null,
+) {
   return generateFlowModelRdFromToken(flowModelUid, ctx?.api?.auth?.token);
 }
 
