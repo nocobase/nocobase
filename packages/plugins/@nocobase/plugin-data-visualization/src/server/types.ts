@@ -43,6 +43,7 @@ export type QueryParams = Partial<{
   contextParams: Record<string, unknown>;
   limit: number;
   offset: number;
+  rd: string;
   sql: {
     fields?: string;
     clauses?: string;

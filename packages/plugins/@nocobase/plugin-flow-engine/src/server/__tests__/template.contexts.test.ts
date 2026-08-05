@@ -46,15 +46,6 @@ describe('ServerBaseContext', () => {
     expect((ctx as any).foo).toBe(1);
   });
 
-  it('defineMethod: accessible and bound', () => {
-    const ctx = new ServerBaseContext();
-    (ctx as any).defineMethod('add', function (a: number, b: number) {
-      return a + b;
-    });
-    expect((ctx as any).add(2, 3)).toBe(5);
-    expect('add' in (ctx as any)).toBe(true);
-  });
-
   it('delegate: property lookup falls back to delegates', () => {
     const parent = new ServerBaseContext();
     (parent as any).defineProperty('foo', { value: 42 });
@@ -67,9 +58,9 @@ describe('ServerBaseContext', () => {
   it('delegate: getter receives top-level proxy as ctx', () => {
     const parent = new ServerBaseContext();
     const child = new ServerBaseContext();
-    (child as any).defineMethod('hello', () => 'ok');
+    (child as any).defineProperty('message', { value: 'ok' });
     (parent as any).defineProperty('x', {
-      get: (ctx: any) => ctx.hello(),
+      get: (ctx: any) => ctx.message,
     });
     (child as any).delegate(parent as any);
     expect((child as any).x).toBe('ok');
@@ -85,6 +76,22 @@ describe('ServerBaseContext', () => {
     const p1 = (ctx as any).createProxy();
     const p2 = (ctx as any).createProxy();
     expect(p1).toBe(p2);
+  });
+
+  it('rejects prototype and internal keys without breaking later definitions', () => {
+    const ctx = new ServerBaseContext();
+    const blockedKeys = ['__proto__', 'constructor', 'then', 'defineProperty', 'getSandboxKeys', '_props'];
+
+    blockedKeys.forEach((key) => ctx.defineProperty(key, { value: 'blocked' }));
+    ctx.defineProperty('safe', { value: 'ok' });
+
+    expect(ctx.getSandboxKeys()).toEqual(['safe']);
+    blockedKeys.forEach((key) => {
+      expect(ctx.getSandboxValue(key)).toBeUndefined();
+      expect(key in ctx).toBe(false);
+    });
+    expect(ctx.safe).toBe('ok');
+    expect(typeof ctx.defineProperty).toBe('function');
   });
 });
 
@@ -126,5 +133,29 @@ describe('HttpRequestContext', () => {
     expect(r.headers).toEqual({ 'x-req-id': 'abc' });
     expect(r.query).toEqual({ a: 1 });
     expect(r.params).toEqual({ foo: 'bar' });
+  });
+
+  it('keeps request and delegated global providers after redefinition attempts', async () => {
+    const koa = {
+      auth: { user: { id: 1 }, role: 'member' },
+      getCurrentLocale: () => 'en-US',
+      state: { clientIp: '1.2.3.4' },
+      headers: { authorization: 'Bearer safe' },
+      request: { query: { page: 1 } },
+      action: { params: { values: true } },
+    };
+    const request = new HttpRequestContext(koa as never);
+    const global = new GlobalContext({ PUBLIC_VALUE: 'safe' });
+    request.delegate(global);
+
+    request.defineProperty('user', { value: { id: 999 } });
+    request.defineProperty('query', { value: { page: 999 } });
+    global.defineProperty('env', { value: { PUBLIC_VALUE: 'spoofed' } });
+    global.defineProperty('now', { value: 'spoofed' });
+
+    expect(await request.user).toEqual({ id: 1 });
+    expect(request.query).toEqual({ page: 1 });
+    expect(request.env).toEqual({ PUBLIC_VALUE: 'safe' });
+    expect(request.now).not.toBe('spoofed');
   });
 });

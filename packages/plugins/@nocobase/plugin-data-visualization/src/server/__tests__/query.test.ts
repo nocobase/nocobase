@@ -11,6 +11,8 @@ import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { vi } from 'vitest';
 import { Database } from '@nocobase/database';
+import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
+import { generateFlowModelRd } from '@nocobase/utils';
 import { cacheMiddleware, checkPermission, parseVariables } from '../actions/query';
 
 describe('query', () => {
@@ -18,9 +20,22 @@ describe('query', () => {
     let ctx: any;
     let app: MockServer;
     let db: Database;
+    const createSession = (userId: number) => {
+      const signInTime = `chart-query-${userId}`;
+      const payload = Buffer.from(JSON.stringify({ userId, signInTime })).toString('base64url');
+      return {
+        rd: (flowModelUid: string) => generateFlowModelRd(flowModelUid, `${userId}:${signInTime}`),
+        token: `test.${payload}.sig`,
+      };
+    };
+    const insertFlowModel = async (uid: string, template: unknown) => {
+      const repository = db.getCollection('flowModels').repository as FlowModelRepository;
+      await repository.insertModel({ uid, use: 'ChartBlockModel', props: template });
+    };
+
     beforeAll(async () => {
       app = await createMockServer({
-        plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
+        plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'flow-engine'],
       });
       db = app.db;
       db.options.underscored = true;
@@ -93,6 +108,7 @@ describe('query', () => {
         action: {
           params: {
             values: {
+              mode: 'sql',
               filter: {
                 $and: [
                   {
@@ -117,23 +133,31 @@ describe('query', () => {
 
     it('should reuse flow-engine variable resolver for filter values', async () => {
       const user = await db.getRepository('users').findOne();
+      const uid = 'chart-query-user';
+      const session = createSession(user.id);
+      await insertFlowModel(uid, { filter: { userId: { $eq: '{{ ctx.user.id }}' } } });
       const context = {
         ...ctx,
         auth: {
           user,
         },
         state: {
+          currentRole: 'member',
+          currentRoles: ['member'],
           currentUser: user,
         },
         get: (key: string) => {
           return {
+            authorization: `Bearer ${session.token}`,
             'x-timezone': '',
-          }[key];
+          }[key.toLowerCase()];
         },
         getCurrentLocale: () => 'en-US',
         action: {
           params: {
             values: {
+              mode: 'builder',
+              rd: session.rd(uid),
               filter: {
                 userId: { $eq: '{{ ctx.user.id }}' },
               },
@@ -146,10 +170,49 @@ describe('query', () => {
 
       expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
     });
+
+    it('should not resolve unregistered Record context params', async () => {
+      const user = await db.getRepository('users').findOne();
+      const uid = 'chart-query-unregistered-record';
+      const session = createSession(user.id);
+      await insertFlowModel(uid, { filter: { userId: { $eq: '{{ ctx.chart.record.id }}' } } });
+      const context = {
+        ...ctx,
+        auth: { user },
+        get: (key: string) => (key.toLowerCase() === 'authorization' ? `Bearer ${session.token}` : ''),
+        getCurrentLocale: () => 'en-US',
+        state: { currentRole: 'member', currentRoles: ['member'], currentUser: user },
+        action: {
+          params: {
+            values: {
+              mode: 'builder',
+              rd: session.rd(uid),
+              contextParams: {
+                'chart.record': {
+                  collection: 'users',
+                  dataSourceKey: 'main',
+                  fields: ['id'],
+                  filterByTk: user.id,
+                },
+              },
+              filter: { userId: { $eq: '{{ ctx.chart.record.id }}' } },
+            },
+          },
+        },
+      };
+
+      const next = vi.fn();
+      await parseVariables(context, next);
+
+      expect(context.body).toEqual([]);
+      expect(context.action.params.values.filter.userId.$eq).toBe('{{ ctx.chart.record.id }}');
+      expect(next).not.toHaveBeenCalled();
+    });
   });
 
   describe('cacheMiddleware', () => {
     const key = 'test-key';
+    const cacheKey = JSON.stringify([key, {}]);
     const value = 'test-val';
     const query = vi.fn().mockImplementation(async (ctx, next) => {
       ctx.body = value;
@@ -195,11 +258,11 @@ describe('query', () => {
         },
       };
       const cache = context.app.cacheManager.getCache();
-      expect(cache.get(key)).toBeUndefined();
+      expect(cache.get(cacheKey)).toBeUndefined();
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
       expect(context.body).toEqual(value);
-      expect(cache.get(key)).toEqual(value);
+      expect(cache.get(cacheKey)).toEqual(value);
       vi.clearAllMocks();
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(context.body).toEqual(value);
@@ -239,14 +302,42 @@ describe('query', () => {
         },
       };
       const cache = context.app.cacheManager.getCache();
-      expect(cache.get(key)).toBeUndefined();
+      expect(cache.get(cacheKey)).toBeUndefined();
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
       expect(context.body).toEqual(value);
-      expect(cache.get(key)).toEqual(value);
+      expect(cache.get(cacheKey)).toEqual(value);
       await compose([cacheMiddleware, query])(context, async () => {});
       expect(query).toBeCalled();
       expect(context.body).toEqual(value);
+    });
+    it('isolates cache entries by resolved query', async () => {
+      const first = {
+        ...ctx,
+        action: {
+          params: {
+            values: { cache: { enabled: true }, filter: { id: 1 }, uid: key },
+          },
+        },
+      };
+      const second = {
+        ...ctx,
+        action: {
+          params: {
+            values: { cache: { enabled: true }, filter: { id: 2 }, uid: key },
+          },
+        },
+      };
+
+      await cacheMiddleware(first, async () => {
+        first.body = 'first';
+      });
+      await cacheMiddleware(second, async () => {
+        second.body = 'second';
+      });
+
+      expect(first.body).toBe('first');
+      expect(second.body).toBe('second');
     });
   });
 });
