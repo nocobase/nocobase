@@ -379,32 +379,35 @@ describe('app', () => {
     expect(screen.getByText('maintaining dialog message')).toBeInTheDocument();
   });
 
-  it('should keep current content behind maintained dialog state', async () => {
-    const CurrentPage = () => {
-      const [count, setCount] = React.useState(0);
-      return <button onClick={() => setCount((value) => value + 1)}>Current page count: {count}</button>;
-    };
+  it.each(['pm.enable', 'future.command'])(
+    'should keep current content without a default dialog while app commanding: %s',
+    async (commandName) => {
+      const CurrentPage = () => {
+        const [count, setCount] = React.useState(0);
+        return <button onClick={() => setCount((value) => value + 1)}>Current page count: {count}</button>;
+      };
 
-    class PluginHelloClient extends Plugin {
-      async load() {
-        this.router.add('root', { path: '/', Component: CurrentPage });
+      class PluginHelloClient extends Plugin {
+        async load() {
+          this.router.add('root', { path: '/', Component: CurrentPage });
+        }
       }
-    }
-    const app = createMockClient({ plugins: [PluginHelloClient] });
-    await renderApp(app);
-    fireEvent.click(screen.getByRole('button', { name: 'Current page count: 0' }));
-    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+      const app = createMockClient({ plugins: [PluginHelloClient] });
+      await renderApp(app);
+      fireEvent.click(screen.getByRole('button', { name: 'Current page count: 0' }));
+      expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
 
-    act(() => {
-      app.maintained = true;
-      app.maintaining = true;
-      app.error = { code: 'APP_COMMANDING', command: { name: 'pm.enable' }, message: 'starting sub applications...' };
-    });
+      act(() => {
+        app.maintained = true;
+        app.maintaining = true;
+        app.error = { code: 'APP_COMMANDING', command: { name: commandName }, message: 'starting sub applications...' };
+      });
 
-    expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText('Enabling plugin')).toBeInTheDocument();
-  });
+      expect(screen.getByRole('button', { name: 'Current page count: 1' })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByText(commandName === 'pm.enable' ? 'Enabling plugin' : commandName)).not.toBeInTheDocument();
+    },
+  );
 
   it('should keep current content without a dialog while app upgrading', async () => {
     const CurrentPage = () => <div>Current page</div>;
@@ -431,17 +434,22 @@ describe('app', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('should not show Try again for an app upgrade error state', async () => {
+  it.each([
+    ['upgrade', 'App upgrading'],
+    ['pm.enable', 'Enabling plugin'],
+    ['pm.disable', 'Disabling plugin'],
+    ['future.command', 'future.command'],
+  ])('should not show Try again for an app commanding error state: %s', async (commandName, title) => {
     class PluginHelloClient extends Plugin {}
     const app = createMockClient({ plugins: [PluginHelloClient] });
     app.error = Object.assign(new Error('Loading data sources...'), {
       code: 'APP_COMMANDING',
-      command: { name: 'upgrade' },
+      command: { name: commandName },
     });
 
     await renderApp(app);
 
-    expect(screen.getByText('App upgrading')).toBeInTheDocument();
+    expect(screen.getByText(title)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 
