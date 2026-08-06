@@ -8,6 +8,7 @@
  */
 
 import { buildJsTemplateSettingsSchema } from '../schema/contracts';
+import { buildJsTemplateSdkDeclarations } from './authoring-contract';
 import {
   buildJsTemplateSettingsAuthoringContract,
   type JsTemplateClientTypegenKind,
@@ -365,39 +366,7 @@ function buildIndexTypes(templates: JsTemplateSettingsTypegenTemplate[]): string
 }
 
 function buildSdkDeclarations(): string {
-  return `${generatedHeader()}
-declare module "@nocobase/js-template-sdk/shared" {
-  export interface JsTemplateSettingsContext<TSettings = unknown> { settings: TSettings; }
-  export type JsTemplateContextRecord = Record<string, unknown>;
-  export interface JsTemplateDataContext<TSettings = unknown> extends JsTemplateSettingsContext<TSettings> {
-    record?: JsTemplateContextRecord | null;
-    records?: JsTemplateContextRecord[];
-    values?: JsTemplateContextRecord;
-    collection?: unknown;
-    collectionField?: unknown;
-    dataSource?: unknown;
-  }
-  export function defineSettings<TSettings>(settings: TSettings): TSettings;
-  export function assertSettings<TSettings>(settings: TSettings): TSettings;
-}
-
-declare module "@nocobase/js-template-sdk/client" {
-  import type { JsTemplateDataContext, JsTemplateContextRecord } from "@nocobase/js-template-sdk/shared";
-  export type { JsTemplateDataContext, JsTemplateContextRecord, JsTemplateSettingsContext } from "@nocobase/js-template-sdk/shared";
-  export { assertSettings, defineSettings } from "@nocobase/js-template-sdk/shared";
-  export interface JSBlockContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> {
-    element?: HTMLElement | null;
-    render?: (node: unknown) => void;
-    i18n?: { t: (key: string, options?: Record<string, unknown>) => string };
-  }
-  export interface JSPageRuntimeFacade { readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void; }
-  export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> { page: JSPageRuntimeFacade; }
-  export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> { value?: TValue; }
-  export interface JSActionContext<TSettings = unknown> extends JsTemplateDataContext<TSettings> { event?: unknown; formValues?: JsTemplateContextRecord; }
-  export interface JSItemContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> { value?: TValue; }
-  export interface RunJSContext<TSettings = unknown, TInput = unknown> extends JsTemplateDataContext<TSettings> { input?: TInput; event?: unknown; formValues?: JsTemplateContextRecord; }
-}
-`;
+  return `${generatedHeader()}\n${buildJsTemplateSdkDeclarations()}\n`;
 }
 
 function parseClientEntryDescriptorPath(

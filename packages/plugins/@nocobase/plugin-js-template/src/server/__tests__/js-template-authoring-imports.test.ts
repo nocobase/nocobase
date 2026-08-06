@@ -9,18 +9,16 @@
 
 import {
   buildJsTemplateSettingsAuthoringContract,
+  JS_TEMPLATE_SDK_AUTHORING_MODULES,
+  JS_TEMPLATE_SDK_CLIENT_IMPORT,
+  JS_TEMPLATE_SDK_SHARED_IMPORT,
   type JsTemplateSettingsAuthoringContract,
 } from '@nocobase/js-template-sdk/typegen';
 import { collectStaticModuleReferences } from '@nocobase/runjs/compiler';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import {
-  JS_TEMPLATE_PUBLIC_AUTHORING_TYPES,
-  JS_TEMPLATE_SDK_CLIENT_IMPORT,
-  JS_TEMPLATE_SDK_SHARED_IMPORT,
-  rewriteJsTemplateAuthoringImports,
-} from '../services/conversion/jsTemplateAuthoringImports';
+import { rewriteJsTemplateAuthoringImports } from '../services/conversion/jsTemplateAuthoringImports';
 
 const publicTypeCases = [
   { name: 'JsTemplateSettingsContext', fragment: 'settings: TSettings' },
@@ -37,14 +35,18 @@ const publicTypeCases = [
 
 describe('JS Template authoring imports', () => {
   it('tracks the public SDK authoring exports by module', () => {
-    expect(JS_TEMPLATE_PUBLIC_AUTHORING_TYPES[JS_TEMPLATE_SDK_SHARED_IMPORT]).toEqual([
+    const sharedModule = JS_TEMPLATE_SDK_AUTHORING_MODULES.get(JS_TEMPLATE_SDK_SHARED_IMPORT);
+    const clientModule = JS_TEMPLATE_SDK_AUTHORING_MODULES.get(JS_TEMPLATE_SDK_CLIENT_IMPORT);
+    if (!sharedModule || !clientModule) {
+      throw new Error('Expected both JS Template SDK authoring modules');
+    }
+    expect([...sharedModule.types.keys()]).toEqual([
       'JsTemplateSettingsContext',
       'JsTemplateContextRecord',
       'JsTemplateDataContext',
     ]);
-    expect(JS_TEMPLATE_PUBLIC_AUTHORING_TYPES[JS_TEMPLATE_SDK_CLIENT_IMPORT]).toEqual(
-      publicTypeCases.map((item) => item.name),
-    );
+    expect([...clientModule.types.keys()]).toEqual(publicTypeCases.map((item) => item.name));
+    expect([...clientModule.runtimeHelpers.keys()]).toEqual(['defineSettings', 'assertSettings']);
   });
 
   it.each(publicTypeCases)('lowers the public $name type with its usable shape', ({ name, fragment }) => {

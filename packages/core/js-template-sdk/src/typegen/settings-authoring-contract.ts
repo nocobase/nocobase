@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type JsTemplateClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+import {
+  getJsTemplateSettingsContextTypeName,
+  type JsTemplateClientTypegenKind,
+  type JsTemplateSettingsContextTypeName,
+} from './authoring-contract';
 
-export type JsTemplateSettingsContextTypeName =
-  | 'JSBlockContext'
-  | 'JSPageContext'
-  | 'JSFieldContext'
-  | 'JSActionContext'
-  | 'JSItemContext';
+export type { JsTemplateClientTypegenKind, JsTemplateSettingsContextTypeName } from './authoring-contract';
 
 export interface JsTemplateSettingsAuthoringTemplate {
   target: 'client';
@@ -54,14 +53,6 @@ type JsonSchemaLike = {
   items?: unknown;
 };
 
-const contextTypes: Record<JsTemplateClientTypegenKind, JsTemplateSettingsContextTypeName> = {
-  'js-block': 'JSBlockContext',
-  'js-page': 'JSPageContext',
-  'js-field': 'JSFieldContext',
-  'js-action': 'JSActionContext',
-  'js-item': 'JSItemContext',
-};
-
 export function buildJsTemplateSettingsAuthoringContract(
   template: JsTemplateSettingsAuthoringTemplate,
 ): JsTemplateSettingsAuthoringContract {
@@ -84,7 +75,7 @@ export function buildJsTemplateSettingsAuthoringContract(
       template.virtualImport,
     )}; schemaHash: ${JSON.stringify(template.schemaHash)} }`,
     context: {
-      publicTypeName: contextTypes[template.kind],
+      publicTypeName: getJsTemplateSettingsContextTypeName(template.kind),
       settingsTypeExpression,
     },
   };

@@ -8,17 +8,21 @@
  */
 
 import {
+  getJsTemplateAuthoringTypeContract,
+  getJsTemplateSettingsContextTypeName,
+  JS_TEMPLATE_SDK_AUTHORING_MODULES,
+  JS_TEMPLATE_SETTINGS_IMPORT_PREFIX,
   parseSettingsTypeImport,
+  renderJsTemplateAuthoringTypeDeclaration,
+  renderJsTemplateAuthoringTypeExpression,
   type JsTemplateClientTypegenKind,
+  type JsTemplateAuthoringTypeContract,
+  type JsTemplateSdkAuthoringModuleContract,
   type JsTemplateSettingsAuthoringContract,
   type JsTemplateSettingsAuthoringContractLookup,
 } from '@nocobase/js-template-sdk/typegen';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
-
-export const JS_TEMPLATE_SDK_CLIENT_IMPORT = '@nocobase/js-template-sdk/client';
-export const JS_TEMPLATE_SDK_SHARED_IMPORT = '@nocobase/js-template-sdk/shared';
-export const JS_TEMPLATE_SETTINGS_IMPORT_PREFIX = 'js-template:settings/';
 
 export type JsTemplateAuthoringImportDiagnosticCode =
   | 'import_not_allowed'
@@ -49,21 +53,6 @@ export interface JsTemplateAuthoringImportOptions {
   settingsContracts?: JsTemplateSettingsAuthoringContractLookup;
 }
 
-interface TypeParameterSpec {
-  defaultType: string;
-  name: string;
-}
-
-interface AuthoringTypeSpec {
-  buildBody: (typeArguments: readonly string[]) => string;
-  parameters: readonly TypeParameterSpec[];
-}
-
-interface SdkAuthoringModule {
-  runtimeHelpers: ReadonlySet<string>;
-  types: ReadonlyMap<string, AuthoringTypeSpec>;
-}
-
 interface SettingsAuthoringModule {
   contract?: JsTemplateSettingsAuthoringContract;
   kind: JsTemplateClientTypegenKind;
@@ -71,155 +60,18 @@ interface SettingsAuthoringModule {
 }
 
 type AuthoringModule =
-  | { kind: 'sdk'; module: SdkAuthoringModule; specifier: string }
+  | { kind: 'sdk'; module: JsTemplateSdkAuthoringModuleContract; specifier: string }
   | { kind: 'settings'; module: SettingsAuthoringModule; specifier: string }
   | { kind: 'invalid-settings'; missingFromWorkspace?: boolean; specifier: string };
 
-const contextRecordType = 'Record<string, unknown>';
-const pageRuntimeFacadeType =
-  '{ readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void }';
-
-const settingsParameter = Object.freeze({ name: 'TSettings', defaultType: 'unknown' });
-const valueParameter = Object.freeze({ name: 'TValue', defaultType: 'unknown' });
-const inputParameter = Object.freeze({ name: 'TInput', defaultType: 'unknown' });
-
-function settingsContextBody(settingsType: string): string {
-  return `{ settings: ${settingsType} }`;
+const contextRecordTypeContract = getJsTemplateAuthoringTypeContract('JsTemplateContextRecord');
+if (!contextRecordTypeContract) {
+  throw new Error('Missing JsTemplateContextRecord authoring contract');
 }
-
-function dataContextBody(settingsType: string): string {
-  return `{ settings: ${settingsType}; record?: ${contextRecordType} | null; records?: ${contextRecordType}[]; values?: ${contextRecordType}; collection?: unknown; collectionField?: unknown; dataSource?: unknown }`;
-}
-
-function blockContextBody(settingsType: string): string {
-  return `(${dataContextBody(
-    settingsType,
-  )} & { element?: HTMLElement | null; render?: (node: unknown) => void; i18n?: { t: (key: string, options?: Record<string, unknown>) => string } })`;
-}
-
-function actionContextBody(settingsType: string): string {
-  return `(${dataContextBody(settingsType)} & { event?: unknown; formValues?: ${contextRecordType} })`;
-}
-
-function valueContextBody(settingsType: string, valueType: string): string {
-  return `(${dataContextBody(settingsType)} & { value?: ${valueType} })`;
-}
-
-const publicAuthoringTypes = new Map<string, AuthoringTypeSpec>([
-  [
-    'JsTemplateSettingsContext',
-    {
-      parameters: [settingsParameter],
-      buildBody: ([settingsType]) => settingsContextBody(settingsType),
-    },
-  ],
-  [
-    'JsTemplateContextRecord',
-    {
-      parameters: [],
-      buildBody: () => contextRecordType,
-    },
-  ],
-  [
-    'JsTemplateDataContext',
-    {
-      parameters: [settingsParameter],
-      buildBody: ([settingsType]) => dataContextBody(settingsType),
-    },
-  ],
-  [
-    'JSBlockContext',
-    {
-      parameters: [settingsParameter],
-      buildBody: ([settingsType]) => blockContextBody(settingsType),
-    },
-  ],
-  [
-    'JSPageRuntimeFacade',
-    {
-      parameters: [],
-      buildBody: () => pageRuntimeFacadeType,
-    },
-  ],
-  [
-    'JSPageContext',
-    {
-      parameters: [settingsParameter],
-      buildBody: ([settingsType]) => `(${blockContextBody(settingsType)} & { page: ${pageRuntimeFacadeType} })`,
-    },
-  ],
-  [
-    'JSFieldContext',
-    {
-      parameters: [settingsParameter, valueParameter],
-      buildBody: ([settingsType, valueType]) => valueContextBody(settingsType, valueType),
-    },
-  ],
-  [
-    'JSActionContext',
-    {
-      parameters: [settingsParameter],
-      buildBody: ([settingsType]) => actionContextBody(settingsType),
-    },
-  ],
-  [
-    'JSItemContext',
-    {
-      parameters: [settingsParameter, valueParameter],
-      buildBody: ([settingsType, valueType]) => valueContextBody(settingsType, valueType),
-    },
-  ],
-  [
-    'RunJSContext',
-    {
-      parameters: [settingsParameter, inputParameter],
-      buildBody: ([settingsType, inputType]) =>
-        `(${dataContextBody(
-          settingsType,
-        )} & { input?: ${inputType}; event?: unknown; formValues?: ${contextRecordType} })`,
-    },
-  ],
-]);
-
-const sharedTypeNames = ['JsTemplateSettingsContext', 'JsTemplateContextRecord', 'JsTemplateDataContext'] as const;
-const clientTypeNames = [
-  ...sharedTypeNames,
-  'JSBlockContext',
-  'JSPageRuntimeFacade',
-  'JSPageContext',
-  'JSFieldContext',
-  'JSActionContext',
-  'JSItemContext',
-  'RunJSContext',
-] as const;
-const runtimeHelpers = new Set(['defineSettings', 'assertSettings']);
-
-export const JS_TEMPLATE_PUBLIC_AUTHORING_TYPES = Object.freeze({
-  [JS_TEMPLATE_SDK_CLIENT_IMPORT]: Object.freeze([...clientTypeNames]),
-  [JS_TEMPLATE_SDK_SHARED_IMPORT]: Object.freeze([...sharedTypeNames]),
-});
-
-export const JS_TEMPLATE_PUBLIC_AUTHORING_RUNTIME_HELPERS = Object.freeze([...runtimeHelpers]);
-
-const sdkAuthoringModules = new Map<string, SdkAuthoringModule>([
-  [
-    JS_TEMPLATE_SDK_CLIENT_IMPORT,
-    {
-      types: pickAuthoringTypes(clientTypeNames),
-      runtimeHelpers,
-    },
-  ],
-  [
-    JS_TEMPLATE_SDK_SHARED_IMPORT,
-    {
-      types: pickAuthoringTypes(sharedTypeNames),
-      runtimeHelpers,
-    },
-  ],
-]);
+const contextRecordType = renderJsTemplateAuthoringTypeExpression(contextRecordTypeContract, []);
 
 export function isJsTemplateAuthoringModuleSpecifier(specifier: string): boolean {
-  return sdkAuthoringModules.has(specifier) || specifier.startsWith(JS_TEMPLATE_SETTINGS_IMPORT_PREFIX);
+  return JS_TEMPLATE_SDK_AUTHORING_MODULES.has(specifier) || specifier.startsWith(JS_TEMPLATE_SETTINGS_IMPORT_PREFIX);
 }
 
 export function analyzeJsTemplateAuthoringImportDeclaration(
@@ -303,7 +155,8 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
   }
 
   if (node.isTypeOf) {
-    if (!authoringModule.module.runtimeHelpers.has(importedName) || node.typeArguments?.length) {
+    const runtimeHelper = authoringModule.module.runtimeHelpers.get(importedName);
+    if (!runtimeHelper || node.typeArguments?.length) {
       return invalidImportTypeAnalysis(
         sourceFile,
         node.getStart(sourceFile),
@@ -311,7 +164,7 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
         `Runtime helper "${importedName}" is not available through this SDK import type`,
       );
     }
-    return recognizedAnalysis('<TSettings>(settings: TSettings) => TSettings');
+    return recognizedAnalysis(runtimeHelper.typeExpression);
   }
 
   const typeSpec = authoringModule.module.types.get(importedName);
@@ -333,7 +186,7 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
       `Type "${importedName}" from "${specifier}" accepts at most ${typeSpec.parameters.length} type arguments`,
     );
   }
-  return recognizedAnalysis(renderTypeExpression(typeSpec, typeArguments));
+  return recognizedAnalysis(renderJsTemplateAuthoringTypeExpression(typeSpec, typeArguments));
 }
 
 export function rewriteJsTemplateAuthoringImports(
@@ -534,10 +387,11 @@ function analyzeSdkImportDeclaration(
         );
         continue;
       }
-      declarations.push(renderTypeDeclaration(typeSpec, element.name.text));
+      declarations.push(renderJsTemplateAuthoringTypeDeclaration(typeSpec, element.name.text));
       continue;
     }
-    if (!authoringModule.module.runtimeHelpers.has(importedName)) {
+    const runtimeHelper = authoringModule.module.runtimeHelpers.get(importedName);
+    if (!runtimeHelper) {
       diagnostics.push(
         createIssue(
           sourceFile,
@@ -548,7 +402,14 @@ function analyzeSdkImportDeclaration(
       );
       continue;
     }
-    declarations.push(buildRuntimeHelperDeclaration(element.name.text, sourceFile.scriptKind));
+    declarations.push(
+      runtimeHelper.buildDeclaration(
+        element.name.text,
+        sourceFile.scriptKind === ts.ScriptKind.JS || sourceFile.scriptKind === ts.ScriptKind.JSX
+          ? 'javascript'
+          : 'typescript',
+      ),
+    );
   }
 
   return {
@@ -640,25 +501,18 @@ function buildSettingsTypeExpression(importedName: string, settingsModule: Setti
     return null;
   }
   if (!settingsModule.contract && importedName === 'Context') {
-    const contextTypeName: Record<JsTemplateClientTypegenKind, string> = {
-      'js-block': 'JSBlockContext',
-      'js-page': 'JSPageContext',
-      'js-field': 'JSFieldContext',
-      'js-action': 'JSActionContext',
-      'js-item': 'JSItemContext',
-    };
-    const contextType = publicAuthoringTypes.get(contextTypeName[settingsModule.kind]);
-    return contextType ? renderTypeExpression(contextType, [contextRecordType]) : null;
+    const contextType = getJsTemplateAuthoringTypeContract(getJsTemplateSettingsContextTypeName(settingsModule.kind));
+    return contextType ? renderJsTemplateAuthoringTypeExpression(contextType, [contextRecordType]) : null;
   }
   if (importedName !== 'Context') {
     return null;
   }
-  const contextType = publicAuthoringTypes.get(settingsModule.contract.context.publicTypeName);
+  const contextType = getJsTemplateAuthoringTypeContract(settingsModule.contract.context.publicTypeName);
   const settingsTypeExpression = nonEmptyTypeExpression(settingsModule.contract.context.settingsTypeExpression);
   if (!contextType || !settingsTypeExpression) {
     return null;
   }
-  return renderTypeExpression(contextType, [settingsTypeExpression]);
+  return renderJsTemplateAuthoringTypeExpression(contextType, [settingsTypeExpression]);
 }
 
 function buildNamespacedSettingsTypeAliases(localName: string, settingsModule: SettingsAuthoringModule): string | null {
@@ -689,39 +543,20 @@ function nonEmptyTypeExpression(expression: string): string | null {
   return expression.trim() ? expression : null;
 }
 
-function buildNamespacedTypeAliases(localName: string, types: ReadonlyMap<string, AuthoringTypeSpec>): string {
+function buildNamespacedTypeAliases(
+  localName: string,
+  types: ReadonlyMap<string, JsTemplateAuthoringTypeContract>,
+): string {
   return [...types]
-    .map(([name, typeSpec]) => renderTypeDeclaration(typeSpec, namespacedTypeName(localName, name)))
+    .map(([name, typeSpec]) => renderJsTemplateAuthoringTypeDeclaration(typeSpec, namespacedTypeName(localName, name)))
     .join(' ');
-}
-
-function buildRuntimeHelperDeclaration(localName: string, sourceScriptKind: ts.ScriptKind): string {
-  if (sourceScriptKind === ts.ScriptKind.JS || sourceScriptKind === ts.ScriptKind.JSX) {
-    return `function ${localName}(settings) { return settings; }`;
-  }
-  return `function ${localName}<TSettings>(settings: TSettings): TSettings { return settings; }`;
-}
-
-function renderTypeDeclaration(typeSpec: AuthoringTypeSpec, localName: string): string {
-  const parameters = typeSpec.parameters.length
-    ? `<${typeSpec.parameters.map((parameter) => `${parameter.name} = ${parameter.defaultType}`).join(', ')}>`
-    : '';
-  const body = typeSpec.buildBody(typeSpec.parameters.map((parameter) => parameter.name));
-  return `type ${localName}${parameters} = ${body};`;
-}
-
-function renderTypeExpression(typeSpec: AuthoringTypeSpec, typeArguments: readonly string[]): string {
-  const resolvedArguments = typeSpec.parameters.map(
-    (parameter, index) => typeArguments[index] || parameter.defaultType,
-  );
-  return typeSpec.buildBody(resolvedArguments);
 }
 
 function classifyAuthoringModule(
   specifier: string,
   options: JsTemplateAuthoringImportOptions = {},
 ): AuthoringModule | null {
-  const sdkModule = sdkAuthoringModules.get(specifier);
+  const sdkModule = JS_TEMPLATE_SDK_AUTHORING_MODULES.get(specifier);
   if (sdkModule) {
     return { kind: 'sdk', module: sdkModule, specifier };
   }
@@ -861,14 +696,6 @@ function unrecognizedAnalysis(): JsTemplateAuthoringImportAnalysis {
 function preserveStatementLineCount(replacement: string, original: string): string {
   const originalLineBreaks = (original.match(/\n/gu) || []).length;
   return `${replacement}${'\n'.repeat(originalLineBreaks)}`;
-}
-
-function pickAuthoringTypes(names: readonly string[]): ReadonlyMap<string, AuthoringTypeSpec> {
-  const entries = names.flatMap((name) => {
-    const typeSpec = publicAuthoringTypes.get(name);
-    return typeSpec ? [[name, typeSpec] as const] : [];
-  });
-  return new Map(entries);
 }
 
 function scriptKind(path: string): ts.ScriptKind {

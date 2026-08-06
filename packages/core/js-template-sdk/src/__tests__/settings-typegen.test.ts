@@ -272,9 +272,7 @@ describe('JS Template settings typegen', () => {
     expect(result.templates).toEqual([]);
     expect(result.files.some((file) => file.path.includes('/client/runjs/'))).toBe(false);
     expect(parseSettingsTypeImport('js-template:settings/client/runjs/subtotal')).toBeNull();
-    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain(
-      'export interface RunJSContext',
-    );
+    expect(result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content).toContain('export type RunJSContext');
   });
 
   it('generates the active settings context from an inline src/client/entry.json file', () => {
@@ -343,7 +341,7 @@ describe('JS Template settings typegen', () => {
     );
     expect(active.file?.content).toContain('type JsTemplateActiveTemplateContext = RunJSContext & Context;');
     const sdkDeclarations = result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content || '';
-    expect(sdkDeclarations).toContain('export interface JSPageContext');
+    expect(sdkDeclarations).toContain('export type JSPageContext');
     expect(sdkDeclarations.match(/declare module "@nocobase\/js-template-sdk\/client"/gu)).toHaveLength(1);
     expect(sdkDeclarations.match(/declare module "@nocobase\/js-template-sdk\/shared"/gu)).toHaveLength(1);
   });
