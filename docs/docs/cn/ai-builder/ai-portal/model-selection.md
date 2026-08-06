@@ -6,9 +6,11 @@ keywords: "NocoBase AI 搭建,大模型选择,GPT,DeepSeek,Qwen,AI Agent,模型�
 
 # 大模型选择
 
-:::tip 实测结论
+:::tip 核心结论
 
-目前市面上的主流旗舰模型都能够完成 NocoBase 应用的主体搭建。不同模型在单次产物的完整度、耗时和问题数量上有所差异，可以结合已有的模型服务、所在地区的网络条件、使用成本和团队习惯自主选择。
+**目前市面上的主流旗舰模型都能够完成 NocoBase 应用的主体搭建。**
+
+不同模型在单次产物的完整度、耗时和问题数量上有所差异，可以结合已有的模型服务、所在地区的网络条件、使用成本和团队习惯自主选择。
 
 :::
 
@@ -37,7 +39,20 @@ keywords: "NocoBase AI 搭建,大模型选择,GPT,DeepSeek,Qwen,AI Agent,模型�
 
 ## 测评结果
 
-![四个旗舰模型在十个结果质量维度上的验收结果，以及各模型的单次质量评分](https://static-docs.nocobase.com/Snipaste_2026-08-06_14-27-41.png)
+| 测评维度 | GPT-5.6 Sol | DeepSeek-V4-Flash | Qwen3.8-Max | GPT-5.6 Luna |
+| --- | :---: | :---: | :---: | :---: |
+| 数据建模 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 功能完成 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#d97706;font-weight:600">◐ 部分通过</span> |
+| 业务逻辑 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 权限安全 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 工作流自动化 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 界面体验 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#d97706;font-weight:600">◐ 部分通过</span> |
+| 稳健性 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 需求覆盖 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#d97706;font-weight:600">◐ 部分通过</span> |
+| 合理扩展 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| 范围控制 | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> | <span style="color:#15803d;font-weight:600">✓ 通过</span> |
+| **搭建速度** | <span style="color:#2563eb;font-weight:700">较快</span> | <span style="color:#2563eb;font-weight:700">较快</span> | <span style="color:#d97706;font-weight:700">慢</span> | <span style="color:#15803d;font-weight:700">最快</span> |
+| **单次质量评分** | <span style="display:inline-block;min-width:42px;padding:2px 10px;border-radius:6px;color:#1d4ed8;background:#eff6ff;font-weight:800">90</span> | <span style="display:inline-block;min-width:42px;padding:2px 10px;border-radius:6px;color:#1d4ed8;background:#eff6ff;font-weight:800">91</span> | <span style="display:inline-block;min-width:42px;padding:2px 10px;border-radius:6px;color:#1d4ed8;background:#eff6ff;font-weight:800">90</span> | <span style="display:inline-block;min-width:42px;padding:2px 10px;border-radius:6px;color:#c2410c;background:#fff7ed;font-weight:800">77</span> |
 
 :::tip 单次质量评分
 
