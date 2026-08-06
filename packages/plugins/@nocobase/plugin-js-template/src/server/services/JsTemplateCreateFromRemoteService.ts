@@ -103,14 +103,10 @@ export class JsTemplateCreateFromRemoteService {
         });
       }
 
-      const compiled = await this.runtimeCompileService.publishPreparedInitialWorkspace(
-        prepared,
-        project.headCommitId,
-        {
-          ...transactionContext,
-          requestSource: 'js-template-create-from-git-publish',
-        },
-      );
+      const compiled = await this.runtimeCompileService.applyPreparedInitialWorkspace(prepared, project.headCommitId, {
+        ...transactionContext,
+        requestSource: 'js-template-create-from-git-apply',
+      });
       const internalProject = await this.projectService.getInternalProject(project.id, transactionContext);
       const established = await runtime.establishInitialBaseline(
         {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
+import type { Database, Model, Transaction } from '@nocobase/database';
 import type { RunJSRuntimeArtifact } from '@nocobase/runjs';
 import {
   assertRunJSCompileInputLimits,
@@ -43,7 +43,7 @@ import { JsTemplateError } from '../../shared/errors';
 import { isJsTemplateRuntimeSourceBinding, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import type { JsTemplateFileService } from './JsTemplateFileService';
-import { JsTemplateService } from './JsTemplateService';
+import { JsTemplateService, templateFromModel } from './JsTemplateService';
 import { getUsageOwnerAdapterByUse } from './JsTemplateUsageOwnerRegistry';
 import type { JsTemplateUsageService } from './JsTemplateUsageService';
 import type { JsTemplateServiceContext } from './JsTemplateProjectService';
@@ -157,7 +157,7 @@ export class DetachJsTemplateToInlineService {
       }
       const prepared = await this.prepareDetachJsTemplateToInline(input, ctx, vscFileService);
       return await this.db.sequelize.transaction(async (transaction) => {
-        const result = await this.publishDetachJsTemplateToInline(input, ctx, prepared, vscFileService, transaction);
+        const result = await this.applyDetachJsTemplateToInline(input, ctx, prepared, vscFileService, transaction);
         await this.recordDetachJsTemplateToInlineSuccessAudit(input, prepared, result, ctx, transaction);
         await this.sourceOperationStore.complete(operation, result, transaction);
         return result;
@@ -379,7 +379,7 @@ export class DetachJsTemplateToInlineService {
     };
   }
 
-  private async publishDetachJsTemplateToInline(
+  private async applyDetachJsTemplateToInline(
     input: DetachJsTemplateToInlineInput,
     ctx: DetachJsTemplateToInlineServiceContext,
     prepared: PreparedDetachJsTemplateToInline,
@@ -408,17 +408,11 @@ export class DetachJsTemplateToInlineService {
     };
 
     await adapter.assertCanWrite({ locator: prepared.locator, ctx: adapterContext });
-    await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
-    requireCurrentJsTemplateBinding(
-      await getFlowModel(this.db, prepared.locator.modelUid, transaction),
-      prepared.locator,
-      input,
-      prepared.source.kind,
-    );
+    const lockedFlowModel = await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
+    requireCurrentJsTemplateBinding(lockedFlowModel, prepared.locator, input, prepared.source.kind);
     const project = await this.projectService.lockInternalProjectForUpdate(input.projectId, serviceContext);
     assertExpectedProjectHead(project.headCommitId, input);
-    await lockJsTemplate(this.db, input.templateId, transaction);
-    const template = await this.templateService.getTemplate(input.templateId, serviceContext);
+    const template = await lockJsTemplate(this.db, input.templateId, transaction);
     assertServerOwnedJsTemplateSourceCurrent(template, prepared.source, input);
     const legacy = await adapter.readLegacy({ locator: prepared.locator, ctx: adapterContext });
     if (!isDetachJsTemplateToInlineHostSupported(prepared.source.kind, legacy.metadata?.modelUse)) {
@@ -441,12 +435,6 @@ export class DetachJsTemplateToInlineService {
       vscContext,
     );
 
-    requireCurrentJsTemplateBinding(
-      await getFlowModel(this.db, prepared.locator.modelUid, transaction),
-      prepared.locator,
-      input,
-      prepared.source.kind,
-    );
     await adapter.writeRuntime({
       locator: prepared.locator,
       artifact: {
@@ -828,14 +816,24 @@ export function isDetachJsTemplateToInlineHostSupported(kind: string, modelUse: 
   return getUsageOwnerAdapterByUse(modelUse)?.kind === kind;
 }
 
-async function lockFlowModel(db: Database, modelUid: string, transaction: Transaction): Promise<void> {
-  await db.getCollection('flowModels').model.findByPk(modelUid, {
+async function lockFlowModel(db: Database, modelUid: string, transaction: Transaction): Promise<JsonRecord> {
+  const model = await db.getCollection('flowModels').model.findByPk(modelUid, {
     transaction,
     lock: transaction.LOCK.UPDATE,
   });
+  if (!model) {
+    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', `FlowModel "${modelUid}" was not found`, {
+      status: 404,
+    });
+  }
+  const value = typeof model.toJSON === 'function' ? model.toJSON() : model;
+  if (!isRecord(value)) {
+    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', `FlowModel "${modelUid}" could not be read`);
+  }
+  return value;
 }
 
-async function lockJsTemplate(db: Database, templateId: string, transaction: Transaction): Promise<void> {
+async function lockJsTemplate(db: Database, templateId: string, transaction: Transaction) {
   const template = await db.getCollection(JS_TEMPLATE_COLLECTIONS.templates).model.findByPk(templateId, {
     transaction,
     lock: transaction.LOCK.UPDATE,
@@ -843,6 +841,7 @@ async function lockJsTemplate(db: Database, templateId: string, transaction: Tra
   if (!template) {
     throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
   }
+  return templateFromModel(template as Model);
 }
 
 async function getFlowModel(db: Database, modelUid: string, transaction?: Transaction): Promise<JsonRecord> {
@@ -894,12 +893,13 @@ function requireCurrentJsTemplateBinding(
 function deriveServerOwnedJsTemplateSource(
   template: Awaited<ReturnType<JsTemplateService['getTemplate']>>,
   binding: JsTemplateRuntimeSourceBinding,
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'expectedProjectHeadCommitId'>,
 ): ServerOwnedJsTemplateSource {
   const runtimeVersion = template.runtimeArtifact?.runtimeVersion || template.runtimeVersion;
   if (
     template.id !== input.templateId ||
     template.projectId !== input.projectId ||
+    template.compiledCommitId !== input.expectedProjectHeadCommitId ||
     template.kind !== binding.kind ||
     typeof runtimeVersion !== 'string' ||
     !runtimeVersion.trim() ||
@@ -921,7 +921,7 @@ function deriveServerOwnedJsTemplateSource(
 function assertServerOwnedJsTemplateSourceCurrent(
   template: Awaited<ReturnType<JsTemplateService['getTemplate']>>,
   expected: ServerOwnedJsTemplateSource,
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'expectedProjectHeadCommitId'>,
 ): void {
   const current = deriveServerOwnedJsTemplateSource(template, expected.binding, input);
   if (

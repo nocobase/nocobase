@@ -272,88 +272,26 @@ export class JsTemplateService {
     projectId: string,
     sourceTemplates: JsTemplateValidationResult[],
     baseHeadCommitId: string | null,
+    transaction?: Transaction,
   ): Promise<JsTemplateReconcilePlan> {
     const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates);
     const existingRecords: Model[] = await repository.find({
       filter: { projectId },
       sort: ['target', 'kind', 'templateName'],
+      transaction,
     });
-    const existingByIdentity = indexExistingTemplates(projectId, existingRecords);
-    const sourceByIdentity = indexSourceTemplates(projectId, sourceTemplates);
-    const changes: JsTemplateReconcileChange[] = [];
-    const writes: PlannedTemplateWrite[] = [];
-
-    for (const sourceTemplate of [...sourceByIdentity.values()].sort(compareSourceTemplates)) {
-      const values = buildSourceTemplateValues(projectId, sourceTemplate);
-      const existing = existingByIdentity.get(getTemplateIdentity(sourceTemplate));
-      if (existing) {
-        const previousTemplate = templateFromModel(existing);
-        const changedValues = getChangedModelValues(existing, values);
-        const template = { ...previousTemplate, ...normalizePlannedTemplateValues(changedValues) } as JsTemplate;
-        if (Object.keys(changedValues).length > 0) {
-          writes.push({ id: template.id, values: changedValues, create: false });
-        }
-        changes.push(
-          createJsTemplateReconcileChange({
-            template,
-            previousTemplate,
-            projectHeadCommitId: baseHeadCommitId,
-            changedFields: Object.keys(changedValues),
-          }),
-        );
-        continue;
-      }
-
-      const id = `jtt_${uid()}`;
-      const template = templateFromPlannedValues({ id, ...values });
-      writes.push({ id, values: { id, ...values }, create: true });
-      changes.push(
-        createJsTemplateReconcileChange({
-          template,
-          previousTemplate: null,
-          projectHeadCommitId: baseHeadCommitId,
-          changedFields: Object.keys(values),
-        }),
-      );
-    }
-
-    for (const record of existingRecords) {
-      if (sourceByIdentity.has(getTemplateIdentityFromModel(record))) {
-        continue;
-      }
-      const previousTemplate = templateFromModel(record);
-      const changedValues = getChangedModelValues(record, {
-        healthStatus: 'missing',
-        diagnostics: [],
-        ...emptyRuntimeFields(),
-      });
-      const template = { ...previousTemplate, ...normalizePlannedTemplateValues(changedValues) } as JsTemplate;
-      if (Object.keys(changedValues).length > 0) {
-        writes.push({ id: template.id, values: changedValues, create: false });
-      }
-      changes.push(
-        createJsTemplateReconcileChange({
-          template,
-          previousTemplate,
-          projectHeadCommitId: baseHeadCommitId,
-          changedFields: Object.keys(changedValues),
-          markedMissing: Object.keys(changedValues).length > 0,
-        }),
-      );
-    }
-
-    const plan: JsTemplateReconcilePlan = Object.freeze({
+    const plan = buildReconcilePlan(
       projectId,
+      existingRecords,
+      sourceTemplates,
       baseHeadCommitId,
-      existingTemplatesFingerprint: createExistingTemplatesFingerprint(existingRecords),
-      result: createJsTemplateReconcileResult(changes),
-      writes: Object.freeze(writes.map((write) => Object.freeze({ ...write, values: { ...write.values } }))),
-    });
+      () => `jtt_${uid()}`,
+    );
     this.reconcilePlans.add(plan);
     return plan;
   }
 
-  async publishReconcilePlan(
+  async applyReconcilePlan(
     plan: JsTemplateReconcilePlan,
     transaction: Transaction,
   ): Promise<JsTemplateReconcileResult> {
@@ -368,7 +306,7 @@ export class JsTemplateService {
     if (createExistingTemplatesFingerprint(records) !== plan.existingTemplatesFingerprint) {
       throw new JsTemplateError(
         'JS_TEMPLATE_SOURCE_OUTDATED',
-        'JS Templates changed before the prepared save was published',
+        'JS Templates changed before the prepared save was committed',
         { details: { projectId: plan.projectId, expectedHeadCommitId: plan.baseHeadCommitId } },
       );
     }
@@ -386,7 +324,7 @@ export class JsTemplateService {
       }
       const record = byId.get(write.id);
       if (!record) {
-        throw new JsTemplateError('JS_TEMPLATE_SOURCE_OUTDATED', `JS Template "${write.id}" changed before publish`);
+        throw new JsTemplateError('JS_TEMPLATE_SOURCE_OUTDATED', `JS Template "${write.id}" changed before apply`);
       }
       await record.update({ ...write.values }, { transaction });
     }
@@ -399,136 +337,8 @@ export class JsTemplateService {
     projectHeadCommitId: string | null,
     transaction: Transaction,
   ): Promise<JsTemplateReconcileResult> {
-    const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates);
-    const existingRecords: Model[] = await repository.find({
-      filter: { projectId },
-      sort: ['target', 'kind', 'templateName'],
-      transaction,
-    });
-    const existingByIdentity = new Map<string, Model>();
-    for (const record of existingRecords) {
-      const identity = getTemplateIdentityFromModel(record);
-      if (existingByIdentity.has(identity)) {
-        throw new JsTemplateError(
-          'JS_TEMPLATE_CONFLICT',
-          `Duplicate JS Template identity "${formatTemplateIdentity(record)}"`,
-          {
-            details: {
-              projectId,
-              templateIdentity: formatTemplateIdentity(record),
-            },
-          },
-        );
-      }
-      existingByIdentity.set(identity, record);
-    }
-
-    const sourceByIdentity = new Map<string, JsTemplateValidationResult>();
-    for (const sourceTemplate of sourceTemplates) {
-      const identity = getTemplateIdentity(sourceTemplate);
-      if (sourceByIdentity.has(identity)) {
-        throw new JsTemplateError(
-          'JS_TEMPLATE_CONFLICT',
-          `Duplicate JS Template source identity "${formatSourceTemplateIdentity(sourceTemplate)}"`,
-          {
-            details: {
-              projectId,
-              templateIdentity: formatSourceTemplateIdentity(sourceTemplate),
-            },
-          },
-        );
-      }
-      sourceByIdentity.set(identity, sourceTemplate);
-    }
-
-    const changes: JsTemplateReconcileChange[] = [];
-    const newTemplateValues: Record<string, unknown>[] = [];
-    const sortedSourceTemplates = [...sourceByIdentity.values()].sort(compareSourceTemplates);
-    for (const sourceTemplate of sortedSourceTemplates) {
-      const settingsHashes = buildJsTemplateSettingsHashes(sourceTemplate.settingsSchema);
-      const existing = existingByIdentity.get(getTemplateIdentity(sourceTemplate));
-      const values: Record<string, unknown> = {
-        projectId,
-        target: sourceTemplate.target,
-        kind: sourceTemplate.kind,
-        templateName: sourceTemplate.templateName,
-        entryPath: sourceTemplate.entryPath,
-        descriptorPath: sourceTemplate.descriptorPath,
-        title: sourceTemplate.title,
-        description: sourceTemplate.description,
-        category: sourceTemplate.category,
-        icon: sourceTemplate.icon,
-        tags: sourceTemplate.tags,
-        sort: sourceTemplate.sort,
-        settingsSchema: sourceTemplate.settingsSchema,
-        settingsSchemaHash: settingsHashes.settingsSchemaHash,
-        settingsDefaultsHash: settingsHashes.settingsDefaultsHash,
-        healthStatus: 'ready',
-        diagnostics: sourceTemplate.diagnostics,
-      };
-
-      if (existing) {
-        const previousTemplate = templateFromModel(existing);
-        const changedValues = getChangedModelValues(existing, values);
-        if (Object.keys(changedValues).length > 0) {
-          await existing.update(changedValues, { transaction });
-        }
-        const template = templateFromModel(existing);
-        changes.push(
-          createJsTemplateReconcileChange({
-            template,
-            previousTemplate,
-            projectHeadCommitId,
-            changedFields: Object.keys(changedValues),
-          }),
-        );
-        continue;
-      }
-
-      newTemplateValues.push(values);
-    }
-
-    if (newTemplateValues.length > 0) {
-      const createdRecords = await repository.createMany({ records: newTemplateValues, transaction });
-      for (const [index, created] of createdRecords.entries()) {
-        const template = templateFromModel(created);
-        changes.push(
-          createJsTemplateReconcileChange({
-            template,
-            previousTemplate: null,
-            projectHeadCommitId,
-            changedFields: Object.keys(newTemplateValues[index] || {}),
-          }),
-        );
-      }
-    }
-
-    for (const record of existingRecords) {
-      if (sourceByIdentity.has(getTemplateIdentityFromModel(record))) {
-        continue;
-      }
-
-      const previousTemplate = templateFromModel(record);
-      const changedValues = getChangedModelValues(record, {
-        healthStatus: 'missing',
-        diagnostics: [],
-        ...emptyRuntimeFields(),
-      });
-      if (Object.keys(changedValues).length > 0) {
-        await record.update(changedValues, { transaction });
-      }
-      changes.push(
-        createJsTemplateReconcileChange({
-          template: templateFromModel(record),
-          previousTemplate,
-          projectHeadCommitId,
-          changedFields: Object.keys(changedValues),
-          markedMissing: Object.keys(changedValues).length > 0,
-        }),
-      );
-    }
-
-    return createJsTemplateReconcileResult(changes);
+    const plan = await this.planReconcileTemplates(projectId, sourceTemplates, projectHeadCommitId, transaction);
+    return this.applyReconcilePlan(plan, transaction);
   }
 
   private async withTransaction<T>(
@@ -558,6 +368,87 @@ export class JsTemplateService {
 
     return new Map(rows.map((row) => [String(row.templateId), normalizeCatalogUsageCount(row.count)]));
   }
+}
+
+function buildReconcilePlan(
+  projectId: string,
+  existingRecords: Model[],
+  sourceTemplates: JsTemplateValidationResult[],
+  baseHeadCommitId: string | null,
+  createTemplateId: () => string,
+): JsTemplateReconcilePlan {
+  const existingByIdentity = indexExistingTemplates(projectId, existingRecords);
+  const sourceByIdentity = indexSourceTemplates(projectId, sourceTemplates);
+  const changes: JsTemplateReconcileChange[] = [];
+  const writes: PlannedTemplateWrite[] = [];
+
+  for (const sourceTemplate of [...sourceByIdentity.values()].sort(compareSourceTemplates)) {
+    const values = buildSourceTemplateValues(projectId, sourceTemplate);
+    const existing = existingByIdentity.get(getTemplateIdentity(sourceTemplate));
+    if (existing) {
+      const previousTemplate = templateFromModel(existing);
+      const changedValues = getChangedModelValues(existing, values);
+      const template = { ...previousTemplate, ...normalizePlannedTemplateValues(changedValues) } as JsTemplate;
+      if (Object.keys(changedValues).length > 0) {
+        writes.push({ id: template.id, values: changedValues, create: false });
+      }
+      changes.push(
+        createJsTemplateReconcileChange({
+          template,
+          previousTemplate,
+          projectHeadCommitId: baseHeadCommitId,
+          changedFields: Object.keys(changedValues),
+        }),
+      );
+      continue;
+    }
+
+    const id = createTemplateId();
+    const template = templateFromPlannedValues({ id, ...values });
+    writes.push({ id, values: { id, ...values }, create: true });
+    changes.push(
+      createJsTemplateReconcileChange({
+        template,
+        previousTemplate: null,
+        projectHeadCommitId: baseHeadCommitId,
+        changedFields: Object.keys(values),
+      }),
+    );
+  }
+
+  for (const record of existingRecords) {
+    if (sourceByIdentity.has(getTemplateIdentityFromModel(record))) {
+      continue;
+    }
+    const previousTemplate = templateFromModel(record);
+    const changedValues = getChangedModelValues(record, {
+      healthStatus: 'missing',
+      diagnostics: [],
+      ...emptyRuntimeFields(),
+    });
+    const template = { ...previousTemplate, ...normalizePlannedTemplateValues(changedValues) } as JsTemplate;
+    if (Object.keys(changedValues).length > 0) {
+      writes.push({ id: template.id, values: changedValues, create: false });
+    }
+    changes.push(
+      createJsTemplateReconcileChange({
+        template,
+        previousTemplate,
+        projectHeadCommitId: baseHeadCommitId,
+        changedFields: Object.keys(changedValues),
+        markedMissing: Object.keys(changedValues).length > 0,
+      }),
+    );
+  }
+
+  const plan: JsTemplateReconcilePlan = Object.freeze({
+    projectId,
+    baseHeadCommitId,
+    existingTemplatesFingerprint: createExistingTemplatesFingerprint(existingRecords),
+    result: createJsTemplateReconcileResult(changes),
+    writes: Object.freeze(writes.map((write) => Object.freeze({ ...write, values: { ...write.values } }))),
+  });
+  return plan;
 }
 
 const SETTINGS_FIELDS = new Set(['settingsSchema', 'settingsSchemaHash', 'settingsDefaultsHash']);

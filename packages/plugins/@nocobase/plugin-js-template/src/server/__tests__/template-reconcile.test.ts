@@ -32,6 +32,46 @@ describe('JsTemplateService reconcile', () => {
     expect(result.templates.map((template) => template.templateName)).toEqual(['entry-a', 'entry-b', 'entry-c']);
   });
 
+  it('routes create, update, and missing changes through one planner and one apply path', async () => {
+    const updatedSource = createSourceTemplate('sales-kpi', { title: 'Sales KPI Updated' });
+    const removedSource = createSourceTemplate('legacy-kpi');
+    const createdSource = createSourceTemplate('pipeline-kpi');
+    const fixture = createReconcileFixture([
+      createStoredTemplate(updatedSource, { title: 'Sales KPI' }),
+      createStoredTemplate(removedSource),
+    ]);
+    const plan = vi.spyOn(fixture.service, 'planReconcileTemplates');
+    const apply = vi.spyOn(fixture.service, 'applyReconcilePlan');
+
+    const result = await fixture.service.reconcileTemplates(
+      'jtp_sales',
+      [createdSource, updatedSource],
+      'commit_2',
+      fixture.transaction,
+    );
+
+    expect(plan).toHaveBeenCalledOnce();
+    expect(apply).toHaveBeenCalledOnce();
+    expect(result.createdTemplates.map((change) => change.template.templateName)).toEqual(['pipeline-kpi']);
+    expect(result.metadataChangedTemplates.map((change) => change.template.templateName)).toEqual(['sales-kpi']);
+    expect(result.missingTemplates.map((change) => change.template.templateName)).toEqual(['legacy-kpi']);
+    expect(fixture.repository.createMany).toHaveBeenCalledOnce();
+    expect(fixture.repository.createMany.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        records: [expect.objectContaining({ templateName: 'pipeline-kpi', healthStatus: 'ready' })],
+        transaction: fixture.transaction,
+      }),
+    );
+    expect(fixture.repository.records[0].update).toHaveBeenCalledWith(
+      { title: 'Sales KPI Updated' },
+      { transaction: fixture.transaction },
+    );
+    expect(fixture.repository.records[1].update).toHaveBeenCalledWith(
+      expect.objectContaining({ healthStatus: 'missing', runtimeArtifact: null }),
+      { transaction: fixture.transaction },
+    );
+  });
+
   it('marks a removed template missing, clears runtime fields, and restores the same template id', async () => {
     const sourceTemplate = createSourceTemplate('sales-kpi');
     const fixture = createReconcileFixture([createStoredTemplate(sourceTemplate)]);

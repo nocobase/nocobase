@@ -299,14 +299,14 @@ export class SaveAsJsTemplateService {
       },
     );
     return this.db.sequelize.transaction(async (transaction) => {
-      const result = await this.publishExistingSave(input, ctx, adapter, kind, entryKey, prepared, transaction);
+      const result = await this.commitExistingSave(input, ctx, adapter, kind, entryKey, prepared, transaction);
       await this.recordSaveAsSuccessAudit(input, result, ctx, transaction);
       await this.sourceOperationStore.complete(operation, result, transaction);
       return result;
     });
   }
 
-  private async publishExistingSave(
+  private async commitExistingSave(
     input: SaveAsJsTemplateInput,
     ctx: SaveAsJsTemplateServiceContext,
     adapter: ExternalBindingAdapter,
@@ -323,7 +323,7 @@ export class SaveAsJsTemplateService {
     assertOwnerFingerprint(input.expectedOwnerFingerprint, currentLegacy.ownerFingerprint);
     await this.assertOriginBindingCurrent(input.originBinding, kind, input.locator, serviceContext);
     await this.sourceSnapshotValidator.assertCurrent(toSourceSnapshotInput(input), transaction);
-    const saved = await this.runtimeCompileService.publishPreparedSave(prepared, serviceContext);
+    const saved = await this.runtimeCompileService.commitPreparedSave(prepared, serviceContext);
     const template = await this.requireTemplate(saved.project.id, kind, entryKey, serviceContext);
     const binding = buildSourceBinding(saved.project, template, kind);
     const writeResult = await adapter.writeExternalBinding({
@@ -418,7 +418,7 @@ export class SaveAsJsTemplateService {
     );
 
     return this.db.sequelize.transaction(async (transaction) => {
-      const result = await this.publishNewSave(
+      const result = await this.commitNewSave(
         input,
         ctx,
         adapter,
@@ -436,7 +436,7 @@ export class SaveAsJsTemplateService {
     });
   }
 
-  private async publishNewSave(
+  private async commitNewSave(
     input: SaveAsJsTemplateInput,
     ctx: SaveAsJsTemplateServiceContext,
     adapter: ExternalBindingAdapter,
@@ -482,9 +482,9 @@ export class SaveAsJsTemplateService {
     if (!project.headCommitId) {
       throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Created JS Template has no source commit');
     }
-    const compiled = await this.runtimeCompileService.publishPreparedInitialWorkspace(prepared, project.headCommitId, {
+    const compiled = await this.runtimeCompileService.applyPreparedInitialWorkspace(prepared, project.headCommitId, {
       ...serviceContext,
-      requestSource: ctx.requestSource || 'js-template-save-as-js-template-publish',
+      requestSource: ctx.requestSource || 'js-template-save-as-js-template-commit',
     });
     const template = await this.requireTemplate(compiled.project.id, preparedKind, entryKey, serviceContext);
     const binding = buildSourceBinding(compiled.project, template, preparedKind);

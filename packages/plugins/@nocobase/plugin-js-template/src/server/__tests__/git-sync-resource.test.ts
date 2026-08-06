@@ -674,7 +674,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     projectService,
     runtimeCompileService: {
       prepareInitialWorkspace: vi.fn(async ({ projectId }: { projectId: string }) => ({ projectId })),
-      publishPreparedInitialWorkspace: vi.fn(async () => {
+      applyPreparedInitialWorkspace: vi.fn(async () => {
         const { vscRepoId: _vscRepoId, ...publicProject } = repo;
         return { project: publicProject, status: 'success', templates: [], diagnostics: [] };
       }),

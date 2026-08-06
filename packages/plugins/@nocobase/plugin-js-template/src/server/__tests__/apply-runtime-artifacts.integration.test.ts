@@ -35,7 +35,7 @@ describe('ApplyCompiledTemplatesService', () => {
       failureCode: 'RUNJS_COMPILE_FAILED',
       message: 'Compile failed',
     });
-    const store = new MockPublishStore([createStoredTemplate(job)]);
+    const store = new MockCompiledTemplatesStore([createStoredTemplate(job)]);
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
 
     await expect(service.applyCompiledTemplates({ commitId: 'commit-1', results: [failure] })).rejects.toMatchObject({
@@ -62,7 +62,7 @@ describe('ApplyCompiledTemplatesService', () => {
     };
     const first = createSuccessResult(firstJob);
     const second = createSuccessResult(secondJob);
-    const store = new MockPublishStore([createStoredTemplate(firstJob), createStoredTemplate(secondJob)]);
+    const store = new MockCompiledTemplatesStore([createStoredTemplate(firstJob), createStoredTemplate(secondJob)]);
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
 
     const result = await service.applyCompiledTemplates({ commitId: 'commit-1', results: [second, first] });
@@ -86,16 +86,16 @@ describe('ApplyCompiledTemplatesService', () => {
     ).toEqual(['template-id-0', 'template-id-1']);
   });
 
-  it('keeps database calls constant for twenty templates and publishes ordinal order', async () => {
+  it('keeps database calls constant for twenty templates and applies ordinal order', async () => {
     const jobs = Array.from({ length: 20 }, (_, ordinal) => createCompileJob(ordinal));
     const results = jobs.map(createSuccessResult).reverse();
-    const store = new MockPublishStore(jobs.map(createStoredTemplate));
+    const store = new MockCompiledTemplatesStore(jobs.map(createStoredTemplate));
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
 
-    const published = await service.applyCompiledTemplates({ commitId: 'commit-20', results });
+    const applied = await service.applyCompiledTemplates({ commitId: 'commit-20', results });
 
-    expect(published.templateCount).toBe(20);
-    expect(published.templateIds).toEqual(jobs.map((job) => job.templateId));
+    expect(applied.templateCount).toBe(20);
+    expect(applied.templateIds).toEqual(jobs.map((job) => job.templateId));
     expect(store.loadTemplates).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertArtifacts).toHaveBeenCalledTimes(1);
     expect(store.bulkUpsertTemplates).toHaveBeenCalledTimes(1);
@@ -104,7 +104,7 @@ describe('ApplyCompiledTemplatesService', () => {
 
   it('reuses an explicit transaction without opening another transaction', async () => {
     const job = createCompileJob(0);
-    const store = new MockPublishStore([createStoredTemplate(job)]);
+    const store = new MockCompiledTemplatesStore([createStoredTemplate(job)]);
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
     const transaction = { id: 'phase-b-transaction' } as unknown as Transaction;
 
@@ -116,10 +116,10 @@ describe('ApplyCompiledTemplatesService', () => {
     expect(store.bulkUpsertTemplates).toHaveBeenCalledWith(expect.any(Array), transaction);
   });
 
-  it('validates all hashes before opening the publish transaction', async () => {
+  it('validates all hashes before opening the apply transaction', async () => {
     const job = createCompileJob(0);
     const result = { ...createSuccessResult(job), artifactHash: 'f'.repeat(64) };
-    const store = new MockPublishStore([createStoredTemplate(job)]);
+    const store = new MockCompiledTemplatesStore([createStoredTemplate(job)]);
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
 
     await expect(service.applyCompiledTemplates({ commitId: 'commit-1', results: [result] })).rejects.toThrow(
@@ -130,7 +130,7 @@ describe('ApplyCompiledTemplatesService', () => {
   });
 
   it('does not perform persistence work for an empty batch', async () => {
-    const store = new MockPublishStore([]);
+    const store = new MockCompiledTemplatesStore([]);
     const service = new ApplyCompiledTemplatesService(store, () => compiledAt);
 
     await expect(service.applyCompiledTemplates({ commitId: 'commit-empty', results: [] })).resolves.toEqual({
@@ -143,7 +143,7 @@ describe('ApplyCompiledTemplatesService', () => {
   });
 });
 
-class MockPublishStore implements CompiledTemplatesStore {
+class MockCompiledTemplatesStore implements CompiledTemplatesStore {
   runInTransactionCalls = 0;
 
   readonly loadTemplates = vi.fn(async (templateIds: string[], _transaction: Transaction) =>

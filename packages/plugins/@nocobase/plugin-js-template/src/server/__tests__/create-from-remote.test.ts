@@ -99,7 +99,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
 
   it('atomically creates the Git source with exactly one primary business audit', async () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
-    const publishPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'publishPreparedInitialWorkspace');
+    const applyPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'applyPreparedInitialWorkspace');
     const result = await service.create(
       {
         name: 'Remote Sales KPI',
@@ -125,7 +125,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
 
     expect(validateCredential).toHaveBeenCalledWith('{{ $env.GIT_SYNC }}');
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
-    expect(publishPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
+    expect(applyPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(result).toMatchObject({
       project: { id: 'jtp_durable_target', healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
       remote: { config: { branch: 'main' }, authRef: '{{ $env.GIT_SYNC }}' },

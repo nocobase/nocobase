@@ -1092,7 +1092,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(compileLogs).toHaveLength(1);
   });
 
-  it('rolls back a compile success audit when publish fails', async () => {
+  it('rolls back a compile success audit when apply fails', async () => {
     const repo = await projectService.createProject({
       name: 'Runtime Compile Audit Rollback',
       initialFiles: baselineSalesKpiFiles(),
@@ -1102,7 +1102,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     const apply = publisher.applyCompiledTemplates.bind(publisher);
     vi.spyOn(publisher, 'applyCompiledTemplates').mockImplementation(async (batch, transaction) => {
       await apply(batch, transaction);
-      throw new Error('forced compile publish rollback');
+      throw new Error('forced compile apply rollback');
     });
     const failingRuntime = new JsTemplateCompileService(app.db, fileService, templateService, compilerBridge, {
       applyCompiledTemplates: publisher,
@@ -1115,7 +1115,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
         message: 'rollback runtime compile audit',
         files: validSalesKpiFiles(),
       }),
-    ).rejects.toThrow('forced compile publish rollback');
+    ).rejects.toThrow('forced compile apply rollback');
 
     expect(compileEntry).toHaveBeenCalledTimes(1);
     await expect(projectService.getProject(repo.id)).resolves.toMatchObject({ headCommitId: repo.headCommitId });
@@ -1130,7 +1130,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     ).resolves.toBe(0);
   });
 
-  it('rolls back all published state when the transactional success audit fails', async () => {
+  it('rolls back all committed state when the transactional success audit fails', async () => {
     const repo = await projectService.createProject({
       name: 'Runtime Compile Audit Persistence Rollback',
       initialFiles: baselineSalesKpiFiles(),
@@ -1210,7 +1210,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(refreshUsagesForProject).toHaveBeenCalledWith(
       repo.id,
       expect.objectContaining({ transaction: expect.anything() }),
-      'source_published',
+      'source_committed',
     );
     expect(recordCompileEvent).toHaveBeenCalledTimes(2);
     expect(recordCompileEvent.mock.calls[0][0]).toMatchObject({
@@ -1317,7 +1317,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(refreshUsagesForProject).toHaveBeenCalledWith(
       repo.id,
       expect.objectContaining({ transaction: expect.anything() }),
-      'source_published',
+      'source_committed',
     );
     await expect(projectService.getProject(repo.id)).resolves.toMatchObject({ headCommitId: initial.commit.id });
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);

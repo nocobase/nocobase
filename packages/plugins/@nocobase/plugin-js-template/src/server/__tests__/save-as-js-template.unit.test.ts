@@ -118,8 +118,19 @@ describe('Save as JS Template source relocation', () => {
       label: 'an absolute workspace path',
       files: [{ path: `/${entryPath}`, content: 'ctx.render(<div />);' }],
     },
-  ])('rejects $label', ({ files }) => {
-    expect(() => collectAndRelocateInlineFiles({ entryPath, files })).toThrowError(
+    {
+      label: 'two reachable files that collide after relocation',
+      files: [
+        {
+          path: 'src/client/js-blocks/sales/main.ts',
+          content: "import './index';\nctx.render(<div />);",
+        },
+        { path: 'src/client/js-blocks/sales/index.ts', content: 'export const value = true;' },
+      ],
+      entryPath: 'src/client/js-blocks/sales/main.ts',
+    },
+  ])('rejects $label', ({ files, entryPath: currentEntryPath = entryPath }) => {
+    expect(() => collectAndRelocateInlineFiles({ entryPath: currentEntryPath, files })).toThrowError(
       expect.objectContaining({ code: 'JS_TEMPLATE_INVALID_INPUT' }),
     );
   });

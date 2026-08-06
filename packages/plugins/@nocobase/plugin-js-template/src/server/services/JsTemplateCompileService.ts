@@ -123,7 +123,7 @@ export interface JsTemplatePreparedRemoteSnapshot {
   readonly preparedSave: JsTemplatePreparedSave | null;
 }
 
-export interface JsTemplateInitialWorkspacePublishResult {
+export interface JsTemplateInitialWorkspaceApplyResult {
   project: JsTemplateSaveSourceResult['project'];
   status: JsTemplateSaveSourceResult['compile']['status'];
   templates: JsTemplateSaveSourceResult['compile']['templates'];
@@ -181,7 +181,7 @@ export class JsTemplateCompileService {
     if (ctx.transaction) {
       throw new JsTemplateError(
         'JS_TEMPLATE_SOURCE_ERROR',
-        'saveSource cannot compile inside an existing transaction; use prepareSaveSource and publishPreparedSave',
+        'saveSource cannot compile inside an existing transaction; use prepareSaveSource and commitPreparedSave',
       );
     }
     try {
@@ -193,7 +193,7 @@ export class JsTemplateCompileService {
               ...ctx,
               transaction,
             };
-            const result = await this.publishPreparedSave(prepared, transactionContext);
+            const result = await this.commitPreparedSave(prepared, transactionContext);
             await this.recordSaveSuccessAudit(result.project.id, prepared.compileResults, transactionContext);
             return result;
           });
@@ -350,13 +350,13 @@ export class JsTemplateCompileService {
     });
   }
 
-  async publishPreparedSave(
+  async commitPreparedSave(
     prepared: JsTemplatePreparedSave,
     ctx: JsTemplateServiceContext,
   ): Promise<JsTemplateSaveSourceResult> {
     const transaction = ctx.transaction;
     if (!transaction) {
-      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'A transaction is required to publish a save');
+      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'A transaction is required to commit a save');
     }
     if (!prepared || !this.preparedSaves.has(prepared)) {
       throw new JsTemplateError(
@@ -365,8 +365,8 @@ export class JsTemplateCompileService {
       );
     }
     this.assertPreparedCompileFingerprint(prepared);
-    const candidate = await this.fileService.publishSourceCandidate(prepared.candidate, ctx);
-    await this.templateService.publishReconcilePlan(prepared.templatePlan, transaction);
+    const candidate = await this.fileService.commitSourceCandidate(prepared.candidate, ctx);
+    await this.templateService.applyReconcilePlan(prepared.templatePlan, transaction);
     await this.applyCompiledTemplates.applyCompiledTemplates(
       {
         commitId: candidate.commit.id,
@@ -382,7 +382,7 @@ export class JsTemplateCompileService {
       },
       transaction,
     });
-    await this.usageService?.refreshUsagesForProject(candidate.project.id, ctx, 'source_published');
+    await this.usageService?.refreshUsagesForProject(candidate.project.id, ctx, 'source_committed');
     const [projectRecord, templateModels] = await Promise.all([
       this.db
         .getRepository(JS_TEMPLATE_COLLECTIONS.projects)
@@ -404,17 +404,14 @@ export class JsTemplateCompileService {
     };
   }
 
-  async publishPreparedInitialWorkspace(
+  async applyPreparedInitialWorkspace(
     prepared: JsTemplatePreparedInitialWorkspace,
     commitId: string,
     ctx: JsTemplateServiceContext,
-  ): Promise<JsTemplateInitialWorkspacePublishResult> {
+  ): Promise<JsTemplateInitialWorkspaceApplyResult> {
     const transaction = ctx.transaction;
     if (!transaction) {
-      throw new JsTemplateError(
-        'JS_TEMPLATE_SOURCE_ERROR',
-        'A transaction is required to publish an initial workspace',
-      );
+      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'A transaction is required to apply an initial workspace');
     }
     if (!prepared || !this.preparedInitialWorkspaces.has(prepared)) {
       throw new JsTemplateError(
@@ -430,11 +427,11 @@ export class JsTemplateCompileService {
     if (!projectRecord || projectRecord.get('headCommitId') !== commitId) {
       throw new JsTemplateError(
         'JS_TEMPLATE_SOURCE_OUTDATED',
-        'JS Template initial source changed before compile publish',
+        'JS Template initial source changed before compiled artifacts were applied',
         { details: { projectId: prepared.projectId, expectedHeadCommitId: commitId } },
       );
     }
-    await this.templateService.publishReconcilePlan(prepared.templatePlan, transaction);
+    await this.templateService.applyReconcilePlan(prepared.templatePlan, transaction);
     await this.applyCompiledTemplates.applyCompiledTemplates(
       {
         commitId,
@@ -450,7 +447,7 @@ export class JsTemplateCompileService {
       },
       transaction,
     });
-    await this.usageService?.refreshUsagesForProject(prepared.projectId, ctx, 'source_published');
+    await this.usageService?.refreshUsagesForProject(prepared.projectId, ctx, 'source_committed');
     const [updatedProjectRecord, templateModels] = await Promise.all([
       this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({ filterByTk: prepared.projectId, transaction }),
       this.db
@@ -477,7 +474,7 @@ export class JsTemplateCompileService {
     if (currentFingerprint !== prepared.compileFingerprint) {
       throw new JsTemplateError(
         'JS_TEMPLATE_SOURCE_OUTDATED',
-        'JS Template compile inputs changed before the prepared workspace was published',
+        'JS Template compile inputs changed before the prepared workspace was committed',
         { details: { projectId: prepared.templatePlan.projectId } },
       );
     }

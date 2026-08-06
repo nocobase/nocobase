@@ -6,7 +6,10 @@
 
 - A JS Template project is not a NocoBase plugin package and has no plugin lifecycle hooks
 - Templates cannot define collections, migrations, server resources, middleware, ACL rules, app providers, or package dependencies
-- The project source tree is the source of truth for source files, Template metadata, runtime artifacts, settings, and usages
+- The Source Project tree is authoritative only for source files and Template descriptor metadata
+- Runtime Artifacts are derived compile outputs; successful saves replace affected artifacts, while failed saves keep the previous artifacts active
+- Usage records are derived from Host bindings rather than owned by the Source Project tree
+- Host settings overrides belong to each Host and are not Template descriptor or Runtime Artifact state
 - Project creation and source changes are compile-gated and atomic
 - Runtime resolution is available to logged-in page users; authoring and project management require `pm.js-template`
 - The legacy admin shell only provides the settings-page bridge needed during the client-v2 transition
@@ -55,7 +58,7 @@ The project authoring flow is:
 4. Send only the reviewed delta to `jsTemplateFiles:saveSource` with the unchanged `expectedHeadCommitId`
 5. On HTTP 409, pull again and rebuild the candidate from the new Head
 
-Save materializes the complete candidate before validating and compiling it. The publish transaction rechecks the Head, then commits source, Template rows, immutable artifacts, usages, and audit state together.
+Save materializes the complete candidate before validating and compiling it. The commit transaction rechecks the Head, then commits source, Template rows, immutable artifacts, usages, and audit state together.
 
 | Result | Contract |
 | --- | --- |
@@ -77,7 +80,7 @@ nb js-template save --dir ./workspace --yes --json-output
 
 **Save as JS Template** saves the complete current workspace, including unsaved files, as a Template Entry in a new or existing Source Project. The server derives the Template kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
 
-**Detach to Inline** copies the current reachable Template files back to the owner and clears the external binding. It copies current Source Project content; it does not silently restore the older fallback snapshot.
+**Detach to Inline** copies the reachable Template files from the committed Source Project Head back to the owner and clears the external binding. It does not copy unsaved editor state or silently restore the older fallback snapshot.
 
 Both directions support `flowModel.step` owners for JS Block, JS Page, JS Field/Column, JS Action, and JS Item. Unsupported or permission-denied Hosts do not expose the conversion actions. A failed conversion leaves Source Project source, artifacts, Host state, and usages unchanged.
 

@@ -193,7 +193,7 @@ export class JsTemplateRemotePullService {
                 'Prepared remote source is missing its compile state',
               );
             }
-            const result = await this.runtimeCompileService.publishPreparedSave(prepared.preparedSave, {
+            const result = await this.runtimeCompileService.commitPreparedSave(prepared.preparedSave, {
               ...ctx,
               transaction,
               requestId,

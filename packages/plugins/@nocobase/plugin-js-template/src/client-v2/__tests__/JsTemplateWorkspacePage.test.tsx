@@ -416,7 +416,7 @@ describe('JsTemplateWorkspacePage', () => {
       diagnostics: [],
       artifact: {
         code: 'ctx.render(<div>preview</div>);',
-        version: 'v2',
+        runtimeVersion: 'v2',
         entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
       },
     });
@@ -652,7 +652,7 @@ describe('JsTemplateWorkspacePage', () => {
     await waitFor(() => expect(onPreview).toHaveBeenCalledTimes(1));
     expect(onPreview).toHaveBeenCalledWith({
       code: 'ctx.render(<div>preview</div>);',
-      version: 'v2',
+      runtimeVersion: 'v2',
       entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
     });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();

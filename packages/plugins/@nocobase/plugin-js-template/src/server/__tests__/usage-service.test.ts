@@ -572,9 +572,9 @@ describe('plugin-js-template usage service', () => {
       usages: [createUsageRecord()],
     });
 
-    const result = await service.refreshUsagesForProject('jtp_sales', {}, 'source_published');
+    const result = await service.refreshUsagesForProject('jtp_sales', {}, 'source_committed');
 
-    expect(result.reason).toBe('source_published');
+    expect(result.reason).toBe('source_committed');
     expect(repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
       resolvedStatus: 'runtime_missing',
     });

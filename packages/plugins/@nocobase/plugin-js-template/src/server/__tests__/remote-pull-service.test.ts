@@ -90,7 +90,7 @@ describe('JsTemplateRemotePullService', () => {
     adapter.advanceRemote(updatedFiles('Pulled runtime'));
     const input = await createPullInput(setup.project.id, setup.remote.id);
     const prepareRemoteSnapshot = vi.spyOn(runtimeCompileService, 'prepareRemoteSnapshot');
-    const publishPreparedSave = vi.spyOn(runtimeCompileService, 'publishPreparedSave');
+    const commitPreparedSave = vi.spyOn(runtimeCompileService, 'commitPreparedSave');
     const commitsBefore = await app.db.getRepository('vscFileCommits').count({
       filter: { repoId: setup.internal.vscRepoId },
     });
@@ -103,7 +103,7 @@ describe('JsTemplateRemotePullService', () => {
       compile: { status: 'success' },
     });
     expect(prepareRemoteSnapshot.mock.calls[0][1]?.transaction).toBeUndefined();
-    expect(publishPreparedSave.mock.calls[0][1].transaction).toBeDefined();
+    expect(commitPreparedSave.mock.calls[0][1].transaction).toBeDefined();
     expect(JSON.stringify(result)).not.toMatch(/authRef|claimToken|leaseOwner|leaseExpiresAt|Pulled runtime/u);
     await expect(
       app.db.getRepository('vscFileCommits').count({ filter: { repoId: setup.internal.vscRepoId } }),

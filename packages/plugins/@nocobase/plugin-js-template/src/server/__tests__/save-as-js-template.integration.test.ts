@@ -241,7 +241,7 @@ describe('SaveAsJsTemplateService', () => {
       };
       const preparedSave = { candidate: { projectId: project.id } };
       const prepareSaveSource = vi.fn(async () => preparedSave);
-      const publishPreparedSave = vi.fn(async () => ({
+      const commitPreparedSave = vi.fn(async () => ({
         project,
         commit: {},
         tree: {},
@@ -285,7 +285,7 @@ describe('SaveAsJsTemplateService', () => {
           })),
         } as never,
         { getTemplate, listTemplates } as never,
-        { prepareSaveSource, publishPreparedSave } as never,
+        { prepareSaveSource, commitPreparedSave } as never,
         { syncFlowModelUsagesForNodeTree: syncUsages } as never,
         () => ({ require: () => adapter }) as unknown as RunJSSourceAdapterRegistry,
         'main',
@@ -334,12 +334,12 @@ describe('SaveAsJsTemplateService', () => {
         }),
         expect.not.objectContaining({ transaction: expect.anything() }),
       );
-      expect(publishPreparedSave).toHaveBeenCalledWith(preparedSave, expect.objectContaining({ transaction }));
+      expect(commitPreparedSave).toHaveBeenCalledWith(preparedSave, expect.objectContaining({ transaction }));
       expect(lockFlowModel).toHaveBeenCalledWith(sourceLocator.modelUid, {
         transaction,
         lock: 'UPDATE',
       });
-      expect(lockFlowModel.mock.invocationCallOrder[0]).toBeLessThan(publishPreparedSave.mock.invocationCallOrder[0]);
+      expect(lockFlowModel.mock.invocationCallOrder[0]).toBeLessThan(commitPreparedSave.mock.invocationCallOrder[0]);
       const savedFiles = prepareSaveSource.mock.calls[0][0].files as Array<{ path: string; content: string }>;
       const descriptor = JSON.parse(
         savedFiles.find((file) => file.path === `${entryRoot}/sales-kpi/entry.json`)?.content || '{}',
@@ -420,7 +420,7 @@ describe('SaveAsJsTemplateService', () => {
       reservedProjectId = input.projectId;
       return prepared;
     });
-    const publishPreparedInitialWorkspace = vi.fn(async () => {
+    const applyPreparedInitialWorkspace = vi.fn(async () => {
       compiled = true;
       return {
         project: { ...createdProject, id: reservedProjectId },
@@ -450,7 +450,7 @@ describe('SaveAsJsTemplateService', () => {
           return [{ ...createdEntry, projectId: reservedProjectId }];
         }),
       } as never,
-      { prepareInitialWorkspace, publishPreparedInitialWorkspace } as never,
+      { prepareInitialWorkspace, applyPreparedInitialWorkspace } as never,
       { syncFlowModelUsagesForNodeTree: syncUsages } as never,
       () =>
         ({
@@ -505,13 +505,13 @@ describe('SaveAsJsTemplateService', () => {
       expect.objectContaining({ projectId: reservedProjectId, files: expect.any(Array) }),
       expect.not.objectContaining({ transaction: expect.anything() }),
     );
-    expect(publishPreparedInitialWorkspace).toHaveBeenCalledWith(
+    expect(applyPreparedInitialWorkspace).toHaveBeenCalledWith(
       prepared,
       createdProject.headCommitId,
       expect.objectContaining({ transaction: expect.anything() }),
     );
     expect(writeExternalBinding.mock.invocationCallOrder[0]).toBeGreaterThan(
-      publishPreparedInitialWorkspace.mock.invocationCallOrder[0],
+      applyPreparedInitialWorkspace.mock.invocationCallOrder[0],
     );
     expect(syncUsages.mock.invocationCallOrder[0]).toBeGreaterThan(writeExternalBinding.mock.invocationCallOrder[0]);
     expect(result.binding).toMatchObject({
@@ -884,7 +884,7 @@ describe('SaveAsJsTemplateService', () => {
       reservedProjectId = input.projectId;
       return prepared;
     });
-    const publishPreparedInitialWorkspace = vi.fn(async () => ({
+    const applyPreparedInitialWorkspace = vi.fn(async () => ({
       project: { ...createdProject, id: reservedProjectId },
       status: 'success',
       templates: [{ ...entry, projectId: reservedProjectId }],
@@ -909,7 +909,7 @@ describe('SaveAsJsTemplateService', () => {
       } as never,
       {} as never,
       { listTemplates: vi.fn(async () => [{ ...entry, projectId: reservedProjectId }]) } as never,
-      { prepareInitialWorkspace, publishPreparedInitialWorkspace } as never,
+      { prepareInitialWorkspace, applyPreparedInitialWorkspace } as never,
       { syncFlowModelUsagesForNodeTree: syncUsages } as never,
       () =>
         ({
@@ -957,7 +957,7 @@ describe('SaveAsJsTemplateService', () => {
       expect.objectContaining({ transaction }),
       { projectId: reservedProjectId },
     );
-    expect(publishPreparedInitialWorkspace).toHaveBeenCalledWith(
+    expect(applyPreparedInitialWorkspace).toHaveBeenCalledWith(
       prepared,
       createdProject.headCommitId,
       expect.objectContaining({ transaction }),
@@ -1280,7 +1280,7 @@ function createFailureService(options: {
     } as never,
     {
       prepareSaveSource: vi.fn(async () => ({ candidate: { projectId: project.id } })),
-      publishPreparedSave: options.saveSource,
+      commitPreparedSave: options.saveSource,
     } as never,
     { syncFlowModelUsagesForNodeTree: options.syncUsages || vi.fn() } as never,
     () =>
@@ -1351,6 +1351,10 @@ function createJsTemplateSourceOperationModel(
   };
 }
 
+function createTestModel(values: Record<string, unknown>): Model {
+  return { get: (key: string) => values[key] } as Model;
+}
+
 function createJsTemplateSourceOperationDatabase(
   operationModel: ReturnType<typeof createJsTemplateSourceOperationModel>,
 ): Database {
@@ -1406,7 +1410,7 @@ function createFailFastService(modelUse = 'JSBlockModel') {
   const getTemplate = vi.fn();
   const listTemplates = vi.fn();
   const prepareSaveSource = vi.fn();
-  const publishPreparedSave = vi.fn();
+  const commitPreparedSave = vi.fn();
   const compileCurrentRuntime = vi.fn();
   const syncFlowModelUsagesForNodeTree = vi.fn();
   const assertCanWrite = vi.fn();
@@ -1441,7 +1445,7 @@ function createFailFastService(modelUse = 'JSBlockModel') {
     { createProject, assertApplicationOwnership: vi.fn() } as never,
     { pull } as never,
     { getTemplate, listTemplates } as never,
-    { prepareSaveSource, publishPreparedSave, compileCurrentRuntime } as never,
+    { prepareSaveSource, commitPreparedSave, compileCurrentRuntime } as never,
     { syncFlowModelUsagesForNodeTree } as never,
     () => ({ require: registryRequire }) as unknown as RunJSSourceAdapterRegistry,
     'main',
@@ -1456,7 +1460,7 @@ function createFailFastService(modelUse = 'JSBlockModel') {
     getTemplate,
     listTemplates,
     prepareSaveSource,
-    publishPreparedSave,
+    commitPreparedSave,
     compileCurrentRuntime,
     syncFlowModelUsagesForNodeTree,
     assertCanWrite,
@@ -1473,7 +1477,7 @@ function expectFailFastWritesNotCalled(fixture: ReturnType<typeof createFailFast
   expect(fixture.getTemplate).not.toHaveBeenCalled();
   expect(fixture.listTemplates).not.toHaveBeenCalled();
   expect(fixture.prepareSaveSource).not.toHaveBeenCalled();
-  expect(fixture.publishPreparedSave).not.toHaveBeenCalled();
+  expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
   expect(fixture.compileCurrentRuntime).not.toHaveBeenCalled();
   expect(fixture.writeExternalBinding).not.toHaveBeenCalled();
   expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
@@ -1549,20 +1553,21 @@ describe('detach to inline integration', () => {
   };
 
   function createDetachCommitSourceReader(
-    files: Array<{ path: string; content: string; language?: string; mode?: string }> = [
+    files: Array<{ path: string; content?: string; language?: string; mode?: string }> = [
       { path: entry.entryPath, content: 'ctx.render(<div />);' },
     ],
+    sourceCommitId?: string,
   ) {
     const pullCommit = vi.fn(async (input: { projectId: string; commitId: string; includeContent: string }) => ({
       project: { ...detachProject, id: input.projectId, headCommitId: input.commitId },
-      commit: { id: input.commitId, projectId: input.projectId },
+      commit: { id: sourceCommitId || input.commitId, projectId: input.projectId },
       tree: { hash: 'source_tree', entryCount: files.length, byteSize: 100 },
       unchanged: false,
       files: files.map((file) => ({
         pathHash: `path-${file.path}`,
         pathLowerHash: `path-lower-${file.path}`,
         blobHash: `blob-${file.path}`,
-        size: file.content.length,
+        size: file.content?.length || 0,
         language: file.language || 'typescript',
         mode: file.mode || '100644',
         ...file,
@@ -1580,7 +1585,8 @@ describe('detach to inline integration', () => {
       ensureError?: Error;
       projectHeadCommitId?: string;
       lockedProjectHeadCommitId?: string;
-      sourceFiles?: Array<{ path: string; content: string; language?: string; mode?: string }>;
+      sourceCommitId?: string;
+      sourceFiles?: Array<{ path: string; content?: string; language?: string; mode?: string }>;
       hostBindingAfterPreparation?: JsTemplateRuntimeSourceBinding;
       templateAfterPreparation?: JsTemplate;
     } = {},
@@ -1618,15 +1624,24 @@ describe('detach to inline integration', () => {
       : flowModel;
     const db = {
       sequelize: { transaction },
-      getCollection: () => ({
-        model: { findByPk: vi.fn(async () => flowModel) },
-        repository: {
-          findModelById: vi.fn(async (_uid: string, readOptions?: { transaction?: Transaction }) =>
-            readOptions?.transaction ? lockedFlowModel : flowModel,
-          ),
-          patch: vi.fn(),
-        },
-      }),
+      getCollection: (name: string) =>
+        name === 'jsTemplates'
+          ? {
+              model: {
+                findByPk: vi.fn(async () =>
+                  createTestModel(
+                    (options.templateAfterPreparation || options.entry || entry) as Record<string, unknown>,
+                  ),
+                ),
+              },
+            }
+          : {
+              model: { findByPk: vi.fn(async () => lockedFlowModel) },
+              repository: {
+                findModelById: vi.fn(async () => flowModel),
+                patch: vi.fn(),
+              },
+            },
       getRepository: (name: string) => {
         if (name === 'jsTemplateSourceOperations') {
           return { model: operationModel.model };
@@ -1637,9 +1652,6 @@ describe('detach to inline integration', () => {
     const getTemplate = vi.fn(async (_templateId: string, templateContext?: { transaction?: Transaction }) => {
       if (options.entryError) {
         throw options.entryError;
-      }
-      if (templateContext?.transaction && options.templateAfterPreparation) {
-        return options.templateAfterPreparation;
       }
       return options.entry || entry;
     });
@@ -1658,7 +1670,7 @@ describe('detach to inline integration', () => {
     });
     const findRepositoryByIdentity = vi.fn(async () => options.targetRepository || null);
     const pull = vi.fn(async () => ({ files: [] }));
-    const sourceReader = createDetachCommitSourceReader(options.sourceFiles);
+    const sourceReader = createDetachCommitSourceReader(options.sourceFiles, options.sourceCommitId);
     const ensureAndPush = vi.fn(async () => {
       if (options.ensureError) {
         throw options.ensureError;
@@ -1768,15 +1780,18 @@ describe('detach to inline integration', () => {
           }
         },
       },
-      getCollection: () => ({
-        model: { findByPk: vi.fn(async () => clone(flowModel)) },
-        repository: {
-          findModelById: vi.fn(async () => clone(flowModel)),
-          patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
-            flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
-          }),
-        },
-      }),
+      getCollection: (name: string) =>
+        name === 'jsTemplates'
+          ? { model: { findByPk: vi.fn(async () => createTestModel({ ...entry })) } }
+          : {
+              model: { findByPk: vi.fn(async () => clone(flowModel)) },
+              repository: {
+                findModelById: vi.fn(async () => clone(flowModel)),
+                patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+                  flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+                }),
+              },
+            },
       getRepository: (name: string) =>
         name === 'jsTemplateSourceOperations' ? { model: operationModel.model } : { update: vi.fn() },
     } as unknown as Database;
@@ -2073,7 +2088,59 @@ describe('detach to inline integration', () => {
       expect(fixture.prepareEntry).not.toHaveBeenCalled();
     });
 
-    it('rechecks the Source Project Head under lock before publishing Inline source', async () => {
+    it('rejects a Template artifact compiled from a different commit before reading source', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({
+        entry: { ...entry, compiledCommitId: 'commit_previous' },
+      });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-stale-compiled-commit',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+      expect(fixture.pullSourceCommit).not.toHaveBeenCalled();
+      expect(fixture.prepareEntry).not.toHaveBeenCalled();
+      expect(fixture.transaction).not.toHaveBeenCalled();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      {
+        label: 'a source reader response for another commit',
+        options: { sourceCommitId: 'commit_other' },
+      },
+      {
+        label: 'a committed file without source content',
+        options: { sourceFiles: [{ path: entry.entryPath }] },
+      },
+    ])('rejects $label before opening a transaction', async ({ label, options }) => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture(options);
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: `detach-invalid-source-read-${label}`,
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_SOURCE_ERROR' });
+      expect(fixture.prepareEntry).not.toHaveBeenCalled();
+      expect(fixture.transaction).not.toHaveBeenCalled();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+    });
+
+    it('rechecks the Source Project Head under lock before committing Inline source', async () => {
       const fixture = createDetachJsTemplateToInlinePreflightFixture({
         lockedProjectHeadCommitId: 'commit_changed_during_detach',
       });
@@ -2122,15 +2189,20 @@ describe('detach to inline integration', () => {
       expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
 
-    it('rejects Template metadata that changes after exact-commit source preparation', async () => {
+    it.each([
+      ['entryPath', { ...entry, entryPath: 'src/client/js-blocks/sales/renamed.tsx' }],
+      ['kind', { ...entry, kind: 'js-page' as const }],
+      ['runtimeVersion', { ...entry, runtimeVersion: 'v3' }],
+      ['compiledCommitId', { ...entry, compiledCommitId: 'commit_recompiled' }],
+    ])('rejects Template %s that changes after exact-commit source preparation', async (field, currentTemplate) => {
       const fixture = createDetachJsTemplateToInlinePreflightFixture({
-        templateAfterPreparation: { ...entry, entryPath: 'src/client/js-blocks/sales/renamed.tsx' },
+        templateAfterPreparation: currentTemplate,
       });
 
       await expect(
         fixture.service.detachToInline(
           {
-            idempotencyKey: 'detach-template-metadata-race',
+            idempotencyKey: `detach-template-${field}-race`,
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
@@ -2206,10 +2278,13 @@ describe('detach to inline integration', () => {
         sequelize: {
           transaction: (run: (current: Transaction) => Promise<unknown>) => run(transaction),
         },
-        getCollection: () => ({
-          model: { findByPk: lockFlowModelRecord },
-          repository: { findModelById: vi.fn(async () => JSON.parse(JSON.stringify(flowModel))), patch },
-        }),
+        getCollection: (name: string) =>
+          name === 'jsTemplates'
+            ? { model: { findByPk: vi.fn(async () => createTestModel({ ...pageEntry })) } }
+            : {
+                model: { findByPk: lockFlowModelRecord },
+                repository: { findModelById: vi.fn(async () => JSON.parse(JSON.stringify(flowModel))), patch },
+              },
         getRepository: (name: string) =>
           name === 'jsTemplateSourceOperations' ? { model: operationModel.model } : { update: updateCommit },
       } as unknown as Database;
@@ -2563,7 +2638,7 @@ describe('detach to inline integration', () => {
       );
       expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));
       expect(assertApplicationOwnership).toHaveBeenCalledTimes(4);
-      expect(getTemplate).toHaveBeenCalledTimes(2);
+      expect(getTemplate).toHaveBeenCalledOnce();
       expect(sourceReader.pullCommit).toHaveBeenCalledWith(
         {
           projectId: pageBinding.projectId,
@@ -2641,7 +2716,7 @@ describe('detach to inline integration', () => {
       expect(fixture.operationModel.getValues()).toMatchObject({ status: 'failed', errorCode: 'Error' });
     });
 
-    it('publishes only one of two different idempotency keys racing for a missing repository', async () => {
+    it('commits only one of two different idempotency keys racing for a missing repository', async () => {
       const operationModel = createJsTemplateSourceOperationModel();
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       let flowModel = {
@@ -2668,15 +2743,18 @@ describe('detach to inline integration', () => {
         sequelize: {
           transaction: (run: (current: Transaction) => Promise<unknown>) => run(transaction),
         },
-        getCollection: () => ({
-          model: { findByPk: vi.fn(async () => clone(flowModel)) },
-          repository: {
-            findModelById: vi.fn(async () => clone(flowModel)),
-            patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
-              flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
-            }),
-          },
-        }),
+        getCollection: (name: string) =>
+          name === 'jsTemplates'
+            ? { model: { findByPk: vi.fn(async () => createTestModel({ ...entry })) } }
+            : {
+                model: { findByPk: vi.fn(async () => clone(flowModel)) },
+                repository: {
+                  findModelById: vi.fn(async () => clone(flowModel)),
+                  patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+                    flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+                  }),
+                },
+              },
         getRepository: (name: string) =>
           name === 'jsTemplateSourceOperations' ? { model: operationModel.model } : { update: vi.fn() },
       } as unknown as Database;
@@ -2880,15 +2958,18 @@ describe('detach to inline integration', () => {
             }
           },
         },
-        getCollection: () => ({
-          model: { findByPk: vi.fn(async () => clone(flowModel)) },
-          repository: {
-            findModelById: vi.fn(async () => clone(flowModel)),
-            patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
-              flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
-            }),
-          },
-        }),
+        getCollection: (name: string) =>
+          name === 'jsTemplates'
+            ? { model: { findByPk: vi.fn(async () => createTestModel({ ...entry })) } }
+            : {
+                model: { findByPk: vi.fn(async () => clone(flowModel)) },
+                repository: {
+                  findModelById: vi.fn(async () => clone(flowModel)),
+                  patch: vi.fn(async (values: { stepParams: typeof flowModel.stepParams }) => {
+                    flowModel = { ...flowModel, stepParams: clone(values.stepParams) };
+                  }),
+                },
+              },
         getRepository: (name: string) =>
           name === 'jsTemplateSourceOperations' ? { model: operationModel.model } : { update: vi.fn() },
       } as unknown as Database;

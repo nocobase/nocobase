@@ -55,7 +55,7 @@ export class DeleteJsTemplateService {
     try {
       const prepared = await this.prepareDelete(template, ctx);
       return await this.db.sequelize.transaction(async (transaction) =>
-        this.publishDelete(prepared, { ...ctx, transaction }, transaction),
+        this.applyDelete(prepared, { ...ctx, transaction }, transaction),
       );
     } catch (error) {
       if (isUsageExistsError(error)) {
@@ -110,7 +110,7 @@ export class DeleteJsTemplateService {
     };
   }
 
-  private async publishDelete(
+  private async applyDelete(
     prepared: PreparedDeleteJsTemplate,
     ctx: JsTemplateServiceContext,
     transaction: Transaction,
@@ -130,7 +130,7 @@ export class DeleteJsTemplateService {
     await this.assertNoEffectiveUsages(current, ctx);
 
     if (prepared.preparedSave) {
-      await this.compileService.publishPreparedSave(prepared.preparedSave, ctx);
+      await this.compileService.commitPreparedSave(prepared.preparedSave, ctx);
     }
     await this.assertNoEffectiveUsages(current, ctx);
     await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).destroy({

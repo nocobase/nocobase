@@ -220,7 +220,7 @@ describe('DeleteJsTemplateService snapshot protection', () => {
 
     expect(fixture.assertActionAllowed).toHaveBeenCalledWith({ action: 'delete', ctx: {} });
     expect(fixture.getTemplate).not.toHaveBeenCalled();
-    expect(fixture.publishPreparedSave).not.toHaveBeenCalled();
+    expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
   });
 
   it('rechecks archived Source Project state under the deletion lock', async () => {
@@ -232,7 +232,7 @@ describe('DeleteJsTemplateService snapshot protection', () => {
     });
 
     expect(fixture.findTemplate).not.toHaveBeenCalled();
-    expect(fixture.publishPreparedSave).not.toHaveBeenCalled();
+    expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
   });
 
   it('rejects a concurrently replaced runtime artifact instead of leaking it after deletion', async () => {
@@ -243,7 +243,7 @@ describe('DeleteJsTemplateService snapshot protection', () => {
       status: 409,
     });
 
-    expect(fixture.publishPreparedSave).not.toHaveBeenCalled();
+    expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
   });
 
   it('locks the shared Artifact row before deciding whether it is unreferenced', async () => {
@@ -279,7 +279,7 @@ function createDeleteServiceFixture(options: {
   const findTemplate = vi.fn(async () => ({
     get: (key: string) => currentTemplate[key as keyof JsTemplate],
   }));
-  const publishPreparedSave = vi.fn();
+  const commitPreparedSave = vi.fn();
   const findArtifact = vi.fn(async () => ({ get: () => template.artifactHash }));
   const countArtifactReferences = vi.fn(async () => 0);
   const destroyArtifact = vi.fn(async () => 1);
@@ -324,7 +324,7 @@ function createDeleteServiceFixture(options: {
       })),
     } as never,
     { getTemplate } as never,
-    { prepareSaveSource: vi.fn(async () => ({})), publishPreparedSave } as never,
+    { prepareSaveSource: vi.fn(async () => ({})), commitPreparedSave } as never,
     { countEffectiveUsages: vi.fn(async () => 0) } as never,
     { assertActionAllowed } as never,
     { recordLifecycleEvent: vi.fn(async () => undefined) } as never,
@@ -336,7 +336,7 @@ function createDeleteServiceFixture(options: {
     findArtifact,
     findTemplate,
     getTemplate,
-    publishPreparedSave,
+    commitPreparedSave,
     service,
     template,
     transaction,

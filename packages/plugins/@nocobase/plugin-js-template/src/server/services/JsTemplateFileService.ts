@@ -352,7 +352,7 @@ export class JsTemplateFileService {
     }
   }
 
-  async publishSourceCandidate(
+  async commitSourceCandidate(
     prepared: JsTemplatePreparedSourceCandidate,
     ctx: JsTemplateServiceContext,
   ): Promise<PreparedCandidateWorkspace> {
@@ -360,7 +360,7 @@ export class JsTemplateFileService {
     if (!transaction) {
       throw new JsTemplateError(
         'JS_TEMPLATE_SOURCE_ERROR',
-        'A transaction is required to publish a prepared source candidate',
+        'A transaction is required to commit a prepared source candidate',
       );
     }
     if (!prepared || !this.preparedSourceCandidates.has(prepared)) {
@@ -387,7 +387,7 @@ export class JsTemplateFileService {
           requestId: prepared.requestId,
           projectId: project.id,
           aclAction: 'writeSource',
-          reason: 'publish prepared js-template source files',
+          reason: 'commit prepared js-template source files',
           allowedActions: ['push'],
         }),
       ),
