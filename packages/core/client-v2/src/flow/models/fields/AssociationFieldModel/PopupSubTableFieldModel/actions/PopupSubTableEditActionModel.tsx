@@ -348,6 +348,10 @@ PopupSubTableEditActionModel.registerFlow({
             return undefined;
           }
         })();
+        const associationName = ctx.collectionField?.resourceName;
+        const sourceId = parentItem?.value
+          ? ctx.collectionField?.collection?.getFilterByTK?.(parentItem.value)
+          : undefined;
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
@@ -359,6 +363,7 @@ PopupSubTableEditActionModel.registerFlow({
             scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
             record: ctx.record,
             parentItem,

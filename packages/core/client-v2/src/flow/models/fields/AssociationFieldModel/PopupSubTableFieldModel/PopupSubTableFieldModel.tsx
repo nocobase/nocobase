@@ -654,6 +654,10 @@ PopupSubTableFieldModel.registerFlow({
         const parentItemOptions = ctx?.getPropertyOptions?.('item');
         const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
         const itemLength = itemIndex + 1;
+        const associationName = ctx.collectionField?.resourceName;
+        const sourceId = parentItem?.value
+          ? ctx.collectionField?.collection?.getFilterByTK?.(parentItem.value)
+          : undefined;
         const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
@@ -665,6 +669,7 @@ PopupSubTableFieldModel.registerFlow({
             scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
             parentItem,
             parentItemMeta: parentItemOptions?.meta,

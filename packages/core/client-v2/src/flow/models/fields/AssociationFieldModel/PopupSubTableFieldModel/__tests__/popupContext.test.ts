@@ -23,8 +23,11 @@ function getOpenViewHandler(modelClass: typeof PopupSubTableFieldModel | typeof 
   return handler;
 }
 
-function createContext(record?: Record<string, unknown>) {
+function createContext(record?: Record<string, unknown>, parentRecord: Record<string, unknown> = { id: 1 }) {
   const open = vi.fn();
+  const sourceCollection = {
+    getFilterByTK: vi.fn((sourceRecord: Record<string, unknown>) => sourceRecord.id),
+  };
   const model = {
     uid: 'popup-subtable-uid',
     props: {
@@ -47,7 +50,7 @@ function createContext(record?: Record<string, unknown>) {
     context: {
       inputArgs: {},
       item: {
-        value: { id: 1 },
+        value: parentRecord,
       },
       view: {
         inputArgs: {
@@ -65,6 +68,8 @@ function createContext(record?: Record<string, unknown>) {
       },
       collectionField: {
         target: 'roles',
+        resourceName: 'users.roles',
+        collection: sourceCollection,
       },
       record,
       getFormValues: () => ({ id: 1 }),
@@ -74,23 +79,42 @@ function createContext(record?: Record<string, unknown>) {
 }
 
 describe('PopupSubTable popup context', () => {
-  it('passes openerUids to the add-new popup', () => {
+  it('passes popup and parent record context to the add-new popup', () => {
     const { context, open } = createContext();
     const handler = getOpenViewHandler(PopupSubTableFieldModel);
 
     handler(context, { mode: 'drawer', size: 'medium' });
 
     expect(open).toHaveBeenCalledOnce();
-    expect(open.mock.calls[0][0].inputArgs.openerUids).toEqual(['root-page-uid', 'parent-popup-uid']);
+    expect(open.mock.calls[0][0].inputArgs).toMatchObject({
+      openerUids: ['root-page-uid', 'parent-popup-uid'],
+      associationName: 'users.roles',
+      sourceId: 1,
+    });
   });
 
-  it('passes openerUids to the edit popup', () => {
+  it('passes popup and parent record context to the edit popup', () => {
     const { context, open } = createContext({ id: 2, name: 'Member' });
     const handler = getOpenViewHandler(PopupSubTableEditActionModel);
 
     handler(context, { mode: 'dialog', size: 'medium' });
 
     expect(open).toHaveBeenCalledOnce();
-    expect(open.mock.calls[0][0].inputArgs.openerUids).toEqual(['root-page-uid', 'parent-popup-uid']);
+    expect(open.mock.calls[0][0].inputArgs).toMatchObject({
+      openerUids: ['root-page-uid', 'parent-popup-uid'],
+      associationName: 'users.roles',
+      sourceId: 1,
+    });
+  });
+
+  it('does not expose a parent record reference before the parent record is persisted', () => {
+    const { context, open } = createContext(undefined, { nickname: 'Draft user' });
+    const handler = getOpenViewHandler(PopupSubTableFieldModel);
+
+    handler(context, { mode: 'drawer', size: 'medium' });
+
+    expect(open).toHaveBeenCalledOnce();
+    expect(open.mock.calls[0][0].inputArgs).not.toHaveProperty('associationName');
+    expect(open.mock.calls[0][0].inputArgs).not.toHaveProperty('sourceId');
   });
 });
