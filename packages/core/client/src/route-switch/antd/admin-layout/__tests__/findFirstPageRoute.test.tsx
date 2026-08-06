@@ -74,6 +74,22 @@ describe('findFirstPageRoute', () => {
     expect(result).toEqual(routes[0]);
   });
 
+  it('should treat page menu routes as valid page routes', () => {
+    const routes: NocoBaseDesktopRoute[] = [
+      {
+        id: 1,
+        schemaUid: 'custom-page',
+        type: 'customPage',
+        title: 'Custom page',
+        options: {
+          pageMenuModelClass: 'DemoPageMenuModel',
+        },
+      },
+    ];
+
+    expect(findFirstPageRoute(routes)).toEqual(routes[0]);
+  });
+
   // 测试：不同类型的路由混合
   it('should find the first page route among mixed route types', () => {
     const routes: NocoBaseDesktopRoute[] = [

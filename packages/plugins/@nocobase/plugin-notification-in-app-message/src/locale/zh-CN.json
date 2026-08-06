@@ -1,5 +1,6 @@
 {
   "All": "全部",
+  "Back": "返回",
   "Channel name": "Channel name",
   "Close after": "关闭延时",
   "Content": "内容",
@@ -21,6 +22,7 @@
   "Message group name": "消息分组名称",
   "Message title": "消息标题",
   "No more": "没有更多了",
+  "Notification": "通知",
   "Plain text": "纯文本",
   "Read": "已读",
   "Receivers": "接收人",

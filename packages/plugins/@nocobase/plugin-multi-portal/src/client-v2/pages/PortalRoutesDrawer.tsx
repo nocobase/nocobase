@@ -18,21 +18,27 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import {
+  buildPageMenuRoute,
   DrawerFormLayout,
   IconPicker,
+  isPageMenuRoute,
   NocoBaseDesktopRouteType,
+  resolvePageMenuModels,
   Table,
   type NocoBaseDesktopRoute,
+  type ResolvedPageMenuModel,
 } from '@nocobase/client-v2';
-import { randomId, useFlowContext, useFlowView } from '@nocobase/flow-engine';
+import { randomId, useFlowContext, useFlowEngine, useFlowView } from '@nocobase/flow-engine';
 import { App as AntdApp, Button, Checkbox, Form, Input, Popover, Radio, Space, Tag, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'antd/es/table/interface';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { MOBILE_UI_LAYOUT_UID } from '../../constants';
 import { useT } from '../locale';
 import { getMultiPortalRouteUrl } from '../routeUrl';
 import type { MultiPortalRecord } from './MultiPortalsPage';
+
+type RouteType = NonNullable<NocoBaseDesktopRoute['type']>;
 
 type RouteFormValues = {
   enableTabs?: boolean;
@@ -41,7 +47,7 @@ type RouteFormValues = {
   routePath?: string;
   showInMenu?: boolean;
   title: string;
-  type: NocoBaseDesktopRouteType;
+  type: RouteType;
 };
 
 type RouteSearchParameter = {
@@ -154,7 +160,7 @@ function getLinkRouteParams(route: NocoBaseDesktopRoute): RouteSearchParameter[]
   }, []);
 }
 
-function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
+function getRouteTypeLabel(type: RouteType | undefined) {
   if (type === NocoBaseDesktopRouteType.group) {
     return 'Group';
   }
@@ -170,7 +176,10 @@ function getRouteTypeLabel(type: NocoBaseDesktopRouteType | undefined) {
   return 'Unknown';
 }
 
-function getRouteTypeColor(type: NocoBaseDesktopRouteType | undefined) {
+function getRouteTypeColor(type: RouteType | undefined, pageMenuModel?: ResolvedPageMenuModel) {
+  if (pageMenuModel) {
+    return 'purple';
+  }
   if (type === NocoBaseDesktopRouteType.flowPage || type === NocoBaseDesktopRouteType.page) {
     return 'purple';
   }
@@ -183,6 +192,29 @@ function getRouteTypeColor(type: NocoBaseDesktopRouteType | undefined) {
   return 'default';
 }
 
+function findPageMenuModel(pageMenuModels: ResolvedPageMenuModel[], type: RouteType | undefined) {
+  return pageMenuModels.find((definition) => definition.routeType === type);
+}
+
+function getAvailablePageMenuModel(route: NocoBaseDesktopRoute, pageMenuModels: ResolvedPageMenuModel[]) {
+  if (!isPageMenuRoute(route)) {
+    return undefined;
+  }
+  const definition = findPageMenuModel(pageMenuModels, route.type);
+  return definition && route.options?.pageMenuModelClass === definition.modelClass ? definition : undefined;
+}
+
+function getPageMenuModelLabel(
+  definition: ResolvedPageMenuModel,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) {
+  return typeof definition.label === 'string' ? t(definition.label) : definition.routeType;
+}
+
+function isUnavailablePageMenuRoute(route: NocoBaseDesktopRoute, pageMenuModels: ResolvedPageMenuModel[]) {
+  return isPageMenuRoute(route) && !getAvailablePageMenuModel(route, pageMenuModels);
+}
+
 function canRouteHaveChildren(route: NocoBaseDesktopRoute) {
   if (route.type === NocoBaseDesktopRouteType.group) {
     return true;
@@ -193,7 +225,7 @@ function canRouteHaveChildren(route: NocoBaseDesktopRoute) {
   return false;
 }
 
-function isPageRouteType(type: NocoBaseDesktopRouteType | undefined) {
+function isPageRouteType(type: RouteType | undefined) {
   return type === NocoBaseDesktopRouteType.page || type === NocoBaseDesktopRouteType.flowPage;
 }
 
@@ -208,8 +240,12 @@ function getDefaultRouteType(options: { mobile?: boolean; parentRoute?: NocoBase
 }
 
 function getRouteTypeOptions(
-  t: ReturnType<typeof useT>,
-  options: { mobile?: boolean; parentRoute?: NocoBaseDesktopRoute | null },
+  t: (key: string, options?: Record<string, unknown>) => string,
+  options: {
+    mobile?: boolean;
+    pageMenuModels: ResolvedPageMenuModel[];
+    parentRoute?: NocoBaseDesktopRoute | null;
+  },
 ) {
   if (
     options.parentRoute?.type === NocoBaseDesktopRouteType.page ||
@@ -223,6 +259,10 @@ function getRouteTypeOptions(
       { label: t('Group'), value: NocoBaseDesktopRouteType.group },
       { label: t('Page'), value: NocoBaseDesktopRouteType.flowPage },
       { label: t('Link'), value: NocoBaseDesktopRouteType.link },
+      ...options.pageMenuModels.map((definition) => ({
+        label: getPageMenuModelLabel(definition, t),
+        value: definition.routeType,
+      })),
     ];
   }
 
@@ -230,6 +270,10 @@ function getRouteTypeOptions(
     ...(options.mobile ? [] : [{ label: t('Group'), value: NocoBaseDesktopRouteType.group }]),
     { label: t('Page'), value: NocoBaseDesktopRouteType.flowPage },
     { label: t('Link'), value: NocoBaseDesktopRouteType.link },
+    ...options.pageMenuModels.map((definition) => ({
+      label: getPageMenuModelLabel(definition, t),
+      value: definition.routeType,
+    })),
   ];
 }
 
@@ -315,16 +359,44 @@ function filterRoutesByKeyword(routes: NocoBaseDesktopRoute[], keyword: string, 
 function normalizeRouteValues(
   values: RouteFormValues,
   route?: NocoBaseDesktopRoute,
-  options?: { mobile?: boolean; withInitialPageTab?: boolean },
+  options?: {
+    mobile?: boolean;
+    pageMenuModels?: ResolvedPageMenuModel[];
+    parentId?: number;
+    withInitialPageTab?: boolean;
+  },
 ): Partial<NocoBaseDesktopRoute> {
   const routePath = values.routePath?.trim();
   const params = (values.params ?? []).filter((param) => !!param?.name?.trim() || !!param?.value?.trim());
   const shouldPersistPageSchemaUid = isPageRouteType(values.type);
   const shouldPersistTabSchemaUid = values.type === NocoBaseDesktopRouteType.tabs;
+  const pageMenuModel = findPageMenuModel(options?.pageMenuModels ?? [], values.type);
+  const existingPageMenuRoute = !!route && isPageMenuRoute(route);
+  const shouldBuildPageMenuRoute = !!pageMenuModel && (!route || !!getAvailablePageMenuModel(route, [pageMenuModel]));
+
+  if (pageMenuModel && shouldBuildPageMenuRoute) {
+    const pageMenuRoute = buildPageMenuRoute(pageMenuModel, {
+      icon: values.icon,
+      parentId: options?.parentId,
+      schemaUid: route?.schemaUid || randomId(),
+      title: (values.title ?? '').trim(),
+    });
+    return {
+      ...pageMenuRoute,
+      hideInMenu: values.showInMenu === false,
+      options: {
+        ...route?.options,
+        ...pageMenuRoute.options,
+      },
+    };
+  }
+
   const routeValues: Partial<NocoBaseDesktopRoute> = {
     ...(shouldPersistPageSchemaUid || shouldPersistTabSchemaUid ? { schemaUid: route?.schemaUid || randomId() } : {}),
+    ...(existingPageMenuRoute && route?.schemaUid ? { schemaUid: route.schemaUid } : {}),
     ...(shouldPersistTabSchemaUid ? { tabSchemaName: route?.tabSchemaName || randomId() } : {}),
     ...(shouldPersistPageSchemaUid ? { enableTabs: !!values.enableTabs } : {}),
+    ...(options?.parentId !== undefined ? { parentId: options.parentId } : {}),
     hideInMenu: values.showInMenu === false,
     icon: values.icon,
     title: (values.title ?? '').trim(),
@@ -338,6 +410,12 @@ function normalizeRouteValues(
       ...restOptions,
       ...(routePath ? { [options?.mobile ? 'url' : 'href']: routePath } : {}),
       ...(params.length ? { params } : {}),
+    };
+  }
+
+  if (existingPageMenuRoute && route?.options) {
+    routeValues.options = {
+      ...route.options,
     };
   }
 
@@ -359,15 +437,22 @@ function normalizeRouteValues(
   return routeValues;
 }
 
-function RouteTypeTag({ type }: { type: NocoBaseDesktopRouteType | undefined }) {
+function RouteTypeTag(props: { pageMenuModels: ResolvedPageMenuModel[]; route: NocoBaseDesktopRoute }) {
   const t = useT();
-  return <Tag color={getRouteTypeColor(type)}>{t(getRouteTypeLabel(type))}</Tag>;
+  const pageMenuModel = getAvailablePageMenuModel(props.route, props.pageMenuModels);
+  const label = pageMenuModel
+    ? getPageMenuModelLabel(pageMenuModel, t)
+    : isPageMenuRoute(props.route)
+      ? t('Unavailable ({{type}})', { type: props.route.type })
+      : t(getRouteTypeLabel(props.route.type));
+  return <Tag color={getRouteTypeColor(props.route.type, pageMenuModel)}>{label}</Tag>;
 }
 
 function RouteEditorForm(props: {
   initialRoute?: NocoBaseDesktopRoute | null;
   mobile?: boolean;
   onSubmit: (values: RouteFormValues) => Promise<void>;
+  pageMenuModels: ResolvedPageMenuModel[];
   parentRoute?: NocoBaseDesktopRoute | null;
   title: string;
 }) {
@@ -378,8 +463,13 @@ function RouteEditorForm(props: {
   const watchedRouteType = Form.useWatch('type', form);
   const routeType = props.initialRoute?.type ?? watchedRouteType;
   const routeTypeOptions = useMemo(
-    () => getRouteTypeOptions(t, { mobile: props.mobile, parentRoute: props.parentRoute }),
-    [props.mobile, props.parentRoute, t],
+    () =>
+      getRouteTypeOptions(t, {
+        mobile: props.mobile,
+        pageMenuModels: props.pageMenuModels,
+        parentRoute: props.parentRoute,
+      }),
+    [props.mobile, props.pageMenuModels, props.parentRoute, t],
   );
   const initialValues = useMemo<RouteFormValues>(
     () => ({
@@ -426,7 +516,7 @@ function RouteEditorForm(props: {
               <Input />
             </Form.Item>
             <Form.Item label={t('Type')}>
-              <RouteTypeTag type={routeType} />
+              <RouteTypeTag pageMenuModels={props.pageMenuModels} route={props.initialRoute} />
             </Form.Item>
           </>
         ) : (
@@ -553,6 +643,7 @@ function RoutesFilterButton(props: { onApply: (values: RouteFilterValues) => voi
 
 function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   const ctx = useFlowContext<PortalRoutesFlowContext>();
+  const flowEngine = useFlowEngine();
   const t = useT();
   const tRef = React.useRef(t);
   const { message, modal } = AntdApp.useApp();
@@ -560,6 +651,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   const [routes, setRoutes] = useState<NocoBaseDesktopRoute[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterValues, setFilterValues] = useState<RouteFilterValues>({});
+  const [pageMenuModels, setPageMenuModels] = useState<ResolvedPageMenuModel[]>([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const desktopRoutesResource = useMemo(() => ctx.api.resource('desktopRoutes'), [ctx.api]);
   const portalUid = portal.uid;
@@ -568,6 +660,24 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
   React.useEffect(() => {
     tRef.current = t;
   }, [t]);
+
+  useEffect(() => {
+    let active = true;
+    resolvePageMenuModels(flowEngine, flowEngine.context)
+      .then((definitions) => {
+        if (active) {
+          setPageMenuModels(definitions);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPageMenuModels([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [flowEngine]);
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);
@@ -614,7 +724,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         await desktopRoutesResource.update({
           filterByTk: editingRoute.id,
           portal: portalUid,
-          values: normalizeRouteValues(values, editingRoute, { mobile }),
+          values: normalizeRouteValues(values, editingRoute, { mobile, pageMenuModels }),
         });
         if (shouldSyncTabVisibility) {
           for (const childRoute of getDirectTabRouteChildren(editingRoute)) {
@@ -632,16 +742,18 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
       } else {
         await desktopRoutesResource.create({
           portal: portalUid,
-          values: {
-            ...normalizeRouteValues(values, undefined, { mobile, withInitialPageTab: true }),
-            ...(parentRoute?.id !== undefined ? { parentId: parentRoute.id } : {}),
-          },
+          values: normalizeRouteValues(values, undefined, {
+            mobile,
+            pageMenuModels,
+            parentId: parentRoute?.id,
+            withInitialPageTab: true,
+          }),
         });
         message.success(t('Saved successfully'));
       }
       await refreshRoutesAfterMutation();
     },
-    [desktopRoutesResource, message, mobile, portalUid, refreshRoutesAfterMutation, t],
+    [desktopRoutesResource, message, mobile, pageMenuModels, portalUid, refreshRoutesAfterMutation, t],
   );
 
   const openRouteEditor = useCallback(
@@ -658,13 +770,14 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
             initialRoute={editingRoute}
             mobile={mobile}
             onSubmit={(values) => submitRoute({ editingRoute, parentRoute, values })}
+            pageMenuModels={pageMenuModels}
             parentRoute={parentRoute}
             title={editingRoute ? t('Edit route') : parentRoute ? t('Add child route') : t('Add new')}
           />
         ),
       });
     },
-    [ctx.viewer, mobile, routes, submitRoute, t, token.screenSM],
+    [ctx.viewer, mobile, pageMenuModels, routes, submitRoute, t, token.screenSM],
   );
 
   const handleDelete = useCallback(
@@ -732,7 +845,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         dataIndex: 'type',
         title: t('Type'),
         width: 160,
-        render: (value) => <RouteTypeTag type={value as NocoBaseDesktopRouteType | undefined} />,
+        render: (_value, route) => <RouteTypeTag pageMenuModels={pageMenuModels} route={route} />,
       },
       {
         dataIndex: 'hideInMenu',
@@ -764,7 +877,9 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         width: 260,
         render: (_value, route) => {
           const routeTitle = getRouteTitle(route, t);
-          const accessPath = getRouteAccessPath(route, portal, routes);
+          const accessPath = isUnavailablePageMenuRoute(route, pageMenuModels)
+            ? ''
+            : getRouteAccessPath(route, portal, routes);
           const accessHref = accessPath ? getMultiPortalRouteUrl(ctx.app, accessPath, portal.portalType) : '';
           return (
             <Space size="small">
@@ -813,7 +928,17 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         },
       },
     ],
-    [ctx.app, openDeleteConfirm, openRouteEditor, portal, routes, t, token.colorError, token.colorSuccess],
+    [
+      ctx.app,
+      openDeleteConfirm,
+      openRouteEditor,
+      pageMenuModels,
+      portal,
+      routes,
+      t,
+      token.colorError,
+      token.colorSuccess,
+    ],
   );
 
   return (

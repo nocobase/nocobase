@@ -52,6 +52,26 @@ describe('resolveAdminRouteRuntimeTarget', () => {
     });
   });
 
+  it('should resolve a page menu route to the v2 spa runtime target', () => {
+    expect(
+      resolveAdminRouteRuntimeTarget({
+        app,
+        route: {
+          type: 'customPage',
+          schemaUid: 'custom-page',
+          options: {
+            pageMenuModelClass: 'DemoPageMenuModel',
+          },
+        },
+      }),
+    ).toEqual({
+      runtimePath: '/nocobase/v2/admin/custom-page',
+      navigationMode: 'spa',
+      isLegacy: false,
+      reason: 'ok',
+    });
+  });
+
   it('should resolve flowPage under a custom admin layout route path', () => {
     expect(
       resolveAdminRouteRuntimeTarget({
@@ -164,6 +184,26 @@ describe('resolveAdminRouteRuntimeTarget', () => {
       runtimePath: '/nocobase/v2/admin/flow-page-2',
       navigationMode: 'spa',
       isLegacy: false,
+      reason: 'ok',
+    });
+  });
+
+  it('should use a nested page menu route as a group landing route', () => {
+    const route: NocoBaseDesktopRoute = {
+      type: NocoBaseDesktopRouteType.group,
+      children: [
+        {
+          type: 'customPage',
+          schemaUid: 'custom-page',
+          options: {
+            pageMenuModelClass: 'DemoPageMenuModel',
+          },
+        },
+      ],
+    };
+
+    expect(resolveAdminRouteRuntimeTarget({ app, route })).toMatchObject({
+      runtimePath: '/nocobase/v2/admin/custom-page',
       reason: 'ok',
     });
   });

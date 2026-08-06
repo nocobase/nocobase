@@ -9,6 +9,7 @@
 
 import {
   BaseLayoutModel,
+  BasePageMenuModel,
   ChildPageModel,
   KeepAlive,
   linkageSetMenuItemProps,
@@ -66,6 +67,15 @@ import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageM
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
+
+class MobileDemoPageMenuModel extends BasePageMenuModel {}
+
+MobileDemoPageMenuModel.define({
+  routeType: 'mobileDemoPage',
+  label: 'Mobile demo page',
+  icon: 'MailOutlined',
+  sort: 20,
+});
 
 type MobileRouteRepositoryForTest = {
   listAccessible: () => NocoBaseDesktopRoute[];
@@ -132,6 +142,7 @@ describe('plugin-ui-layout mobile models', () => {
     const routerRoutePath = options.memoryRouterBasename ? '/mobile' : '/v/mobile';
 
     engine.registerModels({
+      BasePageMenuModel,
       MobileLayoutModel,
       MobileLayoutMenuItemModel,
       RouteModel,
@@ -924,6 +935,16 @@ describe('plugin-ui-layout mobile models', () => {
         },
       },
       {
+        id: 6,
+        type: 'notification',
+        title: 'Notifications',
+        schemaUid: 'notification-page',
+        sort: 45,
+        options: {
+          pageMenuModelClass: 'NotificationPageMenuModel',
+        },
+      },
+      {
         id: 5,
         type: NocoBaseDesktopRouteType.page,
         title: 'Legacy page',
@@ -937,6 +958,7 @@ describe('plugin-ui-layout mobile models', () => {
     expect(mobileRoutes.map((route) => [route.schemaUid, t(route.title || '')])).toEqual([
       ['home-page', 'route:Home'],
       ['docs-link', 'route:Docs'],
+      ['notification-page', 'route:Notifications'],
     ]);
   });
 
@@ -1564,6 +1586,38 @@ describe('plugin-ui-layout mobile models', () => {
         }),
       );
     });
+
+    unmount();
+
+    expect(deactivateLayout).toHaveBeenCalledTimes(1);
+  });
+
+  it('should activate the mobile route repository before child routes render', () => {
+    let layoutActive = false;
+    let layoutActiveDuringChildRender = false;
+    const deactivateLayout = vi.fn(() => {
+      layoutActive = false;
+    });
+    const activateLayout = vi.fn(() => {
+      layoutActive = true;
+      return deactivateLayout;
+    });
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      setRoutes: vi.fn(),
+      activateLayout,
+    };
+    const ChildRouteProbe = () => {
+      layoutActiveDuringChildRender = layoutActive;
+      return null;
+    };
+
+    const { unmount } = renderMobileLayoutWithRouteRepository(routeRepository, {
+      initialEntries: ['/v/mobile/mobile-page'],
+      outletElement: React.createElement(ChildRouteProbe),
+    });
+
+    expect(layoutActiveDuringChildRender).toBe(true);
 
     unmount();
 
@@ -3775,6 +3829,51 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should register mobile page menu routes with their page menu model', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      MobileLayoutModel,
+      RouteModel,
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({
+          type: 'mobileDemoPage',
+          schemaUid: 'mobile-demo-page',
+          options: {
+            pageMenuModelClass: 'MobileDemoPageMenuModel',
+          },
+        })),
+      },
+    });
+    const model = engine.createModel<MobileLayoutModel>({
+      uid: 'mobile-layout-model-page-menu-route',
+      use: 'MobileLayoutModel',
+      props: {
+        layout: {
+          routeName: 'mobile',
+          routePath: '/v/mobile',
+          uid: 'mobile-layout-model-page-menu-route',
+          layoutModelClass: 'MobileLayoutModel',
+          rootPageModelClass: 'MobileRootPageModel',
+          childPageModelClass: 'MobileChildPageModel',
+          authCheck: true,
+        },
+      },
+    });
+
+    const routeModel = model.registerRoutePage('mobile-demo-page', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+
+    expect(routeModel.getStepParams('popupSettings', 'openView')).toMatchObject({
+      mode: 'embed',
+      preventClose: true,
+      pageModelClass: 'MobileDemoPageMenuModel',
+    });
+  });
+
   it('should keep mobile route replay context after the layout delegate is detached', () => {
     const engine = new FlowEngine();
     engine.registerModels({
@@ -4863,6 +4962,60 @@ describe('plugin-ui-layout mobile models', () => {
     const createdRoute = createRoute.mock.calls[0]?.[0];
     expect(createdRoute).not.toHaveProperty('uiLayouts');
     expect(createdRoute?.children?.[0]).not.toHaveProperty('uiLayouts');
+  });
+
+  it('should create page menu routes from the mobile Add tab menu', async () => {
+    const createRoute = vi.fn(async () => {});
+
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    renderMobileLayoutWithRouteRepository(
+      {
+        createRoute,
+        listAccessible: () => [
+          {
+            id: 1,
+            type: NocoBaseDesktopRouteType.flowPage,
+            title: 'Home',
+            schemaUid: 'home-page',
+          },
+        ],
+      },
+      {
+        beforeRender: (model) => {
+          model.flowEngine.registerModels({
+            MobileDemoPageMenuModel,
+          });
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Home/ })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add mobile tab' }));
+    fireEvent.click(await screen.findByText('Mobile demo page'));
+    expect(await screen.findByText('Add page')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(createRoute).toHaveBeenCalledWith(
+        {
+          type: 'mobileDemoPage',
+          title: 'Mobile demo page',
+          icon: 'MailOutlined',
+          schemaUid: expect.any(String),
+          parentId: undefined,
+          options: {
+            pageMenuModelClass: 'MobileDemoPageMenuModel',
+          },
+        },
+        {
+          refreshAfterMutation: false,
+        },
+      );
+    });
   });
 
   it('should create persisted route values for mobile pages and links', () => {

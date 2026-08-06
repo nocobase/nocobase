@@ -14,11 +14,13 @@ import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { MemoryRouter } from 'react-router-dom';
 import { NocoBaseDesktopRouteType } from '../../../../flow-compat';
+import { BasePageMenuModel } from '../../../models/base/PageModel';
 import {
   AdminLayoutMenuItemRenderer,
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
   ADMIN_LAYOUT_MODEL_UID,
+  getAdminLayoutMenuInitializerButton,
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
@@ -26,6 +28,15 @@ import {
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
 } from '..';
+
+class DemoPageMenuModel extends BasePageMenuModel {}
+
+DemoPageMenuModel.define({
+  routeType: 'demoPage',
+  label: 'Demo page',
+  icon: 'MailOutlined',
+  sort: 20,
+});
 
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
@@ -53,6 +64,8 @@ describe('AdminLayoutModel menu items', () => {
     engine.registerModels({
       AdminLayoutModel,
       AdminLayoutMenuItemModel,
+      BasePageMenuModel,
+      DemoPageMenuModel,
     });
     engine.context.defineProperty('routeRepository', {
       value: {
@@ -470,6 +483,37 @@ describe('AdminLayoutModel menu items', () => {
       }),
     ).toMatchObject({
       _runtimePath: '/apps/demo/v2/admin/flow-page-1',
+      _navigationMode: 'spa',
+      _isLegacy: false,
+    });
+  });
+
+  it('should resolve page menu routes as modern page menu items', () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-custom-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 2,
+          title: 'Custom page',
+          schemaUid: 'custom-page',
+          type: 'customPage',
+          options: {
+            pageMenuModelClass: 'DemoPageMenuModel',
+          },
+        },
+      },
+    });
+
+    expect(
+      model.toProLayoutRoute({
+        designable: false,
+        isMobile: false,
+        t: (title) => title,
+      }),
+    ).toMatchObject({
+      path: '/admin/custom-page',
+      _runtimePath: '/apps/demo/v2/admin/custom-page',
       _navigationMode: 'spa',
       _isLegacy: false,
     });
@@ -1368,6 +1412,117 @@ describe('AdminLayoutModel menu items', () => {
     );
   });
 
+  it('should expose page menu models in the Add menu item dropdown', async () => {
+    const model = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-page-menu-options',
+      use: AdminLayoutModel,
+    });
+
+    const initializer = getAdminLayoutMenuInitializerButton('page-menu-options', model);
+    const menuDesignerElement = initializer.name as React.ReactElement;
+    const addSubModelButtonElement = (
+      menuDesignerElement.type as (props: typeof menuDesignerElement.props) => React.ReactElement
+    )(menuDesignerElement.props);
+    const items = await addSubModelButtonElement.props.items();
+    const demoItem = items.find((item) => item.key === 'demoPage');
+
+    expect(demoItem).toMatchObject({
+      key: 'demoPage',
+      label: 'Demo page',
+    });
+    await expect(demoItem?.createModelOptions?.(model.context)).resolves.toMatchObject({
+      props: {
+        creationMeta: {
+          menuType: 'demoPage',
+          source: 'header',
+        },
+      },
+      stepParams: {
+        menuCreation: {
+          basic: {
+            title: 'Demo page',
+            icon: 'MailOutlined',
+          },
+        },
+      },
+    });
+  });
+
+  it('should create page menu routes as leaf routes', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 91,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-page-menu',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'demoPage',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Custom demo',
+      icon: 'AppstoreOutlined',
+    });
+
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledWith(
+      {
+        type: 'demoPage',
+        title: 'Custom demo',
+        icon: 'AppstoreOutlined',
+        schemaUid: expect.any(String),
+        options: {
+          pageMenuModelClass: 'DemoPageMenuModel',
+        },
+        parentId: undefined,
+      },
+      undefined,
+    );
+    expect(createRoute.mock.calls[0]?.[0]).not.toHaveProperty('children');
+    expect(createRoute.mock.calls[0]?.[0]).not.toHaveProperty('menuSchemaUid');
+  });
+
+  it('should reject a custom menu type when its page menu model is unavailable', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 92,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-missing-page-menu',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'missingPageMenu',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Missing page menu',
+      icon: 'AppstoreOutlined',
+    });
+
+    await expect(model.save()).rejects.toThrow("Unknown or unavailable menu type 'missingPageMenu'.");
+    expect(createRoute).not.toHaveBeenCalled();
+  });
+
   it('should persist creation session during saveStepParams and avoid duplicate route creation on save', async () => {
     const createRoute = vi.fn().mockResolvedValue({
       data: {
@@ -1999,6 +2154,7 @@ describe('AdminLayoutModel menu items', () => {
       { label: 'Group', value: 'group' },
       { label: 'Page', value: 'flowPage' },
       { label: 'Link', value: 'link' },
+      { label: 'Demo page', value: 'demoPage' },
     ]);
     expect(schema?.href?.['x-reactions']).toMatchObject({
       dependencies: ['menuType'],

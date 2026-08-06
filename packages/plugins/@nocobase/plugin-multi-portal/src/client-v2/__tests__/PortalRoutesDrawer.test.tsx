@@ -15,6 +15,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MultiPortalRecord } from '../pages/MultiPortalsPage';
 import PortalRoutesDrawer from '../pages/PortalRoutesDrawer';
 
+const pageMenuModelRegistry = vi.hoisted(() => ({
+  current: [] as Array<{ label: string; modelClass: string; routeType: string; sort: number }>,
+  resolve: vi.fn(),
+}));
+
 const flowContext = vi.hoisted(() => ({
   current: undefined as
     | {
@@ -52,6 +57,10 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
         },
         props.value || 'Select icon',
       ),
+    resolvePageMenuModels: (...args: unknown[]) => {
+      pageMenuModelRegistry.resolve(...args);
+      return Promise.resolve(pageMenuModelRegistry.current);
+    },
   };
 });
 
@@ -162,6 +171,7 @@ async function confirmRouteDelete(title: 'Delete route' | 'Delete routes') {
 afterEach(() => {
   cleanup();
   flowContext.current = undefined;
+  pageMenuModelRegistry.current = [];
   vi.clearAllMocks();
 });
 
@@ -360,6 +370,195 @@ describe('PortalRoutesDrawer', () => {
           },
           title: 'Mobile docs',
           type: 'link',
+        }),
+      });
+    });
+  });
+
+  it('adds resolved page menu models to root and group route creation', async () => {
+    pageMenuModelRegistry.current = [
+      {
+        label: 'Earlier custom page',
+        modelClass: 'EarlierPageMenuModel',
+        routeType: 'earlierPage',
+        sort: 10,
+      },
+      {
+        label: 'Later custom page',
+        modelClass: 'LaterPageMenuModel',
+        routeType: 'laterPage',
+        sort: 20,
+      },
+    ];
+    const { drawer } = renderPortalRoutes(
+      {
+        title: 'Customer portal',
+        uid: 'customer-portal',
+        portalType: 'no-code',
+        portalName: 'customer-portal',
+        routePath: '/customer-portal',
+        uiLayoutUid: 'admin-layout-model',
+        enabled: true,
+      },
+      [
+        {
+          id: 1,
+          enableTabs: true,
+          schemaUid: 'dashboard',
+          title: 'Dashboard',
+          type: 'flowPage',
+        },
+        {
+          id: 2,
+          title: 'Navigation group',
+          type: 'group',
+        },
+      ],
+    );
+
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(pageMenuModelRegistry.resolve).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add new' }));
+    const addEditor = renderLatestDrawer(drawer);
+    expect(addEditor.getAllByRole('radio').map((radio) => radio.closest('label')?.textContent?.trim())).toEqual([
+      'Group',
+      'Page',
+      'Link',
+      'Earlier custom page',
+      'Later custom page',
+    ]);
+
+    fireEvent.click(addEditor.getByRole('radio', { name: 'Earlier custom page' }));
+    fireEvent.change(addEditor.getByLabelText('Title'), { target: { value: 'Custom reports' } });
+    fireEvent.click(addEditor.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(desktopRoutesResource.create).toHaveBeenCalledWith({
+        portal: 'customer-portal',
+        values: expect.objectContaining({
+          options: {
+            pageMenuModelClass: 'EarlierPageMenuModel',
+          },
+          schemaUid: 'random-id',
+          title: 'Custom reports',
+          type: 'earlierPage',
+        }),
+      });
+    });
+    const createCall = desktopRoutesResource.create.mock.calls.at(-1)?.[0];
+    expect(createCall.values).not.toHaveProperty('children');
+    expect(createCall.values).not.toHaveProperty('enableTabs');
+    expect(createCall.values).not.toHaveProperty('menuSchemaUid');
+    addEditor.unmount();
+
+    const dashboardRow = screen.getByRole('row', { name: /Dashboard/ });
+    fireEvent.click(within(dashboardRow).getByRole('button', { name: 'Add child Dashboard' }));
+    const pageChildEditor = renderLatestDrawer(drawer);
+    expect(pageChildEditor.getAllByRole('radio')).toHaveLength(1);
+    expect(pageChildEditor.getByRole('radio', { name: 'Tab' })).toBeChecked();
+    expect(pageChildEditor.queryByRole('radio', { name: 'Earlier custom page' })).not.toBeInTheDocument();
+    pageChildEditor.unmount();
+
+    const groupRow = screen.getByRole('row', { name: /Navigation group/ });
+    fireEvent.click(within(groupRow).getByRole('button', { name: 'Add child Navigation group' }));
+    const groupChildEditor = renderLatestDrawer(drawer);
+    expect(groupChildEditor.getByRole('radio', { name: 'Earlier custom page' })).toBeInTheDocument();
+    expect(groupChildEditor.getByRole('radio', { name: 'Later custom page' })).toBeInTheDocument();
+  });
+
+  it('distinguishes available and unavailable page menu routes and preserves their options', async () => {
+    pageMenuModelRegistry.current = [
+      {
+        label: 'Custom page model',
+        modelClass: 'CustomPageMenuModel',
+        routeType: 'customPage',
+        sort: 10,
+      },
+    ];
+    const { drawer } = renderPortalRoutes(
+      {
+        title: 'Customer portal',
+        uid: 'customer-portal',
+        portalType: 'no-code',
+        portalName: 'customer-portal',
+        routePath: '/customer-portal',
+        uiLayoutUid: 'admin-layout-model',
+        enabled: true,
+      },
+      [
+        {
+          id: 20,
+          options: {
+            keep: 'available',
+            pageMenuModelClass: 'CustomPageMenuModel',
+          },
+          schemaUid: 'available-custom-page',
+          title: 'Available custom route',
+          type: 'customPage',
+        },
+        {
+          id: 21,
+          options: {
+            keep: 'unavailable',
+            pageMenuModelClass: 'StaleCustomPageMenuModel',
+          },
+          schemaUid: 'mismatched-custom-page',
+          title: 'Mismatched custom route',
+          type: 'customPage',
+        },
+      ],
+    );
+
+    const availableRow = await screen.findByRole('row', { name: /Available custom route/ });
+    await waitFor(() => {
+      expect(within(availableRow).getByText('Custom page model')).toBeInTheDocument();
+    });
+    expect(within(availableRow).getByRole('link', { name: 'View Available custom route' })).toHaveAttribute(
+      'href',
+      '/v/customer-portal/available-custom-page',
+    );
+
+    const mismatchedRow = screen.getByRole('row', { name: /Mismatched custom route/ });
+    expect(within(mismatchedRow).getByText('Unavailable (customPage)')).toBeInTheDocument();
+    expect(within(mismatchedRow).getByRole('button', { name: 'View Mismatched custom route' })).toBeDisabled();
+
+    fireEvent.click(within(availableRow).getByRole('button', { name: 'Edit Available custom route' }));
+    const availableEditor = renderLatestDrawer(drawer);
+    fireEvent.change(availableEditor.getByLabelText('Title'), { target: { value: 'Updated custom route' } });
+    fireEvent.click(availableEditor.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => {
+      expect(desktopRoutesResource.update).toHaveBeenCalledWith({
+        filterByTk: 20,
+        portal: 'customer-portal',
+        values: expect.objectContaining({
+          options: {
+            keep: 'available',
+            pageMenuModelClass: 'CustomPageMenuModel',
+          },
+          type: 'customPage',
+        }),
+      });
+    });
+    availableEditor.unmount();
+
+    fireEvent.click(within(mismatchedRow).getByRole('button', { name: 'Edit Mismatched custom route' }));
+    const unavailableEditor = renderLatestDrawer(drawer);
+    expect(within(unavailableEditor.container).getByText('Unavailable (customPage)')).toBeInTheDocument();
+    fireEvent.change(unavailableEditor.getByLabelText('Title'), { target: { value: 'Updated unavailable route' } });
+    fireEvent.click(unavailableEditor.getByRole('button', { name: 'Submit' }));
+    await waitFor(() => {
+      expect(desktopRoutesResource.update).toHaveBeenCalledWith({
+        filterByTk: 21,
+        portal: 'customer-portal',
+        values: expect.objectContaining({
+          options: {
+            keep: 'unavailable',
+            pageMenuModelClass: 'StaleCustomPageMenuModel',
+          },
+          type: 'customPage',
         }),
       });
     });

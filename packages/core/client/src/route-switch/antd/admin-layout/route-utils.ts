@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { isFlowPageRoute } from '@nocobase/client-v2';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './route-types';
 
 export function findRouteBySchemaUid(schemaUid: string, treeArray: NocoBaseDesktopRoute[]) {
@@ -47,7 +48,7 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (route.type === NocoBaseDesktopRouteType.page || isFlowPageRoute(route)) {
       return route;
     }
 
