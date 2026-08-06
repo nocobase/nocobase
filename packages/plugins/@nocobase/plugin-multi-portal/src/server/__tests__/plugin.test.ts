@@ -388,7 +388,7 @@ describe('plugin-multi-portal server', () => {
     expect(collection.options.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fields: ['routeName'],
+          fields: ['route_name'],
           unique: true,
         }),
       ]),
