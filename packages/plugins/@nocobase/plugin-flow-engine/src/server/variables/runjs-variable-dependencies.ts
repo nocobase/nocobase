@@ -38,17 +38,26 @@ type AstNode = Readonly<{
   callee?: unknown;
   computed?: boolean;
   elements?: readonly unknown[];
+  expressions?: readonly unknown[];
+  kind?: string;
   key?: unknown;
   left?: unknown;
+  method?: boolean;
+  name?: string;
   object?: unknown;
   operator?: string;
   params?: readonly unknown[];
   properties?: readonly unknown[];
   property?: unknown;
   shorthand?: boolean;
+  start?: number;
   type?: string;
   value?: unknown;
 }>;
+
+type StaticJsonValue = null | boolean | number | string | StaticJsonValue[] | { [key: string]: StaticJsonValue };
+
+type StaticJsonResult = Readonly<{ ok: true; value: StaticJsonValue }> | Readonly<{ ok: false }>;
 
 type TraversalContainer = Record<string, unknown> | unknown[];
 
@@ -73,6 +82,8 @@ export type PreparedFlowModelVariableSource =
 const RUNJS_VALUE_KEYS = new Set(['code', 'version']);
 const RUNJS_PATH_SUFFIXES = new Set(['stepParams.jsSettings.runJs', 'stepParams.clickSettings.runJs']);
 const MUTATING_CTX_METHODS = new Set(['__defineGetter__', '__defineSetter__']);
+const GLOBAL_OBJECT_NAMES = new Set(['globalThis']);
+const DYNAMIC_CODE_EXECUTION_NAMES = new Set(['eval', 'Function']);
 
 export const MAX_FLOW_MODEL_VARIABLE_SOURCE_DEPTH = 128;
 export const MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES = 10_000;
@@ -143,16 +154,13 @@ function hasCtxParameterInFunctionAncestors(ancestors: readonly AstNode[], cache
   return ancestors.some((ancestor) => functionBindsCtxParameter(ancestor, cache));
 }
 
-function isDirectCtxGetVarMember(
+function getDirectCtxMethodName(
   node: unknown,
   identifierBindings: ReturnType<typeof collectAstIdentifierBindingsFromAst>,
 ) {
   const member = unwrapAstChainExpression(node) as AstNode | undefined;
-  return (
-    member?.type === 'MemberExpression' &&
-    isUnshadowedCtxIdentifier(member.object, identifierBindings) &&
-    getAstStaticPropertyName(member) === 'getVar'
-  );
+  if (member?.type !== 'MemberExpression' || !isUnshadowedCtxIdentifier(member.object, identifierBindings)) return;
+  return getAstStaticPropertyName(member);
 }
 
 function isCtxRootedMember(node: unknown, identifierBindings: ReturnType<typeof collectAstIdentifierBindingsFromAst>) {
@@ -202,15 +210,38 @@ function isNonReferenceIdentifier(node: AstNode, parent: AstNode | undefined) {
   );
 }
 
+function thisUsesTopLevelBinding(ancestors: readonly AstNode[]) {
+  for (let index = 0; index < ancestors.length; index += 1) {
+    const ancestor = ancestors[index];
+    if (isAstFunctionLike(ancestor) && ancestor.type !== 'ArrowFunctionExpression') return false;
+    if (ancestor.type === 'StaticBlock') return false;
+    if (ancestor.type === 'PropertyDefinition' && unwrapAstChainExpression(ancestor.value) === ancestors[index + 1]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function hasUnsafeCtxUsage(ast: unknown, identifierBindings: ReturnType<typeof collectAstIdentifierBindingsFromAst>) {
   let unsafe = false;
   walkAstAncestor(ast, {
     Identifier(node: AstNode, ancestors: AstNode[]) {
-      if (!isUnshadowedCtxIdentifier(node, identifierBindings)) return;
       const parent = ancestors[ancestors.length - 2];
       if (isNonReferenceIdentifier(node, parent)) return;
+      if (
+        node.name &&
+        (GLOBAL_OBJECT_NAMES.has(node.name) || DYNAMIC_CODE_EXECUTION_NAMES.has(node.name)) &&
+        !hasAstActiveBinding(node.name, node.start || 0, identifierBindings)
+      ) {
+        unsafe = true;
+        return;
+      }
+      if (!isUnshadowedCtxIdentifier(node, identifierBindings)) return;
       if (parent?.type === 'MemberExpression' && unwrapAstChainExpression(parent.object) === node) return;
       unsafe = true;
+    },
+    ThisExpression(_node: AstNode, ancestors: AstNode[]) {
+      if (thisUsesTopLevelBinding(ancestors)) unsafe = true;
     },
     WithStatement() {
       unsafe = true;
@@ -278,7 +309,89 @@ function createValidatedGetVarTemplate(value: unknown, code: string): string | u
   return `{{ ${path} }}`;
 }
 
-function extractStaticGetVarTemplates(code: string): string[] {
+function resolveStaticJsonValue(node: unknown, code: string): StaticJsonResult {
+  const valueNode = unwrapAstChainExpression(node) as AstNode | undefined;
+  if (!valueNode) return { ok: false };
+  if (valueNode.type === 'Literal') {
+    const literalValue = valueNode.value;
+    if (literalValue === null) return { ok: true, value: null };
+    if (typeof literalValue === 'string') return { ok: true, value: literalValue };
+    if (typeof literalValue === 'boolean') return { ok: true, value: literalValue };
+    if (typeof literalValue === 'number' && Number.isFinite(literalValue)) return { ok: true, value: literalValue };
+    return { ok: false };
+  }
+  if (valueNode.type === 'TemplateLiteral' && !valueNode.expressions?.length) {
+    const value = resolveAstStaticStringValue(valueNode, code);
+    return typeof value === 'string' ? { ok: true, value } : { ok: false };
+  }
+  if (valueNode.type === 'UnaryExpression' && valueNode.operator === '-') {
+    const argument = unwrapAstChainExpression(valueNode.argument) as AstNode | undefined;
+    return argument?.type === 'Literal' && typeof argument.value === 'number' && Number.isFinite(argument.value)
+      ? { ok: true, value: -argument.value }
+      : { ok: false };
+  }
+  if (valueNode.type === 'ArrayExpression') {
+    const value: StaticJsonValue[] = [];
+    for (const element of valueNode.elements || []) {
+      if (!element || (element as AstNode).type === 'SpreadElement') return { ok: false };
+      const resolved = resolveStaticJsonValue(element, code);
+      if (!resolved.ok) return resolved;
+      value.push(resolved.value);
+    }
+    return { ok: true, value };
+  }
+  if (valueNode.type !== 'ObjectExpression') return { ok: false };
+
+  const value: Record<string, StaticJsonValue> = Object.create(null);
+  for (const propertyValue of valueNode.properties || []) {
+    const property = propertyValue as AstNode | undefined;
+    if (
+      property?.type !== 'Property' ||
+      property.computed ||
+      property.kind !== 'init' ||
+      property.method ||
+      property.shorthand
+    ) {
+      return { ok: false };
+    }
+    const keyNode = unwrapAstChainExpression(property.key) as AstNode | undefined;
+    const key =
+      keyNode?.type === 'Identifier'
+        ? keyNode.name
+        : keyNode?.type === 'Literal' && (typeof keyNode.value === 'string' || typeof keyNode.value === 'number')
+          ? String(keyNode.value)
+          : undefined;
+    if (typeof key !== 'string' || key === '__proto__' || Object.prototype.hasOwnProperty.call(value, key)) {
+      return { ok: false };
+    }
+    const resolved = resolveStaticJsonValue(property.value, code);
+    if (!resolved.ok) return resolved;
+    value[key] = resolved.value;
+  }
+  return { ok: true, value };
+}
+
+function collectValidatedResolveJsonTemplates(value: StaticJsonValue): string[] {
+  const analysis = analyzeVariableTemplate(value, { mode: 'untrusted-request' });
+  if (!analysis.supported || analysis.errors.length) return [];
+
+  const templates = new Set<string>();
+  const visit = (current: StaticJsonValue) => {
+    if (typeof current === 'string') {
+      if (analyzeVariableTemplate(current, { mode: 'untrusted-request' }).paths.length) templates.add(current);
+      return;
+    }
+    if (Array.isArray(current)) {
+      current.forEach(visit);
+      return;
+    }
+    if (current && typeof current === 'object') Object.values(current).forEach(visit);
+  };
+  visit(value);
+  return Array.from(templates);
+}
+
+function extractStaticVariableTemplates(code: string): string[] {
   const parsed = parseRunJsAuthoringAst(code);
   if (!parsed.ast) return [];
 
@@ -291,17 +404,17 @@ function extractStaticGetVarTemplates(code: string): string[] {
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
     CallExpression(node: AstNode, ancestors: AstNode[]) {
-      const callee = unwrapAstChainExpression(node.callee) as AstNode | undefined;
-      if (
-        callee?.type !== 'MemberExpression' ||
-        !isUnshadowedCtxIdentifier(callee.object, identifierBindings) ||
-        getAstStaticPropertyName(callee) !== 'getVar' ||
-        hasCtxParameterInFunctionAncestors(ancestors, functionCtxParameterCache)
-      ) {
+      const methodName = getDirectCtxMethodName(node.callee, identifierBindings);
+      if (hasCtxParameterInFunctionAncestors(ancestors, functionCtxParameterCache)) return;
+      if (methodName === 'getVar') {
+        const template = createValidatedGetVarTemplate(node.arguments?.[0], code);
+        if (template) templates.add(template);
         return;
       }
-      const template = createValidatedGetVarTemplate(node.arguments?.[0], code);
-      if (template) templates.add(template);
+      if (methodName !== 'resolveJsonTemplate' || node.arguments?.length !== 1) return;
+      const resolved = resolveStaticJsonValue(node.arguments[0], code);
+      if (!resolved.ok) return;
+      collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },
   });
   return Array.from(templates);
@@ -374,7 +487,7 @@ export function prepareFlowModelVariableSource(value: unknown): PreparedFlowMode
             entryKey === 'code' ? (runJs.version === 'v2' ? '' : maskJavaScriptComments(runJs.code)) : entryValue;
           defineTraversalValue(output, entryKey, preparedEntryValue);
         }
-        extractStaticGetVarTemplates(runJs.code).forEach((template) => templates.add(template));
+        extractStaticVariableTemplates(runJs.code).forEach((template) => templates.add(template));
         continue;
       }
 

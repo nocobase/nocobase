@@ -52,6 +52,37 @@ describe('persisted RunJS variable dependencies', () => {
     expect(templates).toEqual(['{{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
   });
 
+  it('collects static JSON templates from direct unshadowed ctx.resolveJsonTemplate calls', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          const data = await ctx.resolveJsonTemplate({
+            role: '{{ ctx.record.roles[0].name }}',
+            nested: ['Role: {{ ctx.popup.record.name }}'],
+          });
+          const userId = await ctx['resolveJsonTemplate'](\`{{ ctx.user.id }}\`);
+          ctx.render(data.role + userId);
+        `),
+      ),
+    ).toEqual(['{{ ctx.record.roles[0].name }}', 'Role: {{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
+  });
+
+  it.each([
+    ['dynamic identifier', `const template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    ['call result', `await ctx.resolveJsonTemplate(createTemplate('{{ ctx.user.id }}'));`],
+    ['shadowed ctx', `(ctx) => ctx.resolveJsonTemplate('{{ ctx.user.id }}');`],
+    ['comment', `// ctx.resolveJsonTemplate('{{ ctx.user.id }}')`],
+    ['plain code string', `const code = "ctx.resolveJsonTemplate('{{ ctx.user.id }}')";`],
+    ['object spread', `await ctx.resolveJsonTemplate({ ...value, id: '{{ ctx.user.id }}' });`],
+    ['computed key', `await ctx.resolveJsonTemplate({ ['id']: '{{ ctx.user.id }}' });`],
+    ['dynamic value', `await ctx.resolveJsonTemplate({ id: value, role: '{{ ctx.user.id }}' });`],
+    ['function value', `await ctx.resolveJsonTemplate({ id() { return '{{ ctx.user.id }}'; } });`],
+    ['template interpolation', 'await ctx.resolveJsonTemplate(`{{ ctx.user.${field} }}`);'],
+    ['array hole', `await ctx.resolveJsonTemplate(['{{ ctx.user.id }}', ,]);`],
+  ])('does not collect ctx.resolveJsonTemplate dependencies from a %s', (_title, code) => {
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual([]);
+  });
+
   it.each([
     {
       title: 'dynamic arguments',
@@ -97,6 +128,17 @@ describe('persisted RunJS variable dependencies', () => {
   it.each([
     `ctx = { getVar() {} }; ctx.getVar('ctx.user.password');`,
     `ctx.getVar = () => {}; ctx.getVar('ctx.user.password');`,
+    `ctx.resolveJsonTemplate = () => {}; ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `globalThis.ctx = { resolveJsonTemplate() {} }; ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `globalThis['ctx'].resolveJsonTemplate = () => {}; ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `Object.defineProperty(globalThis, 'ctx', { value: {} }); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `Reflect.set(globalThis, 'ctx', {}); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `Object.assign(globalThis, { ctx: {} }); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `const runtimeGlobal = globalThis; runtimeGlobal.ctx = {}; ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `this.ctx = {}; ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `(0, eval)("globalThis.ctx = { resolveJsonTemplate: async () => {} }"); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `Function("globalThis.ctx = { resolveJsonTemplate: async () => {} }")(); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
+    `new Function("globalThis.ctx = { resolveJsonTemplate: async () => {} }")(); ctx.resolveJsonTemplate('{{ ctx.user.password }}');`,
     `ctx['getVar'] ||= () => {}; ctx.getVar('ctx.user.password');`,
     `delete ctx.getVar; ctx.getVar('ctx.user.password');`,
     `Object.defineProperty(ctx, 'getVar', { value: () => {} }); ctx.getVar('ctx.user.password');`,
@@ -124,6 +166,46 @@ describe('persisted RunJS variable dependencies', () => {
         createRunJsOptions(`
           function replace(ctx) { ctx.getVar = () => {}; }
           await ctx.getVar('ctx.popup.record.name');
+        `),
+      ),
+    ).toEqual(['{{ ctx.popup.record.name }}']);
+  });
+
+  it('does not treat a shadowed globalThis reference as a runtime global rewrite', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          function replace(globalThis) { globalThis.ctx = {}; }
+          await ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');
+        `),
+      ),
+    ).toEqual(['{{ ctx.popup.record.name }}']);
+  });
+
+  it('allows local this and shadowed dynamic execution names without widening the contract', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          function eval() {}
+          function Function() {}
+          const helper = { value: 1, read() { return this.value; } };
+          helper.read();
+          await ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');
+        `),
+      ),
+    ).toEqual(['{{ ctx.popup.record.name }}']);
+  });
+
+  it('allows class field and static block this bindings without widening the contract', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          class Helper {
+            value = 1;
+            read = () => this.value;
+            static { this.ready = true; }
+          }
+          await ctx.resolveJsonTemplate('{{ ctx.popup.record.name }}');
         `),
       ),
     ).toEqual(['{{ ctx.popup.record.name }}']);

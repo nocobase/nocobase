@@ -109,6 +109,7 @@ describe('query', () => {
           params: {
             values: {
               mode: 'sql',
+              variableResolution: 'legacy-schema',
               filter: {
                 $and: [
                   {
@@ -125,10 +126,92 @@ describe('query', () => {
       };
       await parseVariables(context, async () => {});
       const { filter } = context.action.params.values;
+      expect(context.action.params.values).not.toHaveProperty('variableResolution');
       const dateOn = filter.$and[0].createdAt.$dateOn;
       expect(new Date(dateOn).getTime()).toBeLessThanOrEqual(new Date().getTime());
       const userId = filter.$and[1].userId.$eq;
       expect(userId).toBe(user.id);
+    });
+
+    it('parses legacy schema variables in the explicit builder lane', async () => {
+      const user = await db.getRepository('users').findOne();
+      const next = vi.fn();
+      const context = {
+        ...ctx,
+        state: { currentUser: user },
+        get: (key: string) => ({ 'x-timezone': '' })[key],
+        action: {
+          params: {
+            values: {
+              mode: 'builder',
+              variableResolution: 'legacy-schema',
+              filter: {
+                $and: [{ createdAt: { $dateOn: '{{$nDate.now}}' } }, { userId: { $eq: '{{$user.id}}' } }],
+              },
+            },
+          },
+        },
+      };
+
+      await parseVariables(context, next);
+
+      expect(next).toHaveBeenCalledOnce();
+      expect(context.action.params.values).not.toHaveProperty('variableResolution');
+      expect(context.action.params.values.filter.$and[1].userId.$eq).toBe(user.id);
+      expect(new Date(context.action.params.values.filter.$and[0].createdAt.$dateOn).getTime()).toBeLessThanOrEqual(
+        Date.now(),
+      );
+    });
+
+    it.each([
+      [
+        'Record context params',
+        {
+          mode: 'builder',
+          variableResolution: 'legacy-schema',
+          contextParams: { 'view.record': { collection: 'users', filterByTk: 1 } },
+          filter: { id: { $eq: 1 } },
+        },
+      ],
+      [
+        'ctx paths',
+        {
+          mode: 'builder',
+          variableResolution: 'legacy-schema',
+          filter: { id: { $eq: '{{ ctx.user.id }}' } },
+        },
+      ],
+      [
+        'unsupported expressions',
+        {
+          mode: 'builder',
+          variableResolution: 'legacy-schema',
+          filter: { id: { $eq: '{{ ctx.other() }}' } },
+        },
+      ],
+      [
+        'an rd',
+        {
+          mode: 'builder',
+          variableResolution: 'legacy-schema',
+          rd: 'invalid-rd',
+          filter: { id: { $eq: 1 } },
+        },
+      ],
+      ['a missing mode', { variableResolution: 'legacy-schema', filter: { id: { $eq: 1 } } }],
+      ['a missing marker', { mode: 'builder', filter: { id: { $eq: 1 } } }],
+    ])('rejects a legacy request with %s', async (_title, values) => {
+      const next = vi.fn();
+      const context = {
+        ...ctx,
+        get: () => '',
+        action: { params: { values } },
+      };
+
+      await parseVariables(context, next);
+
+      expect(context.body).toEqual([]);
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should reuse flow-engine variable resolver for filter values', async () => {
