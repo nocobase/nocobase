@@ -106,8 +106,19 @@ describe('JS Template authoring imports across compile and detach', () => {
         kind: 'js-page',
       });
       const inlineEntry = inlineFiles.find((file) => file.path === 'src/client/index.tsx');
-      expect(inlineEntry?.content).toBe(preparation.files.find((file) => file.path === entryPath)?.content);
-      expect(findAuthoringModuleReferences(inlineEntry?.content || '')).toEqual([]);
+      expect(findAuthoringModuleReferences(inlineEntry?.content || '')).not.toEqual([]);
+
+      const inlinePreparation = bridge.prepareEntry({
+        ...compileInput,
+        templateName: 'orders-inline',
+        entryPath: 'src/client/index.tsx',
+        files: inlineFiles,
+      });
+      expect(inlinePreparation.accepted).toBe(true);
+      expect(inlinePreparation.diagnostics).toEqual([]);
+      const preparedInlineEntry = inlinePreparation.files.find((file) => file.path === 'src/client/index.tsx');
+      expect(findAuthoringModuleReferences(preparedInlineEntry?.content || '')).toEqual([]);
+      expect(preparedInlineEntry?.content).toBe(preparation.files.find((file) => file.path === entryPath)?.content);
 
       const inlineCompiled = await bridge.compileEntry({
         kind: 'js-page',
@@ -121,54 +132,85 @@ describe('JS Template authoring imports across compile and detach', () => {
     },
   );
 
-  it('rejects a non-public namespace type consistently in validation, compile preparation, and detach', () => {
-    const source = [
-      `import type * as SDK from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
-      'type Missing = SDK.MissingContext;',
-      'ctx.render(null as unknown as Missing);',
-      '',
-    ].join('\n');
-    const files = [{ path: entryPath, content: source }];
-    const expectedDiagnostic = expect.objectContaining({
+  it.each([
+    {
+      name: 'a non-public SDK namespace type',
+      source: [
+        `import type * as SDK from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
+        'type Missing = SDK.MissingContext;',
+        'ctx.render(null as unknown as Missing);',
+        '',
+      ].join('\n'),
       code: 'import_not_allowed',
-      message: expect.stringContaining('not a public authoring type'),
-      path: entryPath,
+      message: 'not a public authoring type',
       line: 2,
-    });
+    },
+    {
+      name: 'an invalid settings specifier',
+      source: [
+        'import type { Settings } from "js-template:settings/client/runjs/orders";',
+        'ctx.render(null as unknown as Settings);',
+        '',
+      ].join('\n'),
+      code: 'settings_type_import_invalid',
+      message: 'is not valid',
+      line: 1,
+    },
+    {
+      name: 'a runtime settings import',
+      source: [`import { Settings } from "${settingsImport}";`, 'ctx.render(null as unknown as Settings);', ''].join(
+        '\n',
+      ),
+      code: 'settings_type_import_runtime_not_allowed',
+      message: 'must use import type',
+      line: 1,
+    },
+  ])(
+    'rejects $name in validation and compiler preparation while conversion preserves it',
+    ({ source, code, message, line }) => {
+      const files = [{ path: entryPath, content: source }];
+      const expectedDiagnostic = expect.objectContaining({
+        code,
+        message: expect.stringContaining(message),
+        path: entryPath,
+        line,
+      });
 
-    const validation = new JsTemplateValidator().validateWorkspace({ files });
-    expect(validation.accepted).toBe(false);
-    expect(validation.diagnostics).toContainEqual(expectedDiagnostic);
+      const validation = new JsTemplateValidator().validateWorkspace({ files });
+      expect(validation.accepted).toBe(false);
+      expect(validation.diagnostics).toContainEqual(expectedDiagnostic);
 
-    const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
-      kind: 'js-page',
-      templateName: 'orders',
-      entryPath,
-      files,
-    });
-    expect(preparation.accepted).toBe(false);
-    expect(preparation.diagnostics).toContainEqual(expectedDiagnostic);
+      const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
+        kind: 'js-page',
+        templateName: 'orders',
+        entryPath,
+        files,
+      });
+      expect(preparation.accepted).toBe(false);
+      expect(preparation.diagnostics).toContainEqual(expectedDiagnostic);
 
-    let detachError: unknown;
-    try {
-      collectAndRelocateInlineFiles({ files, entryPath, kind: 'js-page' });
-    } catch (error) {
-      detachError = error;
-    }
-    expect(detachError).toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([
-          expect.objectContaining({
-            code: 'import_not_allowed',
-            message: expect.stringContaining('not a public authoring type'),
-            path: 'src/client/index.tsx',
-            line: 2,
-          }),
-        ]),
-      },
-    });
-  });
+      const inlineFiles = collectAndRelocateInlineFiles({ files, entryPath, kind: 'js-page' });
+      const inlineEntry = inlineFiles.find((file) => file.path === 'src/client/index.tsx');
+      expect(findAuthoringModuleReferences(inlineEntry?.content || '')).not.toEqual([]);
+
+      const inlinePreparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
+        kind: 'js-page',
+        templateName: 'orders-inline',
+        entryPath: 'src/client/index.tsx',
+        files: inlineFiles,
+      });
+      expect(inlinePreparation.accepted).toBe(false);
+      expect(inlinePreparation.failureCode).toBe('JS_TEMPLATE_COMPILE_DENIED');
+      expect(inlinePreparation.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code,
+          message: expect.stringContaining(message),
+          path: 'src/client/index.tsx',
+          line,
+        }),
+      );
+    },
+  );
 });
 
 function buildSource(name: string, typeArguments: string, probe: string): string {

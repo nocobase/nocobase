@@ -20,7 +20,6 @@ import {
   resolveRelativeSourcePath,
   rewriteRelativeImports,
 } from '../sourceRelocation';
-import { rewriteJsTemplateAuthoringImports } from './jsTemplateAuthoringImports';
 
 const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const RUNJS_ENTRY_ROOT = 'src/client';
@@ -99,21 +98,10 @@ export function collectAndRelocateInlineFiles(workspace: {
       if (!sourceFile || !targetPath) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Inline source relocation failed');
       }
-      const rewrittenImports = rewriteRelativeImports(sourceFile.content, sourcePath, targetPath, targetBySource);
-      const rewrittenAuthoringImports = rewriteJsTemplateAuthoringImports(targetPath, rewrittenImports);
-      if (rewrittenAuthoringImports.diagnostics.length > 0) {
-        throw new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source contains invalid authoring imports', {
-          status: 422,
-          details: {
-            failureCode: 'JS_TEMPLATE_COMPILE_DENIED',
-            diagnostics: rewrittenAuthoringImports.diagnostics,
-          },
-        });
-      }
       return {
         ...sourceFile,
         path: targetPath,
-        content: rewrittenAuthoringImports.content,
+        content: rewriteRelativeImports(sourceFile.content, sourcePath, targetPath, targetBySource),
       };
     });
 }

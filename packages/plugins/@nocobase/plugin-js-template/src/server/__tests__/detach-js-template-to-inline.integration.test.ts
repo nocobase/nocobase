@@ -356,6 +356,8 @@ describe('detach to inline integration', () => {
       }
       throw new Error('unexpected repository publish');
     });
+    const syncFlowModelUsagesForNodeTree = vi.fn();
+    const writeRuntime = vi.fn();
     const service = new DetachJsTemplateToInlineService(
       db,
       {
@@ -372,7 +374,7 @@ describe('detach to inline integration', () => {
       { getTemplate } as never,
       sourceReader as never,
       { prepareEntry } as never,
-      { syncFlowModelUsagesForNodeTree: vi.fn() } as never,
+      { syncFlowModelUsagesForNodeTree } as never,
       () =>
         ({
           findRepositoryByIdentity,
@@ -393,6 +395,7 @@ describe('detach to inline integration', () => {
               ownerFingerprint: 'owner_before',
               metadata: { modelUse: 'JSBlockModel' },
             })),
+            writeRuntime,
           }),
         }) as unknown as RunJSSourceAdapterRegistry,
     );
@@ -405,6 +408,8 @@ describe('detach to inline integration', () => {
       ensureAndPush,
       prepareEntry,
       pullSourceCommit: sourceReader.pullCommit,
+      syncFlowModelUsagesForNodeTree,
+      writeRuntime,
     };
   }
 
@@ -695,6 +700,68 @@ describe('detach to inline integration', () => {
       expect(fixture.transaction).not.toHaveBeenCalled();
       expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
+
+    it.each([
+      {
+        label: 'a non-public SDK type',
+        content:
+          'import type { MissingContext } from "@nocobase/js-template-sdk/client";\n' +
+          'ctx.render(null as unknown as MissingContext);\n',
+        diagnosticCode: 'import_not_allowed',
+      },
+      {
+        label: 'an invalid settings specifier',
+        content:
+          'import type { Settings } from "js-template:settings/client/runjs/sales";\n' +
+          'ctx.render(null as unknown as Settings);\n',
+        diagnosticCode: 'settings_type_import_invalid',
+      },
+      {
+        label: 'a runtime settings import',
+        content:
+          'import { Settings } from "js-template:settings/client/js-block/sales";\n' +
+          'ctx.render(null as unknown as Settings);\n',
+        diagnosticCode: 'settings_type_import_runtime_not_allowed',
+      },
+    ])(
+      'rejects $label through compiler preparation before repository, Host, or Usage writes',
+      async ({ content, diagnosticCode }) => {
+        const fixture = createDetachJsTemplateToInlinePreflightFixture({
+          sourceFiles: [{ path: entry.entryPath, content }],
+        });
+
+        await expect(
+          fixture.service.detachToInline(
+            {
+              idempotencyKey: `detach-to-inline-invalid-authoring-${diagnosticCode}`,
+              expectedProjectHeadCommitId: detachProject.headCommitId,
+              locator,
+              projectId: binding.projectId,
+              templateId: binding.templateId,
+            },
+            { actorUserId: '1', adapterContext: {} },
+          ),
+        ).rejects.toMatchObject({
+          code: 'JS_TEMPLATE_VALIDATION_FAILED',
+          details: {
+            failureCode: 'JS_TEMPLATE_COMPILE_DENIED',
+            diagnostics: expect.arrayContaining([
+              expect.objectContaining({
+                code: diagnosticCode,
+                path: 'src/client/index.tsx',
+                line: 1,
+              }),
+            ]),
+          },
+        });
+
+        expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+        expect(fixture.transaction).not.toHaveBeenCalled();
+        expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+        expect(fixture.writeRuntime).not.toHaveBeenCalled();
+        expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
+      },
+    );
 
     it('rejects an existing target repository whose Head changes after preparation', async () => {
       const identity = buildRunJSSourceRepositoryIdentity(locator);
@@ -1099,7 +1166,15 @@ describe('detach to inline integration', () => {
       const sourceFiles = [
         {
           path: pageEntry.entryPath,
-          content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
+          content: [
+            'import { defineSettings } from "@nocobase/js-template-sdk/client";',
+            'import type { Settings } from "js-template:settings/client/js-page/page";',
+            "import { used } from '../../../shared/used';",
+            'const authoringSettings = defineSettings({ enabled: true });',
+            'const settingsTypeProbe: Settings | null = null;',
+            'ctx.render(`${String(used)}:${String(authoringSettings.enabled)}:${String(settingsTypeProbe)}`);',
+            '',
+          ].join('\n'),
           language: 'tsx',
           mode: '100755',
         },
@@ -1163,6 +1238,8 @@ describe('detach to inline integration', () => {
       );
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/shared/unused.ts');
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/client/js-pages/sibling/index.tsx');
+      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('@nocobase/js-template-sdk/client');
+      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('js-template:settings/client/js-page/page');
       expect(prepareEntry).toHaveBeenCalledOnce();
       expect(compileEntry).not.toHaveBeenCalled();
       expect(ensureAndPush).toHaveBeenCalledWith(
@@ -1189,6 +1266,8 @@ describe('detach to inline integration', () => {
         expect.any(Object),
       );
       const pushedFiles = ensureAndPush.mock.calls[0][0].files as VscFileChange[];
+      expect(JSON.stringify(pushedFiles)).not.toContain('@nocobase/js-template-sdk/');
+      expect(JSON.stringify(pushedFiles)).not.toContain('js-template:settings/');
       const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
       const committed = await pullCommit({ repoId: result.runJSRepoId, commitId: result.commitId });
       const materializedCommittedFiles = canonicalizeRunJSCompileFiles(

@@ -212,7 +212,7 @@ describe('Save as JS Template source relocation', () => {
     expect(files.some((file) => file.path.includes('/other/'))).toBe(false);
   });
 
-  it('rewrites JS Page SDK and settings types without touching source text lookalikes', () => {
+  it('preserves JS Page SDK and settings authoring imports for compiler preparation', () => {
     const pageEntryPath = 'src/client/js-pages/orders/index.tsx';
     const files = collectAndRelocateInlineFiles({
       entryPath: pageEntryPath,
@@ -236,17 +236,20 @@ describe('Save as JS Template source relocation', () => {
     });
 
     const code = files[0]?.content || '';
-    expect(code).toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
-    expect(code).not.toContain('import { defineSettings }');
-    expect(code).not.toContain('@nocobase/js-template-sdk/');
-    expect(code).not.toContain('import type { Settings as BlockSettings }');
-    expect(code.match(/js-template:settings\/client\/js-page\/orders/gu)).toHaveLength(2);
-    expect(code).toContain('type JSPageContext<TSettings = unknown>');
-    expect(code).toContain('type Settings = Record<string, unknown>;');
-    expect(code).toContain('type __jsTemplateAuthoring_SDK_JSPageContext<TSettings = unknown>');
-    expect(code).toContain('type ImportedSettings = Record<string, unknown>;');
-    expect(code).toContain('type ImportedContext =');
-    expect(code).toContain('page: { readonly uid: string; readonly active: boolean;');
+    expect(code).toContain('import { type JSPageContext, defineSettings } from "@nocobase/js-template-sdk/client";');
+    expect(code).toContain('import type * as SDK from "@nocobase/js-template-sdk/client";');
+    expect(code).toContain('import type { Settings } from "js-template:settings/client/js-page/orders";');
+    expect(code).toContain(
+      'import type { Settings as BlockSettings } from "js-template:settings/client/js-block/sales";',
+    );
+    expect(code).toContain('type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;');
+    expect(code).toContain(
+      'type ImportedContext = import("@nocobase/js-template-sdk/client").JSPageContext<ImportedSettings>;',
+    );
+    expect(code).toContain('const untouched = "js-template:settings/client/js-page/orders";');
+    expect(code).toContain('// js-template:settings/client/js-page/orders');
+    expect(code).not.toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
+    expect(code).not.toContain('type __jsTemplateAuthoring_SDK_JSPageContext<TSettings = unknown>');
   });
 
   it('relocates the current multi-file workspace and rewrites relative imports', () => {

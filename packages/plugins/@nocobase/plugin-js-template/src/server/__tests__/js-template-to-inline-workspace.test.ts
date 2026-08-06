@@ -16,7 +16,7 @@ import {
 } from '../services/conversion/jsTemplateToInlineWorkspace';
 
 describe('JS Template to Inline workspace conversion', () => {
-  it('relocates the reachable source closure and removes authoring-only imports without infrastructure', () => {
+  it('relocates the reachable source closure while preserving authoring imports for compiler preparation', () => {
     const result = convertJsTemplateToInlineWorkspace({
       entryPath: 'src/client/js-pages/orders/index.tsx',
       kind: 'js-page',
@@ -59,9 +59,9 @@ describe('JS Template to Inline workspace conversion', () => {
     ]);
     const entry = result.files.find((file) => file.path === result.entryPath)?.content || '';
     expect(entry).toContain('from "./title"');
-    expect(entry).toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
-    expect(entry).not.toContain('@nocobase/js-template-sdk/');
-    expect(entry).not.toContain('js-template:settings/');
+    expect(entry).toContain('from "@nocobase/js-template-sdk/client"');
+    expect(entry).toContain('from "js-template:settings/client/js-page/orders"');
+    expect(entry).not.toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
   });
 
   it('builds the canonical RunJS manifest from the converted runtime contract', () => {
