@@ -435,6 +435,43 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(res.body).toEqual({ name: 'root' });
   });
 
+  it('resolves a persisted RunJS ctx.resolveJsonTemplate path for a non-configure role', async () => {
+    const flowModelUid = 'runjs-resolve-json-template-member';
+    const session = createTokenSession(1);
+    await insertFlowModel({
+      uid: flowModelUid,
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: `
+              const data = await ctx.resolveJsonTemplate({
+                role: '{{ ctx.record.roles[0].name }}',
+              });
+              ctx.render(data.role);
+            `,
+            version: 'v2',
+          },
+        },
+      },
+    });
+
+    const res = await execResolve(
+      {
+        rd: session.rd(flowModelUid),
+        template: { role: '{{ ctx.record.roles[0].name }}' },
+        contextParams: {
+          record: { dataSourceKey: 'main', collection: 'users', filterByTk: 1 },
+        },
+      },
+      1,
+      { currentRole: 'member', currentRoles: ['member'], token: session.token },
+    );
+
+    expect(res.body.role).not.toBe('{{ ctx.record.roles[0].name }}');
+    expect(typeof res.body.role).toBe('string');
+  });
+
   it('keeps the exact popup Slot gate for member and root roles', async () => {
     const flowModelUid = 'popup-moved-record-slot';
     const session = createTokenSession(1);
