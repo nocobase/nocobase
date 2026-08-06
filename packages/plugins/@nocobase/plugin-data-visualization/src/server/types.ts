@@ -54,4 +54,5 @@ export type QueryParams = Partial<{
   };
   // Get the latest data from the database
   refresh: boolean;
+  variableResolution: 'legacy-schema';
 }>;

@@ -69,24 +69,40 @@ export const queryData = async (ctx: Context, next: Next) => {
 };
 
 export const parseVariables = async (ctx: Context, next: Next) => {
-  const { mode, contextParams, rd, ...values } = ctx.action.params.values as QueryParams;
+  const { mode, contextParams, rd, variableResolution, ...values } = ctx.action.params.values as QueryParams;
   if (mode !== 'sql') {
-    const resolvedValues = await (
-      ctx.app.pm.get('flow-engine') as PluginFlowEngineServer
-    ).resolveFlowModelVariablesTemplate(ctx, {
-      contextParams,
-      rd,
-      template: values,
-    });
-    if (!resolvedValues) {
-      ctx.body = [];
-      return;
+    const flowEngine = ctx.app.pm.get('flow-engine') as PluginFlowEngineServer;
+    const isLegacyLane = mode === 'builder' && variableResolution === 'legacy-schema' && typeof rd === 'undefined';
+    if (isLegacyLane) {
+      const hasEmptyContextParams =
+        typeof contextParams === 'undefined' ||
+        (contextParams !== null &&
+          typeof contextParams === 'object' &&
+          !Array.isArray(contextParams) &&
+          Object.keys(contextParams).length === 0);
+      if (!hasEmptyContextParams || !flowEngine.isLegacyVariableTemplateSafe(values)) {
+        ctx.body = [];
+        return;
+      }
+      ctx.action.params.values = { mode, ...values };
+    } else {
+      const resolvedValues = await flowEngine.resolveFlowModelVariablesTemplate(ctx, {
+        contextParams,
+        rd,
+        template: values,
+      });
+      if (!resolvedValues) {
+        ctx.body = [];
+        return;
+      }
+      ctx.action.params.values = {
+        mode,
+        ...values,
+        ...(resolvedValues as Record<string, unknown>),
+      };
     }
-    ctx.action.params.values = {
-      mode,
-      ...values,
-      ...(resolvedValues as Record<string, unknown>),
-    };
+  } else {
+    ctx.action.params.values = { mode, ...values };
   }
 
   const { filter } = ctx.action.params.values;

@@ -59,6 +59,11 @@ export async function resolveVariablesTemplate(
   return resolveAnalyzedVariablesTemplate(ctx, result.analysis, REQUEST_BOUND_RESOLVE_POLICY, bindingPlan);
 }
 
+export function isLegacyVariableTemplateSafe(template: JSONValue) {
+  const result = analyzeVariableTemplateSafely(template, { mode: 'untrusted-request' });
+  return result.ok && result.analysis.supported && result.analysis.paths.length === 0;
+}
+
 export async function resolveFlowModelVariablesTemplate(
   ctx: ResourcerContext,
   options: {
@@ -77,7 +82,7 @@ export async function resolveFlowModelVariablesTemplate(
     authorization.bindingPlan,
   );
   const remaining = analyzeVariableTemplateSafely(resolved, { mode: 'untrusted-request' });
-  if (!remaining.ok || remaining.analysis.paths.length) return;
+  if (!remaining.ok || !remaining.analysis.supported || remaining.analysis.paths.length) return;
   return resolved;
 }
 
