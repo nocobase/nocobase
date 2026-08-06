@@ -21,6 +21,11 @@ import type { ButtonProps } from 'antd/es/button';
 import { NAMESPACE } from './locale';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
+const AFTER_SUCCESS_DEFAULT_PARAMS = {
+  successMessage: tExpr('Saved successfully'),
+  manualClose: false,
+  actionAfterSuccess: 'stay',
+};
 
 export class BulkUpdateActionModel extends ActionModel<{
   subModels: {
@@ -88,6 +93,10 @@ BulkUpdateActionModel.registerFlow({
       title: tExpr('Assign field values'),
       clearRecordContext: true,
     }),
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: AFTER_SUCCESS_DEFAULT_PARAMS,
+    },
   },
 });
 
@@ -163,8 +172,20 @@ BulkUpdateActionModel.registerFlow({
           }
         }
 
-        ctx.blockModel?.resource?.refresh?.();
-        ctx.message.success(ctx.t('Saved successfully'));
+        const logRefreshError = (error: unknown) => {
+          ctx.logger?.warn?.({ err: error }, 'Failed to refresh the block after a successful bulk update');
+        };
+        try {
+          const refreshPromise = ctx.blockModel?.resource?.refresh?.();
+          refreshPromise?.catch?.(logRefreshError);
+        } catch (error) {
+          logRefreshError(error);
+        }
+        const savedAfterSuccess = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'afterSuccess') || {};
+        await ctx.runAction('afterSuccess', {
+          ...AFTER_SUCCESS_DEFAULT_PARAMS,
+          ...savedAfterSuccess,
+        });
       },
     },
   },

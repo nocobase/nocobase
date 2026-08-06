@@ -29,3 +29,14 @@ export {
   type FlowSurfaceRunJSWorkspaceBootstrapResult,
   type FlowSurfaceRunJSWorkspaceStatus,
 } from './flow-surfaces/page-surface-contract';
+export {
+  createNestedRecordSlotResolver,
+  getRecordSlotResolverRegistry,
+  RecordSlotResolverRegistry,
+} from './variables/record-slot-resolvers';
+export type {
+  RecordSlotResolved,
+  RecordSlotResolverInput,
+  RecordSlotResolverRegistration,
+  RecordSlotResolverResult,
+} from './variables/record-slot-resolvers';

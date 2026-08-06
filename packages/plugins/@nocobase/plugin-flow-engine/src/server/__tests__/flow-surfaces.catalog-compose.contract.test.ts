@@ -1165,10 +1165,16 @@ describe('flowSurfaces catalog + compose contract', () => {
         triggerWorkflows: {
           type: 'array',
         },
+        afterSuccess: {
+          type: 'object',
+        },
       },
     );
     expect(tableCatalog.actions.find((item: any) => item.key === 'bulkUpdate')?.configureOptions).toMatchObject({
       assignValues: {
+        type: 'object',
+      },
+      afterSuccess: {
         type: 'object',
       },
     });
@@ -7582,6 +7588,12 @@ describe('flowSurfaces catalog + compose contract', () => {
               assignValues: {
                 nickname: 'inactive',
               },
+              afterSuccess: {
+                successMessage: 'Employees archived',
+                manualClose: false,
+                actionAfterSuccess: 'redirect',
+                redirectTo: '/admin/archived-employees',
+              },
             },
           },
           {
@@ -7631,6 +7643,12 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(bulkUpdateReadback.tree.use).toBe('BulkUpdateActionModel');
     expectAssignedValuesMirrors(bulkUpdateReadback.tree, {
       nickname: 'inactive',
+    });
+    expect(bulkUpdateReadback.tree.stepParams?.assignSettings?.afterSuccess).toEqual({
+      successMessage: 'Employees archived',
+      manualClose: false,
+      actionAfterSuccess: 'redirect',
+      redirectTo: '/admin/archived-employees',
     });
 
     const { actionSurface: popupSurface, popupBlock } = await readPrimaryPopupBlock(
@@ -7707,6 +7725,11 @@ describe('flowSurfaces catalog + compose contract', () => {
               assignValues: {
                 nickname: 'active',
               },
+              afterSuccess: {
+                successMessage: 'Employee activated',
+                manualClose: true,
+                actionAfterSuccess: 'stay',
+              },
             },
           },
         ],
@@ -7772,6 +7795,11 @@ describe('flowSurfaces catalog + compose contract', () => {
     expect(updateRecordReadback.tree.stepParams?.buttonSettings?.general?.title).toBeUndefined();
     expectAssignedValuesMirrors(updateRecordReadback.tree, {
       nickname: 'active',
+    });
+    expect(updateRecordReadback.tree.stepParams?.assignSettings?.afterSuccess).toEqual({
+      successMessage: 'Employee activated',
+      manualClose: true,
+      actionAfterSuccess: 'stay',
     });
 
     const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({

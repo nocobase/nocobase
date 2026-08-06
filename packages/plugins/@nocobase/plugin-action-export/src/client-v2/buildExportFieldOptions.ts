@@ -10,19 +10,45 @@
 const TO_ONE_RELATION_TYPES = ['hasOne', 'belongsTo'];
 const TO_MANY_RELATION_TYPES = ['hasMany', 'belongsToMany', 'belongsToArray'];
 const RELATION_TYPES = [...TO_ONE_RELATION_TYPES, 'hasMany', 'belongsToMany', 'belongsToArray'];
-const optionMeta = new WeakMap<object, { field: any; relationDepth: number }>();
+const PRELOAD_BATCH_SIZE = 200;
+const PRELOAD_TIME_SLICE = 8;
+const DEFAULT_SEARCH_RESULT_LIMIT = 50;
+
+export type ExportFieldOption = {
+  name: string;
+  title?: unknown;
+  schema?: unknown;
+  disabled?: boolean;
+  isLeaf?: boolean;
+  loading?: boolean;
+  children?: ExportFieldOption[];
+};
+
+type ExportFieldSearchOptions = {
+  limit?: number;
+  signal?: AbortSignal;
+};
+
+type ExportFieldSearchStackItem = {
+  option: ExportFieldOption;
+  path: ExportFieldOption[];
+};
+
+const optionMeta = new WeakMap<ExportFieldOption, { field: any; relationDepth: number }>();
+
+const waitForNextTask = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const isRelationField = (field) => field?.target && RELATION_TYPES.includes(field.type);
 const isToManyRelationField = (field) => field?.target && TO_MANY_RELATION_TYPES.includes(field.type);
 
-const createOption = (field, getTitle, disabled = false) => ({
+const createOption = (field, getTitle, disabled = false): ExportFieldOption => ({
   name: field.name,
   title: getTitle(field),
   schema: field?.uiSchema,
   disabled,
 });
 
-const createLazyOption = (field, getTitle, relationDepth = 0) => {
+const createLazyOption = (field, getTitle, relationDepth = 0): ExportFieldOption => {
   const relation = isRelationField(field);
   const option = {
     ...createOption(field, getTitle),
@@ -119,6 +145,29 @@ export const buildExportFieldLazyChildren = (option, getTitle, getTargetFields) 
   });
 };
 
+const buildSearchOptionTree = (paths: ExportFieldOption[][]): ExportFieldOption[] => {
+  const rootOptions: ExportFieldOption[] = [];
+  paths.forEach((path) => {
+    let currentOptions = rootOptions;
+    path.forEach((sourceOption, index) => {
+      const isLeaf = index === path.length - 1;
+      let targetOption = currentOptions.find((option) => option.name === sourceOption.name);
+      if (!targetOption) {
+        targetOption = {
+          ...sourceOption,
+          children: isLeaf ? undefined : [],
+        };
+        currentOptions.push(targetOption);
+      }
+      if (!isLeaf) {
+        targetOption.children ||= [];
+        currentOptions = targetOption.children;
+      }
+    });
+  });
+  return rootOptions;
+};
+
 export const createExportFieldLazyOptionsCache = (fields, getTitle, getTargetFields) => {
   const rootOptions = buildExportFieldLazyOptions(fields, getTitle);
 
@@ -165,9 +214,66 @@ export const createExportFieldLazyOptionsCache = (fields, getTitle, getTargetFie
     return changed;
   };
 
+  const searchOptionsAsync = async (
+    searchValue: string,
+    { limit = DEFAULT_SEARCH_RESULT_LIMIT, signal }: ExportFieldSearchOptions = {},
+  ) => {
+    const keyword = searchValue.trim().toLocaleLowerCase();
+    if (!keyword || signal?.aborted) {
+      return [];
+    }
+
+    const matchedPaths: ExportFieldOption[][] = [];
+    const stack: ExportFieldSearchStackItem[] = [...rootOptions].reverse().map((option) => ({ option, path: [] }));
+    const resultLimit = Math.max(1, limit);
+    let batchStartedAt = performance.now();
+    let batchSize = 0;
+
+    while (stack.length && matchedPaths.length < resultLimit) {
+      if (signal?.aborted) {
+        return [];
+      }
+
+      const current = stack.pop();
+      if (!current) {
+        break;
+      }
+      const path = [...current.path, current.option];
+      if (current.option.isLeaf) {
+        const matches = path.some((option) =>
+          String(option.title ?? '')
+            .toLocaleLowerCase()
+            .includes(keyword),
+        );
+        if (!current.option.disabled && matches) {
+          matchedPaths.push(path);
+        }
+      } else {
+        const children =
+          current.option.children || buildExportFieldLazyChildren(current.option, getTitle, getTargetFields);
+        for (let index = children.length - 1; index >= 0; index--) {
+          stack.push({ option: children[index], path });
+        }
+      }
+
+      batchSize += 1;
+      if (batchSize >= PRELOAD_BATCH_SIZE || performance.now() - batchStartedAt >= PRELOAD_TIME_SLICE) {
+        await waitForNextTask();
+        if (signal?.aborted) {
+          return [];
+        }
+        batchStartedAt = performance.now();
+        batchSize = 0;
+      }
+    }
+
+    return buildSearchOptionTree(matchedPaths);
+  };
+
   return {
     getRootOptions: () => rootOptions,
     loadChildren,
     preloadPath,
+    searchOptionsAsync,
   };
 };
