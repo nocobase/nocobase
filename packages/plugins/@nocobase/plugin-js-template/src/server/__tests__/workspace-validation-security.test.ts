@@ -486,6 +486,103 @@ describe('module import', () => {
     );
   });
 
+  it('accepts public SDK and settings type namespaces plus qualified import types', () => {
+    const result = new JsTemplateValidator().validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-pages/orders/index.tsx',
+          content: [
+            'import type * as SDK from "@nocobase/js-template-sdk/client";',
+            'import type * as Template from "js-template:settings/client/js-page/orders";',
+            'type Page = SDK.JSPageContext<Template.Settings>;',
+            'type ImportedPage = import("@nocobase/js-template-sdk/client").JSPageContext<Template.Settings>;',
+            'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
+            'ctx.render(<div />);',
+          ].join('\n'),
+        },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it.each([
+    {
+      label: 'SDK default import',
+      source: 'import SDK from "@nocobase/js-template-sdk/client";',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'SDK side-effect import',
+      source: 'import "@nocobase/js-template-sdk/client";',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'SDK runtime namespace',
+      source: 'import * as SDK from "@nocobase/js-template-sdk/client";',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'unknown SDK type',
+      source: 'import type { MissingContext } from "@nocobase/js-template-sdk/client";',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'client host type from shared SDK',
+      source: 'import type { JSPageContext } from "@nocobase/js-template-sdk/shared";',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'unknown SDK import type',
+      source: 'type Missing = import("@nocobase/js-template-sdk/client").MissingContext;',
+      code: 'import_not_allowed',
+    },
+    {
+      label: 'unknown SDK namespace type',
+      source: 'import type * as SDK from "@nocobase/js-template-sdk/client";\ntype Missing = SDK.MissingContext;',
+      code: 'import_not_allowed',
+      line: 2,
+    },
+    {
+      label: 'settings runtime import',
+      source: 'import { Settings } from "js-template:settings/client/js-page/orders";',
+      code: 'settings_type_import_runtime_not_allowed',
+    },
+    {
+      label: 'unknown settings type',
+      source: 'import type { SettingsContext } from "js-template:settings/client/js-page/orders";',
+      code: 'settings_type_import_invalid',
+    },
+    {
+      label: 'unknown settings namespace type',
+      source:
+        'import type * as Template from "js-template:settings/client/js-page/orders";\ntype Missing = Template.SettingsContext;',
+      code: 'settings_type_import_invalid',
+      line: 2,
+    },
+  ])('rejects unsupported authoring import form: $label', ({ source, code, line = 1 }) => {
+    const path = 'src/client/js-pages/orders/index.tsx';
+    const result = new JsTemplateValidator().validateWorkspace({
+      files: [
+        { path, content: `${source}\nctx.render(<div />);\n` },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
+        },
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code, path, line, column: expect.any(Number) }),
+    );
+  });
+
   it.each(['react/jsx-runtime', 'react-dom', 'dayjs/plugin/utc', 'lodash/get', '__proto__', 'constructor', 'toString'])(
     'rejects unsupported module specifier %s',
     (specifier) => {

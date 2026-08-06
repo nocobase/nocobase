@@ -28,7 +28,6 @@ import {
 } from '../vsc-file/public-api';
 import { createHash, randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
-import ts from 'typescript';
 
 import type {
   DetachJsTemplateToInlineInput,
@@ -53,14 +52,11 @@ import {
   type JsTemplateSourceOperationDescriptor,
   type JsTemplateSourceOperationReservation,
 } from './JsTemplateSourceOperationStore';
-import {
-  JsTemplateWorkspaceCompilerBridge,
-  rewriteJsTemplateSdkRuntimeImports,
-} from './JsTemplateWorkspaceCompilerBridge';
+import { JsTemplateWorkspaceCompilerBridge } from './JsTemplateWorkspaceCompilerBridge';
+import { rewriteJsTemplateAuthoringImports } from './conversion/jsTemplateAuthoringImports';
 import {
   buildRelativeSourceCandidatePaths,
   collectRelativeModuleReferences,
-  getSourceScriptKind,
   isSourceCodeFile,
   normalizeSourceWorkspacePath,
   resolveRelativeSourcePath,
@@ -72,8 +68,6 @@ const RUNJS_ENTRY_ROOT = 'src/client';
 const JS_TEMPLATE_SHARED_ROOT = 'src/shared';
 const JS_TEMPLATE_DESCRIPTOR_FILE = 'entry.json';
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
-const JS_TEMPLATE_SDK_TYPE_MODULES = new Set(['@nocobase/js-template-sdk/client', '@nocobase/js-template-sdk/shared']);
-const JS_TEMPLATE_SETTINGS_TYPE_PREFIX = 'js-template:settings/';
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
 type VscFileServiceProvider = () => VscFileService | null;
@@ -562,153 +556,22 @@ export function collectAndRelocateInlineFiles(workspace: {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Inline source relocation failed');
       }
       const rewrittenImports = rewriteRelativeImports(sourceFile.content, sourcePath, targetPath, targetBySource);
-      const rewrittenSdkImports = rewriteJsTemplateSdkRuntimeImports(targetPath, rewrittenImports);
+      const rewrittenAuthoringImports = rewriteJsTemplateAuthoringImports(targetPath, rewrittenImports);
+      if (rewrittenAuthoringImports.diagnostics.length > 0) {
+        throw new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source contains invalid authoring imports', {
+          status: 422,
+          details: {
+            failureCode: 'JS_TEMPLATE_COMPILE_DENIED',
+            diagnostics: rewrittenAuthoringImports.diagnostics,
+          },
+        });
+      }
       return {
         ...sourceFile,
         path: targetPath,
-        content: rewriteJsTemplateTypeImportsForInline(targetPath, rewrittenSdkImports, workspace.kind),
+        content: rewrittenAuthoringImports.content,
       };
     });
-}
-
-function rewriteJsTemplateTypeImportsForInline(path: string, content: string, kind?: JsTemplateKind): string {
-  if (!isSourceCodeFile(path)) {
-    return content;
-  }
-
-  const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getSourceScriptKind(path));
-  const replacements: Array<{ start: number; end: number; value: string }> = [];
-  const declaredNames = new Set<string>();
-  for (const statement of sourceFile.statements) {
-    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
-      continue;
-    }
-    const specifier = statement.moduleSpecifier.text;
-    if (!JS_TEMPLATE_SDK_TYPE_MODULES.has(specifier) && !isInlineTypeModule(specifier, kind)) {
-      continue;
-    }
-    const importClause = statement.importClause;
-    if (!importClause || importClause.name || !importClause.namedBindings) {
-      continue;
-    }
-    if (ts.isNamespaceImport(importClause.namedBindings)) {
-      if (!importClause.isTypeOnly) {
-        continue;
-      }
-      replacements.push({
-        start: statement.getStart(sourceFile),
-        end: statement.end,
-        value: buildInlineTypeNamespace(importClause.namedBindings.name.text, specifier),
-      });
-      continue;
-    }
-    if (!importClause.isTypeOnly && importClause.namedBindings.elements.some((element) => !element.isTypeOnly)) {
-      continue;
-    }
-
-    const declarations = importClause.namedBindings.elements.flatMap((element) => {
-      const localName = element.name.text;
-      if (declaredNames.has(localName)) {
-        return [];
-      }
-      declaredNames.add(localName);
-      const importedName = element.propertyName?.text || localName;
-      return [buildInlineTypeDeclaration(importedName, localName, specifier)];
-    });
-    replacements.push({
-      start: statement.getStart(sourceFile),
-      end: statement.end,
-      value: declarations.join(' '),
-    });
-  }
-
-  const visitImportTypes = (node: ts.Node) => {
-    if (ts.isImportTypeNode(node)) {
-      const specifier = getImportTypeSpecifier(node);
-      if (specifier && isInlineTypeModule(specifier, kind)) {
-        replacements.push({
-          start: node.getStart(sourceFile),
-          end: node.end,
-          value: buildInlineImportType(node, sourceFile, specifier),
-        });
-        return;
-      }
-    }
-    ts.forEachChild(node, visitImportTypes);
-  };
-  visitImportTypes(sourceFile);
-
-  return replacements
-    .sort((left, right) => right.start - left.start)
-    .reduce(
-      (current, replacement) =>
-        `${current.slice(0, replacement.start)}${replacement.value}${current.slice(replacement.end)}`,
-      content,
-    );
-}
-
-function isInlineTypeModule(specifier: string, kind?: JsTemplateKind): boolean {
-  if (JS_TEMPLATE_SDK_TYPE_MODULES.has(specifier)) {
-    return true;
-  }
-  return Boolean(kind && specifier.startsWith(`${JS_TEMPLATE_SETTINGS_TYPE_PREFIX}client/${kind}/`));
-}
-
-function buildInlineTypeNamespace(localName: string, specifier: string): string {
-  if (specifier.startsWith(JS_TEMPLATE_SETTINGS_TYPE_PREFIX)) {
-    return `declare namespace ${localName} { export type Settings = Record<string, unknown>; export type SettingsSchemaSummary = Record<string, unknown>; export type Context = typeof ctx & { settings: Settings }; export type SettingsContext = Context; }`;
-  }
-
-  return `declare namespace ${localName} { export type JsTemplate = Record<string, unknown>; export type JsTemplateSettingsContext<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings }; export type JsTemplateDataContext<TSettings = Record<string, unknown>> = JsTemplateSettingsContext<TSettings>; export type JSBlockContext<TSettings = Record<string, unknown>> = JsTemplateDataContext<TSettings>; export type JSPageContext<TSettings = Record<string, unknown>> = JsTemplateDataContext<TSettings>; export type JSFieldContext<TSettings = Record<string, unknown>, TValue = unknown> = JsTemplateDataContext<TSettings> & { value?: TValue }; export type JSActionContext<TSettings = Record<string, unknown>> = JsTemplateDataContext<TSettings>; export type JSItemContext<TSettings = Record<string, unknown>, TValue = unknown> = JsTemplateDataContext<TSettings> & { value?: TValue }; export type RunJSContext<TSettings = Record<string, unknown>, TInput = unknown> = JsTemplateDataContext<TSettings> & { input?: TInput }; export function defineSettings<TSettings>(settings: TSettings): TSettings; export function assertSettings<TSettings>(settings: TSettings): TSettings; }`;
-}
-
-function getImportTypeSpecifier(node: ts.ImportTypeNode): string | null {
-  const argument = node.argument;
-  if (!ts.isLiteralTypeNode(argument) || !ts.isStringLiteral(argument.literal)) {
-    return null;
-  }
-  return argument.literal.text;
-}
-
-function buildInlineImportType(node: ts.ImportTypeNode, sourceFile: ts.SourceFile, specifier: string): string {
-  const importedName = node.qualifier ? node.qualifier.getText(sourceFile).split('.').pop() || '' : '';
-  const firstTypeArgument = node.typeArguments?.[0]?.getText(sourceFile) || 'Record<string, unknown>';
-  if (specifier.startsWith(JS_TEMPLATE_SETTINGS_TYPE_PREFIX)) {
-    if (importedName === 'Context' || importedName === 'SettingsContext') {
-      return `(typeof ctx & { settings: Record<string, unknown> })`;
-    }
-    return 'Record<string, unknown>';
-  }
-  if (importedName === 'JsTemplate') {
-    return 'Record<string, unknown>';
-  }
-  if (importedName.endsWith('Context')) {
-    return `(typeof ctx & { settings: ${firstTypeArgument} })`;
-  }
-  return 'unknown';
-}
-
-function buildInlineTypeDeclaration(importedName: string, localName: string, specifier: string): string {
-  if (specifier.startsWith(JS_TEMPLATE_SETTINGS_TYPE_PREFIX)) {
-    if (importedName === 'Context' || importedName === 'SettingsContext') {
-      return `type ${localName} = typeof ctx & { settings: Record<string, unknown> };`;
-    }
-    return `type ${localName} = Record<string, unknown>;`;
-  }
-
-  if (importedName === 'JsTemplate') {
-    return `type ${localName} = Record<string, unknown>;`;
-  }
-  if (importedName === 'RunJSContext' && localName === 'RunJSContext') {
-    return '';
-  }
-  if (importedName === 'JSPageContext') {
-    return `type ${localName}<TSettings = Record<string, unknown>> = typeof ctx & { settings: TSettings };`;
-  }
-  if (importedName.endsWith('Context')) {
-    return `type ${localName}<TSettings = Record<string, unknown>, TValue = unknown> = typeof ctx & { settings: TSettings; value?: TValue };`;
-  }
-  return `type ${localName} = unknown;`;
 }
 
 function collectReachablePaths(

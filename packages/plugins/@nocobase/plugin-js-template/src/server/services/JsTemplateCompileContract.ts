@@ -86,8 +86,8 @@ export const JS_TEMPLATE_AUTHORING_SURFACES: Record<JsTemplateKind, JsTemplateAu
 };
 
 export const JS_TEMPLATE_COMPILER_BRIDGE_CONTRACT_VERSION = 'js-template.compiler-bridge.v1';
-export const JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION = 'js-template.import-rewrite.v1';
-export const JS_TEMPLATE_IMPORT_SECURITY_POLICY_VERSION = 'js-template.import-security.v1';
+export const JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION = 'js-template.import-rewrite.v2';
+export const JS_TEMPLATE_IMPORT_SECURITY_POLICY_VERSION = 'js-template.import-security.v2';
 export const JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT_VERSION = JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT;
 
 export interface JsTemplateCompilerBuildIdentityComponents {

@@ -1277,6 +1277,39 @@ function registerWorkspaceCompilerBridgeTests() {
       expect(result.artifact.code).toContain('function defineSettings');
     });
 
+    it('compiles aliases, namespaces, settings types, and SDK import types through one authoring contract', async () => {
+      const result = await bridge.compileEntry({
+        projectId: 'jtp_orders',
+        templateId: 'jtt_orders',
+        kind: 'js-page',
+        templateName: 'orders',
+        entryPath: 'src/client/js-pages/orders/index.tsx',
+        surfaceStyle: 'render',
+        files: [
+          {
+            path: 'src/client/js-pages/orders/index.tsx',
+            content: [
+              'import { type JsTemplateContextRecord as Row, type JSPageRuntimeFacade as PageFacade, defineSettings as define } from "@nocobase/js-template-sdk/client";',
+              'import type * as SDK from "@nocobase/js-template-sdk/client";',
+              'import type * as Template from "js-template:settings/client/js-page/orders";',
+              'type ImportedPage = import("@nocobase/js-template-sdk/client").JSPageContext<Template.Settings>;',
+              'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
+              'function inspect(row: Row, facade: PageFacade, page: SDK.JSPageContext<Template.Settings>, imported: ImportedPage, settings: ImportedSettings) { facade.setDocumentTitle(String(row.id)); return [page.page.uid, imported.page.active, settings]; }',
+              'const settings = define({ title: "Orders" });',
+              'ctx.render(<div>{settings.title}</div>);',
+              '',
+            ].join('\n'),
+          },
+        ],
+      });
+
+      expect(result.accepted, JSON.stringify(result.diagnostics, null, 2)).toBe(true);
+      expect(result.diagnostics).toEqual([]);
+      expect(result.artifact.code).not.toContain('@nocobase/js-template-sdk/');
+      expect(result.artifact.code).not.toContain('js-template:settings/');
+      expect(result.artifact.code).toContain('function define');
+    });
+
     it('keeps unknown SDK authoring types as compile errors', async () => {
       const result = await bridge.compileEntry({
         projectId: 'jtp_sales',
@@ -1292,10 +1325,12 @@ function registerWorkspaceCompilerBridgeTests() {
       });
 
       expect(result.accepted).toBe(false);
+      expect(result.failureCode).toBe('JS_TEMPLATE_COMPILE_DENIED');
       expect(result.diagnostics).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            message: expect.stringContaining("Cannot find module '@nocobase/js-template-sdk/client'"),
+            code: 'import_not_allowed',
+            message: expect.stringContaining('not a public authoring type'),
           }),
         ]),
       );

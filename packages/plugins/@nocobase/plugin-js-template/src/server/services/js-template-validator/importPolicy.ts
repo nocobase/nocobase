@@ -8,17 +8,20 @@
  */
 
 import { posix as pathPosix } from 'path';
-import { parseSettingsTypeImport } from '@nocobase/js-template-sdk/typegen';
 import ts from 'typescript';
 
 import { JS_TEMPLATE_DESCRIPTOR_FILE, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../../constants';
 import type { JsTemplateDiagnostic } from '../../../shared/types';
 import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
+import {
+  analyzeJsTemplateAuthoringImportDeclaration,
+  isJsTemplateAuthoringModuleSpecifier,
+  rewriteJsTemplateAuthoringImports,
+  type JsTemplateAuthoringImportDiagnostic,
+} from '../conversion/jsTemplateAuthoringImports';
 import type { DiagnosticTarget } from './types';
 import { getTemplateRootPath, normalizeSourcePath, sharedSourceRoot } from './workspacePolicy';
 
-const allowedClientSdkImports = new Set(['@nocobase/js-template-sdk/client', '@nocobase/js-template-sdk/shared']);
-const allowedSdkRuntimeHelpers = new Set(['defineSettings', 'assertSettings']);
 const allowedRunJSBuiltInImports = new Set([
   'react',
   'react-dom/client',
@@ -36,115 +39,33 @@ export function validateExternalSdkImport(
   specifier: string,
   target: Omit<DiagnosticTarget, 'path'>,
 ): JsTemplateDiagnostic[] {
-  if (specifier.startsWith('js-template:settings/')) {
-    return validateSettingsTypeImport(node, sourceFile, specifier, target);
-  }
-
   if (isAllowedRunJSBuiltInImport(specifier)) {
     return validateRunJSBuiltInImport(node, sourceFile, specifier, target);
   }
 
-  if (!allowedClientSdkImports.has(specifier)) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        node.moduleSpecifier.getStart(sourceFile),
-        'import_not_allowed',
-        'error',
-        `Import "${specifier}" is not allowed in js-template source`,
-        target,
-      ),
-    ];
+  if (isJsTemplateAuthoringModuleSpecifier(specifier)) {
+    const analysis = analyzeJsTemplateAuthoringImportDeclaration(node, sourceFile);
+    return toJsTemplateDiagnostics(analysis.diagnostics, target);
   }
 
-  const importClause = node.importClause;
-  if (!importClause) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        node.moduleSpecifier.getStart(sourceFile),
-        'import_not_allowed',
-        'error',
-        `Side-effect import from "${specifier}" is not allowed in js-template source`,
-        target,
-      ),
-    ];
-  }
-  if (importClause.name) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        importClause.name.getStart(sourceFile),
-        'import_not_allowed',
-        'error',
-        `Default import from "${specifier}" is not allowed in js-template source`,
-        target,
-      ),
-    ];
-  }
-  if (!importClause.namedBindings) {
-    return importClause.isTypeOnly
-      ? []
-      : [
-          diagnosticAt(
-            sourceFile,
-            importClause.getStart(sourceFile),
-            'import_not_allowed',
-            'error',
-            `Runtime import from "${specifier}" must use allowed helpers`,
-            target,
-          ),
-        ];
-  }
-  if (ts.isNamespaceImport(importClause.namedBindings)) {
-    return importClause.isTypeOnly
-      ? []
-      : [
-          diagnosticAt(
-            sourceFile,
-            importClause.namedBindings.getStart(sourceFile),
-            'import_not_allowed',
-            'error',
-            `Namespace import from "${specifier}" is only allowed as import type`,
-            target,
-          ),
-        ];
-  }
-  if (!importClause.isTypeOnly && importClause.namedBindings.elements.length === 0) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        importClause.namedBindings.getStart(sourceFile),
-        'import_not_allowed',
-        'error',
-        `Runtime import from "${specifier}" must use allowed helpers`,
-        target,
-      ),
-    ];
-  }
+  return [
+    diagnosticAt(
+      sourceFile,
+      node.moduleSpecifier.getStart(sourceFile),
+      'import_not_allowed',
+      'error',
+      `Import "${specifier}" is not allowed in js-template source`,
+      target,
+    ),
+  ];
+}
 
-  const diagnostics: JsTemplateDiagnostic[] = [];
-  for (const element of importClause.namedBindings.elements) {
-    if (importClause.isTypeOnly || element.isTypeOnly) {
-      continue;
-    }
-    const imported = element.propertyName?.text || element.name.text;
-    if (allowedSdkRuntimeHelpers.has(imported)) {
-      continue;
-    }
-    diagnostics.push(
-      diagnosticAt(
-        sourceFile,
-        element.getStart(sourceFile),
-        'import_not_allowed',
-        'error',
-        `Runtime import "${imported}" from "${specifier}" is not allowed in js-template source`,
-        target,
-      ),
-    );
-  }
-
-  return diagnostics;
+export function validateJsTemplateAuthoringSource(
+  path: string,
+  content: string,
+  target: Omit<DiagnosticTarget, 'path'>,
+): JsTemplateDiagnostic[] {
+  return toJsTemplateDiagnostics(rewriteJsTemplateAuthoringImports(path, content).diagnostics, target);
 }
 
 function isAllowedRunJSBuiltInImport(specifier: string): boolean {
@@ -189,72 +110,6 @@ function validateRunJSBuiltInImport(
     ];
   }
   return [];
-}
-
-export function validateSettingsTypeImport(
-  node: ts.ImportDeclaration,
-  sourceFile: ts.SourceFile,
-  specifier: string,
-  target: Omit<DiagnosticTarget, 'path'>,
-): JsTemplateDiagnostic[] {
-  const importClause = node.importClause;
-  if (!importClause?.isTypeOnly) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        node.moduleSpecifier.getStart(sourceFile),
-        'settings_type_import_runtime_not_allowed',
-        'error',
-        `Settings type import "${specifier}" must use import type`,
-        target,
-      ),
-    ];
-  }
-  if (importClause.name) {
-    return [
-      diagnosticAt(
-        sourceFile,
-        importClause.name.getStart(sourceFile),
-        'settings_type_import_invalid',
-        'error',
-        `Default import from "${specifier}" is not supported`,
-        target,
-      ),
-    ];
-  }
-
-  return validateSettingsTypeSpecifier(sourceFile, node.moduleSpecifier.getStart(sourceFile), specifier, target);
-}
-
-export function validateSettingsImportTypeNode(
-  node: ts.ImportTypeNode,
-  sourceFile: ts.SourceFile,
-  specifier: string,
-  target: Omit<DiagnosticTarget, 'path'>,
-): JsTemplateDiagnostic[] {
-  return validateSettingsTypeSpecifier(sourceFile, node.argument.getStart(sourceFile), specifier, target);
-}
-
-export function validateSettingsTypeSpecifier(
-  sourceFile: ts.SourceFile,
-  position: number,
-  specifier: string,
-  target: Omit<DiagnosticTarget, 'path'>,
-): JsTemplateDiagnostic[] {
-  if (parseSettingsTypeImport(specifier)) {
-    return [];
-  }
-
-  return [
-    diagnosticAt(
-      sourceFile,
-      position,
-      'settings_type_import_invalid',
-      'error',
-      `Settings type import "${specifier}" is not valid`,
-      target,
-    ),
-  ];
 }
 
 export function isRelativeImportOutsideCurrentTemplate(
@@ -322,4 +177,15 @@ export function getImportEqualsSpecifier(node: ts.ImportEqualsDeclaration): stri
 
 export function isJsTemplateKind(value: string): value is JsTemplateKind {
   return (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(value);
+}
+
+function toJsTemplateDiagnostics(
+  diagnostics: JsTemplateAuthoringImportDiagnostic[],
+  target: Omit<DiagnosticTarget, 'path'>,
+): JsTemplateDiagnostic[] {
+  return diagnostics.map((diagnostic) => ({
+    ...diagnostic,
+    kind: target.kind,
+    templateName: target.templateName,
+  }));
 }

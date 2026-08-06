@@ -11,6 +11,7 @@ import ts from 'typescript';
 
 import type { JsTemplateDiagnostic } from '../../../shared/types';
 import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
+import { isJsTemplateAuthoringModuleSpecifier } from '../conversion/jsTemplateAuthoringImports';
 import {
   getImportEqualsSpecifier,
   getImportSpecifier,
@@ -20,7 +21,7 @@ import {
   isRelativeImportOutsideSharedRoot,
   scriptKind,
   validateExternalSdkImport,
-  validateSettingsImportTypeNode,
+  validateJsTemplateAuthoringSource,
 } from './importPolicy';
 import type { DiagnosticTarget, NormalizedSourceFile } from './types';
 
@@ -78,16 +79,19 @@ class ForbiddenRuntimeApiValidator {
       scriptKind(file.path),
     );
     const parseDiagnostics = (sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics || [];
-    const diagnostics: JsTemplateDiagnostic[] = parseDiagnostics.map((item) =>
-      diagnosticAt(
-        sourceFile,
-        item.start || 0,
-        'source_parse_error',
-        'error',
-        ts.flattenDiagnosticMessageText(item.messageText, '\n'),
-        target,
+    const diagnostics: JsTemplateDiagnostic[] = [
+      ...parseDiagnostics.map((item) =>
+        diagnosticAt(
+          sourceFile,
+          item.start || 0,
+          'source_parse_error',
+          'error',
+          ts.flattenDiagnosticMessageText(item.messageText, '\n'),
+          target,
+        ),
       ),
-    );
+      ...validateJsTemplateAuthoringSource(file.path, file.content, target),
+    ];
     const globalObjectAliases = new Set(globalObjectNames);
     const reflectObjectAliases = new Set(['Reflect']);
     const reflectGetAliases = new Set<string>();
@@ -103,7 +107,7 @@ class ForbiddenRuntimeApiValidator {
 
       if (ts.isImportDeclaration(node)) {
         const specifier = getImportSpecifier(node.moduleSpecifier);
-        if (specifier && !specifier.startsWith('.')) {
+        if (specifier && !specifier.startsWith('.') && !isJsTemplateAuthoringModuleSpecifier(specifier)) {
           diagnostics.push(...validateExternalSdkImport(node, sourceFile, specifier, target));
         } else if (specifier && isTemplateDescriptorImport(file.path, specifier)) {
           diagnostics.push(
@@ -139,9 +143,7 @@ class ForbiddenRuntimeApiValidator {
 
       if (ts.isImportTypeNode(node)) {
         const specifier = getImportTypeSpecifier(node);
-        if (specifier?.startsWith('js-template:settings/')) {
-          diagnostics.push(...validateSettingsImportTypeNode(node, sourceFile, specifier, target));
-        } else if (specifier && isTemplateDescriptorImport(file.path, specifier)) {
+        if (specifier && isTemplateDescriptorImport(file.path, specifier)) {
           diagnostics.push(
             diagnosticAt(
               sourceFile,
