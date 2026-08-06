@@ -87,6 +87,57 @@ describe('workflow > Processor', () => {
       expect(await execution.countJobs()).toBe(201);
     });
 
+    it('updates existing jobs using model field mappings', async () => {
+      await app.destroy();
+      app = await getApp({
+        database: {
+          underscored: false,
+        },
+      });
+      plugin = app.pm.get('workflow');
+      db = app.db;
+
+      const WorkflowModel = db.getCollection('workflows').model;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'syncTrigger',
+      });
+      const node = await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+      });
+      const processor = plugin.createProcessor(execution);
+      const startedAt = new Date('2026-08-07T00:00:00.000Z');
+      const job = processor.saveJob({
+        nodeId: node.id,
+        nodeKey: node.key,
+        status: JOB_STATUS.PENDING,
+        result: null,
+      });
+
+      await processor.exit();
+
+      job.set({
+        status: JOB_STATUS.RESOLVED,
+        meta: { source: 'test' },
+        result: { value: 1 },
+        startedAt,
+      });
+      processor.saveJob(job);
+      await processor.exit();
+
+      const savedJob = await db.getRepository('jobs').findOne({
+        filterByTk: job.id,
+      });
+      expect(savedJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(savedJob.meta).toEqual({ source: 'test' });
+      expect(savedJob.result).toEqual({ value: 1 });
+      expect(savedJob.startedAt).toEqual(startedAt);
+    });
+
     it('empty workflow without any nodes', async () => {
       const post = await PostRepo.create({ values: { title: 't1' } });
 

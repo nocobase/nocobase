@@ -532,33 +532,12 @@ export default class Processor {
         if (job.isNewRecord) {
           newJobs.push(job);
         } else {
-          const JobCollection = this.options.plugin.db.getCollection('jobs');
-          const changes = [];
-          if (job.changed('status')) {
-            changes.push([`status`, job.status]);
-            job.changed('status', false);
-          }
-          if (job.changed('meta')) {
-            changes.push([`meta`, JSON.stringify(job.meta ?? null)]);
-            job.changed('meta', false);
-          }
-          if (job.changed('result')) {
-            changes.push([`result`, JSON.stringify(job.result ?? null)]);
-            job.changed('result', false);
-          }
-          if (job.changed('startedAt')) {
-            changes.push([`started_at`, job.startedAt]);
-            job.changed('startedAt', false);
-          }
-          if (changes.length) {
-            await this.options.plugin.db.sequelize.query(
-              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(([key]) => `${key} = ?`)} WHERE id='${
-                job.id
-              }'`,
-              { replacements: changes.map(([, value]) => value) },
-            );
-          }
-          // await job.save();
+          await job.save({
+            fields: ['status', 'meta', 'result', 'startedAt'],
+            hooks: false,
+            silent: true,
+            validate: false,
+          });
         }
       }
       if (newJobs.length) {
