@@ -101,9 +101,6 @@ interface JsTemplateWorkspacePageProps {
 
 export interface DetachJsTemplateToInlineRequest {
   expectedProjectHeadCommitId: string;
-  entryPath: string;
-  files: RunJSWorkspaceFile[];
-  version: string;
 }
 
 export interface JsTemplateWorkspaceFooterActions {
@@ -217,6 +214,7 @@ function JsTemplateWorkspacePage({
   const authoringBlockedDirtyPathsRef = useRef<Set<string>>(new Set());
   const authoringWorkspaceWritableRef = useRef(false);
   const authoringWorkspaceScopeRef = useRef(workspaceScope);
+  const hasUnsavedLocalChangesRef = useRef(false);
   const templateRoot = getJsTemplateRoot(workspaceScope);
   const templateScoped = workspaceScope.mode === 'template';
   const pathRestrictionReason = t('Other JS Templates are read-only here');
@@ -341,6 +339,7 @@ function JsTemplateWorkspacePage({
   const dirtyChanges = useMemo(() => buildFileChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
+  hasUnsavedLocalChangesRef.current = hasUnsavedLocalChanges;
   const canWrite = Boolean(project && project.lifecycleStatus !== 'archived');
   const hasBlockedDirtyChanges = dirtyChanges.some(
     (change) => !canChangeJsTemplateWorkspacePath(workspaceScope, change.path),
@@ -1037,15 +1036,21 @@ function JsTemplateWorkspacePage({
     ) {
       return;
     }
+    if (hasUnsavedLocalChangesRef.current) {
+      setNotice({
+        type: 'warning',
+        message: t(
+          'This workspace has unsaved changes. Save them first, or close and discard them before detaching to Inline.',
+        ),
+      });
+      return;
+    }
 
     setDetachingToInline(true);
     setNotice(null);
     try {
       await onDetachJsTemplateToInline({
         expectedProjectHeadCommitId: baseHeadCommitId,
-        entryPath: workspaceScope.entryPath,
-        files: files.map((file) => ({ ...file })),
-        version: 'v2',
       });
     } catch (error) {
       setNotice({
@@ -1056,13 +1061,22 @@ function JsTemplateWorkspacePage({
     } finally {
       setDetachingToInline(false);
     }
-  }, [baseHeadCommitId, canDetachJsTemplateToInline, files, onDetachJsTemplateToInline, t, workspaceScope]);
+  }, [baseHeadCommitId, canDetachJsTemplateToInline, onDetachJsTemplateToInline, t, workspaceScope.mode]);
 
   const confirmDetachJsTemplateToInline = useCallback(() => {
+    if (hasUnsavedLocalChanges) {
+      setNotice({
+        type: 'warning',
+        message: t(
+          'This workspace has unsaved changes. Save them first, or close and discard them before detaching to Inline.',
+        ),
+      });
+      return;
+    }
     Modal.confirm({
       title: t('Detach to Inline?'),
       content: t(
-        'The current working copy of this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.',
+        'The committed Project Head for this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.',
       ),
       okText: t('Detach to Inline'),
       cancelText: t('Cancel'),
@@ -1070,7 +1084,7 @@ function JsTemplateWorkspacePage({
       maskTransitionName: '',
       onOk: detachToInline,
     });
-  }, [detachToInline, t]);
+  }, [detachToInline, hasUnsavedLocalChanges, t]);
 
   const exportWorkspace = useCallback(async () => {
     if (!project || exporting || importing) {

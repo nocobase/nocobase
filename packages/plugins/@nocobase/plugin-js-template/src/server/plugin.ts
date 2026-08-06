@@ -349,6 +349,7 @@ export class PluginJsTemplateServer extends Plugin {
       db,
       this.projectService,
       this.templateService,
+      this.fileService,
       this.workspaceCompilerBridge,
       this.usageService,
       () => new VscFileService(db, workspaceModule.getPermissionHookRegistry()),

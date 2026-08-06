@@ -658,7 +658,7 @@ describe('JsTemplateWorkspacePage', () => {
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
-  it('offers detaching the current unsaved entry workspace to Inline', async () => {
+  it('blocks detaching an unsaved entry workspace to Inline', async () => {
     const onDetachJsTemplateToInline = vi.fn(async () => undefined);
     const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
       config.onOk?.(() => undefined);
@@ -691,9 +691,51 @@ describe('JsTemplateWorkspacePage', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Detach to Inline' }));
 
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(onDetachJsTemplateToInline).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'This workspace has unsaved changes. Save them first, or close and discard them before detaching to Inline.',
+      ),
+    ).toBeInTheDocument();
+    confirmSpy.mockRestore();
+  });
+
+  it('offers detaching the committed Project Head to Inline', async () => {
+    const onDetachJsTemplateToInline = vi.fn(async () => undefined);
+    const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
+      config.onOk?.(() => undefined);
+      return {
+        destroy: vi.fn(),
+        update: vi.fn(),
+      } as ReturnType<typeof Modal.confirm>;
+    });
+    const workspaceScope: JsTemplateWorkspaceScope = {
+      mode: 'template',
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      kind: 'js-block',
+    };
+
+    render(
+      <MemoryRouter>
+        <JsTemplateWorkspacePage
+          embedded
+          templateId="jtt_sales_kpi"
+          onDetachJsTemplateToInline={onDetachJsTemplateToInline}
+          projectId="jtp_sales"
+          workspaceScope={workspaceScope}
+        />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Detach to Inline' }));
+
     expect(confirmSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Detach to Inline?',
+        content:
+          'The committed Project Head for this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.',
         okText: 'Detach to Inline',
         transitionName: '',
         maskTransitionName: '',
@@ -702,14 +744,6 @@ describe('JsTemplateWorkspacePage', () => {
     await waitFor(() =>
       expect(onDetachJsTemplateToInline).toHaveBeenCalledWith({
         expectedProjectHeadCommitId: 'commit-1',
-        entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-        version: 'v2',
-        files: [
-          expect.objectContaining({
-            path: 'src/client/js-blocks/sales-kpi/index.tsx',
-            content: 'ctx.render(<div>unsaved inline detach</div>);\n',
-          }),
-        ],
       }),
     );
     confirmSpy.mockRestore();

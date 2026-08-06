@@ -31,14 +31,18 @@ import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
 import type {
-  SaveAsJsTemplateWorkspaceFile,
   DetachJsTemplateToInlineInput,
   DetachJsTemplateToInlineResult,
   JsTemplateKind,
+  JsTemplatePullResult,
+  JsTemplateRuntimeSourceBinding,
+  SaveAsJsTemplateWorkspaceFile,
 } from '../../shared/types';
+import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
 import { JsTemplateError } from '../../shared/errors';
 import { isJsTemplateRuntimeSourceBinding, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
+import type { JsTemplateFileService } from './JsTemplateFileService';
 import { JsTemplateService } from './JsTemplateService';
 import { getUsageOwnerAdapterByUse } from './JsTemplateUsageOwnerRegistry';
 import type { JsTemplateUsageService } from './JsTemplateUsageService';
@@ -72,6 +76,7 @@ const JS_TEMPLATE_SETTINGS_TYPE_PREFIX = 'js-template:settings/';
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
 type VscFileServiceProvider = () => VscFileService | null;
+type JsTemplateCommitSourceReader = Pick<JsTemplateFileService, 'pullCommit'>;
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 
@@ -91,6 +96,7 @@ export interface DetachJsTemplateToInlineServiceContext extends JsTemplateServic
 
 interface PreparedDetachJsTemplateToInline {
   locator: FlowModelStepLocator;
+  source: ServerOwnedJsTemplateSource;
   entryPath: string;
   ownerFingerprint: string;
   surfaceStyle: string;
@@ -101,12 +107,11 @@ interface PreparedDetachJsTemplateToInline {
   changes: VscFileChange[];
 }
 
-/** @internal Removed from the HTTP contract; Task 02 will replace these transitional values with server-owned source reads. */
-interface DetachJsTemplateToInlineServiceInput extends DetachJsTemplateToInlineInput {
+interface ServerOwnedJsTemplateSource {
+  binding: JsTemplateRuntimeSourceBinding;
   entryPath: string;
   kind: JsTemplateKind;
   runtimeVersion: string;
-  files: SaveAsJsTemplateWorkspaceFile[];
 }
 
 export class DetachJsTemplateToInlineService {
@@ -116,6 +121,7 @@ export class DetachJsTemplateToInlineService {
     private readonly db: Database,
     private readonly projectService: JsTemplateProjectService,
     private readonly templateService: JsTemplateService,
+    private readonly commitSourceReader: JsTemplateCommitSourceReader,
     private readonly workspaceCompilerBridge: JsTemplateWorkspaceCompilerBridge,
     private readonly usageService: JsTemplateUsageService,
     private readonly getVscFileService: VscFileServiceProvider,
@@ -145,28 +151,14 @@ export class DetachJsTemplateToInlineService {
         return claimed.replayResult;
       }
       operation = claimed.reservation;
-      assertDetachJsTemplateToInlineServiceInput(input);
-      assertRunJSCompileInputLimits(input.files);
-      const relocatedFiles = collectAndRelocateInlineFiles({
-        files: input.files,
-        entryPath: input.entryPath,
-        kind: input.kind,
-      });
-      assertRunJSCompileInputLimits([
-        ...relocatedFiles,
-        {
-          path: RUNJS_MANIFEST_PATH,
-          content: '',
-        },
-      ]);
       const vscFileService = this.getVscFileService();
       if (!vscFileService) {
         throw new JsTemplateError('JS_TEMPLATE_RUNTIME_UNAVAILABLE', 'RunJS source service is unavailable');
       }
-      const prepared = await this.prepareDetachJsTemplateToInline(input, ctx, relocatedFiles, vscFileService);
+      const prepared = await this.prepareDetachJsTemplateToInline(input, ctx, vscFileService);
       return await this.db.sequelize.transaction(async (transaction) => {
         const result = await this.publishDetachJsTemplateToInline(input, ctx, prepared, vscFileService, transaction);
-        await this.recordDetachJsTemplateToInlineSuccessAudit(input, result, ctx, transaction);
+        await this.recordDetachJsTemplateToInlineSuccessAudit(input, prepared, result, ctx, transaction);
         await this.sourceOperationStore.complete(operation, result, transaction);
         return result;
       });
@@ -206,9 +198,8 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async prepareDetachJsTemplateToInline(
-    input: DetachJsTemplateToInlineServiceInput,
+    input: DetachJsTemplateToInlineInput,
     ctx: DetachJsTemplateToInlineServiceContext,
-    relocatedFiles: SaveAsJsTemplateWorkspaceFile[],
     vscFileService: VscFileService,
   ): Promise<PreparedDetachJsTemplateToInline> {
     const locator = requireFlowModelStepLocator(input.locator);
@@ -234,17 +225,39 @@ export class DetachJsTemplateToInlineService {
 
     await adapter.assertCanWrite({ locator, ctx: adapterContext });
     const currentModel = await getFlowModel(this.db, locator.modelUid);
-    assertCurrentJsTemplateBinding(currentModel, locator, input);
+    const binding = requireCurrentJsTemplateBinding(currentModel, locator, input);
     await this.projectService.assertApplicationOwnership(input.projectId, this.applicationName, serviceContext);
     const project = await this.projectService.getProject(input.projectId, serviceContext);
     assertExpectedProjectHead(project.headCommitId, input);
     const template = await this.templateService.getTemplate(input.templateId, serviceContext);
-    assertCurrentTemplate(template, input);
+    const source = deriveServerOwnedJsTemplateSource(template, binding, input);
 
     const legacy = await adapter.readLegacy({ locator, ctx: adapterContext });
-    if (!isDetachJsTemplateToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
+    if (!isDetachJsTemplateToInlineHostSupported(source.kind, legacy.metadata?.modelUse)) {
       throw unsupportedLocator(locator);
     }
+
+    const sourceSnapshot = await this.commitSourceReader.pullCommit(
+      {
+        projectId: input.projectId,
+        commitId: input.expectedProjectHeadCommitId,
+        includeContent: 'all',
+      },
+      serviceContext,
+    );
+    const sourceFiles = materializeCommittedSourceFiles(sourceSnapshot, input);
+    const relocatedFiles = collectAndRelocateInlineFiles({
+      files: sourceFiles,
+      entryPath: source.entryPath,
+      kind: source.kind,
+    });
+    assertRunJSCompileInputLimits([
+      ...relocatedFiles,
+      {
+        path: RUNJS_MANIFEST_PATH,
+        content: '',
+      },
+    ]);
 
     const identity = buildRunJSSourceRepositoryIdentity(locator);
     const repository = await vscFileService.findRepositoryByIdentity(identity, vscContext);
@@ -252,15 +265,15 @@ export class DetachJsTemplateToInlineService {
       assertRepositoryIdentity(repository, identity);
     }
 
-    const entryPath = relocateEntryPath(input.entryPath);
+    const entryPath = relocateEntryPath(source.entryPath);
     const sourcePreparation = this.workspaceCompilerBridge.prepareEntry({
       projectId: input.projectId,
       templateId: input.templateId,
       operation: 'runtimeCompile',
-      kind: input.kind,
+      kind: source.kind,
       templateName: template.templateName,
       entryPath,
-      runtimeVersion: input.runtimeVersion,
+      runtimeVersion: source.runtimeVersion,
       files: relocatedFiles,
     });
     if (!sourcePreparation.accepted) {
@@ -354,6 +367,7 @@ export class DetachJsTemplateToInlineService {
     };
     return {
       locator,
+      source,
       entryPath,
       ownerFingerprint: legacy.ownerFingerprint,
       surfaceStyle: legacy.surfaceStyle,
@@ -366,7 +380,7 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async publishDetachJsTemplateToInline(
-    input: DetachJsTemplateToInlineServiceInput,
+    input: DetachJsTemplateToInlineInput,
     ctx: DetachJsTemplateToInlineServiceContext,
     prepared: PreparedDetachJsTemplateToInline,
     vscFileService: VscFileService,
@@ -395,17 +409,19 @@ export class DetachJsTemplateToInlineService {
 
     await adapter.assertCanWrite({ locator: prepared.locator, ctx: adapterContext });
     await lockFlowModel(this.db, prepared.locator.modelUid, transaction);
-    assertCurrentJsTemplateBinding(
+    requireCurrentJsTemplateBinding(
       await getFlowModel(this.db, prepared.locator.modelUid, transaction),
       prepared.locator,
       input,
+      prepared.source.kind,
     );
     const project = await this.projectService.lockInternalProjectForUpdate(input.projectId, serviceContext);
     assertExpectedProjectHead(project.headCommitId, input);
+    await lockJsTemplate(this.db, input.templateId, transaction);
     const template = await this.templateService.getTemplate(input.templateId, serviceContext);
-    assertCurrentTemplate(template, input);
+    assertServerOwnedJsTemplateSourceCurrent(template, prepared.source, input);
     const legacy = await adapter.readLegacy({ locator: prepared.locator, ctx: adapterContext });
-    if (!isDetachJsTemplateToInlineHostSupported(input.kind, legacy.metadata?.modelUse)) {
+    if (!isDetachJsTemplateToInlineHostSupported(prepared.source.kind, legacy.metadata?.modelUse)) {
       throw unsupportedLocator(prepared.locator);
     }
     if (legacy.ownerFingerprint !== prepared.ownerFingerprint || legacy.surfaceStyle !== prepared.surfaceStyle) {
@@ -425,10 +441,11 @@ export class DetachJsTemplateToInlineService {
       vscContext,
     );
 
-    assertCurrentJsTemplateBinding(
+    requireCurrentJsTemplateBinding(
       await getFlowModel(this.db, prepared.locator.modelUid, transaction),
       prepared.locator,
       input,
+      prepared.source.kind,
     );
     await adapter.writeRuntime({
       locator: prepared.locator,
@@ -443,7 +460,7 @@ export class DetachJsTemplateToInlineService {
       baseOwnerFingerprint: prepared.ownerFingerprint,
       ctx: adapterContext,
     });
-    await setFlowModelSourceModeInline(this.db, prepared.locator, input, transaction);
+    await setFlowModelSourceModeInline(this.db, prepared.locator, input, prepared.source.kind, transaction);
     const ownerFingerprint = await adapter.getFingerprint({ locator: prepared.locator, ctx: adapterContext });
     await updateRunJSCommitMetadata(
       this.db,
@@ -482,7 +499,8 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async recordDetachJsTemplateToInlineSuccessAudit(
-    input: DetachJsTemplateToInlineServiceInput,
+    input: DetachJsTemplateToInlineInput,
+    prepared: PreparedDetachJsTemplateToInline,
     result: DetachJsTemplateToInlineResult,
     ctx: DetachJsTemplateToInlineServiceContext,
     transaction: Transaction,
@@ -497,7 +515,7 @@ export class DetachJsTemplateToInlineService {
       details: {
         destinationType: 'inline',
         templateId: input.templateId,
-        kind: input.kind,
+        kind: prepared.source.kind,
         runJSRepoId: result.runJSRepoId,
       },
       transaction,
@@ -505,13 +523,13 @@ export class DetachJsTemplateToInlineService {
   }
 }
 
-export function collectAndRelocateInlineFiles(input: {
+export function collectAndRelocateInlineFiles(workspace: {
   files: SaveAsJsTemplateWorkspaceFile[];
   entryPath: string;
   kind?: JsTemplateKind;
 }): SaveAsJsTemplateWorkspaceFile[] {
   const sourceFiles = new Map<string, SaveAsJsTemplateWorkspaceFile>();
-  for (const file of input.files) {
+  for (const file of workspace.files) {
     const path = normalizeSourceWorkspacePath(file.path);
     if (sourceFiles.has(path)) {
       throw invalidInput(`Duplicate workspace path "${path}"`);
@@ -519,7 +537,7 @@ export function collectAndRelocateInlineFiles(input: {
     sourceFiles.set(path, { ...file, path });
   }
 
-  const entryPath = normalizeSourceWorkspacePath(input.entryPath);
+  const entryPath = normalizeSourceWorkspacePath(workspace.entryPath);
   const entryFile = sourceFiles.get(entryPath);
   if (!entryFile || !isSourceCodeFile(entryPath)) {
     throw invalidInput('JS Template source entry file is missing or invalid');
@@ -531,6 +549,7 @@ export function collectAndRelocateInlineFiles(input: {
     selectedPaths.add(descriptorPath);
   }
   const targetBySource = new Map<string, string>();
+  const targetPaths = new Set<string>();
   for (const sourcePath of selectedPaths) {
     const targetPath =
       sourcePath === entryPath
@@ -538,10 +557,11 @@ export function collectAndRelocateInlineFiles(input: {
         : sourcePath.startsWith(`${entryRoot}/`)
           ? `${RUNJS_ENTRY_ROOT}/${pathPosix.relative(entryRoot, sourcePath)}`
           : sourcePath;
-    if (Array.from(targetBySource.values()).includes(targetPath)) {
+    if (targetPaths.has(targetPath)) {
       throw invalidInput(`Workspace files collide after relocation at "${targetPath}"`);
     }
     targetBySource.set(sourcePath, targetPath);
+    targetPaths.add(targetPath);
   }
 
   return Array.from(selectedPaths)
@@ -557,7 +577,7 @@ export function collectAndRelocateInlineFiles(input: {
       return {
         ...sourceFile,
         path: targetPath,
-        content: rewriteJsTemplateTypeImportsForInline(targetPath, rewrittenSdkImports, input.kind),
+        content: rewriteJsTemplateTypeImportsForInline(targetPath, rewrittenSdkImports, workspace.kind),
       };
     });
 }
@@ -815,6 +835,16 @@ async function lockFlowModel(db: Database, modelUid: string, transaction: Transa
   });
 }
 
+async function lockJsTemplate(db: Database, templateId: string, transaction: Transaction): Promise<void> {
+  const template = await db.getCollection(JS_TEMPLATE_COLLECTIONS.templates).model.findByPk(templateId, {
+    transaction,
+    lock: transaction.LOCK.UPDATE,
+  });
+  if (!template) {
+    throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+  }
+}
+
 async function getFlowModel(db: Database, modelUid: string, transaction?: Transaction): Promise<JsonRecord> {
   const model = await getFlowModelRepository(db).findModelById(modelUid, {
     includeAsyncNode: true,
@@ -832,11 +862,12 @@ function getFlowModelRepository(db: Database): FlowModelRepositoryLike {
   return db.getCollection('flowModels').repository as unknown as FlowModelRepositoryLike;
 }
 
-function assertCurrentJsTemplateBinding(
+function requireCurrentJsTemplateBinding(
   model: JsonRecord,
   locator: FlowModelStepLocator,
-  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
-): void {
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  expectedKind?: JsTemplateKind,
+): JsTemplateRuntimeSourceBinding {
   const sourceRoot = getAtPath(model, [
     'stepParams',
     locator.flowKey,
@@ -853,27 +884,52 @@ function assertCurrentJsTemplateBinding(
   if (
     sourceBinding.projectId !== input.projectId ||
     sourceBinding.templateId !== input.templateId ||
-    sourceBinding.kind !== input.kind
+    (expectedKind !== undefined && sourceBinding.kind !== expectedKind)
   ) {
-    throw bindingOutdated(input);
+    throw bindingOutdated(input, expectedKind);
   }
+  return sourceBinding;
 }
 
-function assertCurrentTemplate(
+function deriveServerOwnedJsTemplateSource(
   template: Awaited<ReturnType<JsTemplateService['getTemplate']>>,
-  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'entryPath' | 'kind'>,
-): void {
+  binding: JsTemplateRuntimeSourceBinding,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+): ServerOwnedJsTemplateSource {
+  const runtimeVersion = template.runtimeArtifact?.runtimeVersion || template.runtimeVersion;
   if (
     template.id !== input.templateId ||
     template.projectId !== input.projectId ||
-    template.kind !== input.kind ||
-    normalizeSourceWorkspacePath(template.entryPath) !== normalizeSourceWorkspacePath(input.entryPath)
+    template.kind !== binding.kind ||
+    typeof runtimeVersion !== 'string' ||
+    !runtimeVersion.trim() ||
+    (template.runtimeArtifact !== null &&
+      normalizeSourceWorkspacePath(template.runtimeArtifact.entryPath) !==
+        normalizeSourceWorkspacePath(template.entryPath)) ||
+    (template.runtimeVersion !== null && template.runtimeVersion !== runtimeVersion)
   ) {
-    throw new JsTemplateError(
-      'JS_TEMPLATE_BINDING_OUTDATED',
-      'The selected JS Template changed before it could be detached to inline code',
-      { status: 409, details: input },
-    );
+    throw templateOutdated(input, binding.kind);
+  }
+  return {
+    binding,
+    entryPath: normalizeSourceWorkspacePath(template.entryPath),
+    kind: template.kind,
+    runtimeVersion,
+  };
+}
+
+function assertServerOwnedJsTemplateSourceCurrent(
+  template: Awaited<ReturnType<JsTemplateService['getTemplate']>>,
+  expected: ServerOwnedJsTemplateSource,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+): void {
+  const current = deriveServerOwnedJsTemplateSource(template, expected.binding, input);
+  if (
+    current.entryPath !== expected.entryPath ||
+    current.kind !== expected.kind ||
+    current.runtimeVersion !== expected.runtimeVersion
+  ) {
+    throw templateOutdated(input, expected.kind);
   }
 }
 
@@ -898,14 +954,41 @@ function assertExpectedProjectHead(
   );
 }
 
+function materializeCommittedSourceFiles(
+  snapshot: JsTemplatePullResult,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'expectedProjectHeadCommitId'>,
+): SaveAsJsTemplateWorkspaceFile[] {
+  if (snapshot.commit?.id !== input.expectedProjectHeadCommitId || !Array.isArray(snapshot.files)) {
+    throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'The exact JS Template source commit could not be read', {
+      status: 409,
+      details: input,
+    });
+  }
+
+  return snapshot.files.map((file) => {
+    if (typeof file.content !== 'string') {
+      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Committed JS Template source content is missing', {
+        details: { ...input, path: file.path },
+      });
+    }
+    return {
+      path: file.path,
+      content: file.content,
+      language: file.language,
+      mode: file.mode,
+    };
+  });
+}
+
 async function setFlowModelSourceModeInline(
   db: Database,
   locator: FlowModelStepLocator,
-  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  kind: JsTemplateKind,
   transaction: Transaction,
 ): Promise<void> {
   const model = await getFlowModel(db, locator.modelUid, transaction);
-  assertCurrentJsTemplateBinding(model, locator, input);
+  requireCurrentJsTemplateBinding(model, locator, input, kind);
   const stepParams = cloneRecord(model.stepParams);
   const step = cloneRecord(getAtPath(stepParams, [locator.flowKey, locator.stepKey]));
   setAtPath(stepParams, [locator.flowKey, locator.stepKey], step);
@@ -1023,19 +1106,6 @@ function assertDetachJsTemplateToInlineInputSupported(input: DetachJsTemplateToI
   return idempotencyKey;
 }
 
-function assertDetachJsTemplateToInlineServiceInput(
-  input: DetachJsTemplateToInlineInput | DetachJsTemplateToInlineServiceInput,
-): asserts input is DetachJsTemplateToInlineServiceInput {
-  if (
-    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).entryPath !== 'string' ||
-    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).kind !== 'string' ||
-    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).runtimeVersion !== 'string' ||
-    !Array.isArray((input as Partial<DetachJsTemplateToInlineServiceInput>).files)
-  ) {
-    throw invalidInput('Detach to inline source must be resolved by the server');
-  }
-}
-
 function createDetachJsTemplateToInlineOperationDescriptor(
   input: DetachJsTemplateToInlineInput,
   idempotencyKey: string,
@@ -1079,15 +1149,27 @@ function readDetachJsTemplateToInlineOperationResult(value: unknown): DetachJsTe
 }
 
 function bindingOutdated(
-  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  kind?: JsTemplateKind,
 ): JsTemplateError {
   return new JsTemplateError(
     'JS_TEMPLATE_BINDING_OUTDATED',
     'The RunJS source binding changed before it could be detached to inline code',
     {
       status: 409,
-      details: input,
+      details: { ...input, ...(kind ? { kind } : {}) },
     },
+  );
+}
+
+function templateOutdated(
+  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId'>,
+  kind: JsTemplateKind,
+): JsTemplateError {
+  return new JsTemplateError(
+    'JS_TEMPLATE_BINDING_OUTDATED',
+    'The selected JS Template changed before it could be detached to inline code',
+    { status: 409, details: { ...input, kind } },
   );
 }
 

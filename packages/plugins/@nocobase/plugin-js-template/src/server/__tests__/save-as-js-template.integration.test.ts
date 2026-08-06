@@ -15,6 +15,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { JsTemplateError } from '../../shared/errors';
 import type {
   JsTemplate,
+  JsTemplateRuntimeSourceBinding,
   SaveAsJsTemplateInput,
   SaveAsJsTemplateOriginBinding,
   JsTemplateProject,
@@ -1547,6 +1548,29 @@ describe('detach to inline integration', () => {
     headCommitId: 'commit_light',
   };
 
+  function createDetachCommitSourceReader(
+    files: Array<{ path: string; content: string; language?: string; mode?: string }> = [
+      { path: entry.entryPath, content: 'ctx.render(<div />);' },
+    ],
+  ) {
+    const pullCommit = vi.fn(async (input: { projectId: string; commitId: string; includeContent: string }) => ({
+      project: { ...detachProject, id: input.projectId, headCommitId: input.commitId },
+      commit: { id: input.commitId, projectId: input.projectId },
+      tree: { hash: 'source_tree', entryCount: files.length, byteSize: 100 },
+      unchanged: false,
+      files: files.map((file) => ({
+        pathHash: `path-${file.path}`,
+        pathLowerHash: `path-lower-${file.path}`,
+        blobHash: `blob-${file.path}`,
+        size: file.content.length,
+        language: file.language || 'typescript',
+        mode: file.mode || '100644',
+        ...file,
+      })),
+    }));
+    return { pullCommit };
+  }
+
   function createDetachJsTemplateToInlinePreflightFixture(
     options: {
       entry?: JsTemplate;
@@ -1556,6 +1580,9 @@ describe('detach to inline integration', () => {
       ensureError?: Error;
       projectHeadCommitId?: string;
       lockedProjectHeadCommitId?: string;
+      sourceFiles?: Array<{ path: string; content: string; language?: string; mode?: string }>;
+      hostBindingAfterPreparation?: JsTemplateRuntimeSourceBinding;
+      templateAfterPreparation?: JsTemplate;
     } = {},
   ) {
     const operationModel = createJsTemplateSourceOperationModel();
@@ -1576,11 +1603,29 @@ describe('detach to inline integration', () => {
         },
       },
     };
+    const lockedFlowModel = options.hostBindingAfterPreparation
+      ? {
+          ...flowModel,
+          stepParams: {
+            jsSettings: {
+              runJs: {
+                ...flowModel.stepParams.jsSettings.runJs,
+                sourceBinding: options.hostBindingAfterPreparation,
+              },
+            },
+          },
+        }
+      : flowModel;
     const db = {
       sequelize: { transaction },
       getCollection: () => ({
         model: { findByPk: vi.fn(async () => flowModel) },
-        repository: { findModelById: vi.fn(async () => flowModel), patch: vi.fn() },
+        repository: {
+          findModelById: vi.fn(async (_uid: string, readOptions?: { transaction?: Transaction }) =>
+            readOptions?.transaction ? lockedFlowModel : flowModel,
+          ),
+          patch: vi.fn(),
+        },
       }),
       getRepository: (name: string) => {
         if (name === 'jsTemplateSourceOperations') {
@@ -1589,9 +1634,12 @@ describe('detach to inline integration', () => {
         return { update: vi.fn() };
       },
     } as unknown as Database;
-    const getTemplate = vi.fn(async () => {
+    const getTemplate = vi.fn(async (_templateId: string, templateContext?: { transaction?: Transaction }) => {
       if (options.entryError) {
         throw options.entryError;
+      }
+      if (templateContext?.transaction && options.templateAfterPreparation) {
+        return options.templateAfterPreparation;
       }
       return options.entry || entry;
     });
@@ -1610,6 +1658,7 @@ describe('detach to inline integration', () => {
     });
     const findRepositoryByIdentity = vi.fn(async () => options.targetRepository || null);
     const pull = vi.fn(async () => ({ files: [] }));
+    const sourceReader = createDetachCommitSourceReader(options.sourceFiles);
     const ensureAndPush = vi.fn(async () => {
       if (options.ensureError) {
         throw options.ensureError;
@@ -1630,6 +1679,7 @@ describe('detach to inline integration', () => {
         })),
       } as never,
       { getTemplate } as never,
+      sourceReader as never,
       { prepareEntry } as never,
       { syncFlowModelUsagesForNodeTree: vi.fn() } as never,
       () =>
@@ -1663,6 +1713,7 @@ describe('detach to inline integration', () => {
       pull,
       ensureAndPush,
       prepareEntry,
+      pullSourceCommit: sourceReader.pullCommit,
     };
   }
 
@@ -1809,6 +1860,7 @@ describe('detach to inline integration', () => {
         lockInternalProjectForUpdate: vi.fn(async () => detachProject),
       } as never,
       { getTemplate: vi.fn(async () => entry) } as never,
+      createDetachCommitSourceReader() as never,
       {
         prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
           new JsTemplateWorkspaceCompilerBridge().prepareEntry(compileInput),
@@ -1869,6 +1921,8 @@ describe('detach to inline integration', () => {
           code: 'JS_TEMPLATE_SOURCE_ERROR',
           details: expect.objectContaining({ sourceCode: 'REPO_LIMIT_EXCEEDED' }),
         },
+        lockedProjectHeadCommitId: undefined,
+        transactionCalls: 0,
       },
       {
         label: 'allows a 200-file workspace when the relocated dependency closure fits with the manifest',
@@ -1879,41 +1933,26 @@ describe('detach to inline integration', () => {
             content: 'export const unused = true;\n',
           })),
         ],
-        expected: { code: 'JS_TEMPLATE_RUNTIME_UNAVAILABLE' },
+        expected: { code: 'JS_TEMPLATE_SOURCE_OUTDATED' },
+        lockedProjectHeadCommitId: 'commit_changed_after_source_read',
+        transactionCalls: 1,
       },
-    ])('$label before opening a database transaction', async ({ files, expected }) => {
-      const transaction = vi.fn();
-      const operationModel = createJsTemplateSourceOperationModel();
-      const service = new DetachJsTemplateToInlineService(
-        {
-          sequelize: { transaction },
-          getRepository: () => ({ model: operationModel.model }),
-        } as unknown as Database,
-        {} as never,
-        {} as never,
-        {} as never,
-        {} as never,
-        () => null,
-        () => null,
-      );
+    ])('$label', async ({ files, expected, lockedProjectHeadCommitId, transactionCalls }) => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({ sourceFiles: files, lockedProjectHeadCommitId });
 
       await expect(
-        service.detachToInline(
+        fixture.service.detachToInline(
           {
             idempotencyKey: 'detach-to-inline-file-limit',
             expectedProjectHeadCommitId: detachProject.headCommitId,
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files,
           },
           { adapterContext: {} },
         ),
       ).rejects.toMatchObject(expected);
-      expect(transaction).not.toHaveBeenCalled();
+      expect(fixture.transaction).toHaveBeenCalledTimes(transactionCalls);
     });
 
     it.each([
@@ -1944,7 +1983,7 @@ describe('detach to inline integration', () => {
         expectedCode: 'JS_TEMPLATE_VALIDATION_FAILED',
       },
     ])('does not create a RunJS repository for $label', async ({ options, files, expectedCode }) => {
-      const fixture = createDetachJsTemplateToInlinePreflightFixture(options);
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({ ...options, sourceFiles: files });
 
       await expect(
         fixture.service.detachToInline(
@@ -1954,10 +1993,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files,
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -1990,10 +2025,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2024,10 +2055,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2059,10 +2086,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2074,6 +2097,52 @@ describe('detach to inline integration', () => {
       expect(fixture.transaction).toHaveBeenCalledOnce();
       expect(fixture.ensureAndPush).not.toHaveBeenCalled();
       expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+    });
+
+    it('rejects a Host binding that changes after exact-commit source preparation', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({
+        hostBindingAfterPreparation: { ...binding, templateId: 'jtt_rebound' },
+      });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-host-binding-race',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+      expect(fixture.pullSourceCommit).toHaveBeenCalledOnce();
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+      expect(fixture.transaction).toHaveBeenCalledOnce();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+    });
+
+    it('rejects Template metadata that changes after exact-commit source preparation', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({
+        templateAfterPreparation: { ...entry, entryPath: 'src/client/js-blocks/sales/renamed.tsx' },
+      });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-template-metadata-race',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+      expect(fixture.pullSourceCommit).toHaveBeenCalledOnce();
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+      expect(fixture.transaction).toHaveBeenCalledOnce();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
 
     it('detaches a JS Page to Inline with its snapshot and settings while removing the active usage', async () => {
@@ -2273,6 +2342,22 @@ describe('detach to inline integration', () => {
       const getTemplate = vi.fn(async () => pageEntry);
       const recordLifecycleEvent = vi.fn(async () => undefined);
       const lockProject = vi.fn(async () => ({ ...detachProject, id: pageBinding.projectId }));
+      const sourceFiles = [
+        {
+          path: pageEntry.entryPath,
+          content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
+          language: 'tsx',
+          mode: '100755',
+        },
+        { path: pageEntry.descriptorPath, content: descriptorContent, language: 'json', mode: '100644' },
+        { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
+        { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
+        {
+          path: 'src/client/js-pages/sibling/index.tsx',
+          content: 'ctx.render("sibling");\n',
+        },
+      ];
+      const sourceReader = createDetachCommitSourceReader(sourceFiles);
       const service = new DetachJsTemplateToInlineService(
         db,
         {
@@ -2281,6 +2366,7 @@ describe('detach to inline integration', () => {
           lockInternalProjectForUpdate: lockProject,
         } as never,
         { getTemplate } as never,
+        sourceReader as never,
         compilerBridge,
         { syncFlowModelUsagesForNodeTree: syncUsages } as never,
         getVscFileService,
@@ -2295,18 +2381,6 @@ describe('detach to inline integration', () => {
         locator: pageLocator,
         projectId: pageBinding.projectId,
         templateId: pageBinding.templateId,
-        entryPath: pageEntry.entryPath,
-        kind: 'js-page' as const,
-        runtimeVersion: 'v2',
-        files: [
-          {
-            path: pageEntry.entryPath,
-            content: "import { used } from '../../../shared/used';\nctx.render(String(used));\n",
-          },
-          { path: pageEntry.descriptorPath, content: descriptorContent, language: 'json' },
-          { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
-          { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
-        ],
       };
       const serviceContext = {
         actorUserId: '1',
@@ -2319,15 +2393,7 @@ describe('detach to inline integration', () => {
       getTemplate.mockRejectedValue(new Error('source entry was deleted after the completed detach'));
       const deletedEntryReplay = await service.detachToInline(input, serviceContext);
 
-      await expect(
-        service.detachToInline(
-          {
-            ...input,
-            files: [...input.files, { path: 'src/shared/changed.ts', content: 'export const changed = true;\n' }],
-          },
-          serviceContext,
-        ),
-      ).resolves.toEqual(result);
+      await expect(service.detachToInline(input, serviceContext)).resolves.toEqual(result);
       assertCanWrite.mockRejectedValueOnce(new Error('replay host permission denied'));
       await expect(service.detachToInline(input, serviceContext)).rejects.toThrow('replay host permission denied');
 
@@ -2342,6 +2408,7 @@ describe('detach to inline integration', () => {
         }),
       );
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/shared/unused.ts');
+      expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/client/js-pages/sibling/index.tsx');
       expect(prepareEntry).toHaveBeenCalledOnce();
       expect(compileEntry).not.toHaveBeenCalled();
       expect(ensureAndPush).toHaveBeenCalledWith(
@@ -2497,6 +2564,15 @@ describe('detach to inline integration', () => {
       expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));
       expect(assertApplicationOwnership).toHaveBeenCalledTimes(4);
       expect(getTemplate).toHaveBeenCalledTimes(2);
+      expect(sourceReader.pullCommit).toHaveBeenCalledWith(
+        {
+          projectId: pageBinding.projectId,
+          commitId: pageEntry.compiledCommitId,
+          includeContent: 'all',
+        },
+        expect.not.objectContaining({ transaction: expect.anything() }),
+      );
+      expect(sourceReader.pullCommit).toHaveBeenCalledOnce();
       expect(vscFileService.getRepository).toHaveBeenCalledTimes(3);
       expect(operationModel.getValues()).toMatchObject({ status: 'completed', result });
       expect(operationModel.model.update).toHaveBeenCalledWith(
@@ -2549,10 +2625,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2690,6 +2762,7 @@ describe('detach to inline integration', () => {
           lockInternalProjectForUpdate: vi.fn(async () => detachProject),
         } as never,
         { getTemplate: vi.fn(async () => entry) } as never,
+        createDetachCommitSourceReader([{ path: entry.entryPath, content: 'ctx.render("inline");' }]) as never,
         {
           prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
             new JsTemplateWorkspaceCompilerBridge().prepareEntry(compileInput),
@@ -2710,10 +2783,6 @@ describe('detach to inline integration', () => {
         locator,
         projectId: binding.projectId,
         templateId: binding.templateId,
-        entryPath: entry.entryPath,
-        kind: 'js-block' as const,
-        runtimeVersion: 'v2',
-        files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
       };
 
       const outcomes = await Promise.allSettled([
@@ -2900,6 +2969,9 @@ describe('detach to inline integration', () => {
           lockInternalProjectForUpdate: vi.fn(async () => detachProject),
         } as never,
         { getTemplate: vi.fn(async () => entry) } as never,
+        createDetachCommitSourceReader([
+          { path: entry.entryPath, content: 'ctx.render("inline after detach");' },
+        ]) as never,
         {
           prepareEntry: vi.fn((compileInput: JsTemplateWorkspaceCompileInput) =>
             new JsTemplateWorkspaceCompilerBridge().prepareEntry(compileInput),
@@ -2918,10 +2990,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render("inline after detach");' }],
           },
           { actorUserId: '1', adapterContext: {} },
         ),
@@ -2978,6 +3046,7 @@ describe('detach to inline integration', () => {
         db,
         { assertApplicationOwnership: vi.fn(async () => undefined) } as never,
         { getTemplate: vi.fn() } as never,
+        createDetachCommitSourceReader() as never,
         { prepareEntry: vi.fn() } as never,
         { syncFlowModelUsagesForNodeTree: vi.fn() } as never,
         () => ({}) as VscFileService,
@@ -2998,10 +3067,6 @@ describe('detach to inline integration', () => {
             locator,
             projectId: binding.projectId,
             templateId: binding.templateId,
-            entryPath: entry.entryPath,
-            kind: 'js-block',
-            runtimeVersion: 'v2',
-            files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { adapterContext: {} },
         ),

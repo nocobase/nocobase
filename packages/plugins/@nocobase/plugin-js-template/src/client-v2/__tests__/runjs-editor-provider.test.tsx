@@ -29,7 +29,6 @@ import { resolveInlineJsTemplateWorkspaceJsonSchema } from '../workspace/jsTempl
 
 const workspacePageMockState = vi.hoisted(() => ({
   detachToInlineCompleted: false,
-  detachToInlineCode: 'ctx.render(<div>working copy</div>);',
 }));
 
 vi.mock('../pages/JsTemplateWorkspacePage', () => {
@@ -47,12 +46,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
     initialPath?: string;
     workspaceScope?: { kind?: string };
     templateId?: string | null;
-    onDetachJsTemplateToInline?: (input: {
-      expectedProjectHeadCommitId: string;
-      entryPath: string;
-      files: Array<{ path: string; content: string }>;
-      version: string;
-    }) => void | Promise<void>;
+    onDetachJsTemplateToInline?: (input: { expectedProjectHeadCommitId: string }) => void | Promise<void>;
     onPreview?: (artifact: { code: string; runtimeVersion: string; entryPath: string }) => void | Promise<void>;
     onRequestClose?: () => void | Promise<void>;
     onSaved?: () => void | Promise<void>;
@@ -65,12 +59,6 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
       try {
         await onDetachJsTemplateToInline?.({
           expectedProjectHeadCommitId: 'project_head_1',
-          entryPath: initialPath || '',
-          files: [
-            { path: initialPath || '', content: workspacePageMockState.detachToInlineCode },
-            { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
-          ],
-          version: 'v2',
         });
         workspacePageMockState.detachToInlineCompleted = true;
       } catch {
@@ -466,7 +454,6 @@ describe('RunJSJsTemplateEditorProvider', () => {
     };
 
     workspacePageMockState.detachToInlineCompleted = false;
-    workspacePageMockState.detachToInlineCode = 'ctx.render(<div>working copy</div>);';
     render(
       <EditorViewHarness api={api} onClose={onClose}>
         {provider.renderEditor({
@@ -528,7 +515,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     expect(runtimeInvalidator.invalidateProject).toHaveBeenCalledWith('jtp_example');
   });
 
-  it('reuses the detach-to-inline key when only the local working copy changes', async () => {
+  it('reuses the detach-to-inline key when retrying the same committed Head', async () => {
     const provider = createJsTemplateRunJSEditorProvider();
     const onPersistedChange = vi.fn();
     const onClose = vi.fn();
@@ -567,7 +554,6 @@ describe('RunJSJsTemplateEditorProvider', () => {
     };
 
     workspacePageMockState.detachToInlineCompleted = false;
-    workspacePageMockState.detachToInlineCode = 'ctx.render(<div>working copy</div>);';
     render(
       <EditorViewHarness api={api} onClose={onClose}>
         {provider.renderEditor({
@@ -597,7 +583,6 @@ describe('RunJSJsTemplateEditorProvider', () => {
         vi.mocked(api.request).mock.calls.filter(([options]) => options.url === 'jsTemplates:detachToInline'),
       ).toHaveLength(2);
     });
-    workspacePageMockState.detachToInlineCode = 'ctx.render(<div>changed working copy</div>);';
     fireEvent.click(screen.getByRole('button', { name: 'detach workspace to Inline' }));
     await waitFor(() => {
       expect(
