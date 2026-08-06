@@ -21,6 +21,7 @@ import { createFormItemRecordSlotResolvers } from './variables/form-item-record-
 import { createBuiltInRecordSlotResolvers } from './variables/record-slot-policy';
 import { getRecordSlotResolverRegistry } from './variables/record-slot-resolvers';
 import {
+  isLegacyVariableTemplateSafe,
   resolveAnalyzedVariablesBatch,
   resolveAnalyzedVariablesTemplate,
   resolveFlowModelVariablesTemplate,
@@ -66,6 +67,10 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   ) {
     this.ensureRecordSlotResolvers(ctx.app);
     return await resolveFlowModelVariablesTemplate(ctx, options);
+  }
+
+  isLegacyVariableTemplateSafe(template: JSONValue) {
+    return isLegacyVariableTemplateSafe(template);
   }
 
   async load() {

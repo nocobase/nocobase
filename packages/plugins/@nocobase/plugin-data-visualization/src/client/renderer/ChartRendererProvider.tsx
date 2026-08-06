@@ -116,6 +116,8 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
             dataSource,
             collection,
             ...queryWithFilter,
+            mode: props.mode ?? 'builder',
+            variableResolution: 'legacy-schema',
             filter: removeUnparsableFilter(queryWithFilter.filter),
             dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
               const dimension = { ...item };

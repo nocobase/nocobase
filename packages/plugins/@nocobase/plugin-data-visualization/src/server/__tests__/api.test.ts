@@ -21,6 +21,7 @@ describe('api', () => {
   let memberToken: string;
   let rootToken: string;
   let designerToken: string;
+  let limitedToken: string;
 
   const insertChartModel = async (uid: string, template: unknown) => {
     const repository = db.getCollection('flowModels').repository as FlowModelRepository;
@@ -96,14 +97,26 @@ describe('api', () => {
         strategy: { actions: ['view'] },
       },
     });
+    await db.getRepository('roles').create({
+      values: {
+        name: 'chart-limited',
+        strategy: { actions: ['view'] },
+      },
+    });
     for (const roleName of ['member', 'chart-designer']) {
       const role = app.acl.getRole(roleName) || app.acl.define({ role: roleName });
       role.grantAction('chart_test:view', {});
     }
+    const limitedRole = app.acl.getRole('chart-limited') || app.acl.define({ role: 'chart-limited' });
+    limitedRole.grantAction('chart_test:view', {
+      fields: ['id', 'price', 'title'],
+      filter: { id: { $eq: 1 } },
+    });
     const users = db.getRepository('users');
     const root = await users.findOne();
     const member = await users.create({ values: { nickname: 'Chart member', roles: ['member'] } });
     const designer = await users.create({ values: { nickname: 'Chart designer', roles: ['chart-designer'] } });
+    const limited = await users.create({ values: { nickname: 'Chart limited', roles: ['chart-limited'] } });
 
     rootToken = await app.authManager.jwt.sign({ userId: root.id, roleName: 'root', signInTime: 'chart-root' });
     memberToken = await app.authManager.jwt.sign({
@@ -115,6 +128,11 @@ describe('api', () => {
       userId: designer.id,
       roleName: 'chart-designer',
       signInTime: 'chart-designer',
+    });
+    limitedToken = await app.authManager.jwt.sign({
+      userId: limited.id,
+      roleName: 'chart-limited',
+      signInTime: 'chart-limited',
     });
   });
 
@@ -218,6 +236,89 @@ describe('api', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.data.map((row: { Title: string }) => row.Title).sort()).toEqual(['title1', 'title2']);
+  });
+
+  test('supports explicit legacy 1.x builder requests without rd', async () => {
+    const response = await requestChart(memberToken, 'member', {
+      collection: 'chart_test',
+      dataSource: 'main',
+      dimensions: [{ alias: 'Title', field: ['title'] }],
+      measures: [{ alias: 'Price', field: ['price'] }],
+      mode: 'builder',
+      variableResolution: 'legacy-schema',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data.map((row: { Title: string }) => row.Title).sort()).toEqual(['title1', 'title2']);
+  });
+
+  test('keeps row-level ACL filters in the explicit legacy lane', async () => {
+    const response = await requestChart(limitedToken, 'chart-limited', {
+      collection: 'chart_test',
+      dataSource: 'main',
+      dimensions: [{ alias: 'Title', field: ['title'] }],
+      measures: [{ alias: 'Price', field: ['price'] }],
+      mode: 'builder',
+      variableResolution: 'legacy-schema',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.data).toEqual([expect.objectContaining({ Title: 'title1' })]);
+  });
+
+  test('keeps the legacy lane closed to Record descriptors and ctx paths', async () => {
+    const query = vi.spyOn(repo, 'query');
+    const base = {
+      collection: 'chart_test',
+      dataSource: 'main',
+      dimensions: [{ alias: 'Title', field: ['title'] }],
+      measures: [{ alias: 'Price', field: ['price'] }],
+      mode: 'builder',
+      variableResolution: 'legacy-schema',
+    };
+
+    const withRecord = await requestChart(memberToken, 'member', {
+      ...base,
+      contextParams: { 'view.record': { collection: 'chart_test', filterByTk: 1 } },
+    });
+    const withCtxPath = await requestChart(memberToken, 'member', {
+      ...base,
+      filter: { id: { $eq: '{{ ctx.user.id }}' } },
+    });
+
+    expect(withRecord.body.data).toEqual([]);
+    expect(withCtxPath.body.data).toEqual([]);
+    expect(query).not.toHaveBeenCalled();
+    query.mockRestore();
+  });
+
+  test('fails closed when resolved record data contains an unsupported second-stage template', async () => {
+    const uid = 'chart-secondary-unsupported-template';
+    const filter = { title: { $eq: '{{ ctx.view.record.title }}' } };
+    await insertChartModel(uid, { filter });
+    await repo.update({ filterByTk: 1, values: { title: '{{ ctx.other() }}' } });
+    const query = vi.spyOn(repo, 'query');
+
+    try {
+      const response = await requestChart(memberToken, 'member', {
+        collection: 'chart_test',
+        contextParams: {
+          'view.record': { collection: 'chart_test', dataSourceKey: 'main', filterByTk: 1 },
+        },
+        dataSource: 'main',
+        dimensions: [{ alias: 'Title', field: ['title'] }],
+        filter,
+        measures: [{ alias: 'Price', field: ['price'] }],
+        mode: 'builder',
+        rd: generateFlowModelRdFromToken(uid, memberToken),
+      });
+
+      expect(response.body.data).toEqual([]);
+      expect(query).not.toHaveBeenCalled();
+    } finally {
+      query.mockRestore();
+      await repo.update({ filterByTk: 1, values: { title: 'title1' } });
+    }
   });
 
   test.each([
