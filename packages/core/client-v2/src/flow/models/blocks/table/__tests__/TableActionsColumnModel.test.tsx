@@ -65,6 +65,10 @@ class TestTextActionModel extends ActionModel {
   defaultProps: any = { type: 'text', title: 'Text action' };
 }
 
+class TestPrimaryActionModel extends ActionModel {
+  defaultProps: any = { type: 'primary', title: 'View' };
+}
+
 // 在 beforeRender 中，根据 inputArgs（即当前行 record）决定是否隐藏按钮
 TestViewActionModel.registerFlow({
   key: 'autoHideByPhone',
@@ -213,6 +217,49 @@ describe('TableActionsColumnModel: hidden action layout', () => {
     expect(actionButtonStyleText).toContain('box-shadow:none');
     expect(actionButtonStyleText).not.toContain('1.5714285714285714');
     expect(actionButtonStyleText).not.toContain('!important');
+  });
+
+  it('renders primary row actions with compact filled button padding', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestPrimaryActionModel, TestViewActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestPrimaryActionModel' }, { use: 'TestViewActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '000000' } as any;
+
+    const { container } = render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{colProps.render?.(undefined, record, 0) as any}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('View').length).toBe(2);
+    });
+
+    const actions = container.querySelector('.nb-table-row-actions');
+    const primaryButton = actions?.querySelector('.ant-btn-primary') as HTMLButtonElement;
+    const linkButton = actions?.querySelector('.ant-btn-link') as HTMLButtonElement;
+
+    expect(primaryButton).toBeInTheDocument();
+    expect(linkButton).toBeInTheDocument();
+    expect(primaryButton).toHaveClass('nb-table-row-action-button');
+    expect(linkButton).toHaveClass('nb-table-row-action-button');
+
+    const filledButtonStyleText = Array.from(document.querySelectorAll('style'))
+      .map((style) => style.textContent || '')
+      .find((styleText) => styleText.includes('.nb-table-row-action-button.ant-btn-primary'));
+    expect(filledButtonStyleText).toContain('padding-block:var(--ant-padding-xxs)');
+    expect(filledButtonStyleText).toContain('padding-inline:var(--ant-padding-sm)');
+    expect(filledButtonStyleText).toContain('border-radius:var(--ant-border-radius-lg)');
+    expect(filledButtonStyleText).not.toContain('padding:0');
   });
 });
 
