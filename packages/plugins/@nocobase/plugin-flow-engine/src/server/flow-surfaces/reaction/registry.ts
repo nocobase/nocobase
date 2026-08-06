@@ -94,6 +94,7 @@ export const FLOW_SURFACE_REACTION_SUPPORTED_KINDS_BY_USE = {
   JSRecordActionModel: ['actionLinkage'],
   JSFormActionModel: ['actionLinkage'],
   JSItemActionModel: ['actionLinkage'],
+  AIEmployeeButtonModel: ['actionLinkage'],
   FilterFormJSActionModel: ['actionLinkage'],
   JSActionModel: ['actionLinkage'],
   CalendarTodayActionModel: ['actionLinkage'],
