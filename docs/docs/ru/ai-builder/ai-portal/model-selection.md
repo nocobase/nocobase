@@ -6,5 +6,3 @@ description: "Руководство по выбору модели для со�
 # Выбор модели
 
 The localized content will be added after the Chinese version is confirmed.
-
-[Read the Chinese version](/cn/ai-builder/ai-portal/model-selection/)

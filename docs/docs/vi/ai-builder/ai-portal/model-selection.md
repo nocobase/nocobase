@@ -6,5 +6,3 @@ description: "Hướng dẫn lựa chọn mô hình khi xây dựng ứng dụng
 # Lựa chọn mô hình
 
 The localized content will be added after the Chinese version is confirmed.
-
-[Read the Chinese version](/cn/ai-builder/ai-portal/model-selection/)

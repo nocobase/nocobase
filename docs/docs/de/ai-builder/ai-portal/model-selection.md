@@ -6,5 +6,3 @@ description: "Leitfaden zur Modellauswahl beim Erstellen von NocoBase-Anwendunge
 # Modellauswahl
 
 The localized content will be added after the Chinese version is confirmed.
-
-[Read the Chinese version](/cn/ai-builder/ai-portal/model-selection/)
