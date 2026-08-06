@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { createJsTemplateWorkspaceFromRunJS } from '../services/SaveAsJsTemplateService';
-import { collectAndRelocateInlineFiles } from '../services/DetachJsTemplateToInlineService';
+import { collectAndRelocateInlineFiles } from '../services/conversion/jsTemplateToInlineWorkspace';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 
 // Old case -> new owner:

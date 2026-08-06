@@ -10,7 +10,7 @@
 import { compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
 import { describe, expect, it } from 'vitest';
 
-import { collectAndRelocateInlineFiles } from '../services/DetachJsTemplateToInlineService';
+import { collectAndRelocateInlineFiles } from '../services/conversion/jsTemplateToInlineWorkspace';
 
 describe('detach ImportType integration', () => {
   it('copies and rewrites the reachable type closure into a compilable inline workspace', async () => {

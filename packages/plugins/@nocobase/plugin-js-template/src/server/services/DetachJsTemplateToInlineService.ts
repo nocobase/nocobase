@@ -27,7 +27,6 @@ import {
   VscFileService,
 } from '../vsc-file/public-api';
 import { createHash, randomUUID } from 'crypto';
-import { posix as pathPosix } from 'path';
 
 import type {
   DetachJsTemplateToInlineInput,
@@ -53,20 +52,13 @@ import {
   type JsTemplateSourceOperationReservation,
 } from './JsTemplateSourceOperationStore';
 import { JsTemplateWorkspaceCompilerBridge } from './JsTemplateWorkspaceCompilerBridge';
-import { rewriteJsTemplateAuthoringImports } from './conversion/jsTemplateAuthoringImports';
 import {
-  buildRelativeSourceCandidatePaths,
-  collectRelativeModuleReferences,
-  isSourceCodeFile,
-  normalizeSourceWorkspacePath,
-  resolveRelativeSourcePath,
-  rewriteRelativeImports,
-} from './sourceRelocation';
+  buildJsTemplateInlineOverwriteChanges,
+  convertJsTemplateToInlineWorkspace,
+  createRunJSInlineManifestFile,
+} from './conversion/jsTemplateToInlineWorkspace';
+import { normalizeSourceWorkspacePath } from './sourceRelocation';
 
-const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
-const RUNJS_ENTRY_ROOT = 'src/client';
-const JS_TEMPLATE_SHARED_ROOT = 'src/shared';
-const JS_TEMPLATE_DESCRIPTOR_FILE = 'entry.json';
 const UNSAFE_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 type AdapterRegistryProvider = () => RunJSSourceAdapterRegistry | null;
@@ -241,18 +233,18 @@ export class DetachJsTemplateToInlineService {
       serviceContext,
     );
     const sourceFiles = materializeCommittedSourceFiles(sourceSnapshot, input);
-    const relocatedFiles = collectAndRelocateInlineFiles({
+    const inlineWorkspace = convertJsTemplateToInlineWorkspace({
       files: sourceFiles,
       entryPath: source.entryPath,
       kind: source.kind,
+      runtimeVersion: source.runtimeVersion,
     });
-    assertRunJSCompileInputLimits([
-      ...relocatedFiles,
-      {
-        path: RUNJS_MANIFEST_PATH,
-        content: '',
-      },
-    ]);
+    const inlineManifest = createRunJSInlineManifestFile({
+      entryPath: inlineWorkspace.entryPath,
+      runtimeVersion: inlineWorkspace.runtimeVersion,
+      surfaceStyle: legacy.surfaceStyle,
+    });
+    assertRunJSCompileInputLimits([...inlineWorkspace.files, { ...inlineManifest, content: '' }]);
 
     const identity = buildRunJSSourceRepositoryIdentity(locator);
     const repository = await vscFileService.findRepositoryByIdentity(identity, vscContext);
@@ -260,7 +252,7 @@ export class DetachJsTemplateToInlineService {
       assertRepositoryIdentity(repository, identity);
     }
 
-    const entryPath = relocateEntryPath(source.entryPath);
+    const entryPath = inlineWorkspace.entryPath;
     const sourcePreparation = this.workspaceCompilerBridge.prepareEntry({
       projectId: input.projectId,
       templateId: input.templateId,
@@ -268,8 +260,8 @@ export class DetachJsTemplateToInlineService {
       kind: source.kind,
       templateName: template.templateName,
       entryPath,
-      runtimeVersion: source.runtimeVersion,
-      files: relocatedFiles,
+      runtimeVersion: inlineWorkspace.runtimeVersion,
+      files: inlineWorkspace.files,
     });
     if (!sourcePreparation.accepted) {
       throw new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source could not be compiled', {
@@ -295,12 +287,14 @@ export class DetachJsTemplateToInlineService {
         language: file.language,
       };
     });
-    const desiredFiles = withRunJSManifest(
-      sourceInputFiles,
-      entryPath,
-      sourcePreparation.runtimeVersion,
-      legacy.surfaceStyle,
-    );
+    const desiredFiles = [
+      ...sourceInputFiles,
+      createRunJSInlineManifestFile({
+        entryPath,
+        runtimeVersion: sourcePreparation.runtimeVersion,
+        surfaceStyle: legacy.surfaceStyle,
+      }),
+    ];
     const targetBaseFiles = repository
       ? (
           await vscFileService.pull(
@@ -340,7 +334,7 @@ export class DetachJsTemplateToInlineService {
         },
       });
     }
-    const commitChanges = buildOverwriteChanges(targetBaseFiles || [], candidateWorkspaceFiles);
+    const commitChanges = buildJsTemplateInlineOverwriteChanges(targetBaseFiles || [], candidateWorkspaceFiles);
     const artifact: RunJSRuntimeArtifact = {
       ...compileResult.artifact,
       entryPath,
@@ -506,195 +500,6 @@ export class DetachJsTemplateToInlineService {
   }
 }
 
-export function collectAndRelocateInlineFiles(workspace: {
-  files: SaveAsJsTemplateWorkspaceFile[];
-  entryPath: string;
-  kind?: JsTemplateKind;
-}): SaveAsJsTemplateWorkspaceFile[] {
-  const sourceFiles = new Map<string, SaveAsJsTemplateWorkspaceFile>();
-  for (const file of workspace.files) {
-    const path = normalizeSourceWorkspacePath(file.path);
-    if (sourceFiles.has(path)) {
-      throw invalidInput(`Duplicate workspace path "${path}"`);
-    }
-    sourceFiles.set(path, { ...file, path });
-  }
-
-  const entryPath = normalizeSourceWorkspacePath(workspace.entryPath);
-  const entryFile = sourceFiles.get(entryPath);
-  if (!entryFile || !isSourceCodeFile(entryPath)) {
-    throw invalidInput('JS Template source entry file is missing or invalid');
-  }
-  const entryRoot = pathPosix.dirname(entryPath);
-  const selectedPaths = collectReachablePaths(sourceFiles, entryPath, entryRoot);
-  const descriptorPath = `${entryRoot}/${JS_TEMPLATE_DESCRIPTOR_FILE}`;
-  if (sourceFiles.has(descriptorPath)) {
-    selectedPaths.add(descriptorPath);
-  }
-  const targetBySource = new Map<string, string>();
-  const targetPaths = new Set<string>();
-  for (const sourcePath of selectedPaths) {
-    const targetPath =
-      sourcePath === entryPath
-        ? relocateEntryPath(entryPath)
-        : sourcePath.startsWith(`${entryRoot}/`)
-          ? `${RUNJS_ENTRY_ROOT}/${pathPosix.relative(entryRoot, sourcePath)}`
-          : sourcePath;
-    if (targetPaths.has(targetPath)) {
-      throw invalidInput(`Workspace files collide after relocation at "${targetPath}"`);
-    }
-    targetBySource.set(sourcePath, targetPath);
-    targetPaths.add(targetPath);
-  }
-
-  return Array.from(selectedPaths)
-    .sort((left, right) => left.localeCompare(right))
-    .map((sourcePath) => {
-      const sourceFile = sourceFiles.get(sourcePath);
-      const targetPath = targetBySource.get(sourcePath);
-      if (!sourceFile || !targetPath) {
-        throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Inline source relocation failed');
-      }
-      const rewrittenImports = rewriteRelativeImports(sourceFile.content, sourcePath, targetPath, targetBySource);
-      const rewrittenAuthoringImports = rewriteJsTemplateAuthoringImports(targetPath, rewrittenImports);
-      if (rewrittenAuthoringImports.diagnostics.length > 0) {
-        throw new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source contains invalid authoring imports', {
-          status: 422,
-          details: {
-            failureCode: 'JS_TEMPLATE_COMPILE_DENIED',
-            diagnostics: rewrittenAuthoringImports.diagnostics,
-          },
-        });
-      }
-      return {
-        ...sourceFile,
-        path: targetPath,
-        content: rewrittenAuthoringImports.content,
-      };
-    });
-}
-
-function collectReachablePaths(
-  files: Map<string, SaveAsJsTemplateWorkspaceFile>,
-  entryPath: string,
-  entryRoot: string,
-): Set<string> {
-  const selected = new Set<string>();
-  const pending = [entryPath];
-
-  while (pending.length) {
-    const path = pending.shift();
-    if (!path || selected.has(path)) {
-      continue;
-    }
-    selected.add(path);
-    const file = files.get(path);
-    if (!file || !isSourceCodeFile(path)) {
-      continue;
-    }
-
-    for (const reference of collectRelativeModuleReferences(path, file.content)) {
-      const importedPath = resolveRelativeSourcePath(path, reference.specifier, (candidate) => files.has(candidate));
-      if (!importedPath) {
-        throw unresolvedStaticReference(path, reference);
-      }
-      if (!isAllowedEntryDependency(importedPath, entryRoot)) {
-        throw invalidInput(`Entry imports a file outside its own directory or ${JS_TEMPLATE_SHARED_ROOT}`);
-      }
-      if (!selected.has(importedPath)) {
-        pending.push(importedPath);
-      }
-    }
-  }
-
-  return selected;
-}
-
-function unresolvedStaticReference(
-  importer: string,
-  reference: ReturnType<typeof collectRelativeModuleReferences>[number],
-): JsTemplateError {
-  const candidatePaths = buildRelativeSourceCandidatePaths(importer, reference.specifier);
-  return new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source contains an unresolved static import', {
-    status: 422,
-    details: {
-      failureCode: 'RUNJS_IMPORT_NOT_FOUND',
-      diagnostics: [
-        {
-          severity: 'error',
-          code: 'RUNJS_IMPORT_NOT_FOUND',
-          path: importer,
-          line: reference.line,
-          column: reference.column,
-          message: `Import "${reference.specifier}" could not be resolved`,
-          details: {
-            importer,
-            specifier: reference.specifier,
-            candidatePaths,
-            kind: reference.typeOnly ? 'type' : 'runtime',
-          },
-        },
-      ],
-    },
-  });
-}
-
-function isAllowedEntryDependency(path: string, entryRoot: string): boolean {
-  return path === entryRoot || path.startsWith(`${entryRoot}/`) || path.startsWith(`${JS_TEMPLATE_SHARED_ROOT}/`);
-}
-
-function relocateEntryPath(entryPath: string): string {
-  return `${RUNJS_ENTRY_ROOT}/index${pathPosix.extname(normalizeSourceWorkspacePath(entryPath))}`;
-}
-
-function withRunJSManifest(
-  files: SaveAsJsTemplateWorkspaceFile[],
-  entryPath: string,
-  runtimeVersion: string,
-  surfaceStyle: string,
-): SaveAsJsTemplateWorkspaceFile[] {
-  return [
-    ...files,
-    {
-      path: RUNJS_MANIFEST_PATH,
-      content: `${JSON.stringify(
-        {
-          schemaVersion: 1,
-          entry: entryPath,
-          runtimeVersion,
-          surfaceStyle,
-          compiler: {
-            module: 'virtual-esm',
-            jsx: true,
-          },
-        },
-        null,
-        2,
-      )}\n`,
-      language: 'json',
-    },
-  ];
-}
-
-function buildOverwriteChanges(
-  currentFiles: Array<{ path: string }>,
-  desiredFiles: SaveAsJsTemplateWorkspaceFile[],
-): VscFileChange[] {
-  const desiredPaths = new Set(desiredFiles.map((file) => file.path));
-  return [
-    ...desiredFiles.map((file) => ({
-      ...file,
-      operation: 'upsert' as const,
-    })),
-    ...currentFiles
-      .filter((file) => !desiredPaths.has(file.path))
-      .map((file) => ({
-        path: file.path,
-        operation: 'delete' as const,
-      })),
-  ].sort((left, right) => left.path.localeCompare(right.path));
-}
-
 function requireFlowModelStepLocator(locator: RunJSSourceLocator): FlowModelStepLocator {
   if (locator.kind !== 'flowModel.step') {
     throw unsupportedLocator(locator);
@@ -702,8 +507,8 @@ function requireFlowModelStepLocator(locator: RunJSSourceLocator): FlowModelStep
   return locator;
 }
 
-export function isDetachJsTemplateToInlineHostSupported(kind: string, modelUse: unknown): boolean {
-  if (kind === 'runjs' || typeof modelUse !== 'string') {
+export function isDetachJsTemplateToInlineHostSupported(kind: JsTemplateKind, modelUse: unknown): boolean {
+  if (typeof modelUse !== 'string') {
     return false;
   }
   return getUsageOwnerAdapterByUse(modelUse)?.kind === kind;

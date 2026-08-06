@@ -11,10 +11,10 @@ import { collectStaticModuleReferences } from '@nocobase/runjs/compiler';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-import { collectAndRelocateInlineFiles } from '../services/DetachJsTemplateToInlineService';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 import { JS_TEMPLATE_SDK_CLIENT_IMPORT } from '../services/conversion/jsTemplateAuthoringImports';
+import { collectAndRelocateInlineFiles } from '../services/conversion/jsTemplateToInlineWorkspace';
 
 const settingsImport = 'js-template:settings/client/js-page/orders';
 const entryPath = 'src/client/js-pages/orders/index.tsx';

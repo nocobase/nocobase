@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { JsTemplateError } from '../../shared/errors';
-import { collectAndRelocateInlineFiles } from '../services/DetachJsTemplateToInlineService';
+import { collectAndRelocateInlineFiles } from '../services/conversion/jsTemplateToInlineWorkspace';
 import { collectRelativeModuleReferences, rewriteRelativeImports } from '../services/sourceRelocation';
 
 describe('JS Template static source relocation', () => {
