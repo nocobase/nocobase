@@ -92,8 +92,14 @@ export {
   isCtxDatePathPrefix,
   isCtxDateExpression,
   parseCtxDateExpression,
+  parseCtxDateExpressionConfig,
   resolveCtxDatePath,
+  serializeCtxDateExpressionConfig,
   serializeCtxDateValue,
+  type CtxDateExpressionConfig,
+  type CtxDatePreset,
+  type CtxDateRelativeDirection,
+  type CtxDateRelativeUnit,
 } from './dateVariable';
 
 // 安全全局对象（window/document）
