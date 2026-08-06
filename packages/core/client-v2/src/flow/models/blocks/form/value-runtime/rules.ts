@@ -83,6 +83,15 @@ type ToManyAggregateSourceInfo = {
   lastWrite?: FormValueWriteMeta;
 };
 
+type RuntimeItemChain = {
+  index?: number;
+  length?: number;
+  __is_new__?: boolean;
+  __is_stored__?: boolean;
+  value: unknown;
+  parentItem?: RuntimeItemChain;
+};
+
 export type RuleEngineOptions = {
   getBlockModelUid: () => string;
   getActionName: () => string | undefined;
@@ -2038,7 +2047,7 @@ export class RuleEngine {
     // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
     // 计算顺序：
     // 1) 优先按 targetNamePath 从 formValues 构建“关联链 item”
-    // 2) 若无法构建（例如目标字段是顶层路径），回退到上游显式注入的 baseCtx.item
+    // 2) 若无法构建（例如目标字段是顶层非关联字段），回退到上游显式注入的 baseCtx.item
     //    （如 PopupSubTable 新增弹窗传入的 parentItem 链）
     let itemCached: any;
     let itemCachedReady = false;
@@ -2209,9 +2218,23 @@ export class RuleEngine {
         parentItem,
       };
     };
-    const defaultRoot = buildNode(trackingFormValues, undefined, undefined, undefined);
-    // item 仅用于“关系字段的子路径”场景；
-    // 顶层字段/非关联嵌套对象字段应使用 formValues。
+    const blockCtx = this.options.getBlockContext();
+    const formRootItem = (() => {
+      try {
+        const item = blockCtx?.item as RuntimeItemChain | undefined;
+        if (!item || typeof item !== 'object') return undefined;
+        return item.value === blockCtx?.formValues ? item : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const defaultRoot = {
+      ...buildNode(trackingFormValues, formRootItem?.index, formRootItem?.length, formRootItem?.parentItem),
+      __is_new__: formRootItem?.__is_new__ ?? trackingFormValues?.__is_new__,
+      __is_stored__: formRootItem?.__is_stored__ ?? trackingFormValues?.__is_stored__,
+    };
+    // item 用于“关系字段目标或其子路径”场景；
+    // 顶层非关联字段/非关联嵌套对象字段应使用 formValues。
     if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
     if (!rootCollection?.getField) return undefined;
 
@@ -2219,7 +2242,9 @@ export class RuleEngine {
     const prefix: NamePath = [];
     let collection = rootCollection;
 
-    for (let i = 0; i < targetNamePath.length - 1; i++) {
+    // The target itself can be an association. Keep that final association in the item chain so
+    // ctx.item.parentItem continues to point at the containing row instead of skipping directly to the form root.
+    for (let i = 0; i < targetNamePath.length; i++) {
       const seg = targetNamePath[i];
       if (typeof seg !== 'string') break;
 
@@ -2231,9 +2256,12 @@ export class RuleEngine {
 
       if (toMany) {
         const next = targetNamePath[i + 1];
-        if (typeof next !== 'number') break;
-        prefix.push(next);
-        i += 1;
+        if (typeof next === 'number') {
+          prefix.push(next);
+          i += 1;
+        } else if (i !== targetNamePath.length - 1) {
+          break;
+        }
       }
 
       const targetCollection = field?.targetCollection;
@@ -2248,9 +2276,11 @@ export class RuleEngine {
       const assocEntry = assocEntries[idx];
       const value = _.get(trackingFormValues, assocEntry.path);
       const lastSeg = assocEntry.path[assocEntry.path.length - 1];
-      const index = assocEntry.toMany && typeof lastSeg === 'number' ? lastSeg : undefined;
+      const isIndexedToManyItem = assocEntry.toMany && typeof lastSeg === 'number';
+      const index = isIndexedToManyItem ? lastSeg : undefined;
       const length = (() => {
         if (!assocEntry.toMany) return undefined;
+        if (!isIndexedToManyItem) return Array.isArray(value) ? value.length : undefined;
         // assocEntry.path: [..., associationKey, rowIndex]
         const listPath = assocEntry.path.slice(0, -1);
         const list = _.get(trackingFormValues, listPath);
