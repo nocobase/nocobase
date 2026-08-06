@@ -13,7 +13,7 @@ import { fireEvent, render, screen } from '@nocobase/test/client';
 import { dayjs } from '@nocobase/utils/client';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DateVariableEditor, getDateVariableFormatPreview, serializeExactDatePickerValue } from '../DateVariableEditor';
+import { DateVariableEditor, serializeExactDatePickerValue } from '../DateVariableEditor';
 import {
   DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
   isDateLikeField,
@@ -305,20 +305,22 @@ describe('DateVariableEditor Format', () => {
     );
 
     expect(screen.getByRole('combobox', { name: 'Format' })).toBeInTheDocument();
-    expect((screen.getByRole('textbox', { name: 'Preview' }) as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(screen.queryByRole('textbox', { name: 'Preview' })).not.toBeInTheDocument();
   });
 
-  it('previews the current Date value with the configured Format', () => {
-    expect(getDateVariableFormatPreview({ kind: 'exact', value: '2026-02-12', format: 'YYYY/MM/DD' })).toBe(
-      '2026/02/12',
+  it('keeps the relative amount visible beside its fixed-width unit selector', () => {
+    render(
+      <DateVariableEditor
+        value={{ kind: 'relative', direction: 'next', amount: 1, unit: 'day' }}
+        isDateLikeField={false}
+        dateComponentProps={DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      />,
     );
-    expect(
-      getDateVariableFormatPreview({
-        kind: 'exact',
-        value: ['2026-02-12', '2026-02-20'],
-        format: 'YYYYMMDD',
-      }),
-    ).toBe('20260212 – 20260220');
+
+    const amountInput = screen.getByRole('spinbutton', { name: 'Next' });
+    expect(amountInput).toHaveValue('1');
+    expect(amountInput.closest('.ant-input-number')).toHaveStyle({ minWidth: '80px' });
+    expect(screen.getByRole('combobox', { name: 'Unit' }).closest('.ant-select')).toHaveStyle({ flex: '0 0 130px' });
   });
 
   it('shows the default Format as a placeholder when a legacy expression has no Format', () => {
@@ -333,9 +335,6 @@ describe('DateVariableEditor Format', () => {
     const formatInput = screen.getByRole('combobox', { name: 'Format' });
     expect(formatInput).toHaveValue('');
     expect(screen.getByText('YYYY-MM-DD HH:mm:ss')).toHaveClass('ant-select-selection-placeholder');
-    expect((screen.getByRole('textbox', { name: 'Preview' }) as HTMLInputElement).value).toMatch(
-      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
-    );
   });
 
   it('hides Format for date-like fields', () => {
