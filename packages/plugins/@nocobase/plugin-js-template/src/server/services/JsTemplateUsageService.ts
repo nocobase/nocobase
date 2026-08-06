@@ -91,6 +91,20 @@ type UsageSyncAction =
   | 'usageRebuild'
   | string;
 
+interface JsTemplateUsageVisibilityScanMetrics {
+  usagePageCalls: number;
+  visibilityResolutions: number;
+  maxRetainedBatches: number;
+  maxRetainedUsageRecords: number;
+  maxRetainedLocations: number;
+}
+
+const USAGE_VISIBILITY_SCAN_METRICS = Symbol.for('nocobase.js-template.usage-visibility-scan-metrics');
+
+type JsTemplateUsageVisibilityScanContext = {
+  [USAGE_VISIBILITY_SCAN_METRICS]?: JsTemplateUsageVisibilityScanMetrics;
+};
+
 type JsTemplateUsageServiceContext = JsTemplateServiceContext & {
   currentUser?: unknown;
   state?: Record<string, unknown>;
@@ -444,15 +458,21 @@ export class JsTemplateUsageService {
       this.resolveUsageOwnerVisibility(ctx),
     ]);
     const start = (normalizedInput.page - 1) * normalizedInput.pageSize;
+    const visibilityScanMetrics = resetVisibilityScanMetrics(getVisibilityScanMetrics(ctx));
     let data: JsTemplateUsageLocation[] = [];
     let count = 0;
     let hiddenCount = 0;
     let projectId: string | undefined;
 
     if (visibility.unrestricted) {
+      if (visibilityScanMetrics) {
+        visibilityScanMetrics.usagePageCalls += 1;
+        visibilityScanMetrics.visibilityResolutions += 1;
+      }
       const records = await this.findUsageModelsPage(filter, ctx, normalizedInput.pageSize, start);
       const usages = records.map(usageFromModel);
       data = await this.resolveVisibleUsageLocations(usages, ctx, visibility);
+      recordVisibilityRetention(visibilityScanMetrics, 1, usages.length, data.length);
       count = effectiveCount;
       projectId = usages[0]?.projectId;
     } else {
@@ -460,26 +480,40 @@ export class JsTemplateUsageService {
         { length: Math.ceil(effectiveCount / USAGE_VISIBILITY_BATCH_SIZE) },
         (_, index) => index * USAGE_VISIBILITY_BATCH_SIZE,
       );
-      const batches = await mapWithConcurrency(
+      const visiblePage: JsTemplateUsageLocation[] = [];
+      let visibleCount = 0;
+      await consumeWithConcurrencyInOrder(
         offsets,
         USAGE_VISIBILITY_BATCH_CONCURRENCY,
         async (offset): Promise<{ usages: JsTemplateUsage[]; visible: JsTemplateUsageLocation[] }> => {
+          if (visibilityScanMetrics) {
+            visibilityScanMetrics.usagePageCalls += 1;
+          }
           const records = await this.findUsageModelsPage(filter, ctx, USAGE_VISIBILITY_BATCH_SIZE, offset);
           const usages = records.map(usageFromModel);
+          if (visibilityScanMetrics) {
+            visibilityScanMetrics.visibilityResolutions += 1;
+          }
           return {
             usages,
             visible: await this.resolveVisibleUsageLocations(usages, ctx, visibility),
           };
         },
+        (batch) => {
+          projectId ||= batch.usages[0]?.projectId;
+          hiddenCount += batch.usages.length - batch.visible.length;
+          for (const location of batch.visible) {
+            if (visibleCount >= start && visibleCount < start + normalizedInput.pageSize) {
+              visiblePage.push(location);
+            }
+            visibleCount += 1;
+          }
+        },
+        (batch) => ({ usageRecords: batch.usages.length, locations: batch.visible.length }),
+        visibilityScanMetrics,
       );
-      const visibleUsages: JsTemplateUsageLocation[] = [];
-      for (const batch of batches) {
-        projectId ||= batch.usages[0]?.projectId;
-        hiddenCount += batch.usages.length - batch.visible.length;
-        visibleUsages.push(...batch.visible);
-      }
-      count = visibleUsages.length;
-      data = visibleUsages.slice(start, start + normalizedInput.pageSize);
+      count = visibleCount;
+      data = visiblePage;
     }
 
     if (hiddenCount > 0) {
@@ -1642,25 +1676,102 @@ export class JsTemplateUsageService {
   }
 }
 
-async function mapWithConcurrency<T, R>(
+async function consumeWithConcurrencyInOrder<T, R>(
   items: readonly T[],
   concurrency: number,
   mapper: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
+  consume: (result: R, index: number) => void | Promise<void>,
+  getRetention: (result: R) => { usageRecords: number; locations: number },
+  metrics?: JsTemplateUsageVisibilityScanMetrics,
+): Promise<void> {
   if (items.length === 0) {
-    return [];
+    return;
   }
-  const results = new Array<R>(items.length);
-  let nextIndex = 0;
-  const runWorker = async () => {
-    while (nextIndex < items.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      results[index] = await mapper(items[index], index);
-    }
+
+  type SettledResult = { status: 'fulfilled'; value: R } | { status: 'rejected'; reason: unknown };
+  const pending = new Map<number, Promise<SettledResult>>();
+  let nextToSchedule = 0;
+  let retainedBatches = 0;
+  let retainedUsageRecords = 0;
+  let retainedLocations = 0;
+
+  const schedule = (index: number) => {
+    const result: Promise<SettledResult> = mapper(items[index], index).then(
+      (value): SettledResult => {
+        const retained = getRetention(value);
+        retainedBatches += 1;
+        retainedUsageRecords += retained.usageRecords;
+        retainedLocations += retained.locations;
+        recordVisibilityRetention(metrics, retainedBatches, retainedUsageRecords, retainedLocations);
+        return { status: 'fulfilled', value };
+      },
+      (reason: unknown): SettledResult => ({ status: 'rejected', reason }),
+    );
+    pending.set(index, result);
   };
-  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => runWorker()));
-  return results;
+
+  while (nextToSchedule < Math.min(concurrency, items.length)) {
+    schedule(nextToSchedule);
+    nextToSchedule += 1;
+  }
+
+  for (let index = 0; index < items.length; index += 1) {
+    const pendingResult = pending.get(index);
+    if (!pendingResult) {
+      throw new Error(`Missing ordered concurrent result at index ${index}`);
+    }
+    pending.delete(index);
+    const settled = await pendingResult;
+    if (settled.status === 'rejected') {
+      throw settled.reason;
+    }
+    const retained = getRetention(settled.value);
+    try {
+      await consume(settled.value, index);
+    } finally {
+      retainedBatches -= 1;
+      retainedUsageRecords -= retained.usageRecords;
+      retainedLocations -= retained.locations;
+    }
+    if (nextToSchedule < items.length) {
+      schedule(nextToSchedule);
+      nextToSchedule += 1;
+    }
+  }
+}
+
+function resetVisibilityScanMetrics(
+  metrics?: JsTemplateUsageVisibilityScanMetrics,
+): JsTemplateUsageVisibilityScanMetrics | undefined {
+  if (!metrics) {
+    return undefined;
+  }
+  metrics.usagePageCalls = 0;
+  metrics.visibilityResolutions = 0;
+  metrics.maxRetainedBatches = 0;
+  metrics.maxRetainedUsageRecords = 0;
+  metrics.maxRetainedLocations = 0;
+  return metrics;
+}
+
+function getVisibilityScanMetrics(
+  ctx: JsTemplateUsageServiceContext,
+): JsTemplateUsageVisibilityScanMetrics | undefined {
+  return (ctx as JsTemplateUsageServiceContext & JsTemplateUsageVisibilityScanContext)[USAGE_VISIBILITY_SCAN_METRICS];
+}
+
+function recordVisibilityRetention(
+  metrics: JsTemplateUsageVisibilityScanMetrics | undefined,
+  batches: number,
+  usageRecords: number,
+  locations: number,
+): void {
+  if (!metrics) {
+    return;
+  }
+  metrics.maxRetainedBatches = Math.max(metrics.maxRetainedBatches, batches);
+  metrics.maxRetainedUsageRecords = Math.max(metrics.maxRetainedUsageRecords, usageRecords);
+  metrics.maxRetainedLocations = Math.max(metrics.maxRetainedLocations, locations);
 }
 
 async function resolveCan(
