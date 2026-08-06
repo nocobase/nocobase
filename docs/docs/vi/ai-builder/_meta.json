@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Lựa chọn mô hình",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
         "label": "Cộng tác cùng AI Agent để xây dựng",
         "link": "/ai-builder/ai-portal/agent-workflow"
       },

@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "大模型选择",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
         "label": "与 AI Agent 协作搭建",
         "link": "/ai-builder/ai-portal/agent-workflow"
       },
