@@ -24,7 +24,9 @@ import type {
   CompiledJsTemplateArtifact,
   JsTemplateProject,
   JsTemplateProjectLifecycleStatus,
+  JsTemplateKind,
 } from '../../shared/types';
+import { assertJsTemplateKind } from '../../shared/types';
 import { JsTemplateFileService } from './JsTemplateFileService';
 import { assertPreparedCandidateWorkspace, type PreparedCandidateWorkspace } from './PreparedCandidateWorkspace';
 import type { JsTemplateServiceContext } from './JsTemplateProjectService';
@@ -41,7 +43,7 @@ import { hasUsableRuntimeArtifact } from './runtimeArtifact';
 export interface JsTemplateUsageFingerprint {
   templateId: string;
   projectId: string;
-  kind: string;
+  kind: JsTemplateKind;
   healthStatus: JsTemplateHealthStatus;
   settingsSchemaHash: string | null;
   settingsDefaultsHash: string | null;
@@ -637,7 +639,7 @@ function templateFromPlannedValues(values: Record<string, unknown>): JsTemplate 
     id: String(values.id),
     projectId: String(values.projectId),
     target: 'client',
-    kind: String(values.kind),
+    kind: assertJsTemplateKind(values.kind),
     templateName: String(values.templateName),
     entryPath: String(values.entryPath),
     descriptorPath: String(values.descriptorPath),
@@ -798,7 +800,7 @@ function toCatalogEntry(record: Model, project: JsTemplateProject, usageCount: n
     projectName: project.name,
     projectTitle: project.title || null,
     projectLifecycleStatus: project.lifecycleStatus,
-    kind: String(record.get('kind')),
+    kind: assertJsTemplateKind(record.get('kind')),
     templateName: String(record.get('templateName')),
     title: nullableString(record.get('title')),
     description: nullableString(record.get('description')),
@@ -852,7 +854,7 @@ export function templateFromModel(record: Model): JsTemplate {
     id: String(record.get('id')),
     projectId: String(record.get('projectId')),
     target: 'client',
-    kind: String(record.get('kind')),
+    kind: assertJsTemplateKind(record.get('kind')),
     templateName: String(record.get('templateName')),
     entryPath: String(record.get('entryPath')),
     descriptorPath: String(record.get('descriptorPath')),
@@ -917,7 +919,7 @@ function normalizeRuntimeArtifact(value: unknown): CompiledJsTemplateArtifact | 
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
   }
-  const artifact = value as Partial<CompiledJsTemplateArtifact>;
+  const artifact = value as Record<string, unknown>;
   if (typeof artifact.code !== 'string') {
     return null;
   }
@@ -925,7 +927,7 @@ function normalizeRuntimeArtifact(value: unknown): CompiledJsTemplateArtifact | 
   return {
     code: artifact.code,
     sourceMap: typeof artifact.sourceMap === 'string' ? artifact.sourceMap : undefined,
-    version: typeof artifact.version === 'string' ? artifact.version : 'v2',
+    runtimeVersion: typeof artifact.version === 'string' ? artifact.version : 'v2',
     entryPath: typeof artifact.entryPath === 'string' ? artifact.entryPath : '',
     filesHash: typeof artifact.filesHash === 'string' ? artifact.filesHash : undefined,
     diagnostics: normalizeDiagnostics(artifact.diagnostics),

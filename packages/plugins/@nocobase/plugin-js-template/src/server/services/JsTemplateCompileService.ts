@@ -901,7 +901,7 @@ function reuseCompiledTemplate(
     template.compilerBuildId !== input.inputManifest.compilerBuildId ||
     template.runtimeVersion !== input.inputManifest.runtimeVersion ||
     !artifact ||
-    artifact.version !== input.inputManifest.runtimeVersion ||
+    artifact.runtimeVersion !== input.inputManifest.runtimeVersion ||
     artifact.entryPath !== template.entryPath ||
     !template.runtimeCodeHash ||
     !template.artifactHash
@@ -912,7 +912,7 @@ function reuseCompiledTemplate(
   const artifactHash = buildRunJSArtifactHash({
     code: artifact.code,
     sourceMap: artifact.sourceMap,
-    version: artifact.version,
+    version: artifact.runtimeVersion,
     entryPath: artifact.entryPath,
     runtimeContract: input.inputManifest.runtimeContract,
   });
@@ -925,7 +925,7 @@ function reuseCompiledTemplate(
     artifact: {
       code: artifact.code,
       ...(artifact.sourceMap ? { sourceMap: artifact.sourceMap } : {}),
-      version: artifact.version,
+      version: artifact.runtimeVersion,
       entryPath: artifact.entryPath,
       filesHash: artifact.filesHash,
       diagnostics: sortDiagnostics(artifact.diagnostics || []),
@@ -950,7 +950,7 @@ function toSuccessfulCompileTemplateResult(
     execution: compiled ? 'compiled' : 'skipped',
     diagnostics: result.diagnostics,
     artifact: {
-      version: result.artifact.version,
+      runtimeVersion: result.artifact.version,
       entryPath: result.artifact.entryPath || result.entryPath,
       filesHash: result.artifact.filesHash,
       metadata: normalizeRecord(result.artifact.metadata),

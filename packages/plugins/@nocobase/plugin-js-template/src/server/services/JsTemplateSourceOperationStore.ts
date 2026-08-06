@@ -22,10 +22,10 @@ export interface JsTemplateSourceOperationReservation {
   attemptId: string;
 }
 
-export interface JsTemplateSourceOperationDescriptor<TResult> {
+export interface JsTemplateSourceOperationDescriptor<TResult, TRequest = unknown> {
   action: string;
   idempotencyKey: string;
-  request: unknown;
+  request: TRequest;
   parseResult: (value: unknown) => TResult;
 }
 
@@ -40,8 +40,8 @@ export class JsTemplateSourceOperationStore {
     private readonly applicationName: string,
   ) {}
 
-  async inspect<TResult>(
-    descriptor: JsTemplateSourceOperationDescriptor<TResult>,
+  async inspect<TResult, TRequest>(
+    descriptor: JsTemplateSourceOperationDescriptor<TResult, TRequest>,
   ): Promise<JsTemplateSourceOperationResolution<TResult>> {
     const identity = this.resolveIdentity(descriptor);
     const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.sourceOperations).model.findOne({
@@ -61,8 +61,8 @@ export class JsTemplateSourceOperationStore {
     return {};
   }
 
-  async claim<TResult>(
-    descriptor: JsTemplateSourceOperationDescriptor<TResult>,
+  async claim<TResult, TRequest>(
+    descriptor: JsTemplateSourceOperationDescriptor<TResult, TRequest>,
   ): Promise<JsTemplateSourceOperationResolution<TResult>> {
     const identity = this.resolveIdentity(descriptor);
     const attemptId = randomUUID();
@@ -167,7 +167,9 @@ export class JsTemplateSourceOperationStore {
     }
   }
 
-  private resolveIdentity<TResult>(descriptor: JsTemplateSourceOperationDescriptor<TResult>): {
+  private resolveIdentity<TResult, TRequest>(
+    descriptor: JsTemplateSourceOperationDescriptor<TResult, TRequest>,
+  ): {
     applicationName: string;
     identityHash: string;
     requestHash: string;

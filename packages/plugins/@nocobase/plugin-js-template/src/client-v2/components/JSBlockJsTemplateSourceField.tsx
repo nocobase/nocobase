@@ -388,7 +388,7 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
         settings: values.settings || {},
       });
       form.setValuesIn('code', resolved.code);
-      form.setValuesIn('version', resolved.version || 'v2');
+      form.setValuesIn('version', resolved.runtimeVersion || 'v2');
     } finally {
       setCopying(false);
     }

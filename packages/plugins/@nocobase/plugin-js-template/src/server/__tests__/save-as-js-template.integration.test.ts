@@ -82,7 +82,11 @@ const entry: JsTemplate = {
   compiledCommitId: 'commit_2',
   compiledInputKey: 'compile_key',
   compilerBuildId: 'compiler_build',
-  runtimeArtifact: { code: 'return 1;', version: 'v2', entryPath: 'src/client/js-blocks/sales-kpi/index.ts' },
+  runtimeArtifact: {
+    code: 'return 1;',
+    runtimeVersion: 'v2',
+    entryPath: 'src/client/js-blocks/sales-kpi/index.ts',
+  },
   runtimeVersion: 'v2',
   surfaceStyle: 'render',
   runtimeCodeHash: 'runtime_hash',
@@ -296,7 +300,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [
             { path: 'src/main.ts', content: 'return 1;' },
             {
@@ -478,7 +482,7 @@ describe('SaveAsJsTemplateService', () => {
         sourceRepoId: 'runjs_repo',
         sourceHeadCommitId: null,
         entryPath: 'src/main.tsx',
-        version: 'v2',
+        runtimeVersion: 'v2',
         files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Saved</div>);' }],
         destination: { type: 'new', name: 'sales-tools', title: 'Sales tools' },
         templateName: 'sales-kpi',
@@ -586,7 +590,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: null,
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.ts', content: 'return 1;' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-kpi',
@@ -613,7 +617,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.ts', content: 'return 1;' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-kpi',
@@ -644,7 +648,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: null,
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.ts', content: 'ctx.message.success("done");' }],
           destination: { type: 'new', name: 'forbidden-runjs' },
           templateName: 'action-script',
@@ -791,7 +795,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: null,
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.ts', content: 'return 1;' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-kpi',
@@ -1104,7 +1108,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.tsx',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Page</div>);' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-page',
@@ -1139,7 +1143,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.tsx',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.tsx', content: 'ctx.render(<div>Page</div>);' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-page',
@@ -1183,7 +1187,7 @@ describe('SaveAsJsTemplateService', () => {
           sourceRepoId: 'runjs_repo',
           sourceHeadCommitId: 'runjs_commit',
           entryPath: 'src/main.ts',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/main.ts', content: 'return 1;' }],
           destination: { type: 'existing', projectId: project.id },
           templateName: 'sales-kpi',
@@ -1386,7 +1390,7 @@ function createSaveAsJsTemplateInput(overrides: Partial<SaveAsJsTemplateInput> =
     sourceRepoId: 'runjs_repo',
     sourceHeadCommitId: 'runjs_commit',
     entryPath: 'src/main.ts',
-    version: 'v2',
+    runtimeVersion: 'v2',
     files: [{ path: 'src/main.ts', content: 'return 1;' }],
     destination: { type: 'existing', projectId: project.id },
     templateName: 'sales-kpi',
@@ -1903,7 +1907,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files,
           },
           { adapterContext: {} },
@@ -1952,7 +1956,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files,
           },
           { actorUserId: '1', adapterContext: {} },
@@ -1988,7 +1992,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
@@ -2022,7 +2026,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
@@ -2057,7 +2061,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { actorUserId: '1', adapterContext: {} },
@@ -2293,7 +2297,7 @@ describe('detach to inline integration', () => {
         templateId: pageBinding.templateId,
         entryPath: pageEntry.entryPath,
         kind: 'js-page' as const,
-        version: 'v2',
+        runtimeVersion: 'v2',
         files: [
           {
             path: pageEntry.entryPath,
@@ -2323,7 +2327,7 @@ describe('detach to inline integration', () => {
           },
           serviceContext,
         ),
-      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_IDEMPOTENCY_CONFLICT' });
+      ).resolves.toEqual(result);
       assertCanWrite.mockRejectedValueOnce(new Error('replay host permission denied'));
       await expect(service.detachToInline(input, serviceContext)).rejects.toThrow('replay host permission denied');
 
@@ -2424,14 +2428,14 @@ describe('detach to inline integration', () => {
       expect(lockFlowModelRecord.mock.invocationCallOrder[0]).toBeLessThan(lockProject.mock.invocationCallOrder[0]);
       expect(modifiedEntryReplay).toEqual(result);
       expect(deletedEntryReplay).toEqual(result);
-      expect(getVscFileService).toHaveBeenCalledTimes(4);
+      expect(getVscFileService).toHaveBeenCalledTimes(5);
       expect(ensureAndPush).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({ transaction }));
       expect(ensureAndPush).toHaveBeenCalledOnce();
       expect(writeRuntime).toHaveBeenCalledOnce();
       expect(patch).toHaveBeenCalledOnce();
       expect(syncUsages).toHaveBeenCalledOnce();
       expect(prepareEntry.mock.invocationCallOrder[0]).toBeLessThan(lockFlowModelRecord.mock.invocationCallOrder[0]);
-      expect(assertCanWrite).toHaveBeenCalledTimes(5);
+      expect(assertCanWrite).toHaveBeenCalledTimes(6);
       expect(assertCanWrite.mock.calls[0][0].ctx.transaction).toBeUndefined();
       expect(readLegacy).toHaveBeenCalledTimes(2);
       expect(readLegacy.mock.calls[0][0].ctx.transaction).toBeUndefined();
@@ -2480,7 +2484,7 @@ describe('detach to inline integration', () => {
       );
       expect(flowModel.stepParams.jsSettings.runJs).toMatchObject({
         code: result.code,
-        version: result.version,
+        version: result.runtimeVersion,
         sourceMode: 'inline',
         sourceRef: result.sourceRef,
       });
@@ -2491,9 +2495,9 @@ describe('detach to inline integration', () => {
         expect.objectContaining({ transaction }),
       );
       expect(updateCommit).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'runjs_new_commit' }));
-      expect(assertApplicationOwnership).toHaveBeenCalledTimes(3);
+      expect(assertApplicationOwnership).toHaveBeenCalledTimes(4);
       expect(getTemplate).toHaveBeenCalledTimes(2);
-      expect(vscFileService.getRepository).toHaveBeenCalledTimes(2);
+      expect(vscFileService.getRepository).toHaveBeenCalledTimes(3);
       expect(operationModel.getValues()).toMatchObject({ status: 'completed', result });
       expect(operationModel.model.update).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'completed', result }),
@@ -2547,7 +2551,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
           },
           { actorUserId: '1', adapterContext: {} },
@@ -2708,7 +2712,7 @@ describe('detach to inline integration', () => {
         templateId: binding.templateId,
         entryPath: entry.entryPath,
         kind: 'js-block' as const,
-        version: 'v2',
+        runtimeVersion: 'v2',
         files: [{ path: entry.entryPath, content: 'ctx.render("inline");' }],
       };
 
@@ -2916,7 +2920,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render("inline after detach");' }],
           },
           { actorUserId: '1', adapterContext: {} },
@@ -2996,7 +3000,7 @@ describe('detach to inline integration', () => {
             templateId: binding.templateId,
             entryPath: entry.entryPath,
             kind: 'js-block',
-            version: 'v2',
+            runtimeVersion: 'v2',
             files: [{ path: entry.entryPath, content: 'ctx.render(<div />);' }],
           },
           { adapterContext: {} },
@@ -3048,7 +3052,7 @@ describe('JS Template conversion resource integration', () => {
         'sourceRepoId',
         'sourceHeadCommitId',
         'entryPath',
-        'version',
+        'runtimeVersion',
         'files',
         'destination',
         'templateName',
@@ -3061,7 +3065,7 @@ describe('JS Template conversion resource integration', () => {
           'sourceRepoId',
           'sourceHeadCommitId',
           'entryPath',
-          'version',
+          'runtimeVersion',
           'files',
           'originBinding',
           'destination',
@@ -3075,23 +3079,9 @@ describe('JS Template conversion resource integration', () => {
         'projectId',
         'templateId',
         'expectedProjectHeadCommitId',
-        'entryPath',
-        'kind',
-        'version',
-        'files',
       ]);
       expect(Object.keys(detachToInlineRequest.properties).sort()).toEqual(
-        [
-          'idempotencyKey',
-          'locator',
-          'projectId',
-          'templateId',
-          'expectedProjectHeadCommitId',
-          'entryPath',
-          'kind',
-          'version',
-          'files',
-        ].sort(),
+        ['idempotencyKey', 'locator', 'projectId', 'templateId', 'expectedProjectHeadCommitId'].sort(),
       );
     });
 
@@ -3127,7 +3117,7 @@ describe('JS Template conversion resource integration', () => {
               sourceRepoId: 'runjs_sales_page',
               sourceHeadCommitId: 'commit_inline',
               entryPath: 'src/client/index.tsx',
-              version: 'v2',
+              runtimeVersion: 'v2',
               files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
               destination,
               templateName: 'sales-page',
@@ -3182,7 +3172,7 @@ describe('JS Template conversion resource integration', () => {
           sourceRepoId: 'runjs_sales_page',
           sourceHeadCommitId: 'commit_inline',
           entryPath: 'src/client/index.tsx',
-          version: 'v2',
+          runtimeVersion: 'v2',
           files: [{ path: 'src/client/index.tsx', content: 'ctx.render(null);' }],
           templateName: 'sales-page',
         };
@@ -3211,7 +3201,7 @@ describe('JS Template conversion resource integration', () => {
     );
 
     it('normalizes the detachToInline resource input and request context', async () => {
-      const detachToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', version: 'v2' }));
+      const detachToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', runtimeVersion: 'v2' }));
       const resource = createJsTemplatesResource(
         {} as never,
         {} as never,
@@ -3229,10 +3219,6 @@ describe('JS Template conversion resource integration', () => {
               locator,
               projectId: binding.projectId,
               templateId: binding.templateId,
-              entryPath,
-              kind: 'js-block',
-              version: 'v2',
-              files: [{ path: entryPath, content: 'ctx.render(<div />);' }],
             },
           },
         },
@@ -3255,17 +3241,6 @@ describe('JS Template conversion resource integration', () => {
           locator,
           projectId: binding.projectId,
           templateId: binding.templateId,
-          entryPath,
-          kind: 'js-block',
-          version: 'v2',
-          files: [
-            {
-              path: entryPath,
-              content: 'ctx.render(<div />);',
-              language: undefined,
-              mode: undefined,
-            },
-          ],
         },
         expect.objectContaining({
           actorUserId: '9',
@@ -3275,8 +3250,46 @@ describe('JS Template conversion resource integration', () => {
           adapterContext: expect.objectContaining({ currentUser: { id: 9 } }),
         }),
       );
-      expect((ctx as { body?: unknown }).body).toEqual({ code: 'ctx.render(<div />);', version: 'v2' });
+      expect((ctx as { body?: unknown }).body).toEqual({ code: 'ctx.render(<div />);', runtimeVersion: 'v2' });
     });
+
+    it.each(['entryPath', 'kind', 'version', 'files'] as const)(
+      'rejects forged detach source field %s before invoking the service',
+      async (forgedField) => {
+        const detachToInline = vi.fn();
+        const resource = createJsTemplatesResource(
+          {} as never,
+          {} as never,
+          {} as JsTemplateCompilePreviewService,
+          undefined,
+          { detachToInline } as unknown as DetachJsTemplateToInlineService,
+        );
+        const ctx = {
+          action: {
+            params: {
+              values: {
+                idempotencyKey: 'detach-to-inline-forged-source',
+                expectedProjectHeadCommitId: 'commit_template_head',
+                locator,
+                projectId: binding.projectId,
+                templateId: binding.templateId,
+                [forgedField]: forgedField === 'files' ? [{ path: entryPath, content: 'forged' }] : 'forged',
+              },
+            },
+          },
+          auth: { user: { id: 9 } },
+          request: { headers: {} },
+        } as unknown as Context;
+
+        await resource.actions?.detachToInline?.(ctx, async () => undefined);
+
+        expect(detachToInline).not.toHaveBeenCalled();
+        expect((ctx as { status?: number }).status).toBe(400);
+        expect((ctx as { body?: { errors?: Array<{ message?: string }> } }).body?.errors?.[0]?.message).toContain(
+          forgedField,
+        );
+      },
+    );
 
     it('maps detach-to-inline service errors to the public HTTP response contract', async () => {
       const error = new JsTemplateError(
@@ -3305,10 +3318,6 @@ describe('JS Template conversion resource integration', () => {
               locator,
               projectId: binding.projectId,
               templateId: binding.templateId,
-              entryPath,
-              kind: 'js-block',
-              version: 'v2',
-              files: [{ path: entryPath, content: 'ctx.render(<div />);' }],
             },
           },
         },

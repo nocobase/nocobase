@@ -26,6 +26,7 @@ import type {
   JsTemplateUsageResolvedStatus,
   JsTemplateRuntimeSourceBinding,
 } from '../../shared/types';
+import { assertJsTemplateKind } from '../../shared/types';
 import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import {
   createJsTemplateRuntimeSourceBinding,
@@ -1760,14 +1761,13 @@ function normalizeSourceBinding(value: unknown): JsTemplateRuntimeSourceBinding 
   }
   const projectId = normalizeString(value.projectId);
   const templateId = normalizeString(value.templateId);
-  const kind = normalizeString(value.kind);
-  if (!projectId || !templateId || !kind) {
+  if (!projectId || !templateId) {
     return undefined;
   }
   return createJsTemplateRuntimeSourceBinding({
     projectId,
     templateId,
-    kind,
+    kind: value.kind,
   });
 }
 
@@ -1883,9 +1883,7 @@ function normalizeStatus(value: unknown): JsTemplateUsageResolvedStatus {
 }
 
 function normalizeUsageKind(value: unknown): JsTemplateKind {
-  const normalized = normalizeString(value);
-  const adapter = normalized ? listUsageOwnerAdapters().find((item) => item.kind === normalized) : null;
-  return adapter?.kind || JS_BLOCK_USAGE_OWNER_ADAPTER.kind;
+  return assertJsTemplateKind(value);
 }
 
 function normalizeOwnerKind(value: unknown): JsTemplateUsage['ownerKind'] {

@@ -141,7 +141,7 @@ export const SaveAsJsTemplate: React.FC<{
       sourceRepoId: context.workspace.repository.repoId,
       sourceHeadCommitId: context.workspace.repository.headCommitId || null,
       entryPath: context.entryPath,
-      version: context.version,
+      runtimeVersion: context.version,
       files: context.files.map((file) => ({ ...file })),
       originBinding: resolveOriginBinding(context.sourceBinding, kind),
       destination,

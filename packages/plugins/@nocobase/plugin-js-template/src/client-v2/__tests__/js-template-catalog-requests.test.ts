@@ -11,10 +11,12 @@ import { vi } from 'vitest';
 
 import {
   deleteJsTemplate,
+  detachJsTemplateToInline,
   listJsTemplateCatalog,
   listJsTemplateUsageLocations,
   type ApiClientLike,
 } from '../api/jsTemplatesRequests';
+import type { DetachJsTemplateToInlineInput } from '../../shared/types';
 
 describe('JS Template catalog requests', () => {
   it('loads the dedicated entry-centric catalog action without reusing the runtime selectable catalog', async () => {
@@ -73,6 +75,41 @@ describe('JS Template catalog requests', () => {
       url: 'jsTemplates:delete',
       method: 'post',
       data: { templateId: 'jtt_entry' },
+    });
+  });
+
+  it('sends only the five-field detach contract even when a caller object contains forged source fields', async () => {
+    const request = vi.fn(async () => ({ data: { data: { runtimeVersion: 'v2' } } }));
+    const input = {
+      idempotencyKey: 'detach-sales-v1',
+      locator: {
+        kind: 'flowModel.step',
+        modelUid: 'fm_sales',
+        flowKey: 'runJs',
+        stepKey: 'runJs',
+        paramPath: ['code'],
+      },
+      projectId: 'jtp_source',
+      templateId: 'jtt_entry',
+      expectedProjectHeadCommitId: 'commit_1',
+      files: [{ path: 'forged.ts', content: 'throw new Error();' }],
+      entryPath: 'forged.ts',
+      kind: 'js-action',
+      version: 'forged',
+    } satisfies DetachJsTemplateToInlineInput & Record<string, unknown>;
+
+    await detachJsTemplateToInline({ request }, input);
+
+    expect(request).toHaveBeenCalledWith({
+      url: 'jsTemplates:detachToInline',
+      method: 'post',
+      data: {
+        idempotencyKey: 'detach-sales-v1',
+        locator: input.locator,
+        projectId: 'jtp_source',
+        templateId: 'jtt_entry',
+        expectedProjectHeadCommitId: 'commit_1',
+      },
     });
   });
 });

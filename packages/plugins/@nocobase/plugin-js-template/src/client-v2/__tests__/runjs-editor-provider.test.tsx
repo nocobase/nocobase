@@ -53,7 +53,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
       files: Array<{ path: string; content: string }>;
       version: string;
     }) => void | Promise<void>;
-    onPreview?: (artifact: { code: string; version: string; entryPath: string }) => void | Promise<void>;
+    onPreview?: (artifact: { code: string; runtimeVersion: string; entryPath: string }) => void | Promise<void>;
     onRequestClose?: () => void | Promise<void>;
     onSaved?: () => void | Promise<void>;
   }) => {
@@ -92,7 +92,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
             onClick={() =>
               onPreview({
                 code: 'ctx.render(<div>preview</div>);',
-                version: 'v2',
+                runtimeVersion: 'v2',
                 entryPath: initialPath || '',
               })
             }
@@ -431,7 +431,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
                 commitId: sourceRef.commitId,
                 ownerFingerprint: 'owner_after',
                 code: 'ctx.render(<div>inline workspace</div>);',
-                version: 'v2',
+                runtimeVersion: 'v2',
                 entryPath: sourceRef.entry,
                 filesHash: 'files_hash',
                 sourceRef,
@@ -500,20 +500,11 @@ describe('RunJSJsTemplateEditorProvider', () => {
             flowKey: 'jsSettings',
             stepKey: 'runJs',
             paramPath: ['code'],
+            versionPath: undefined,
           },
           projectId: 'jtp_example',
           templateId: 'jtt_example',
           expectedProjectHeadCommitId: 'project_head_1',
-          entryPath: 'src/client/js-pages/example/index.tsx',
-          kind: 'js-page',
-          version: 'v2',
-          files: [
-            {
-              path: 'src/client/js-pages/example/index.tsx',
-              content: 'ctx.render(<div>working copy</div>);',
-            },
-            { path: 'src/shared/format.ts', content: 'export const format = () => "ok";' },
-          ],
         },
       });
     });
@@ -537,7 +528,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     expect(runtimeInvalidator.invalidateProject).toHaveBeenCalledWith('jtp_example');
   });
 
-  it('reuses the detach-to-inline key for an exact retry and rotates it after the request changes', async () => {
+  it('reuses the detach-to-inline key when only the local working copy changes', async () => {
     const provider = createJsTemplateRunJSEditorProvider();
     const onPersistedChange = vi.fn();
     const onClose = vi.fn();
@@ -619,7 +610,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
       .map(([options]) => options.data as { idempotencyKey: string });
     expect(detachRequests[0].idempotencyKey).toMatch(/^detach-to-inline-/);
     expect(detachRequests[1].idempotencyKey).toBe(detachRequests[0].idempotencyKey);
-    expect(detachRequests[2].idempotencyKey).not.toBe(detachRequests[0].idempotencyKey);
+    expect(detachRequests[2].idempotencyKey).toBe(detachRequests[0].idempotencyKey);
     expect(onPersistedChange).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(
@@ -803,7 +794,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
               title: 'Example refreshed',
               runtimeArtifact: {
                 code: 'ctx.render(<div>refreshed runtime</div>);',
-                version: 'v3',
+                runtimeVersion: 'v3',
                 entryPath: 'src/client/js-blocks/renamed-example/index.tsx',
               },
             },
@@ -958,7 +949,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
             title: 'Example',
             runtimeArtifact: {
               code: 'ctx.render(<div>saved</div>);',
-              version: 'v3',
+              runtimeVersion: 'v3',
               entryPath: 'src/client/js-blocks/example/index.tsx',
             },
           },

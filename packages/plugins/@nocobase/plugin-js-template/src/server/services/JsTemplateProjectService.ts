@@ -27,9 +27,11 @@ import type {
   JsTemplateDeleteProjectInput,
   JsTemplateProjectLifecycleStatus,
   JsTemplateProject,
+  JsTemplateKind,
   JsTemplateTreeEntryInput,
   JsTemplateUpdateProjectInput,
 } from '../../shared/types';
+import { assertJsTemplateKind } from '../../shared/types';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { JsTemplatePermissionService, type JsTemplateCanFunction } from './JsTemplatePermissionService';
 import type { JsTemplateUsageService } from './JsTemplateUsageService';
@@ -269,13 +271,13 @@ export class JsTemplateProjectService {
             transaction,
           })
         : [];
-      const templateSummary = new Map<string, { count: number; kinds: Record<string, number> }>();
+      const templateSummary = new Map<string, { count: number; kinds: Partial<Record<JsTemplateKind, number>> }>();
       for (const template of templateRecords) {
         if (template.get('healthStatus') === 'missing') {
           continue;
         }
         const projectId = String(template.get('projectId'));
-        const kind = String(template.get('kind'));
+        const kind = assertJsTemplateKind(template.get('kind'));
         const summary = templateSummary.get(projectId) || { count: 0, kinds: {} };
         summary.count += 1;
         summary.kinds[kind] = (summary.kinds[kind] || 0) + 1;

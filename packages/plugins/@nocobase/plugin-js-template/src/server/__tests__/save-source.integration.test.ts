@@ -122,7 +122,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     });
     expect(runtime).toMatchObject({
       templateId: result.compile.templates[0].templateId,
-      version: 'v2',
+      runtimeVersion: 'v2',
       settings: {
         region: 'EMEA',
       },
@@ -399,7 +399,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     });
     expect(runtime).toMatchObject({
       templateId: compiled.templateId,
-      version: 'v2',
+      runtimeVersion: 'v2',
       settings: { title: 'Orders' },
       artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
     });

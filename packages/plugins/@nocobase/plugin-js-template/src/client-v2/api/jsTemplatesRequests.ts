@@ -123,7 +123,13 @@ export async function detachJsTemplateToInline(
   const response = await api.request<ResourceResponse<DetachJsTemplateToInlineResult>>({
     url: 'jsTemplates:detachToInline',
     method: 'post',
-    data: input,
+    data: {
+      idempotencyKey: input.idempotencyKey,
+      locator: input.locator,
+      projectId: input.projectId,
+      templateId: input.templateId,
+      expectedProjectHeadCommitId: input.expectedProjectHeadCommitId,
+    },
   });
   const result = unwrapResourceResponse(response);
   invalidateJsTemplateSettingsDescriptorCache(api, input.projectId);

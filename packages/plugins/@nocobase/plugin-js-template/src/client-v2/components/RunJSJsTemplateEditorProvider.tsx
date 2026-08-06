@@ -180,7 +180,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
       previewAppliedRef.current = await applyPreviewValue({
         ...value,
         code: artifact.code,
-        version: artifact.version,
+        version: artifact.runtimeVersion,
         sourceMode: INLINE_SOURCE_MODE,
       });
     },
@@ -215,10 +215,6 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
         projectId: currentBinding.projectId,
         templateId: currentBinding.templateId,
         expectedProjectHeadCommitId: request.expectedProjectHeadCommitId,
-        entryPath: request.entryPath,
-        kind: workspaceScope.kind,
-        version: request.version,
-        files: request.files,
       };
       const requestFingerprint = JSON.stringify(detachInput);
       const existingAttempt = detachToInlineAttemptRef.current;
@@ -235,7 +231,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
       const nextValue = {
         ...value,
         code: result.code,
-        version: result.version,
+        version: result.runtimeVersion,
         sourceMode: INLINE_SOURCE_MODE,
         sourceBinding: undefined,
         sourceRef: result.sourceRef,
@@ -274,7 +270,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
             nextValue = {
               ...nextValue,
               code: template.runtimeArtifact.code,
-              version: template.runtimeArtifact.version,
+              version: template.runtimeArtifact.runtimeVersion,
             };
           }
         }

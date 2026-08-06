@@ -16,6 +16,7 @@ import {
   JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT as RUNTIME_SURFACE_CONTRACT,
   JS_TEMPLATE_SOURCE_BINDING_TYPE as SOURCE_BINDING_TYPE,
   JS_TEMPLATE_SOURCE_MODE as SOURCE_MODE,
+  JS_TEMPLATE_SUPPORTED_KINDS,
 } from '../constants';
 import { JS_TEMPLATE_SCHEMA_URI as SCHEMA_URI } from '@nocobase/js-template-sdk/schema';
 import type { JsTemplateRuntimeSourceBinding } from './types';
@@ -59,7 +60,8 @@ export function isJsTemplateRuntimeSourceBinding(value: unknown): value is JsTem
     binding.type === JS_TEMPLATE_SOURCE_BINDING_TYPE &&
     isNonEmptyString(binding.projectId) &&
     isNonEmptyString(binding.templateId) &&
-    isNonEmptyString(binding.kind)
+    typeof binding.kind === 'string' &&
+    (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(binding.kind)
   );
 }
 

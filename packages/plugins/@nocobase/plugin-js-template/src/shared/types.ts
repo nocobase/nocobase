@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type {
+import {
   JS_TEMPLATE_HEALTH_STATUSES,
   JS_TEMPLATE_PROJECT_HEALTH_STATUSES,
   JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES,
+  JS_TEMPLATE_SUPPORTED_KINDS,
   JS_TEMPLATE_USAGE_RESOLVED_STATUSES,
   JS_TEMPLATE_SOURCE_BINDING_TYPE,
   JS_TEMPLATE_SOURCE_MODE,
-  JsTemplateKind,
+  type JsTemplateKind,
 } from '../constants';
 import type {
   RunJSSourceLocator,
@@ -30,6 +31,13 @@ import type {
 } from './vsc-file/public-api';
 
 export type { JsTemplateKind } from '../constants';
+
+export function assertJsTemplateKind(value: unknown): JsTemplateKind {
+  if (typeof value === 'string' && (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(value)) {
+    return value as JsTemplateKind;
+  }
+  throw new TypeError(`Unsupported JS Template kind: ${String(value)}`);
+}
 
 export type JsTemplateProjectLifecycleStatus = (typeof JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES)[number];
 
@@ -245,7 +253,7 @@ export interface JsTemplateDiagnostic {
 export interface CompiledJsTemplateArtifact {
   code: string;
   sourceMap?: string;
-  version: string;
+  runtimeVersion: string;
   entryPath: string;
   filesHash?: string;
   diagnostics?: JsTemplateDiagnostic[];
@@ -256,7 +264,7 @@ export interface JsTemplate {
   id: string;
   projectId: string;
   target: 'client';
-  kind: string;
+  kind: JsTemplateKind;
   templateName: string;
   entryPath: string;
   descriptorPath: string;
@@ -293,7 +301,7 @@ export interface JsTemplateCatalogEntry {
   projectName: string;
   projectTitle: string | null;
   projectLifecycleStatus: JsTemplateProjectLifecycleStatus;
-  kind: string;
+  kind: JsTemplateKind;
   templateName: string;
   title: string | null;
   description: string | null;
@@ -311,7 +319,7 @@ export type JsTemplateCompileTemplateStatus = 'success' | 'failed' | 'skipped';
 export interface JsTemplateSaveSourceCompileTemplateResult {
   templateId: string;
   templateName: string;
-  kind: string;
+  kind: JsTemplateKind;
   entryPath: string;
   status: JsTemplateCompileTemplateStatus;
   execution?: 'compiled' | 'skipped';
@@ -387,7 +395,7 @@ export interface JsTemplateCapabilities {
 }
 
 export interface JsTemplateCompilePreviewArtifactSummary {
-  version: string;
+  runtimeVersion: string;
   entryPath: string;
   filesHash?: string;
   metadata?: Record<string, unknown>;
@@ -399,7 +407,7 @@ export interface JsTemplateCompilePreviewTemplateResult {
   templateId: string | null;
   projectId: string;
   target: 'client';
-  kind: string;
+  kind?: JsTemplateKind;
   templateName: string;
   entryPath: string | null;
   status: JsTemplateCompilePreviewTemplateStatus;
@@ -448,7 +456,7 @@ export interface JsTemplateSelectableTemplateSummary {
   projectId: string;
   projectName?: string | null;
   projectTitle?: string | null;
-  kind: string;
+  kind: JsTemplateKind;
   templateName: string;
   entryPath: string;
   title: string | null;
@@ -472,7 +480,7 @@ export type JsTemplateRuntimeSourceBinding = {
   type: typeof JS_TEMPLATE_SOURCE_BINDING_TYPE;
   projectId: string;
   templateId: string;
-  kind: string;
+  kind: JsTemplateKind;
 };
 
 export interface SaveAsJsTemplateWorkspaceFile {
@@ -506,7 +514,7 @@ export interface SaveAsJsTemplateInput {
   sourceRepoId: string;
   sourceHeadCommitId: string | null;
   entryPath: string;
-  version: string;
+  runtimeVersion: string;
   files: SaveAsJsTemplateWorkspaceFile[];
   originBinding?: SaveAsJsTemplateOriginBinding;
   destination: SaveAsJsTemplateDestination;
@@ -527,10 +535,6 @@ export interface DetachJsTemplateToInlineInput {
   projectId: string;
   templateId: string;
   expectedProjectHeadCommitId: string;
-  entryPath: string;
-  kind: JsTemplateKind;
-  version: string;
-  files: SaveAsJsTemplateWorkspaceFile[];
 }
 
 export interface DetachJsTemplateToInlineResult {
@@ -538,7 +542,7 @@ export interface DetachJsTemplateToInlineResult {
   commitId: string;
   ownerFingerprint: string;
   code: string;
-  version: string;
+  runtimeVersion: string;
   entryPath: string;
   filesHash: string;
   sourceRef: {
@@ -575,7 +579,7 @@ export interface JsTemplateRuntimeResolveResult {
   artifactHash: string;
   artifactUrl: string;
   runtimeCodeHash: string;
-  version: string;
+  runtimeVersion: string;
   settings: Record<string, unknown>;
   settingsHash: string;
 }
@@ -585,7 +589,7 @@ export interface JsTemplateArtifact {
   runtimeCodeHash: string;
   code: string;
   sourceMap?: string;
-  version: string;
+  runtimeVersion: string;
   entryPath: string;
   runtimeContract: string;
   byteSize: number;

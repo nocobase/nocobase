@@ -22,6 +22,7 @@ import type {
   JsTemplateRuntimeResolveResult,
   JsTemplateSelectableTemplateSummary,
 } from '../../shared/types';
+import { assertJsTemplateKind } from '../../shared/types';
 import { templateFromModel } from './JsTemplateService';
 import type { JsTemplateServiceContext } from './JsTemplateProjectService';
 import { JsTemplateSettingsService } from './JsTemplateSettingsService';
@@ -137,7 +138,7 @@ export class JsTemplateRuntimeService {
       artifactHash: template.artifactHash,
       artifactUrl: buildJsTemplateArtifactUrl(template.artifactHash, this.options.apiBasePath),
       runtimeCodeHash: template.runtimeCodeHash,
-      version: template.runtimeVersion,
+      runtimeVersion: template.runtimeVersion,
       settings,
       settingsHash: stableJsonHash(settings),
     };
@@ -169,7 +170,7 @@ export class JsTemplateRuntimeService {
       runtimeCodeHash: String(record.get('runtimeCodeHash')),
       code: String(record.get('code')),
       ...(typeof record.get('sourceMap') === 'string' ? { sourceMap: String(record.get('sourceMap')) } : {}),
-      version: String(record.get('version')),
+      runtimeVersion: String(record.get('version')),
       entryPath: String(record.get('entryPath')),
       runtimeContract: String(record.get('runtimeContract')),
       byteSize: Number(record.get('byteSize')),
@@ -372,6 +373,7 @@ function assertRuntimeResolveInput(input: JsTemplateRuntimeResolveInput): void {
       throw invalidInput(`sourceBinding.${key} is required`);
     }
   }
+  assertSupportedKind(sourceBinding.kind);
   if (
     typeof input.settings !== 'undefined' &&
     input.settings !== null &&
@@ -447,7 +449,7 @@ function isSelectableRuntimeTemplate(
 interface SelectableTemplateProjection {
   id: string;
   projectId: string;
-  kind: string;
+  kind: JsTemplateKind;
   templateName: string;
   entryPath: string;
   title: string | null;
@@ -468,7 +470,7 @@ function selectableTemplateFromModel(record: Model): SelectableTemplateProjectio
   return {
     id: String(record.get('id')),
     projectId: String(record.get('projectId')),
-    kind: String(record.get('kind')),
+    kind: assertJsTemplateKind(record.get('kind')),
     templateName: String(record.get('templateName')),
     entryPath: String(record.get('entryPath')),
     title: nullableString(record.get('title')),

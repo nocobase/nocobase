@@ -34,6 +34,7 @@ import type {
   SaveAsJsTemplateWorkspaceFile,
   DetachJsTemplateToInlineInput,
   DetachJsTemplateToInlineResult,
+  JsTemplateKind,
 } from '../../shared/types';
 import { JsTemplateError } from '../../shared/errors';
 import { isJsTemplateRuntimeSourceBinding, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
@@ -45,6 +46,7 @@ import type { JsTemplateServiceContext } from './JsTemplateProjectService';
 import { JsTemplateProjectService } from './JsTemplateProjectService';
 import {
   JsTemplateSourceOperationStore,
+  type JsTemplateSourceOperationDescriptor,
   type JsTemplateSourceOperationReservation,
 } from './JsTemplateSourceOperationStore';
 import {
@@ -99,6 +101,14 @@ interface PreparedDetachJsTemplateToInline {
   changes: VscFileChange[];
 }
 
+/** @internal Removed from the HTTP contract; Task 02 will replace these transitional values with server-owned source reads. */
+interface DetachJsTemplateToInlineServiceInput extends DetachJsTemplateToInlineInput {
+  entryPath: string;
+  kind: JsTemplateKind;
+  runtimeVersion: string;
+  files: SaveAsJsTemplateWorkspaceFile[];
+}
+
 export class DetachJsTemplateToInlineService {
   private readonly sourceOperationStore: JsTemplateSourceOperationStore;
 
@@ -135,6 +145,7 @@ export class DetachJsTemplateToInlineService {
         return claimed.replayResult;
       }
       operation = claimed.reservation;
+      assertDetachJsTemplateToInlineServiceInput(input);
       assertRunJSCompileInputLimits(input.files);
       const relocatedFiles = collectAndRelocateInlineFiles({
         files: input.files,
@@ -195,7 +206,7 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async prepareDetachJsTemplateToInline(
-    input: DetachJsTemplateToInlineInput,
+    input: DetachJsTemplateToInlineServiceInput,
     ctx: DetachJsTemplateToInlineServiceContext,
     relocatedFiles: SaveAsJsTemplateWorkspaceFile[],
     vscFileService: VscFileService,
@@ -249,7 +260,7 @@ export class DetachJsTemplateToInlineService {
       kind: input.kind,
       templateName: template.templateName,
       entryPath,
-      runtimeVersion: input.version,
+      runtimeVersion: input.runtimeVersion,
       files: relocatedFiles,
     });
     if (!sourcePreparation.accepted) {
@@ -355,7 +366,7 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async publishDetachJsTemplateToInline(
-    input: DetachJsTemplateToInlineInput,
+    input: DetachJsTemplateToInlineServiceInput,
     ctx: DetachJsTemplateToInlineServiceContext,
     prepared: PreparedDetachJsTemplateToInline,
     vscFileService: VscFileService,
@@ -463,7 +474,7 @@ export class DetachJsTemplateToInlineService {
       commitId: pushed.commit.id,
       ownerFingerprint,
       code: prepared.artifact.code,
-      version: prepared.artifact.version,
+      runtimeVersion: prepared.artifact.version,
       entryPath: prepared.entryPath,
       filesHash: prepared.artifact.filesHash,
       sourceRef,
@@ -471,7 +482,7 @@ export class DetachJsTemplateToInlineService {
   }
 
   private async recordDetachJsTemplateToInlineSuccessAudit(
-    input: DetachJsTemplateToInlineInput,
+    input: DetachJsTemplateToInlineServiceInput,
     result: DetachJsTemplateToInlineResult,
     ctx: DetachJsTemplateToInlineServiceContext,
     transaction: Transaction,
@@ -497,7 +508,7 @@ export class DetachJsTemplateToInlineService {
 export function collectAndRelocateInlineFiles(input: {
   files: SaveAsJsTemplateWorkspaceFile[];
   entryPath: string;
-  kind?: DetachJsTemplateToInlineInput['kind'];
+  kind?: JsTemplateKind;
 }): SaveAsJsTemplateWorkspaceFile[] {
   const sourceFiles = new Map<string, SaveAsJsTemplateWorkspaceFile>();
   for (const file of input.files) {
@@ -551,11 +562,7 @@ export function collectAndRelocateInlineFiles(input: {
     });
 }
 
-function rewriteJsTemplateTypeImportsForInline(
-  path: string,
-  content: string,
-  kind?: DetachJsTemplateToInlineInput['kind'],
-): string {
+function rewriteJsTemplateTypeImportsForInline(path: string, content: string, kind?: JsTemplateKind): string {
   if (!isSourceCodeFile(path)) {
     return content;
   }
@@ -631,7 +638,7 @@ function rewriteJsTemplateTypeImportsForInline(
     );
 }
 
-function isInlineTypeModule(specifier: string, kind?: DetachJsTemplateToInlineInput['kind']): boolean {
+function isInlineTypeModule(specifier: string, kind?: JsTemplateKind): boolean {
   if (JS_TEMPLATE_SDK_TYPE_MODULES.has(specifier)) {
     return true;
   }
@@ -828,7 +835,7 @@ function getFlowModelRepository(db: Database): FlowModelRepositoryLike {
 function assertCurrentJsTemplateBinding(
   model: JsonRecord,
   locator: FlowModelStepLocator,
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
 ): void {
   const sourceRoot = getAtPath(model, [
     'stepParams',
@@ -854,7 +861,7 @@ function assertCurrentJsTemplateBinding(
 
 function assertCurrentTemplate(
   template: Awaited<ReturnType<JsTemplateService['getTemplate']>>,
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'entryPath' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'entryPath' | 'kind'>,
 ): void {
   if (
     template.id !== input.templateId ||
@@ -894,7 +901,7 @@ function assertExpectedProjectHead(
 async function setFlowModelSourceModeInline(
   db: Database,
   locator: FlowModelStepLocator,
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
   transaction: Transaction,
 ): Promise<void> {
   const model = await getFlowModel(db, locator.modelUid, transaction);
@@ -1016,14 +1023,35 @@ function assertDetachJsTemplateToInlineInputSupported(input: DetachJsTemplateToI
   return idempotencyKey;
 }
 
+function assertDetachJsTemplateToInlineServiceInput(
+  input: DetachJsTemplateToInlineInput | DetachJsTemplateToInlineServiceInput,
+): asserts input is DetachJsTemplateToInlineServiceInput {
+  if (
+    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).entryPath !== 'string' ||
+    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).kind !== 'string' ||
+    typeof (input as Partial<DetachJsTemplateToInlineServiceInput>).runtimeVersion !== 'string' ||
+    !Array.isArray((input as Partial<DetachJsTemplateToInlineServiceInput>).files)
+  ) {
+    throw invalidInput('Detach to inline source must be resolved by the server');
+  }
+}
+
 function createDetachJsTemplateToInlineOperationDescriptor(
   input: DetachJsTemplateToInlineInput,
   idempotencyKey: string,
-) {
+): JsTemplateSourceOperationDescriptor<
+  DetachJsTemplateToInlineResult,
+  Omit<DetachJsTemplateToInlineInput, 'idempotencyKey'>
+> {
   return {
     action: 'detach-to-inline',
     idempotencyKey,
-    request: { ...input, idempotencyKey: undefined },
+    request: {
+      locator: input.locator,
+      projectId: input.projectId,
+      templateId: input.templateId,
+      expectedProjectHeadCommitId: input.expectedProjectHeadCommitId,
+    },
     parseResult: readDetachJsTemplateToInlineOperationResult,
   };
 }
@@ -1035,7 +1063,7 @@ function readDetachJsTemplateToInlineOperationResult(value: unknown): DetachJsTe
     typeof value.commitId !== 'string' ||
     typeof value.ownerFingerprint !== 'string' ||
     typeof value.code !== 'string' ||
-    typeof value.version !== 'string' ||
+    typeof value.runtimeVersion !== 'string' ||
     typeof value.entryPath !== 'string' ||
     typeof value.filesHash !== 'string' ||
     !value.filesHash.trim() ||
@@ -1051,7 +1079,7 @@ function readDetachJsTemplateToInlineOperationResult(value: unknown): DetachJsTe
 }
 
 function bindingOutdated(
-  input: Pick<DetachJsTemplateToInlineInput, 'projectId' | 'templateId' | 'kind'>,
+  input: Pick<DetachJsTemplateToInlineServiceInput, 'projectId' | 'templateId' | 'kind'>,
 ): JsTemplateError {
   return new JsTemplateError(
     'JS_TEMPLATE_BINDING_OUTDATED',

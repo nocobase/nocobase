@@ -97,7 +97,7 @@ function createRunJSResolver(api: ApiClientLike, transport: RuntimeTransport): J
       const runtime = await resolveRuntimeSource(api, input, runtimeCache, transport);
       return {
         code: runtime.code,
-        version: runtime.version,
+        version: runtime.runtimeVersion,
         sourceMap: runtime.sourceMap,
         settings: runtime.settings,
         context: {
@@ -452,7 +452,7 @@ function toResolvedRuntime(
     templateId: response.templateId,
     entryPath: response.entryPath || artifact.entryPath,
     runtimeCodeHash: response.runtimeCodeHash,
-    version: response.version || artifact.version,
+    runtimeVersion: response.runtimeVersion || artifact.runtimeVersion,
     settings: response.settings,
   };
 }
@@ -549,7 +549,7 @@ function createTemplateMenuItem(
       template.entryPath,
       template.projectId,
       projectLabel,
-      getKindLabel(template.kind as JsTemplateKind, t),
+      getKindLabel(template.kind, t),
     ]
       .filter(Boolean)
       .join(' '),
@@ -632,7 +632,7 @@ export function isJsTemplateRuntimeSourceBinding(value: unknown): value is JsTem
     typeof value.templateId === 'string' &&
     value.templateId.trim().length > 0 &&
     typeof value.kind === 'string' &&
-    value.kind.trim().length > 0 &&
+    (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(value.kind) &&
     Object.keys(value).every((key) => JS_TEMPLATE_SOURCE_BINDING_KEYS.has(key))
   );
 }

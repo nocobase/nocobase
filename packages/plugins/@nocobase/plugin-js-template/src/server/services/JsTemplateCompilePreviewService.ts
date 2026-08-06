@@ -21,6 +21,7 @@ import type {
   JsTemplate,
   JsTemplateWorkspacePreviewInput,
   JsTemplateWorkspacePreviewResult,
+  JsTemplateKind,
 } from '../../shared/types';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { compileJsTemplateValidatedTemplate, validateJsTemplateWorkspace } from './JsTemplateCompileContract';
@@ -48,7 +49,7 @@ interface JsTemplateCompilePreviewTarget {
   templateId: string | null;
   projectId: string;
   target: 'client';
-  kind: string;
+  kind?: JsTemplateKind;
   templateName: string;
   entryPath: string | null;
   validationTemplate?: JsTemplateValidationResult;
@@ -310,7 +311,7 @@ export class JsTemplateCompilePreviewService {
         ? {
             code: compiled.artifact.code,
             sourceMap: compiled.artifact.sourceMap,
-            version: compiled.artifact.version,
+            runtimeVersion: compiled.artifact.version,
             entryPath: compiled.artifact.entryPath || validationTemplate.entryPath,
             filesHash: compiled.artifact.filesHash,
             diagnostics,
@@ -644,7 +645,6 @@ function buildUnknownTemplateTarget(projectId: string, templateId: string): JsTe
     templateId,
     projectId,
     target: 'client',
-    kind: 'unknown',
     templateName: templateId,
     entryPath: null,
     diagnostics: [diagnostic],
@@ -657,7 +657,7 @@ function buildSkippedTemplateResult(target: JsTemplateCompilePreviewTarget): JsT
     templateId: target.templateId,
     projectId: target.projectId,
     target: target.target,
-    kind: target.kind,
+    ...(target.kind ? { kind: target.kind } : {}),
     templateName: target.templateName,
     entryPath: target.entryPath,
     status: 'skipped',
@@ -674,7 +674,7 @@ function buildWorkspaceBlockedTemplateResult(
     templateId: target.templateId,
     projectId: target.projectId,
     target: target.target,
-    kind: target.kind,
+    ...(target.kind ? { kind: target.kind } : {}),
     templateName: target.templateName,
     entryPath: target.entryPath,
     status: target.validationTemplate ? 'failed' : 'skipped',
@@ -694,7 +694,7 @@ function summarizeArtifact(
   fallbackEntryPath: string,
 ): JsTemplateCompilePreviewArtifactSummary {
   return {
-    version: input.version,
+    runtimeVersion: input.version,
     entryPath: input.entryPath || fallbackEntryPath,
     filesHash: input.filesHash,
     metadata: input.metadata,

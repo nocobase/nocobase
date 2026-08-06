@@ -67,7 +67,7 @@ function registerCompilePreviewTests() {
         status: 'success',
         accepted: true,
         artifact: {
-          version: 'v2',
+          runtimeVersion: 'v2',
           entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
           metadata: expect.objectContaining({
             projectId: project.id,
@@ -151,7 +151,7 @@ function registerCompilePreviewTests() {
         accepted: true,
         diagnostics: [],
         artifact: {
-          version: 'v2',
+          runtimeVersion: 'v2',
           entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
           metadata: expect.objectContaining({
             projectId: project.id,
@@ -210,7 +210,7 @@ function registerCompilePreviewTests() {
         accepted: true,
         diagnostics: [],
         artifact: {
-          version: 'v2',
+          runtimeVersion: 'v2',
           entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
         },
       });

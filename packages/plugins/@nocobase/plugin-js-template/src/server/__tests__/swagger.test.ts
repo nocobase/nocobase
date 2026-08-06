@@ -121,6 +121,11 @@ describe('js-template swagger', () => {
     });
     expect(schemas.JsTemplateSourceBinding.additionalProperties).toBe(false);
     expect(schemas.JsTemplateDiagnostic.required).toEqual(expect.arrayContaining(['code', 'severity', 'message']));
+    expect(schemas.JsTemplateDiagnostic.properties.kind).toEqual({ type: 'string' });
+    expect(schemas.JsTemplateCompileArtifactSummary.required).toContain('runtimeVersion');
+    expect(schemas.JsTemplateCompileArtifactSummary.properties).not.toHaveProperty('version');
+    expect(schemas.CompiledJsTemplateArtifact.required).toContain('runtimeVersion');
+    expect(schemas.CompiledJsTemplateArtifact.properties).not.toHaveProperty('version');
     expect(schemas.JsTemplateErrorResponse.properties.errors.items).toEqual({
       $ref: '#/components/schemas/JsTemplateErrorItem',
     });
@@ -161,8 +166,9 @@ describe('js-template swagger', () => {
       $ref: '#/components/schemas/SaveAsJsTemplateRequest',
     });
     expect(schemas.SaveAsJsTemplateRequest.required).toEqual(
-      expect.arrayContaining(['idempotencyKey', 'locator', 'files', 'destination', 'templateName']),
+      expect.arrayContaining(['idempotencyKey', 'locator', 'runtimeVersion', 'files', 'destination', 'templateName']),
     );
+    expect(schemas.SaveAsJsTemplateRequest.properties).not.toHaveProperty('version');
     expect(schemas.SaveAsJsTemplateDestination.oneOf).toEqual([
       expect.objectContaining({ required: ['type', 'projectId'] }),
       expect.objectContaining({ required: ['type', 'name'] }),
@@ -176,9 +182,24 @@ describe('js-template swagger', () => {
     expect(detachToInline.requestBody.content['application/json'].schema).toEqual({
       $ref: '#/components/schemas/DetachJsTemplateToInlineRequest',
     });
-    expect(schemas.DetachJsTemplateToInlineRequest.required).toContain('idempotencyKey');
-    expect(schemas.DetachJsTemplateToInlineRequest.required).toContain('expectedProjectHeadCommitId');
+    expect(schemas.DetachJsTemplateToInlineRequest.required).toEqual([
+      'idempotencyKey',
+      'locator',
+      'projectId',
+      'templateId',
+      'expectedProjectHeadCommitId',
+    ]);
+    expect(Object.keys(schemas.DetachJsTemplateToInlineRequest.properties)).toEqual([
+      'idempotencyKey',
+      'locator',
+      'projectId',
+      'templateId',
+      'expectedProjectHeadCommitId',
+    ]);
+    expect(schemas.DetachJsTemplateToInlineRequest.additionalProperties).toBe(false);
     expect(schemas.DetachJsTemplateToInlineResult.required).toContain('filesHash');
+    expect(schemas.DetachJsTemplateToInlineResult.required).toContain('runtimeVersion');
+    expect(schemas.DetachJsTemplateToInlineResult.properties).not.toHaveProperty('version');
     expect(schemas.DetachJsTemplateToInlineResult.properties.filesHash).toEqual({
       type: 'string',
       minLength: 1,

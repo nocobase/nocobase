@@ -45,7 +45,7 @@ describe('JsTemplateRuntimeService', () => {
       artifactHash: 'a'.repeat(64),
       artifactUrl: `/api/jsTemplateRuntime:getArtifact/${'a'.repeat(64)}`,
       runtimeCodeHash: 'runtime_hash_1',
-      version: 'v2',
+      runtimeVersion: 'v2',
       settings: {
         threshold: 5,
         region: 'EMEA',
@@ -238,7 +238,6 @@ describe('JsTemplateRuntimeService', () => {
       {
         name: 'unsupported persisted kind',
         templateKind: 'unsupported-kind',
-        sourceKind: 'unsupported-kind',
         reasonCode: 'kind_unsupported',
       },
       {
@@ -257,18 +256,22 @@ describe('JsTemplateRuntimeService', () => {
     for (const blockedCase of blockedCases) {
       const { service } = createJsTemplateRuntimeService(blockedCase);
 
-      await expect(
-        service.resolve(
-          {
-            sourceMode: 'js-template',
-            sourceBinding: createSourceBinding({
-              kind: blockedCase.sourceKind || 'js-block',
-            }),
-            settings: {},
-          },
-          {},
-        ),
-      ).rejects.toMatchObject({
+      const resolution = service.resolve(
+        {
+          sourceMode: 'js-template',
+          sourceBinding: createSourceBinding({
+            kind: blockedCase.sourceKind || 'js-block',
+          }),
+          settings: {},
+        },
+        {},
+      );
+      if (blockedCase.templateKind === 'unsupported-kind') {
+        await expect(resolution).rejects.toThrow('Unsupported JS Template kind: unsupported-kind');
+        continue;
+      }
+
+      await expect(resolution).rejects.toMatchObject({
         code: blockedCase.errorCode || 'JS_TEMPLATE_RUNTIME_UNAVAILABLE',
         status: blockedCase.status || 409,
         details: {

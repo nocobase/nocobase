@@ -166,7 +166,7 @@ function normalizeSaveAsJsTemplateInput(input: ResourceActionInput): SaveAsJsTem
     sourceRepoId: requireString(input, 'sourceRepoId'),
     sourceHeadCommitId: optionalNullableString(input, 'sourceHeadCommitId') ?? null,
     entryPath: requireString(input, 'entryPath'),
-    version: requireString(input, 'version'),
+    runtimeVersion: requireString(input, 'runtimeVersion'),
     files: requireArray(input, 'files', normalizeSaveAsJsTemplateFile),
     originBinding: normalizeSaveAsJsTemplateOriginBinding(input.originBinding),
     destination: normalizeSaveAsJsTemplateDestination(input.destination),
@@ -204,17 +204,22 @@ function normalizeSaveAsJsTemplateOriginBinding(value: unknown): SaveAsJsTemplat
 }
 
 function normalizeDetachJsTemplateToInlineInput(input: ResourceActionInput): DetachJsTemplateToInlineInput {
+  assertOnlyProperties(input, ['idempotencyKey', 'locator', 'projectId', 'templateId', 'expectedProjectHeadCommitId']);
   return {
     idempotencyKey: requireIdempotencyKey(input),
     locator: normalizeRunJSSourceLocator(input.locator),
     projectId: requireProjectId(input),
     templateId: requireString(input, 'templateId'),
     expectedProjectHeadCommitId: requireString(input, 'expectedProjectHeadCommitId'),
-    entryPath: requireString(input, 'entryPath'),
-    kind: requireJsTemplateKind(input, 'kind'),
-    version: requireString(input, 'version'),
-    files: requireArray(input, 'files', normalizeSaveAsJsTemplateFile),
   };
+}
+
+function assertOnlyProperties(input: ResourceActionInput, allowedProperties: readonly string[]): void {
+  const allowed = new Set(allowedProperties);
+  const unexpectedProperties = Object.keys(input).filter((key) => !allowed.has(key));
+  if (unexpectedProperties.length > 0) {
+    throw invalidInput(`Unexpected properties: ${unexpectedProperties.sort().join(', ')}`);
+  }
 }
 
 function getSaveAsJsTemplateServiceContext(ctx: JsTemplateResourceContext): SaveAsJsTemplateServiceContext {

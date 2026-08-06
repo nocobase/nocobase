@@ -107,9 +107,9 @@ export const jsTemplateSchemas = {
   },
   JsTemplateCompileArtifactSummary: {
     type: 'object',
-    required: ['version', 'entryPath'],
+    required: ['runtimeVersion', 'entryPath'],
     properties: {
-      version: {
+      runtimeVersion: {
         type: 'string',
       },
       entryPath: {
@@ -152,7 +152,7 @@ export const jsTemplateSchemas = {
         minimum: 1,
       },
       kind: {
-        $ref: '#/components/schemas/JsTemplateKind',
+        type: 'string',
       },
       templateName: {
         type: 'string',
@@ -673,17 +673,7 @@ export const jsTemplateSchemas = {
   },
   JsTemplateCompileTemplateResult: {
     type: 'object',
-    required: [
-      'templateId',
-      'projectId',
-      'target',
-      'kind',
-      'templateName',
-      'entryPath',
-      'status',
-      'accepted',
-      'diagnostics',
-    ],
+    required: ['templateId', 'projectId', 'target', 'templateName', 'entryPath', 'status', 'accepted', 'diagnostics'],
     properties: {
       templateId: nullableString,
       projectId: {
@@ -723,7 +713,7 @@ export const jsTemplateSchemas = {
   },
   CompiledJsTemplateArtifact: {
     type: 'object',
-    required: ['code', 'version', 'entryPath'],
+    required: ['code', 'runtimeVersion', 'entryPath'],
     properties: {
       code: {
         type: 'string',
@@ -731,7 +721,7 @@ export const jsTemplateSchemas = {
       sourceMap: {
         type: 'string',
       },
-      version: {
+      runtimeVersion: {
         type: 'string',
       },
       entryPath: {
@@ -925,7 +915,7 @@ export const jsTemplateSchemas = {
       'sourceRepoId',
       'sourceHeadCommitId',
       'entryPath',
-      'version',
+      'runtimeVersion',
       'files',
       'destination',
       'templateName',
@@ -960,7 +950,7 @@ export const jsTemplateSchemas = {
         minLength: 1,
         description: 'Canonical entry path in the supplied RunJS workspace.',
       },
-      version: {
+      runtimeVersion: {
         type: 'string',
         minLength: 1,
         description: 'RunJS source version from the opened workspace.',
@@ -1008,17 +998,7 @@ export const jsTemplateSchemas = {
   },
   DetachJsTemplateToInlineRequest: {
     type: 'object',
-    required: [
-      'idempotencyKey',
-      'locator',
-      'projectId',
-      'templateId',
-      'expectedProjectHeadCommitId',
-      'entryPath',
-      'kind',
-      'version',
-      'files',
-    ],
+    required: ['idempotencyKey', 'locator', 'projectId', 'templateId', 'expectedProjectHeadCommitId'],
     properties: {
       idempotencyKey: {
         type: 'string',
@@ -1042,33 +1022,21 @@ export const jsTemplateSchemas = {
         minLength: 1,
         description: 'Exact Source Project Head observed with the workspace being copied to Inline.',
       },
-      entryPath: {
-        type: 'string',
-        minLength: 1,
-        description: 'Canonical entry path for the bound JS Template source.',
-      },
-      kind: {
-        $ref: '#/components/schemas/JsTemplateKind',
-      },
-      version: {
-        type: 'string',
-        minLength: 1,
-        description: 'Compiled JS Template source version being detached to Inline.',
-      },
-      files: {
-        type: 'array',
-        minItems: 1,
-        description: 'Complete source files reachable from the JS Template entry point.',
-        items: {
-          $ref: '#/components/schemas/JsTemplateWorkspaceFile',
-        },
-      },
     },
     additionalProperties: false,
   },
   DetachJsTemplateToInlineResult: {
     type: 'object',
-    required: ['runJSRepoId', 'commitId', 'ownerFingerprint', 'code', 'version', 'entryPath', 'filesHash', 'sourceRef'],
+    required: [
+      'runJSRepoId',
+      'commitId',
+      'ownerFingerprint',
+      'code',
+      'runtimeVersion',
+      'entryPath',
+      'filesHash',
+      'sourceRef',
+    ],
     properties: {
       runJSRepoId: {
         type: 'string',
@@ -1082,7 +1050,7 @@ export const jsTemplateSchemas = {
       code: {
         type: 'string',
       },
-      version: {
+      runtimeVersion: {
         type: 'string',
       },
       entryPath: {

@@ -476,8 +476,8 @@ export const jsTemplatePaths = {
       summary: 'Detach a JS Template workspace to Inline',
       description: [
         'Detach a JS Template workspace to Inline.',
-        'Compile and copy a complete reachable JS Template workspace into its bound RunJS Host, then remove that Host binding.',
-        'Pass the root business payload directly and use --body-file for multi-file source. idempotencyKey and expectedProjectHeadCommitId are required: the same complete request replays its first result, while a different request with the same key returns a conflict. HTTP 409 reports stale binding, Source Project Head, source, owner, or idempotency state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
+        'Compile and copy the server-owned JS Template source at expectedProjectHeadCommitId into its bound RunJS Host, then remove that Host binding.',
+        'Pass the five identity and CAS fields directly. idempotencyKey and expectedProjectHeadCommitId are required: the same request replays its first result, while a different request with the same key returns a conflict. HTTP 409 reports stale binding, Source Project Head, source, owner, or idempotency state. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance RunJS or Host state.',
       ].join('\n\n'),
       requestBody: {
         required: true,
@@ -490,7 +490,7 @@ export const jsTemplatePaths = {
           content: jsonContent('DetachJsTemplateToInlineEnvelope'),
         },
         400: errorResponse(
-          'The idempotency key, locator, Template binding identity, version, or reachable source workspace is invalid.',
+          'The idempotency key, locator, Template binding identity, or expected Source Project Head is invalid.',
         ),
         403: errorResponse('The current user cannot read the Template or write the bound RunJS Host.'),
         404: errorResponse(
