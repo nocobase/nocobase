@@ -132,6 +132,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       }),
       limit: query.limit,
       offset: query.offset,
+      rd: query.rd,
       contextParams: query.contextParams,
     };
     return data;
@@ -165,7 +166,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
-    debugLog('---ChartResource refresh', this.request.data);
+    debugLog('---ChartResource refresh');
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }
