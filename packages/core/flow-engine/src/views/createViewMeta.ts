@@ -474,12 +474,14 @@ interface PopupNodeResource {
 interface PopupNode {
   uid?: string;
   resource: PopupNodeResource;
+  sourceRecord?: unknown;
   parent?: PopupNode;
 }
 
 export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promise<PopupNode | undefined> {
   const stack = getViewStack(view);
   const currentIndex = getAnchoredViewStackIndex(view, stack);
+  const sourceRecord = view?.inputArgs?.parentItem?.value;
 
   const openerUids = view?.inputArgs?.openerUids;
   const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
@@ -502,6 +504,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
         filterByTk: args.filterByTk,
         sourceId: args.sourceId,
       },
+      ...(typeof sourceRecord !== 'undefined' ? { sourceRecord } : {}),
     };
   }
 
@@ -530,6 +533,9 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
     return node;
   };
   const currentNode = await buildNode(currentIndex);
+  if (currentNode && typeof sourceRecord !== 'undefined') {
+    currentNode.sourceRecord = sourceRecord;
+  }
   return currentNode;
 }
 
@@ -541,6 +547,30 @@ export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
   // - 任意层级 parent.parent... 下的 record / sourceRecord 及其子字段
   const POPUP_SERVER_PATH_RE =
     /^(?:record|sourceRecord)(?:\.|$)|^parent(?:\.parent)*(?:\.(?:record|sourceRecord))(?:\.|$)/;
+  const shouldResolveSourceRecordOnServer = (path: string): boolean => {
+    if (path !== 'sourceRecord' && !path.startsWith('sourceRecord.')) return false;
+
+    const parentItem = view?.inputArgs?.parentItem;
+    if (typeof parentItem?.value === 'undefined') return true;
+
+    const sourcePath = path === 'sourceRecord' ? '' : path.slice('sourceRecord.'.length);
+    if (!sourcePath) return false;
+
+    const parentItemResolver = view?.inputArgs?.parentItemResolver;
+    if (typeof parentItemResolver === 'function') {
+      return parentItemResolver(`value.${sourcePath}`);
+    }
+
+    const segments = sourcePath.split('.').filter(Boolean);
+    let current = parentItem.value;
+    for (const segment of segments) {
+      if (current === null || typeof current !== 'object' || !(segment in current)) {
+        return true;
+      }
+      current = current[segment];
+    }
+    return false;
+  };
   // 始终注册 popup 变量：
   // - 若当前视图无可推断记录，仅在元信息中不呈现 record 字段；
   // - 但仍可依据 navigation 推断并展示上级弹窗信息。
@@ -549,6 +579,9 @@ export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
     meta: createPopupMeta(ctx, view),
     resolveOnServer: (p: string) => {
       try {
+        if (p === 'sourceRecord' || p.startsWith('sourceRecord.')) {
+          return shouldResolveSourceRecordOnServer(p);
+        }
         return !!p && POPUP_SERVER_PATH_RE.test(p);
       } catch (_) {
         return false;
