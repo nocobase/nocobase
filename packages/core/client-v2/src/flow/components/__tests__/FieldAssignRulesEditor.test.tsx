@@ -23,6 +23,7 @@ const { mockFieldAssignValueInput, mockConditionBuilder } = vi.hoisted(() => ({
       data-assoc-label={String(props?.associationFieldNamesOverride?.label || '')}
       data-assoc-value={String(props?.associationFieldNamesOverride?.value || '')}
       data-date-constant={props?.enableDateVariableAsConstant ? 'yes' : 'no'}
+      data-preserve-cascade-parent-chain={props?.preserveCascadeParentChain ? 'yes' : 'no'}
     />
   )),
   mockConditionBuilder: vi.fn((props: any) => (
@@ -1241,6 +1242,25 @@ describe('FieldAssignRulesEditor', () => {
     expect(lastCall?.[0]?.mode).toBe('override');
   });
 
+  it('passes cascade parent-chain preservation intent for default value mode', () => {
+    const value: FieldAssignRuleItem[] = [
+      {
+        key: '1',
+        enable: true,
+        targetPath: 'profile',
+        mode: 'default',
+      },
+    ];
+
+    render(
+      wrap(<FieldAssignRulesEditor t={t} fieldOptions={[]} value={value} showCondition={false} showEnable={false} />),
+    );
+
+    const latestInputCall = mockFieldAssignValueInput.mock.calls[mockFieldAssignValueInput.mock.calls.length - 1]?.[0];
+    expect(latestInputCall?.preserveCascadeParentChain).toBe(true);
+    expect(screen.getByTestId('mock-value-input')).toHaveAttribute('data-preserve-cascade-parent-chain', 'yes');
+  });
+
   it('shows assignment mode tooltips for each option', async () => {
     const value: FieldAssignRuleItem[] = [
       {
@@ -1401,7 +1421,10 @@ describe('FieldAssignRulesEditor', () => {
 
     const itemNode = merged.find((node) => node.name === 'item');
     expect(itemNode).toBeTruthy();
-    const parent = ((itemNode?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');
+    if (!itemNode) {
+      throw new Error('Expected item node in merged meta tree.');
+    }
+    const parent = (itemNode.children as MetaTreeNode[]).find((node) => node.name === 'parentItem');
     expect(parent).toBeTruthy();
 
     const nestedParent = ((parent?.children as MetaTreeNode[]) || []).find((node) => node.name === 'parentItem');

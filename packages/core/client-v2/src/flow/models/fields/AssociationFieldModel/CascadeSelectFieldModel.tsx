@@ -146,13 +146,21 @@ function buildTree(data, idField = 'id', parentField = 'parentId') {
   return tree;
 }
 
-function buildParentChain(options = []) {
+export function buildParentChain(options = []) {
   return options.reduce((parent, cur) => {
     return {
       ...cur,
       parent: parent ? omit(parent, ['children']) : null,
     };
   }, null);
+}
+
+export function normalizeCascadeSelectedRecord(option: unknown) {
+  if (!isPlainRecord(option)) {
+    return option;
+  }
+
+  return omit(option, ['children', 'parent']);
 }
 interface Props {
   value: any[]; // 当前选中数组，每一项是 Cascader 的 value
@@ -242,12 +250,11 @@ const SortableItem: React.FC<{
           )}
           fieldNames={fieldNames}
           onChange={(value, item) => {
-            const isTreeTemplate = others?.collectionField?.targetCollection?.template === 'tree';
-            if (underDefaultValueConfig || isTreeTemplate) {
+            if (underDefaultValueConfig || others.preserveCascadeParentChain) {
               onChange(index, buildParentChain(item));
             } else {
               const val = last(item);
-              onChange(index, val);
+              onChange(index, normalizeCascadeSelectedRecord(val));
             }
           }}
           changeOnSelect
@@ -332,6 +339,7 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
 
 export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
+  updateAssociation = false;
 
   get collectionField(): CollectionField {
     return this.context.collectionField;
@@ -539,12 +547,11 @@ const ToOneCascadeSelect: React.FC<any> = (props: any) => {
       onSearch={(value) => onSearch(value)}
       displayRender={renderDisplay}
       onChange={(value, item) => {
-        const isTreeTemplate = props?.collectionField?.targetCollection?.template === 'tree';
-        if (underDefaultValueConfig || isTreeTemplate) {
+        if (underDefaultValueConfig || props.preserveCascadeParentChain) {
           onChange(buildParentChain(item));
         } else {
           const val = last(item);
-          onChange(val);
+          onChange(normalizeCascadeSelectedRecord(val));
         }
       }}
       value={cascaderValue.length ? cascaderValue : undefined}

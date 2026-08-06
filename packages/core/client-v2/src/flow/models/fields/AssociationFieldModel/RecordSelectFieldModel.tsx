@@ -493,6 +493,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
 
 export class RecordSelectFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
+  updateAssociation = false;
 
   get collectionField(): CollectionField {
     return this.context.collectionField;

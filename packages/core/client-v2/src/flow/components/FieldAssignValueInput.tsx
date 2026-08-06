@@ -341,6 +341,8 @@ interface Props {
    * 默认 false，保持历史行为。
    */
   enableDateVariableAsConstant?: boolean;
+  /** 默认值配置里的级联选择需要保存父链，用于后续显示完整路径。 */
+  preserveCascadeParentChain?: boolean;
   maxAssociationFieldDepth?: number;
 }
 
@@ -712,6 +714,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   preferFormItemFieldModel,
   associationFieldNamesOverride,
   enableDateVariableAsConstant = false,
+  preserveCascadeParentChain = false,
   maxAssociationFieldDepth = 2,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
@@ -805,8 +808,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     }
 
     // 2) 未配置字段：优先按根集合解析顶层字段（例如 foo / user）
-    const rootCollection = getCollectionFromModel((flowCtx as any).model);
-    const blockModel = (flowCtx as any).model?.context?.blockModel || (flowCtx as any).model;
+    const rootCollection = getCollectionFromModel(flowCtx.model);
+    const blockModel = flowCtx.model?.context?.blockModel || flowCtx.model;
     const empty: ResolvedFieldContext = {
       itemModel: null,
       collection: null,
@@ -1027,6 +1030,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       customFieldProps,
       collectionField: effectiveCollectionField,
     });
+    if (
+      preserveCascadeParentChain &&
+      (effectiveFieldModelUse === 'CascadeSelectFieldModel' || effectiveFieldModelUse === 'CascadeSelectListFieldModel')
+    ) {
+      tempFieldProps.preserveCascadeParentChain = true;
+    }
 
     const sourceContext = resolved?.itemModel?.context || flowCtx.model?.context;
     const created = engine?.createModel?.(
@@ -1140,6 +1149,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     preferFormItemFieldModel,
     associationFieldNamesOverride?.label,
     associationFieldNamesOverride?.value,
+    preserveCascadeParentChain,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
@@ -1235,7 +1245,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       );
     };
     return C;
-  }, [placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue, operator]);
+  }, [operator, placeholder, tempRoot, coerceEmptyValueForRenderer, normalizeEventValue]);
 
   const DateVariableConstantEditor = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => {
