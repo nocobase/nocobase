@@ -7,8 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CtxDateExpressionConfig, CtxDateRelativeUnit } from '@nocobase/flow-engine';
-import { useFlowContext } from '@nocobase/flow-engine';
+import {
+  parseValueToPath,
+  resolveCtxDatePath,
+  serializeCtxDateExpressionConfig,
+  useFlowContext,
+  type CtxDateExpressionConfig,
+  type CtxDateRelativeUnit,
+} from '@nocobase/flow-engine';
 import { AutoComplete, Input, InputNumber, Select, Space } from 'antd';
 import type { Dayjs } from 'dayjs';
 import React from 'react';
@@ -47,6 +53,16 @@ export function getDefaultDateVariableFormat(config: CtxDateExpressionConfig): s
   return config.kind === 'preset' && config.preset === 'now' ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
 }
 
+export function getDateVariableFormatPreview(config: CtxDateExpressionConfig): string {
+  const format = config.format?.trim() ? config.format : getDefaultDateVariableFormat(config);
+  const expression = serializeCtxDateExpressionConfig({ ...config, format });
+  if (!expression) return '';
+
+  const resolved = resolveCtxDatePath(parseValueToPath(expression));
+  if (Array.isArray(resolved)) return resolved.map(String).join(' – ');
+  return resolved == null ? '' : String(resolved);
+}
+
 export function serializeExactDatePickerValue(
   value: ExactDatePickerValue,
   showTime: boolean,
@@ -69,8 +85,9 @@ type DateVariableEditorProps = {
 const DateFormatEditor: React.FC<{
   value: string;
   placeholder: string;
+  preview: string;
   onChange: (value: string) => void;
-}> = ({ value, placeholder, onChange }) => {
+}> = ({ value, placeholder, preview, onChange }) => {
   const ctx = useFlowContext();
   return (
     <Space.Compact style={{ width: '100%' }}>
@@ -82,6 +99,13 @@ const DateFormatEditor: React.FC<{
         onChange={(nextValue) => onChange(nextValue.slice(0, 128))}
         style={{ flex: 1, minWidth: 0 }}
         aria-label={ctx.t('Format')}
+      />
+      <Input
+        value={preview}
+        readOnly
+        tabIndex={-1}
+        aria-label={ctx.t('Preview')}
+        style={{ flex: '0 1 180px', minWidth: 120, pointerEvents: 'none' }}
       />
     </Space.Compact>
   );
@@ -156,7 +180,12 @@ export const DateVariableEditor: React.FC<DateVariableEditorProps> = ({
     <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 8, width: '100%', minWidth: 0, ...style }}>
       {renderValueEditor()}
       {!isDateLikeField && (
-        <DateFormatEditor value={format} placeholder={getDefaultDateVariableFormat(value)} onChange={updateFormat} />
+        <DateFormatEditor
+          value={format}
+          placeholder={getDefaultDateVariableFormat(value)}
+          preview={getDateVariableFormatPreview(value)}
+          onChange={updateFormat}
+        />
       )}
     </div>
   );
