@@ -61,6 +61,9 @@ jobs:
           gh pr checkout ${{ inputs.nocobase_pr_number }}
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Prepare image build Dockerfile
+        shell: bash
+        run: git show "${GITHUB_SHA}:Dockerfile" > Dockerfile.pr-image
       - name: Checkout pro-plugins
         uses: actions/checkout@v4
         with:
@@ -135,7 +138,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile
+          file: Dockerfile.pr-image
           target: app-artifact
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
