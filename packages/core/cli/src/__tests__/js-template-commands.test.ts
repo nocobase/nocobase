@@ -93,13 +93,13 @@ async function startFakeRuntime(): Promise<void> {
     new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
 
-function templateEnvelope() {
+function templateEnvelope(kind = 'js-block') {
   return {
     data: {
       id: 'jtt_demo',
       projectId: 'jtp_demo',
       target: 'client',
-      kind: 'js-block',
+      kind,
       templateName: 'demo',
       entryPath: 'src/client/demo/index.tsx',
       descriptorPath: 'src/client/demo/entry.json',
@@ -159,8 +159,9 @@ function commandFlags(workspace: string) {
 async function runPull(
   workspace: string,
   headCommitId: string | null = null,
+  kind = 'js-block',
 ) {
-  fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope() });
+  fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope(kind) });
   fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope(headCommitId) });
   const command = createCommandHarness(
     {
@@ -228,6 +229,17 @@ describe('nb js-template pull/check/save', () => {
     expect(JsTemplateCheck.summary).toContain('JS Template');
     expect(JsTemplateSave.summary).toContain('JS Template');
   });
+
+  test.each(['js-block', 'js-page', 'js-field', 'js-action', 'js-item'])(
+    'pulls a supported %s workspace',
+    async (kind) => {
+      const workspace = await createTempWorkspace();
+      await runPull(workspace, null, kind);
+
+      const state = JSON.parse(await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'));
+      expect(state.template.kind).toBe(kind);
+    },
+  );
 
   test('uses the canonical JS Template HTTP resources', async () => {
     const workspace = await createTempWorkspace();

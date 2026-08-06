@@ -24,7 +24,15 @@ export const JS_TEMPLATE_EXIT_CODES = {
   forbidden: 4,
 } as const;
 
-const SUPPORTED_KINDS = new Set(['js-block', 'js-page']);
+export type JsTemplateKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+
+const SUPPORTED_KINDS = new Set<JsTemplateKind>([
+  'js-block',
+  'js-page',
+  'js-field',
+  'js-action',
+  'js-item',
+]);
 const TOP_LEVEL_GENERATED_DIRECTORIES = new Set([
   '.cache',
   '.next',
@@ -61,7 +69,7 @@ export interface JsTemplateRecord {
   id: string;
   projectId: string;
   target: 'client';
-  kind: 'js-block' | 'js-page';
+  kind: JsTemplateKind;
   templateName: string;
   entryPath: string;
   descriptorPath: string;
@@ -131,7 +139,7 @@ export interface JsTemplateWorkspaceState {
   };
   template: {
     id: string;
-    kind: 'js-block' | 'js-page';
+    kind: JsTemplateKind;
     name: string;
     path: string;
     descriptorPath: string;
@@ -249,8 +257,8 @@ function requireNullableString(value: unknown, label: string): string | null {
   return requireString(value, label);
 }
 
-function isSupportedKind(value: string): value is 'js-block' | 'js-page' {
-  return SUPPORTED_KINDS.has(value);
+function isSupportedKind(value: string): value is JsTemplateKind {
+  return SUPPORTED_KINDS.has(value as JsTemplateKind);
 }
 
 function sanitizeApiBaseUrl(value: string): string {
@@ -393,7 +401,7 @@ export function extractTemplateRecord(value: unknown): JsTemplateRecord {
         { kind },
         {
           fallback:
-            'The local JS Template workflow only supports JS Block and JS Page templates; received "{{kind}}". Use the raw API command for other kinds.',
+            'The local JS Template workflow supports js-block, js-page, js-field, js-action, and js-item templates; received "{{kind}}".',
         },
       ),
     );

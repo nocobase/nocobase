@@ -1358,6 +1358,9 @@ function resolveRunJsSourceBindingKindForUse(use: unknown): RunJsSourceBindingKi
   if (normalizedUse === 'JSBlockModel') {
     return 'js-block';
   }
+  if (normalizedUse === 'JSPageModel') {
+    return 'js-page';
+  }
   if (['JSFieldModel', 'JSEditableFieldModel', 'JSColumnModel'].includes(normalizedUse)) {
     return 'js-field';
   }
@@ -21742,6 +21745,7 @@ export class FlowSurfacesService {
       use,
     });
     assertSupportedSimpleChanges('page', changes, allowedKeys);
+    const runJsSourceChanges = use === 'JSPageModel' ? buildRunJsSourceChanges(changes) : undefined;
     return this.updateSettings(
       {
         target,
@@ -21752,27 +21756,29 @@ export class FlowSurfacesService {
           icon: changes.icon,
           enableHeader: changes.enableHeader,
         }),
-        stepParams: hasDefinedValue(changes, [
-          'title',
-          'documentTitle',
-          'displayTitle',
-          'enableTabs',
-          'icon',
-          'enableHeader',
-        ])
-          ? {
-              pageSettings: {
-                general: buildDefinedPayload({
-                  title: changes.title,
-                  documentTitle: changes.documentTitle,
-                  displayTitle: changes.displayTitle,
-                  enableTabs: changes.enableTabs,
-                  icon: changes.icon,
-                  enableHeader: changes.enableHeader,
-                }),
-              },
-            }
-          : undefined,
+        stepParams: buildDefinedPayload({
+          ...(hasDefinedValue(changes, ['title', 'documentTitle', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'])
+            ? {
+                pageSettings: {
+                  general: buildDefinedPayload({
+                    title: changes.title,
+                    documentTitle: changes.documentTitle,
+                    displayTitle: changes.displayTitle,
+                    enableTabs: changes.enableTabs,
+                    icon: changes.icon,
+                    enableHeader: changes.enableHeader,
+                  }),
+                },
+              }
+            : {}),
+          ...(runJsSourceChanges
+            ? {
+                jsSettings: {
+                  runJs: runJsSourceChanges,
+                },
+              }
+            : {}),
+        }),
       },
       options,
     );

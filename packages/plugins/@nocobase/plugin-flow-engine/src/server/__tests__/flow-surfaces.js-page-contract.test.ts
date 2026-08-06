@@ -478,7 +478,7 @@ describe('flowSurfaces JS page contract', () => {
     }
   });
 
-  it('locates JS pages without inventing tabs and exposes only page-level configuration', async () => {
+  it('locates JS pages without inventing tabs and exposes page metadata plus reusable source configuration', async () => {
     const page = await createJSPage(context, `JS page ${Date.now()}`);
 
     for (const locator of [
@@ -509,8 +509,32 @@ describe('flowSurfaces JS page contract', () => {
       }),
     );
     expect(catalog.blocks || []).toEqual([]);
-    expect(Object.keys(catalog.node.configureOptions)).toEqual(['title', 'documentTitle', 'displayTitle']);
+    expect(Object.keys(catalog.node.configureOptions)).toEqual([
+      'title',
+      'documentTitle',
+      'displayTitle',
+      'sourceMode',
+      'sourceBinding',
+      'settings',
+    ]);
     expect(catalog.node.editableDomains).toEqual(['props', 'stepParams']);
+    expect(catalog.node.settingsContract.stepParams.groups.jsSettings).toMatchObject({
+      allowedPaths: ['runJs.sourceMode', 'runJs.sourceBinding', 'runJs.settings.*'],
+      pathSchemas: {
+        'runJs.sourceBinding': {
+          properties: {
+            kind: { enum: ['js-page'] },
+          },
+        },
+      },
+    });
+
+    const sourceBinding = {
+      type: 'js-template-entry',
+      projectId: 'jtp_dashboards',
+      templateId: 'jtt_sales_dashboard',
+      kind: 'js-page',
+    };
 
     const configureRes = await context.rootAgent.resource('flowSurfaces').configure({
       values: {
@@ -519,6 +543,13 @@ describe('flowSurfaces JS page contract', () => {
           title: 'Updated JS page',
           documentTitle: 'Updated JS document',
           displayTitle: false,
+          sourceMode: 'js-template',
+          sourceBinding,
+          settings: {
+            enabled: false,
+            threshold: 0,
+            label: '',
+          },
         },
       },
     });
@@ -542,6 +573,17 @@ describe('flowSurfaces JS page contract', () => {
             displayTitle: false,
           },
         },
+        jsSettings: {
+          runJs: {
+            sourceMode: 'js-template',
+            sourceBinding,
+            settings: {
+              enabled: false,
+              threshold: 0,
+              label: '',
+            },
+          },
+        },
       },
     });
 
@@ -555,6 +597,17 @@ describe('flowSurfaces JS page contract', () => {
     });
     expect(rejectedConfigure.status).toBe(400);
     expect(readErrorMessage(rejectedConfigure)).toContain('enableTabs');
+
+    const rejectedCodeConfigure = await context.rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: page.pageUid },
+        changes: {
+          code: 'ctx.render(null);',
+        },
+      },
+    });
+    expect(rejectedCodeConfigure.status).toBe(400);
+    expect(readErrorMessage(rejectedCodeConfigure)).toContain('code');
   });
 
   it('keeps synthetic get and lazy-created get on JSPageModel without writing during read', async () => {

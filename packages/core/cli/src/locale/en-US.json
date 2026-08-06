@@ -155,7 +155,7 @@
         "checkArraysInvalid": "Workspace check diagnostics are missing or invalid.",
         "httpFailure": "{{operation}} failed with HTTP {{status}}.",
         "clientTemplatesOnly": "The local JS Template workflow only supports client templates.",
-        "unsupportedTemplateKind": "The local JS Template workflow only supports JS Block and JS Page templates; received \"{{kind}}\". Use the raw API command for other kinds.",
+        "unsupportedTemplateKind": "The local JS Template workflow supports js-block, js-page, js-field, js-action, and js-item templates; received \"{{kind}}\".",
         "pullFilesMissing": "Pull response must include the complete files array.",
         "invalidWorkspacePath": "Invalid workspace path: {{path}}",
         "nonUtf8Unsupported": "Binary or non-UTF-8 files are not supported by the first local Agent workflow: {{path}}.",

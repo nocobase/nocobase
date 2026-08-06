@@ -3359,6 +3359,9 @@ describe('JS Template conversion resource integration', () => {
       const ctx = {
         action: {
           params: {
+            resourceName: 'jsTemplates',
+            actionName: 'detachToInline',
+            filterByTk: undefined,
             values: {
               idempotencyKey: '  detach-to-inline-sales-v1  ',
               expectedProjectHeadCommitId: 'commit_template_head',

@@ -87,9 +87,14 @@ export function getActionInput(ctx: JsTemplateResourceContext): ResourceActionIn
   const params = toRecord(ctx.action?.params);
   const values = toRecord(params.values);
   const { values: _values, ...queryParams } = params;
+  const publicQueryParams = Object.fromEntries(
+    Object.entries(queryParams).filter(
+      ([key, value]) => key !== 'resourceName' && key !== 'actionName' && typeof value !== 'undefined',
+    ),
+  );
 
   return {
-    ...queryParams,
+    ...publicQueryParams,
     ...values,
   };
 }

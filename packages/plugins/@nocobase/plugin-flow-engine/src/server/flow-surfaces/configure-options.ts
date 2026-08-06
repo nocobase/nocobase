@@ -142,7 +142,7 @@ const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
-type JS_SOURCE_BINDING_KIND = 'js-block' | 'js-field' | 'js-action' | 'js-item';
+type JS_SOURCE_BINDING_KIND = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
 
 const JS_SOURCE_MODE = stringOption('JS source mode', {
   enum: ['inline', 'js-template'],
@@ -156,6 +156,11 @@ const JS_SOURCE_EXAMPLES: Record<
   'js-block': {
     projectId: 'jtp_sales',
     templateId: 'jtt_kpi_cards',
+    settings: { region: 'APAC' },
+  },
+  'js-page': {
+    projectId: 'jtp_dashboards',
+    templateId: 'jtt_sales_dashboard',
     settings: { region: 'APAC' },
   },
   'js-field': {
@@ -231,6 +236,7 @@ const JS_PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   title: PAGE_OPTIONS.title,
   documentTitle: PAGE_OPTIONS.documentTitle,
   displayTitle: PAGE_OPTIONS.displayTitle,
+  ...createJSSourceOptions('js-page'),
 };
 
 const TAB_OPTIONS: FlowSurfaceConfigureOptions = {

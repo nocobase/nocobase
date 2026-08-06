@@ -247,7 +247,7 @@ const RUN_JS_SETTINGS_GROUP = {
     'runJs.version': STRING_SCHEMA,
   },
 };
-type FlowSurfaceRunJsSourceBindingKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
+type FlowSurfaceRunJsSourceBindingKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
 
 function createRunJsSourceBindingSchema(kind: FlowSurfaceRunJsSourceBindingKind) {
   return {
@@ -287,6 +287,19 @@ function createJsTemplateRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBindingK
 }
 
 const JS_BLOCK_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-block');
+const JS_PAGE_RUN_JS_SETTINGS_GROUP = {
+  allowedPaths: RUN_JS_SOURCE_ALLOWED_PATHS,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['runJs'],
+  pathSchemas: {
+    'runJs.sourceMode': {
+      type: 'string',
+      enum: ['inline', 'js-template'],
+    },
+    'runJs.sourceBinding': createRunJsSourceBindingSchema('js-page'),
+    'runJs.settings': OBJECT_SCHEMA,
+  },
+};
 const JS_FIELD_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-field');
 const JS_ACTION_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-action');
 const JS_ITEM_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-item');
@@ -930,7 +943,12 @@ PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
 const JS_PAGE_NODE_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams'],
   props: ['title', 'displayTitle'],
-  stepParams: ['pageSettings'],
+  stepParams: ['pageSettings', 'jsSettings'],
+  eventBindings: {
+    jsSettings: {
+      stepKeys: ['runJs'],
+    },
+  },
 });
 JS_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
   pageSettings: {
@@ -942,6 +960,7 @@ JS_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
       'general.displayTitle': BOOLEAN_SCHEMA,
     },
   },
+  jsSettings: JS_PAGE_RUN_JS_SETTINGS_GROUP,
 });
 
 const TRIGGER_CHILD_PAGE_NODE_CONTRACT = createContract({

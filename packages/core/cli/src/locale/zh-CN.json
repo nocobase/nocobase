@@ -155,7 +155,7 @@
         "checkArraysInvalid": "Workspace 检查结果中的 diagnostics 缺失或无效。",
         "httpFailure": "{{operation}} 失败，HTTP 状态码为 {{status}}。",
         "clientTemplatesOnly": "本地 JS 模板工作流仅支持客户端模板。",
-        "unsupportedTemplateKind": "本地 JS 模板工作流仅支持 JS Block 和 JS Page 模板；收到“{{kind}}”。其他类型请使用原始 API 命令。",
+        "unsupportedTemplateKind": "本地 JS 模板工作流支持 js-block、js-page、js-field、js-action 和 js-item 模板；收到“{{kind}}”。",
         "pullFilesMissing": "拉取响应必须包含完整的 files 数组。",
         "invalidWorkspacePath": "Workspace 路径无效：{{path}}",
         "nonUtf8Unsupported": "首版本地 Agent 工作流不支持二进制或非 UTF-8 文件：{{path}}。",
