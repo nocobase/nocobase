@@ -215,9 +215,9 @@ export function WorkflowFormDrawer(props: WorkflowFormDrawerProps) {
             'Execute workflow asynchronously or synchronously based on trigger type, and could not be changed after created.',
           )}
         >
-          {/* Execute mode is fixed after creation — disabled in edit mode (v1 parity),
-              and also when the trigger type forces a sync mode. */}
-          <SyncModeSelect disabled={syncLocked || mode === 'edit'} />
+          {/* Execute mode is unavailable until a trigger is selected, fixed after creation, and also locked when the
+              trigger type forces a sync mode. */}
+          <SyncModeSelect disabled={!watchedType || syncLocked || mode === 'edit'} />
         </Form.Item>
         <Form.Item name="categories" label={t('Category')}>
           <Select mode="multiple" allowClear options={categoryOptions} optionFilterProp="label" />
