@@ -158,8 +158,15 @@ vi.mock('antd-mobile', () => {
       mockState.popupProps = props;
       return props.visible ? <div data-testid="popup">{props.children}</div> : null;
     },
-    SearchBar: ({ value, onChange }: any) => (
-      <input data-testid="search" value={value ?? ''} onChange={(e) => onChange?.(e.target.value)} />
+    SearchBar: ({ value, onChange, onCancel, cancelText, showCancelButton }: any) => (
+      <div>
+        <input data-testid="search" value={value ?? ''} onChange={(e) => onChange?.(e.target.value)} />
+        {showCancelButton && value ? (
+          <button type="button" onClick={onCancel}>
+            {cancelText ?? '取消'}
+          </button>
+        ) : null}
+      </div>
     ),
     CheckList: MockCheckList,
   };
@@ -287,6 +294,17 @@ describe('MobileSelect in SubForm/SubTable containers', () => {
 describe('MobileLazySelect', () => {
   beforeEach(() => {
     resetMockState();
+  });
+
+  it('renders a translated cancel action after searching', () => {
+    renderMobileLazySelect();
+
+    openLazyPopup();
+    act(() => {
+      fireEvent.change(screen.getByTestId('search'), { target: { value: '11' } });
+    });
+
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
   it('keeps pending relation records selected until confirm', () => {
