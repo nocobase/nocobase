@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { parseSettingsTypeImport, type JsTemplateClientTypegenKind } from '@nocobase/js-template-sdk/typegen';
+import {
+  parseSettingsTypeImport,
+  type JsTemplateClientTypegenKind,
+  type JsTemplateSettingsAuthoringContract,
+  type JsTemplateSettingsAuthoringContractLookup,
+} from '@nocobase/js-template-sdk/typegen';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 
@@ -40,6 +45,10 @@ export interface RewriteJsTemplateAuthoringImportsResult {
   diagnostics: JsTemplateAuthoringImportDiagnostic[];
 }
 
+export interface JsTemplateAuthoringImportOptions {
+  settingsContracts?: JsTemplateSettingsAuthoringContractLookup;
+}
+
 interface TypeParameterSpec {
   defaultType: string;
   name: string;
@@ -56,6 +65,7 @@ interface SdkAuthoringModule {
 }
 
 interface SettingsAuthoringModule {
+  contract?: JsTemplateSettingsAuthoringContract;
   kind: JsTemplateClientTypegenKind;
   specifier: string;
 }
@@ -63,7 +73,7 @@ interface SettingsAuthoringModule {
 type AuthoringModule =
   | { kind: 'sdk'; module: SdkAuthoringModule; specifier: string }
   | { kind: 'settings'; module: SettingsAuthoringModule; specifier: string }
-  | { kind: 'invalid-settings'; specifier: string };
+  | { kind: 'invalid-settings'; missingFromWorkspace?: boolean; specifier: string };
 
 const contextRecordType = 'Record<string, unknown>';
 const pageRuntimeFacadeType =
@@ -215,11 +225,12 @@ export function isJsTemplateAuthoringModuleSpecifier(specifier: string): boolean
 export function analyzeJsTemplateAuthoringImportDeclaration(
   node: ts.ImportDeclaration,
   sourceFile: ts.SourceFile,
+  options: JsTemplateAuthoringImportOptions = {},
 ): JsTemplateAuthoringImportAnalysis {
   if (!ts.isStringLiteral(node.moduleSpecifier)) {
     return unrecognizedAnalysis();
   }
-  const authoringModule = classifyAuthoringModule(node.moduleSpecifier.text);
+  const authoringModule = classifyAuthoringModule(node.moduleSpecifier.text, options);
   if (!authoringModule) {
     return unrecognizedAnalysis();
   }
@@ -228,6 +239,7 @@ export function analyzeJsTemplateAuthoringImportDeclaration(
       sourceFile,
       node.moduleSpecifier.getStart(sourceFile),
       authoringModule.specifier,
+      authoringModule.missingFromWorkspace,
     );
   }
   if (authoringModule.kind === 'settings') {
@@ -240,17 +252,23 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
   node: ts.ImportTypeNode,
   sourceFile: ts.SourceFile,
   rewrittenTypeArguments?: readonly string[],
+  options: JsTemplateAuthoringImportOptions = {},
 ): JsTemplateAuthoringImportAnalysis {
   const specifier = getImportTypeSpecifier(node);
   if (!specifier) {
     return unrecognizedAnalysis();
   }
-  const authoringModule = classifyAuthoringModule(specifier);
+  const authoringModule = classifyAuthoringModule(specifier, options);
   if (!authoringModule) {
     return unrecognizedAnalysis();
   }
   if (authoringModule.kind === 'invalid-settings') {
-    return invalidSettingsSpecifierAnalysis(sourceFile, node.argument.getStart(sourceFile), specifier);
+    return invalidSettingsSpecifierAnalysis(
+      sourceFile,
+      node.argument.getStart(sourceFile),
+      specifier,
+      authoringModule.missingFromWorkspace,
+    );
   }
 
   const importedName = node.qualifier && ts.isIdentifier(node.qualifier) ? node.qualifier.text : null;
@@ -272,13 +290,13 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
         `Settings import type "${importedName}" from "${specifier}" cannot use typeof or type arguments`,
       );
     }
-    const replacement = buildSettingsTypeExpression(importedName, authoringModule.module.kind);
+    const replacement = buildSettingsTypeExpression(importedName, authoringModule.module);
     if (!replacement) {
       return invalidImportTypeAnalysis(
         sourceFile,
         node.qualifier?.getStart(sourceFile) || node.getStart(sourceFile),
         authoringModule,
-        `Type "${importedName}" is not exported by settings module "${specifier}"`,
+        settingsTypeUnavailableMessage(importedName, authoringModule.module),
       );
     }
     return recognizedAnalysis(replacement);
@@ -321,6 +339,7 @@ export function analyzeJsTemplateAuthoringImportTypeNode(
 export function rewriteJsTemplateAuthoringImports(
   path: string,
   content: string,
+  options: JsTemplateAuthoringImportOptions = {},
 ): RewriteJsTemplateAuthoringImportsResult {
   const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, scriptKind(path));
   const replacements: Array<{ start: number; end: number; value: string }> = [];
@@ -332,13 +351,13 @@ export function rewriteJsTemplateAuthoringImports(
     if (!ts.isImportDeclaration(statement)) {
       continue;
     }
-    const analysis = analyzeJsTemplateAuthoringImportDeclaration(statement, sourceFile);
+    const analysis = analyzeJsTemplateAuthoringImportDeclaration(statement, sourceFile, options);
     diagnostics.push(...analysis.diagnostics);
     if (analysis.recognized && analysis.replacement !== undefined && analysis.diagnostics.length === 0) {
       const namespaceImport = getTypeNamespaceImport(statement);
       if (namespaceImport && ts.isStringLiteral(statement.moduleSpecifier)) {
         namespaceSpecifiers.set(namespaceImport, statement.moduleSpecifier.text);
-        namespaceTypes.set(namespaceImport, getNamespaceTypeNames(statement.moduleSpecifier.text));
+        namespaceTypes.set(namespaceImport, getNamespaceTypeNames(statement.moduleSpecifier.text, options));
       }
       replacements.push({
         start: statement.getStart(sourceFile),
@@ -378,7 +397,7 @@ export function rewriteJsTemplateAuthoringImports(
       const typeArguments = node.typeArguments?.map((argument) =>
         rewriteNamespaceTypeReferences(argument, sourceFile, namespaceTypes, namespaceSpecifiers, diagnostics),
       );
-      const analysis = analyzeJsTemplateAuthoringImportTypeNode(node, sourceFile, typeArguments);
+      const analysis = analyzeJsTemplateAuthoringImportTypeNode(node, sourceFile, typeArguments, options);
       diagnostics.push(...analysis.diagnostics);
       if (analysis.recognized && analysis.replacement !== undefined && analysis.diagnostics.length === 0) {
         replacements.push({ start: node.getStart(sourceFile), end: node.end, value: analysis.replacement });
@@ -570,23 +589,29 @@ function analyzeSettingsImportDeclaration(
     );
   }
   if (ts.isNamespaceImport(importClause.namedBindings)) {
-    return recognizedAnalysis(
-      `export {}; ${buildNamespacedSettingsTypeAliases(importClause.namedBindings.name.text, settingsModule.kind)}`,
-    );
+    const aliases = buildNamespacedSettingsTypeAliases(importClause.namedBindings.name.text, settingsModule);
+    return aliases
+      ? recognizedAnalysis(`export {}; ${aliases}`)
+      : issueAnalysis(
+          sourceFile,
+          importClause.namedBindings.getStart(sourceFile),
+          'settings_type_import_invalid',
+          `Settings module "${settingsModule.specifier}" does not provide every exact authoring type`,
+        );
   }
 
   const diagnostics: JsTemplateAuthoringImportDiagnostic[] = [];
   const declarations: string[] = [];
   for (const element of importClause.namedBindings.elements) {
     const importedName = element.propertyName?.text || element.name.text;
-    const body = buildSettingsTypeExpression(importedName, settingsModule.kind);
+    const body = buildSettingsTypeExpression(importedName, settingsModule);
     if (!body) {
       diagnostics.push(
         createIssue(
           sourceFile,
           element.getStart(sourceFile),
           'settings_type_import_invalid',
-          `Type "${importedName}" is not exported by settings module "${settingsModule.specifier}"`,
+          settingsTypeUnavailableMessage(importedName, settingsModule),
         ),
       );
       continue;
@@ -600,34 +625,68 @@ function analyzeSettingsImportDeclaration(
   };
 }
 
-function buildSettingsTypeExpression(importedName: string, kind: JsTemplateClientTypegenKind): string | null {
-  if (importedName === 'Settings' || importedName === 'SettingsSchemaSummary') {
-    return contextRecordType;
+function buildSettingsTypeExpression(importedName: string, settingsModule: SettingsAuthoringModule): string | null {
+  if (importedName === 'Settings') {
+    return settingsModule.contract
+      ? nonEmptyTypeExpression(settingsModule.contract.settingsTypeExpression)
+      : contextRecordType;
+  }
+  if (importedName === 'SettingsSchemaSummary') {
+    return settingsModule.contract
+      ? nonEmptyTypeExpression(settingsModule.contract.settingsSchemaSummaryTypeExpression)
+      : contextRecordType;
+  }
+  if (!settingsModule.contract && importedName !== 'Context') {
+    return null;
+  }
+  if (!settingsModule.contract && importedName === 'Context') {
+    const contextTypeName: Record<JsTemplateClientTypegenKind, string> = {
+      'js-block': 'JSBlockContext',
+      'js-page': 'JSPageContext',
+      'js-field': 'JSFieldContext',
+      'js-action': 'JSActionContext',
+      'js-item': 'JSItemContext',
+    };
+    const contextType = publicAuthoringTypes.get(contextTypeName[settingsModule.kind]);
+    return contextType ? renderTypeExpression(contextType, [contextRecordType]) : null;
   }
   if (importedName !== 'Context') {
     return null;
   }
-  const contextTypeName: Record<JsTemplateClientTypegenKind, string> = {
-    'js-block': 'JSBlockContext',
-    'js-page': 'JSPageContext',
-    'js-field': 'JSFieldContext',
-    'js-action': 'JSActionContext',
-    'js-item': 'JSItemContext',
-  };
-  const contextType = publicAuthoringTypes.get(contextTypeName[kind]);
-  if (!contextType) {
+  const contextType = publicAuthoringTypes.get(settingsModule.contract.context.publicTypeName);
+  const settingsTypeExpression = nonEmptyTypeExpression(settingsModule.contract.context.settingsTypeExpression);
+  if (!contextType || !settingsTypeExpression) {
     return null;
   }
-  return renderTypeExpression(contextType, [contextRecordType]);
+  return renderTypeExpression(contextType, [settingsTypeExpression]);
 }
 
-function buildNamespacedSettingsTypeAliases(localName: string, kind: JsTemplateClientTypegenKind): string {
-  const contextBody = buildSettingsTypeExpression('Context', kind) || contextRecordType;
+function buildNamespacedSettingsTypeAliases(localName: string, settingsModule: SettingsAuthoringModule): string | null {
+  const settingsBody = buildSettingsTypeExpression('Settings', settingsModule);
+  const summaryBody = buildSettingsTypeExpression('SettingsSchemaSummary', settingsModule);
+  const contextBody = buildSettingsTypeExpression('Context', settingsModule);
+  if (!settingsBody || !summaryBody || !contextBody) {
+    return null;
+  }
   return [
-    `type ${namespacedTypeName(localName, 'Settings')} = ${contextRecordType};`,
-    `type ${namespacedTypeName(localName, 'SettingsSchemaSummary')} = ${contextRecordType};`,
+    `type ${namespacedTypeName(localName, 'Settings')} = ${settingsBody};`,
+    `type ${namespacedTypeName(localName, 'SettingsSchemaSummary')} = ${summaryBody};`,
     `type ${namespacedTypeName(localName, 'Context')} = ${contextBody};`,
   ].join(' ');
+}
+
+function settingsTypeUnavailableMessage(importedName: string, settingsModule: SettingsAuthoringModule): string {
+  if (
+    settingsModule.contract &&
+    (importedName === 'Settings' || importedName === 'SettingsSchemaSummary' || importedName === 'Context')
+  ) {
+    return `Settings module "${settingsModule.specifier}" does not provide an exact "${importedName}" authoring type`;
+  }
+  return `Type "${importedName}" is not exported by settings module "${settingsModule.specifier}"`;
+}
+
+function nonEmptyTypeExpression(expression: string): string | null {
+  return expression.trim() ? expression : null;
 }
 
 function buildNamespacedTypeAliases(localName: string, types: ReadonlyMap<string, AuthoringTypeSpec>): string {
@@ -658,7 +717,10 @@ function renderTypeExpression(typeSpec: AuthoringTypeSpec, typeArguments: readon
   return typeSpec.buildBody(resolvedArguments);
 }
 
-function classifyAuthoringModule(specifier: string): AuthoringModule | null {
+function classifyAuthoringModule(
+  specifier: string,
+  options: JsTemplateAuthoringImportOptions = {},
+): AuthoringModule | null {
   const sdkModule = sdkAuthoringModules.get(specifier);
   if (sdkModule) {
     return { kind: 'sdk', module: sdkModule, specifier };
@@ -670,9 +732,13 @@ function classifyAuthoringModule(specifier: string): AuthoringModule | null {
   if (!settingsImport) {
     return { kind: 'invalid-settings', specifier };
   }
+  const contract = options.settingsContracts?.get(specifier);
+  if (options.settingsContracts && !contract) {
+    return { kind: 'invalid-settings', missingFromWorkspace: true, specifier };
+  }
   return {
     kind: 'settings',
-    module: { kind: settingsImport.kind, specifier },
+    module: { contract, kind: settingsImport.kind, specifier },
     specifier,
   };
 }
@@ -690,8 +756,8 @@ function getTypeNamespaceImport(node: ts.ImportDeclaration): string | null {
     : null;
 }
 
-function getNamespaceTypeNames(specifier: string): ReadonlySet<string> {
-  const authoringModule = classifyAuthoringModule(specifier);
+function getNamespaceTypeNames(specifier: string, options: JsTemplateAuthoringImportOptions = {}): ReadonlySet<string> {
+  const authoringModule = classifyAuthoringModule(specifier, options);
   if (!authoringModule || authoringModule.kind === 'invalid-settings') {
     return new Set();
   }
@@ -746,12 +812,15 @@ function invalidSettingsSpecifierAnalysis(
   sourceFile: ts.SourceFile,
   position: number,
   specifier: string,
+  missingFromWorkspace = false,
 ): JsTemplateAuthoringImportAnalysis {
   return issueAnalysis(
     sourceFile,
     position,
     'settings_type_import_invalid',
-    `Settings type import "${specifier}" is not valid`,
+    missingFromWorkspace
+      ? `Settings type import "${specifier}" does not exist in the current workspace`
+      : `Settings type import "${specifier}" is not valid`,
   );
 }
 

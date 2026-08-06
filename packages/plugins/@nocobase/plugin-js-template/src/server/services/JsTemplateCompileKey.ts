@@ -9,6 +9,7 @@
 
 import { normalizePath, stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
+import { isClientSettingsTypegenDescriptorPath } from '@nocobase/js-template-sdk/typegen';
 import { posix as pathPosix } from 'path';
 
 import type { JsTemplateKind } from '../../constants';
@@ -65,9 +66,8 @@ export function buildJsTemplateCompileKey(input: {
   const compilerBuildIdentity = input.compilerBuildIdentity || JS_TEMPLATE_COMPILER_BUILD_IDENTITY;
   const surface = JS_TEMPLATE_AUTHORING_SURFACES[input.template.kind];
   const entryPath = normalizePath(input.template.entryPath);
-  const descriptorPath = normalizePath(input.template.descriptorPath);
   const entryRootPath = pathPosix.dirname(entryPath);
-  const files = normalizeManifestFiles(input.files, entryRootPath, descriptorPath);
+  const files = normalizeManifestFiles(input.files, entryRootPath);
   const inputManifest: CompileInputManifest = {
     compilerBuildId: compilerBuildIdentity.compilerBuildId,
     runtimeContract: JS_TEMPLATE_ARTIFACT_CONTRACT,
@@ -90,14 +90,17 @@ export function buildJsTemplateCompileKey(input: {
 function normalizeManifestFiles(
   files: readonly CompileInputManifestSourceFile[],
   entryRootPath: string,
-  descriptorPath: string,
 ): CompileInputManifestFile[] {
   const byPath = new Map<string, CompileInputManifestFile>();
   for (const file of files) {
     const path = normalizePath(file.path);
     if (
-      path === descriptorPath ||
-      !(path === entryRootPath || path.startsWith(`${entryRootPath}/`) || path.startsWith('src/shared/'))
+      !(
+        path === entryRootPath ||
+        path.startsWith(`${entryRootPath}/`) ||
+        path.startsWith('src/shared/') ||
+        isClientSettingsTypegenDescriptorPath(path)
+      )
     ) {
       continue;
     }

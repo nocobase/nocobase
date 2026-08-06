@@ -8,8 +8,13 @@
  */
 
 import { buildJsTemplateSettingsSchema } from '../schema/contracts';
+import {
+  buildJsTemplateSettingsAuthoringContract,
+  type JsTemplateClientTypegenKind,
+  type JsTemplateSettingsAuthoringTemplate,
+} from './settings-authoring-contract';
 
-export type JsTemplateClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+export type { JsTemplateClientTypegenKind } from './settings-authoring-contract';
 
 export interface JsTemplateSettingsTypegenSourceFile {
   path: string;
@@ -31,7 +36,7 @@ export interface JsTemplateSettingsTypegenDiagnostic {
   details?: Record<string, unknown>;
 }
 
-export interface JsTemplateSettingsTypegenTemplate {
+export interface JsTemplateSettingsTypegenTemplate extends JsTemplateSettingsAuthoringTemplate {
   target: 'client';
   kind: JsTemplateClientTypegenKind;
   directoryName: string;
@@ -57,14 +62,6 @@ export interface JsTemplateActiveTemplateContextResult {
   globalContextType?: string;
 }
 
-type JsonSchemaLike = {
-  type?: unknown;
-  enum?: unknown;
-  required?: unknown;
-  properties?: unknown;
-  items?: unknown;
-};
-
 export const JS_TEMPLATE_GENERATED_TYPES_ROOT = '.js-template/types';
 export const JS_TEMPLATE_ACTIVE_TEMPLATE_CONTEXT_PATH = `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/__active-template-context.d.ts`;
 export const JS_TEMPLATE_SDK_DECLARATIONS_PATH = `${JS_TEMPLATE_GENERATED_TYPES_ROOT}/sdk.d.ts`;
@@ -82,14 +79,6 @@ const clientKindRoots: Array<{ kind: JsTemplateClientTypegenKind; root: string }
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },
 ];
-
-const contextTypes: Record<JsTemplateClientTypegenKind, string> = {
-  'js-block': 'JSBlockContext',
-  'js-page': 'JSPageContext',
-  'js-field': 'JSFieldContext',
-  'js-action': 'JSActionContext',
-  'js-item': 'JSItemContext',
-};
 
 export function generateClientSettingsTypes(input: {
   files: JsTemplateSettingsTypegenSourceFile[];
@@ -203,6 +192,18 @@ export function isNamespacedSettingsTypeImport(specifier: string): boolean {
   return Boolean(parseSettingsTypeImport(specifier));
 }
 
+export function isClientSettingsTypegenDescriptorPath(path: string): boolean {
+  return Boolean(parseClientEntryDescriptorPath(normalizeSourcePath(path)));
+}
+
+export function isInlineClientSettingsTypegenDescriptorPath(path: string): boolean {
+  return normalizeSourcePath(path) === 'src/client/entry.json';
+}
+
+export function isSettingsTypegenDescriptorPath(path: string): boolean {
+  return isClientSettingsTypegenDescriptorPath(path) || isInlineClientSettingsTypegenDescriptorPath(path);
+}
+
 function collectClientSettingsTemplates(
   files: Array<Required<JsTemplateSettingsTypegenSourceFile>>,
   diagnostics: JsTemplateSettingsTypegenDiagnostic[],
@@ -275,7 +276,7 @@ function parseEntryDescriptor(
   diagnostics: JsTemplateSettingsTypegenDiagnostic[],
 ): { key: string; settingsSchema: Record<string, unknown> | null } | null {
   try {
-    const value = JSON.parse(file.content) as unknown;
+    const value = JSON.parse(file.content.replace(/^\uFEFF/u, '')) as unknown;
     if (!isRecord(value) || typeof value.key !== 'string' || !isValidTemplateName(value.key)) {
       throw new Error('entry.json must contain a valid key to generate settings types');
     }
@@ -327,24 +328,16 @@ function buildVirtualSettingsModules(templates: JsTemplateSettingsTypegenTemplat
 }
 
 function buildTemplateTypes(template: JsTemplateSettingsTypegenTemplate): string {
-  const contextType = contextTypes[template.kind];
+  const contract = buildJsTemplateSettingsAuthoringContract(template);
   return [
     generatedHeader(),
-    `import type { ${contextType} } from "@nocobase/js-template-sdk/client";`,
+    `import type { ${contract.context.publicTypeName} } from "@nocobase/js-template-sdk/client";`,
     '',
-    'export type SettingsSchemaSummary = {',
-    '  target: "client";',
-    `  kind: "${template.kind}";`,
-    `  templateName: "${template.templateName}";`,
-    `  entryKey: "${template.entryKey}";`,
-    `  descriptorPath: "${template.descriptorPath}";`,
-    `  virtualImport: "${template.virtualImport}";`,
-    `  schemaHash: "${template.schemaHash}";`,
-    '};',
+    `export type SettingsSchemaSummary = ${contract.settingsSchemaSummaryTypeExpression};`,
     '',
-    `export interface Settings ${schemaObjectToTypeBody(template.schema)}`,
+    `export type Settings = ${contract.settingsTypeExpression};`,
     '',
-    `export type Context = ${contextType}<Settings>;`,
+    `export type Context = ${contract.context.publicTypeName}<Settings>;`,
     '',
   ].join('\n');
 }
@@ -407,50 +400,6 @@ declare module "@nocobase/js-template-sdk/client" {
 `;
 }
 
-function schemaObjectToTypeBody(schema: Record<string, unknown>): string {
-  const schemaLike = schema as JsonSchemaLike;
-  const properties = isRecord(schemaLike.properties) ? schemaLike.properties : {};
-  const required = new Set(Array.isArray(schemaLike.required) ? schemaLike.required.filter(isString) : []);
-  const lines = Object.entries(properties)
-    .filter(([, propertySchema]) => isRecord(propertySchema))
-    .map(([propertyName, propertySchema]) => {
-      const optional = required.has(propertyName) ? '' : '?';
-      return `  ${quotePropertyName(propertyName)}${optional}: ${schemaToType(propertySchema as JsonSchemaLike)};`;
-    });
-  return lines.length ? `{\n${lines.join('\n')}\n}` : '{}';
-}
-
-function schemaToType(schema: JsonSchemaLike): string {
-  if (Array.isArray(schema.enum)) {
-    return schema.enum.map(literalToType).join(' | ') || 'unknown';
-  }
-  const type = normalizeSchemaType(schema);
-  if (type === 'string') return 'string';
-  if (type === 'number' || type === 'integer') return 'number';
-  if (type === 'boolean') return 'boolean';
-  if (type === 'array') {
-    return `Array<${isRecord(schema.items) ? schemaToType(schema.items as JsonSchemaLike) : 'unknown'}>`;
-  }
-  if (type === 'object') return schemaObjectToTypeBody(schema as Record<string, unknown>);
-  return 'unknown';
-}
-
-function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
-  if (Array.isArray(schema.type)) {
-    return schema.type.find((item): item is string => typeof item === 'string' && item !== 'null');
-  }
-  if (typeof schema.type === 'string') return schema.type;
-  if (isRecord(schema.properties) || Array.isArray(schema.required)) return 'object';
-  if (isRecord(schema.items)) return 'array';
-  return undefined;
-}
-
-function literalToType(value: unknown): string {
-  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null
-    ? JSON.stringify(value)
-    : 'unknown';
-}
-
 function parseClientEntryDescriptorPath(
   path: string,
 ): { kind: JsTemplateClientTypegenKind; directoryName: string; root: string } | null {
@@ -477,16 +426,8 @@ function toPascalCase(value: string): string {
     .join('');
 }
 
-function quotePropertyName(propertyName: string): string {
-  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(propertyName) ? propertyName : JSON.stringify(propertyName);
-}
-
 function isValidTemplateName(value: string): boolean {
   return entryKeyPattern.test(value);
-}
-
-function isString(value: unknown): value is string {
-  return typeof value === 'string';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

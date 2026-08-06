@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import {
+  buildJsTemplateSettingsAuthoringContract,
+  type JsTemplateSettingsAuthoringContract,
+} from '@nocobase/js-template-sdk/typegen';
 import { collectStaticModuleReferences } from '@nocobase/runjs/compiler';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -140,6 +144,42 @@ describe('JS Template authoring imports', () => {
     ).toEqual([]);
   });
 
+  it.each([
+    {
+      name: 'named import',
+      source: 'import type { Settings } from "js-template:settings/client/js-page/orders";',
+      contractPatch: { settingsTypeExpression: '' },
+      message: 'does not provide an exact "Settings" authoring type',
+    },
+    {
+      name: 'namespace import',
+      source: 'import type * as Template from "js-template:settings/client/js-page/orders";',
+      contractPatch: { settingsSchemaSummaryTypeExpression: '' },
+      message: 'does not provide every exact authoring type',
+    },
+    {
+      name: 'import type',
+      source: 'type Settings = import("js-template:settings/client/js-page/orders").Context;',
+      contractPatch: { context: { publicTypeName: 'JSPageContext' as const, settingsTypeExpression: '' } },
+      message: 'does not provide an exact "Context" authoring type',
+    },
+  ])('rejects an incomplete exact settings contract for a $name', ({ source, contractPatch, message }) => {
+    const contract = createSettingsContract(contractPatch);
+    const result = rewriteJsTemplateAuthoringImports(
+      'src/client/js-pages/orders/index.tsx',
+      `${source}\nctx.render(null);\n`,
+      { settingsContracts: new Map([[contract.specifier, contract]]) },
+    );
+
+    expect(result.diagnostics).toHaveLength(1);
+    expect(result.diagnostics[0]).toMatchObject({
+      code: 'settings_type_import_invalid',
+      message: expect.stringContaining(message),
+    });
+    expect(result.content).toContain(source);
+    expect(result.content).not.toContain('type Settings = Record<string, unknown>');
+  });
+
   it('keeps shared namespace exports limited to the shared public surface', () => {
     const result = rewriteJsTemplateAuthoringImports(
       'src/shared/context.ts',
@@ -254,3 +294,21 @@ describe('JS Template authoring imports', () => {
     expect(result.content).toContain(source);
   });
 });
+
+function createSettingsContract(
+  patch: Partial<JsTemplateSettingsAuthoringContract>,
+): JsTemplateSettingsAuthoringContract {
+  return {
+    ...buildJsTemplateSettingsAuthoringContract({
+      target: 'client',
+      kind: 'js-page',
+      templateName: 'orders',
+      entryKey: 'client/js-page/orders',
+      descriptorPath: 'src/client/js-pages/orders/entry.json',
+      virtualImport: 'js-template:settings/client/js-page/orders',
+      schema: { type: 'object', properties: { count: { type: 'number' } } },
+      schemaHash: 'schema-hash',
+    }),
+    ...patch,
+  };
+}

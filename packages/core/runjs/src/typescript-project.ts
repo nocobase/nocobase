@@ -31,6 +31,7 @@ export function createRunJSTypeScriptCompilerOptions(ts: TypeScriptModule): Comp
     noLib: true,
     resolveJsonModule: true,
     skipLibCheck: true,
+    strictNullChecks: true,
     target: ts.ScriptTarget.ES2020,
     types: [],
   };
@@ -116,13 +117,16 @@ interface RunJSResource extends RunJSUnknownObject {
   off?(event: string, callback: (...args: unknown[]) => void): void;
   refresh?: () => Promise<unknown>;
 }
+interface RunJSApiResponse extends RunJSUnknownObject {
+  data?: RunJSUnknownObject;
+}
 interface RunJSApi {
   readonly auth?: {
     readonly locale?: string;
     readonly role?: string;
     readonly token?: string;
   };
-  request<T = unknown>(options: Record<string, unknown>): Promise<T>;
+  request<T = RunJSApiResponse>(options: Record<string, unknown>): Promise<T>;
   resource(name: string): RunJSResource;
 }
 interface RunJSAuth {

@@ -8,6 +8,7 @@
  */
 
 import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
+import { isClientSettingsTypegenDescriptorPath } from '@nocobase/js-template-sdk/typegen';
 import {
   RUNJS_COMPILER_BUILD_IDENTITY,
   type RunJSCompilerBuildIdentity,
@@ -86,7 +87,7 @@ export const JS_TEMPLATE_AUTHORING_SURFACES: Record<JsTemplateKind, JsTemplateAu
 };
 
 export const JS_TEMPLATE_COMPILER_BRIDGE_CONTRACT_VERSION = 'js-template.compiler-bridge.v1';
-export const JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION = 'js-template.import-rewrite.v2';
+export const JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION = 'js-template.import-rewrite.v3';
 export const JS_TEMPLATE_IMPORT_SECURITY_POLICY_VERSION = 'js-template.import-security.v2';
 export const JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT_VERSION = JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT;
 
@@ -195,8 +196,10 @@ export function selectJsTemplateCompileFiles<T extends JsTemplateWorkspaceCompil
   return files
     .filter(
       (file) =>
-        file.path !== template.descriptorPath &&
-        (file.path === rootPath || file.path.startsWith(`${rootPath}/`) || file.path.startsWith('src/shared/')),
+        file.path === rootPath ||
+        file.path.startsWith(`${rootPath}/`) ||
+        file.path.startsWith('src/shared/') ||
+        isClientSettingsTypegenDescriptorPath(file.path),
     )
     .map((file) => ({ ...file }));
 }

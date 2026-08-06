@@ -16,6 +16,7 @@ import {
   createJsTemplateCompileInfrastructureFailure,
   JS_TEMPLATE_COMPILER_BUILD_IDENTITY,
   JS_TEMPLATE_COMPILER_BUILD_IDENTITY_COMPONENTS,
+  JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION,
   type JsTemplateCompilerBuildIdentityComponents,
 } from '../services/JsTemplateCompileContract';
 import { buildJsTemplateCompileKey, type CompileInputManifestSourceFile } from '../services/JsTemplateCompileKey';
@@ -93,11 +94,15 @@ function registerCompileContractTests() {
       ]);
     });
 
-    it('compiles only validated template and shared files through the pure compile helper', async () => {
+    it('compiles the validated template with shared files and every settings descriptor', async () => {
       const compileEntry = vi.fn().mockResolvedValue({ accepted: true, diagnostics: [] });
       const files = [
         { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' },
         { path: 'src/client/js-blocks/example/entry.json', content: '{"schemaVersion":1,"key":"example"}' },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
+        },
         { path: 'src/shared/format.ts', content: 'export const format = String;' },
         { path: 'README.md', content: '# ignored' },
       ];
@@ -124,7 +129,7 @@ function registerCompileContractTests() {
           projectId: 'project_example',
           templateId: 'template_example',
           operation: 'compilePreview',
-          files: [files[0], files[2]],
+          files: [files[0], files[1], files[2], files[3]],
         }),
       );
       expect(compileEntry.mock.calls[0][0].files[0]).not.toBe(files[0]);
@@ -145,6 +150,7 @@ function registerCompileKeyTests() {
   describe('JS Template compiler identity and compile key', () => {
     it('changes the compiler build id when a build component changes', () => {
       expect(JS_TEMPLATE_COMPILER_BUILD_IDENTITY.compilerBuildId).toMatch(/^[a-f0-9]{64}$/u);
+      expect(JS_TEMPLATE_IMPORT_REWRITE_POLICY_VERSION).toBe('js-template.import-rewrite.v3');
       for (const component of Object.keys(JS_TEMPLATE_COMPILER_BUILD_IDENTITY_COMPONENTS) as Array<
         keyof JsTemplateCompilerBuildIdentityComponents
       >) {
@@ -168,12 +174,11 @@ function registerCompileKeyTests() {
       expect(reordered).toEqual(first);
       expect(first.compileKey).toMatch(/^[a-f0-9]{64}$/u);
       expect(first.inputManifest.files).toEqual([
+        expect.objectContaining({ path: template.descriptorPath, blobHash: 'blob_descriptor' }),
         expect.objectContaining({ path: 'src/client/js-blocks/sales/index.tsx', blobHash: 'blob_entry' }),
+        expect.objectContaining({ path: 'src/client/js-pages/orders/entry.json', blobHash: 'blob_orders_descriptor' }),
         expect.objectContaining({ path: 'src/shared/format.ts', blobHash: 'blob_shared' }),
       ]);
-      expect(first.inputManifest.files).not.toEqual(
-        expect.arrayContaining([expect.objectContaining({ path: template.descriptorPath })]),
-      );
       expect(JSON.stringify(first.inputManifest)).not.toContain('source body');
     });
 
@@ -207,10 +212,19 @@ function registerCompileKeyTests() {
         template: { ...template, projectId: 'project_other', title: 'Changed title' },
         files,
       });
+      const changedReferencedSettings = buildJsTemplateCompileKey({
+        template,
+        files: files.map((file) =>
+          file.path === 'src/client/js-pages/orders/entry.json'
+            ? { ...file, blobHash: 'blob_orders_descriptor_changed' }
+            : file,
+        ),
+      });
 
       expect(changedBlob.compileKey).not.toBe(first.compileKey);
       expect(moved.compileKey).not.toBe(first.compileKey);
       expect(changedBuild.compileKey).not.toBe(first.compileKey);
+      expect(changedReferencedSettings.compileKey).not.toBe(first.compileKey);
       expect(changedDisplayMetadata.compileKey).toBe(first.compileKey);
     });
   });
@@ -279,6 +293,12 @@ function registerCompileKeyTests() {
       {
         path: 'src/client/js-blocks/sales/entry.json',
         blobHash: 'blob_descriptor',
+        language: 'json',
+        mode: '100644',
+      },
+      {
+        path: 'src/client/js-pages/orders/entry.json',
+        blobHash: 'blob_orders_descriptor',
         language: 'json',
         mode: '100644',
       },

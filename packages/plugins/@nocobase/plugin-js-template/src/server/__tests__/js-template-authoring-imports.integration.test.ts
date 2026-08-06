@@ -118,7 +118,10 @@ describe('JS Template authoring imports across compile and detach', () => {
       expect(inlinePreparation.diagnostics).toEqual([]);
       const preparedInlineEntry = inlinePreparation.files.find((file) => file.path === 'src/client/index.tsx');
       expect(findAuthoringModuleReferences(preparedInlineEntry?.content || '')).toEqual([]);
-      expect(preparedInlineEntry?.content).toBe(preparation.files.find((file) => file.path === entryPath)?.content);
+      expect(preparation.files.find((file) => file.path === entryPath)?.content).toContain(
+        'descriptorPath: "src/client/js-pages/orders/entry.json"',
+      );
+      expect(preparedInlineEntry?.content).toContain('descriptorPath: "src/client/entry.json"');
 
       const inlineCompiled = await bridge.compileEntry({
         kind: 'js-page',
@@ -131,6 +134,123 @@ describe('JS Template authoring imports across compile and detach', () => {
       expect(inlineCompiled.diagnostics).toEqual([]);
     },
   );
+
+  it('preserves precise settings for named, aliased, namespace, context, summary, and import-type forms', async () => {
+    const descriptor = preciseSettingsDescriptor();
+    const source = [
+      `import type { Settings, Settings as AliasedSettings, Context, SettingsSchemaSummary } from "${settingsImport}";`,
+      `import type * as Template from "${settingsImport}";`,
+      `type ImportedSettings = import("${settingsImport}").Settings;`,
+      'const named: Settings = { count: 1, enabled: true, mode: "table", tags: ["hot"], display: { showTotal: true } };',
+      'const aliased: AliasedSettings = named;',
+      'const namespaced: Template.Settings = aliased;',
+      'const imported: ImportedSettings = namespaced;',
+      'const optional: string | undefined = imported.title?.trim();',
+      'const kind: "js-page" = null as unknown as SettingsSchemaSummary["kind"];',
+      'const entryKey: "client/js-page/orders" = null as unknown as Template.SettingsSchemaSummary["entryKey"];',
+      'const descriptorPath: "src/client/js-pages/orders/entry.json" = null as unknown as Template.SettingsSchemaSummary["descriptorPath"];',
+      'const readContext = (context: Context): number => context.settings.count;',
+      'ctx.render(<div>{String(readContext(null as unknown as Context))}:{optional}:{kind}:{entryKey}:{descriptorPath}</div>);',
+      '',
+    ].join('\n');
+    const input = {
+      kind: 'js-page' as const,
+      templateName: 'orders',
+      entryPath,
+      surfaceStyle: 'render' as const,
+      files: [{ path: entryPath, content: source }, descriptor],
+    };
+    const bridge = new JsTemplateWorkspaceCompilerBridge();
+
+    const preparation = bridge.prepareEntry(input);
+    const compiled = await bridge.compileEntry(input);
+    const preparedEntry = preparation.files.find((file) => file.path === entryPath)?.content || '';
+
+    expect(preparation.accepted, JSON.stringify(preparation.diagnostics, null, 2)).toBe(true);
+    expect(preparedEntry).toContain('count: number');
+    expect(preparedEntry).toContain('title?: string');
+    expect(preparedEntry).toContain('kind: "js-page"');
+    expect(preparedEntry).toContain('descriptorPath: "src/client/js-pages/orders/entry.json"');
+    expect(findAuthoringModuleReferences(preparedEntry)).toEqual([]);
+    expect(compiled.accepted, JSON.stringify(compiled.diagnostics, null, 2)).toBe(true);
+    expect(compiled.diagnostics).toEqual([]);
+    expect(findAuthoringModuleReferences(compiled.artifact.code)).toEqual([]);
+  });
+
+  it.each([
+    {
+      name: 'number methods',
+      body: 'declare const settings: Settings; settings.count.trim();',
+      message: 'trim',
+    },
+    {
+      name: 'required fields',
+      body: 'const settings: Settings = { count: 1 };',
+      message: 'missing',
+    },
+    {
+      name: 'optional fields without narrowing',
+      body: 'declare const settings: Settings; settings.title.trim();',
+      message: 'possibly',
+    },
+    {
+      name: 'enum values',
+      body: 'declare const settings: Settings; const mode: "grid" = settings.mode;',
+      message: 'not assignable',
+    },
+    {
+      name: 'array members',
+      body: 'declare const settings: Settings; const tag: number = settings.tags[0];',
+      message: 'not assignable',
+    },
+    {
+      name: 'object members',
+      body: 'declare const settings: Settings; const total: string = settings.display.showTotal;',
+      message: 'not assignable',
+    },
+  ])('rejects invalid precise settings $name during compilation', async ({ body, message }) => {
+    const bridge = new JsTemplateWorkspaceCompilerBridge();
+    const result = await bridge.compileEntry({
+      kind: 'js-page',
+      templateName: 'orders',
+      entryPath,
+      files: [
+        {
+          path: entryPath,
+          content: `import type { Settings } from "${settingsImport}";\n${body}\nctx.render(<div />);\n`,
+        },
+        preciseSettingsDescriptor(),
+      ],
+    });
+
+    expect(result.accepted).toBe(false);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: entryPath, message: expect.stringContaining(message) })]),
+    );
+  });
+
+  it('reports a structurally valid settings module that is absent from the current workspace', () => {
+    const source = [
+      'import type { Settings } from "js-template:settings/client/js-page/missing";',
+      'ctx.render(null as unknown as Settings);',
+      '',
+    ].join('\n');
+    const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
+      kind: 'js-page',
+      templateName: 'orders',
+      entryPath,
+      files: [{ path: entryPath, content: source }, preciseSettingsDescriptor()],
+    });
+
+    expect(preparation.accepted).toBe(false);
+    expect(preparation.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'settings_type_import_invalid',
+        path: entryPath,
+        message: expect.stringContaining('does not exist in the current workspace'),
+      }),
+    );
+  });
 
   it.each([
     {
@@ -168,7 +288,13 @@ describe('JS Template authoring imports across compile and detach', () => {
   ])(
     'rejects $name in validation and compiler preparation while conversion preserves it',
     ({ source, code, message, line }) => {
-      const files = [{ path: entryPath, content: source }];
+      const files = [
+        { path: entryPath, content: source },
+        {
+          path: 'src/client/js-pages/orders/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'orders', settings: {} }),
+        },
+      ];
       const expectedDiagnostic = expect.objectContaining({
         code,
         message: expect.stringContaining(message),
@@ -229,6 +355,28 @@ function buildSource(name: string, typeArguments: string, probe: string): string
     `ctx.render(<div>{settings.title}</div>);`,
     '',
   ].join('\n');
+}
+
+function preciseSettingsDescriptor() {
+  return {
+    path: 'src/client/js-pages/orders/entry.json',
+    content: JSON.stringify({
+      schemaVersion: 1,
+      key: 'orders',
+      settings: {
+        count: { type: 'number', required: true },
+        enabled: { type: 'boolean', required: true },
+        title: { type: 'string' },
+        mode: { type: 'string', enum: ['table', 'chart'], required: true },
+        tags: { type: 'array', items: { type: 'string' }, required: true },
+        display: {
+          type: 'object',
+          required: true,
+          properties: { showTotal: { type: 'boolean', required: true } },
+        },
+      },
+    }),
+  };
 }
 
 function findAuthoringModuleReferences(content: string) {

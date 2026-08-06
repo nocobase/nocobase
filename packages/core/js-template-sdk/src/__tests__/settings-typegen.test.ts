@@ -56,6 +56,117 @@ describe('JS Template settings typegen', () => {
     expect(result.files.some((file) => file.path.endsWith('/settings.d.ts'))).toBe(false);
   });
 
+  it('enforces precise settings and summary literals through TypeScript semantic diagnostics', () => {
+    const virtualImport = 'js-template:settings/client/js-block/typed-settings';
+    const entryPath = 'src/client/js-blocks/typed-settings/index.tsx';
+    const result = generateClientSettingsTypes({
+      files: [
+        {
+          path: 'src/client/js-blocks/typed-settings/entry.json',
+          content: JSON.stringify({
+            key: 'typed-settings',
+            settings: {
+              count: { type: 'number', required: true },
+              title: { type: 'string', required: true },
+              enabled: { type: 'boolean', required: true },
+              subtitle: { type: 'string' },
+              mode: { type: 'string', enum: ['table', 'chart'], required: true },
+              tags: { type: 'array', items: { type: 'string' }, required: true },
+              display: {
+                type: 'object',
+                required: true,
+                properties: {
+                  showTotal: { type: 'boolean', required: true },
+                  label: { type: 'string' },
+                },
+              },
+            },
+          }),
+        },
+      ],
+    });
+    const active = createActiveTemplateContextType({ activePath: entryPath, templates: result.templates });
+    if (!active.file) {
+      throw new Error('Expected active template context declarations');
+    }
+    const baseFiles = [...result.files, active.file, runJSContextDeclaration()];
+    const validSource = [
+      `import type { Settings, SettingsSchemaSummary } from "${virtualImport}";`,
+      'const settings: Settings = { count: 1, title: "Sales", enabled: true, mode: "table", tags: ["hot"], display: { showTotal: true } };',
+      'const count: number = settings.count;',
+      'const title: string = settings.title;',
+      'const enabled: boolean = settings.enabled;',
+      'const subtitle: string | undefined = settings.subtitle?.trim();',
+      'const mode: "table" | "chart" = settings.mode;',
+      'const firstTag: string = settings.tags[0];',
+      'const showTotal: boolean = settings.display.showTotal;',
+      'const label: string | undefined = settings.display.label?.trim();',
+      'const kind: "js-block" = null as unknown as SettingsSchemaSummary["kind"];',
+      'const entryKey: "client/js-block/typed-settings" = null as unknown as SettingsSchemaSummary["entryKey"];',
+      'const descriptorPath: "src/client/js-blocks/typed-settings/entry.json" = null as unknown as SettingsSchemaSummary["descriptorPath"];',
+      `const moduleName: "${virtualImport}" = null as unknown as SettingsSchemaSummary["virtualImport"];`,
+      'ctx.render([count, title, enabled, subtitle, mode, firstTag, showTotal, label, kind, entryKey, descriptorPath, moduleName]);',
+      '',
+    ].join('\n');
+
+    expect(getTypeScriptDiagnostics([...baseFiles, { path: entryPath, content: validSource }])).toEqual([]);
+
+    const invalidCases = [
+      {
+        name: 'number',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; settings.count.trim();`,
+        message: /trim/u,
+      },
+      {
+        name: 'string',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; const value: number = settings.title;`,
+        message: /string.*number|number.*string/u,
+      },
+      {
+        name: 'boolean',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; const value: string = settings.enabled;`,
+        message: /boolean.*string|string.*boolean/u,
+      },
+      {
+        name: 'required',
+        source: `import type { Settings } from "${virtualImport}"; const settings: Settings = { count: 1 };`,
+        message: /missing/u,
+      },
+      {
+        name: 'optional',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; settings.subtitle.trim();`,
+        message: /possibly.*undefined/u,
+      },
+      {
+        name: 'enum',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; const mode: "grid" = settings.mode;`,
+        message: /table|chart/u,
+      },
+      {
+        name: 'array',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; const tag: number = settings.tags[0];`,
+        message: /string.*number|number.*string/u,
+      },
+      {
+        name: 'object',
+        source: `import type { Settings } from "${virtualImport}"; declare const settings: Settings; const total: string = settings.display.showTotal;`,
+        message: /boolean.*string|string.*boolean/u,
+      },
+      {
+        name: 'summary literal',
+        source: `import type { SettingsSchemaSummary } from "${virtualImport}"; const kind: "js-page" = null as unknown as SettingsSchemaSummary["kind"];`,
+        message: /js-block.*js-page|js-page.*js-block/u,
+      },
+    ];
+    for (const invalid of invalidCases) {
+      const diagnostics = getTypeScriptDiagnostics([...baseFiles, { path: entryPath, content: invalid.source }]);
+      expect(
+        diagnostics.some((message) => invalid.message.test(message)),
+        invalid.name,
+      ).toBe(true);
+    }
+  });
+
   it('uses entry key for stable virtual imports after directory rename', () => {
     const generate = (directoryName: string) =>
       generateClientSettingsTypes({
@@ -251,7 +362,13 @@ function descriptor(kindRoot: string, directoryName: string, key: string, proper
 function runJSContextDeclaration() {
   return {
     path: '__runjs__/context.d.ts',
-    content: 'interface RunJSContext { logger: unknown; }\ndeclare const ctx: JsTemplateActiveTemplateContext;\n',
+    content: [
+      'interface Array<T> { readonly [index: number]: T; }',
+      'interface String { trim(): string; }',
+      'interface RunJSContext { logger: unknown; render(node: unknown): void; }',
+      'declare const ctx: JsTemplateActiveTemplateContext;',
+      '',
+    ].join('\n'),
   };
 }
 
@@ -263,6 +380,7 @@ function getTypeScriptDiagnostics(files: Array<{ path: string; content: string }
     noEmit: true,
     noLib: true,
     skipLibCheck: true,
+    strictNullChecks: true,
     target: ts.ScriptTarget.ES2020,
     types: [],
   };

@@ -39,7 +39,7 @@ describe('Save as JS Template source relocation', () => {
             'const settings = defineSettings({ enabled: true });\n' +
             'ctx.render(<div>{settings.enabled as Settings}</div>);\n',
         },
-        { path: 'src/client/entry.json', content: '{"schemaVersion":1}', language: 'json' },
+        { path: 'src/client/entry.json', content: '{"schemaVersion":1,"key":"sales","settings":{}}', language: 'json' },
       ],
     });
 
@@ -62,7 +62,10 @@ describe('Save as JS Template source relocation', () => {
     });
     expect(preparation.files).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ path: 'src/client/entry.json', content: '{"schemaVersion":1}' }),
+        expect.objectContaining({
+          path: 'src/client/entry.json',
+          content: '{"schemaVersion":1,"key":"sales","settings":{}}',
+        }),
         expect.objectContaining({
           path: 'src/client/index.tsx',
           content: expect.stringContaining('function defineSettings<TSettings>(settings: TSettings): TSettings'),

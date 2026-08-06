@@ -21,6 +21,7 @@ describe('RunJS compiler build identity', () => {
   it('is stable and content-addressed', () => {
     expect(buildRunJSCompilerBuildIdentity()).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
     expect(RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId).toMatch(/^[a-f0-9]{64}$/u);
+    expect(RUNJS_COMPILER_BUILD_IDENTITY.components.sourceInspectionPolicy).toBe('runjs.source-inspection.v3');
   });
 
   it('changes when any compiler build component changes', () => {

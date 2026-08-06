@@ -208,6 +208,48 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(compileLogs).toHaveLength(2);
   });
 
+  it('rechecks dependent entries when only a referenced settings descriptor changes', async () => {
+    const repo = await projectService.createProject({
+      name: 'Referenced Settings Descriptor Save',
+      initialFiles: settingsReferenceFiles('string'),
+    });
+    const initial = await saveCurrentSource({
+      projectId: repo.id,
+      message: 'compile referenced settings baseline',
+      files: [{ path: 'README.md', content: '# Referenced settings\n', language: 'markdown' }],
+    });
+    const compileEntrySpy = vi.spyOn(compilerBridge, 'compileEntry');
+
+    await expect(
+      saveCurrentSource({
+        projectId: repo.id,
+        message: 'change referenced settings type only',
+        files: [settingsReferenceFiles('number')[3]],
+      }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            path: 'src/client/js-blocks/consumer/index.tsx',
+            message: expect.stringContaining("Type 'string' is not assignable to type 'number'"),
+          }),
+        ]),
+      },
+    });
+
+    expect(compileEntrySpy).toHaveBeenCalledWith(expect.objectContaining({ templateName: 'consumer' }));
+    await expect(projectService.getProject(repo.id)).resolves.toMatchObject({ headCommitId: initial.commit.id });
+    const persisted = await fileService.pullCommit({
+      projectId: repo.id,
+      commitId: initial.commit.id,
+      includeContent: 'all',
+    });
+    expect(persisted.files?.find((file) => file.path.endsWith('/provider/entry.json'))?.content).toContain(
+      '"type":"string"',
+    );
+  });
+
   it('rebuilds missing or corrupt immutable artifacts and recompiles after a compiler build change', async () => {
     const repo = await projectService.createProject({
       name: 'Compile All Recovery',
@@ -1421,6 +1463,40 @@ function entryFiles(templateName: string, label: string, descriptor: Record<stri
     {
       path: `src/client/js-blocks/${templateName}/entry.json`,
       content: JSON.stringify(descriptor),
+      language: 'json',
+    },
+  ];
+}
+
+function settingsReferenceFiles(providerType: 'string' | 'number') {
+  return [
+    {
+      path: 'src/client/js-blocks/consumer/index.tsx',
+      content: [
+        'import type { Settings as ProviderSettings } from "js-template:settings/client/js-block/provider";',
+        'const provider: ProviderSettings = { value: "valid" };',
+        'ctx.render(<div>{provider.value}</div>);',
+        '',
+      ].join('\n'),
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/consumer/entry.json',
+      content: JSON.stringify({ schemaVersion: 1, key: 'consumer', settings: {} }),
+      language: 'json',
+    },
+    {
+      path: 'src/client/js-blocks/provider/index.tsx',
+      content: 'ctx.render(<div />);\n',
+      language: 'typescript',
+    },
+    {
+      path: 'src/client/js-blocks/provider/entry.json',
+      content: JSON.stringify({
+        schemaVersion: 1,
+        key: 'provider',
+        settings: { value: { type: providerType, required: true } },
+      }),
       language: 'json',
     },
   ];

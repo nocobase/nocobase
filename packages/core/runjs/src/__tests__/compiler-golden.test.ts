@@ -60,6 +60,36 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     }
   });
 
+  it('requires optional values to be narrowed under strict null checking', async () => {
+    const invalid = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: 'type Settings = { title?: string }; const settings: Settings = {}; return settings.title.trim();',
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+    const valid = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: 'type Settings = { title?: string }; const settings: Settings = {}; return settings.title?.trim();',
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(invalid.failureCode).toBe('RUNJS_COMPILE_FAILED');
+    expect(invalid.artifact.diagnostics).toContainEqual(
+      expect.objectContaining({ path: 'index.ts', message: expect.stringContaining('possibly') }),
+    );
+    expect(valid.failureCode, JSON.stringify(valid.artifact.diagnostics, null, 2)).toBeUndefined();
+    expect(valid.artifact.diagnostics).toEqual([]);
+  });
+
   it.each([
     {
       name: 'single TypeScript file',

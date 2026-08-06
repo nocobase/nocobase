@@ -330,6 +330,67 @@ function registerCompilePreviewTests() {
       expect(fileService.pull).not.toHaveBeenCalled();
     });
 
+    it('checks a selected template against referenced settings from the current unsaved workspace', async () => {
+      const project = createProject();
+      const { db } = createDbStub([
+        createTemplateRecord({ id: 'jtt_consumer', projectId: project.id, templateName: 'consumer' }),
+        createTemplateRecord({ id: 'jtt_provider', projectId: project.id, templateName: 'provider' }),
+      ]);
+      const fileService = createFileServiceStub(project, []);
+      const { service } = createPreviewService(db, fileService);
+      const check = (providerType: 'string' | 'number') =>
+        service.compileWorkspacePreview({
+          projectId: project.id,
+          expectedHeadCommitId: project.headCommitId,
+          templateId: 'jtt_consumer',
+          kind: 'js-block',
+          entryPath: 'src/client/js-blocks/consumer/index.tsx',
+          runtimeVersion: 'v2',
+          files: [
+            {
+              path: 'src/client/js-blocks/consumer/index.tsx',
+              content: [
+                'import type { Settings as ProviderSettings } from "js-template:settings/client/js-block/provider";',
+                'const provider: ProviderSettings = { value: "valid" };',
+                'ctx.render(<div>{provider.value}</div>);',
+                '',
+              ].join('\n'),
+            },
+            {
+              path: 'src/client/js-blocks/consumer/entry.json',
+              content: JSON.stringify({ schemaVersion: 1, key: 'consumer', settings: {} }),
+            },
+            {
+              path: 'src/client/js-blocks/provider/index.tsx',
+              content: 'ctx.render(<div />);\n',
+            },
+            {
+              path: 'src/client/js-blocks/provider/entry.json',
+              content: JSON.stringify({
+                schemaVersion: 1,
+                key: 'provider',
+                settings: { value: { type: providerType, required: true } },
+              }),
+            },
+          ],
+        });
+
+      const valid = await check('string');
+      const changedProvider = await check('number');
+
+      expect(valid).toMatchObject({ accepted: true, diagnostics: [] });
+      expect(changedProvider).toMatchObject({ accepted: false });
+      expect(changedProvider.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: 'src/client/js-blocks/consumer/index.tsx',
+            message: expect.stringContaining("Type 'string' is not assignable to type 'number'"),
+          }),
+        ]),
+      );
+      expect(fileService.pull).not.toHaveBeenCalled();
+    });
+
     it('rejects invalid unsaved workspace paths before compiling the preview', async () => {
       const project = createProject();
       const { db } = createDbStub([]);
@@ -526,7 +587,7 @@ function registerCompilePreviewTests() {
       const fileService = createFileServiceStub(project, [
         {
           path: 'src/client/js-items/customer-menu/index.tsx',
-          content: 'ctx.render(<button>{String(ctx.record.name)}</button>);\n',
+          content: 'ctx.render(<button>{String(ctx.record?.name)}</button>);\n',
         },
         {
           path: 'src/client/js-items/customer-menu/entry.json',
@@ -1026,6 +1087,10 @@ function registerWorkspaceCompilerBridgeTests() {
               path: 'src/client/js-blocks/sales-kpi/labels.ts',
               content: "export const title = 'Sales KPI';\n",
             },
+            {
+              path: 'src/client/js-blocks/sales-kpi/entry.json',
+              content: '{"schemaVersion":1,"key":"sales-kpi","settings":{"title":{"type":"string"}}}',
+            },
           ],
         },
         {
@@ -1299,6 +1364,10 @@ function registerWorkspaceCompilerBridgeTests() {
               'ctx.render(<div>{settings.title}</div>);',
               '',
             ].join('\n'),
+          },
+          {
+            path: 'src/client/js-pages/orders/entry.json',
+            content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
           },
         ],
       });

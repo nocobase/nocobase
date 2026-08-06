@@ -8,3 +8,4 @@
  */
 
 export * from './settings-typegen';
+export * from './settings-authoring-contract';

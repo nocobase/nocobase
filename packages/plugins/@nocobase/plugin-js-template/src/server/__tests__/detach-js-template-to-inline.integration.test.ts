@@ -727,7 +727,14 @@ describe('detach to inline integration', () => {
       'rejects $label through compiler preparation before repository, Host, or Usage writes',
       async ({ content, diagnosticCode }) => {
         const fixture = createDetachJsTemplateToInlinePreflightFixture({
-          sourceFiles: [{ path: entry.entryPath, content }],
+          sourceFiles: [
+            { path: entry.entryPath, content },
+            {
+              path: entry.descriptorPath,
+              content: JSON.stringify({ schemaVersion: 1, key: 'sales', settings: {} }),
+              language: 'json',
+            },
+          ],
         });
 
         await expect(
@@ -762,6 +769,60 @@ describe('detach to inline integration', () => {
         expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
       },
     );
+
+    it('rejects a precise optional settings access before repository, Host, or Usage writes', async () => {
+      const fixture = createDetachJsTemplateToInlinePreflightFixture({
+        sourceFiles: [
+          {
+            path: entry.entryPath,
+            content: [
+              'import type { Settings } from "js-template:settings/client/js-block/sales";',
+              'const readTitle = (settings: Settings) => settings.title.trim();',
+              'ctx.render(<div>{readTitle({})}</div>);',
+              '',
+            ].join('\n'),
+          },
+          {
+            path: entry.descriptorPath,
+            content: JSON.stringify({
+              schemaVersion: 1,
+              key: 'sales',
+              settings: { title: { type: 'string' } },
+            }),
+            language: 'json',
+          },
+        ],
+      });
+
+      await expect(
+        fixture.service.detachToInline(
+          {
+            idempotencyKey: 'detach-to-inline-precise-optional-settings',
+            expectedProjectHeadCommitId: detachProject.headCommitId,
+            locator,
+            projectId: binding.projectId,
+            templateId: binding.templateId,
+          },
+          { actorUserId: '1', adapterContext: {} },
+        ),
+      ).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_VALIDATION_FAILED',
+        details: {
+          diagnostics: expect.arrayContaining([
+            expect.objectContaining({
+              path: 'src/client/index.tsx',
+              message: expect.stringContaining('possibly'),
+            }),
+          ]),
+        },
+      });
+
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
+      expect(fixture.transaction).not.toHaveBeenCalled();
+      expect(fixture.ensureAndPush).not.toHaveBeenCalled();
+      expect(fixture.writeRuntime).not.toHaveBeenCalled();
+      expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
+    });
 
     it('rejects an existing target repository whose Head changes after preparation', async () => {
       const identity = buildRunJSSourceRepositoryIdentity(locator);
@@ -986,8 +1047,8 @@ describe('detach to inline integration', () => {
       const canonicalDescriptorContent = `${JSON.stringify(
         {
           schemaVersion: 1,
-          key: 'sales',
-          title: 'Sales',
+          key: 'page',
+          title: 'Page',
           settings: { enabled: { type: 'boolean', default: true } },
         },
         null,

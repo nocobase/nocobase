@@ -11,6 +11,14 @@ import { type RunJSCompileDiagnostic, type RunJSRuntimeArtifact } from '@nocobas
 import { buildRunJSFilesHash } from '@nocobase/runjs/server';
 import type { CompileRunJSSourceWorkspaceResult, RunJSSourceWorkspaceInspector } from '@nocobase/runjs/compiler';
 import { loadRunJSCompiler } from '@nocobase/runjs/compiler/loader';
+import {
+  buildJsTemplateSettingsAuthoringContractLookup,
+  generateClientSettingsTypes,
+  generateInlineClientSettingsTypes,
+  isSettingsTypegenDescriptorPath,
+  type JsTemplateSettingsTypegenDiagnostic,
+  type JsTemplateSettingsTypegenResult,
+} from '@nocobase/js-template-sdk/typegen';
 import { posix as pathPosix } from 'path';
 
 import { JS_TEMPLATE_DESCRIPTOR_FILE, type JsTemplateKind } from '../../constants';
@@ -88,9 +96,12 @@ export class JsTemplateWorkspaceCompilerBridge {
 
   prepareEntry(input: JsTemplateWorkspaceCompileInput): JsTemplateWorkspaceCompilePreparation {
     const surface = getSurfaceSpec(input.kind);
-    const preparedFiles = prepareJsTemplateCompileFiles(input.files);
+    const preparedFiles = prepareJsTemplateCompileFiles(input);
     const diagnostics = sortDiagnostics([
       ...this.validateCompileInput(input, surface),
+      ...preparedFiles.settingsDiagnostics.map((diagnostic) =>
+        toSettingsTypegenDiagnostic(diagnostic, input.kind, input.templateName),
+      ),
       ...preparedFiles.diagnostics.map((diagnostic) =>
         toAuthoringImportDiagnostic(diagnostic, input.kind, input.templateName),
       ),
@@ -114,7 +125,7 @@ export class JsTemplateWorkspaceCompilerBridge {
     if (!preparation.accepted) {
       return this.buildBlockedResult(input, preparation);
     }
-    const runtimeFiles = filterCurrentEntryDescriptor({ entryPath: input.entryPath, files: preparation.files });
+    const runtimeFiles = filterSettingsTypegenDescriptors(preparation.files);
     const { compileRunJSSourceWorkspace } = await loadRunJSCompiler();
     const compiled = await compileRunJSSourceWorkspace({
       files: runtimeFiles,
@@ -199,7 +210,7 @@ export class JsTemplateWorkspaceCompilerBridge {
         code: '',
         version: preparation.runtimeVersion,
         diagnostics: preparation.diagnostics,
-        filesHash: buildRunJSFilesHash(filterCurrentEntryDescriptor(input)),
+        filesHash: buildRunJSFilesHash(filterSettingsTypegenDescriptors(input.files)),
         entryPath: input.entryPath,
         metadata: { ...preparation.metadata },
       },
@@ -271,32 +282,49 @@ function normalizeSourcePath(path: string): string {
   return pathPosix.normalize(path.trim()).replace(/^\.\/+/, '');
 }
 
-function prepareJsTemplateCompileFiles(files: JsTemplateWorkspaceCompileFileInput[]): {
+function prepareJsTemplateCompileFiles(input: JsTemplateWorkspaceCompileInput): {
   diagnostics: JsTemplateAuthoringImportDiagnostic[];
   files: JsTemplateWorkspaceCompileFileInput[];
+  settingsDiagnostics: JsTemplateSettingsTypegenDiagnostic[];
 } {
+  const settingsTypegen = generateCompileSettingsTypes(input);
+  const settingsContracts = buildJsTemplateSettingsAuthoringContractLookup(settingsTypegen.templates);
   const diagnostics: JsTemplateAuthoringImportDiagnostic[] = [];
-  const preparedFiles = files.map((file) => {
+  const preparedFiles = input.files.map((file) => {
     if (!file.content || !isCompileCodeFile(file.path)) {
       return file;
     }
 
-    const rewritten = rewriteJsTemplateAuthoringImports(file.path, file.content);
+    const rewritten = rewriteJsTemplateAuthoringImports(file.path, file.content, { settingsContracts });
     diagnostics.push(...rewritten.diagnostics);
     return {
       ...file,
       content: rewritten.content,
     };
   });
-  return { diagnostics, files: preparedFiles };
+  return { diagnostics, files: preparedFiles, settingsDiagnostics: settingsTypegen.diagnostics };
 }
 
-function filterCurrentEntryDescriptor(
-  input: Pick<JsTemplateWorkspaceCompileInput, 'entryPath' | 'files'>,
-): JsTemplateWorkspaceCompileFileInput[] {
+function generateCompileSettingsTypes(input: JsTemplateWorkspaceCompileInput): JsTemplateSettingsTypegenResult {
+  const files = input.files
+    .filter((file) => file.operation !== 'delete')
+    .map((file) => ({ path: file.path, content: file.content }));
   const entryRoot = pathPosix.dirname(normalizeSourcePath(input.entryPath));
-  const descriptorPath = `${entryRoot}/${JS_TEMPLATE_DESCRIPTOR_FILE}`;
-  return input.files.filter((file) => normalizeSourcePath(file.path) !== descriptorPath);
+  if (entryRoot === 'src/client') {
+    return generateInlineClientSettingsTypes({
+      descriptorPath: `${entryRoot}/${JS_TEMPLATE_DESCRIPTOR_FILE}`,
+      files,
+      kind: input.kind,
+      sourceRoot: entryRoot,
+    });
+  }
+  return generateClientSettingsTypes({ files });
+}
+
+function filterSettingsTypegenDescriptors(
+  files: JsTemplateWorkspaceCompileFileInput[],
+): JsTemplateWorkspaceCompileFileInput[] {
+  return files.filter((file) => !isSettingsTypegenDescriptorPath(file.path));
 }
 
 function toAuthoringImportDiagnostic(
@@ -308,6 +336,18 @@ function toAuthoringImportDiagnostic(
     ...diagnostic,
     kind,
     templateName: templateName || inferTemplateName(diagnostic.path),
+  };
+}
+
+function toSettingsTypegenDiagnostic(
+  diagnostic: JsTemplateSettingsTypegenDiagnostic,
+  kind: JsTemplateKind,
+  templateName?: string,
+): JsTemplateDiagnostic {
+  return {
+    ...diagnostic,
+    kind: diagnostic.kind || kind,
+    templateName: diagnostic.templateName || templateName,
   };
 }
 
