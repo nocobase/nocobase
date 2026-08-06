@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Выбор модели",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
         "label": "Совместная разработка с ИИ агентом",
         "link": "/ai-builder/ai-portal/agent-workflow"
       },

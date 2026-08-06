@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "モデル選択",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
         "label": "AI Agent と協働して構築",
         "link": "/ai-builder/ai-portal/agent-workflow"
       },

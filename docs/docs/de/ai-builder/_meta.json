@@ -15,6 +15,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Modellauswahl",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
         "label": "Aufbau mit einem AI Agent",
         "link": "/ai-builder/ai-portal/agent-workflow"
       },
