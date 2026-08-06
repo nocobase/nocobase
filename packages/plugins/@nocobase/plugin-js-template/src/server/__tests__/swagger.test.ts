@@ -15,7 +15,7 @@ import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';
 import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 
 const publicActions = {
-  jsTemplateProjects: ['list', 'get'],
+  jsTemplateProjects: ['list', 'get', 'addTemplate'],
   jsTemplates: [
     'listCatalog',
     'get',
@@ -242,5 +242,29 @@ describe('js-template swagger', () => {
     expect(schemas.JsTemplateCatalogEntryListEnvelope.properties.data.items).toEqual({
       $ref: '#/components/schemas/JsTemplateCatalogEntry',
     });
+  });
+
+  it('documents the Head-CAS action for adding a Template to an existing Source Project', () => {
+    const addTemplate = swaggerDocument.paths['/jsTemplateProjects:addTemplate'].post;
+    const requestSchema = addTemplate.requestBody.content['application/json'].schema;
+
+    expect(requestSchema).toEqual({
+      $ref: '#/components/schemas/JsTemplateCatalogAddTemplateRequest',
+    });
+    expect(swaggerDocument.components.schemas.JsTemplateCatalogAddTemplateRequest).toMatchObject({
+      required: ['destination', 'expectedHeadCommitId', 'kind', 'templateName', 'title'],
+      additionalProperties: false,
+    });
+    expect(swaggerDocument.components.schemas.JsTemplateCatalogAddTemplateRequest.properties.destination).toMatchObject(
+      {
+        required: ['type', 'projectId'],
+        additionalProperties: false,
+      },
+    );
+    expect(addTemplate.responses[200].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/JsTemplateSaveSourceEnvelope',
+    });
+    expect(addTemplate.responses).toHaveProperty('409');
+    expect(addTemplate.responses).toHaveProperty('422');
   });
 });

@@ -34,7 +34,16 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       prepareRemoteSnapshot: vi.fn(),
       saveSource: vi.fn(),
     } as unknown as JsTemplateCompileService;
-    const resource = createJsTemplateProjectsResource({} as Database, projectService, runtimeCompileService);
+    const resource = createJsTemplateProjectsResource(
+      {} as Database,
+      projectService,
+      runtimeCompileService,
+      {} as never,
+      {} as never,
+      {} as never,
+      'test',
+      {} as never,
+    );
     const zip = new JSZip();
     zip.file('workspace/README.md', '# Inspected\n');
     zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
@@ -84,7 +93,16 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       getProject: vi.fn(async () => ({ id: 'jtp_inspect', lifecycleStatus: 'enabled' })),
       getValidator: vi.fn(() => new JsTemplateValidator()),
     } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource({} as Database, projectService, {} as JsTemplateCompileService);
+    const resource = createJsTemplateProjectsResource(
+      {} as Database,
+      projectService,
+      {} as JsTemplateCompileService,
+      {} as never,
+      {} as never,
+      {} as never,
+      'test',
+      {} as never,
+    );
     const zip = new JSZip();
     zip.file('src/shared/value.ts', Buffer.from('export\0const value = 1;'));
     const ctx = createActionContext({
@@ -111,7 +129,16 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       }),
       getValidator,
     } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource({} as Database, projectService, {} as JsTemplateCompileService);
+    const resource = createJsTemplateProjectsResource(
+      {} as Database,
+      projectService,
+      {} as JsTemplateCompileService,
+      {} as never,
+      {} as never,
+      {} as never,
+      'test',
+      {} as never,
+    );
     const ctx = createActionContext({
       projectId: 'jtp_missing',
       zipBase64: 'not-base64',
@@ -138,7 +165,16 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       })),
       getValidator,
     } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource({} as Database, projectService, {} as JsTemplateCompileService);
+    const resource = createJsTemplateProjectsResource(
+      {} as Database,
+      projectService,
+      {} as JsTemplateCompileService,
+      {} as never,
+      {} as never,
+      {} as never,
+      'test',
+      {} as never,
+    );
     const ctx = createActionContext({
       projectId: 'jtp_archived',
       zipBase64: 'not-base64',

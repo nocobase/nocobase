@@ -7,20 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SaveOutlined } from '@ant-design/icons';
+import { PlusOutlined, SaveOutlined } from '@ant-design/icons';
 import { Button, Drawer, Flex, Space } from 'antd';
 import React from 'react';
 
 import type { JsTemplateProject } from '../../../shared/types';
-import JsTemplateWorkspacePage, { type JsTemplateWorkspaceFooterActions } from '../JsTemplateWorkspacePage';
+import JsTemplateSourceProjectWorkspacePage, {
+  type JsTemplateSourceProjectWorkspaceFooterActions,
+} from '../JsTemplateSourceProjectWorkspacePage';
 import type { JsTemplateListTranslate } from './types';
 
 const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
 
 interface JsTemplateSourceDrawerProps {
-  footerActions: JsTemplateWorkspaceFooterActions | null;
+  footerActions: JsTemplateSourceProjectWorkspaceFooterActions | null;
   onClose: () => void;
-  onFooterActionsChange: (actions: JsTemplateWorkspaceFooterActions | null) => void;
+  onAddTemplate: () => void;
+  onFooterActionsChange: (actions: JsTemplateSourceProjectWorkspaceFooterActions | null) => void;
   onSaved: () => void | Promise<void>;
   open: boolean;
   project: JsTemplateProject | null;
@@ -30,6 +33,7 @@ interface JsTemplateSourceDrawerProps {
 export function JsTemplateSourceDrawer({
   footerActions,
   onClose,
+  onAddTemplate,
   onFooterActionsChange,
   onSaved,
   open,
@@ -45,7 +49,15 @@ export function JsTemplateSourceDrawer({
       styles={{ body: { overflow: 'hidden', padding: 16 } }}
       footer={
         open ? (
-          <Flex justify="flex-end">
+          <Flex justify="space-between">
+            <Button
+              aria-label={t('Add JS Template')}
+              disabled={project?.lifecycleStatus !== 'enabled' || Boolean(footerActions?.dirty)}
+              icon={<PlusOutlined />}
+              onClick={onAddTemplate}
+            >
+              {t('Add JS Template')}
+            </Button>
             <Space>
               <Button disabled={footerActions?.loading} onClick={footerActions?.onCancel || onClose}>
                 {t('Cancel')}
@@ -67,7 +79,7 @@ export function JsTemplateSourceDrawer({
       width={SOURCE_DRAWER_WIDTH}
     >
       {open ? (
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           defaultFilesCollapsed
           embedded
           onFooterActionsChange={onFooterActionsChange}

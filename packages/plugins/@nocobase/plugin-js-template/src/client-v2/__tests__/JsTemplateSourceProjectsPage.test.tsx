@@ -19,11 +19,11 @@ import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
 import type { JsTemplateCreateJobSummary } from '../../shared/types';
 import { JsTemplateSyncHookError, type UseJsTemplateSyncResult } from '../hooks/useJsTemplateSync';
-import JsTemplateProjectsPage, {
+import JsTemplateSourceProjectsPage, {
   JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES,
   jsTemplateProjectFilterCollection,
   matchesJsTemplateProjectFilter,
-} from '../pages/JsTemplateProjectsPage';
+} from '../pages/JsTemplateSourceProjectsPage';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -53,6 +53,9 @@ const mocks = vi.hoisted(() => ({
     refresh: vi.fn(async () => undefined),
     dismiss: vi.fn(),
     update: vi.fn(),
+  },
+  workspace: {
+    dirty: true,
   },
 }));
 
@@ -157,7 +160,7 @@ vi.mock('../components/JsTemplateSyncDrawer', async () => {
   return { default: MockJsTemplateSyncDrawer };
 });
 
-vi.mock('../pages/JsTemplateWorkspacePage', async () => {
+vi.mock('../pages/JsTemplateSourceProjectWorkspacePage', async () => {
   const React = await import('react');
   const noop = () => undefined;
 
@@ -176,7 +179,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', async () => {
     onSaved?: () => void | Promise<void>;
   };
 
-  const MockJsTemplateWorkspacePage = ({
+  const MockJsTemplateSourceProjectWorkspacePage = ({
     defaultFilesCollapsed,
     onFooterActionsChange,
     onRequestClose,
@@ -184,7 +187,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', async () => {
   }: WorkspacePageProps) => {
     React.useEffect(() => {
       onFooterActionsChange?.({
-        dirty: true,
+        dirty: mocks.workspace.dirty,
         disabled: false,
         loading: false,
         onCancel: () => onRequestClose?.(),
@@ -204,7 +207,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', async () => {
   };
 
   return {
-    default: MockJsTemplateWorkspacePage,
+    default: MockJsTemplateSourceProjectWorkspacePage,
   };
 });
 
@@ -215,7 +218,7 @@ function renderListPage(initialEntry = '/admin/settings/js-template') {
   return render(
     <FlowEngineProvider engine={app.flowEngine}>
       <MemoryRouter initialEntries={[initialEntry]}>
-        <JsTemplateProjectsPage />
+        <JsTemplateSourceProjectsPage />
         <LocationSearch />
       </MemoryRouter>
     </FlowEngineProvider>,
@@ -226,10 +229,11 @@ function LocationSearch() {
   return <output data-testid="location-search">{useLocation().search}</output>;
 }
 
-describe('JsTemplateProjectsPage', () => {
+describe('JsTemplateSourceProjectsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.createJobs.initialJobs = [];
+    mocks.workspace.dirty = true;
     mocks.createJobs.error = null;
     mocks.api.listProjects.mockResolvedValue([]);
     mocks.api.createProject.mockResolvedValue({
@@ -873,6 +877,29 @@ describe('JsTemplateProjectsPage', () => {
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('js-block 2')).toBeInTheDocument();
+  });
+
+  it('offers a discoverable Add JS Template entry from the Source Project drawer', async () => {
+    mocks.workspace.dirty = false;
+    mocks.api.listProjects.mockResolvedValueOnce([
+      {
+        id: 'jtp_browser_smoke',
+        name: 'browser-smoke',
+        normalizedName: 'browser-smoke',
+        title: 'Browser smoke',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: 'commit-1',
+        templateCount: 1,
+        templateKinds: { 'js-block': 1 },
+      },
+    ]);
+    renderListPage('/admin/settings/js-templates/source-projects?projectId=jtp_browser_smoke&panel=source');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Add JS Template' }));
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('?create=1&destinationProjectId=jtp_browser_smoke');
   });
 
   it('supports multi-select batch enablement changes', async () => {

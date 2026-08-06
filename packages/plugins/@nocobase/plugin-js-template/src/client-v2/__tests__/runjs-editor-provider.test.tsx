@@ -31,8 +31,8 @@ const workspacePageMockState = vi.hoisted(() => ({
   detachToInlineCompleted: false,
 }));
 
-vi.mock('../pages/JsTemplateWorkspacePage', () => {
-  const MockJsTemplateWorkspacePage = ({
+vi.mock('../pages/JsTemplateSourceProjectWorkspacePage', () => {
+  const MockJsTemplateSourceProjectWorkspacePage = ({
     projectId,
     initialPath,
     workspaceScope,
@@ -102,7 +102,7 @@ vi.mock('../pages/JsTemplateWorkspacePage', () => {
   };
 
   return {
-    default: MockJsTemplateWorkspacePage,
+    default: MockJsTemplateSourceProjectWorkspacePage,
   };
 });
 

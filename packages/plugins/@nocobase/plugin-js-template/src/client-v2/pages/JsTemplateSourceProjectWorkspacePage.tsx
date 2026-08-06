@@ -31,7 +31,7 @@ import {
 } from '../vsc-file/public-api';
 import { Alert, Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -79,13 +79,13 @@ import {
   WorkspaceLoadingStrip,
   WorkspaceNotice,
   WorkspacePageHeader,
-} from './js-template-workspace/WorkspacePageChrome';
-import { WorkspaceOverlays } from './js-template-workspace/WorkspaceOverlays';
-import { WorkspaceStudio } from './js-template-workspace/WorkspaceStudio';
+} from './source-project-workspace/WorkspacePageChrome';
+import { WorkspaceOverlays } from './source-project-workspace/WorkspaceOverlays';
+import { WorkspaceStudio } from './source-project-workspace/WorkspaceStudio';
 
 type WorkspaceFile = RunJSWorkspaceFile;
 
-interface JsTemplateWorkspacePageProps {
+interface JsTemplateSourceProjectWorkspacePageProps {
   embedded?: boolean;
   defaultFilesCollapsed?: boolean;
   projectId?: string;
@@ -94,7 +94,7 @@ interface JsTemplateWorkspacePageProps {
   templateId?: string | null;
   onDetachJsTemplateToInline?: (input: DetachJsTemplateToInlineRequest) => void | Promise<void>;
   onPreview?: (artifact: CompiledJsTemplateArtifact) => void | Promise<void>;
-  onFooterActionsChange?: (actions: JsTemplateWorkspaceFooterActions | null) => void;
+  onFooterActionsChange?: (actions: JsTemplateSourceProjectWorkspaceFooterActions | null) => void;
   onRequestClose?: () => void | Promise<void>;
   onSaved?: () => void | Promise<void>;
 }
@@ -103,7 +103,7 @@ export interface DetachJsTemplateToInlineRequest {
   expectedProjectHeadCommitId: string;
 }
 
-export interface JsTemplateWorkspaceFooterActions {
+export interface JsTemplateSourceProjectWorkspaceFooterActions {
   dirty: boolean;
   disabled: boolean;
   loading: boolean;
@@ -134,7 +134,7 @@ const DEFAULT_NEW_FILE_EXTENSION = '.ts';
 const HISTORY_PAGE_SIZE = 20;
 const PROJECT_WORKSPACE_SCOPE: JsTemplateWorkspaceScope = { mode: 'project' };
 
-function JsTemplateWorkspacePage({
+function JsTemplateSourceProjectWorkspacePage({
   embedded = false,
   defaultFilesCollapsed = false,
   projectId: projectIdProp,
@@ -146,11 +146,12 @@ function JsTemplateWorkspacePage({
   onFooterActionsChange,
   onRequestClose,
   onSaved,
-}: JsTemplateWorkspacePageProps) {
+}: JsTemplateSourceProjectWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
   const apiClient = app.apiClient as ApiClientLike | undefined;
   const studioT = useVscFileT();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = projectIdProp || searchParams.get('projectId') || '';
   const {
@@ -344,6 +345,10 @@ function JsTemplateWorkspacePage({
   const hasBlockedDirtyChanges = dirtyChanges.some(
     (change) => !canChangeJsTemplateWorkspacePath(workspaceScope, change.path),
   );
+  const openCatalogAddTemplate = useCallback(() => {
+    const query = new URLSearchParams({ create: '1', destinationProjectId: projectId });
+    navigate(`/admin/settings/js-templates?${query.toString()}`);
+  }, [navigate, projectId]);
   const activeFileReadOnly =
     !canWrite || !activePath || !getJsTemplateWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const checkSnapshotKey = useMemo(() => buildWorkspacePreviewSnapshot(files, workspaceScope), [files, workspaceScope]);
@@ -827,7 +832,7 @@ function JsTemplateWorkspacePage({
     await onRequestClose?.();
   }, [onRequestClose]);
 
-  const footerActions = useMemo<JsTemplateWorkspaceFooterActions>(
+  const footerActions = useMemo<JsTemplateSourceProjectWorkspaceFooterActions>(
     () => ({
       dirty: hasUnsavedLocalChanges,
       disabled: !canWrite || loading || !hasUnsavedLocalChanges || hasBlockedDirtyChanges,
@@ -889,7 +894,7 @@ function JsTemplateWorkspacePage({
     }
     const surface = createWorkspaceAuthoringSurface({
       id: authoringSurfaceId,
-      kind: 'js-template-workspace',
+      kind: 'source-project-workspace',
       title: project.title || project.name || t('Source workspace'),
       getSourceFiles: () =>
         toJsTemplateAuthoringFiles(
@@ -1200,9 +1205,12 @@ function JsTemplateWorkspacePage({
   return (
     <Flex vertical gap={16} style={{ height: embedded ? '100%' : undefined, minHeight: 0, padding: embedded ? 0 : 24 }}>
       <WorkspacePageHeader
+        addTemplateDisabled={project?.lifecycleStatus !== 'enabled' || hasUnsavedLocalChanges}
+        addTemplateLabel={t('Add JS Template')}
         disabled={footerActions.disabled}
         embedded={embedded}
         loading={footerActions.loading}
+        onAddTemplate={openCatalogAddTemplate}
         onSave={footerActions.onSave}
         projectId={projectId}
         saveLabel={t('Save')}
@@ -1743,4 +1751,4 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-export default JsTemplateWorkspacePage;
+export default JsTemplateSourceProjectWorkspacePage;

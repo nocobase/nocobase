@@ -13,7 +13,7 @@ import { getDayRangeByParams } from '@nocobase/utils/client';
 import { uid } from '@nocobase/utils/client';
 import { Alert, Button, Card, Form, Space, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
@@ -35,18 +35,18 @@ import { useT } from '../locale';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
-import { JsTemplateListTable } from './js-template-list/JsTemplateListTable';
-import { JsTemplateListToolbar } from './js-template-list/JsTemplateListToolbar';
-import { JsTemplateProjectOverlays } from './js-template-list/JsTemplateProjectOverlays';
-import { JsTemplateSourceDrawer } from './js-template-list/JsTemplateSourceDrawer';
-import { JsTemplateSyncDrawerShell } from './js-template-list/JsTemplateSyncDrawerShell';
+import { JsTemplateListTable } from './source-project-list/JsTemplateListTable';
+import { JsTemplateListToolbar } from './source-project-list/JsTemplateListToolbar';
+import { JsTemplateProjectOverlays } from './source-project-list/JsTemplateProjectOverlays';
+import { JsTemplateSourceDrawer } from './source-project-list/JsTemplateSourceDrawer';
+import { JsTemplateSyncDrawerShell } from './source-project-list/JsTemplateSyncDrawerShell';
 import type {
   CreateProjectFormValues,
   EditProjectFormValues,
   JsTemplateListRow,
   ToggleLifecycleStatus,
-} from './js-template-list/types';
-import type { JsTemplateWorkspaceFooterActions } from './JsTemplateWorkspacePage';
+} from './source-project-list/types';
+import type { JsTemplateSourceProjectWorkspaceFooterActions } from './JsTemplateSourceProjectWorkspacePage';
 
 type Notice = {
   type: 'success' | 'info' | 'warning' | 'error';
@@ -128,19 +128,20 @@ export const jsTemplateProjectFilterCollection: CollectionOptions = {
 };
 const jsTemplateProjectFilterCollections = [jsTemplateProjectFilterCollection];
 
-function JsTemplateProjectsPage() {
+function JsTemplateSourceProjectsPage() {
   return (
     <ExtendCollectionsProvider collections={jsTemplateProjectFilterCollections}>
-      <JsTemplateProjectsPageInner />
+      <JsTemplateSourceProjectsPageInner />
     </ExtendCollectionsProvider>
   );
 }
 
-function JsTemplateProjectsPageInner() {
+function JsTemplateSourceProjectsPageInner() {
   const { t } = useTranslation(NAMESPACE);
   const flowContext = useFlowContext() as FlowContextWithApi;
   const compileT = useT();
   const { token } = theme.useToken();
+  const navigate = useNavigate();
   const filterCollection = useJsTemplateProjectFilterCollection();
   const {
     changeLifecycle: changeLifecycleRequest,
@@ -176,7 +177,9 @@ function JsTemplateProjectsPageInner() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [sourceFooterActions, setSourceFooterActions] = useState<JsTemplateWorkspaceFooterActions | null>(null);
+  const [sourceFooterActions, setSourceFooterActions] = useState<JsTemplateSourceProjectWorkspaceFooterActions | null>(
+    null,
+  );
   const observedCreateJobs = useRef<Map<string, JsTemplateCreateJobSummary> | null>(null);
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
@@ -603,6 +606,14 @@ function JsTemplateProjectsPageInner() {
     await loadProjects();
   }, [loadProjects]);
 
+  const openCatalogAddTemplate = useCallback(() => {
+    if (!selectedProject) {
+      return;
+    }
+    const query = new URLSearchParams({ create: '1', destinationProjectId: selectedProject.id });
+    navigate(`/admin/settings/js-templates?${query.toString()}`);
+  }, [navigate, selectedProject]);
+
   return (
     <Card variant="borderless">
       {createJobsError ? (
@@ -678,6 +689,7 @@ function JsTemplateProjectsPageInner() {
 
       <JsTemplateSourceDrawer
         footerActions={sourceFooterActions}
+        onAddTemplate={openCatalogAddTemplate}
         onClose={closeDetailDrawer}
         onFooterActionsChange={setSourceFooterActions}
         onSaved={handleWorkspaceSaved}
@@ -1047,4 +1059,4 @@ export function createJsTemplateProjectName(): string {
   return `jt_${uid()}`;
 }
 
-export default JsTemplateProjectsPage;
+export default JsTemplateSourceProjectsPage;

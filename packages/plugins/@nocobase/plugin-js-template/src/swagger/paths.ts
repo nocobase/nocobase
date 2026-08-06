@@ -75,6 +75,42 @@ export const jsTemplatePaths = {
       },
     },
   },
+  '/jsTemplateProjects:addTemplate': {
+    post: {
+      tags: ['jsTemplateProjects'],
+      summary: 'Add one JS Template to an existing Source Project',
+      description: [
+        'Create one starter Template Entry in an existing enabled Source Project without replacing sibling Templates, shared source, Project metadata, or history.',
+        'expectedHeadCommitId must exactly match the current Source Project Head. The server validates and compiles the complete candidate workspace before atomically committing source, reconcile state, runtime artifacts, Usage refreshes, and Audit records.',
+      ].join('\n\n'),
+      requestBody: {
+        required: true,
+        description: 'Root business payload; do not wrap it in values.',
+        content: jsonContent('JsTemplateCatalogAddTemplateRequest'),
+      },
+      responses: {
+        200: {
+          description: 'The Template Entry was added and the complete Source Project compiled successfully.',
+          content: jsonContent('JsTemplateSaveSourceEnvelope'),
+        },
+        400: errorResponse('The destination, kind, name, title, or expected Head value is invalid.'),
+        403: errorResponse('The current user cannot write this Source Project.'),
+        404: errorResponse('The Source Project does not exist.'),
+        409: {
+          description:
+            'The Source Project Head is stale, the destination is disabled or archived, or the Template Entry already exists.',
+          content: {
+            'application/json': {
+              schema: {
+                oneOf: [schemaRef('JsTemplateSourceOutdatedErrorResponse'), schemaRef('JsTemplateErrorResponse')],
+              },
+            },
+          },
+        },
+        422: errorResponse('The complete candidate workspace failed validation or compilation.'),
+      },
+    },
+  },
   '/jsTemplates:listCatalog': {
     post: {
       tags: ['jsTemplates'],

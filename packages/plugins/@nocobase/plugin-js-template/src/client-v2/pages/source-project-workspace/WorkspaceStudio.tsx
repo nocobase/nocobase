@@ -151,7 +151,7 @@ export function WorkspaceStudio(props: WorkspaceStudioProps) {
                 </main>
               </div>
               <div
-                data-testid="js-template-workspace-diagnostics"
+                data-testid="source-project-workspace-diagnostics"
                 style={{
                   borderTop: `1px solid ${token.colorBorderSecondary}`,
                   flex: '0 0 auto',

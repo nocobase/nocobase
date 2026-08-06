@@ -10,11 +10,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import { JsTemplateHookError, type UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
-import JsTemplateWorkspacePage, { type JsTemplateWorkspaceFooterActions } from '../pages/JsTemplateWorkspacePage';
+import JsTemplateSourceProjectWorkspacePage, {
+  type JsTemplateSourceProjectWorkspaceFooterActions,
+} from '../pages/JsTemplateSourceProjectWorkspacePage';
 import type { JsTemplateWorkspaceScope } from '../workspace/jsTemplateWorkspaceAccess';
 
 const mocks = vi.hoisted(() => ({
@@ -362,7 +364,11 @@ async function confirmSaveVersion(message: string) {
   fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save' }));
 }
 
-describe('JsTemplateWorkspacePage', () => {
+function LocationSearch() {
+  return <span data-testid="location-search">{useLocation().search}</span>;
+}
+
+describe('JsTemplateSourceProjectWorkspacePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.api.getProject.mockResolvedValue({
@@ -437,10 +443,23 @@ describe('JsTemplateWorkspacePage', () => {
     mocks.archive.readJsTemplateWorkspaceArchive.mockResolvedValue('zip-base64');
   });
 
+  it('offers a discoverable Add JS Template entry for the current Source Project', async () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/js-template/source/jtp_sales']}>
+        <JsTemplateSourceProjectWorkspacePage projectId="jtp_sales" />
+        <LocationSearch />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Add JS Template' }));
+
+    expect(screen.getByTestId('location-search')).toHaveTextContent('?create=1&destinationProjectId=jtp_sales');
+  });
+
   it('saves only dirty source changes without compiling a workspace preview first', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -499,7 +518,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
+        <JsTemplateSourceProjectWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
       </MemoryRouter>,
     );
 
@@ -536,7 +555,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
+        <JsTemplateSourceProjectWorkspacePage onRequestClose={onRequestClose} onSaved={onSaved} />
       </MemoryRouter>,
     );
 
@@ -571,7 +590,7 @@ describe('JsTemplateWorkspacePage', () => {
   });
 
   it('restores save controls after a network error and rejects the embedded save request without closing', async () => {
-    let footerActions: JsTemplateWorkspaceFooterActions | null = null;
+    let footerActions: JsTemplateSourceProjectWorkspaceFooterActions | null = null;
     let rejectSave: ((reason?: unknown) => void) | undefined;
     const onRequestClose = vi.fn();
     const onSaved = vi.fn();
@@ -582,7 +601,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           onFooterActionsChange={(actions) => {
             footerActions = actions;
@@ -599,7 +618,7 @@ describe('JsTemplateWorkspacePage', () => {
       target: { value: 'export default function SalesKpi() { return "offline edit"; }\n' },
     });
     await waitFor(() => expect(footerActions?.disabled).toBe(false));
-    let hostSavePromise: ReturnType<JsTemplateWorkspaceFooterActions['requestSave']> | undefined;
+    let hostSavePromise: ReturnType<JsTemplateSourceProjectWorkspaceFooterActions['requestSave']> | undefined;
     act(() => {
       hostSavePromise = footerActions?.requestSave();
     });
@@ -631,7 +650,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           templateId="jtt_sales_kpi"
           onPreview={onPreview}
@@ -675,7 +694,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           templateId="jtt_sales_kpi"
           onDetachJsTemplateToInline={onDetachJsTemplateToInline}
@@ -718,7 +737,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           templateId="jtt_sales_kpi"
           onDetachJsTemplateToInline={onDetachJsTemplateToInline}
@@ -758,7 +777,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           projectId="jtp_sales"
           templateId="jtt_sales_kpi"
@@ -797,7 +816,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           embedded
           projectId="jtp_sales"
           templateId="jtt_sales_kpi"
@@ -839,7 +858,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -905,7 +924,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -972,7 +991,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           initialPath={workspaceScope.entryPath}
           projectId="jtp_sales"
           workspaceScope={workspaceScope}
@@ -1056,7 +1075,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           initialPath={workspaceScope.entryPath}
           projectId="jtp_sales"
           workspaceScope={workspaceScope}
@@ -1148,7 +1167,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           initialPath={workspaceScope.entryPath}
           projectId="jtp_sales"
           workspaceScope={workspaceScope}
@@ -1216,7 +1235,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           initialPath={workspaceScope.entryPath}
           projectId="jtp_sales"
           workspaceScope={workspaceScope}
@@ -1325,7 +1344,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter>
-        <JsTemplateWorkspacePage
+        <JsTemplateSourceProjectWorkspacePage
           initialPath={workspaceScope.entryPath}
           projectId="jtp_sales"
           workspaceScope={workspaceScope}
@@ -1378,7 +1397,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -1391,7 +1410,7 @@ describe('JsTemplateWorkspacePage', () => {
   it('creates missing repo root files from the reused default new-file entry', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -1447,7 +1466,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage initialPath="src/client/js-blocks/product-list/index.tsx" />
+        <JsTemplateSourceProjectWorkspacePage initialPath="src/client/js-blocks/product-list/index.tsx" />
       </MemoryRouter>,
     );
 
@@ -1501,7 +1520,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 
@@ -1545,7 +1564,7 @@ describe('JsTemplateWorkspacePage', () => {
 
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
-        <JsTemplateWorkspacePage />
+        <JsTemplateSourceProjectWorkspacePage />
       </MemoryRouter>,
     );
 

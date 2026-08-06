@@ -185,6 +185,115 @@ describe('JS Template entry-centric catalog', () => {
       }),
     ]);
   });
+
+  it('adds a sibling Template through Head CAS without replacing shared source, metadata, or history', async () => {
+    const createResponse = await app
+      .agent()
+      .post('/jsTemplateProjects:create')
+      .send({
+        name: 'shared-source-project',
+        title: 'Shared source project',
+        description: 'Metadata must remain unchanged',
+        initialFiles: [
+          ...createJsTemplateEntryStarter({
+            kind: 'js-block',
+            templateName: 'first-card',
+            title: 'First card',
+          }),
+          {
+            path: 'src/shared/format.ts',
+            content: 'export const format = (value: string) => `shared:${value}`;\n',
+            language: 'typescript',
+          },
+          {
+            path: 'README.md',
+            content: '# Shared source metadata\n',
+            language: 'markdown',
+          },
+        ],
+        message: 'Create shared Source Project',
+      });
+
+    expect(createResponse.status).toBe(202);
+    const projectId = createResponse.body.data.targetProjectId;
+    await waitForSuccessfulCreate(app, createResponse.body.data.id, projectId);
+    const beforeResponse = await app.agent().post('/jsTemplateProjects:get').send({ projectId });
+    const before = beforeResponse.body.data;
+    const commitCountBefore = await app.db.getRepository('vscFileCommits').count();
+    const auditCountBefore = await app.db.getRepository('jsTemplateLogs').count({ filter: { projectId } });
+
+    const addResponse = await app
+      .agent()
+      .post('/jsTemplateProjects:addTemplate')
+      .send({
+        destination: { type: 'existing', projectId },
+        expectedHeadCommitId: before.headCommitId,
+        kind: 'js-action',
+        templateName: 'refresh-data',
+        title: 'Refresh data',
+        description: 'Second sibling Template',
+      });
+
+    expect(addResponse.status).toBe(200);
+    expect(addResponse.body.data.project).toMatchObject({
+      id: projectId,
+      name: 'shared-source-project',
+      title: 'Shared source project',
+      description: 'Metadata must remain unchanged',
+      templateCount: 2,
+    });
+    expect(addResponse.body.data.project.headCommitId).not.toBe(before.headCommitId);
+    expect(addResponse.body.data.compile.templates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'js-action', templateName: 'refresh-data', status: 'success' }),
+      ]),
+    );
+
+    const pullResponse = await app.agent().post('/jsTemplateFiles:pull').send({ projectId, includeContent: 'all' });
+    const files = new Map(
+      pullResponse.body.data.files.map((file: { path: string; content: string }) => [file.path, file.content]),
+    );
+    expect(files.get('src/client/js-blocks/first-card/entry.json')).toContain('First card');
+    expect(files.get('src/client/js-actions/refresh-data/entry.json')).toContain('Second sibling Template');
+    expect(files.get('src/shared/format.ts')).toContain('shared:${value}');
+    expect(files.get('README.md')).toBe('# Shared source metadata\n');
+
+    const catalogResponse = await app.agent().post('/jsTemplates:listCatalog');
+    expect(catalogResponse.body.data.filter((entry: { projectId: string }) => entry.projectId === projectId)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'js-block', templateName: 'first-card' }),
+        expect.objectContaining({ kind: 'js-action', templateName: 'refresh-data' }),
+      ]),
+    );
+    const projectsResponse = await app.agent().post('/jsTemplateProjects:list');
+    expect(projectsResponse.body.data).toEqual([
+      expect.objectContaining({ id: projectId, templateCount: 2, title: 'Shared source project' }),
+    ]);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(commitCountBefore + 1);
+    expect(await app.db.getRepository('jsTemplateLogs').count({ filter: { projectId } })).toBeGreaterThan(
+      auditCountBefore,
+    );
+
+    const committedHead = addResponse.body.data.project.headCommitId;
+    const commitCountAfterSuccess = await app.db.getRepository('vscFileCommits').count();
+    const staleResponse = await app
+      .agent()
+      .post('/jsTemplateProjects:addTemplate')
+      .send({
+        destination: { type: 'existing', projectId },
+        expectedHeadCommitId: before.headCommitId,
+        kind: 'js-field',
+        templateName: 'stale-field',
+        title: 'Stale field',
+      });
+
+    expect(staleResponse.status).toBe(409);
+    expect(staleResponse.body.errors[0].code).toBe('JS_TEMPLATE_SOURCE_OUTDATED');
+    const afterFailure = await app.agent().post('/jsTemplateProjects:get').send({ projectId });
+    expect(afterFailure.body.data.headCommitId).toBe(committedHead);
+    expect(await app.db.getRepository('vscFileCommits').count()).toBe(commitCountAfterSuccess);
+    expect(await app.db.getRepository('jsTemplates').count({ filter: { projectId } })).toBe(2);
+  });
 });
 
 async function createSourceProject(

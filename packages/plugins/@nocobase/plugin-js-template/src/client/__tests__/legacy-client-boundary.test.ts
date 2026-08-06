@@ -39,7 +39,7 @@ import PluginJsTemplateClient, {
   JS_TEMPLATE_SETTINGS_KEY,
   JS_TEMPLATE_V2_UI_CONTRACT,
   JsTemplateCatalogPage,
-  JsTemplateProjectsPage,
+  JsTemplateSourceProjectsPage,
   PluginJsTemplateClient as NamedPluginJsTemplateClient,
 } from '..';
 
@@ -122,7 +122,7 @@ describe('plugin-js-template legacy client boundary', () => {
       `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`,
       expect.objectContaining({
         title: '@nocobase/plugin-js-template:Source Projects',
-        Component: JsTemplateProjectsPage,
+        Component: JsTemplateSourceProjectsPage,
         aclSnippet: 'pm.js-template',
         sort: 2,
       }),
@@ -187,7 +187,7 @@ describe('plugin-js-template legacy client boundary', () => {
     ]);
     expect(add.mock.calls[0][1].Component).toBeUndefined();
     expect(add.mock.calls[1][1].Component).toBe(JsTemplateCatalogPage);
-    expect(add.mock.calls[2][1].Component).toBe(JsTemplateProjectsPage);
+    expect(add.mock.calls[2][1].Component).toBe(JsTemplateSourceProjectsPage);
     expect(
       add.mock.calls
         .slice(1)

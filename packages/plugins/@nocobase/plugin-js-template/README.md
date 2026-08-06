@@ -60,6 +60,8 @@ The project authoring flow is:
 
 Save materializes the complete candidate before validating and compiling it. The commit transaction rechecks the Head, then commits source, Template rows, immutable artifacts, usages, and audit state together.
 
+The Catalog can either create a new Source Project or add one starter Template to an existing enabled Source Project. The existing-project path uses `jsTemplateProjects:addTemplate` with an explicit existing destination and `expectedHeadCommitId`; it preserves sibling Templates, shared source, project metadata, and history while applying the same validation, compile, reconcile, Usage, Audit, and atomic Head-CAS save chain.
+
 | Result | Contract |
 | --- | --- |
 | Valid delta | Source Head and affected runtime artifacts advance together |

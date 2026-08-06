@@ -8,8 +8,8 @@
  */
 
 export { default as JsTemplateCatalogPage } from './pages/JsTemplateCatalogPage';
-export { default as JsTemplateProjectsPage } from './pages/JsTemplateProjectsPage';
-export { default as JsTemplateWorkspacePage } from './pages/JsTemplateWorkspacePage';
+export { default as JsTemplateSourceProjectsPage } from './pages/JsTemplateSourceProjectsPage';
+export { default as JsTemplateSourceProjectWorkspacePage } from './pages/JsTemplateSourceProjectWorkspacePage';
 export {
   JSActionJsTemplateSourceField,
   JSBlockJsTemplateSourceField,
@@ -33,5 +33,6 @@ export * from './jsTemplateRunJSIntegration';
 export * from './jsTemplateRunJSIntegrationContract';
 export * from './jsTemplateV2UIContract';
 export * from './vsc-file/public-api';
+export * from '../shared/catalogAuthoring';
 export { PluginJsTemplateClientV2 } from './plugin';
 export { default } from './plugin';

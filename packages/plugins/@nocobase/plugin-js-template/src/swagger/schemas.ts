@@ -211,6 +211,43 @@ export const jsTemplateSchemas = {
       'Required optimistic-concurrency value from the workspace pull. Pass null only when the repository has no Head commit.',
     example: '93e5ce98-6ec0-4dc8-9fb8-035da1a83f18',
   },
+  JsTemplateCatalogAddTemplateRequest: {
+    type: 'object',
+    required: ['destination', 'expectedHeadCommitId', 'kind', 'templateName', 'title'],
+    properties: {
+      destination: {
+        type: 'object',
+        required: ['type', 'projectId'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['existing'],
+          },
+          projectId: {
+            type: 'string',
+            minLength: 1,
+          },
+        },
+        additionalProperties: false,
+      },
+      expectedHeadCommitId: {
+        $ref: '#/components/schemas/JsTemplateExpectedHeadCommitId',
+      },
+      kind: {
+        $ref: '#/components/schemas/JsTemplateKind',
+      },
+      templateName: {
+        type: 'string',
+        pattern: '^[a-z][a-z0-9-]*$',
+      },
+      title: {
+        type: 'string',
+        minLength: 1,
+      },
+      description: nullableString,
+    },
+    additionalProperties: false,
+  },
   JsTemplateSourceOutdatedErrorResponse: {
     type: 'object',
     required: ['errors'],

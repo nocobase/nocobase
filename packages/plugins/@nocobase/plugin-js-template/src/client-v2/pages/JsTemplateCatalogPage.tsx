@@ -23,6 +23,7 @@ import {
   Modal,
   Pagination,
   Popconfirm,
+  Radio,
   Select,
   Space,
   Spin,
@@ -33,7 +34,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { JS_TEMPLATE_KEY_PATTERN, JS_TEMPLATE_SUPPORTED_KINDS, NAMESPACE, type JsTemplateKind } from '../../constants';
@@ -42,7 +43,9 @@ import type {
   JsTemplateCatalogEntry,
   JsTemplateCatalogStatus,
   JsTemplateCreateJobSummary,
+  JsTemplateProject,
   JsTemplateUsageListResult,
+  SaveAsJsTemplateDestination,
 } from '../../shared/types';
 import {
   deleteJsTemplate,
@@ -61,7 +64,9 @@ interface CreateJsTemplateFormValues {
   title: string;
   description?: string;
   kind: JsTemplateKind;
-  sourceProjectName: string;
+  destinationType: SaveAsJsTemplateDestination['type'];
+  existingProjectId?: string;
+  sourceProjectName?: string;
 }
 
 interface FlowContextWithApi {
@@ -80,8 +85,9 @@ export function JsTemplateCatalogPage() {
   const { t } = useTranslation(NAMESPACE);
   const flowContext = useFlowContext() as FlowContextWithApi;
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token } = theme.useToken();
-  const { createProject } = useJsTemplateProject();
+  const { addTemplate, createProject, listProjects } = useJsTemplateProject();
   const {
     jobs: createJobs,
     error: createJobsError,
@@ -90,6 +96,8 @@ export function JsTemplateCatalogPage() {
   } = useJsTemplateCreateJobs();
   const [form] = Form.useForm<CreateJsTemplateFormValues>();
   const [entries, setEntries] = useState<JsTemplateCatalogEntry[]>([]);
+  const [sourceProjects, setSourceProjects] = useState<JsTemplateProject[]>([]);
+  const [sourceProjectsLoading, setSourceProjectsLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -105,6 +113,7 @@ export function JsTemplateCatalogPage() {
   const observedCreateJobs = useRef<Map<string, JsTemplateCreateJobSummary> | null>(null);
   const usageRequestSeq = useRef(0);
   const usageRequestedPage = useRef(1);
+  const destinationType = Form.useWatch('destinationType', form);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -179,18 +188,64 @@ export function JsTemplateCatalogPage() {
     }
   }, [createJobs, dismissCreateJob]);
 
-  const resetCreateForm = useCallback(() => {
-    form.resetFields();
-    form.setFieldsValue({
-      kind: 'js-block',
-      sourceProjectName: createSourceProjectName(),
-    });
-  }, [form]);
+  const resetCreateForm = useCallback(
+    (existingProjectId?: string) => {
+      form.resetFields();
+      form.setFieldsValue({
+        kind: 'js-block',
+        destinationType: existingProjectId ? 'existing' : 'new',
+        existingProjectId,
+        sourceProjectName: createSourceProjectName(),
+      });
+    },
+    [form],
+  );
+
+  const loadSourceProjects = useCallback(async () => {
+    setSourceProjectsLoading(true);
+    try {
+      setSourceProjects(await listProjects());
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : t('Failed to load Source Projects'),
+      });
+    } finally {
+      setSourceProjectsLoading(false);
+    }
+  }, [listProjects, t]);
 
   const openCreate = useCallback(() => {
     resetCreateForm();
     setCreateOpen(true);
-  }, [resetCreateForm]);
+    loadSourceProjects();
+  }, [loadSourceProjects, resetCreateForm]);
+
+  useEffect(() => {
+    if (searchParams.get('create') !== '1' || createOpen) {
+      return;
+    }
+    resetCreateForm(searchParams.get('destinationProjectId') || undefined);
+    setCreateOpen(true);
+    loadSourceProjects();
+  }, [createOpen, loadSourceProjects, resetCreateForm, searchParams]);
+
+  useEffect(() => {
+    const destinationProjectId = searchParams.get('destinationProjectId');
+    if (createOpen && destinationType === 'existing' && destinationProjectId) {
+      form.setFieldValue('existingProjectId', destinationProjectId);
+    }
+  }, [createOpen, destinationType, form, searchParams]);
+
+  const clearCreateQuery = useCallback(() => {
+    if (!searchParams.has('create') && !searchParams.has('destinationProjectId')) {
+      return;
+    }
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete('create');
+    nextSearchParams.delete('destinationProjectId');
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const closeCreate = useCallback(() => {
     if (creating) {
@@ -198,7 +253,8 @@ export function JsTemplateCatalogPage() {
     }
     setCreateOpen(false);
     resetCreateForm();
-  }, [creating, resetCreateForm]);
+    clearCreateQuery();
+  }, [clearCreateQuery, creating, resetCreateForm]);
 
   const createTemplate = async () => {
     const values = await form.validateFields();
@@ -207,22 +263,60 @@ export function JsTemplateCatalogPage() {
     try {
       const title = values.title.trim();
       const description = values.description?.trim() || null;
-      const accepted = await createProject({
-        name: values.sourceProjectName.trim(),
-        title,
-        description,
-        initialFiles: createJsTemplateEntryStarter({
+      const destination: SaveAsJsTemplateDestination =
+        values.destinationType === 'existing'
+          ? { type: 'existing', projectId: values.existingProjectId || '' }
+          : {
+              type: 'new',
+              name: values.sourceProjectName?.trim() || '',
+              title,
+              description,
+            };
+      if (destination.type === 'existing') {
+        const project = sourceProjects.find((candidate) => candidate.id === destination.projectId);
+        if (!project || project.lifecycleStatus !== 'enabled') {
+          throw new Error(t('Select an enabled Source Project'));
+        }
+        await addTemplate({
+          destination,
+          expectedHeadCommitId: project.headCommitId,
           kind: values.kind,
           templateName: values.templateName.trim(),
           title,
           description,
-        }),
-        message: 'Create JS Template entry',
-      });
-      addAcceptedJob(accepted);
-      setCreateOpen(false);
-      resetCreateForm();
-      setNotice({ type: 'info', message: t('JS Template creation started') });
+        });
+        setCreateOpen(false);
+        resetCreateForm();
+        clearCreateQuery();
+        const refreshed = await loadCatalog();
+        if (refreshed) {
+          setNotice({
+            type: 'success',
+            message: t('JS Template added to Source Project: {{name}}').replace(
+              '{{name}}',
+              project.title || project.name,
+            ),
+          });
+        }
+      } else {
+        const accepted = await createProject({
+          name: destination.name,
+          title: destination.title,
+          description: destination.description,
+          initialFiles: createJsTemplateEntryStarter({
+            kind: values.kind,
+            templateName: values.templateName.trim(),
+            title,
+            description,
+          }),
+          message: 'Create JS Template entry',
+        });
+        addAcceptedJob(accepted);
+        setCreateOpen(false);
+        resetCreateForm();
+        clearCreateQuery();
+        setNotice({ type: 'info', message: t('JS Template creation started') });
+      }
     } catch (error) {
       setNotice({
         type: 'error',
@@ -537,17 +631,49 @@ export function JsTemplateCatalogPage() {
           <Form.Item label={t('Description')} name="description">
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item
-            extra={t('The Source Project name is generated automatically and can be changed if needed.')}
-            label={t('Source Project name')}
-            name="sourceProjectName"
-            rules={[
-              { required: true, message: t('Name is required') },
-              { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
-            ]}
-          >
-            <Input />
+          <Form.Item label={t('Source Project destination')} name="destinationType" rules={[{ required: true }]}>
+            <Radio.Group
+              aria-label={t('Source Project destination')}
+              options={[
+                { label: t('Create a new Source Project'), value: 'new' },
+                { label: t('Add to an existing Source Project'), value: 'existing' },
+              ]}
+            />
           </Form.Item>
+          {destinationType === 'existing' ? (
+            <Form.Item
+              label={t('Existing Source Project')}
+              name="existingProjectId"
+              rules={[{ required: true, message: t('Select a Source Project') }]}
+            >
+              <Select
+                aria-label={t('Existing Source Project')}
+                loading={sourceProjectsLoading}
+                options={sourceProjects.map((project) => ({
+                  disabled: project.lifecycleStatus !== 'enabled',
+                  label: `${project.title || project.name} (${project.name})${
+                    project.lifecycleStatus === 'enabled' ? '' : ` - ${t(project.lifecycleStatus)}`
+                  }`,
+                  value: project.id,
+                }))}
+                placeholder={t('Select a Source Project')}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              extra={t('The Source Project name is generated automatically and can be changed if needed.')}
+              label={t('Source Project name')}
+              name="sourceProjectName"
+              rules={[
+                { required: true, message: t('Name is required') },
+                { pattern: /^[a-z][a-z0-9._-]*$/, message: t('Name format is invalid') },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+          )}
         </Form>
       </Modal>
 

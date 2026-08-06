@@ -36,9 +36,9 @@ import {
   JsTemplateCreateSourceSelector as ExportedJsTemplateCreateSourceSelector,
   JsTemplateCredentialInput as ExportedJsTemplateCredentialInput,
   JsTemplateCatalogPage as ExportedJsTemplateCatalogPage,
-  JsTemplateProjectsPage as ExportedJsTemplateProjectsPage,
+  JsTemplateSourceProjectsPage as ExportedJsTemplateSourceProjectsPage,
   JsTemplateSyncDrawer as ExportedJsTemplateSyncDrawer,
-  JsTemplateWorkspacePage as ExportedJsTemplateWorkspacePage,
+  JsTemplateSourceProjectWorkspacePage as ExportedJsTemplateSourceProjectWorkspacePage,
   SaveAsJsTemplate as ExportedSaveAsJsTemplate,
   PluginJsTemplateClientV2 as ExportedPluginJsTemplateClientV2,
   useJsTemplateCreateJobs as exportedUseJsTemplateCreateJobs,
@@ -47,8 +47,8 @@ import {
 } from '../index';
 import { JS_TEMPLATE_V2_UI_CONTRACT } from '../jsTemplateV2UIContract';
 import DirectJsTemplateCatalogPage from '../pages/JsTemplateCatalogPage';
-import DirectJsTemplateProjectsPage from '../pages/JsTemplateProjectsPage';
-import DirectJsTemplateWorkspacePage from '../pages/JsTemplateWorkspacePage';
+import DirectJsTemplateSourceProjectsPage from '../pages/JsTemplateSourceProjectsPage';
+import DirectJsTemplateSourceProjectWorkspacePage from '../pages/JsTemplateSourceProjectWorkspacePage';
 import { PluginJsTemplateClientV2 as DirectPluginJsTemplateClientV2 } from '../plugin';
 
 const pluginCanonicalTranslations = {
@@ -79,8 +79,8 @@ const pluginCanonicalTranslations = {
   'Select a Source Project from Source Projects': '请从源码项目列表选择源码项目',
   'Selected JS Template is unavailable': '所选 JS 模板不可用',
   'Source Project name': '源码项目名称',
-  'The current working copy of this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.':
-    '将把当前模板的工作副本及其实际引用的文件复制到内联代码；原 JS 模板保持不变。',
+  'The committed Project Head for this template and its referenced files will be copied to inline code. The JS Template will remain unchanged.':
+    '将把当前模板在项目已提交 Head 中的源码及其实际引用的文件复制到内联代码；原 JS 模板保持不变。',
   'The saved sync source will be removed from this Source Project.': '将从此源码项目中移除已保存的同步来源。',
   'This page is rendered by a JS Template.': '此页面由 JS 模板渲染。',
   'This JS Template is used in {{count}} locations; after save those locations immediately use the new code.':
@@ -135,8 +135,8 @@ describe('JS Templates client-v2 UI contract', () => {
   it('exports the canonical client-v2 implementation', () => {
     expect(ExportedPluginJsTemplateClientV2).toBe(DirectPluginJsTemplateClientV2);
     expect(ExportedJsTemplateCatalogPage).toBe(DirectJsTemplateCatalogPage);
-    expect(ExportedJsTemplateProjectsPage).toBe(DirectJsTemplateProjectsPage);
-    expect(ExportedJsTemplateWorkspacePage).toBe(DirectJsTemplateWorkspacePage);
+    expect(ExportedJsTemplateSourceProjectsPage).toBe(DirectJsTemplateSourceProjectsPage);
+    expect(ExportedJsTemplateSourceProjectWorkspacePage).toBe(DirectJsTemplateSourceProjectWorkspacePage);
     expect(ExportedJSActionJsTemplateSourceField).toBe(JSActionJsTemplateSourceField);
     expect(ExportedJSBlockJsTemplateSourceField).toBe(JSBlockJsTemplateSourceField);
     expect(ExportedSaveAsJsTemplate).toBe(DirectSaveAsJsTemplate);

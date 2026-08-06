@@ -22,7 +22,7 @@ import { registerJsTemplateRuntimeAuthSession } from './resolvers/JsTemplateRunt
 let activeJsTemplateClientV2Instance: PluginJsTemplateClientV2 | null = null;
 
 const loadJsTemplateCatalogPage = () => import('./pages/JsTemplateCatalogPage');
-const loadJsTemplateProjectsPage = () => import('./pages/JsTemplateProjectsPage');
+const loadJsTemplateSourceProjectsPage = () => import('./pages/JsTemplateSourceProjectsPage');
 
 export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Application> {
   private readonly disposers: Array<() => void> = [];
@@ -61,7 +61,7 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
       key: 'source-projects',
       title: this.t('Source Projects'),
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      componentLoader: loadJsTemplateProjectsPage,
+      componentLoader: loadJsTemplateSourceProjectsPage,
     });
   }
 

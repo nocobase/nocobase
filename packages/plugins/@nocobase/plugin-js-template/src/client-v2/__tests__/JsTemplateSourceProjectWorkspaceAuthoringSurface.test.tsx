@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
-import JsTemplateWorkspacePage from '../pages/JsTemplateWorkspacePage';
+import JsTemplateSourceProjectWorkspacePage from '../pages/JsTemplateSourceProjectWorkspacePage';
 import type { JsTemplateWorkspaceScope } from '../workspace/jsTemplateWorkspaceAccess';
 
 const entryPath = 'src/client/js-blocks/sales-kpi/index.tsx';
@@ -131,7 +131,7 @@ function getRegisteredSurface(): CodeAuthoringSurface {
 function renderTemplateWorkspace() {
   return render(
     <MemoryRouter>
-      <JsTemplateWorkspacePage
+      <JsTemplateSourceProjectWorkspacePage
         embedded
         templateId="jtt-sales-kpi"
         initialPath={entryPath}

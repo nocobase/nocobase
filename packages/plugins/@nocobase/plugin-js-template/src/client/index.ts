@@ -10,9 +10,10 @@
 import type React from 'react';
 
 export * from './vsc-file/public-api';
+export * from '../shared/catalogAuthoring';
 
 export { default as JsTemplateCatalogPage } from '../client-v2/pages/JsTemplateCatalogPage';
-export { default as JsTemplateProjectsPage } from '../client-v2/pages/JsTemplateProjectsPage';
+export { default as JsTemplateSourceProjectsPage } from '../client-v2/pages/JsTemplateSourceProjectsPage';
 export { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
 
 import { NAMESPACE } from '../constants';
@@ -21,7 +22,7 @@ import {
   registerJsTemplateRunJSFlowSettingsComponents,
 } from '../client-v2/jsTemplateRunJSIntegration';
 import JsTemplateCatalogPage from '../client-v2/pages/JsTemplateCatalogPage';
-import JsTemplateProjectsPage from '../client-v2/pages/JsTemplateProjectsPage';
+import JsTemplateSourceProjectsPage from '../client-v2/pages/JsTemplateSourceProjectsPage';
 import { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
 
@@ -123,7 +124,7 @@ export class PluginJsTemplateClient {
     });
     this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, {
       title: translate(this.app, 'Source Projects'),
-      Component: JsTemplateProjectsPage,
+      Component: JsTemplateSourceProjectsPage,
       aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
       sort: 2,
     });

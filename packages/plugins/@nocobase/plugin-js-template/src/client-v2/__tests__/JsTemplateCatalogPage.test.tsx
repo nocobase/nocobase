@@ -14,7 +14,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
-import type { JsTemplateCatalogEntry, JsTemplateCreateJobSummary } from '../../shared/types';
+import type { JsTemplateCatalogEntry, JsTemplateCreateJobSummary, JsTemplateProject } from '../../shared/types';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
 import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import JsTemplateCatalogPage from '../pages/JsTemplateCatalogPage';
@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   listUsageLocations: vi.fn(),
   deleteTemplate: vi.fn(),
   createProject: vi.fn(),
+  addTemplate: vi.fn(),
+  listProjects: vi.fn(),
   jobs: {
     initial: [] as JsTemplateCreateJobSummary[],
     update: vi.fn(),
@@ -59,6 +61,8 @@ vi.mock('../hooks/useJsTemplateProject', async (importOriginal) => {
     useJsTemplateProject: () =>
       ({
         createProject: mocks.createProject,
+        addTemplate: mocks.addTemplate,
+        listProjects: mocks.listProjects,
       }) as unknown as UseJsTemplateProjectResult,
   };
 });
@@ -116,6 +120,8 @@ describe('JsTemplateCatalogPage', () => {
     });
     mocks.jobs.initial = [];
     mocks.createProject.mockResolvedValue(createJob());
+    mocks.addTemplate.mockResolvedValue({ project: createSourceProject() });
+    mocks.listProjects.mockResolvedValue([createSourceProject()]);
   });
 
   it('renders one row per Template Entry and the required entry-centric columns', async () => {
@@ -154,6 +160,8 @@ describe('JsTemplateCatalogPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Create JS Template' }));
     const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    expect(within(dialog).getByRole('radio', { name: 'Create a new Source Project' })).toBeChecked();
+    expect(within(dialog).getByRole('radio', { name: 'Add to an existing Source Project' })).toBeInTheDocument();
     fireEvent.change(within(dialog).getByLabelText('Template name'), { target: { value: 'new-card' } });
     fireEvent.change(within(dialog).getByLabelText('Template title'), { target: { value: 'New card' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
@@ -182,6 +190,31 @@ describe('JsTemplateCatalogPage', () => {
     });
 
     expect(await screen.findByText('New card')).toBeInTheDocument();
+    expect(mocks.listCatalog).toHaveBeenCalledTimes(2);
+  });
+
+  it('adds a Template Entry to an explicitly selected existing Source Project with its current Head', async () => {
+    renderCatalog('/admin/settings/js-templates?create=1&destinationProjectId=jtp_shared');
+    const dialog = await screen.findByRole('dialog', { name: 'Create JS Template' });
+    expect(within(dialog).getByRole('radio', { name: 'Add to an existing Source Project' })).toBeChecked();
+    expect(await within(dialog).findByText('Shared source (shared-source)')).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Template name'), { target: { value: 'existing-card' } });
+    fireEvent.change(within(dialog).getByLabelText('Template title'), { target: { value: 'Existing card' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+
+    await waitFor(() => {
+      expect(mocks.addTemplate).toHaveBeenCalledWith({
+        destination: { type: 'existing', projectId: 'jtp_shared' },
+        expectedHeadCommitId: 'vscc_shared',
+        kind: 'js-block',
+        templateName: 'existing-card',
+        title: 'Existing card',
+        description: null,
+      });
+    });
+    expect(mocks.createProject).not.toHaveBeenCalled();
+    expect(mocks.jobs.addAccepted).not.toHaveBeenCalled();
+    expect(await screen.findByText('JS Template added to Source Project: Shared source')).toBeInTheDocument();
     expect(mocks.listCatalog).toHaveBeenCalledTimes(2);
   });
 
@@ -363,11 +396,11 @@ describe('JsTemplateCatalogPage', () => {
   });
 });
 
-function renderCatalog() {
+function renderCatalog(initialEntry = '/admin/settings/js-templates') {
   const app = createMockClient();
   return render(
     <FlowEngineProvider engine={app.flowEngine}>
-      <MemoryRouter initialEntries={['/admin/settings/js-templates']}>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <JsTemplateCatalogPage />
       </MemoryRouter>
     </FlowEngineProvider>,
@@ -391,6 +424,20 @@ function createCatalogEntry(overrides: Partial<JsTemplateCatalogEntry>): JsTempl
     createdAt: '2026-08-04T00:00:00.000Z',
     updatedAt: '2026-08-04T00:00:00.000Z',
     ...overrides,
+  };
+}
+
+function createSourceProject(): JsTemplateProject {
+  return {
+    id: 'jtp_shared',
+    name: 'shared-source',
+    normalizedName: 'shared-source',
+    title: 'Shared source',
+    description: 'Shared project metadata',
+    lifecycleStatus: 'enabled',
+    healthStatus: 'ready',
+    headCommitId: 'vscc_shared',
+    templateCount: 2,
   };
 }
 

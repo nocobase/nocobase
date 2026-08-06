@@ -35,10 +35,10 @@ import {
 } from '../resolvers/JsTemplateRunJSResolver';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
-import JsTemplateWorkspacePage, {
+import JsTemplateSourceProjectWorkspacePage, {
   type DetachJsTemplateToInlineRequest,
-  type JsTemplateWorkspaceFooterActions,
-} from '../pages/JsTemplateWorkspacePage';
+  type JsTemplateSourceProjectWorkspaceFooterActions,
+} from '../pages/JsTemplateSourceProjectWorkspacePage';
 import type { JsTemplateWorkspaceScope } from '../workspace/jsTemplateWorkspaceAccess';
 import { createInlineJsTemplateWorkspaceTypeScriptContextResolver } from '../workspace/inlineJsTemplateWorkspaceTypeScript';
 import { resolveInlineJsTemplateWorkspaceJsonSchema } from '../workspace/jsTemplateWorkspaceJsonSchema';
@@ -91,7 +91,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
   const [currentBinding, setCurrentBinding] = React.useState(binding);
   const [currentEntryPath, setCurrentEntryPath] = React.useState<string | null>(null);
   const [detachedInlineValue, setDetachedInlineValue] = React.useState<RunJSValue | null>(null);
-  const [footerActions, setFooterActions] = React.useState<JsTemplateWorkspaceFooterActions | null>(null);
+  const [footerActions, setFooterActions] = React.useState<JsTemplateSourceProjectWorkspaceFooterActions | null>(null);
   const flowContext = useFlowContext<JsTemplateEditorFlowContext | null>();
   const app = React.useContext(ApplicationContext) as ApplicationWithApi | null;
   const resolverApi = app?.apiClient;
@@ -345,7 +345,7 @@ const JsTemplateSourceWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
       vertical
       style={{ height: 'calc(100vh - 96px)', minHeight: 0, minWidth: 0, overflow: 'hidden' }}
     >
-      <JsTemplateWorkspacePage
+      <JsTemplateSourceProjectWorkspacePage
         defaultFilesCollapsed
         embedded
         templateId={currentBinding.templateId}

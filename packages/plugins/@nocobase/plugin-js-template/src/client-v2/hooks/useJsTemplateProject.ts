@@ -12,6 +12,10 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
+import type {
+  JsTemplateCatalogAddTemplateInput,
+  JsTemplateCatalogAddTemplateResult,
+} from '../../shared/catalogAuthoring';
 import type { VscCommitDiffResult } from '../../shared/vsc-file/public-api';
 import type {
   JsTemplateChangeLifecycleInput,
@@ -99,6 +103,7 @@ export interface JsTemplateSaveSourceInput {
 export interface UseJsTemplateProjectResult {
   listProjects(): Promise<JsTemplateProject[]>;
   createProject(input: JsTemplateCreateProjectInput): Promise<JsTemplateCreateJobAcceptedResult>;
+  addTemplate(input: JsTemplateCatalogAddTemplateInput): Promise<JsTemplateCatalogAddTemplateResult>;
   getProject(projectId: string): Promise<JsTemplateProject>;
   updateProject(input: JsTemplateUpdateProjectInput): Promise<JsTemplateProject>;
   changeLifecycle(input: JsTemplateChangeLifecycleInput): Promise<JsTemplateProject>;
@@ -135,6 +140,7 @@ type ResourceResponse<T> = {
 type OperationInputMap = {
   listProjects: undefined;
   createProject: JsTemplateCreateProjectInput;
+  addTemplate: JsTemplateCatalogAddTemplateInput;
   getProject: { projectId: string };
   updateProject: JsTemplateUpdateProjectInput;
   changeLifecycle: JsTemplateChangeLifecycleInput;
@@ -151,6 +157,7 @@ type OperationInputMap = {
 type OperationResultMap = {
   listProjects: JsTemplateProject[];
   createProject: JsTemplateCreateJobAcceptedResult;
+  addTemplate: JsTemplateCatalogAddTemplateResult;
   getProject: JsTemplateProject;
   updateProject: JsTemplateProject;
   changeLifecycle: JsTemplateProject;
@@ -167,6 +174,7 @@ type OperationResultMap = {
 const operationResourceActions: Record<JsTemplateProjectOperation, string> = {
   listProjects: 'jsTemplateProjects:list',
   createProject: 'jsTemplateProjects:create',
+  addTemplate: 'jsTemplateProjects:addTemplate',
   getProject: 'jsTemplateProjects:get',
   updateProject: 'jsTemplateProjects:updateMetadata',
   changeLifecycle: 'jsTemplateProjects:changeLifecycle',
@@ -208,6 +216,15 @@ export function useJsTemplateProject(): UseJsTemplateProjectResult {
   const createProject = useCallback(
     (input: JsTemplateCreateProjectInput) => requestOperation('createProject', input),
     [requestOperation],
+  );
+  const addTemplate = useCallback(
+    async (input: JsTemplateCatalogAddTemplateInput) => {
+      const result = await requestOperation('addTemplate', input);
+      invalidateJsTemplateSettingsDescriptorCache(ctx.api, input.destination.projectId);
+      invalidateJsTemplateRuntimeCache(ctx.api, input.destination.projectId);
+      return result;
+    },
+    [ctx.api, requestOperation],
   );
   const getProject = useCallback(
     (projectId: string) => requestOperation('getProject', { projectId }),
@@ -274,6 +291,7 @@ export function useJsTemplateProject(): UseJsTemplateProjectResult {
     () => ({
       listProjects,
       createProject,
+      addTemplate,
       getProject,
       updateProject,
       changeLifecycle,
@@ -287,6 +305,7 @@ export function useJsTemplateProject(): UseJsTemplateProjectResult {
       diffCommits,
     }),
     [
+      addTemplate,
       changeLifecycle,
       compileWorkspacePreview,
       createProject,

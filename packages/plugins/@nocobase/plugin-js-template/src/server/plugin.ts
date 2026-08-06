@@ -57,6 +57,7 @@ import { JsTemplatePermissionService } from './services/JsTemplatePermissionServ
 import { JsTemplateRemotePullService } from './services/JsTemplateRemotePullService';
 import { JsTemplateProjectService } from './services/JsTemplateProjectService';
 import { JsTemplateCompileService } from './services/JsTemplateCompileService';
+import { JsTemplateCatalogAuthoringService } from './services/JsTemplateCatalogAuthoringService';
 import { JsTemplateValidator } from './services/JsTemplateValidator';
 import { JsTemplateWorkspaceCompilerBridge } from './services/JsTemplateWorkspaceCompilerBridge';
 import { JsTemplateRuntimeService } from './services/JsTemplateRuntimeService';
@@ -136,6 +137,8 @@ export class PluginJsTemplateServer extends Plugin {
   private runtimeService?: JsTemplateRuntimeService;
 
   private runtimeCompileService?: JsTemplateCompileService;
+
+  private catalogAuthoringService?: JsTemplateCatalogAuthoringService;
 
   private compileWorkerPool?: JsTemplateCompileWorkerPool;
 
@@ -305,6 +308,11 @@ export class PluginJsTemplateServer extends Plugin {
         validator: this.validator,
       },
     );
+    this.catalogAuthoringService = new JsTemplateCatalogAuthoringService(
+      this.projectService,
+      this.templateService,
+      this.runtimeCompileService,
+    );
     this.createJobStore = new JsTemplateCreateJobStore(db);
     const createFromRemoteService = new JsTemplateCreateFromRemoteService(
       db,
@@ -387,6 +395,7 @@ export class PluginJsTemplateServer extends Plugin {
         db,
         this.projectService,
         this.runtimeCompileService,
+        this.catalogAuthoringService,
         this.createJobStore,
         this.createJobRunner,
         this.app.name,
