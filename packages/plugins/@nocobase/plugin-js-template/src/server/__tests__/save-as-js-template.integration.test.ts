@@ -25,8 +25,6 @@ import {
   SaveAsJsTemplateService,
   PersistentSaveAsJsTemplateSnapshotValidator,
 } from '../services/SaveAsJsTemplateService';
-import { JsTemplateSourceOperationStore } from '../services/JsTemplateSourceOperationStore';
-import { DetachJsTemplateToInlineService } from '../services/DetachJsTemplateToInlineService';
 import type { RunJSSourceAdapterRegistry } from '../vsc-file';
 import { buildRunJSSourceRepositoryIdentity } from '../vsc-file/public-api';
 
@@ -1012,63 +1010,6 @@ describe('SaveAsJsTemplateService', () => {
     expect(operationModel.getValues()).toMatchObject({ status: 'completed' });
   });
 
-  it('keeps save-as-js-template and detach-to-inline reservations independent when they use the same key', async () => {
-    const operationModel = createJsTemplateSourceOperationModel();
-    const store = new JsTemplateSourceOperationStore(createJsTemplateSourceOperationDatabase(operationModel), 'main');
-    const descriptor = {
-      idempotencyKey: 'shared-save-detach-key',
-      request: { locator, version: 'v2' },
-      parseResult: (value: unknown) => value,
-    };
-
-    await expect(store.claim({ ...descriptor, action: 'save-as-js-template' })).resolves.toHaveProperty('reservation');
-    await expect(store.claim({ ...descriptor, action: 'detach-to-inline' })).resolves.toHaveProperty('reservation');
-
-    expect(operationModel.getAllValues()).toHaveLength(2);
-    expect(operationModel.getAllValues()[0].identityHash).not.toBe(operationModel.getAllValues()[1].identityHash);
-  });
-
-  it('allows only one concurrent detach-to-inline reservation for the same request', async () => {
-    const operationModel = createJsTemplateSourceOperationModel();
-    const db = createJsTemplateSourceOperationDatabase(operationModel);
-    const descriptor = {
-      action: 'detach-to-inline',
-      idempotencyKey: 'concurrent-detach-to-inline',
-      request: { locator, version: 'v2' },
-      parseResult: (value: unknown) => value,
-    };
-
-    const resolutions = await Promise.allSettled([
-      new JsTemplateSourceOperationStore(db, 'main').claim(descriptor),
-      new JsTemplateSourceOperationStore(db, 'main').claim(descriptor),
-    ]);
-
-    expect(resolutions.filter((resolution) => resolution.status === 'fulfilled')).toHaveLength(1);
-    expect(resolutions.filter((resolution) => resolution.status === 'rejected')).toHaveLength(1);
-    expect(resolutions.find((resolution) => resolution.status === 'rejected')).toMatchObject({
-      reason: { code: 'JS_TEMPLATE_IDEMPOTENCY_IN_PROGRESS' },
-    });
-    expect(operationModel.getAllValues()).toHaveLength(1);
-  });
-
-  it('reclaims a failed detach-to-inline reservation for the same request', async () => {
-    const operationModel = createJsTemplateSourceOperationModel();
-    const store = new JsTemplateSourceOperationStore(createJsTemplateSourceOperationDatabase(operationModel), 'main');
-    const descriptor = {
-      action: 'detach-to-inline',
-      idempotencyKey: 'retry-detach-to-inline',
-      request: { locator, version: 'v2' },
-      parseResult: (value: unknown) => value,
-    };
-
-    const first = await store.claim(descriptor);
-    await store.fail(first.reservation, new Error('first attempt failed'));
-    const retry = await store.claim(descriptor);
-
-    expect(retry.reservation?.attemptId).not.toBe(first.reservation?.attemptId);
-    expect(operationModel.getValues()).toMatchObject({ status: 'pending', errorCode: null, result: null });
-  });
-
   it.each([
     ['disabled', 'JS_TEMPLATE_PROJECT_DISABLED'],
     ['archived', 'JS_TEMPLATE_PROJECT_ARCHIVED'],
@@ -1339,19 +1280,6 @@ function createTestModel(values: Record<string, unknown>): Model {
   return { get: (key: string) => values[key] } as Model;
 }
 
-function createJsTemplateSourceOperationDatabase(
-  operationModel: ReturnType<typeof createJsTemplateSourceOperationModel>,
-): Database {
-  return {
-    getRepository: (name: string) => {
-      if (name !== 'jsTemplateSourceOperations') {
-        throw new Error(`Unexpected repository: ${name}`);
-      }
-      return { model: operationModel.model };
-    },
-  } as unknown as Database;
-}
-
 function createSnapshotDatabase(input: {
   repository?: Record<string, unknown>;
   commit?: Record<string, unknown>;
@@ -1467,11 +1395,7 @@ function expectFailFastWritesNotCalled(fixture: ReturnType<typeof createFailFast
   expect(fixture.syncFlowModelUsagesForNodeTree).not.toHaveBeenCalled();
 }
 
-describe('JS Template conversion resource integration', () => {
-  // Old case -> new owner:
-  // detach-to-inline / normalizes the detachToInline resource input and request context -> this suite.
-  // New owner: service errors are mapped to the stable HTTP response contract by the public resource.
-
+describe('save-as JS Template resource integration', () => {
   const locator = {
     kind: 'flowModel.step',
     modelUid: 'fm_js_block',
@@ -1480,19 +1404,9 @@ describe('JS Template conversion resource integration', () => {
     paramPath: ['code'],
   } as const;
 
-  const binding = {
-    type: 'js-template-entry',
-    projectId: 'jtp_sales',
-    templateId: 'jtt_sales',
-    kind: 'js-block',
-  } as const;
-
-  const entryPath = 'src/client/js-blocks/sales/index.tsx';
-
-  describe('detach-to-inline resource', () => {
-    it('keeps the public conversion request schemas aligned with the normalized resource inputs', () => {
+  describe('save-as resource', () => {
+    it('keeps the public Save as request schema aligned with the normalized resource input', () => {
       const saveAsJsTemplateRequest = swaggerDocument.components.schemas.SaveAsJsTemplateRequest;
-      const detachToInlineRequest = swaggerDocument.components.schemas.DetachJsTemplateToInlineRequest;
 
       expect(saveAsJsTemplateRequest.required).toEqual([
         'idempotencyKey',
@@ -1521,16 +1435,6 @@ describe('JS Template conversion resource integration', () => {
           'templateName',
           'templateTitle',
         ].sort(),
-      );
-      expect(detachToInlineRequest.required).toEqual([
-        'idempotencyKey',
-        'locator',
-        'projectId',
-        'templateId',
-        'expectedProjectHeadCommitId',
-      ]);
-      expect(Object.keys(detachToInlineRequest.properties).sort()).toEqual(
-        ['idempotencyKey', 'locator', 'projectId', 'templateId', 'expectedProjectHeadCommitId'].sort(),
       );
     });
 
@@ -1648,141 +1552,5 @@ describe('JS Template conversion resource integration', () => {
         });
       },
     );
-
-    it('normalizes the detachToInline resource input and request context', async () => {
-      const detachToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', runtimeVersion: 'v2' }));
-      const resource = createJsTemplatesResource(
-        {} as never,
-        {} as never,
-        {} as JsTemplateCompilePreviewService,
-        undefined,
-        { detachToInline } as unknown as DetachJsTemplateToInlineService,
-      );
-      const can = vi.fn().mockReturnValue({});
-      const ctx = {
-        action: {
-          params: {
-            resourceName: 'jsTemplates',
-            actionName: 'detachToInline',
-            filterByTk: undefined,
-            values: {
-              idempotencyKey: '  detach-to-inline-sales-v1  ',
-              expectedProjectHeadCommitId: 'commit_template_head',
-              locator,
-              projectId: binding.projectId,
-              templateId: binding.templateId,
-            },
-          },
-        },
-        auth: { user: { id: 9 } },
-        can,
-        request: {
-          headers: {
-            'x-request-id': 'req_detach_inline',
-            'x-request-source': 'unit-resource',
-          },
-        },
-      } as unknown as Context;
-
-      await resource.actions?.detachToInline?.(ctx, async () => undefined);
-
-      expect(detachToInline).toHaveBeenCalledWith(
-        {
-          idempotencyKey: 'detach-to-inline-sales-v1',
-          expectedProjectHeadCommitId: 'commit_template_head',
-          locator,
-          projectId: binding.projectId,
-          templateId: binding.templateId,
-        },
-        expect.objectContaining({
-          actorUserId: '9',
-          requestId: 'req_detach_inline',
-          requestSource: 'unit-resource',
-          can,
-          adapterContext: expect.objectContaining({ currentUser: { id: 9 } }),
-        }),
-      );
-      expect((ctx as { body?: unknown }).body).toEqual({ code: 'ctx.render(<div />);', runtimeVersion: 'v2' });
-    });
-
-    it.each(['entryPath', 'kind', 'version', 'files'] as const)(
-      'rejects forged detach source field %s before invoking the service',
-      async (forgedField) => {
-        const detachToInline = vi.fn();
-        const resource = createJsTemplatesResource(
-          {} as never,
-          {} as never,
-          {} as JsTemplateCompilePreviewService,
-          undefined,
-          { detachToInline } as unknown as DetachJsTemplateToInlineService,
-        );
-        const ctx = {
-          action: {
-            params: {
-              values: {
-                idempotencyKey: 'detach-to-inline-forged-source',
-                expectedProjectHeadCommitId: 'commit_template_head',
-                locator,
-                projectId: binding.projectId,
-                templateId: binding.templateId,
-                [forgedField]: forgedField === 'files' ? [{ path: entryPath, content: 'forged' }] : 'forged',
-              },
-            },
-          },
-          auth: { user: { id: 9 } },
-          request: { headers: {} },
-        } as unknown as Context;
-
-        await resource.actions?.detachToInline?.(ctx, async () => undefined);
-
-        expect(detachToInline).not.toHaveBeenCalled();
-        expect((ctx as { status?: number }).status).toBe(400);
-        expect((ctx as { body?: { errors?: Array<{ message?: string }> } }).body?.errors?.[0]?.message).toContain(
-          forgedField,
-        );
-      },
-    );
-
-    it('maps detach-to-inline service errors to the public HTTP response contract', async () => {
-      const error = new JsTemplateError(
-        'JS_TEMPLATE_BINDING_OUTDATED',
-        'The binding changed before the detach completed',
-        {
-          details: { projectId: binding.projectId, templateId: binding.templateId },
-        },
-      );
-      const detachToInline = vi.fn(async () => {
-        throw error;
-      });
-      const resource = createJsTemplatesResource(
-        {} as never,
-        {} as never,
-        {} as JsTemplateCompilePreviewService,
-        undefined,
-        { detachToInline } as unknown as DetachJsTemplateToInlineService,
-      );
-      const ctx = {
-        action: {
-          params: {
-            values: {
-              idempotencyKey: 'detach-to-inline-error-v1',
-              expectedProjectHeadCommitId: 'commit_template_head',
-              locator,
-              projectId: binding.projectId,
-              templateId: binding.templateId,
-            },
-          },
-        },
-        auth: { user: { id: 9 } },
-        request: { headers: {} },
-      } as unknown as Context;
-
-      await resource.actions?.detachToInline?.(ctx, async () => undefined);
-
-      expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBe(true);
-      expect((ctx as { type?: string }).type).toBe('application/json');
-      expect((ctx as { status?: number }).status).toBe(409);
-      expect((ctx as { body?: unknown }).body).toEqual(error.toResponseBody());
-    });
   });
 });
