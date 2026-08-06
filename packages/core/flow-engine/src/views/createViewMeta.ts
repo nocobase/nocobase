@@ -15,6 +15,13 @@ import type { FlowView } from './FlowView';
 
 type PopupModelLike = { getStepParams?: (a: string, b: string) => any } | undefined;
 
+function buildPopupSourceRecordRef(ref?: Pick<RecordRef, 'associationName' | 'dataSourceKey' | 'sourceId'>) {
+  if (ref?.sourceId == null || ref.sourceId === '' || typeof ref.associationName !== 'string') return undefined;
+  const collection = ref.associationName.split('.')[0];
+  if (!collection) return undefined;
+  return { collection, dataSourceKey: ref.dataSourceKey || 'main', filterByTk: ref.sourceId };
+}
+
 function isDefined(value: any) {
   return value !== undefined && value !== null;
 }
@@ -327,13 +334,15 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
           const stack = getViewStack(view);
           const currentIndex = getAnchoredViewStackIndex(view, stack);
           if (currentIndex >= 2) {
-            let cur: Record<string, any> = params;
+            let cur = params;
             let level = 1;
             let parentRef = await getParentRecordRef(level, c);
             while (parentRef) {
-              if (!cur.parent) cur.parent = {};
-              cur.parent.record = parentRef;
-              cur = cur.parent;
+              const parent: PopupVariableParams = { record: parentRef };
+              const sourceRecord = buildPopupSourceRecordRef(parentRef);
+              if (sourceRecord) parent.sourceRecord = sourceRecord;
+              cur.parent = parent;
+              cur = parent;
               level += 1;
               parentRef = await getParentRecordRef(level, c);
             }
@@ -343,20 +352,12 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
         }
 
         try {
-          const srcId = inputArgs?.sourceId;
-          const assoc: string | undefined = inputArgs?.associationName;
-          const dsKey: string = inputArgs?.dataSourceKey || 'main';
-          if (srcId != null && srcId !== '' && assoc && typeof assoc === 'string') {
-            // associationName 形如 `posts.comments`，父级集合为 `posts`
-            const parentCollectionName = String(assoc).split('.')[0];
-            if (parentCollectionName) {
-              params.sourceRecord = {
-                collection: parentCollectionName,
-                dataSourceKey: dsKey,
-                filterByTk: srcId,
-              };
-            }
-          }
+          const sourceRecord = buildPopupSourceRecordRef({
+            sourceId: inputArgs?.sourceId,
+            associationName: inputArgs?.associationName,
+            dataSourceKey: inputArgs?.dataSourceKey,
+          });
+          if (sourceRecord) params.sourceRecord = sourceRecord;
         } catch (err) {
           c.logger?.debug?.({ err }, '[FlowEngine] buildVariablesParams: infer sourceRecord failed');
         }

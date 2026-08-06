@@ -11,6 +11,7 @@ import { vi } from 'vitest';
 import { MockServer } from '@nocobase/test';
 import { GlobalContext, HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { resolveJsonTemplate } from '../template/resolver';
+import { projectRecord } from '../variables/record-projection';
 import { variables } from '../variables/registry';
 import { createFlowEngineMockServer, resetVariablesRegistryForTest } from './test-utils';
 
@@ -105,6 +106,32 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.obj).toEqual({ a: 1, b: 2 });
   });
 
+  it('keeps projected dates and normalizes buffers through final JSON output', async () => {
+    const createdAt = new Date('2026-08-04T00:00:00.000Z');
+    const ctx = new ServerBaseContext();
+    ctx.defineProperty('record', {
+      value: projectRecord({ blob: Buffer.from([0, 127, 255]), createdAt }, [[]]),
+    });
+    ctx.defineProperty('rawBlob', { value: Buffer.from([1, 2, 3]) });
+
+    const out = await resolveJsonTemplate({ rawBlob: '{{ ctx.rawBlob }}', record: '{{ ctx.record }}' }, ctx);
+
+    expect(out).toEqual({
+      rawBlob: { type: 'Buffer', data: [1, 2, 3] },
+      record: { blob: { type: 'Buffer', data: [0, 127, 255] }, createdAt },
+    });
+    expect(out.record.createdAt).toBeInstanceOf(Date);
+    expect(out.record.createdAt).not.toBe(createdAt);
+    expect(out.record.createdAt.getTime()).toBe(createdAt.getTime());
+    expect(JSON.parse(JSON.stringify(out))).toEqual({
+      rawBlob: { type: 'Buffer', data: [1, 2, 3] },
+      record: {
+        blob: { type: 'Buffer', data: [0, 127, 255] },
+        createdAt: '2026-08-04T00:00:00.000Z',
+      },
+    });
+  });
+
   it('does not endow timers (setTimeout is undefined)', async () => {
     const { req } = makeCtx(1);
     const tpl = { t: '{{ typeof setTimeout }}' } as any;
@@ -160,46 +187,24 @@ describe('variables resolver (no HTTP)', () => {
     expect(out.user).toBe('{{ ctx.user.id }}');
   });
 
-  it('supports custom ctx methods attached via registry', async () => {
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => flowCtx.defineMethod('twice', (n: any) => Number(n) * 2),
-      });
-    }
-    const { koa, req } = makeCtx(1);
-    const tpl = { v: '{{ ctx.twice(21) }}' } as any;
-    await variables.attachUsedVariables(req, koa, tpl, {});
-    const out = await resolveJsonTemplate(tpl, req);
-    expect(out.v).toBe(42);
-  });
-
-  it('blocks constructor traversal on context values and methods', async () => {
-    if (!variables.get('twice')) {
-      variables.register({
-        name: 'twice',
-        scope: 'request',
-        attach: (flowCtx) => flowCtx.defineMethod('twice', (n: any) => Number(n) * 2),
-      });
-    }
-    const { koa, req } = makeCtx(1);
+  it('does not expose context functions or helper constructors', async () => {
+    const { req } = makeCtx(1);
+    req.defineProperty('twice', { value: (n: number) => n * 2 });
     const tpl = {
       userCtor: '{{ ctx.user.constructor }}',
       getCtor: "{{ (await __get('user')).constructor }}",
       helperCtor: '{{ __get.constructor }}',
       methodCtor: '{{ ctx.twice.constructor }}',
-      methodStillWorks: '{{ ctx.twice(21) }}',
+      methodCall: '{{ ctx.twice(21) }}',
     } as any;
 
-    await variables.attachUsedVariables(req, koa, tpl, {});
     const out = await resolveJsonTemplate(tpl, req);
 
     expect(out.userCtor).toBe('{{ ctx.user.constructor }}');
     expect(out.getCtor).toBe("{{ (await __get('user')).constructor }}");
     expect(out.helperCtor).toBe('{{ __get.constructor }}');
     expect(out.methodCtor).toBe('{{ ctx.twice.constructor }}');
-    expect(out.methodStillWorks).toBe(42);
+    expect(out.methodCall).toBe('{{ ctx.twice(21) }}');
   });
 
   it('does not read then accessors on exposed data values', async () => {
@@ -352,10 +357,10 @@ describe('variables resolver (no HTTP)', () => {
   it('passes the top-level sandbox proxy to delegated getters', async () => {
     const parent = new ServerBaseContext();
     parent.defineProperty('x', {
-      get: (flowCtx) => flowCtx.hello(),
+      get: (flowCtx) => flowCtx.message,
     });
     const child = new ServerBaseContext();
-    child.defineMethod('hello', () => 'ok');
+    child.defineProperty('message', { value: 'ok' });
     child.delegate(parent);
 
     const out = await resolveJsonTemplate('{{ ctx.x }}', child);
