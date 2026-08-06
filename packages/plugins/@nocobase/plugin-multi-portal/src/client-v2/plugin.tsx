@@ -9,12 +9,13 @@
 
 import { Plugin } from '@nocobase/client-v2';
 import React from 'react';
+import { PortalAccessRuntimeProvider } from './PortalAccessBoundary';
 import { RootLanding } from './RootLanding';
 import { registerPortalEntryActions } from './entryActions/registerPortalEntryActions';
-import { getPortalPathname, installMultiPortalRequestInterceptor } from './interceptor';
 import { fetchMultiPortals, registerMultiPortals, type MultiPortalRuntimeRecord } from './layoutRegistration';
 import { MultiPortalBlockModel } from './models/MultiPortalBlockModel';
 import { registerMultiPortalPermissionsTab } from './permissions/multiPortalPermissions';
+import { PortalAccessController, type PortalAccessApiClient } from './portalAccess';
 
 type AuthRouteScopeRegistrar = {
   registerAuthRouteScope?: (name: string, basePath: string, routeNames?: { signin?: string; signup?: string }) => void;
@@ -50,6 +51,18 @@ function registerMultiPortalAuthRouteScopes(
   }
 }
 
+function getCurrentPathname(app: PluginMultiPortalClientV2['app']) {
+  try {
+    const pathname = app.router.state?.location?.pathname;
+    if (pathname) {
+      return pathname;
+    }
+  } catch {
+    // The React Router instance is created after plugins finish loading.
+  }
+  return globalThis.window?.location?.pathname || '/';
+}
+
 export class PluginMultiPortalClientV2 extends Plugin {
   async load() {
     const title = String(this.t('Portal manager'));
@@ -57,6 +70,9 @@ export class PluginMultiPortalClientV2 extends Plugin {
     this.app.flowEngine.registerModels({ MultiPortalBlockModel });
 
     this.app.flowEngine.registerModelLoaders({
+      MultiPortalDesktopLayoutModel: {
+        loader: () => import('./models/MultiPortalLayoutModels'),
+      },
       MultiPortalMobileLayoutModel: {
         loader: () => import('./models/MultiPortalMobilePageModels'),
       },
@@ -104,6 +120,14 @@ export class PluginMultiPortalClientV2 extends Plugin {
       return;
     }
 
+    const portalAccessController = new PortalAccessController({
+      apiClient: this.app.apiClient as unknown as PortalAccessApiClient,
+      getBasename: () => this.app.router.getBasename(),
+      getCurrentPathname: () => getCurrentPathname(this.app),
+    });
+    portalAccessController.install();
+    this.app.use(PortalAccessRuntimeProvider, { controller: portalAccessController });
+
     let runtimeRegistrationFailed = false;
     this.router.add('root', {
       path: '/',
@@ -115,12 +139,11 @@ export class PluginMultiPortalClientV2 extends Plugin {
     try {
       const records = await fetchMultiPortals(this.app.apiClient);
       registerMultiPortals(this.app, records);
-      installMultiPortalRequestInterceptor(this.app.apiClient, records, () =>
-        getPortalPathname(window.location.pathname, this.app.getPublicPath()),
-      );
+      portalAccessController.setRecords(records);
       registerMultiPortalAuthRouteScopes(this.app.pm.get<AuthRouteScopeRegistrar>('@nocobase/plugin-auth'), records);
     } catch (error) {
       console.error('[NocoBase] Failed to register multi-portals.', error);
+      portalAccessController.setRecords([]);
       runtimeRegistrationFailed = true;
     }
   }
