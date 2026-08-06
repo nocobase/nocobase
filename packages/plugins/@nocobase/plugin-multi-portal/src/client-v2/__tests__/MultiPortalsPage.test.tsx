@@ -278,7 +278,42 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal')).toBe('/nocobase/v/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/x/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/customer-portal', 'ai')).toBe('/nocobase/x/customer-portal');
+    expect(getMultiPortalRouteUrl(app, '/nocobase/v/x', 'ai')).toBe('/nocobase/x/x');
+    expect(getMultiPortalRouteUrl(app, '/nocobase/x/v', 'no-code')).toBe('/nocobase/v/v');
+    expect(getMultiPortalRouteUrl(app, '/x', 'ai')).toBe('/nocobase/x/x');
+    expect(getMultiPortalRouteUrl(app, '/v', 'no-code')).toBe('/nocobase/v/v');
     expect(getMultiPortalSettingsUrl(app)).toBe('/nocobase/settings');
+  });
+
+  it('should not duplicate an exact Settings basename when no public path is available', () => {
+    expect(
+      getMultiPortalSettingsUrl({
+        router: {
+          getBasename: () => '/settings',
+        },
+      }),
+    ).toBe('/settings');
+  });
+
+  it.each([
+    ['ai', '/x', '/x/x'],
+    ['ai', '/v', '/x/v'],
+    ['no-code', '/x', '/v/x'],
+    ['no-code', '/v', '/v/v'],
+  ])(
+    'should keep a portal name that equals a client route prefix for %s portals',
+    (portalType, routePath, expected) => {
+      expect(getMultiPortalRouteUrl(undefined, routePath, portalType)).toBe(expected);
+    },
+  );
+
+  it.each([
+    ['ai', '/x/x'],
+    ['ai', '/x/v'],
+    ['no-code', '/v/x'],
+    ['no-code', '/v/v'],
+  ])('should keep an already resolved %s prefix-shaped portal URL unchanged', (portalType, routeUrl) => {
+    expect(getMultiPortalRouteUrl(undefined, routeUrl, portalType)).toBe(routeUrl);
   });
 
   it('should build sub-app portal hrefs from the app-scoped basename', () => {
@@ -292,6 +327,8 @@ describe('plugin-multi-portal settings page', () => {
 
     expect(getMultiPortalRouteUrl(app, '/admin', 'no-code')).toBe('/nocobase/v/apps/a_q7xx6p75d0e/admin');
     expect(getMultiPortalRouteUrl(app, '/test', 'ai')).toBe('/nocobase/x/apps/a_q7xx6p75d0e/test');
+    expect(getMultiPortalRouteUrl(app, '/v', 'no-code')).toBe('/nocobase/v/apps/a_q7xx6p75d0e/v');
+    expect(getMultiPortalRouteUrl(app, '/x', 'ai')).toBe('/nocobase/x/apps/a_q7xx6p75d0e/x');
     expect(getMultiPortalRouteUrl(app, '/nocobase/v/apps/a_q7xx6p75d0e/v/admin', 'no-code')).toBe(
       '/nocobase/v/apps/a_q7xx6p75d0e/admin',
     );
@@ -329,6 +366,7 @@ describe('plugin-multi-portal settings page', () => {
     expect(getMultiPortalRouteUrl(app, '/customer-portal/dashboard', 'no-code')).toBe(
       '/nocobase/modern/_app/demo/customer-portal/dashboard',
     );
+    expect(getMultiPortalRouteUrl(app, '/modern', 'no-code')).toBe('/nocobase/modern/_app/demo/modern');
   });
 
   it.each(['apps', '_app'])(
