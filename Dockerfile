@@ -35,6 +35,22 @@ expect {
 }
 EOD
 
+WORKDIR /tmp/nocobase
+COPY . /tmp/nocobase
+
+RUN yarn install && yarn build --no-dts
+
+RUN NEWVERSION="$(jq -r '.version' lerna.json).$(date +'%Y%m%d%H%M%S')" && \
+  git checkout -b "release-$(date +'%Y%m%d%H%M%S')" && \
+  yarn lerna version "$NEWVERSION" -y --no-git-tag-version
+
+RUN git config user.email "test@mail.com" && \
+  git config user.name "test" && \
+  git add . && \
+  git commit -m "chore(versions): test publish packages"
+
+RUN yarn release:force --registry $VERDACCIO_URL
+
 RUN yarn config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
