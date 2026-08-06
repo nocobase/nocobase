@@ -141,6 +141,35 @@ class ForbiddenRuntimeApiValidator {
         const specifier = getImportTypeSpecifier(node);
         if (specifier?.startsWith('js-template:settings/')) {
           diagnostics.push(...validateSettingsImportTypeNode(node, sourceFile, specifier, target));
+        } else if (specifier && isTemplateDescriptorImport(file.path, specifier)) {
+          diagnostics.push(
+            diagnosticAt(
+              sourceFile,
+              node.argument.getStart(sourceFile),
+              'entry_descriptor_import_not_allowed',
+              'error',
+              'entry.json is descriptor-only and cannot be imported by runtime source',
+              target,
+            ),
+          );
+        } else if (
+          specifier?.startsWith('.') &&
+          (boundary === 'shared'
+            ? isRelativeImportOutsideSharedRoot(file.path, specifier)
+            : isRelativeImportOutsideCurrentTemplate(file.path, specifier, target, templateRootPath))
+        ) {
+          diagnostics.push(
+            diagnosticAt(
+              sourceFile,
+              node.argument.getStart(sourceFile),
+              'import_not_allowed',
+              'error',
+              boundary === 'shared'
+                ? `Relative import "${specifier}" must stay within src/shared`
+                : `Relative import "${specifier}" must stay within the current JS Template or src/shared`,
+              target,
+            ),
+          );
         }
       }
 

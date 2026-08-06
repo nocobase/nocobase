@@ -622,6 +622,74 @@ describe('module import', () => {
       }),
     );
   });
+
+  it('applies Template, shared, and descriptor boundaries to relative ImportType references', () => {
+    const validator = new JsTemplateValidator();
+    const accepted = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-blocks/sales/index.ts',
+          content: [
+            `type Local = import('./types').Local;`,
+            `type Shared = import('../../../shared/types').Shared;`,
+            `export type Combined = Local & Shared;`,
+          ].join('\n'),
+        },
+        { path: 'src/client/js-blocks/sales/types.ts', content: `export interface Local { local: true }` },
+        { path: 'src/shared/types.ts', content: `export interface Shared { shared: true }` },
+        {
+          path: 'src/client/js-blocks/sales/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'sales' }),
+        },
+      ],
+    });
+    const rejected = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/client/js-blocks/sales/index.ts',
+          content: [
+            `type Sibling = import('../sibling/types').Sibling;`,
+            `type Descriptor = import('./entry.json').default;`,
+          ].join('\n'),
+        },
+        {
+          path: 'src/client/js-blocks/sales/entry.json',
+          content: JSON.stringify({ schemaVersion: 1, key: 'sales' }),
+        },
+      ],
+    });
+    const rejectedShared = validator.validateWorkspace({
+      files: [
+        {
+          path: 'src/shared/types.ts',
+          content: `export type Template = import('../client/js-blocks/sales/types').Local;`,
+        },
+      ],
+    });
+
+    expect(accepted.accepted).toBe(true);
+    expect(accepted.diagnostics).toEqual([]);
+    expect(rejected.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'import_not_allowed',
+          path: 'src/client/js-blocks/sales/index.ts',
+          line: 1,
+        }),
+        expect.objectContaining({
+          code: 'entry_descriptor_import_not_allowed',
+          path: 'src/client/js-blocks/sales/index.ts',
+          line: 2,
+        }),
+      ]),
+    );
+    expect(rejectedShared.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'import_not_allowed',
+        path: 'src/shared/types.ts',
+      }),
+    );
+  });
 });
 
 describe('runtime global/security', () => {

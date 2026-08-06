@@ -58,7 +58,8 @@ import {
   rewriteJsTemplateSdkRuntimeImports,
 } from './JsTemplateWorkspaceCompilerBridge';
 import {
-  collectRelativeModuleSpecifiers,
+  buildRelativeSourceCandidatePaths,
+  collectRelativeModuleReferences,
   getSourceScriptKind,
   isSourceCodeFile,
   normalizeSourceWorkspacePath,
@@ -729,10 +730,10 @@ function collectReachablePaths(
       continue;
     }
 
-    for (const specifier of collectRelativeModuleSpecifiers(path, file.content)) {
-      const importedPath = resolveRelativeSourcePath(path, specifier, (candidate) => files.has(candidate));
+    for (const reference of collectRelativeModuleReferences(path, file.content)) {
+      const importedPath = resolveRelativeSourcePath(path, reference.specifier, (candidate) => files.has(candidate));
       if (!importedPath) {
-        continue;
+        throw unresolvedStaticReference(path, reference);
       }
       if (!isAllowedEntryDependency(importedPath, entryRoot)) {
         throw invalidInput(`Entry imports a file outside its own directory or ${JS_TEMPLATE_SHARED_ROOT}`);
@@ -744,6 +745,35 @@ function collectReachablePaths(
   }
 
   return selected;
+}
+
+function unresolvedStaticReference(
+  importer: string,
+  reference: ReturnType<typeof collectRelativeModuleReferences>[number],
+): JsTemplateError {
+  const candidatePaths = buildRelativeSourceCandidatePaths(importer, reference.specifier);
+  return new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'Inline source contains an unresolved static import', {
+    status: 422,
+    details: {
+      failureCode: 'RUNJS_IMPORT_NOT_FOUND',
+      diagnostics: [
+        {
+          severity: 'error',
+          code: 'RUNJS_IMPORT_NOT_FOUND',
+          path: importer,
+          line: reference.line,
+          column: reference.column,
+          message: `Import "${reference.specifier}" could not be resolved`,
+          details: {
+            importer,
+            specifier: reference.specifier,
+            candidatePaths,
+            kind: reference.typeOnly ? 'type' : 'runtime',
+          },
+        },
+      ],
+    },
+  });
 }
 
 function isAllowedEntryDependency(path: string, entryRoot: string): boolean {

@@ -19,7 +19,9 @@ import {
   JS_TEMPLATE_BASELINE_PATH,
   JS_TEMPLATE_EXIT_CODES,
   JS_TEMPLATE_STATE_PATH,
+  type JsTemplateKind,
   type JsTemplateWorkspaceFile,
+  type JsTemplateWorkspaceState,
 } from '../lib/js-template-workspace.js';
 import {
   JS_TEMPLATE_WORKSPACE_API_PATHS,
@@ -38,6 +40,82 @@ interface FakeResponse {
 }
 
 type FakeHandler = (request: RecordedRequest) => FakeResponse | Promise<FakeResponse>;
+
+interface JsTemplateKindFixture {
+  kind: JsTemplateKind;
+  root: string;
+  entryFileName: 'index.ts' | 'index.tsx';
+  title: string;
+  tag: string;
+  source: string;
+}
+
+const JS_TEMPLATE_KIND_FIXTURES: readonly JsTemplateKindFixture[] = [
+  {
+    kind: 'js-block',
+    root: 'src/client/js-blocks/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo block',
+    tag: 'JS Block',
+    source: 'ctx.render(<div>{ctx.t("你好")}</div>);\n',
+  },
+  {
+    kind: 'js-page',
+    root: 'src/client/js-pages/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo page',
+    tag: 'JS Page',
+    source: 'ctx.render(<div>{ctx.t("Demo page")}</div>);\n',
+  },
+  {
+    kind: 'js-field',
+    root: 'src/client/js-fields/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo field',
+    tag: 'JS Field',
+    source: 'ctx.render(<span>{String(ctx.value ?? "-")}</span>);\n',
+  },
+  {
+    kind: 'js-action',
+    root: 'src/client/js-actions/demo',
+    entryFileName: 'index.ts',
+    title: 'Demo action',
+    tag: 'JS Action',
+    source: 'ctx.message.success(ctx.t("Demo action"));\n',
+  },
+  {
+    kind: 'js-item',
+    root: 'src/client/js-items/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo item',
+    tag: 'JS Item',
+    source: 'ctx.render(<span>{ctx.t("Demo item")}</span>);\n',
+  },
+];
+
+function getKindFixture(kind: JsTemplateKind): JsTemplateKindFixture {
+  const fixture = JS_TEMPLATE_KIND_FIXTURES.find((candidate) => candidate.kind === kind);
+  if (!fixture) throw new Error(`Missing fixture for ${kind}`);
+  return fixture;
+}
+
+function getEntryPath(fixture: JsTemplateKindFixture): string {
+  return `${fixture.root}/${fixture.entryFileName}`;
+}
+
+function getDescriptorPath(fixture: JsTemplateKindFixture): string {
+  return `${fixture.root}/entry.json`;
+}
+
+function getDescriptorMetadata(fixture: JsTemplateKindFixture): Record<string, unknown> {
+  return {
+    schemaVersion: 1,
+    key: 'demo',
+    title: fixture.title,
+    category: fixture.kind,
+    tags: [fixture.tag],
+  };
+}
 
 const temporaryDirectories: string[] = [];
 let fakeHandlers: Record<string, FakeHandler>;
@@ -93,7 +171,8 @@ async function startFakeRuntime(): Promise<void> {
     new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
 
-function templateEnvelope(kind = 'js-block') {
+function templateEnvelope(kind: JsTemplateKind = 'js-block') {
+  const fixture = getKindFixture(kind);
   return {
     data: {
       id: 'jtt_demo',
@@ -101,13 +180,19 @@ function templateEnvelope(kind = 'js-block') {
       target: 'client',
       kind,
       templateName: 'demo',
-      entryPath: 'src/client/demo/index.tsx',
-      descriptorPath: 'src/client/demo/entry.json',
+      entryPath: getEntryPath(fixture),
+      descriptorPath: getDescriptorPath(fixture),
     },
   };
 }
 
-function pullEnvelope(headCommitId: string | null = null, files?: Array<Record<string, unknown>>) {
+function pullEnvelope(
+  headCommitId: string | null = null,
+  files?: Array<Record<string, unknown>>,
+  kind: JsTemplateKind = 'js-block',
+) {
+  const fixture = getKindFixture(kind);
+  const descriptorContent = `${JSON.stringify(getDescriptorMetadata(fixture), null, 2)}\n`;
   return {
     data: {
       project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'active', headCommitId },
@@ -116,22 +201,22 @@ function pullEnvelope(headCommitId: string | null = null, files?: Array<Record<s
       unchanged: false,
       files: files || [
         {
-          path: 'src/client/demo/entry.json',
-          content: '{"schemaVersion":1,"kind":"js-block","name":"demo","template":"index.tsx"}\n',
+          path: getDescriptorPath(fixture),
+          content: descriptorContent,
           encoding: 'utf8',
           language: 'json',
           mode: '100644',
-          blobHash: 'descriptor',
-          size: 80,
+          blobHash: `descriptor-${kind}`,
+          size: Buffer.byteLength(descriptorContent, 'utf8'),
         },
         {
-          path: 'src/client/demo/index.tsx',
-          content: 'export default function Demo() {\n  return "你好";\n}\n',
+          path: getEntryPath(fixture),
+          content: fixture.source,
           encoding: 'utf8',
           language: 'typescript',
           mode: '100644',
-          blobHash: 'source',
-          size: 58,
+          blobHash: `source-${kind}`,
+          size: Buffer.byteLength(fixture.source, 'utf8'),
         },
       ],
     },
@@ -156,13 +241,9 @@ function commandFlags(workspace: string) {
   };
 }
 
-async function runPull(
-  workspace: string,
-  headCommitId: string | null = null,
-  kind = 'js-block',
-) {
+async function runPull(workspace: string, headCommitId: string | null = null, kind: JsTemplateKind = 'js-block') {
   fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope(kind) });
-  fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope(headCommitId) });
+  fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope(headCommitId, undefined, kind) });
   const command = createCommandHarness(
     {
       ...commandFlags(workspace),
@@ -175,7 +256,9 @@ async function runPull(
   return command;
 }
 
-async function runAcceptedCheck(workspace: string) {
+async function runAcceptedCheck(workspace: string, kind: JsTemplateKind = 'js-block') {
+  const fixture = getKindFixture(kind);
+  const entryPath = getEntryPath(fixture);
   fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
     body: {
       data: {
@@ -187,21 +270,29 @@ async function runAcceptedCheck(workspace: string) {
             templateId: 'jtt_demo',
             projectId: 'jtp_demo',
             target: 'client',
-            kind: 'js-block',
+            kind,
             templateName: 'demo',
-            entryPath: 'src/client/demo/index.tsx',
+            entryPath,
             status: 'success',
             accepted: true,
             diagnostics: [],
+            artifact: {
+              runtimeVersion: 'v2',
+              entryPath,
+              filesHash: `files-${kind}`,
+              metadata: {
+                projectId: 'jtp_demo',
+                templateId: 'jtt_demo',
+                kind,
+                templateName: 'demo',
+              },
+            },
           },
         ],
       },
     },
   });
-  const command = createCommandHarness(
-    commandFlags(workspace),
-    JS_TEMPLATE_WORKSPACE_API_PATHS,
-  );
+  const command = createCommandHarness(commandFlags(workspace), JS_TEMPLATE_WORKSPACE_API_PATHS);
   await JsTemplateCheck.prototype.run.call(command as never);
   return command;
 }
@@ -230,21 +321,34 @@ describe('nb js-template pull/check/save', () => {
     expect(JsTemplateSave.summary).toContain('JS Template');
   });
 
-  test.each(['js-block', 'js-page', 'js-field', 'js-action', 'js-item'])(
+  test.each(JS_TEMPLATE_KIND_FIXTURES.map((fixture) => [fixture.kind] as const))(
     'pulls a supported %s workspace',
     async (kind) => {
       const workspace = await createTempWorkspace();
+      const fixture = getKindFixture(kind);
       await runPull(workspace, null, kind);
 
-      const state = JSON.parse(await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'));
-      expect(state.template.kind).toBe(kind);
+      const state = JSON.parse(
+        await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
+      ) as JsTemplateWorkspaceState;
+      expect(state.template).toEqual({
+        id: 'jtt_demo',
+        kind,
+        name: 'demo',
+        path: getEntryPath(fixture),
+        descriptorPath: getDescriptorPath(fixture),
+      });
+      expect(JSON.parse(await readFile(join(workspace, ...getDescriptorPath(fixture).split('/')), 'utf8'))).toEqual(
+        getDescriptorMetadata(fixture),
+      );
+      expect(await readFile(join(workspace, ...getEntryPath(fixture).split('/')), 'utf8')).toBe(fixture.source);
     },
   );
 
   test('uses the canonical JS Template HTTP resources', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
-    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default "canonical";\n', 'utf8');
+    await writeFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'export default "canonical";\n', 'utf8');
     await runAcceptedCheck(workspace);
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
       body: {
@@ -282,23 +386,23 @@ describe('nb js-template pull/check/save', () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
 
-    expect(await readFile(join(workspace, 'src/client/demo/index.tsx'), 'utf8')).toContain('return "你好";');
+    expect(await readFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'utf8')).toContain('你好');
     const stateText = await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8');
     expect(stateText).not.toMatch(/secret-api-key|authorization|cookie/i);
     expect(requests[0]?.headers.authorization).toBe('Bearer secret-api-key');
     expect(requests[0]?.headers['x-role']).toBe('developer');
 
     await writeFile(
-      join(workspace, 'src/client/demo/index.tsx'),
-      'export default function Demo() {\n  return "你好，Agent";\n}\n',
+      join(workspace, 'src/client/js-blocks/demo/index.tsx'),
+      'ctx.render(<div>{ctx.t("你好，Agent")}</div>);\n',
       'utf8',
     );
     await runAcceptedCheck(workspace);
     const checkRequest = requests.find((request) => request.path.endsWith('compileWorkspacePreview'));
     expect(checkRequest?.body.expectedHeadCommitId).toBeNull();
     expect((checkRequest?.body.files as JsTemplateWorkspaceFile[]).map((file) => file.path)).toEqual([
-      'src/client/demo/entry.json',
-      'src/client/demo/index.tsx',
+      'src/client/js-blocks/demo/entry.json',
+      'src/client/js-blocks/demo/index.tsx',
     ]);
 
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
@@ -321,47 +425,211 @@ describe('nb js-template pull/check/save', () => {
     const saveRequest = requests.find((request) => request.path.endsWith('saveSource'));
     expect(saveRequest?.body.expectedHeadCommitId).toBeNull();
     expect(saveRequest?.body.files).toEqual([
-      expect.objectContaining({ path: 'src/client/demo/index.tsx', operation: 'upsert' }),
+      expect.objectContaining({ path: 'src/client/js-blocks/demo/index.tsx', operation: 'upsert' }),
     ]);
   });
 
-  test('returns diagnostics from a rejected check with the stable exit code', async () => {
-      const workspace = await createTempWorkspace();
-      await runPull(workspace);
-      fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
-        status: 422,
-        body: {
-          data: {
-            accepted: false,
-            httpStatus: 422,
-            diagnostics: [
+  test('pulls, checks, and saves a js-action workspace with authoritative metadata', async () => {
+    const workspace = await createTempWorkspace();
+    const fixture = getKindFixture('js-action');
+    const entryPath = getEntryPath(fixture);
+    const descriptorPath = getDescriptorPath(fixture);
+    const modifiedSource = 'ctx.message.success(ctx.t("Action saved by Agent"));\n';
+    await runPull(workspace, 'commit_action_base', 'js-action');
+
+    expect(await readFile(join(workspace, ...entryPath.split('/')), 'utf8')).toBe(fixture.source);
+    await writeFile(join(workspace, ...entryPath.split('/')), modifiedSource, 'utf8');
+
+    const checkCommand = await runAcceptedCheck(workspace, 'js-action');
+    const checkRequest = requests.find((request) => request.path.endsWith('compileWorkspacePreview'));
+    expect(checkRequest?.body).toEqual({
+      projectId: 'jtp_demo',
+      expectedHeadCommitId: 'commit_action_base',
+      files: expect.any(Array),
+    });
+    const checkedFiles = checkRequest?.body.files as JsTemplateWorkspaceFile[];
+    expect(checkedFiles.map((file) => file.path)).toEqual([descriptorPath, entryPath]);
+    expect(checkedFiles.find((file) => file.path === entryPath)?.content).toBe(modifiedSource);
+    expect(JSON.parse(checkedFiles.find((file) => file.path === descriptorPath)?.content || '{}')).toEqual(
+      getDescriptorMetadata(fixture),
+    );
+
+    const checkOutput = JSON.parse(String(checkCommand.log.mock.calls.at(-1)?.[0])) as {
+      check: { templates: Array<Record<string, unknown>> };
+    };
+    expect(checkOutput.check.templates).toEqual([
+      expect.objectContaining({
+        templateId: 'jtt_demo',
+        projectId: 'jtp_demo',
+        target: 'client',
+        kind: 'js-action',
+        templateName: 'demo',
+        entryPath,
+        status: 'success',
+        accepted: true,
+      }),
+    ]);
+
+    const artifactSummary = {
+      runtimeVersion: 'v2',
+      entryPath,
+      filesHash: 'files-js-action-saved',
+      metadata: {
+        projectId: 'jtp_demo',
+        templateId: 'jtt_demo',
+        kind: 'js-action',
+        templateName: 'demo',
+        modelUse: 'JSActionModel',
+        surface: 'js-model.action',
+        surfaceStyle: 'action',
+      },
+    };
+    fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
+      body: {
+        data: {
+          project: {
+            id: 'jtp_demo',
+            name: 'demo',
+            lifecycleStatus: 'active',
+            headCommitId: 'commit_action_new',
+          },
+          commit: { id: 'commit_action_new', treeHash: 'tree_action_new' },
+          tree: { hash: 'tree_action_new', entryCount: 2, byteSize: 180 },
+          compile: {
+            status: 'success',
+            templates: [
               {
-                code: 'typescript_error',
-                severity: 'error',
-                message: 'Cannot find name missingValue',
-                path: 'src/client/demo/index.tsx',
-                line: 2,
-                column: 10,
+                templateId: 'jtt_demo',
+                templateName: 'demo',
+                kind: 'js-action',
+                entryPath,
+                status: 'success',
+                execution: 'compiled',
+                diagnostics: [],
+                artifact: artifactSummary,
               },
             ],
           },
+          diagnostics: [],
         },
-      });
-      const command = createCommandHarness(commandFlags(workspace));
-      await expect(JsTemplateCheck.prototype.run.call(command as never)).rejects.toMatchObject({
-        exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
-      });
-      const failure = JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]));
-      expect(failure.exitCode).toBe(JS_TEMPLATE_EXIT_CODES.rejected);
-      expect(failure.check.diagnostics[0].line).toBe(2);
+      },
+    });
+    const saveCommand = createCommandHarness({
+      ...commandFlags(workspace),
+      message: 'Update demo action',
+      yes: true,
+    });
+    await JsTemplateSave.prototype.run.call(saveCommand as never);
+
+    const saveRequest = requests.find((request) => request.path.endsWith('saveSource'));
+    expect(saveRequest?.body).toEqual({
+      projectId: 'jtp_demo',
+      expectedHeadCommitId: 'commit_action_base',
+      message: 'Update demo action',
+      files: [
+        {
+          path: entryPath,
+          operation: 'upsert',
+          content: modifiedSource,
+          encoding: 'utf8',
+          size: Buffer.byteLength(modifiedSource, 'utf8'),
+          language: 'typescript',
+          mode: '100644',
+        },
+      ],
+    });
+    const reviewOutput = JSON.parse(String(saveCommand.logToStderr.mock.calls.at(0)?.[0])) as {
+      stage: string;
+      review: {
+        baseHeadCommitId: string | null;
+        delta: Record<string, number>;
+        diff: string;
+      };
+    };
+    expect(reviewOutput).toMatchObject({
+      stage: 'review',
+      review: {
+        baseHeadCommitId: 'commit_action_base',
+        delta: { changedFiles: 1, upserts: 1, deletes: 0, additions: 1, deletions: 1 },
+      },
+    });
+    expect(reviewOutput.review.diff).toContain(`--- a/${entryPath}`);
+    expect(reviewOutput.review.diff).toContain(`-${fixture.source.trim()}`);
+    expect(reviewOutput.review.diff).toContain(`+${modifiedSource.trim()}`);
+
+    const saveOutput = JSON.parse(String(saveCommand.log.mock.calls.at(-1)?.[0])) as {
+      newHeadCommitId: string;
+      delta: Record<string, number>;
+      result: {
+        compile: { status: string; templates: Array<Record<string, unknown>> };
+      };
+    };
+    expect(saveOutput.newHeadCommitId).toBe('commit_action_new');
+    expect(saveOutput.delta).toEqual({ changedFiles: 1, upserts: 1, deletes: 0, additions: 1, deletions: 1 });
+    expect(saveOutput.result.compile).toEqual({
+      status: 'success',
+      templates: [
+        expect.objectContaining({
+          templateId: 'jtt_demo',
+          kind: 'js-action',
+          entryPath,
+          status: 'success',
+          execution: 'compiled',
+          artifact: artifactSummary,
+        }),
+      ],
+    });
+    expect(JSON.stringify(saveOutput.result.compile)).not.toContain('"code"');
+
+    const state = JSON.parse(
+      await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
+    ) as JsTemplateWorkspaceState;
+    expect(state.baseHeadCommitId).toBe('commit_action_new');
+    expect(state.lastCheck).toBeUndefined();
+    expect(await readFile(join(workspace, ...entryPath.split('/')), 'utf8')).toBe(modifiedSource);
+  });
+
+  test('returns diagnostics from a rejected check with the stable exit code', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace);
+    fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
+      status: 422,
+      body: {
+        data: {
+          accepted: false,
+          httpStatus: 422,
+          diagnostics: [
+            {
+              code: 'typescript_error',
+              severity: 'error',
+              message: 'Cannot find name missingValue',
+              path: 'src/client/js-blocks/demo/index.tsx',
+              line: 2,
+              column: 10,
+            },
+          ],
+        },
+      },
+    });
+    const command = createCommandHarness(commandFlags(workspace));
+    await expect(JsTemplateCheck.prototype.run.call(command as never)).rejects.toMatchObject({
+      exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
+    });
+    const failure = JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]));
+    expect(failure.exitCode).toBe(JS_TEMPLATE_EXIT_CODES.rejected);
+    expect(failure.check.diagnostics[0].line).toBe(2);
   });
 
   test('keeps local files and baseline unchanged after a stale-Head save conflict', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace, 'commit_base');
-    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default 2;\n', 'utf8');
+    await writeFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'export default 2;\n', 'utf8');
     await runAcceptedCheck(workspace);
-    const baselinePath = join(workspace, ...JS_TEMPLATE_BASELINE_PATH.split('/'), 'src/client/demo/index.tsx');
+    const baselinePath = join(
+      workspace,
+      ...JS_TEMPLATE_BASELINE_PATH.split('/'),
+      'src/client/js-blocks/demo/index.tsx',
+    );
     const baselineBefore = await readFile(baselinePath, 'utf8');
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
       status: 409,
@@ -371,7 +639,7 @@ describe('nb js-template pull/check/save', () => {
     await expect(JsTemplateSave.prototype.run.call(command as never)).rejects.toMatchObject({
       exitCode: JS_TEMPLATE_EXIT_CODES.conflict,
     });
-    expect(await readFile(join(workspace, 'src/client/demo/index.tsx'), 'utf8')).toBe('export default 2;\n');
+    expect(await readFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'utf8')).toBe('export default 2;\n');
     expect(await readFile(baselinePath, 'utf8')).toBe(baselineBefore);
   });
 
@@ -410,10 +678,10 @@ describe('nb js-template pull/check/save', () => {
   test('rejects a modified Pull baseline before saving', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
-    await writeFile(join(workspace, 'src/client/demo/index.tsx'), 'export default 2;\n', 'utf8');
+    await writeFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'export default 2;\n', 'utf8');
     await runAcceptedCheck(workspace);
     await writeFile(
-      join(workspace, ...JS_TEMPLATE_BASELINE_PATH.split('/'), 'src/client/demo/index.tsx'),
+      join(workspace, ...JS_TEMPLATE_BASELINE_PATH.split('/'), 'src/client/js-blocks/demo/index.tsx'),
       'tampered\n',
       'utf8',
     );
@@ -428,7 +696,7 @@ describe('nb js-template pull/check/save', () => {
     fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({
       body: pullEnvelope(null, [
         {
-          path: 'src/client/demo/index.tsx',
+          path: 'src/client/js-blocks/demo/index.tsx',
           content: Buffer.from('export default 1;\n').toString('base64'),
           encoding: 'base64',
           language: 'typescript',
@@ -449,7 +717,7 @@ describe('nb js-template pull/check/save', () => {
   test('rejects local NUL content before calling the check endpoint', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace);
-    await writeFile(join(workspace, 'src/client/demo/index.tsx'), Buffer.from([0, 1, 2]));
+    await writeFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), Buffer.from([0, 1, 2]));
     const command = createCommandHarness(commandFlags(workspace));
     await expect(JsTemplateCheck.prototype.run.call(command as never)).rejects.toMatchObject({ exitCode: 1 });
     expect(requests.some((request) => request.path.endsWith('compileWorkspacePreview'))).toBe(false);

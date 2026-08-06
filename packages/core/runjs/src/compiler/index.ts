@@ -45,6 +45,7 @@ import {
 export * from './source-inspection';
 export * from './portable';
 export * from './build-identity';
+export * from './static-module-references';
 export * from './typescript-project';
 export type { RunJSCompileFailureCode } from '..';
 

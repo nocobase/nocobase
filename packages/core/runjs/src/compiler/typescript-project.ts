@@ -19,6 +19,7 @@ import {
   type RunJSTypeDependencyGraph,
   type RunJSUnresolvedDependency,
 } from './dependency-collector';
+import { collectStaticModuleReferences } from './static-module-references';
 
 export interface RunJSTypeScriptProjectFile {
   path: string;
@@ -419,62 +420,17 @@ function isDeclarationIdentifier(node: ts.Identifier): boolean {
   );
 }
 
-interface TypeModuleReference {
-  kind: 'runtime' | 'type';
-  specifier: string;
+function collectModuleReferences(sourceFile: ts.SourceFile): Array<{ kind: 'runtime' | 'type'; specifier: string }> {
+  return collectStaticModuleReferences(sourceFile)
+    .filter((reference) => reference.kind !== 'import-type' || isRelativeSpecifier(reference.specifier))
+    .map((reference) => ({
+      kind: reference.typeOnly ? 'type' : 'runtime',
+      specifier: reference.specifier,
+    }));
 }
 
-function collectModuleReferences(sourceFile: ts.SourceFile): TypeModuleReference[] {
-  const references: TypeModuleReference[] = [];
-  for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement) && ts.isStringLiteralLike(statement.moduleSpecifier)) {
-      references.push({
-        kind: isTypeOnlyImport(statement) ? 'type' : 'runtime',
-        specifier: statement.moduleSpecifier.text,
-      });
-      continue;
-    }
-    if (
-      ts.isExportDeclaration(statement) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteralLike(statement.moduleSpecifier)
-    ) {
-      references.push({
-        kind: isTypeOnlyExport(statement) ? 'type' : 'runtime',
-        specifier: statement.moduleSpecifier.text,
-      });
-    }
-  }
-  return references;
-}
-
-function isTypeOnlyImport(statement: ts.ImportDeclaration): boolean {
-  const clause = statement.importClause;
-  if (!clause) {
-    return false;
-  }
-  if (clause.isTypeOnly) {
-    return true;
-  }
-  return Boolean(
-    !clause.name &&
-      clause.namedBindings &&
-      ts.isNamedImports(clause.namedBindings) &&
-      clause.namedBindings.elements.length > 0 &&
-      clause.namedBindings.elements.every((element) => element.isTypeOnly),
-  );
-}
-
-function isTypeOnlyExport(statement: ts.ExportDeclaration): boolean {
-  if (statement.isTypeOnly) {
-    return true;
-  }
-  return Boolean(
-    statement.exportClause &&
-      ts.isNamedExports(statement.exportClause) &&
-      statement.exportClause.elements.length > 0 &&
-      statement.exportClause.elements.every((element) => element.isTypeOnly),
-  );
+function isRelativeSpecifier(specifier: string): boolean {
+  return specifier === '.' || specifier === '..' || specifier.startsWith('./') || specifier.startsWith('../');
 }
 
 function fromVirtualPath(path: string): string {

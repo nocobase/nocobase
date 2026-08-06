@@ -9,7 +9,11 @@
 
 import path from 'path';
 
-import { compileRunJSSourceWorkspace, createRunJSCompilerPaths } from '../compiler';
+import {
+  compileRunJSSourceWorkspace,
+  createRunJSCompilerPaths,
+  inspectRunJSSourceWorkspaceWithDependencies,
+} from '../compiler';
 
 describe('@nocobase/runjs compiler paths', () => {
   it.each([
@@ -53,5 +57,51 @@ describe('@nocobase/runjs compiler paths', () => {
         message: 'Import "../missing/value" could not be resolved',
       }),
     );
+  });
+
+  it('records relative ImportType edges and portable unresolved candidates', () => {
+    const resolved = inspectRunJSSourceWorkspaceWithDependencies({
+      entry: 'src/pages/index.ts',
+      files: [
+        {
+          path: 'src/pages/index.ts',
+          content: `type Row = import('../shared/types').Row;\nreturn null as unknown as Row;`,
+        },
+        { path: 'src/shared/types.ts', content: `export interface Row { id: number }` },
+      ],
+      surfaceStyle: 'value',
+    });
+    const unresolved = inspectRunJSSourceWorkspaceWithDependencies({
+      entry: 'src/pages/index.ts',
+      files: [
+        {
+          path: 'src/pages/index.ts',
+          content: [
+            `type Missing = import('../missing/types').Missing;`,
+            `type Sdk = import('@nocobase/js-template-sdk/client').JsTemplate;`,
+            `const dynamic = import('../dynamic/runtime');`,
+            `return [null as unknown as Missing, null as unknown as Sdk, dynamic];`,
+          ].join('\n'),
+        },
+      ],
+      surfaceStyle: 'value',
+    });
+
+    expect(resolved.typeDependencies.edges).toContainEqual({
+      importer: 'src/pages/index.ts',
+      imported: 'src/shared/types.ts',
+      kind: 'type',
+    });
+    expect(unresolved.typeDependencies.unresolved).toContainEqual({
+      importer: 'src/pages/index.ts',
+      specifier: '../missing/types',
+      kind: 'type',
+      candidatePaths: expect.arrayContaining([
+        'src/missing/types.ts',
+        'src/missing/types.tsx',
+        'src/missing/types/index.ts',
+      ]),
+    });
+    expect(unresolved.typeDependencies.unresolved).toHaveLength(1);
   });
 });

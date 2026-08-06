@@ -8,6 +8,7 @@
  */
 
 import { posix as pathPosix } from 'path';
+import { collectStaticModuleReferences, type StaticModuleReference } from '@nocobase/runjs/compiler';
 import ts from 'typescript';
 
 import { JsTemplateError } from '../../shared/errors';
@@ -46,25 +47,12 @@ export function getSourceScriptKind(path: string): ts.ScriptKind {
 }
 
 export function collectRelativeModuleSpecifiers(path: string, content: string): string[] {
+  return collectRelativeModuleReferences(path, content).map((reference) => reference.specifier);
+}
+
+export function collectRelativeModuleReferences(path: string, content: string): StaticModuleReference[] {
   const sourceFile = ts.createSourceFile(path, content, ts.ScriptTarget.Latest, true, getSourceScriptKind(path));
-  const specifiers: string[] = [];
-  for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement)) {
-      if (ts.isStringLiteral(statement.moduleSpecifier) && statement.moduleSpecifier.text.startsWith('.')) {
-        specifiers.push(statement.moduleSpecifier.text);
-      }
-      continue;
-    }
-    if (
-      ts.isExportDeclaration(statement) &&
-      statement.moduleSpecifier &&
-      ts.isStringLiteral(statement.moduleSpecifier) &&
-      statement.moduleSpecifier.text.startsWith('.')
-    ) {
-      specifiers.push(statement.moduleSpecifier.text);
-    }
-  }
-  return specifiers;
+  return collectStaticModuleReferences(sourceFile).filter((reference) => reference.specifier.startsWith('.'));
 }
 
 export function resolveRelativeSourcePath(
@@ -72,13 +60,16 @@ export function resolveRelativeSourcePath(
   specifier: string,
   hasPath: (path: string) => boolean,
 ): string | null {
+  return buildRelativeSourceCandidatePaths(sourcePath, specifier).find(hasPath) || null;
+}
+
+export function buildRelativeSourceCandidatePaths(sourcePath: string, specifier: string): string[] {
   const basePath = normalizeSourceWorkspacePath(pathPosix.join(pathPosix.dirname(sourcePath), specifier));
-  const candidates = [
+  return [
     basePath,
     ...SOURCE_RESOLVABLE_EXTENSIONS.map((extension) => `${basePath}${extension}`),
     ...SOURCE_RESOLVABLE_EXTENSIONS.map((extension) => `${basePath}/index${extension}`),
   ];
-  return candidates.find(hasPath) || null;
 }
 
 export function rewriteRelativeImports(
@@ -99,28 +90,22 @@ export function rewriteRelativeImports(
     getSourceScriptKind(sourcePath),
   );
   const replacements: Array<{ start: number; end: number; value: string }> = [];
-  const visit = (node: ts.Node) => {
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      const specifier = node.moduleSpecifier.text;
-      if (specifier.startsWith('.')) {
-        const importedSourcePath = resolveRelativeSourcePath(sourcePath, specifier, (path) => targetBySource.has(path));
-        const importedTargetPath = importedSourcePath ? targetBySource.get(importedSourcePath) : undefined;
-        if (importedTargetPath) {
-          replacements.push({
-            start: node.moduleSpecifier.getStart(sourceFile) + 1,
-            end: node.moduleSpecifier.getEnd() - 1,
-            value: buildRelativeSpecifier(targetPath, importedTargetPath, specifier),
-          });
-        }
-      }
+  for (const reference of collectStaticModuleReferences(sourceFile)) {
+    if (!reference.specifier.startsWith('.')) {
+      continue;
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(sourceFile);
+    const importedSourcePath = resolveRelativeSourcePath(sourcePath, reference.specifier, (path) =>
+      targetBySource.has(path),
+    );
+    const importedTargetPath = importedSourcePath ? targetBySource.get(importedSourcePath) : undefined;
+    if (importedTargetPath) {
+      replacements.push({
+        start: reference.start + 1,
+        end: reference.end - 1,
+        value: buildRelativeSpecifier(targetPath, importedTargetPath, reference.specifier),
+      });
+    }
+  }
 
   return replacements
     .sort((left, right) => right.start - left.start)
