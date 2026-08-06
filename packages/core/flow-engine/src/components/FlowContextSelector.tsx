@@ -311,6 +311,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       const path = selectedValues.map(String);
       const pathString = path.join('.');
       const isLeaf = lastOption?.isLeaf;
+      const isSelectable = lastOption?.meta?.selectable !== false;
       const now = Date.now();
 
       // 使用自定义格式化函数或默认函数
@@ -325,6 +326,10 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
       }
 
       if (isLeaf) {
+        if (!isSelectable) {
+          setTempSelectedPath(path);
+          return;
+        }
         onChange?.(formattedValue, lastOption?.meta);
         // 选中叶子节点后，可清空内部临时路径（外部 value 将驱动级联）
         setTempSelectedPath([]);
@@ -333,7 +338,8 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
 
       // 非叶子节点：检查双击
       const lastSelected = lastSelectedRef.current;
-      const isDoubleClick = !onlyLeafSelectable && lastSelected?.path === pathString && now - lastSelected.time < 300;
+      const isDoubleClick =
+        isSelectable && !onlyLeafSelectable && lastSelected?.path === pathString && now - lastSelected.time < 300;
 
       if (isDoubleClick) {
         // 双击：选中非叶子节点
