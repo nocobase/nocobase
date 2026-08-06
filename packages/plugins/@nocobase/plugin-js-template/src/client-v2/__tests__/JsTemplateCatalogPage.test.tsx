@@ -154,6 +154,24 @@ describe('JsTemplateCatalogPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the localized empty state when the catalog has no entries', async () => {
+    mocks.catalog = [];
+
+    renderCatalog();
+
+    expect(await screen.findByText('No JS Templates yet')).toBeInTheDocument();
+  });
+
+  it('surfaces a catalog loading error without replacing the page controls', async () => {
+    mocks.listCatalog.mockRejectedValue(new Error('Catalog unavailable'));
+
+    renderCatalog();
+
+    expect(await screen.findByText('Catalog unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create JS Template' })).toBeInTheDocument();
+  });
+
   it('creates a single Template Entry starter and reloads it into the catalog after the job succeeds', async () => {
     renderCatalog();
     await screen.findByText('First card');
@@ -254,6 +272,28 @@ describe('JsTemplateCatalogPage', () => {
       pageSize: 10,
     });
     expect(within(dialog).getAllByRole('list').length).toBeGreaterThan(0);
+  });
+
+  it('shows an accessible usage loading state before the empty result', async () => {
+    let resolveUsage: (value: ReturnType<typeof createEmptyUsageListResult>) => void = () => undefined;
+    mocks.listUsageLocations.mockImplementation(
+      async () =>
+        new Promise<ReturnType<typeof createEmptyUsageListResult>>((resolve) => {
+          resolveUsage = resolve;
+        }),
+    );
+    renderCatalog();
+    await screen.findByText('First card');
+
+    fireEvent.click(screen.getByRole('button', { name: 'View usage locations for First card' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Usage locations for First card' });
+    expect(within(dialog).getByLabelText('Loading usage locations')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveUsage(createEmptyUsageListResult());
+    });
+    expect(await within(dialog).findByText('No usage locations')).toBeInTheDocument();
   });
 
   it('ignores an obsolete usage response after the modal switches to another Template Entry', async () => {
@@ -483,5 +523,12 @@ function createUsageListResult(templateId: string, locationTitle: string) {
       },
     ],
     meta: { page: 1, pageSize: 10, count: 1, totalPage: 1, effectiveCount: 1, hiddenCount: 0 },
+  };
+}
+
+function createEmptyUsageListResult() {
+  return {
+    data: [],
+    meta: { page: 1, pageSize: 10, count: 0, totalPage: 0, effectiveCount: 0, hiddenCount: 0 },
   };
 }
