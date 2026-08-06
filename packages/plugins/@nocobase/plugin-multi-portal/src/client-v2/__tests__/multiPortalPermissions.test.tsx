@@ -145,7 +145,8 @@ describe('plugin-multi-portal route permissions', () => {
       </AntdApp>,
     );
 
-    expect(await screen.findByText('Managed by layout permissions')).toBeInTheDocument();
+    const desktopPortalRow = await screen.findByRole('row', { name: /Desktop portal/ });
+    expect(within(desktopPortalRow).getByText('-')).toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'Allow access to Desktop portal' })).not.toBeInTheDocument();
 
     await act(async () => {
