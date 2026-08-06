@@ -297,6 +297,13 @@ function translateTitle(title: unknown, t: (key: string, options?: Record<string
   return t(title) || t('Unnamed');
 }
 
+function getPortalTitle(title: unknown, t: (key: string, options?: Record<string, unknown>) => string) {
+  if (typeof title !== 'string' || !title) {
+    return t('Unnamed');
+  }
+  return title;
+}
+
 function getChangedUids(currentUids: string[], nextUids: string[]) {
   const currentUidSet = new Set(currentUids);
   const nextUidSet = new Set(nextUids);
@@ -405,7 +412,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
     () => portalService.data?.find((portal) => portal.uid === selectedPortalUid),
     [portalService.data, selectedPortalUid],
   );
-  const selectedPortalTitle = selectedPortal ? translateTitle(selectedPortal.title, t) : '';
+  const selectedPortalTitle = selectedPortal ? getPortalTitle(selectedPortal.title, t) : '';
   const selectedPortalUsesLayoutPermissions = hasLayoutRoutePermissions(selectedPortal);
   const selectedPortalSupportsRoutes = supportsRoutePermissions(selectedPortal);
   const drawerTitle = selectedPortal
@@ -597,7 +604,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
       {
         dataIndex: 'title',
         title: t('Portal'),
-        render: (value) => translateTitle(value, t),
+        render: (value) => getPortalTitle(value, t),
       },
       {
         dataIndex: 'accessible',
@@ -606,7 +613,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
           if (hasLayoutRoutePermissions(portal)) {
             return <Typography.Text type="secondary">{t('Managed by layout permissions')}</Typography.Text>;
           }
-          const portalTitle = translateTitle(portal.title, t);
+          const portalTitle = getPortalTitle(portal.title, t);
           return (
             <Checkbox
               aria-label={t('Allow access to {{portal}}', { portal: portalTitle })}
@@ -623,7 +630,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
           if (!supportsRoutePermissions(portal)) {
             return <Typography.Text type="secondary">-</Typography.Text>;
           }
-          const portalTitle = translateTitle(portal.title, t);
+          const portalTitle = getPortalTitle(portal.title, t);
           return (
             <Button
               aria-label={t('Configure routes permissions for {{portal}}', { portal: portalTitle })}

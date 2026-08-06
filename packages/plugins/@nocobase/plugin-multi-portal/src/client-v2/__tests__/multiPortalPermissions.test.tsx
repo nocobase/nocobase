@@ -32,6 +32,7 @@ const flowMocks = vi.hoisted(() => ({
     },
   },
 }));
+const defaultT = flowMocks.engine.context.t;
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = (await importOriginal()) as object;
@@ -47,6 +48,7 @@ describe('plugin-multi-portal route permissions', () => {
   afterEach(() => {
     cleanup();
     flowMocks.context = undefined;
+    flowMocks.engine.context.t = defaultT;
   });
 
   it('should configure portal route permissions with the portal route dimension', async () => {
@@ -238,6 +240,47 @@ describe('plugin-multi-portal route permissions', () => {
     );
     expect(resource.routePermissionList).not.toHaveBeenCalled();
     expect(resource.routeDefaultPolicyList).not.toHaveBeenCalled();
+  });
+
+  it('should keep portal titles raw while translating route titles', async () => {
+    const resource = createMultiPortalPermissionResources({
+      portals: [
+        {
+          uid: 'main-portal',
+          title: 'Main',
+          portalType: 'no-code',
+        },
+      ],
+      routes: [
+        {
+          id: 1,
+          title: 'Main',
+        },
+      ],
+      selectedPortalUids: ['main-portal'],
+      selectedRouteIds: [],
+    });
+    const user = userEvent.setup();
+    flowMocks.context = resource.context;
+    flowMocks.engine.context.t = (key, options) => (key === 'Main' ? '主数据源' : defaultT(key, options));
+
+    render(
+      <AntdApp>
+        <MultiPortalPermissionsTab activeKey="multi-portals" activeRole={{ name: 'portal-member', title: 'Member' }} />
+      </AntdApp>,
+    );
+
+    expect(await screen.findByText('Main')).toBeInTheDocument();
+    expect(screen.queryByText('主数据源')).not.toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Allow access to Main' })).toBeChecked();
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: 'Configure routes permissions for Main' }));
+    });
+
+    const drawer = await screen.findByRole('dialog', { name: 'Configure routes permissions for Main' });
+    expect(within(drawer).getByText('主数据源')).toBeInTheDocument();
+    expect(within(drawer).getByRole('checkbox', { name: 'Allow access to 主数据源' })).not.toBeChecked();
   });
 
   it('should not expose route permissions for missing or unknown portal types', async () => {
