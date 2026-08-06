@@ -103,7 +103,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     }
 
     const reading = this.reading.get(channel) || [];
-    const count = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
+    const queue = this.queues.get(channel);
+    const concurrency = event.concurrency ?? QUEUE_DEFAULT_CONCURRENCY;
+    const count = concurrency <= 0 ? queue?.length || 0 : concurrency - reading.length;
     if (count <= 0) {
       // logger.debug(
       //   `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,

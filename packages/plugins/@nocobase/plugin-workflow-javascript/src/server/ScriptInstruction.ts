@@ -10,16 +10,21 @@
 import winston, { Logger } from 'winston';
 import Joi from 'joi';
 
-import WorkflowPlugin, { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 import { CacheTransport } from './cache-logger';
-import { getJavaScriptProcessLimiter } from './JavaScriptProcessLimiter';
-import { JavaScriptJobSnapshot, JavaScriptQueueFullError, JavaScriptTaskQueue } from './JavaScriptTaskQueue';
+import { PENDING_JAVASCRIPT_TASK_CHANNEL } from './constants';
+import { ABORT_JAVASCRIPT_JOB_SYNC_MESSAGE_TYPE, getAbortReason, RunningJobs } from './RunningJobs';
 import { ScriptArguments, ScriptRunResult, ScriptWorkerRunner } from './ScriptWorkerRunner';
 
 type ScriptArgument = { name: string; value?: unknown };
 
 type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: ScriptArgument[] };
+
+type JavaScriptJobMeta = {
+  args: ScriptArguments;
+  [key: string]: unknown;
+};
 
 export default class ScriptInstruction extends Instruction {
   static get workerScript() {
@@ -31,12 +36,12 @@ export default class ScriptInstruction extends Instruction {
     args: ScriptArguments,
     options: { logger: Logger; timeout?: number; signal?: AbortSignal },
   ): Promise<ScriptRunResult> {
-    return getJavaScriptProcessLimiter().run(() => ScriptWorkerRunner.run(source, args, options));
+    return ScriptWorkerRunner.run(source, args, options);
   }
 
   constructor(
     workflow: WorkflowPlugin,
-    private readonly taskQueue?: JavaScriptTaskQueue,
+    private readonly runningJobs: RunningJobs,
   ) {
     super(workflow);
   }
@@ -87,27 +92,8 @@ export default class ScriptInstruction extends Instruction {
       };
     }
 
-    if (!this.taskQueue) {
-      const message = 'JavaScript task queue is not ready';
-      processor.logger.error(`script (#${node.id}) queue failed, the reason is ${message}`);
-      return {
-        status: cont ? JOB_STATUS.RESOLVED : JOB_STATUS.ERROR,
-        result: message,
-      };
-    }
-
-    try {
-      await this.taskQueue.assertCapacity();
-    } catch (error) {
-      return this.getQueueFailureJob(node.id, Boolean(cont), error);
-    }
-
-    const snapshot: JavaScriptJobSnapshot = {
-      version: 1,
-      content,
+    const meta: JavaScriptJobMeta = {
       args: _args,
-      timeout,
-      continue: cont,
     };
 
     const { id } = processor.saveJob({
@@ -116,34 +102,43 @@ export default class ScriptInstruction extends Instruction {
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
       startedAt: null,
-      meta: {
-        javascript: snapshot,
-      },
+      meta,
     });
+
+    const abortQueuedJob = async () => {
+      await this.runningJobs.abortAcrossInstances(this.workflow, {
+        type: ABORT_JAVASCRIPT_JOB_SYNC_MESSAGE_TYPE,
+        jobId: id,
+        executionId: processor.execution.id,
+        reason: getAbortReason(options?.signal?.reason),
+      });
+    };
+
+    if (options?.signal?.aborted) {
+      await abortQueuedJob();
+    } else {
+      options?.signal?.addEventListener(
+        'abort',
+        () => {
+          abortQueuedJob().catch((error) => {
+            processor.logger.error(`broadcasting JavaScript job (${id}) abort signal failed`, { error });
+          });
+        },
+        { once: true },
+      );
+    }
 
     processor.logger.info(`script (#${node.id}) has been queued, waiting for JavaScript Worker resource...`);
 
     await processor.exit();
 
     try {
-      await this.taskQueue.publish(id);
+      await this.workflow.app.eventQueue.publish(PENDING_JAVASCRIPT_TASK_CHANNEL, {
+        jobId: id,
+      });
     } catch (error) {
       processor.logger.error(`publishing JavaScript job (${id}) failed, recovery will republish it`, { error });
     }
-  }
-
-  private getQueueFailureJob(nodeId: number | string, cont: boolean, error: unknown): IJob {
-    const message = error instanceof Error ? error.message : String(error);
-    if (error instanceof JavaScriptQueueFullError) {
-      this.workflow.getLogger('javascript').warn(`script (#${nodeId}) queue rejected, the reason is ${message}`);
-    } else {
-      this.workflow.getLogger('javascript').error(`script (#${nodeId}) queue failed, the reason is ${message}`);
-    }
-
-    return {
-      status: cont ? JOB_STATUS.RESOLVED : JOB_STATUS.ERROR,
-      result: message,
-    };
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

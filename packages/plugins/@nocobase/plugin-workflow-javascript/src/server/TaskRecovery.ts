@@ -7,35 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Op } from 'sequelize';
 import type WorkflowPlugin from '@nocobase/plugin-workflow';
-import { JOB_STATUS } from '@nocobase/plugin-workflow';
+import { JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
 
-import { JAVASCRIPT_TASK_CLAIM_TIMEOUT, JavaScriptJobMeta, JavaScriptTaskQueue } from './JavaScriptTaskQueue';
+import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 
 const RECOVERY_BATCH_SIZE = 100;
 const RECOVERY_MAX_SCAN_SIZE = 1000;
 const RECOVERY_INTERVAL = 60_000;
 
-type WorkflowJob = {
-  id: number | string;
-  status: number;
-  meta?: JavaScriptJobMeta | null;
-  startedAt?: Date | null;
-  updatedAt?: Date;
-};
-
-function hasJavaScriptSnapshot(job: WorkflowJob) {
-  return job.meta?.javascript?.version === 1;
-}
-
-export class JavaScriptTaskRecovery {
+export class TaskRecovery {
   private timer: NodeJS.Timeout | null = null;
   private ready = false;
   private recovering: Promise<void> | null = null;
 
   constructor(
     private readonly workflowPlugin: WorkflowPlugin,
-    private readonly taskQueue: JavaScriptTaskQueue,
+    private readonly taskQueueChannel: string,
   ) {}
 
   start() {
@@ -87,48 +76,45 @@ export class JavaScriptTaskRecovery {
   private async republishQueuedJobs() {
     let cursor: number | string | null = null;
     let scanned = 0;
-    const staleBefore = new Date(Date.now() - JAVASCRIPT_TASK_CLAIM_TIMEOUT);
+    const staleBefore = new Date(Date.now() - 120_000);
+    const logger = this.workflowPlugin.getLogger('javascript');
+    const JobModel = this.workflowPlugin.db.getModel('jobs');
 
     while (scanned < RECOVERY_MAX_SCAN_SIZE) {
-      const jobs = (await this.workflowPlugin.db.getRepository('jobs').find({
-        filter: {
-          ...(cursor == null ? {} : { id: { $gt: cursor } }),
+      const jobs = (await JobModel.findAll({
+        where: {
+          ...(cursor == null ? {} : { id: { [Op.gt]: cursor } }),
           status: JOB_STATUS.PENDING,
-          'meta.javascript.version': 1,
         },
-        sort: 'id',
+        attributes: ['id', 'startedAt', 'updatedAt'],
+        include: [
+          {
+            association: 'node',
+            attributes: [],
+            where: {
+              type: SCRIPT_INSTRUCTION_TYPE,
+            },
+            required: true,
+          },
+        ],
+        order: [['id', 'ASC']],
         limit: Math.min(RECOVERY_BATCH_SIZE, RECOVERY_MAX_SCAN_SIZE - scanned),
-      })) as WorkflowJob[];
+      })) as JobModel[];
 
       if (!jobs.length) {
         break;
       }
 
       for (const job of jobs) {
-        if (!hasJavaScriptSnapshot(job)) {
+        if (job.startedAt) {
+          if (job.updatedAt && job.updatedAt <= staleBefore) {
+            logger.warn(`JavaScript job (${job.id}) claim heartbeat timed out, manual recovery is required`);
+          }
           continue;
         }
-        if (job.startedAt) {
-          if (!job.updatedAt || job.updatedAt > staleBefore) {
-            continue;
-          }
-          const JobModel = this.workflowPlugin.db.getModel('jobs');
-          const [affected] = await JobModel.update(
-            { startedAt: null },
-            {
-              where: {
-                id: job.id,
-                status: JOB_STATUS.PENDING,
-                startedAt: job.startedAt,
-                updatedAt: job.updatedAt,
-              },
-            },
-          );
-          if (!affected) {
-            continue;
-          }
-        }
-        await this.taskQueue.publish(job.id);
+        await this.workflowPlugin.app.eventQueue.publish(this.taskQueueChannel, {
+          jobId: job.id,
+        });
       }
 
       scanned += jobs.length;
