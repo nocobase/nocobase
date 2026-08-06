@@ -131,6 +131,20 @@ jobs:
           echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
+      - name: Build NocoBase archive
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          target: app-artifact
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            PLUGINS_DIRS=pro-plugins
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+          outputs: type=local,dest=.
+      - name: Prepare docs archive placeholder
+        run: touch dist.tar.gz
       - name: Build and push - ${{ steps.get-tag.outputs.tag }}
         uses: docker/build-push-action@v3
         with:
@@ -142,6 +156,7 @@ jobs:
             PLUGINS_DIRS=pro-plugins
             BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
             APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+            INCLUDE_DOCS_ARCHIVE=0
           push: true
           tags: ${{ steps.set-tags.outputs.tags }}
       - name: Deploy NocoBase
