@@ -66,7 +66,7 @@ jobs:
         with:
           repository: nocobase/pro-plugins
           path: packages/pro-plugins
-          ref: ${{ github.head_ref || github.ref_name }}
+          ref: main
           token: ${{ steps.app-token.outputs.token }}
       - name: Checkout pr
         if: ${{ inputs.pr_number != '' }}
@@ -135,7 +135,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: .
-          file: Dockerfile.pro
+          file: Dockerfile
           build-args: |
             VERDACCIO_URL=http://localhost:4873/
             COMMIT_HASH=${GITHUB_SHA}
