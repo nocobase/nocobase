@@ -9,7 +9,7 @@
 
 import { posix as pathPosix } from 'path';
 
-import type { JsTemplateKind, SaveAsJsTemplateWorkspaceFile } from '../../../shared/types';
+import type { SaveAsJsTemplateWorkspaceFile } from '../../../shared/types';
 import { JsTemplateError } from '../../../shared/errors';
 import type { VscFileChange } from '../../vsc-file/public-api';
 import {
@@ -29,7 +29,6 @@ const JS_TEMPLATE_DESCRIPTOR_FILE = 'entry.json';
 export interface JsTemplateToInlineWorkspaceInput {
   files: SaveAsJsTemplateWorkspaceFile[];
   entryPath: string;
-  kind: JsTemplateKind;
   runtimeVersion: string;
 }
 
@@ -52,7 +51,6 @@ export function convertJsTemplateToInlineWorkspace(
 export function collectAndRelocateInlineFiles(workspace: {
   files: SaveAsJsTemplateWorkspaceFile[];
   entryPath: string;
-  kind?: JsTemplateKind;
 }): SaveAsJsTemplateWorkspaceFile[] {
   const sourceFiles = new Map<string, SaveAsJsTemplateWorkspaceFile>();
   for (const file of workspace.files) {

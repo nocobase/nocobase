@@ -117,7 +117,7 @@ describe('detach to inline integration', () => {
   // detach-to-inline / js-page + JSPageModel -> host-kind support matrix below.
   // detach-to-inline / js-page + JSBlockModel -> host-kind support matrix below.
   // detach-to-inline / js-block + JSColumnModel -> host-kind support matrix below.
-  // detach-to-inline / reserves the RunJS manifest file slot before opening a database transaction -> file-limit matrix below.
+  // detach-to-inline / checks the prepared workspace with the real RunJS manifest before opening a database transaction -> file-limit matrix below.
   // detach-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> file-limit matrix below.
   // detach-to-inline / detaches a JS Page with its snapshot and settings while removing the active usage -> this suite.
   // detach-to-inline / rejects a host that no longer points to the selected JS Template entry -> this suite.
@@ -603,7 +603,7 @@ describe('detach to inline integration', () => {
 
     it.each([
       {
-        label: 'reserves the RunJS manifest file slot for a full 200-file dependency closure',
+        label: 'rejects a full 200-file dependency closure after preparing the real RunJS manifest',
         files: [
           {
             path: entry.entryPath,
@@ -651,6 +651,7 @@ describe('detach to inline integration', () => {
           { adapterContext: {} },
         ),
       ).rejects.toMatchObject(expected);
+      expect(fixture.prepareEntry).toHaveBeenCalledOnce();
       expect(fixture.transaction).toHaveBeenCalledTimes(transactionCalls);
     });
 

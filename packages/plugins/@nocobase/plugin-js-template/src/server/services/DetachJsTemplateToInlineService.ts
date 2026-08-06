@@ -236,15 +236,8 @@ export class DetachJsTemplateToInlineService {
     const inlineWorkspace = convertJsTemplateToInlineWorkspace({
       files: sourceFiles,
       entryPath: source.entryPath,
-      kind: source.kind,
       runtimeVersion: source.runtimeVersion,
     });
-    const inlineManifest = createRunJSInlineManifestFile({
-      entryPath: inlineWorkspace.entryPath,
-      runtimeVersion: inlineWorkspace.runtimeVersion,
-      surfaceStyle: legacy.surfaceStyle,
-    });
-    assertRunJSCompileInputLimits([...inlineWorkspace.files, { ...inlineManifest, content: '' }]);
 
     const identity = buildRunJSSourceRepositoryIdentity(locator);
     const repository = await vscFileService.findRepositoryByIdentity(identity, vscContext);
@@ -287,14 +280,12 @@ export class DetachJsTemplateToInlineService {
         language: file.language,
       };
     });
-    const desiredFiles = [
-      ...sourceInputFiles,
-      createRunJSInlineManifestFile({
-        entryPath,
-        runtimeVersion: sourcePreparation.runtimeVersion,
-        surfaceStyle: legacy.surfaceStyle,
-      }),
-    ];
+    const inlineManifestFile = createRunJSInlineManifestFile({
+      entryPath,
+      runtimeVersion: sourcePreparation.runtimeVersion,
+      surfaceStyle: legacy.surfaceStyle,
+    });
+    const desiredFiles = [...sourceInputFiles, inlineManifestFile];
     const targetBaseFiles = repository
       ? (
           await vscFileService.pull(

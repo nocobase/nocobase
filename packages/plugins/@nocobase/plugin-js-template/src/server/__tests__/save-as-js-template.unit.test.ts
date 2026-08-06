@@ -219,7 +219,6 @@ describe('Save as JS Template source relocation', () => {
     const pageEntryPath = 'src/client/js-pages/orders/index.tsx';
     const files = collectAndRelocateInlineFiles({
       entryPath: pageEntryPath,
-      kind: 'js-page',
       files: [
         {
           path: pageEntryPath,

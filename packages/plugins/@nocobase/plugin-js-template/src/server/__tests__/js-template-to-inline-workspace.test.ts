@@ -19,7 +19,6 @@ describe('JS Template to Inline workspace conversion', () => {
   it('relocates the reachable source closure while preserving authoring imports for compiler preparation', () => {
     const result = convertJsTemplateToInlineWorkspace({
       entryPath: 'src/client/js-pages/orders/index.tsx',
-      kind: 'js-page',
       runtimeVersion: 'v2',
       files: [
         {

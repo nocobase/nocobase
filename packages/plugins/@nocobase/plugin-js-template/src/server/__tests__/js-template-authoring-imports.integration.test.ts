@@ -103,7 +103,6 @@ describe('JS Template authoring imports across compile and detach', () => {
       const inlineFiles = collectAndRelocateInlineFiles({
         files: compileInput.files,
         entryPath,
-        kind: 'js-page',
       });
       const inlineEntry = inlineFiles.find((file) => file.path === 'src/client/index.tsx');
       expect(findAuthoringModuleReferences(inlineEntry?.content || '')).not.toEqual([]);
@@ -315,7 +314,7 @@ describe('JS Template authoring imports across compile and detach', () => {
       expect(preparation.accepted).toBe(false);
       expect(preparation.diagnostics).toContainEqual(expectedDiagnostic);
 
-      const inlineFiles = collectAndRelocateInlineFiles({ files, entryPath, kind: 'js-page' });
+      const inlineFiles = collectAndRelocateInlineFiles({ files, entryPath });
       const inlineEntry = inlineFiles.find((file) => file.path === 'src/client/index.tsx');
       expect(findAuthoringModuleReferences(inlineEntry?.content || '')).not.toEqual([]);
 
