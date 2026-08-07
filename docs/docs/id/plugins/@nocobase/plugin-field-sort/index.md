@@ -7,7 +7,7 @@ description: |
   Digunakan untuk mengurutkan data dalam collection.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

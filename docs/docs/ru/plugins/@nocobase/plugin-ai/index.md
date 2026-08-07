@@ -9,7 +9,7 @@ description: |
   Создание ИИ-сотрудников с разными навыками для совместной работы с людьми, сборки систем и ведения бизнес-процессов.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

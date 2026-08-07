@@ -7,7 +7,7 @@ description: |
   Блок iframe на странице для встраивания внешних веб-страниц или контента.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

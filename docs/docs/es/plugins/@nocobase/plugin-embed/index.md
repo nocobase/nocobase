@@ -10,7 +10,7 @@ description: |
   Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

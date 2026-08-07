@@ -7,7 +7,7 @@ description: |
   Membuat dan mengelola iframe pada halaman, untuk menyematkan dan menampilkan halaman web atau konten eksternal.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

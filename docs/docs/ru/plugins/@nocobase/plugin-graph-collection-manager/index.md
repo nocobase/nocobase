@@ -9,7 +9,7 @@ description: |
   Инструмент в стиле ER-диаграммы. В настоящее время поддерживается только основная база данных.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

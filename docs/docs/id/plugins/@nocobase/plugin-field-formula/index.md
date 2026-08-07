@@ -7,7 +7,7 @@ description: |
   Memungkinkan konfigurasi dan penyimpanan hasil perhitungan antara nilai field-field pada record yang sama. Mendukung dua engine: Math.js dan Excel formula functions.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

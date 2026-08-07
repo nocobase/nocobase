@@ -7,7 +7,7 @@ description: |
   Add copy button to text fields
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

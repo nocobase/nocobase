@@ -7,7 +7,7 @@ description: |
   Từ phiên bản 2.0, di động được thay thế bằng plugin ui-layout mới, plugin này vẫn đang được phát triển.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

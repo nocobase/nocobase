@@ -7,7 +7,7 @@ description: |
   Send email in workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

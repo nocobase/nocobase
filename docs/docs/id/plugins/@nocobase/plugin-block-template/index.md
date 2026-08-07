@@ -7,7 +7,7 @@ description: |
   Membuat dan mengelola template Block, untuk digunakan kembali pada halaman.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

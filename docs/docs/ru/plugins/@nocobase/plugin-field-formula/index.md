@@ -7,7 +7,7 @@ description: |
   Настройка и сохранение результатов вычислений по полям одной записи; поддерживаются Math.js и функции формул Excel.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

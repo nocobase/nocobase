@@ -7,7 +7,7 @@ description: |
   用于人工控制部分决策的流程。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

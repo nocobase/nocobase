@@ -7,7 +7,7 @@ description: |
   用于对数据表的数据进行排序。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

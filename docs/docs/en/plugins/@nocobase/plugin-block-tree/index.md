@@ -9,7 +9,7 @@ description: |
   Provides tree structure filter block
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   支持 URL 格式的附件。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

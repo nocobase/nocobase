@@ -7,7 +7,7 @@ description: |
   Stellt einen Kommentarblock bereit, um Kommentare in Datensatzdetails, Pop-ups und ähnlichen Szenarien anzuzeigen und zu erstellen.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Xác thực danh tính bằng mã xác minh SMS.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

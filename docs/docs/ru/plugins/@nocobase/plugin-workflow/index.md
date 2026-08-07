@@ -7,7 +7,7 @@ description: |
   Инструмент BPM для автоматизации рабочих процессов: базовая поддержка и неограниченное расширение триггеров и узлов.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

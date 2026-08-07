@@ -7,7 +7,7 @@ description: |
   Quản lý xác thực danh tính người dùng, bao gồm SMS, TOTP authenticator, v.v., có thể mở rộng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Dùng để soạn và hiển thị thông báo phản hồi cho client trong workflow của sự kiện biểu mẫu và chặn request.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

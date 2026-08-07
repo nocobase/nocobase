@@ -7,7 +7,7 @@ description: |
   Отправка уведомлений по электронной почте со встроенной доставкой через SMTP.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

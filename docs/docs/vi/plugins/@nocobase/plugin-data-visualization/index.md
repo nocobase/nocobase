@@ -7,7 +7,7 @@ description: |
   Cung cấp chức năng trực quan hóa dữ liệu, bao gồm Block biểu đồ và Block lọc biểu đồ, hỗ trợ hơn mười loại biểu đồ như biểu đồ đường, biểu đồ vùng, biểu đồ cột, bạn cũng có thể mở rộng thêm các loại biểu đồ khác.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -10,7 +10,7 @@ description: |
   可用于在工作流中对日期进行操作求值，如加减、比较操作，格式化等。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

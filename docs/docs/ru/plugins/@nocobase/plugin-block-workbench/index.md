@@ -7,7 +7,7 @@ description: |
   Централизованное управление и отображение действий. Поддерживается расширяемость; типы действий включают всплывающие окна, ссылки, сканирование и произвольные запросы.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

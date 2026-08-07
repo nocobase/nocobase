@@ -7,7 +7,7 @@ description: |
   Digunakan untuk proses cabang yang perlu dieksekusi secara paralel dalam workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

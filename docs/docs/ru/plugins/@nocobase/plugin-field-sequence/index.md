@@ -7,7 +7,7 @@ description: |
   Автоматическая генерация кодов по правилам: дата, число, текст и их сочетания.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

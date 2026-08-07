@@ -7,7 +7,7 @@ description: |
   Could be used in workflow parallel branch for waiting other branches.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   An OpenAPI documentation generator for NocoBase HTTP API.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

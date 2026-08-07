@@ -10,7 +10,7 @@ description: |
   Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

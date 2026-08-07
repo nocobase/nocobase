@@ -7,7 +7,7 @@ description: |
   Pengaturan ID instance dan kunci lisensi
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

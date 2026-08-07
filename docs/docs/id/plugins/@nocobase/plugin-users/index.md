@@ -7,7 +7,7 @@ description: |
   Menyediakan model pengguna dasar, serta Field pembuat dan Field pembaru terakhir.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

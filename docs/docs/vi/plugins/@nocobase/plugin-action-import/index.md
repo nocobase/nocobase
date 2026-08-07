@@ -10,7 +10,7 @@ description: |
   Sử dụng mẫu Excel để nhập dữ liệu, có thể cấu hình các trường cần nhập, tự động tạo mẫu.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

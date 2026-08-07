@@ -7,7 +7,7 @@ description: |
   提供中国行政区划数据和字段类型。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

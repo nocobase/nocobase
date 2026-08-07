@@ -7,7 +7,7 @@ description: |
   Gửi thông báo qua kênh email, hiện chỉ hỗ trợ phương thức truyền tải SMTP.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

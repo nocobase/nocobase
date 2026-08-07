@@ -10,7 +10,7 @@ description: |
   Kích hoạt khi nhấp vào nút được liên kết với sự kiện tùy chỉnh. Phù hợp cho việc điều phối Action tùy chỉnh trên các hàng dữ liệu.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

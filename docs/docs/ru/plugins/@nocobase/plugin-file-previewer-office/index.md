@@ -7,7 +7,7 @@ description: |
   Плагин для предпросмотра офисных файлов через сервис Microsoft Live Preview.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

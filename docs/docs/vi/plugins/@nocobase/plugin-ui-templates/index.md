@@ -9,7 +9,7 @@ description: |
   Cung cấp khả năng tái sử dụng template Block và template popup.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

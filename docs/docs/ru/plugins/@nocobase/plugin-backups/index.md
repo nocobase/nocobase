@@ -10,7 +10,7 @@ description: |
   Резервное копирование и восстановление, расписание резервного копирования, безопасность данных и быстрое восстановление.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

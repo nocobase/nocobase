@@ -7,7 +7,7 @@ description: |
   Cấu hình ID phiên bản và khóa giấy phép
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

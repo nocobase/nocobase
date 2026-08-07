@@ -7,7 +7,7 @@ description: |
   Proporciona un bloque de comentarios para ver y crear comentarios en detalles de registros, ventanas emergentes y escenarios similares.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

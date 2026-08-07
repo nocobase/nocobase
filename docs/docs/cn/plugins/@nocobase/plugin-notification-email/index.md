@@ -7,7 +7,7 @@ description: |
   通过电子邮件渠道发送通知，目前只支持 SMTP 传输方式。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

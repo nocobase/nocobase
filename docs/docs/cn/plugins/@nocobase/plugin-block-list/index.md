@@ -7,7 +7,7 @@ description: |
   以列表形式展示数据,支持分页设置
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

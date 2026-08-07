@@ -7,7 +7,7 @@ description: |
   Ручная сортировка записей в коллекции.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

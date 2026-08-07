@@ -7,7 +7,7 @@ description: |
   Generator dokumentasi OpenAPI untuk NocoBase HTTP API.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

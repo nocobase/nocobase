@@ -9,7 +9,7 @@ description: |
   Kirim request ke layanan HTTP apa pun, mendukung pengiriman data konteks ke layanan target.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

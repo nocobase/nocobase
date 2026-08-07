@@ -10,7 +10,7 @@ description: |
   Dipicu sebelum eksekusi melalui tombol Action atau request API, misalnya sebelum menambah, memperbarui, menghapus data. Cocok untuk validasi data dan logika sebelum operasi, dan dapat memblokir request melalui "Node Akhir".
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

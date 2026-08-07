@@ -7,7 +7,7 @@ description: |
   Публикация форм для внешнего доступа и сбора данных от анонимных пользователей.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

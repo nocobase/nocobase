@@ -7,7 +7,7 @@ description: |
   Dùng để thực hiện tính toán biểu thức động dựa trên hàng dữ liệu trong workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

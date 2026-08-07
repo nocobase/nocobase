@@ -7,7 +7,7 @@ description: |
   Provides kanban block.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

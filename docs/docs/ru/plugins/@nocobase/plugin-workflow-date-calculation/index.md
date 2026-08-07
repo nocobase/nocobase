@@ -10,7 +10,7 @@ description: |
   Вычисления с датами в рабочем процессе: преобразования, сравнения, форматирование и т.д.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Allows users to use API key to access application's HTTP API
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

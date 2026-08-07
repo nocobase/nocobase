@@ -10,7 +10,7 @@ description: |
   Шаблон коллекции комментариев и блок для комментирования записей любой коллекции.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

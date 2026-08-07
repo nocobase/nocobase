@@ -7,7 +7,7 @@ description: |
   Menampilkan data dalam bentuk grid list, mendukung pengaturan paginasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   可用于在工作流中对数据库执行任意 SQL 语句。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

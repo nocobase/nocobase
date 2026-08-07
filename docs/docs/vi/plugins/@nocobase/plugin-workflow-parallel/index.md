@@ -7,7 +7,7 @@ description: |
   Dùng cho các quy trình nhánh cần thực thi song song trong workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

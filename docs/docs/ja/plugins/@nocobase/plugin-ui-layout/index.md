@@ -7,7 +7,7 @@ description: |
   Provides desktop layout, mobile layout, and route management pages.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

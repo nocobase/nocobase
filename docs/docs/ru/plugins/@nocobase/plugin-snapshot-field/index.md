@@ -7,7 +7,7 @@ description: |
   При добавлении записи создаётся снимок связанной записи и сохраняется в новой записи. Снимок не обновляется при изменении связанной записи.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

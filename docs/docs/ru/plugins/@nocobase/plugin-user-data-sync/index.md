@@ -7,7 +7,7 @@ description: |
   Регистрация и управление расширяемыми источниками синхронизации пользовательских данных; по умолчанию доступен HTTP API. Поддержка синхронизации с ресурсами вроде пользователей и отделов.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

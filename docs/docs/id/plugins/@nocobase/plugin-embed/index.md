@@ -9,7 +9,7 @@ description: |
   Sematkan NocoBase ke dalam sistem atau halaman eksternal sehingga menjadi bagian dari sistem atau halaman tersebut.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

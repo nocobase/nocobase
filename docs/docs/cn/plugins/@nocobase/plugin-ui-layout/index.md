@@ -7,7 +7,7 @@ description: |
   提供桌面端布局、移动端布局、路由管理页面。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

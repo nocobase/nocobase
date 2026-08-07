@@ -7,7 +7,7 @@ description: |
   Đa ứng dụng chạy theo cách chia sẻ tiến trình, chỉ phù hợp cho môi trường kiểm thử và demo, vui lòng không sử dụng trong môi trường sản xuất.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

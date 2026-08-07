@@ -7,7 +7,7 @@ description: |
   Mengelola data source, termasuk database Master bawaan serta database dan API eksternal.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Хранение Markdown и редактирование в Vditor: списки, код, цитаты и др.; загрузка изображений и записей, режим мгновенного предпросмотра.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   注册和管理可扩展的用户数据同步来源，默认提供 HTTP API。支持向用户和部门等资源同步数据。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

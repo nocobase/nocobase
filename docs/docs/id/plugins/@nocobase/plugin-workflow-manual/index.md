@@ -7,7 +7,7 @@ description: |
   Digunakan untuk proses dengan keputusan yang sebagian dikontrol secara manual.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

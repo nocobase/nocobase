@@ -7,7 +7,7 @@ description: |
   Menyediakan fungsi CC dalam workflow, untuk mengirimkan salinan persetujuan atau informasi lainnya ke pengguna tertentu.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

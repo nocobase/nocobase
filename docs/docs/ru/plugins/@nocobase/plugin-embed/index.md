@@ -10,7 +10,7 @@ description: |
   Встраивание NocoBase в другую систему или страницу как часть интерфейса.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

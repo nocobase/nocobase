@@ -9,7 +9,7 @@ description: |
   支持新增和使用自定义变量
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

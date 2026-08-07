@@ -7,7 +7,7 @@ description: |
   Nhật ký phía máy chủ, chủ yếu bao gồm nhật ký yêu cầu API và nhật ký vận hành hệ thống, hỗ trợ đóng gói và tải xuống tệp nhật ký.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

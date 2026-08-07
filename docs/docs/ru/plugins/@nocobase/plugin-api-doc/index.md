@@ -7,7 +7,7 @@ description: |
   Генератор документации OpenAPI для HTTP API NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

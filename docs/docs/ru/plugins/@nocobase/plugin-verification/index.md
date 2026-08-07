@@ -7,7 +7,7 @@ description: |
   Управление подтверждением личности пользователя: SMS, TOTP-аутентификатор и расширяемость.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

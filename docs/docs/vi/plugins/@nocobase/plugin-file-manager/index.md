@@ -7,7 +7,7 @@ description: |
   Cung cấp dịch vụ lưu trữ tệp, đồng thời cung cấp mẫu bảng tệp và Field đính kèm.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

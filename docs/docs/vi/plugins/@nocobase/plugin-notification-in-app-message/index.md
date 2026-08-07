@@ -7,7 +7,7 @@ description: |
   Hỗ trợ người dùng nhận thông báo tin nhắn theo thời gian thực trong ứng dụng NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

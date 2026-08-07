@@ -7,7 +7,7 @@ description: |
   Cung cấp dịch vụ lưu trữ UI schema tập trung.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

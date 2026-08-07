@@ -7,7 +7,7 @@ description: |
   Used for assemble response message and showing to client in form event and request interception workflows.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

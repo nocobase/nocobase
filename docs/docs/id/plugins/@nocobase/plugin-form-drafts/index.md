@@ -9,7 +9,7 @@ description: |
   Mendukung penyimpanan draf saat mengisi formulir, sehingga Anda dapat melanjutkan pengeditan dan pengiriman di kemudian waktu.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

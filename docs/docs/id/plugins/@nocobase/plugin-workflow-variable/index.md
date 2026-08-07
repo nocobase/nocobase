@@ -10,7 +10,7 @@ description: |
   Digunakan untuk membuat variabel kustom atau memberinya nilai dalam workflow, untuk menyimpan data sementara dalam proses.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Dùng để ánh xạ dữ liệu JSON bất kỳ thành các biến có cấu trúc, để các node sau có thể sử dụng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

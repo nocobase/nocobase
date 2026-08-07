@@ -9,8 +9,8 @@ supportedVersions:
 description: |
   Cung cấp chức năng sao lưu và khôi phục, hỗ trợ sao lưu định kỳ, đảm bảo an toàn dữ liệu và khôi phục nhanh chóng.
 isFree: false
-builtIn: false
-defaultEnabled: false
+builtIn: true
+defaultEnabled: true
 editionLevel: 2
 ---
 

@@ -7,7 +7,7 @@ description: |
   Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

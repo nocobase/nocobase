@@ -7,7 +7,7 @@ description: |
   Tambahkan tombol salin untuk Field teks
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

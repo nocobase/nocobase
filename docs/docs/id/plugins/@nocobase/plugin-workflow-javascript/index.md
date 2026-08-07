@@ -10,7 +10,7 @@ description: |
   Mengeksekusi sepotong kode JavaScript dalam lingkungan terisolasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

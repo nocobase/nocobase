@@ -10,7 +10,7 @@ description: |
   Создание пользовательских переменных и присваивание значений в рабочем процессе для временных данных процесса.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 
