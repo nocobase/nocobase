@@ -16,6 +16,7 @@ describe('AIEmployeeButtonModel', () => {
     const buttonSettings = AIEmployeeButtonModel.globalFlowRegistry.getFlow('buttonSettings');
 
     expect(buttonSettings?.steps?.linkageRules?.use).toBe('actionLinkageRules');
+    expect(AIEmployeeButtonModel.prototype.supportedActionLinkageStates).toEqual(['visible', 'hidden']);
   });
 
   it('renders the AI employee button as disabled-looking content when hidden in config mode', () => {

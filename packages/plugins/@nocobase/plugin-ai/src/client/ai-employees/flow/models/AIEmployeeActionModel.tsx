@@ -23,6 +23,10 @@ import { AIEmployeeListItem } from '../../AIEmployeeListItem';
 import { AIEmployeeShortcutModel } from './AIEmployeeShortcutModel';
 
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
+  get supportedActionLinkageStates() {
+    return ['visible', 'hidden'] as const;
+  }
+
   constructor(options: any) {
     super(options);
     this.props = {
