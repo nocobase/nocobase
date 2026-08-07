@@ -7,7 +7,7 @@ description: |
   Send HTTP requests to any HTTP service for data interaction in workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   It supports users in receiving real-time message notifications within the NocoBase application.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

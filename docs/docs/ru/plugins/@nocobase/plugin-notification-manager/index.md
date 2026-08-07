@@ -7,7 +7,7 @@ description: |
   Единая служба управления: настройка каналов, логирование и др.; поддерживаются различные каналы уведомлений, включая сообщения в приложении и электронную почту.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

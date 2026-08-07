@@ -10,7 +10,7 @@ description: |
   Lakukan bulk edit pada seluruh data atau data yang dipilih.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

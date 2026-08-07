@@ -7,7 +7,7 @@ description: |
   Dapat digunakan untuk mengeksekusi pernyataan SQL apa pun ke database dalam workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

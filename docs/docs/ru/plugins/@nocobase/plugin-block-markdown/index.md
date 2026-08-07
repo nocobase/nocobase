@@ -7,7 +7,7 @@ description: |
   Блок с разметкой Markdown.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

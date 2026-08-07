@@ -9,7 +9,7 @@ description: |
   Membagi form yang berisi banyak field menjadi beberapa langkah pengisian, untuk mengurangi beban pengguna.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

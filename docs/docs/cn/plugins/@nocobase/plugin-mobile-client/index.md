@@ -9,7 +9,7 @@ description: |
   提供移动端页面配置的能力。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

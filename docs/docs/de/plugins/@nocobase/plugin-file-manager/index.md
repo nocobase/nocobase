@@ -7,7 +7,7 @@ description: |
   Provides files storage services with files collection template and attachment field.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Plugin xem trước tệp Office dựa trên dịch vụ trực tuyến của Microsoft.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

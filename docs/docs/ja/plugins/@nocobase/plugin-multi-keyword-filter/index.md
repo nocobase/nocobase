@@ -10,7 +10,7 @@ description: |
   Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -10,7 +10,7 @@ description: |
   Cung cấp mẫu Collection và Block bình luận, thêm chức năng bình luận cho dữ liệu của Collection bất kỳ.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

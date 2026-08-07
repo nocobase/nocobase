@@ -7,7 +7,7 @@ description: |
   提供评论区块，支持在记录详情、弹窗等场景中查看和创建评论。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

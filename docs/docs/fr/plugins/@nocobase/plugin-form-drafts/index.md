@@ -9,7 +9,7 @@ description: |
   Allow users to save form drafts and continue editing later.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

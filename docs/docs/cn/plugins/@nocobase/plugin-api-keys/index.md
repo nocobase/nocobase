@@ -7,7 +7,7 @@ description: |
   允许用户使用 API 密钥访问应用的 HTTP API
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

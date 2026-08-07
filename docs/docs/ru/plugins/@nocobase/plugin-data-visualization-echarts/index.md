@@ -9,7 +9,7 @@ description: |
   Визуализация на ECharts: воронка, радар и другие типы диаграмм с удобной настройкой.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

@@ -7,7 +7,7 @@ description: |
   Chia sẻ biểu mẫu công khai ra bên ngoài, thu thập thông tin từ người dùng ẩn danh.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

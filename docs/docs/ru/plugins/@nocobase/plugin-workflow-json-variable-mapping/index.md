@@ -7,7 +7,7 @@ description: |
   Сопоставляет произвольные JSON-данные со структурированными переменными для использования в последующих узлах.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Handling application errors and exceptions.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

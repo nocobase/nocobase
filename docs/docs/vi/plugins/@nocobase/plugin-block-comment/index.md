@@ -7,7 +7,7 @@ description: |
   Cung cấp Block Bình luận để xem và tạo bình luận trong chi tiết bản ghi, pop-up và các tình huống tương tự.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

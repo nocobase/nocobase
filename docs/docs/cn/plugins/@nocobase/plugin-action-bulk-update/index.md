@@ -10,7 +10,7 @@ description: |
   对全部数据或选中的数据进行批量更新。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

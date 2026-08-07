@@ -10,7 +10,7 @@ description: |
   Экспорт отфильтрованных записей в Excel; можно настроить, какие поля экспортировать.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

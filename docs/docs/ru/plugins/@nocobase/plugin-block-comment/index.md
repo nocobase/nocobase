@@ -7,7 +7,7 @@ description: |
   Предоставляет блок комментариев для просмотра и создания комментариев в деталях записей, всплывающих окнах и похожих сценариях.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

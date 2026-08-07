@@ -7,7 +7,7 @@ description: |
   Dipicu setelah eksekusi selesai melalui tombol Action atau request API, misalnya setelah menambah, memperbarui, menghapus data, atau setelah "Submit ke Workflow". Cocok untuk pemrosesan data, pengiriman notifikasi, dan lainnya setelah operasi selesai.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

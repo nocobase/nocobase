@@ -9,7 +9,7 @@ description: |
   Добавление и использование пользовательских переменных.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Công cụ tương tự sơ đồ ER, hiện chỉ hỗ trợ cơ sở dữ liệu chính.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

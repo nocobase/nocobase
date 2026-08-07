@@ -10,7 +10,7 @@ description: |
   在隔离环境中执行一段 JavaScript 代码。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

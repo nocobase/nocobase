@@ -7,7 +7,7 @@ description: |
   Log sisi server, terutama mencakup log permintaan API dan log operasi sistem, serta mendukung pengemasan dan pengunduhan file log.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

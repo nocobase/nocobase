@@ -7,7 +7,7 @@ description: |
   Quản lý tập trung biến môi trường và khóa bí mật, dùng cho lưu trữ dữ liệu nhạy cảm, tái sử dụng cấu hình, cách ly đa môi trường, v.v.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

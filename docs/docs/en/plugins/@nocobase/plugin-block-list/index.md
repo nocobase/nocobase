@@ -7,7 +7,7 @@ description: |
   Display data in a list with pagination support.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

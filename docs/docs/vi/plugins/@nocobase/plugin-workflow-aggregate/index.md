@@ -7,7 +7,7 @@ description: |
   Có thể được sử dụng để thực hiện truy vấn tổng hợp trên cơ sở dữ liệu trong workflow, chẳng hạn như: đếm số lượng, tính tổng, tính trung bình, v.v.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

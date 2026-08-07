@@ -7,7 +7,7 @@ description: |
   Cung cấp mẫu Collection SQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

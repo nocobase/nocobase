@@ -7,7 +7,7 @@ description: |
   Cho phép người dùng truy cập HTTP API của ứng dụng bằng API Key.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

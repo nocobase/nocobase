@@ -7,7 +7,7 @@ description: |
   Hiển thị dữ liệu dưới dạng danh sách, hỗ trợ cấu hình phân trang.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

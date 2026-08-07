@@ -7,7 +7,7 @@ description: |
   Позволяет обращаться к HTTP API приложения с помощью API-ключа.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

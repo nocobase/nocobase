@@ -7,7 +7,7 @@ description: |
   Mengelola dan menampilkan berbagai action secara terpusat, memudahkan pengguna mengeksekusi task dengan cepat. Mendukung perluasan; tipe action yang saat ini didukung adalah popup, link, scan, dan custom request.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

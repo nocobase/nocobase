@@ -7,7 +7,7 @@ description: |
   An MCP server for building NocoBase systems and supporting business workflows.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

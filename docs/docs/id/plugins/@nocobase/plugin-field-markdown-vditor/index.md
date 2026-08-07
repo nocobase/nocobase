@@ -7,7 +7,7 @@ description: |
   Digunakan untuk menyimpan Markdown dan dirender menggunakan editor Vditor. Mendukung sintaks Markdown umum seperti list, code, quote, dan lainnya, serta mendukung upload gambar, perekaman audio, dan lainnya. Memungkinkan rendering instan dengan WYSIWYG.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

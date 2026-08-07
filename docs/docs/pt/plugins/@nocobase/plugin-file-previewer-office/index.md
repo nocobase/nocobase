@@ -7,7 +7,7 @@ description: |
   A plugin for previewing office files via Microsoft live preview service.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

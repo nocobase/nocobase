@@ -7,7 +7,7 @@ description: |
   Управление источниками данных: встроенная основная БД, внешние базы, API и др.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

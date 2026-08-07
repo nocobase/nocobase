@@ -9,7 +9,7 @@ description: |
   Support integration with GigaChat LLM service.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

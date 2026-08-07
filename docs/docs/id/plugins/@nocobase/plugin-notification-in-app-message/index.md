@@ -7,7 +7,7 @@ description: |
   Mendukung pengguna untuk menerima notifikasi pesan secara real-time di dalam aplikasi NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

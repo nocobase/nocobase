@@ -10,7 +10,7 @@ description: |
   Import data menggunakan template Excel. Dapat dikonfigurasi field mana yang akan di-import dan template dibuat secara otomatis.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

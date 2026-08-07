@@ -7,7 +7,7 @@ description: |
  Динамические вычисления по выражениям и записям коллекций в рабочем процессе.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

@@ -7,7 +7,7 @@ description: |
   Digunakan untuk melakukan kalkulasi ekspresi dinamis berbasis baris data dalam workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

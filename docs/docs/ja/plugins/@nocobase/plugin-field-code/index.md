@@ -10,7 +10,7 @@ description: |
   For code editing and highlighting, supporting Java, JavaScript, Python, SQL and other languages.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

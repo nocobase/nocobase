@@ -7,7 +7,7 @@ description: |
   根据配置的规则自动生成编码，支持日期、数字、文本的组合。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

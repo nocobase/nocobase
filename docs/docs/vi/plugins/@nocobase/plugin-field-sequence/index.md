@@ -7,7 +7,7 @@ description: |
   Tự động tạo mã theo các quy tắc đã cấu hình, hỗ trợ kết hợp ngày, số và văn bản.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

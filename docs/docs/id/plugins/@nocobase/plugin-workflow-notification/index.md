@@ -7,7 +7,7 @@ description: |
   Dapat digunakan untuk mengirim berbagai jenis notifikasi dalam workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

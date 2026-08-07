@@ -10,7 +10,7 @@ description: |
   Untuk pengeditan dan highlight kode. Mendukung bahasa seperti Java, JavaScript, Python, SQL, dan lainnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

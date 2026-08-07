@@ -7,7 +7,7 @@ description: |
   Xử lý lỗi và ngoại lệ trong ứng dụng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

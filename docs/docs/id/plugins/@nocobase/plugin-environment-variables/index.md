@@ -7,7 +7,7 @@ description: |
   Mengelola environment variable dan secret secara terpusat untuk penyimpanan data sensitif, reuse data konfigurasi, isolasi multi-environment, dan lainnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

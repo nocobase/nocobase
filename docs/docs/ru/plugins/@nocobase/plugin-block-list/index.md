@@ -7,7 +7,7 @@ description: |
   Отображение данных списком с поддержкой постраничной навигации.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

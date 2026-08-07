@@ -7,7 +7,7 @@ description: |
   Cho phép cấu hình và lưu trữ kết quả tính toán giữa các giá trị Field trong cùng một bản ghi, hỗ trợ hai engine: Math.js và Excel formula functions.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Digunakan untuk pemrosesan sub-flow berulang pada setiap nilai dalam sebuah array, juga dapat digunakan untuk pemrosesan sub-flow berulang dengan jumlah pengulangan tetap.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

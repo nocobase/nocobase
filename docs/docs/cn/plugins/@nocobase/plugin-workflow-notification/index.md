@@ -7,7 +7,7 @@ description: |
   可用于在工作流中发送各类通知。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

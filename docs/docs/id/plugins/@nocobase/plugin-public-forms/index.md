@@ -7,7 +7,7 @@ description: |
   Bagikan formulir publik secara eksternal untuk mengumpulkan informasi dari pengguna anonim.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

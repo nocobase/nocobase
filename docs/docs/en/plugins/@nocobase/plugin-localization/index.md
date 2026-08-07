@@ -7,7 +7,7 @@ description: |
   Allows to manage localization resources of the application.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

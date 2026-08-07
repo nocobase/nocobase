@@ -7,7 +7,7 @@ description: |
   Позволяет пользователям получать уведомления в реальном времени внутри приложения NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

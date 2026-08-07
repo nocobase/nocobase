@@ -7,7 +7,7 @@ description: |
   Provides data and field type for administrative divisions of China.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

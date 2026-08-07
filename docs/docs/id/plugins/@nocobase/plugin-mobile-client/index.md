@@ -7,7 +7,7 @@ description: |
   Menyediakan kemampuan konfigurasi halaman mobile.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

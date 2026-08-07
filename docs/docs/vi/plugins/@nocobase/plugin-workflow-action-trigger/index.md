@@ -7,7 +7,7 @@ description: |
   Kích hoạt qua nút Action hoặc API và sau khi thực thi hoàn tất, ví dụ sau khi thêm, cập nhật, xóa dữ liệu hoặc sau "Submit to workflow". Phù hợp để xử lý dữ liệu, gửi thông báo sau khi thao tác hoàn tất.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

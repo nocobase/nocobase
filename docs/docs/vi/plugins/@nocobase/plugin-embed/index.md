@@ -9,7 +9,7 @@ description: |
   Nhúng NocoBase vào hệ thống hoặc trang web bên ngoài, để nó trở thành một phần của hệ thống hoặc trang đó.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

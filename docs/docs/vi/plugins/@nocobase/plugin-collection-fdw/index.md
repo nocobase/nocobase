@@ -10,7 +10,7 @@ description: |
   Kết nối Collection từ xa dựa trên foreign data wrapper (FDW) của cơ sở dữ liệu, hiện hỗ trợ cơ sở dữ liệu MySQL và PostgreSQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Блок карты: поддержка карт Gaode (Amap) и Google Maps; можно расширить другими типами карт.types.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

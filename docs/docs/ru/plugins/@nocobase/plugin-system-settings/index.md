@@ -7,7 +7,7 @@ description: |
   Настройка заголовка системы, логотипа, языка и др.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -10,7 +10,7 @@ description: |
   Sao chép một bản ghi, có thể sao chép vào biểu mẫu để chỉnh sửa rồi gửi, hoặc sao chép trực tiếp và tạo bản ghi mới.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

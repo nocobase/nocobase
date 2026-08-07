@@ -7,7 +7,7 @@ description: |
   Block bản đồ, hỗ trợ AMap và Google Maps, bạn cũng có thể mở rộng thêm nhiều loại bản đồ khác.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

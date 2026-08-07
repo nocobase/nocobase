@@ -7,7 +7,7 @@ description: |
   Tùy chỉnh màu sắc, kích thước, v.v. của UI và lưu kết quả thành giao diện, có thể chuyển đổi giữa nhiều giao diện.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

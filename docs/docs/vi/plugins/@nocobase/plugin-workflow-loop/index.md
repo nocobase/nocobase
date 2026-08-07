@@ -7,7 +7,7 @@ description: |
   Dùng để xử lý subflow lặp lại cho từng giá trị trong một mảng, cũng có thể dùng cho subflow lặp lại với số lần cố định.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

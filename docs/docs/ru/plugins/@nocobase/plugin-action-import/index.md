@@ -10,7 +10,7 @@ description: |
   Импорт записей по шаблонам Excel. Можно настроить импортируемые поля; шаблоны формируются автоматически.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

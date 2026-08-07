@@ -7,7 +7,7 @@ description: |
   Cung cấp Block biểu đồ Gantt.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

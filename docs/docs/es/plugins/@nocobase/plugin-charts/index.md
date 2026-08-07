@@ -9,7 +9,7 @@ description: |
   The plugin has been deprecated, please use the data visualization plugin instead.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

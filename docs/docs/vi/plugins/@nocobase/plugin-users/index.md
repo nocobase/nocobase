@@ -7,7 +7,7 @@ description: |
   Cung cấp model người dùng cơ bản, cùng với Field người tạo và người cập nhật cuối.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

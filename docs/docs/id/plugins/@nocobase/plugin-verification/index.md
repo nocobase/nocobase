@@ -7,7 +7,7 @@ description: |
   Manajemen verifikasi identitas pengguna, mencakup SMS, TOTP authenticator, dan lainnya, dapat diperluas.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

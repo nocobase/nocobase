@@ -7,7 +7,7 @@ description: |
   Mengorganisasikan pengguna berdasarkan departemen, mengatur hierarki atasan dan bawahan, mengikat role untuk kontrol hak akses, serta mendukung penggunaan sebagai variable dalam workflow dan ekspresi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Provides a client interface for the NocoBase server
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Alat BPM yang kuat, menyediakan dukungan dasar untuk otomatisasi bisnis, dan dapat diperluas dengan lebih banyak trigger dan node sesuai kebutuhan.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

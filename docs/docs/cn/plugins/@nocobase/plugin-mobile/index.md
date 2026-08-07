@@ -9,7 +9,7 @@ description: |
   自 2.0 版本起，移动端由新的 ui-layout 插件替代，该插件仍在开发中。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

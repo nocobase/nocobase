@@ -9,7 +9,7 @@ description: |
   Начиная с версии 2.0 мобильный плагин заменён новым плагином ui-layout, который всё ещё в разработке.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

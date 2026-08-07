@@ -7,7 +7,7 @@ description: |
   Plugin yang sudah deprecated, gunakan plugin Data Visualization sebagai gantinya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

@@ -7,7 +7,7 @@ description: |
   Có thể được sử dụng trong các nhánh song song của workflow để chờ các nhánh khác hoàn thành thực thi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

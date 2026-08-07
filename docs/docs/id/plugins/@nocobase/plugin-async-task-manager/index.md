@@ -7,7 +7,7 @@ description: |
   Mengelola dan memantau task asynchronous seperti import dan ekspor data. Mendukung pelacakan progres task dan notifikasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

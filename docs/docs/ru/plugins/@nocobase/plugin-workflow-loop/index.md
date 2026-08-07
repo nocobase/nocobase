@@ -7,7 +7,7 @@ description: |
   Повторяет подпроцесс для каждого значения фиксированное число раз.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

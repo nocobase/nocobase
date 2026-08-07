@@ -7,7 +7,7 @@ description: |
   Block peta, mendukung Amap dan Google Maps, dan Anda juga dapat memperluas lebih banyak jenis peta.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

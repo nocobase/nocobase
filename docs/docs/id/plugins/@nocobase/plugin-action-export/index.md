@@ -10,7 +10,7 @@ description: |
   Ekspor record yang sudah difilter ke Excel, dapat dikonfigurasi field mana saja yang akan diekspor.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

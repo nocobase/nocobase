@@ -10,7 +10,7 @@ description: |
   Xuất các bản ghi đã lọc ra Excel, có thể cấu hình các trường nào sẽ được xuất.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

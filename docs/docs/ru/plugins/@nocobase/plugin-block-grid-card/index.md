@@ -7,7 +7,7 @@ description: |
   Отображение данных сеткой с поддержкой постраничной навигации.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 
