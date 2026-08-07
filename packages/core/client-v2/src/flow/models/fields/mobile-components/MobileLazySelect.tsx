@@ -291,6 +291,7 @@ export function MobileLazySelect(props: Readonly<LazySelectProps>) {
             value={searchText}
             onChange={handleSearchChange}
             onCancel={handleClose}
+            cancelText={t('Cancel')}
             showCancelButton
           />
         </div>

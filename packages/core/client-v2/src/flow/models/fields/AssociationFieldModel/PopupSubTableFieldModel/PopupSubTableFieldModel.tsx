@@ -28,6 +28,7 @@ import { observer } from '@formily/reactive-react';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { buildRecordPickerPopupContextInputArgs, RecordPickerContent } from '../RecordPickerFieldModel';
+import { buildOpenerUids } from '../recordSelectShared';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { adjustColumnOrder } from '../../../blocks/table/utils';
 import { isSubTableColumnFieldComponentContext } from '../SubTableFieldModel/SubTableColumnModel';
@@ -653,6 +654,11 @@ PopupSubTableFieldModel.registerFlow({
         const parentItemOptions = ctx?.getPropertyOptions?.('item');
         const itemIndex = Array.isArray(ctx.model?.props?.value) ? ctx.model.props.value.length : 0;
         const itemLength = itemIndex + 1;
+        const associationName = ctx.collectionField?.resourceName;
+        const sourceId = parentItem?.value
+          ? ctx.collectionField?.collection?.getFilterByTK?.(parentItem.value)
+          : undefined;
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -663,12 +669,14 @@ PopupSubTableFieldModel.registerFlow({
             scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
             parentItem,
             parentItemMeta: parentItemOptions?.meta,
             parentItemResolver: parentItemOptions?.resolveOnServer,
             itemIndex,
             itemLength,
+            openerUids,
           },
           content: () => <EditFormContent model={ctx.model} scene="create" />,
           styles: {
