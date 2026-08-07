@@ -72,12 +72,31 @@ const isWithinAIChatBoxBlock = (model: FlowModel | null | undefined) => {
 };
 
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
+  get supportedActionLinkageStates() {
+    return ['visible', 'hidden'] as const;
+  }
+
   render() {
     const { defaultTaskChatBoxUid, style, ...props } = this.props;
     const runtime = isWithinAIChatBoxBlock(this) ? undefined : getGlobalChatBoxRuntime();
     return <AIEmployeeShortcut {...props} runtime={runtime} size={style?.size ?? 40} mask={style?.mask ?? false} />;
   }
+
+  protected renderHiddenInConfig(): React.ReactNode {
+    return <div style={{ display: 'inline-flex', opacity: 0.3 }}>{this.render()}</div>;
+  }
 }
+
+AIEmployeeButtonModel.registerFlow({
+  key: 'buttonSettings',
+  title: tExpr('Button settings'),
+  sort: -999,
+  steps: {
+    linkageRules: {
+      use: 'actionLinkageRules',
+    },
+  },
+});
 
 type ShortcutTask = Task & {
   skillSettings?: SkillSettings;

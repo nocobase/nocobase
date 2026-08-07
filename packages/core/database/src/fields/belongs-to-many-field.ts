@@ -147,6 +147,8 @@ export class BelongsToManyField extends RelationField {
 
     if (database.hasCollection(through)) {
       Through = database.getCollection(through);
+      Through.options.sourceCollectionName ??= this.collection.name;
+      Through.options.targetCollectionName ??= this.target;
     } else {
       const throughCollectionOptions = {
         name: through,
