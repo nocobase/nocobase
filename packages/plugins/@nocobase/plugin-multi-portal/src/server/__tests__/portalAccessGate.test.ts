@@ -97,31 +97,6 @@ describe('Portal access gate for roles:check', () => {
         uiLayoutUid: 'missing-layout',
       },
     });
-    await portalRepository.create({
-      values: {
-        uid: '__default_admin__',
-        title: 'Desktop layout',
-        portalType: 'no-code',
-        portalName: 'admin',
-        routePath: '/admin',
-        authCheck: true,
-        enabled: true,
-        uiLayoutUid: ADMIN_UI_LAYOUT_UID,
-      },
-    });
-    await portalRepository.create({
-      values: {
-        uid: '__default_mobile__',
-        title: 'Mobile layout',
-        portalType: 'no-code',
-        portalName: 'mobile',
-        routePath: '/mobile',
-        authCheck: true,
-        enabled: true,
-        uiLayoutUid: MOBILE_UI_LAYOUT_UID,
-      },
-    });
-
     const roleRepository = app.db.getRepository('roles');
     await roleRepository.create({ values: { name: 'portal-gate-allowed', allowNewMultiPortal: false } });
     await roleRepository.create({ values: { name: 'portal-gate-union-other', allowNewMultiPortal: false } });
@@ -235,6 +210,22 @@ describe('Portal access gate for roles:check', () => {
     ]);
   });
 
+  it('accepts the legacy /x/ prefix from older AI Portal templates', async () => {
+    const [allowedResponse, deniedResponse] = await Promise.all([
+      allowedAgent.get('/roles:check').set('X-Portal', '/x/portal-access-ai'),
+      deniedAgent.get('/roles:check').set('X-Portal', '/x/portal-access-ai'),
+    ]);
+
+    expect(allowedResponse.status).toBe(200);
+    expect(deniedResponse.status).toBe(403);
+    expect(deniedResponse.body.errors).toEqual([
+      expect.objectContaining({
+        code: 'PORTAL_ACCESS_DENIED',
+      }),
+    ]);
+    expect(deniedResponse.body.data.portalName).toBe('portal-access-ai');
+  });
+
   it('returns a structured minimal 403 response for a denied role', async () => {
     const baseline = await deniedAgent.get('/roles:check');
     const response = await deniedAgent.get('/roles:check').set('X-Portal', 'portal-access-gate');
@@ -258,7 +249,7 @@ describe('Portal access gate for roles:check', () => {
     expect(response.body.data).not.toHaveProperty('data');
   });
 
-  it.each(['', ' ', '/x/portal-access-gate', '/v/portal-access-gate', 'Portal'])(
+  it.each(['', ' ', '/x/', '/x/portal-access-gate/extra', '/v/portal-access-gate', 'Portal'])(
     'rejects invalid X-Portal value %j',
     async (portalName) => {
       const response = await deniedAgent.get('/roles:check').set('X-Portal', portalName);
