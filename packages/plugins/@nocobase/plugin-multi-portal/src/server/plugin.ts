@@ -1573,8 +1573,13 @@ function getRequestedPortalNameFromHeader(ctx: ResourcerContext) {
     return;
   }
 
-  const portalName = headers['x-portal'];
-  if (typeof portalName !== 'string' || !MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
+  const rawPortalName = headers['x-portal'];
+  if (typeof rawPortalName !== 'string') {
+    throwPortalAccessGateError(ctx, 400, PORTAL_CONTEXT_INVALID_CODE, 'Invalid Portal context');
+  }
+
+  const portalName = rawPortalName.startsWith('/x/') ? rawPortalName.slice('/x/'.length) : rawPortalName;
+  if (!MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
     throwPortalAccessGateError(ctx, 400, PORTAL_CONTEXT_INVALID_CODE, 'Invalid Portal context');
   }
   return portalName;
