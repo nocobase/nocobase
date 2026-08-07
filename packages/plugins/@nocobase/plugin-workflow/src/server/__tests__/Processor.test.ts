@@ -43,7 +43,6 @@ describe('workflow > Processor', () => {
 
   describe('base', () => {
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('updates job id out of max safe integer', async () => {
-      const JobModel = db.getModel('jobs');
       const node = await workflow.createNode({ type: 'echo' });
       const execution = await workflow.createExecution({
         key: workflow.key,
@@ -51,16 +50,18 @@ describe('workflow > Processor', () => {
         dispatched: true,
         status: EXECUTION_STATUS.STARTED,
       });
-      const id = '10267424896650240';
-      const job = await JobModel.create({
-        id,
-        executionId: execution.id,
+      // This value is rounded to 10267424896650240 when coerced to a JavaScript number.
+      const id = '10267424896650241';
+      vi.spyOn(plugin.snowflake, 'getUniqueID').mockReturnValue(BigInt(id));
+      const processor = plugin.createProcessor(execution);
+      const job = processor.saveJob({
         nodeId: node.id,
         nodeKey: node.key,
         status: JOB_STATUS.PENDING,
         result: null,
       });
-      const processor = plugin.createProcessor(execution);
+      await processor.exit();
+      expect(job.id).toBe(id);
 
       job.set({
         status: JOB_STATUS.RESOLVED,
@@ -70,9 +71,8 @@ describe('workflow > Processor', () => {
       await processor.exit();
 
       const savedJob = await db.getRepository('jobs').findOne({
-        filterByTk: id,
+        filter: { executionId: execution.id },
       });
-      expect(savedJob.id).toBe(id);
       expect(savedJob.status).toBe(JOB_STATUS.RESOLVED);
       expect(savedJob.result).toEqual({ value: 1 });
     });
