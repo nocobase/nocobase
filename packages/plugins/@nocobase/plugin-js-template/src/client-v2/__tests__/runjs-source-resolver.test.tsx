@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { JsTemplateArtifact, JsTemplateRuntimeResolveResult } from '../../shared/types';
 import { type ApiClientLike, type ApiRequestOptions } from '../api/jsTemplatesRequests';
 import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
 import { createJsTemplateRunJSResolver } from '../resolvers/JsTemplateRunJSResolver';
@@ -143,34 +144,36 @@ function registerImmutableCacheTests() {
 
   function resolveResponse(data: unknown, artifactUrl = `/api/jsTemplateRuntime:getArtifact/${artifactHash}`) {
     const settings = (data as { settings?: Record<string, unknown> } | undefined)?.settings || {};
+    const resolveResult = {
+      templateId: 'template_1',
+      entryPath: 'src/client/js-actions/example/index.ts',
+      artifactHash,
+      artifactUrl,
+      runtimeCodeHash: 'runtime_hash_v1',
+      runtimeVersion: 'v2',
+      settings,
+      settingsHash: 'settings_hash',
+    } satisfies JsTemplateRuntimeResolveResult;
     return {
       data: {
-        data: {
-          templateId: 'template_1',
-          entryPath: 'src/client/js-actions/example/index.ts',
-          artifactHash,
-          artifactUrl,
-          runtimeCodeHash: 'runtime_hash_v1',
-          version: 'v2',
-          settings,
-          settingsHash: 'settings_hash',
-        },
+        data: resolveResult,
       },
     };
   }
 
   function artifactResponse() {
+    const artifact = {
+      artifactHash,
+      runtimeCodeHash: 'runtime_hash_v1',
+      code: "ctx.message.success('ACTION_V1');",
+      sourceMap: '{"version":3}',
+      runtimeVersion: 'v2',
+      entryPath: 'src/client/js-actions/example/index.ts',
+      runtimeContract: 'js-template.runtime-artifact.v1',
+      byteSize: 64,
+    } satisfies JsTemplateArtifact;
     return {
-      data: {
-        artifactHash,
-        runtimeCodeHash: 'runtime_hash_v1',
-        code: "ctx.message.success('ACTION_V1');",
-        sourceMap: '{"version":3}',
-        version: 'v2',
-        entryPath: 'src/client/js-actions/example/index.ts',
-        runtimeContract: 'js-template.runtime-artifact.v1',
-        byteSize: 64,
-      },
+      data: artifact,
     };
   }
 

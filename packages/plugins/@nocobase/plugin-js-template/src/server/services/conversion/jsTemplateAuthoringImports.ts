@@ -372,6 +372,7 @@ function analyzeSdkImportDeclaration(
 
   const diagnostics: JsTemplateAuthoringImportDiagnostic[] = [];
   const declarations: string[] = [];
+  const sourceScriptKind = scriptKind(sourceFile.fileName);
   for (const element of importClause.namedBindings.elements) {
     const importedName = element.propertyName?.text || element.name.text;
     if (importClause.isTypeOnly || element.isTypeOnly) {
@@ -405,9 +406,7 @@ function analyzeSdkImportDeclaration(
     declarations.push(
       runtimeHelper.buildDeclaration(
         element.name.text,
-        sourceFile.scriptKind === ts.ScriptKind.JS || sourceFile.scriptKind === ts.ScriptKind.JSX
-          ? 'javascript'
-          : 'typescript',
+        sourceScriptKind === ts.ScriptKind.JS || sourceScriptKind === ts.ScriptKind.JSX ? 'javascript' : 'typescript',
       ),
     );
   }

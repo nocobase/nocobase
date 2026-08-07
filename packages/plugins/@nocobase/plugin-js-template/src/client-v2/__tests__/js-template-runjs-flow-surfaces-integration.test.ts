@@ -18,7 +18,11 @@ import {
   JS_TEMPLATE_RUNJS_PERSISTENCE_RUNTIME_CONTRACT,
   serializeJsTemplateRunJSPersistence,
 } from '../../shared/jsTemplateRunJSPersistence';
-import type { JsTemplateRuntimeSourceBinding } from '../../shared/types';
+import type {
+  JsTemplateArtifact,
+  JsTemplateRuntimeResolveResult,
+  JsTemplateRuntimeSourceBinding,
+} from '../../shared/types';
 import type { ApiClientLike, ApiRequestOptions } from '../api/jsTemplatesRequests';
 import {
   JS_TEMPLATE_RUNJS_FLOW_SURFACES,
@@ -174,33 +178,35 @@ function createRuntimeApi() {
   const request = vi.fn(async (options: ApiRequestOptions) => {
     if (options.url === 'jsTemplateRuntime:resolve') {
       const settings = (options.data as { settings?: Record<string, unknown> }).settings || {};
+      const resolveResult = {
+        templateId: 'template_1',
+        entryPath,
+        artifactHash: 'artifact_hash',
+        artifactUrl: '/api/jsTemplateRuntime:getArtifact/artifact_hash',
+        runtimeCodeHash: 'runtime_hash',
+        runtimeVersion: 'v2',
+        settings,
+        settingsHash: 'settings_hash',
+      } satisfies JsTemplateRuntimeResolveResult;
       return {
         data: {
-          data: {
-            templateId: 'template_1',
-            entryPath,
-            artifactHash: 'artifact_hash',
-            artifactUrl: '/api/jsTemplateRuntime:getArtifact/artifact_hash',
-            runtimeCodeHash: 'runtime_hash',
-            version: 'v2',
-            settings,
-            settingsHash: 'settings_hash',
-          },
+          data: resolveResult,
         },
       };
     }
+    const artifact = {
+      artifactHash: 'artifact_hash',
+      runtimeCodeHash: 'runtime_hash',
+      code: 'ctx.message.success(settings.message);',
+      sourceMap: '{"version":3}',
+      runtimeVersion: 'v2',
+      entryPath,
+      runtimeContract: 'js-template.runtime-artifact.v1',
+      byteSize: 42,
+    } satisfies JsTemplateArtifact;
     return {
       data: {
-        data: {
-          artifactHash: 'artifact_hash',
-          runtimeCodeHash: 'runtime_hash',
-          code: 'ctx.message.success(settings.message);',
-          sourceMap: '{"version":3}',
-          version: 'v2',
-          entryPath,
-          runtimeContract: 'js-template.runtime-artifact.v1',
-          byteSize: 42,
-        },
+        data: artifact,
       },
     };
   });

@@ -391,6 +391,13 @@ describe('plugin-ui-layout mobile models', () => {
     mobileRoute.context.defineProperty('isMobileLayout', {
       value: true,
     });
+    mobileRoute.context.defineProperty('layout', {
+      value: {
+        layoutModelClass: 'MobileLayoutModel',
+        rootPageModelClass: 'MobileRootPageModel',
+        childPageModelClass: 'MobileChildPageModel',
+      },
+    });
 
     const desktopPage = engine.createModel({
       uid: 'desktop-js-page',

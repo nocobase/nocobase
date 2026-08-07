@@ -8,7 +8,11 @@
  */
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
-import { type JsTemplateRuntimeSourceBinding } from '../../shared/types';
+import {
+  type JsTemplateArtifact,
+  type JsTemplateRuntimeResolveResult,
+  type JsTemplateRuntimeSourceBinding,
+} from '../../shared/types';
 import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
 import PluginJsTemplateClientV2 from '../plugin';
 import { createForm } from '@formily/core';
@@ -460,33 +464,34 @@ function registerSourceModeRoundTripTests() {
 
   function successfulRequest(options: { url: string }) {
     if (options.url === 'jsTemplateRuntime:resolve') {
+      const resolveResult = {
+        templateId: 'template_sales',
+        entryPath: 'src/client/js-pages/sales/index.tsx',
+        artifactHash,
+        artifactUrl: `/api/jsTemplateRuntime:getArtifact/${artifactHash}`,
+        runtimeCodeHash: 'runtime_hash',
+        runtimeVersion: 'v2',
+        settings: {},
+        settingsHash: 'settings_hash',
+      } satisfies JsTemplateRuntimeResolveResult;
       return Promise.resolve({
         data: {
-          data: {
-            templateId: 'template_sales',
-            entryPath: 'src/client/js-pages/sales/index.tsx',
-            artifactHash,
-            artifactUrl: `/api/jsTemplateRuntime:getArtifact/${artifactHash}`,
-            runtimeCodeHash: 'runtime_hash',
-            version: 'v2',
-            settings: {},
-            settingsHash: 'settings_hash',
-          },
+          data: resolveResult,
         },
       });
     }
     if (options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`) {
+      const artifact = {
+        artifactHash,
+        runtimeCodeHash: 'runtime_hash',
+        code: 'ctx.render("copied runtime");',
+        runtimeVersion: 'v2',
+        entryPath: 'src/client/js-pages/sales/index.tsx',
+        runtimeContract: 'js-template.runtime-artifact.v1',
+        byteSize: 64,
+      } satisfies JsTemplateArtifact;
       return Promise.resolve({
-        data: {
-          artifactHash,
-          runtimeCodeHash: 'runtime_hash',
-          code: 'ctx.render("copied runtime");',
-          sourceMap: null,
-          version: 'v2',
-          entryPath: 'src/client/js-pages/sales/index.tsx',
-          runtimeContract: 'js-template.runtime-artifact.v1',
-          byteSize: 64,
-        },
+        data: artifact,
       });
     }
     if (options.url === 'jsTemplates:listSelectable') {

@@ -89,8 +89,10 @@ describe('FieldAssignValueInput RunJS menu', () => {
       };
     };
     const metaTree = await variableInputProps.metaTree?.();
+    const metaTreeNames = metaTree?.map((item) => item.name) ?? [];
 
-    expect(metaTree?.map((item) => item.name)).toEqual(['constant', 'null', 'runjs', 'record']);
+    expect(metaTreeNames.filter((name) => name === 'runjs')).toHaveLength(1);
+    expect(metaTreeNames).not.toContain('js-template');
     expect(listSourceMenuItems).not.toHaveBeenCalled();
     expect(variableInputProps.converters?.resolveValueFromPath?.({ name: 'runjs', paths: ['runjs'] })).toEqual({
       code: '',

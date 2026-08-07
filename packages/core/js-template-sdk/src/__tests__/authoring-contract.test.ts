@@ -27,10 +27,12 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
   buildJsTemplateSdkDeclarations,
+  getJsTemplateAuthoringTypeContract,
   getJsTemplateSettingsContextTypeName,
   JS_TEMPLATE_SDK_AUTHORING_MODULES,
   JS_TEMPLATE_SDK_CLIENT_IMPORT,
   JS_TEMPLATE_SDK_SHARED_IMPORT,
+  renderJsTemplateAuthoringTypeDeclaration,
 } from '../typegen';
 
 const expectedTypes = [
@@ -70,6 +72,21 @@ describe('JS Template SDK authoring contract', () => {
       getJsTemplateSettingsContextTypeName('js-action'),
       getJsTemplateSettingsContextTypeName('js-item'),
     ]).toEqual(['JSBlockContext', 'JSPageContext', 'JSFieldContext', 'JSActionContext', 'JSItemContext']);
+  });
+
+  it('renders the canonical type name and valid local aliases', () => {
+    const typeContract = getJsTemplateAuthoringTypeContract('JSPageContext');
+    if (!typeContract) {
+      throw new Error('Expected the JSPageContext authoring type contract');
+    }
+
+    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract)).toContain('type JSPageContext<TSettings = unknown>');
+    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract, 'LocalPageContext')).toContain(
+      'type LocalPageContext<TSettings = unknown>',
+    );
+    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract, '__jsTemplateAuthoring_SDK_JSPageContext')).toContain(
+      'type __jsTemplateAuthoring_SDK_JSPageContext<TSettings = unknown>',
+    );
   });
 
   it('keeps the real SDK exports aligned with every contracted public shape', () => {

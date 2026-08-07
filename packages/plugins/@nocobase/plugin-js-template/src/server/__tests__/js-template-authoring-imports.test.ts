@@ -108,6 +108,24 @@ describe('JS Template authoring imports', () => {
     expect(sourceFile.parseDiagnostics).toEqual([]);
   });
 
+  it.each(['ts', 'tsx'])('preserves TypeScript runtime helper declarations in .%s files', (extension) => {
+    const source = `import { defineSettings as define } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";\nconst settings = define({ title: "Orders" });\n`;
+    const path = `src/client/js-pages/orders/index.${extension}`;
+    const result = rewriteJsTemplateAuthoringImports(path, source);
+    const sourceFile = ts.createSourceFile(
+      path,
+      result.content,
+      ts.ScriptTarget.Latest,
+      true,
+      extension === 'tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    );
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.content).toContain('function define<TSettings>(settings: TSettings): TSettings');
+    expect(result.content).not.toContain('function define(settings)');
+    expect(sourceFile.parseDiagnostics).toEqual([]);
+  });
+
   it('lowers client and settings namespaces plus SDK and settings import types', () => {
     const source = [
       `import type * as SDK from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,

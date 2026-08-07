@@ -255,7 +255,7 @@ export function renderJsTemplateAuthoringTypeExpression(
 
 export function renderJsTemplateAuthoringTypeDeclaration(
   typeContract: JsTemplateAuthoringTypeContract,
-  localName = typeContract.name,
+  localName: string = typeContract.name,
 ): string {
   const parameters = typeContract.parameters.length
     ? `<${typeContract.parameters.map((parameter) => `${parameter.name} = ${parameter.defaultType}`).join(', ')}>`
