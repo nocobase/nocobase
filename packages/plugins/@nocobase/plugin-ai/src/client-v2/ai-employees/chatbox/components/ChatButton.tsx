@@ -26,7 +26,8 @@ export const ChatButton: React.FC = observer(() => {
   const app = useApp();
   const ctx = useFlowContext<FlowRuntimeContext>();
   const t = useT();
-  const isV1Page = ctx?.pageInfo?.version === 'v1';
+  const pageVersion = ctx?.pageInfo?.version;
+  const isV1Page = pageVersion === undefined || pageVersion === 'v1';
   const { pathname } = useLocation();
   const publicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/$/, '');
   const browserPathname = window.location.pathname;
@@ -36,7 +37,8 @@ export const ChatButton: React.FC = observer(() => {
       : browserPathname;
   const modernClientPath = `/${getModernClientPrefix()}`;
   const isV2Route =
-    pathnameWithoutPublicPath === modernClientPath || pathnameWithoutPublicPath.startsWith(`${modernClientPath}/`);
+    pathnameWithoutPublicPath.startsWith(`${modernClientPath}/`) &&
+    pathnameWithoutPublicPath.length > modernClientPath.length + 1;
   const isAdmin = pathname.startsWith('/admin');
   const { isMobileLayout } = useMobileLayout();
   const { token } = theme.useToken();
