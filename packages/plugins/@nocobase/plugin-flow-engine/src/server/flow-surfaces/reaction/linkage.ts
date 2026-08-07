@@ -75,7 +75,6 @@ const CONTEXT_EXPR_RE = /^\{\{\s*ctx(?:\.([^}]+?))?\s*\}\}$/;
 const CTX_PREFIX_RE = /^ctx\./;
 
 type FlowSurfaceLinkageValidationCapability = {
-  supportedActions?: Array<{ type?: string; states?: string[] }>;
   conditionMeta: {
     operatorsByPath: Record<string, string[]>;
     fieldMetaByPath?: Record<string, { type?: string; interface?: string }>;
@@ -1007,19 +1006,8 @@ export function validateActionLinkageRulesAgainstCapability(
   rules: FlowSurfaceActionLinkageRule[],
   capability: FlowSurfaceLinkageValidationCapability,
 ) {
-  const supportedStates = capability.supportedActions?.find((action) => action.type === 'setActionState')?.states;
-
   for (const [ruleIndex, rule] of (rules || []).entries()) {
     validateReactionFilterAgainstCapability(rule.when, capability, `rules[${ruleIndex}].when`);
-
-    for (const action of rule.then || []) {
-      if (action.type === 'setActionState' && supportedStates && !supportedStates.includes(action.state)) {
-        throwBadRequest(
-          `Action linkage state "${String(action.state)}" is not supported by this target.`,
-          FLOW_SURFACE_REACTION_UNSUPPORTED_ACTION_FOR_SCENE,
-        );
-      }
-    }
   }
 }
 

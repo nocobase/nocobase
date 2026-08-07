@@ -94,7 +94,6 @@ export const FLOW_SURFACE_REACTION_SUPPORTED_KINDS_BY_USE = {
   JSRecordActionModel: ['actionLinkage'],
   JSFormActionModel: ['actionLinkage'],
   JSItemActionModel: ['actionLinkage'],
-  AIEmployeeButtonModel: ['actionLinkage'],
   FilterFormJSActionModel: ['actionLinkage'],
   JSActionModel: ['actionLinkage'],
   CalendarTodayActionModel: ['actionLinkage'],
@@ -131,17 +130,6 @@ export const FLOW_SURFACE_REACTION_SUPPORTED_KINDS_BY_USE = {
 export const FLOW_SURFACE_BLOCK_LINKAGE_STATES = ['visible', 'hidden'] as const;
 
 export const FLOW_SURFACE_ACTION_LINKAGE_STATES = ['visible', 'hidden', 'hiddenText', 'enabled', 'disabled'] as const;
-
-const FLOW_SURFACE_ACTION_LINKAGE_STATES_BY_USE: Record<
-  string,
-  readonly (typeof FLOW_SURFACE_ACTION_LINKAGE_STATES)[number][]
-> = {
-  AIEmployeeButtonModel: ['visible', 'hidden'],
-};
-
-export function getActionLinkageStatesForUse(use?: string) {
-  return [...(FLOW_SURFACE_ACTION_LINKAGE_STATES_BY_USE[use || ''] || FLOW_SURFACE_ACTION_LINKAGE_STATES)];
-}
 
 export const FLOW_SURFACE_FIELD_LINKAGE_STATES_BY_SCENE = {
   form: ['visible', 'hidden', 'hiddenReservedValue', 'required', 'notRequired', 'disabled', 'enabled'],

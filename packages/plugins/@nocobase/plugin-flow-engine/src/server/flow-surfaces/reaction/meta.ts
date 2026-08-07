@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { normalizeFieldPath } from '../service-helpers';
 import type { FlowSurfaceContextResponse, FlowSurfaceContextVarInfo } from '../types';
 import { FLOW_SURFACE_REACTION_FORM_ONLY, FLOW_SURFACE_REACTION_UNSUPPORTED_TARGET_KIND } from './errors';
-import { FLOW_SURFACE_REACTION_SLOT_REGISTRY, getActionLinkageStatesForUse } from './registry';
+import { FLOW_SURFACE_REACTION_SLOT_REGISTRY } from './registry';
 import { resolveReactionStorageNode } from './resolver';
 import type {
   FlowSurfaceBuildReactionMetaCapabilitiesInput,
@@ -384,15 +384,15 @@ function collectFieldOptions(
   return fromNode.length ? fromNode : collectFieldOptionsFromContext(context, scene);
 }
 
-function buildSupportedActions(
-  capability: FlowSurfaceResolvedReactionCapability,
-  use?: string,
-): Array<Record<string, any>> {
+function buildSupportedActions(capability: FlowSurfaceResolvedReactionCapability): Array<Record<string, any>> {
   switch (capability.kind) {
     case 'blockLinkage':
       return [{ type: 'setBlockState', states: ['visible', 'hidden'] }, { type: 'runjs' }];
     case 'actionLinkage':
-      return [{ type: 'setActionState', states: getActionLinkageStatesForUse(use) }, { type: 'runjs' }];
+      return [
+        { type: 'setActionState', states: ['visible', 'hidden', 'hiddenText', 'enabled', 'disabled'] },
+        { type: 'runjs' },
+      ];
     case 'fieldLinkage':
       if (capability.resolvedScene === 'details') {
         return [{ type: 'setFieldState', states: FIELD_STATE_BY_SCENE.details }, { type: 'runjs' }];
@@ -477,7 +477,7 @@ function buildLinkageCapability(
     fingerprint: buildCapabilityFingerprint(capability, canonicalRules),
     canonicalRules,
     context: input.context,
-    supportedActions: buildSupportedActions(capability, input.resolvedTarget.use),
+    supportedActions: buildSupportedActions(capability),
     conditionMeta: {
       operatorsByPath: buildConditionOperatorsByPath(input.context),
       fieldMetaByPath: buildConditionFieldMetaByPath(input.context),
