@@ -661,6 +661,30 @@ export const linkageSetBlockProps = defineAction({
   },
 });
 
+const ACTION_LINKAGE_STATE_OPTIONS = [
+  { label: 'Visible', value: 'visible' },
+  { label: 'Hidden', value: 'hidden' },
+  { label: 'Hidden text', value: 'hiddenText' },
+  { label: 'Enabled', value: 'enabled' },
+  { label: 'Disabled', value: 'disabled' },
+] as const;
+
+type ActionLinkageState = (typeof ACTION_LINKAGE_STATE_OPTIONS)[number]['value'];
+
+export function getActionLinkageStateOptions(
+  model: { supportedActionLinkageStates?: readonly ActionLinkageState[] },
+  t: (key: string) => string,
+) {
+  const supportedStates = model.supportedActionLinkageStates ? new Set(model.supportedActionLinkageStates) : undefined;
+
+  return ACTION_LINKAGE_STATE_OPTIONS.filter((option) => !supportedStates || supportedStates.has(option.value)).map(
+    (option) => ({
+      label: t(option.label),
+      value: option.value,
+    }),
+  );
+}
+
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
   title: tExpr('Set button state'),
@@ -681,13 +705,7 @@ export const linkageSetActionProps = defineAction({
             onChange={onChange}
             placeholder={t('Please select state')}
             style={{ width: '100%' }}
-            options={[
-              { label: t('Visible'), value: 'visible' },
-              { label: t('Hidden'), value: 'hidden' },
-              { label: t('Hidden text'), value: 'hiddenText' },
-              { label: t('Enabled'), value: 'enabled' },
-              { label: t('Disabled'), value: 'disabled' },
-            ]}
+            options={getActionLinkageStateOptions(ctx.model, t)}
             allowClear
           />
         );
