@@ -269,7 +269,7 @@ function joinPortalRoutePath(portalRoutePath: string, routePath: string) {
   return `${portalRoutePath.replace(/\/+$/, '')}/${routePath.replace(/^\/+/, '')}`;
 }
 
-function getRouteAccessPath(route: NocoBaseDesktopRoute, portal: MultiPortalRecord, routes: NocoBaseDesktopRoute[]) {
+function getRouteAccessPath(route: NocoBaseDesktopRoute, portalRoutePath: string, routes: NocoBaseDesktopRoute[]) {
   if (route.type === NocoBaseDesktopRouteType.group || route.type === NocoBaseDesktopRouteType.link) {
     return '';
   }
@@ -281,9 +281,9 @@ function getRouteAccessPath(route: NocoBaseDesktopRoute, portal: MultiPortalReco
     if (!parent?.schemaUid) {
       return '';
     }
-    return joinPortalRoutePath(portal.routePath, `${parent.schemaUid}/tab/${route.schemaUid}`);
+    return joinPortalRoutePath(portalRoutePath, `${parent.schemaUid}/tab/${route.schemaUid}`);
   }
-  return joinPortalRoutePath(portal.routePath, route.schemaUid);
+  return joinPortalRoutePath(portalRoutePath, route.schemaUid);
 }
 
 function filterRoutesByKeyword(routes: NocoBaseDesktopRoute[], keyword: string, t: ReturnType<typeof useT>) {
@@ -750,7 +750,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         title: t('Path'),
         width: 320,
         render: (_value, route) => {
-          const path = getRouteAccessPath(route, portal, routes);
+          const path = getRouteAccessPath(route, portal.routePath, routes);
           return path ? (
             <Typography.Paragraph copyable ellipsis style={{ marginBottom: 0 }}>
               {path}
@@ -764,8 +764,10 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
         width: 260,
         render: (_value, route) => {
           const routeTitle = getRouteTitle(route, t);
-          const accessPath = getRouteAccessPath(route, portal, routes);
-          const accessHref = accessPath ? getMultiPortalRouteUrl(ctx.app, accessPath, portal.portalType) : '';
+          const accessPath = getRouteAccessPath(route, portal.routePath, routes);
+          const accessHref = accessPath
+            ? getRouteAccessPath(route, getMultiPortalRouteUrl(ctx.app, portal.routePath, portal.portalType), routes)
+            : '';
           return (
             <Space size="small">
               <Button

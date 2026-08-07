@@ -64,6 +64,15 @@ function getPortalRoutePrefixes() {
   );
 }
 
+function joinPortalRoutePath(basePath: string | undefined, pathname: string) {
+  const path = normalizeRootPath(pathname);
+  // A prefix-shaped routePath is a portal slug, so it must remain as a child segment instead of being deduplicated.
+  if (getPortalRoutePrefixes().includes(path)) {
+    return `${normalizeBasePath(basePath)}${path}`;
+  }
+  return joinRoutePath(basePath, path);
+}
+
 function getPortalTypeBasePath(basePath: string | undefined, portalType?: string | null, useTrailingAppScope = true) {
   const base = normalizeBasePath(basePath);
   const portalRoutePrefix = getPortalRoutePrefix(portalType);
@@ -125,11 +134,23 @@ function normalizePortalRoutePath(
   useTrailingAppScope = true,
 ) {
   let path = normalizeRootPath(routePath);
-  for (const base of [
+  const portalRoutePrefixes = getPortalRoutePrefixes();
+  const portalTypeBasePaths = [
     getPortalTypeBasePath(basePath, portalType, useTrailingAppScope),
     getPortalTypeBasePath(basePath, getAlternativePortalType(portalType), useTrailingAppScope),
-    ...getPortalRoutePrefixes(),
-  ]) {
+  ];
+  // A resolved root URL can come from either client prefix; preserve its prefix-shaped slug while switching types.
+  for (const portalTypeBasePath of portalTypeBasePaths) {
+    const pathWithoutPortalTypeBase = stripBasePath(path, portalTypeBasePath);
+    if (pathWithoutPortalTypeBase !== path && portalRoutePrefixes.includes(pathWithoutPortalTypeBase)) {
+      return pathWithoutPortalTypeBase;
+    }
+  }
+  // routePath stores the portal slug. Preserve prefix-shaped slugs so they remain the second URL segment.
+  if (portalRoutePrefixes.includes(path)) {
+    return path;
+  }
+  for (const base of [...portalTypeBasePaths, ...portalRoutePrefixes]) {
     path = stripBasePath(path, base);
   }
   return path;
@@ -182,7 +203,7 @@ export function getMultiPortalRouteUrl(
         })
       : basename;
     const useTrailingAppScope = shouldUseTrailingAppScope(app, basePath);
-    return joinRoutePath(
+    return joinPortalRoutePath(
       getPortalTypeBasePath(basePath, portalType, useTrailingAppScope),
       normalizePortalRoutePath(normalizedRoutePath, basePath, portalType, useTrailingAppScope),
     );
@@ -193,7 +214,7 @@ export function getMultiPortalRouteUrl(
     const routeUrlBasePath = getBasePathFromRouteUrl(routeUrl, normalizedRoutePath);
     if (routeUrlBasePath !== undefined) {
       const useTrailingAppScope = shouldUseTrailingAppScope(app, routeUrlBasePath);
-      return joinRoutePath(
+      return joinPortalRoutePath(
         getPortalTypeBasePath(routeUrlBasePath, portalType, useTrailingAppScope),
         normalizePortalRoutePath(normalizedRoutePath, routeUrlBasePath, portalType, useTrailingAppScope),
       );
@@ -203,7 +224,7 @@ export function getMultiPortalRouteUrl(
 
   const publicPath = app?.getPublicPath?.();
   const useTrailingAppScope = shouldUseTrailingAppScope(app, publicPath);
-  return joinRoutePath(
+  return joinPortalRoutePath(
     getPortalTypeBasePath(publicPath, portalType, useTrailingAppScope),
     normalizePortalRoutePath(normalizedRoutePath, publicPath, portalType, useTrailingAppScope),
   );
