@@ -611,7 +611,7 @@ export default function MultiPortalPermissionsTab(props: PermissionTabProps) {
         title: t('Allow access'),
         render: (_, portal) => {
           if (hasLayoutRoutePermissions(portal)) {
-            return <Typography.Text type="secondary">{t('Managed by layout permissions')}</Typography.Text>;
+            return <Typography.Text type="secondary">-</Typography.Text>;
           }
           const portalTitle = getPortalTitle(portal.title, t);
           return (
