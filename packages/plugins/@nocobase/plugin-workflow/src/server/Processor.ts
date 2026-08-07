@@ -528,20 +528,41 @@ export default class Processor {
 
     if (this.jobsToSave.size) {
       const newJobs = [];
+      const JobCollection = this.options.plugin.db.getCollection('jobs');
+      const JobsModel = this.options.plugin.db.getModel('jobs');
       for (const job of this.jobsToSave.values()) {
         if (job.isNewRecord) {
           newJobs.push(job);
         } else {
-          await job.save({
-            fields: ['status', 'meta', 'result', 'startedAt'],
-            hooks: false,
-            silent: true,
-            validate: false,
-          });
+          const changes: [string, unknown][] = [];
+          if (job.changed('status')) {
+            changes.push(['status', job.status]);
+          }
+          if (job.changed('meta')) {
+            changes.push(['meta', JSON.stringify(job.meta ?? null)]);
+          }
+          if (job.changed('result')) {
+            changes.push(['result', JSON.stringify(job.result ?? null)]);
+          }
+          if (job.changed('startedAt')) {
+            changes.push(['startedAt', job.startedAt]);
+          }
+          if (changes.length) {
+            const idColumn = JobsModel.rawAttributes.id.field || 'id';
+            await this.options.plugin.db.sequelize.query(
+              `UPDATE ${JobCollection.quotedTableName()} SET ${changes.map(
+                ([field]) =>
+                  `${this.options.plugin.db.quoteIdentifier(JobsModel.rawAttributes[field].field || field)} = ?`,
+              )} WHERE ${this.options.plugin.db.quoteIdentifier(idColumn)}='${job.id}'`,
+              { replacements: changes.map(([, value]) => value) },
+            );
+            for (const [field] of changes) {
+              job.changed(field, false);
+            }
+          }
         }
       }
       if (newJobs.length) {
-        const JobsModel = this.options.plugin.db.getModel('jobs');
         for (let offset = 0; offset < newJobs.length; offset += JOB_SAVE_BATCH_SIZE) {
           const batch = newJobs.slice(offset, offset + JOB_SAVE_BATCH_SIZE);
           await JobsModel.bulkCreate(

@@ -42,19 +42,39 @@ describe('workflow > Processor', () => {
   afterEach(() => app.destroy());
 
   describe('base', () => {
-    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('job id out of max safe integer', async () => {
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('updates job id out of max safe integer', async () => {
       const JobModel = db.getModel('jobs');
+      const node = await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+      });
+      const id = '10267424896650240';
+      const job = await JobModel.create({
+        id,
+        executionId: execution.id,
+        nodeId: node.id,
+        nodeKey: node.key,
+        status: JOB_STATUS.PENDING,
+        result: null,
+      });
+      const processor = plugin.createProcessor(execution);
 
-      const records = await JobModel.bulkCreate([
-        {
-          id: '10267424896650240',
-        },
-        {
-          id: '10267424930204672',
-        },
-      ]);
+      job.set({
+        status: JOB_STATUS.RESOLVED,
+        result: { value: 1 },
+      });
+      processor.saveJob(job);
+      await processor.exit();
 
-      expect(records.length).toBe(2);
+      const savedJob = await db.getRepository('jobs').findOne({
+        filterByTk: id,
+      });
+      expect(savedJob.id).toBe(id);
+      expect(savedJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(savedJob.result).toEqual({ value: 1 });
     });
 
     it('saves new jobs in batches', async () => {
