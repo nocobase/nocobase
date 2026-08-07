@@ -20,6 +20,10 @@ import { describe, expect, it } from 'vitest';
 
 import { rewriteJsTemplateAuthoringImports } from '../services/conversion/jsTemplateAuthoringImports';
 
+type SourceFileWithParseDiagnostics = ts.SourceFile & {
+  readonly parseDiagnostics: readonly ts.Diagnostic[];
+};
+
 const publicTypeCases = [
   { name: 'JsTemplateSettingsContext', fragment: 'settings: TSettings' },
   { name: 'JsTemplateContextRecord', fragment: 'Record<string, unknown>' },
@@ -105,7 +109,7 @@ describe('JS Template authoring imports', () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.content).toContain('function define(settings) { return settings; }');
     expect(result.content).not.toContain('<TSettings>');
-    expect(sourceFile.parseDiagnostics).toEqual([]);
+    expect((sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics).toEqual([]);
   });
 
   it.each(['ts', 'tsx'])('preserves TypeScript runtime helper declarations in .%s files', (extension) => {
@@ -123,7 +127,7 @@ describe('JS Template authoring imports', () => {
     expect(result.diagnostics).toEqual([]);
     expect(result.content).toContain('function define<TSettings>(settings: TSettings): TSettings');
     expect(result.content).not.toContain('function define(settings)');
-    expect(sourceFile.parseDiagnostics).toEqual([]);
+    expect((sourceFile as SourceFileWithParseDiagnostics).parseDiagnostics).toEqual([]);
   });
 
   it('lowers client and settings namespaces plus SDK and settings import types', () => {
