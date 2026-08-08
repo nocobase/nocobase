@@ -206,4 +206,52 @@ describe('database data source', () => {
       },
     });
   });
+
+  it('should preserve formula field type during resync', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource;
+
+    const [mergedCollection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'metrics',
+          tableName: 'metrics',
+          fields: [
+            {
+              name: 'total',
+              field: 'total',
+              rawType: 'DOUBLE PRECISION',
+              type: 'float',
+              interface: 'number',
+            },
+          ],
+        },
+      ],
+      {
+        metrics: {
+          name: 'metrics',
+          fields: [
+            {
+              name: 'total',
+              field: 'total',
+              rawType: '',
+              type: 'formula',
+              interface: 'formula',
+              dataType: 'double',
+              engine: 'formula.js',
+              expression: 'SUM({{amount}}, {{tax}})',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(mergedCollection.fields[0]).toMatchObject({
+      name: 'total',
+      type: 'formula',
+      interface: 'formula',
+      dataType: 'double',
+      engine: 'formula.js',
+      expression: 'SUM({{amount}}, {{tax}})',
+    });
+  });
 });
