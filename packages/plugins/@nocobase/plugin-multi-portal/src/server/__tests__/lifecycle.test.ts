@@ -9,6 +9,7 @@
 
 import { AppSupervisor } from '@nocobase/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
+import { isDefaultLayoutMultiPortalUid } from '../../constants';
 
 async function createLifecycleServer() {
   return createMockServer({
@@ -79,14 +80,22 @@ describe('Multi Portal seed lifecycle', () => {
       }),
     ]);
     for (const portal of portals) {
-      expect(
-        await app.db.getRepository('rolesMultiPortals').count({
-          filter: { multiPortalUid: portal.get('uid') },
-        }),
-      ).toBeGreaterThan(0);
-      const routePolicyCount = await app.db.getRepository('rolesMultiPortalRoutePolicies').count({
-        filter: { multiPortalUid: portal.get('uid'), allowNewMenu: true },
+      const portalUid = portal.get('uid');
+      const accessCount = await app.db.getRepository('rolesMultiPortals').count({
+        filter: { multiPortalUid: portalUid },
       });
+      const routePolicyCount = await app.db.getRepository('rolesMultiPortalRoutePolicies').count({
+        filter: { multiPortalUid: portalUid, allowNewMenu: true },
+      });
+
+      const usesLayoutPermissions = isDefaultLayoutMultiPortalUid(portalUid);
+      if (usesLayoutPermissions) {
+        expect(accessCount).toBe(0);
+        expect(routePolicyCount).toBe(0);
+        continue;
+      }
+
+      expect(accessCount).toBeGreaterThan(0);
       if (portal.get('portalType') === 'no-code') {
         expect(routePolicyCount).toBeGreaterThan(0);
       } else {
