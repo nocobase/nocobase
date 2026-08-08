@@ -18,6 +18,7 @@ import {
 } from './AdminLayoutMenuUtils';
 import { getFlowPageMenuSchema, getPageMenuSchema, isVariable } from './AdminLayoutCompat';
 import { joinAdminLayoutRoutePath, type AdminLayoutRoutePathLike } from './resolveAdminRouteRuntimeTarget';
+import { adminLayoutPageTypeManager } from './AdminLayoutPageTypeManager';
 
 const buildLinkSettingSchema = (t: (title: any) => any) => ({
   href: {
@@ -116,11 +117,17 @@ export const getMenuCreationDefaultParams = (
   return {};
 };
 
-const MENU_TYPE_OPTIONS: Array<{ label: string; value: AdminLayoutMenuCreationType }> = [
+const getMenuTypeOptions = (): Array<{ label: string; value: AdminLayoutMenuCreationType }> => [
   { label: 'Group', value: 'group' },
-  { label: 'Page', value: 'flowPage' },
+  ...adminLayoutPageTypeManager.getPageTypes().map((pageType) => ({
+    label: pageType.label,
+    value: pageType.name,
+  })),
   { label: 'Link', value: 'link' },
 ];
+
+/** @deprecated Use getMenuTypeOptions() so plugin-registered page types are included. */
+const MENU_TYPE_OPTIONS = getMenuTypeOptions();
 
 export const buildMenuBasicSchema = (t: (title: any) => any): Record<string, any> => ({
   title: {
@@ -179,7 +186,7 @@ const getInsertMenuUiSchema = (t: (title: any) => any): Record<string, any> => (
   menuType: {
     title: t('Menu type'),
     required: true,
-    enum: MENU_TYPE_OPTIONS.map((item) => ({
+    enum: getMenuTypeOptions().map((item) => ({
       label: t(item.label),
       value: item.value,
     })),
@@ -338,4 +345,4 @@ export const buildInsertRouteSchema = (
     : getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName });
 };
 
-export { getAdminLayoutMenuMovePositionOptions, MENU_TYPE_OPTIONS, buildLinkSettingSchema };
+export { getAdminLayoutMenuMovePositionOptions, getMenuTypeOptions, MENU_TYPE_OPTIONS, buildLinkSettingSchema };

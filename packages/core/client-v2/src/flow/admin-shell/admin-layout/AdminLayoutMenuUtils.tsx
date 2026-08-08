@@ -43,6 +43,7 @@ import {
   joinAdminLayoutRoutePath,
   toRouterNavigationPath,
 } from './resolveAdminRouteRuntimeTarget';
+import { adminLayoutPageTypeManager } from './AdminLayoutPageTypeManager';
 
 export type AdminLayoutMenuRenderType = 'item' | 'group';
 
@@ -86,7 +87,7 @@ export type AdminLayoutMenuMovePositionOption = {
 
 export type AdminLayoutMenuInsertPosition = 'beforeBegin' | 'afterEnd' | 'beforeEnd';
 
-export type AdminLayoutMenuCreationType = 'group' | 'page' | 'flowPage' | 'link';
+export type AdminLayoutMenuCreationType = string;
 
 export type AdminLayoutMenuCreationSource = 'header' | 'sider' | 'insert';
 
@@ -345,9 +346,13 @@ const translateByModel = (model: FlowModel, value: any) => {
   return typeof model.context.t === 'function' ? model.context.t(value) : value;
 };
 
-const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> = [
+const getMenuTypeItems = (): Array<{ key: string; label: string; menuType: AdminLayoutMenuCreationType }> => [
   { key: 'group', label: 'Group', menuType: 'group' },
-  { key: 'flow-page', label: 'Page', menuType: 'flowPage' },
+  ...adminLayoutPageTypeManager.getPageTypes().map((pageType) => ({
+    key: `page-${pageType.name}`,
+    label: pageType.label,
+    menuType: pageType.name,
+  })),
   { key: 'link', label: 'Link', menuType: 'link' },
 ];
 
@@ -363,7 +368,7 @@ const getMenuDesignerItems = (launcherModel: FlowModel, parentRoute?: NocoBaseDe
   const t = (value: any) => translateByModel(launcherModel, value);
   const source: AdminLayoutMenuCreationSource = parentRoute ? 'sider' : 'header';
 
-  return MENU_TYPE_ITEMS.map((item) => ({
+  return getMenuTypeItems().map((item) => ({
     key: item.key,
     label: t(item.label),
     createModelOptions: () =>
