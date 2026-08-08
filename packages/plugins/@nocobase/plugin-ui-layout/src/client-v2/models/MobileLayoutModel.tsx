@@ -26,6 +26,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { define, observable } from '@formily/reactive';
 import { css } from '@emotion/css';
 import {
+  useUIConfigurationPermissions,
   BaseLayoutModel,
   BaseLayoutRouteCoordinator,
   KeepAlive,
@@ -691,6 +692,7 @@ function useIsDesktopPreview(screenMD: number) {
 
 const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel }) => {
   const { model } = props;
+  const { allowConfigUI } = useUIConfigurationPermissions();
   const { token } = theme.useToken();
   const isDesktopPreview = useIsDesktopPreview(token.screenMD);
   const [previewSize, setPreviewSize] = useState<MobilePreviewSize>(MOBILE_PREVIEW_SIZE);
@@ -701,9 +703,8 @@ const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel
   const [flowSettingsSyncVersion, setFlowSettingsSyncVersion] = useState(0);
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
-  const preferredFlowSettingsEnabled = flowSettingsPreference.hasStoredPreference
-    ? flowSettingsPreference.enabled
-    : isMobileMenuEmpty;
+  const preferredFlowSettingsEnabled =
+    allowConfigUI && (flowSettingsPreference.hasStoredPreference ? flowSettingsPreference.enabled : isMobileMenuEmpty);
   const className = useMemo(
     () => css`
       width: 100%;
@@ -859,19 +860,25 @@ const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel
         flowSettingsSyncRef.current += 1;
       }
     };
-  }, [model.flowEngine.flowSettings, preferredFlowSettingsEnabled]);
+  }, [allowConfigUI, model.flowEngine.flowSettings, preferredFlowSettingsEnabled]);
 
-  const handleFlowSettingsPreferenceChange = useCallback((enabled: boolean) => {
-    setFlowSettingsPreference({
-      enabled,
-      hasStoredPreference: true,
-    });
-    writeMobileFlowSettingsPreference(enabled);
-  }, []);
+  const handleFlowSettingsPreferenceChange = useCallback(
+    (enabled: boolean) => {
+      if (!allowConfigUI) {
+        return;
+      }
+      setFlowSettingsPreference({
+        enabled,
+        hasStoredPreference: true,
+      });
+      writeMobileFlowSettingsPreference(enabled);
+    },
+    [allowConfigUI],
+  );
 
   return (
     <div className={className}>
-      {isDesktopPreview ? (
+      {isDesktopPreview && allowConfigUI ? (
         <MobileDesktopModeHeader
           designModeEnabled={preferredFlowSettingsEnabled}
           model={model}

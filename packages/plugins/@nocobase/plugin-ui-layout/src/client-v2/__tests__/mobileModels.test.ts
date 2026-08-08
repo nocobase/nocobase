@@ -8,6 +8,7 @@
  */
 
 import {
+  ACLContext,
   BaseLayoutModel,
   ChildPageModel,
   KeepAlive,
@@ -114,6 +115,17 @@ describe('plugin-ui-layout mobile models', () => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
 
+  function createAclValue(allowConfigUI = true) {
+    return {
+      loading: false,
+      data: {
+        data: { snippets: allowConfigUI ? ['ui.*'] : [] },
+        meta: {},
+      },
+      refresh: async () => undefined,
+    };
+  }
+
   function renderMobileLayoutWithRouteRepository(
     routeRepository: MobileRouteRepositoryForTest,
     options: {
@@ -126,6 +138,7 @@ describe('plugin-ui-layout mobile models', () => {
       outletElement?: React.ReactNode;
       routerBasename?: string;
       theme?: ThemeConfig;
+      allowConfigUI?: boolean;
     } = {},
   ) {
     const engine = new FlowEngine();
@@ -179,46 +192,49 @@ describe('plugin-ui-layout mobile models', () => {
       },
     });
     options.beforeRender?.(model);
+    const acl = createAclValue(options.allowConfigUI !== false);
 
     const renderResult = render(
       React.createElement(
         FlowEngineProvider,
         { engine },
         React.createElement(
-          ConfigProvider,
-          {
-            theme: options.theme,
-          },
+          ACLContext.Provider,
+          { value: acl },
           React.createElement(
-            AntdApp,
-            null,
+            ConfigProvider,
+            { theme: options.theme },
             React.createElement(
-              MemoryRouter,
-              {
-                initialEntries: options.initialEntries || [
-                  options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
-                ],
-                basename: options.memoryRouterBasename,
-              },
+              AntdApp,
+              null,
               React.createElement(
-                Routes,
-                null,
-                options.outletElement
-                  ? React.createElement(
-                      Route,
-                      {
-                        path: routerRoutePath,
+                MemoryRouter,
+                {
+                  initialEntries: options.initialEntries || [
+                    options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
+                  ],
+                  basename: options.memoryRouterBasename,
+                },
+                React.createElement(
+                  Routes,
+                  null,
+                  options.outletElement
+                    ? React.createElement(
+                        Route,
+                        {
+                          path: routerRoutePath,
+                          element: model.render(),
+                        },
+                        React.createElement(Route, {
+                          path: ':name',
+                          element: options.outletElement,
+                        }),
+                      )
+                    : React.createElement(Route, {
+                        path: `${routerRoutePath}/*`,
                         element: model.render(),
-                      },
-                      React.createElement(Route, {
-                        path: ':name',
-                        element: options.outletElement,
                       }),
-                    )
-                  : React.createElement(Route, {
-                      path: `${routerRoutePath}/*`,
-                      element: model.render(),
-                    }),
+                ),
               ),
             ),
           ),
@@ -1223,18 +1239,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createAclValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
@@ -1329,6 +1349,22 @@ describe('plugin-ui-layout mobile models', () => {
     });
   });
 
+  it('should not enable mobile design mode from a stored preference without UI configuration permission', async () => {
+    window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
+
+    const { engine } = renderMobileLayoutWithRouteRepository(
+      {
+        listAccessible: () => [],
+      },
+      { allowConfigUI: false },
+    );
+
+    await waitFor(() => {
+      expect(engine.context.flowSettingsEnabled).toBe(false);
+      expect(screen.queryByTestId('ui-editor-button')).not.toBeInTheDocument();
+    });
+  });
+
   it('should render hidden mobile tab items in design mode with a hidden marker', async () => {
     window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, '1');
 
@@ -1406,18 +1442,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createAclValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
