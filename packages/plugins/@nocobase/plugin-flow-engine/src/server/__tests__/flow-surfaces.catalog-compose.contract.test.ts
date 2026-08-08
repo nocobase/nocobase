@@ -9,13 +9,13 @@
 
 import _ from 'lodash';
 import { uid } from '@nocobase/utils';
-import type { FlowSurfaceRunJSLocator } from '../flow-surfaces/page-surface-contract';
 import {
   addBlockData,
   getComposeBlock,
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
+  expectCommittedRunJSSource,
   expectStructuredError,
   getData,
   getSurface,
@@ -46,64 +46,6 @@ describe('flowSurfaces catalog + compose contract', () => {
   let flowRepo: FlowSurfacesContractContext['flowRepo'];
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
   const calendarPopupSourceTables = new Map<string, any>();
-
-  async function expectCommittedRunJSSource(
-    locator: FlowSurfaceRunJSLocator,
-    sourceRef: unknown,
-    expectedSource: string,
-  ) {
-    if (!sourceRef || typeof sourceRef !== 'object' || Array.isArray(sourceRef)) {
-      throw new Error('Expected RunJS sourceRef to be an object');
-    }
-    const sourceRefRecord = sourceRef as Record<string, unknown>;
-    const { type, repoId, commitId, entry } = sourceRefRecord;
-    if (type !== 'vsc-file') {
-      throw new Error("Expected RunJS sourceRef.type to be 'vsc-file'");
-    }
-    if (typeof repoId !== 'string' || !repoId) {
-      throw new Error('Expected RunJS sourceRef.repoId to be a non-empty string');
-    }
-    if (typeof commitId !== 'string' || !commitId) {
-      throw new Error('Expected RunJS sourceRef.commitId to be a non-empty string');
-    }
-    if (typeof entry !== 'string' || !entry) {
-      throw new Error('Expected RunJS sourceRef.entry to be a non-empty string');
-    }
-    expect(sourceRefRecord).toMatchObject({
-      type: 'vsc-file',
-      repoId: expect.any(String),
-      commitId: expect.any(String),
-      entry: expect.any(String),
-    });
-
-    const versionResponse = await rootAgent.resource('runJSSources').getVersion({
-      values: {
-        locator,
-        repoId,
-        commitId,
-        includeFiles: true,
-      },
-    });
-    expect(versionResponse.status, readErrorMessage(versionResponse)).toBe(200);
-    const versionData: unknown = getData(versionResponse);
-    if (!versionData || typeof versionData !== 'object' || Array.isArray(versionData)) {
-      throw new Error('Expected runJSSources:getVersion to return an object');
-    }
-    const files = (versionData as Record<string, unknown>).files;
-    if (!Array.isArray(files)) {
-      throw new Error('Expected runJSSources:getVersion to return files');
-    }
-    const entryFile = files.find((file): file is Record<string, unknown> => {
-      if (!file || typeof file !== 'object' || Array.isArray(file)) {
-        return false;
-      }
-      return (file as Record<string, unknown>).path === entry;
-    });
-    if (!entryFile) {
-      throw new Error(`Expected sourceRef.entry '${entry}' in the referenced RunJS commit`);
-    }
-    expect(entryFile.content).toBe(expectedSource);
-  }
 
   async function createSyntheticApprovalSurface(targetFlowRepo = flowRepo) {
     const pageUid = uid();
@@ -1566,6 +1508,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
     expect(collectionRuntimeCode.length).toBeGreaterThan(0);
     await expectCommittedRunJSSource(
+      rootAgent,
       collectionActionReadback.tree.runJSLocator,
       collectionActionRunJs?.sourceRef,
       collectionActionSource,
@@ -1604,6 +1547,7 @@ describe('flowSurfaces catalog + compose contract', () => {
     }
     expect(recordRuntimeCode.length).toBeGreaterThan(0);
     await expectCommittedRunJSSource(
+      rootAgent,
       recordActionReadback.tree.runJSLocator,
       recordActionRunJs?.sourceRef,
       recordActionSource,
