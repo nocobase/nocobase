@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, QUEUE_DEFAULT_CONCURRENCY } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import WorkflowPlugin, { JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
 import type { UpdateOptions } from 'sequelize';
 
@@ -93,8 +93,7 @@ export class PluginWorkflowScriptServer extends Plugin {
     this.db.on('jobs.afterBulkUpdate', this.handleJobsAfterBulkUpdate);
     const workerConcurrency = Number.parseInt(process.env.WORKFLOW_SCRIPT_WORKER_CONCURRENCY, 10);
     this.app.eventQueue.subscribe(PENDING_JAVASCRIPT_TASK_CHANNEL, {
-      concurrency:
-        Number.isInteger(workerConcurrency) && workerConcurrency >= 0 ? workerConcurrency : QUEUE_DEFAULT_CONCURRENCY,
+      concurrency: Number.isInteger(workerConcurrency) && workerConcurrency >= 0 ? workerConcurrency : 0,
       idle: () => this.taskConsumer.idle(),
       process: this.taskConsumer.process,
     });

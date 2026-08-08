@@ -44,6 +44,24 @@ If checked, subsequent nodes will still be executed even if the script encounter
 If the script errors out, it will have no return value, and the node's result will be populated with the error message. If subsequent nodes use the result variable from the script node, it should be handled with caution.
 :::
 
+## Worker concurrency control
+
+JavaScript script nodes place pending scripts in a task queue and execute them in separate Worker threads. You can use the `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` environment variable to control how many JavaScript scripts each NocoBase application instance can run concurrently:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+The configuration rules are as follows:
+
+- If the variable is unset or its value is invalid, the default concurrency is `1`
+- A positive integer sets the maximum number of Worker threads that can run concurrently
+- A value of `0` removes the concurrency limit, allowing all queued tasks to run concurrently
+
+When the concurrency limit is reached, new tasks remain in the queue until a Worker becomes available. The default configuration is suitable for most scenarios. Increasing concurrency consumes more CPU and memory, so adjust it gradually based on server resources and script workloads. Setting concurrency to `0` is not recommended in production environments.
+
+If an application runs on multiple server instances, this setting applies separately to each instance. The overall concurrency capacity also depends on the number of instances that can consume tasks. Restart the NocoBase service after changing the environment variable for the new value to take effect.
+
 ## Execution Engine
 
 The JavaScript script node supports two execution engines, automatically selected based on whether the `WORKFLOW_SCRIPT_MODULES` environment variable is configured:

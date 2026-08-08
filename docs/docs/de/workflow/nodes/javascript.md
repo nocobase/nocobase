@@ -44,6 +44,24 @@ Wenn diese Option aktiviert ist, werden nachfolgende Knoten auch dann ausgeführ
 Wenn das Skript fehlerhaft ist, gibt es keinen Rückgabewert. Das Ergebnis des Knotens wird stattdessen mit der Fehlermeldung gefüllt. Falls nachfolgende Knoten die Ergebnisvariable des Skriptknotens verwenden, ist hier Vorsicht geboten.
 :::
 
+## Steuerung der Worker-Parallelität
+
+JavaScript-Skript-Knoten stellen auszuführende Skripte in eine Aufgabenwarteschlange und führen sie in separaten Worker-Threads aus. Mit der Umgebungsvariable `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` können Sie festlegen, wie viele JavaScript-Skripte jede NocoBase-Anwendungsinstanz gleichzeitig ausführen kann:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Es gelten folgende Regeln:
+
+- Wenn die Variable nicht konfiguriert oder ihr Wert ungültig ist, beträgt die standardmäßige Parallelität `1`
+- Eine positive Ganzzahl legt die maximale Anzahl gleichzeitig ausgeführter Worker-Threads fest
+- Der Wert `0` hebt die Begrenzung auf, sodass alle Aufgaben in der Warteschlange gleichzeitig ausgeführt werden können
+
+Wenn die Parallelitätsgrenze erreicht ist, bleiben neue Aufgaben in der Warteschlange, bis ein Worker verfügbar ist. Die Standardkonfiguration reicht für die meisten Anwendungsfälle aus. Eine höhere Parallelität beansprucht mehr CPU und Arbeitsspeicher. Passen Sie den Wert daher schrittweise an die Serverressourcen und die Skriptlast an. In Produktionsumgebungen wird der Wert `0` nicht empfohlen.
+
+Wenn eine Anwendung auf mehreren Serverinstanzen läuft, gilt diese Einstellung für jede Instanz separat. Die gesamte Parallelitätskapazität hängt außerdem von der Anzahl der Instanzen ab, die Aufgaben verarbeiten können. Starten Sie den NocoBase-Dienst nach einer Änderung der Umgebungsvariable neu, damit der neue Wert wirksam wird.
+
 ## Ausführungs-Engine
 
 Der JavaScript-Skript-Knoten unterstützt zwei Ausführungs-Engines, die automatisch anhand der Konfiguration der Umgebungsvariable `WORKFLOW_SCRIPT_MODULES` ausgewählt werden:

@@ -44,6 +44,24 @@ Si se marca esta opción, los nodos posteriores se seguirán ejecutando incluso 
 Si el script falla, no tendrá un valor de retorno, y el resultado del nodo se rellenará con el mensaje de error. Si los nodos posteriores utilizan la variable de resultado del nodo de script, debe manejarse con precaución.
 :::
 
+## Control de concurrencia de Workers
+
+Los nodos de script de JavaScript colocan los scripts pendientes en una cola de tareas y los ejecutan en hilos Worker independientes. Puede utilizar la variable de entorno `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` para controlar cuántos scripts de JavaScript puede ejecutar simultáneamente cada instancia de la aplicación NocoBase:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Se aplican las siguientes reglas:
+
+- Si la variable no está configurada o su valor no es válido, la concurrencia predeterminada es `1`
+- Un entero positivo establece el número máximo de hilos Worker que pueden ejecutarse simultáneamente
+- El valor `0` elimina el límite de concurrencia y permite ejecutar simultáneamente todas las tareas de la cola
+
+Cuando se alcanza el límite de concurrencia, las nuevas tareas permanecen en la cola hasta que haya un Worker disponible. La configuración predeterminada es adecuada para la mayoría de los casos. Aumentar la concurrencia consume más CPU y memoria, por lo que se recomienda ajustarla gradualmente según los recursos del servidor y la carga de los scripts. No se recomienda establecer la concurrencia en `0` en entornos de producción.
+
+Si una aplicación se ejecuta en varias instancias de servidor, esta configuración se aplica por separado a cada instancia. La capacidad total de concurrencia también depende del número de instancias que puedan consumir tareas. Reinicie el servicio NocoBase después de cambiar la variable de entorno para que el nuevo valor entre en vigor.
+
 ## Motor de ejecución
 
 El nodo de script de JavaScript soporta dos motores de ejecución, seleccionados automáticamente según si la variable de entorno `WORKFLOW_SCRIPT_MODULES` está configurada:
