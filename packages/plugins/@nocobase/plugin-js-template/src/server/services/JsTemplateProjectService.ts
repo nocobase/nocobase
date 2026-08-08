@@ -55,6 +55,7 @@ export interface JsTemplateServiceContext {
 export interface JsTemplateProjectInternalRecord extends JsTemplateProject {
   vscRepoId: string;
   applicationName: string | null;
+  creationJobId: string | null;
 }
 
 export interface JsTemplateRemoteSyncLifecycleGate {
@@ -70,6 +71,7 @@ export interface JsTemplateCreateMetadata {
 
 export interface JsTemplateCreateProjectOptions {
   projectId?: string;
+  creationJobId?: string;
 }
 
 export interface JsTemplateListProjectsOptions {
@@ -178,6 +180,7 @@ export class JsTemplateProjectService {
           title: metadata.title,
           description: metadata.description,
           headCommitId: vscResult.repository.headCommitId || null,
+          creationJobId: options.creationJobId || null,
         },
         transaction,
       );
@@ -642,6 +645,7 @@ export class JsTemplateProjectService {
       title?: string | null;
       description?: string | null;
       headCommitId: string | null;
+      creationJobId: string | null;
     },
     transaction: Transaction,
   ): Promise<Model> {
@@ -845,6 +849,7 @@ export function internalProjectFromModel(record: Model): JsTemplateProjectIntern
     id: record.get('id') as string,
     vscRepoId: record.get('vscRepoId') as string,
     applicationName: (record.get('applicationName') as string | null) || null,
+    creationJobId: (record.get('creationJobId') as string | null) || null,
     name: record.get('name') as string,
     normalizedName: record.get('normalizedName') as string,
     title: (record.get('title') as string | null) || null,
@@ -859,7 +864,12 @@ export function internalProjectFromModel(record: Model): JsTemplateProjectIntern
 }
 
 export function stripInternalProject(project: JsTemplateProjectInternalRecord): JsTemplateProject {
-  const { vscRepoId: _vscRepoId, applicationName: _applicationName, ...publicProject } = project;
+  const {
+    vscRepoId: _vscRepoId,
+    applicationName: _applicationName,
+    creationJobId: _creationJobId,
+    ...publicProject
+  } = project;
   return publicProject;
 }
 

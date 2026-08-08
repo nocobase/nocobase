@@ -204,11 +204,23 @@ describe('JsTemplateCatalogPage', () => {
       createCatalogEntry({ id: 'jtt_new', templateName: 'new-card', title: 'New card' }),
     ];
     await act(async () => {
-      mocks.jobs.update([]);
+      mocks.jobs.update([createJob({ status: 'succeeded', resultProjectId: 'jtp_new' })]);
     });
 
     expect(await screen.findByText('New card')).toBeInTheDocument();
     expect(mocks.listCatalog).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps an initially failed creation visible until explicit removal', async () => {
+    mocks.jobs.initial = [
+      createJob({ status: 'failed', errorCode: 'JS_TEMPLATE_CREATE_FAILED', errorMessage: 'Safe failure' }),
+    ];
+    renderCatalog();
+
+    expect(await screen.findByText('Safe failure')).toBeInTheDocument();
+    expect(mocks.jobs.dismiss).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove creation task New card' }));
+    await waitFor(() => expect(mocks.jobs.dismiss).toHaveBeenCalledWith('jtcj_new'));
   });
 
   it('adds a Template Entry to an explicitly selected existing Source Project with its current Head', async () => {
@@ -481,7 +493,7 @@ function createSourceProject(): JsTemplateProject {
   };
 }
 
-function createJob(): JsTemplateCreateJobSummary {
+function createJob(overrides: Partial<JsTemplateCreateJobSummary> = {}): JsTemplateCreateJobSummary {
   return {
     id: 'jtcj_new',
     targetProjectId: 'jtp_new',
@@ -490,12 +502,14 @@ function createJob(): JsTemplateCreateJobSummary {
     description: null,
     sourceType: 'starter',
     status: 'pending',
+    resultProjectId: null,
     errorCode: null,
     errorMessage: null,
     startedAt: null,
     finishedAt: null,
     createdAt: '2026-08-04T00:00:00.000Z',
     updatedAt: '2026-08-04T00:00:00.000Z',
+    ...overrides,
   };
 }
 

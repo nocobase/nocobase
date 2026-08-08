@@ -109,6 +109,7 @@ describe('plugin-js-template collections', () => {
     expect(usage.get('resolvedStatus')).toBe('runtime_missing');
     expect(log.get('level')).toBe('info');
     expect(createJob.get('status')).toBe('pending');
+    expect(createJob.get('attempt')).toBe(0);
   });
 
   it('keeps the persistence constraints and query indexes required by production behavior', () => {
@@ -132,6 +133,7 @@ describe('plugin-js-template collections', () => {
     expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateProjects, 'name')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateProjects, 'normalizedName')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'creationJobId')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateSourceOperations, 'identityHash')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateCreateJobs, 'targetProjectId')).toMatchObject({ unique: true });
 
@@ -139,6 +141,7 @@ describe('plugin-js-template collections', () => {
     expectCriticalIndex(jsTemplateProjects, ['normalizedName'], true);
     expectCriticalIndex(jsTemplateProjects, ['vscRepoId'], true);
     expectCriticalIndex(jsTemplateProjects, ['applicationName']);
+    expectCriticalIndex(jsTemplateProjects, ['creationJobId'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'templateName'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'entryPath'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'healthStatus']);
@@ -148,6 +151,7 @@ describe('plugin-js-template collections', () => {
     expectCriticalIndex(jsTemplateSourceOperations, ['identityHash'], true);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'reservationKey'], true);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'status']);
+    expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'status', 'leaseExpiresAt']);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'actorUserId', 'status']);
 
     expect(jsTemplateLogs.migrationRules).toEqual(['schema-only', 'skip']);

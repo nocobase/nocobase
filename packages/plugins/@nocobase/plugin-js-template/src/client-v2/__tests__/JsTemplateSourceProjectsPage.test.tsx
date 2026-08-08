@@ -244,6 +244,7 @@ describe('JsTemplateSourceProjectsPage', () => {
       description: null,
       sourceType: 'starter',
       status: 'pending',
+      resultProjectId: null,
       errorCode: null,
       errorMessage: null,
       startedAt: null,
@@ -287,6 +288,7 @@ describe('JsTemplateSourceProjectsPage', () => {
       description: null,
       sourceType: 'git',
       status: 'pending',
+      resultProjectId: null,
       errorCode: null,
       errorMessage: null,
       startedAt: null,
@@ -369,7 +371,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     );
     expect(mocks.api.createProject.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     const creationRow = await screen.findByRole('row', { name: /Browser smoke/ });
-    expect(within(creationRow).getByText('Creating')).toBeInTheDocument();
+    expect(within(creationRow).getByText('Creation pending')).toBeInTheDocument();
     expect(within(creationRow).getByRole('checkbox', { name: 'Creation task Browser smoke' })).toBeDisabled();
     const creationCells = within(creationRow).getAllByRole('cell');
     expect(creationCells[3]).toBeEmptyDOMElement();
@@ -388,6 +390,7 @@ describe('JsTemplateSourceProjectsPage', () => {
       description: null,
       sourceType: 'zip',
       status: 'pending',
+      resultProjectId: null,
       errorCode: null,
       errorMessage: null,
       startedAt: null,
@@ -418,7 +421,7 @@ describe('JsTemplateSourceProjectsPage', () => {
         zipBase64: 'emlwLXNvdXJjZQ==',
       }),
     );
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Create Source Project' })).not.toBeInTheDocument();
   });
 
@@ -452,7 +455,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
     expect(mocks.api.createProject).not.toHaveBeenCalled();
     expect(await screen.findByText('Git smoke')).toBeInTheDocument();
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
     expect(screen.getByTestId('location-search')).not.toHaveTextContent('projectId=jtp_git');
   });
 
@@ -518,7 +521,7 @@ describe('JsTemplateSourceProjectsPage', () => {
         expect.objectContaining({ config: expect.objectContaining({ branch: null }) }),
       ),
     );
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
     await act(async () => {
       mocks.createJobs.update([
         createJobSummary({
@@ -558,23 +561,23 @@ describe('JsTemplateSourceProjectsPage', () => {
       },
     ]);
     renderListPage();
-    expect(await screen.findByText('Creating')).toBeInTheDocument();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
 
     await act(async () => {
-      mocks.createJobs.update([]);
+      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
     });
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('Source Project creation succeeded: Demo')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
-    expect(screen.queryByText('Creating')).not.toBeInTheDocument();
+    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
     await act(async () => {
-      mocks.createJobs.update([]);
+      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
     });
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
-  it('automatically removes a failed creation', async () => {
+  it('keeps an initially failed creation until the user explicitly removes it', async () => {
     const failed = createJobSummary({
       status: 'failed',
       errorCode: 'JS_TEMPLATE_CREATE_FAILED',
@@ -583,9 +586,11 @@ describe('JsTemplateSourceProjectsPage', () => {
     mocks.createJobs.initialJobs = [failed];
     renderListPage();
 
+    expect(await screen.findByText('Safe failure')).toBeInTheDocument();
+    expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove creation task Demo' }));
     await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
     expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove failed creation Demo' })).not.toBeInTheDocument();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -1040,6 +1045,7 @@ function createJobSummary(overrides: Partial<JsTemplateCreateJobSummary> = {}): 
     description: null,
     sourceType: 'starter',
     status: 'pending',
+    resultProjectId: null,
     errorCode: null,
     errorMessage: null,
     startedAt: null,

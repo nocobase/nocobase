@@ -119,9 +119,11 @@ Official runtime images include Git and OpenSSH clients. Non-Docker deployments 
 
 Starter, ZIP, and Git creation are accepted as durable background jobs. `jsTemplateProjects:create` handles starter or ZIP input, and `jsTemplateSync:createFromGit` handles Git input; both return HTTP 202 with a safe creation-job summary.
 
-`jsTemplateCreateJobs:list` and `jsTemplateCreateJobs:dismiss` are the public job API. A visible job is `pending`, `running`, or `failed`. Acceptance only confirms persistence; a successful job disappears after the project, source, compiled artifacts, and runtime are ready.
+`jsTemplateCreateJobs:list` and `jsTemplateCreateJobs:dismiss` are the public job API. A visible job is `pending`, `running`, `succeeded`, or `failed`. Acceptance only confirms persistence. Successful jobs retain their safe `resultProjectId`, and terminal jobs remain visible until the originating user explicitly dismisses them.
 
-The UI closes the creation dialog after acceptance and shows the job in a separate creation-status area. Success refreshes the project table; failure offers removal. Public summaries never expose source payloads or credentials.
+The database job is the execution source of truth. Queue messages only wake a runner; startup and periodic scans claim pending or expired jobs with fenced leases and heartbeats. A ready Project carrying the matching creation marker is recovered as succeeded after a crash and is never deleted as failed cleanup. A failed wake-up publish does not change the HTTP 202 response because the scanner still processes the durable job.
+
+The UI closes the creation dialog after acceptance and shows all four states in a separate creation-status area. Success refreshes from `resultProjectId`; failure remains visible with a safe error until explicit removal. Public summaries never expose source payloads, credentials, actor/request identity, claim tokens, owners, leases, or heartbeats.
 
 ## Operational guarantees
 

@@ -96,6 +96,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
   it('atomically creates the Git source with exactly one primary business audit', async () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
     const applyPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'applyPreparedInitialWorkspace');
+    const assertCurrentClaim = vi.fn(async () => undefined);
     const result = await service.create(
       {
         name: 'Remote Sales KPI',
@@ -106,7 +107,11 @@ describe('JsTemplateCreateFromRemoteService', () => {
         authRef: '{{ $env.GIT_SYNC }}',
       },
       { requestId: 'req_create_from_git_main_audit' },
-      { targetProjectId: 'jtp_durable_target' },
+      {
+        targetProjectId: 'jtp_durable_target',
+        creationJobId: 'jtcj_git_durable',
+        assertCurrentClaim,
+      },
     );
     const internalProject = await projectService.getInternalProject(result.project.id);
     const remote = await runtime.getRemote(internalProject.vscRepoId, 'origin');
@@ -122,6 +127,9 @@ describe('JsTemplateCreateFromRemoteService', () => {
     expect(validateCredential).toHaveBeenCalledWith('{{ $env.GIT_SYNC }}');
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
     expect(applyPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
+    expect(assertCurrentClaim).toHaveBeenCalledWith(expect.anything());
+    expect(internalProject.creationJobId).toBe('jtcj_git_durable');
+    expect(result.project).not.toHaveProperty('creationJobId');
     expect(result).toMatchObject({
       project: { id: 'jtp_durable_target', healthStatus: 'ready', headCommitId: expect.stringMatching(/^vscc_/) },
       remote: { config: { branch: 'main' }, authRef: '{{ $env.GIT_SYNC }}' },

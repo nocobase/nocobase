@@ -180,7 +180,8 @@ function JsTemplateSourceProjectsPageInner() {
   const [sourceFooterActions, setSourceFooterActions] = useState<JsTemplateSourceProjectWorkspaceFooterActions | null>(
     null,
   );
-  const observedCreateJobs = useRef<Map<string, JsTemplateCreateJobSummary> | null>(null);
+  const handledTerminalCreateJobIds = useRef(new Set<string>());
+  const [dismissingCreateJobIds, setDismissingCreateJobIds] = useState<Set<string>>(() => new Set());
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
@@ -219,8 +220,10 @@ function JsTemplateSourceProjectsPageInner() {
   const handleSucceededJobs = useCallback(
     async (jobs: JsTemplateCreateJobSummary[]) => {
       for (const job of jobs) {
-        invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.targetProjectId);
-        invalidateJsTemplateRuntimeCache(flowContext.api, job.targetProjectId);
+        if (job.resultProjectId) {
+          invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.resultProjectId);
+          invalidateJsTemplateRuntimeCache(flowContext.api, job.resultProjectId);
+        }
       }
       const refreshed = await loadProjects();
       if (refreshed) {
@@ -235,23 +238,15 @@ function JsTemplateSourceProjectsPageInner() {
   );
 
   useEffect(() => {
-    const currentJobs = new Map(createJobs.map((job) => [job.id, job]));
-    const previousJobs = observedCreateJobs.current;
-    observedCreateJobs.current = currentJobs;
-    if (!previousJobs) {
-      return;
-    }
-
-    const succeeded = [...previousJobs.values()].filter(
-      (job) => (job.status === 'pending' || job.status === 'running') && !currentJobs.has(job.id),
+    const terminal = createJobs.filter(
+      (job) =>
+        (job.status === 'succeeded' || job.status === 'failed') && !handledTerminalCreateJobIds.current.has(job.id),
     );
-    let lastFailed: JsTemplateCreateJobSummary | null = null;
-    for (const job of createJobs) {
-      const previous = previousJobs.get(job.id);
-      if ((previous?.status === 'pending' || previous?.status === 'running') && job.status === 'failed') {
-        lastFailed = job;
-      }
+    for (const job of terminal) {
+      handledTerminalCreateJobIds.current.add(job.id);
     }
+    const succeeded = terminal.filter((job) => job.status === 'succeeded');
+    const lastFailed = terminal.findLast((job) => job.status === 'failed') || null;
 
     if (succeeded.length) {
       handleSucceededJobs(succeeded).catch(() => undefined);
@@ -268,13 +263,23 @@ function JsTemplateSourceProjectsPageInner() {
     }
   }, [createJobs, handleSucceededJobs, t]);
 
-  useEffect(() => {
-    for (const job of createJobs) {
-      if (job.status === 'failed') {
-        dismissCreateJob(job.id).catch(() => undefined);
+  const dismissTerminalCreateJob = useCallback(
+    async (jobId: string) => {
+      setDismissingCreateJobIds((current) => new Set(current).add(jobId));
+      try {
+        await dismissCreateJob(jobId);
+      } catch {
+        setNotice({ type: 'error', message: t('Failed to remove creation task') });
+      } finally {
+        setDismissingCreateJobIds((current) => {
+          const next = new Set(current);
+          next.delete(jobId);
+          return next;
+        });
       }
-    }
-  }, [createJobs, dismissCreateJob]);
+    },
+    [dismissCreateJob, t],
+  );
 
   useEffect(() => {
     const projectId = searchParams.get('projectId');
@@ -314,9 +319,7 @@ function JsTemplateSourceProjectsPageInner() {
   );
   const tableRows = useMemo<JsTemplateListRow[]>(
     () => [
-      ...createJobs
-        .filter((job) => job.status === 'pending' || job.status === 'running')
-        .map((job): JsTemplateListRow => ({ rowType: 'creation-job', job })),
+      ...createJobs.map((job): JsTemplateListRow => ({ rowType: 'creation-job', job })),
       ...filteredProjects.map((project): JsTemplateListRow => ({ rowType: 'project', project })),
     ],
     [createJobs, filteredProjects],
@@ -656,10 +659,12 @@ function JsTemplateSourceProjectsPageInner() {
         loading={loading}
         onChangeLifecycle={changeProjectLifecycle}
         onEditProject={openEditDrawer}
+        onDismissCreateJob={dismissTerminalCreateJob}
         onRemoveProject={setRemoveTarget}
         onSelectProject={(projectId, panel) => selectProject(projectId, { panel })}
         onSelectedRowKeysChange={setSelectedRowKeys}
         removingProjectIds={removingProjectIds}
+        dismissingCreateJobIds={dismissingCreateJobIds}
         rows={tableRows}
         selectedRowKeys={selectedRowKeys}
         t={t}

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 import type { RemoteSyncRuntime } from '../vsc-file/remotes';
 import type {
   VscFileRemoteRecord,
@@ -44,6 +44,8 @@ export interface JsTemplateCreateFromRemoteResult {
 
 export interface JsTemplateCreateFromRemoteOptions {
   targetProjectId?: string;
+  creationJobId?: string;
+  assertCurrentClaim?: (transaction: Transaction) => Promise<void>;
 }
 
 export class JsTemplateCreateFromRemoteService {
@@ -80,6 +82,7 @@ export class JsTemplateCreateFromRemoteService {
     );
 
     return this.db.sequelize.transaction(async (transaction) => {
+      await options.assertCurrentClaim?.(transaction);
       const transactionContext: JsTemplateServiceContext = {
         ...ctx,
         transaction,
@@ -95,7 +98,7 @@ export class JsTemplateCreateFromRemoteService {
           message: 'Import JS Template source from Git',
         },
         transactionContext,
-        { projectId },
+        { projectId, creationJobId: options.creationJobId },
       );
       if (!project.headCommitId) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template initial source commit is missing', {

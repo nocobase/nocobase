@@ -981,7 +981,7 @@ describe('js-template remote sync public API contract', () => {
   });
 
   it('freezes the durable creation job states, sources, actions, and safe summary boundary', () => {
-    const statuses: JsTemplateCreateJobStatus[] = ['pending', 'running', 'failed'];
+    const statuses: JsTemplateCreateJobStatus[] = ['pending', 'running', 'succeeded', 'failed'];
     const sourceTypes: JsTemplateCreateSourceType[] = ['starter', 'zip', 'git'];
     const actions: JsTemplateCreateJobActionName[] = ['list', 'dismiss'];
     const record: JsTemplateCreateJob = {
@@ -994,12 +994,18 @@ describe('js-template remote sync public API contract', () => {
       description: null,
       sourceType: 'git',
       status: 'pending',
+      resultProjectId: null,
       payload: { authRef: '{{ $env.GIT_SYNC_SECRET }}' },
       errorCode: null,
       errorMessage: null,
       reservationKey: 'main:sales',
       actorUserId: 'user-1',
       requestId: 'request-1',
+      claimToken: null,
+      claimOwner: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      attempt: 0,
       startedAt: null,
       finishedAt: null,
       createdAt: '2026-07-27T00:00:00.000Z',
@@ -1013,6 +1019,7 @@ describe('js-template remote sync public API contract', () => {
       description: record.description,
       sourceType: record.sourceType,
       status: record.status,
+      resultProjectId: record.resultProjectId,
       errorCode: record.errorCode,
       errorMessage: record.errorMessage,
       startedAt: record.startedAt,
@@ -1030,7 +1037,7 @@ describe('js-template remote sync public API contract', () => {
       actorUserId: false,
     };
 
-    expect(statuses).toEqual(['pending', 'running', 'failed']);
+    expect(statuses).toEqual(['pending', 'running', 'succeeded', 'failed']);
     expect(sourceTypes).toEqual(['starter', 'zip', 'git']);
     expect(actions).toEqual(['list', 'dismiss']);
     expect(internalFieldContract).toEqual({

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
@@ -52,17 +52,15 @@ export interface EnqueueJsTemplateCreateJobInput {
   requestId?: string | null;
 }
 
-export interface JsTemplateCreateJobTimeouts {
-  pendingTimeoutMs: number;
-  runningTimeoutMs: number;
-}
-
 export type JsTemplateCreateJobStoreClock = () => Date;
+
+export type JsTemplateCreateJobClaimTokenFactory = () => string;
 
 export class JsTemplateCreateJobStore {
   constructor(
     private readonly db: Database,
     private readonly clock: JsTemplateCreateJobStoreClock = () => new Date(),
+    private readonly claimTokenFactory: JsTemplateCreateJobClaimTokenFactory = () => randomUUID(),
   ) {}
 
   async enqueue(input: EnqueueJsTemplateCreateJobInput, transaction?: Transaction): Promise<JsTemplateCreateJob> {
@@ -77,6 +75,7 @@ export class JsTemplateCreateJobStore {
           description: input.description ?? null,
           sourceType: input.sourceType,
           status: 'pending',
+          resultProjectId: null,
           payload: input.payload,
           errorCode: null,
           errorReasonCode: null,
@@ -84,6 +83,11 @@ export class JsTemplateCreateJobStore {
           reservationKey: createReservationKey(input.applicationName, input.normalizedName),
           actorUserId: input.actorUserId ?? null,
           requestId: input.requestId ?? null,
+          claimToken: null,
+          claimOwner: null,
+          leaseExpiresAt: null,
+          heartbeatAt: null,
+          attempt: 0,
           startedAt: null,
           finishedAt: null,
         },
@@ -98,61 +102,171 @@ export class JsTemplateCreateJobStore {
     }
   }
 
-  async start(jobId: string, applicationName: string): Promise<JsTemplateCreateJob | null> {
+  async findClaimableIds(applicationName: string, limit = 100): Promise<string[]> {
+    validateLimit(limit);
+    const now = this.clock();
+    const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).find({
+      filter: {
+        applicationName,
+        $or: [
+          { status: 'pending' },
+          { status: 'running', leaseExpiresAt: { $lte: now } },
+          { status: 'running', leaseExpiresAt: null },
+        ],
+      },
+      fields: ['id'],
+      sort: ['createdAt'],
+      limit,
+    });
+    return records.map((record) => String(record.get('id')));
+  }
+
+  async claim(
+    jobId: string,
+    applicationName: string,
+    claimOwner: string,
+    leaseDurationMs: number,
+  ): Promise<JsTemplateCreateJob | null> {
+    validateLeaseDuration(leaseDurationMs);
+    if (!claimOwner.trim()) {
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job claim owner is required');
+    }
     return this.withLockedJob(jobId, async (record, transaction) => {
-      if (!record || record.get('applicationName') !== applicationName || record.get('status') !== 'pending') {
+      if (!record || record.get('applicationName') !== applicationName) {
         return null;
       }
-      await record.update({ status: 'running', startedAt: this.clock(), finishedAt: null }, { transaction });
+      const now = this.clock();
+      if (!isClaimable(record, now)) {
+        return null;
+      }
+      await record.update(
+        {
+          status: 'running',
+          resultProjectId: null,
+          claimToken: this.claimTokenFactory(),
+          claimOwner,
+          leaseExpiresAt: new Date(now.getTime() + leaseDurationMs),
+          heartbeatAt: now,
+          attempt: numericValue(record.get('attempt')) + 1,
+          startedAt: record.get('startedAt') || now,
+          finishedAt: null,
+          errorCode: null,
+          errorReasonCode: null,
+          errorMessage: null,
+        },
+        { transaction },
+      );
       return createJobFromModel(record);
     });
   }
 
-  async complete(jobId: string, applicationName: string): Promise<boolean> {
+  async heartbeat(
+    jobId: string,
+    applicationName: string,
+    claimToken: string,
+    leaseDurationMs: number,
+  ): Promise<boolean> {
+    validateLeaseDuration(leaseDurationMs);
     return this.withLockedJob(jobId, async (record, transaction) => {
-      if (!record || record.get('applicationName') !== applicationName || record.get('status') !== 'running') {
+      const now = this.clock();
+      if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
         return false;
       }
-      await record.destroy({ transaction });
+      await record.update(
+        {
+          leaseExpiresAt: new Date(now.getTime() + leaseDurationMs),
+          heartbeatAt: now,
+        },
+        { transaction },
+      );
       return true;
+    });
+  }
+
+  async assertCurrentClaim(
+    jobId: string,
+    applicationName: string,
+    claimToken: string,
+    transaction: Transaction,
+  ): Promise<void> {
+    await this.withLockedJob(
+      jobId,
+      async (record) => {
+        if (!isCurrentLiveClaim(record, applicationName, claimToken, this.clock())) {
+          throw claimLost();
+        }
+      },
+      transaction,
+    );
+  }
+
+  async succeed(
+    jobId: string,
+    applicationName: string,
+    claimToken: string,
+    resultProjectId: string,
+  ): Promise<JsTemplateCreateJob | null> {
+    if (!resultProjectId.trim()) {
+      throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job result Project identity is required');
+    }
+    return this.withLockedJob(jobId, async (record, transaction) => {
+      const now = this.clock();
+      if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
+        return null;
+      }
+      await record.update(
+        {
+          status: 'succeeded',
+          resultProjectId,
+          payload: null,
+          reservationKey: null,
+          errorCode: null,
+          errorReasonCode: null,
+          errorMessage: null,
+          claimToken: null,
+          claimOwner: null,
+          leaseExpiresAt: null,
+          heartbeatAt: null,
+          finishedAt: now,
+        },
+        { transaction },
+      );
+      return createJobFromModel(record);
     });
   }
 
   async fail(
     jobId: string,
     applicationName: string,
+    claimToken: string,
     errorCode: string,
     errorMessage: string,
     errorReasonCode: string | null = null,
   ): Promise<JsTemplateCreateJob | null> {
     return this.withLockedJob(jobId, async (record, transaction) => {
-      if (
-        !record ||
-        record.get('applicationName') !== applicationName ||
-        !['pending', 'running'].includes(String(record.get('status')))
-      ) {
+      const now = this.clock();
+      if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
         return null;
       }
-      await markFailed(record, transaction, this.clock(), errorCode, errorMessage, errorReasonCode);
+      await record.update(
+        {
+          status: 'failed',
+          resultProjectId: null,
+          errorCode,
+          errorReasonCode,
+          errorMessage,
+          payload: null,
+          reservationKey: null,
+          claimToken: null,
+          claimOwner: null,
+          leaseExpiresAt: null,
+          heartbeatAt: null,
+          finishedAt: now,
+        },
+        { transaction },
+      );
       return createJobFromModel(record);
     });
-  }
-
-  async failStale(applicationName: string, timeouts: JsTemplateCreateJobTimeouts): Promise<JsTemplateCreateJob[]> {
-    validateTimeout(timeouts.pendingTimeoutMs);
-    validateTimeout(timeouts.runningTimeoutMs);
-    const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).find({
-      filter: { applicationName, status: { $in: ['pending', 'running'] } },
-      fields: ['id'],
-    });
-    const failed: JsTemplateCreateJob[] = [];
-    for (const candidate of records) {
-      const job = await this.failIfStale(String(candidate.get('id')), applicationName, timeouts);
-      if (job) {
-        failed.push(job);
-      }
-    }
-    return failed;
   }
 
   async getOwn(
@@ -177,8 +291,8 @@ export class JsTemplateCreateJobStore {
         throw jobNotFound(jobId);
       }
       assertJobOwner(record, applicationName, actorUserId);
-      if (record.get('status') !== 'failed') {
-        throw invalidJobState('Only failed creation jobs can be dismissed');
+      if (!['succeeded', 'failed'].includes(String(record.get('status')))) {
+        throw invalidJobState('Only terminal creation jobs can be dismissed');
       }
       await record.destroy({ transaction });
     });
@@ -186,55 +300,31 @@ export class JsTemplateCreateJobStore {
 
   async listOwnVisibleJobs(applicationName: string, actorUserId: string): Promise<JsTemplateCreateJobSummary[]> {
     const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).find({
-      filter: { applicationName, actorUserId, status: { $in: ['pending', 'running', 'failed'] } },
+      filter: { applicationName, actorUserId, status: { $in: ['pending', 'running', 'succeeded', 'failed'] } },
       sort: ['-createdAt'],
     });
     return records.map((record) => toCreateJobSummary(createJobFromModel(record)));
   }
 
-  private async failIfStale(
-    jobId: string,
-    applicationName: string,
-    timeouts: JsTemplateCreateJobTimeouts,
-  ): Promise<JsTemplateCreateJob | null> {
-    return this.withLockedJob(jobId, async (record, transaction) => {
-      if (!record || record.get('applicationName') !== applicationName) {
-        return null;
-      }
-      const status = record.get('status');
-      const now = this.clock();
-      const referenceTime =
-        status === 'running' ? dateValue(record.get('startedAt')) : dateValue(record.get('createdAt'));
-      const timeoutMs = status === 'running' ? timeouts.runningTimeoutMs : timeouts.pendingTimeoutMs;
-      if (
-        !referenceTime ||
-        !['pending', 'running'].includes(String(status)) ||
-        now.getTime() - referenceTime.getTime() < timeoutMs
-      ) {
-        return null;
-      }
-      await markFailed(
-        record,
-        transaction,
-        now,
-        'JS_TEMPLATE_CREATE_TIMED_OUT',
-        status === 'running' ? 'JS Template creation timed out' : 'JS Template creation did not start in time',
-        null,
-      );
-      return createJobFromModel(record);
-    });
-  }
-
   private async withLockedJob<T>(
     jobId: string,
     run: (record: Model | null, transaction: Transaction) => Promise<T>,
+    transaction?: Transaction,
   ): Promise<T> {
+    if (transaction) {
+      const model = this.db.getModel<Model>(JS_TEMPLATE_COLLECTIONS.createJobs);
+      const record = await model.findByPk(jobId, { transaction, lock: transaction.LOCK.UPDATE });
+      return run(record, transaction);
+    }
     for (let attempt = 0; ; attempt += 1) {
       try {
-        return await this.db.sequelize.transaction(async (transaction) => {
+        return await this.db.sequelize.transaction(async (currentTransaction) => {
           const model = this.db.getModel<Model>(JS_TEMPLATE_COLLECTIONS.createJobs);
-          const record = await model.findByPk(jobId, { transaction, lock: transaction.LOCK.UPDATE });
-          return run(record, transaction);
+          const record = await model.findByPk(jobId, {
+            transaction: currentTransaction,
+            lock: currentTransaction.LOCK.UPDATE,
+          });
+          return run(record, currentTransaction);
         });
       } catch (error) {
         if (this.db.sequelize.getDialect() !== 'sqlite' || !isSqliteBusyError(error) || attempt >= 2) {
@@ -255,6 +345,7 @@ export function toCreateJobSummary(job: JsTemplateCreateJob): JsTemplateCreateJo
     description: job.description,
     sourceType: job.sourceType,
     status: job.status,
+    resultProjectId: job.resultProjectId,
     errorCode: job.errorCode,
     errorReasonCode: job.errorReasonCode ?? null,
     errorMessage: job.errorMessage,
@@ -276,6 +367,7 @@ export function createJobFromModel(record: Model): JsTemplateCreateJob {
     description: nullableString(record.get('description')),
     sourceType: record.get('sourceType') as JsTemplateCreateSourceType,
     status: record.get('status') as JsTemplateCreateJob['status'],
+    resultProjectId: nullableString(record.get('resultProjectId')),
     payload: record.get('payload') as Record<string, unknown> | null,
     errorCode: nullableString(record.get('errorCode')),
     errorReasonCode: nullableString(record.get('errorReasonCode')),
@@ -283,6 +375,11 @@ export function createJobFromModel(record: Model): JsTemplateCreateJob {
     reservationKey: nullableString(record.get('reservationKey')),
     actorUserId: nullableString(record.get('actorUserId')),
     requestId: nullableString(record.get('requestId')),
+    claimToken: nullableString(record.get('claimToken')),
+    claimOwner: nullableString(record.get('claimOwner')),
+    leaseExpiresAt: nullableDateString(record.get('leaseExpiresAt')),
+    heartbeatAt: nullableDateString(record.get('heartbeatAt')),
+    attempt: numericValue(record.get('attempt')),
     startedAt: nullableDateString(record.get('startedAt')),
     finishedAt: nullableDateString(record.get('finishedAt')),
     createdAt: nullableDateString(record.get('createdAt')) || new Date(0).toISOString(),
@@ -290,26 +387,34 @@ export function createJobFromModel(record: Model): JsTemplateCreateJob {
   };
 }
 
-async function markFailed(
-  record: Model,
-  transaction: Transaction,
+function isClaimable(record: Model, now: Date): boolean {
+  const status = record.get('status');
+  if (status === 'pending') {
+    return true;
+  }
+  if (status !== 'running') {
+    return false;
+  }
+  const leaseExpiresAt = dateValue(record.get('leaseExpiresAt'));
+  return !leaseExpiresAt || leaseExpiresAt.getTime() <= now.getTime();
+}
+
+function isCurrentLiveClaim(
+  record: Model | null,
+  applicationName: string,
+  claimToken: string,
   now: Date,
-  errorCode: string,
-  errorMessage: string,
-  errorReasonCode: string | null,
-): Promise<void> {
-  await record.update(
-    {
-      status: 'failed',
-      errorCode,
-      errorReasonCode,
-      errorMessage,
-      payload: null,
-      reservationKey: null,
-      finishedAt: now,
-    },
-    { transaction },
-  );
+): record is Model {
+  if (
+    !record ||
+    record.get('applicationName') !== applicationName ||
+    record.get('status') !== 'running' ||
+    record.get('claimToken') !== claimToken
+  ) {
+    return false;
+  }
+  const leaseExpiresAt = dateValue(record.get('leaseExpiresAt'));
+  return Boolean(leaseExpiresAt && leaseExpiresAt.getTime() > now.getTime());
 }
 
 function createReservationKey(applicationName: string, normalizedName: string): string {
@@ -324,6 +429,10 @@ function assertJobOwner(record: Model, applicationName: string, actorUserId: str
 
 function nullableString(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
+}
+
+function numericValue(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : Number(value) || 0;
 }
 
 function dateValue(value: unknown): Date | null {
@@ -341,9 +450,15 @@ function nullableDateString(value: unknown): string | null {
   return dateValue(value)?.toISOString() || null;
 }
 
-function validateTimeout(timeoutMs: number): void {
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs <= 0) {
-    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job timeout must be a positive integer');
+function validateLeaseDuration(leaseDurationMs: number): void {
+  if (!Number.isSafeInteger(leaseDurationMs) || leaseDurationMs <= 0) {
+    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job lease duration must be a positive integer');
+  }
+}
+
+function validateLimit(limit: number): void {
+  if (!Number.isSafeInteger(limit) || limit <= 0) {
+    throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job scan limit must be a positive integer');
   }
 }
 
@@ -374,4 +489,10 @@ function jobNotFound(jobId: string): JsTemplateError {
 
 function invalidJobState(message: string): JsTemplateError {
   return new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', message, { status: 409 });
+}
+
+function claimLost(): JsTemplateError {
+  return new JsTemplateError('JS_TEMPLATE_CREATE_FAILED', 'JS Template creation claim is no longer current', {
+    status: 409,
+  });
 }

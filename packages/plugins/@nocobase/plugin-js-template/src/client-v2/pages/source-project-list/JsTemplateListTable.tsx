@@ -14,15 +14,18 @@ import React, { useMemo } from 'react';
 
 import { JS_TEMPLATE_SUPPORTED_KINDS } from '../../../constants';
 import type { JsTemplateProjectLifecycleStatus, JsTemplateProject } from '../../../shared/types';
+import { getJsTemplateSyncErrorTranslationKey } from '../../hooks/useJsTemplateSync';
 import type { JsTemplateListRow, JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
 
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 
 interface JsTemplateListTableProps {
   changingProjectIds: Set<string>;
+  dismissingCreateJobIds: Set<string>;
   loading: boolean;
   onChangeLifecycle: (project: JsTemplateProject, lifecycleStatus: ToggleLifecycleStatus) => void;
   onEditProject: (project: JsTemplateProject) => void;
+  onDismissCreateJob: (jobId: string) => void;
   onRemoveProject: (project: JsTemplateProject) => void;
   onSelectProject: (projectId: string, panel: 'source' | 'sync') => void;
   onSelectedRowKeysChange: (selectedRowKeys: React.Key[]) => void;
@@ -34,9 +37,11 @@ interface JsTemplateListTableProps {
 
 export function JsTemplateListTable({
   changingProjectIds,
+  dismissingCreateJobIds,
   loading,
   onChangeLifecycle,
   onEditProject,
+  onDismissCreateJob,
   onRemoveProject,
   onSelectProject,
   onSelectedRowKeysChange,
@@ -158,10 +163,29 @@ export function JsTemplateListTable({
         width: 350,
         render: (_value, row) => {
           if (row.rowType === 'creation-job') {
+            const job = row.job;
+            const terminal = job.status === 'succeeded' || job.status === 'failed';
             return (
-              <Space aria-live="polite" role="status" size="small">
-                <Spin size="small" />
-                <Typography.Text>{t('Creating')}</Typography.Text>
+              <Space aria-live="polite" role="status" size="small" wrap>
+                {terminal ? null : <Spin size="small" />}
+                <Tag color={job.status === 'failed' ? 'error' : job.status === 'succeeded' ? 'success' : 'processing'}>
+                  {creationStatusLabel(job.status, t)}
+                </Tag>
+                {job.status === 'failed' ? (
+                  <Typography.Text type="danger">{creationFailureMessage(job, t)}</Typography.Text>
+                ) : null}
+                {terminal ? (
+                  <Button
+                    aria-label={`${t('Remove creation task')} ${job.title || job.name}`}
+                    loading={dismissingCreateJobIds.has(job.id)}
+                    onClick={() => onDismissCreateJob(job.id)}
+                    size="small"
+                    style={TABLE_ACTION_BUTTON_STYLE}
+                    type="link"
+                  >
+                    {t('Remove')}
+                  </Button>
+                ) : null}
               </Space>
             );
           }
@@ -211,7 +235,17 @@ export function JsTemplateListTable({
         },
       },
     ],
-    [changingProjectIds, onChangeLifecycle, onEditProject, onRemoveProject, onSelectProject, removingProjectIds, t],
+    [
+      changingProjectIds,
+      dismissingCreateJobIds,
+      onChangeLifecycle,
+      onDismissCreateJob,
+      onEditProject,
+      onRemoveProject,
+      onSelectProject,
+      removingProjectIds,
+      t,
+    ],
   );
 
   return (
@@ -277,6 +311,30 @@ function getListRowDescription(row: JsTemplateListRow): string | null | undefine
 
 function getListRowTemplateCount(row: JsTemplateListRow): number {
   return row.rowType === 'project' ? getProjectTemplateCount(row.project) : 0;
+}
+
+function creationStatusLabel(
+  status: Extract<JsTemplateListRow, { rowType: 'creation-job' }>['job']['status'],
+  t: JsTemplateListTranslate,
+): string {
+  switch (status) {
+    case 'pending':
+      return t('Creation pending');
+    case 'running':
+      return t('Creation running');
+    case 'succeeded':
+      return t('Creation succeeded');
+    case 'failed':
+      return t('Creation failed');
+  }
+}
+
+function creationFailureMessage(
+  job: Extract<JsTemplateListRow, { rowType: 'creation-job' }>['job'],
+  t: JsTemplateListTranslate,
+): string {
+  const errorKey = getJsTemplateSyncErrorTranslationKey(job.errorCode, job.errorReasonCode);
+  return errorKey ? t(errorKey) : job.errorMessage || t('JS Template creation failed');
 }
 
 function getListRowUpdatedAt(row: JsTemplateListRow): string | null | undefined {

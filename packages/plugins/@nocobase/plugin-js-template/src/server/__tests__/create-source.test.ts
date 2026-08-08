@@ -39,6 +39,9 @@ describe('plugin-js-template initial source creation', () => {
     expect(createResponse.status).toBe(202);
     const accepted = createResponse.body.data;
     await waitForSuccessfulCreate(app, accepted.id, accepted.targetProjectId);
+    const internalProject = await app.db.getRepository('jsTemplateProjects').findOne({
+      filterByTk: accepted.targetProjectId,
+    });
     const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
     const pullResponse = await app
@@ -65,6 +68,8 @@ describe('plugin-js-template initial source creation', () => {
       headCommitId: expect.stringMatching(/^vscc_/),
       lastCompiledAt: expect.any(String),
     });
+    expect(internalProject?.get('creationJobId')).toBe(accepted.id);
+    expect(repo).not.toHaveProperty('creationJobId');
     expect(pullResponse.body.data.files.map((file) => file.path).sort()).toEqual(
       DEFAULT_JS_TEMPLATE_TEMPLATE_FILES.map((file) => file.path).sort(),
     );
@@ -116,6 +121,9 @@ describe('plugin-js-template initial source creation', () => {
     expect(createResponse.status).toBe(202);
     const accepted = createResponse.body.data;
     await waitForSuccessfulCreate(app, accepted.id, accepted.targetProjectId);
+    const internalProject = await app.db.getRepository('jsTemplateProjects').findOne({
+      filterByTk: accepted.targetProjectId,
+    });
     const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
     const pullResponse = await app
@@ -132,6 +140,7 @@ describe('plugin-js-template initial source creation', () => {
       });
 
     expect(repo).toMatchObject({ healthStatus: 'ready', headCommitId: expect.any(String) });
+    expect(internalProject?.get('creationJobId')).toBe(accepted.id);
     expect(pullResponse.body.data.files.map((file) => file.path)).toEqual([
       'README.md',
       'src/client/js-blocks/example/entry.json',
@@ -201,10 +210,11 @@ describe('plugin-js-template initial source creation', () => {
       projectService,
       runtimeCompileService,
       {} as JsTemplateCreateFromRemoteService,
+      { assertCurrentClaim: vi.fn(async () => undefined) } as unknown as JsTemplateCreateJobStore,
     );
 
     await expect(
-      executor.execute(createJob('jtcj_missing_commit', projectId, 'Missing Initial Commit')),
+      executor.execute(createJob('jtcj_missing_commit', projectId, 'Missing Initial Commit'), 'claim-missing-commit'),
     ).rejects.toMatchObject({
       code: 'JS_TEMPLATE_SOURCE_ERROR',
       details: { projectId },
@@ -218,26 +228,89 @@ describe('plugin-js-template initial source creation', () => {
     ).resolves.toBeNull();
   });
 
-  it('fails stale pending and running jobs and releases their retained input', async () => {
-    const createdAt = new Date('2026-07-27T00:00:00.000Z');
-    const store = new JsTemplateCreateJobStore(app.db, () => createdAt);
-    const pending = await store.enqueue(createJobInput('pending'));
-    const running = await store.enqueue(createJobInput('running'));
-    await store.start(running.id, 'main');
+  it('reclaims an expired lease once and fences the old worker from terminal writes', async () => {
+    let now = new Date('2026-07-27T00:00:00.000Z');
+    const initialStore = new JsTemplateCreateJobStore(
+      app.db,
+      () => now,
+      () => 'claim-old',
+    );
+    const pending = await initialStore.enqueue(createJobInput('reclaim'));
+    const initialClaim = await initialStore.claim(pending.id, 'main', 'runner-old', 1_000);
+    expect(initialClaim).toMatchObject({ status: 'running', claimToken: 'claim-old', attempt: 1 });
 
-    const cleanupStore = new JsTemplateCreateJobStore(app.db, () => new Date('2030-07-27T00:11:00.000Z'));
-    const failed = await cleanupStore.failStale('main', {
-      pendingTimeoutMs: 5 * 60_000,
-      runningTimeoutMs: 10 * 60_000,
-    });
+    now = new Date('2026-07-27T00:00:02.000Z');
+    const firstRecovery = new JsTemplateCreateJobStore(
+      app.db,
+      () => now,
+      () => 'claim-first-recovery',
+    );
+    const secondRecovery = new JsTemplateCreateJobStore(
+      app.db,
+      () => now,
+      () => 'claim-second-recovery',
+    );
+    const recovered = await Promise.all([
+      firstRecovery.claim(pending.id, 'main', 'runner-first', 1_000),
+      secondRecovery.claim(pending.id, 'main', 'runner-second', 1_000),
+    ]);
+    const currentClaim = recovered.find((job): job is JsTemplateCreateJob => Boolean(job));
 
-    expect(failed.map((job) => job.id).sort()).toEqual([pending.id, running.id].sort());
-    expect(failed).toEqual(
+    expect(recovered.filter(Boolean)).toHaveLength(1);
+    expect(currentClaim).toMatchObject({ status: 'running', attempt: 2 });
+    await expect(initialStore.succeed(pending.id, 'main', 'claim-old', pending.targetProjectId)).resolves.toBeNull();
+    if (!currentClaim?.claimToken) {
+      throw new Error('Expected one recovery claimant');
+    }
+    const currentStore = currentClaim.claimToken === 'claim-first-recovery' ? firstRecovery : secondRecovery;
+    await expect(
+      currentStore.succeed(pending.id, 'main', currentClaim.claimToken, pending.targetProjectId),
+    ).resolves.toMatchObject({ status: 'succeeded', resultProjectId: pending.targetProjectId });
+    await expect(
+      initialStore.fail(pending.id, 'main', 'claim-old', 'JS_TEMPLATE_CREATE_FAILED', 'JS Template creation failed'),
+    ).resolves.toBeNull();
+  });
+
+  it('retains succeeded and failed jobs until their owner explicitly dismisses them', async () => {
+    const store = new JsTemplateCreateJobStore(app.db, () => new Date('2026-07-27T00:00:00.000Z'));
+    const succeededPending = await store.enqueue({ ...createJobInput('visible-success'), actorUserId: '7' });
+    const succeededClaim = await store.claim(succeededPending.id, 'main', 'runner', 60_000);
+    if (!succeededClaim?.claimToken) {
+      throw new Error('Expected succeeded job claim');
+    }
+    await store.succeed(succeededClaim.id, 'main', succeededClaim.claimToken, succeededClaim.targetProjectId);
+
+    const failedPending = await store.enqueue({ ...createJobInput('visible-failure'), actorUserId: '7' });
+    const failedClaim = await store.claim(failedPending.id, 'main', 'runner', 60_000);
+    if (!failedClaim?.claimToken) {
+      throw new Error('Expected failed job claim');
+    }
+    await store.fail(
+      failedClaim.id,
+      'main',
+      failedClaim.claimToken,
+      'JS_TEMPLATE_CREATE_FAILED',
+      'JS Template creation failed',
+    );
+    const activePending = await store.enqueue({ ...createJobInput('visible-pending'), actorUserId: '7' });
+
+    await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ status: 'failed', payload: null, reservationKey: null }),
-        expect.objectContaining({ status: 'failed', payload: null, reservationKey: null }),
+        expect.objectContaining({
+          id: succeededClaim.id,
+          status: 'succeeded',
+          resultProjectId: succeededClaim.targetProjectId,
+        }),
+        expect.objectContaining({ id: failedClaim.id, status: 'failed', errorMessage: 'JS Template creation failed' }),
+        expect.objectContaining({ id: activePending.id, status: 'pending' }),
       ]),
     );
+    await expect(store.dismiss(activePending.id, 'main', '7')).rejects.toMatchObject({ status: 409 });
+    await store.dismiss(succeededClaim.id, 'main', '7');
+    await store.dismiss(failedClaim.id, 'main', '7');
+    await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual([
+      expect.objectContaining({ id: activePending.id, status: 'pending' }),
+    ]);
   });
 });
 
@@ -258,7 +331,7 @@ async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId
     if (job?.get('status') === 'failed') {
       throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
     }
-    if (!job) {
+    if (job?.get('status') === 'succeeded' && job.get('resultProjectId') === projectId) {
       const repo = await app.db.getRepository('jsTemplateProjects').findOne({ filterByTk: projectId });
       if (repo) {
         return;
@@ -291,12 +364,18 @@ function createJob(id: string, targetProjectId: string, name: string): JsTemplat
     description: null,
     sourceType: 'starter',
     status: 'running',
+    resultProjectId: null,
     payload: { sourceType: 'starter', message: 'Initial JS Template source' },
     errorCode: null,
     errorMessage: null,
     reservationKey: 'sha256:missing',
     actorUserId: null,
     requestId: null,
+    claimToken: 'claim-missing-commit',
+    claimOwner: 'runner-test',
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    heartbeatAt: new Date().toISOString(),
+    attempt: 1,
     startedAt: new Date().toISOString(),
     finishedAt: null,
     createdAt: new Date().toISOString(),

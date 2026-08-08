@@ -79,7 +79,7 @@ export const jsTemplateCreateSourceTypes = ['starter', 'zip', 'git'] as const;
 
 export type JsTemplateCreateSourceType = (typeof jsTemplateCreateSourceTypes)[number];
 
-export const jsTemplateCreateJobStatuses = ['pending', 'running', 'failed'] as const;
+export const jsTemplateCreateJobStatuses = ['pending', 'running', 'succeeded', 'failed'] as const;
 
 export type JsTemplateCreateJobStatus = (typeof jsTemplateCreateJobStatuses)[number];
 
@@ -93,6 +93,7 @@ export interface JsTemplateCreateJob {
   description: string | null;
   sourceType: JsTemplateCreateSourceType;
   status: JsTemplateCreateJobStatus;
+  resultProjectId: string | null;
   payload: Record<string, unknown> | null;
   errorCode: string | null;
   errorReasonCode?: string | null;
@@ -100,6 +101,11 @@ export interface JsTemplateCreateJob {
   reservationKey: string | null;
   actorUserId: string | null;
   requestId: string | null;
+  claimToken: string | null;
+  claimOwner: string | null;
+  leaseExpiresAt: string | null;
+  heartbeatAt: string | null;
+  attempt: number;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
@@ -114,6 +120,7 @@ export interface JsTemplateCreateJobSummary {
   description: string | null;
   sourceType: JsTemplateCreateSourceType;
   status: JsTemplateCreateJobStatus;
+  resultProjectId: string | null;
   errorCode: string | null;
   errorReasonCode?: string | null;
   errorMessage: string | null;

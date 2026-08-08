@@ -326,6 +326,7 @@ export class PluginJsTemplateServer extends Plugin {
       this.projectService,
       this.runtimeCompileService,
       createFromRemoteService,
+      this.createJobStore,
     );
     this.createJobRunner = new JsTemplateCreateJobRunner(
       this.createJobStore,
@@ -448,6 +449,9 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   async afterEnable() {
+    if (!this.createJobRunner || !this.compileWorkerPool) {
+      await this.load();
+    }
     this.domainAvailable = true;
     this.registerExternalizationCapability(this.requireRunJSWorkspaceServerModule());
     await this.startCreateJobRunner();

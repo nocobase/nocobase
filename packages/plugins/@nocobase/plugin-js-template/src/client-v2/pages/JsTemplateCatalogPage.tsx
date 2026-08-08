@@ -21,6 +21,7 @@ import { getJsTemplateSyncErrorTranslationKey } from '../hooks/useJsTemplateSync
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
 import { CreateJsTemplateModal } from './js-template-catalog/CreateJsTemplateModal';
+import { JsTemplateCreateJobStatusList } from './js-template-catalog/JsTemplateCreateJobStatusList';
 import { JsTemplateCatalogTable } from './js-template-catalog/JsTemplateCatalogTable';
 import { JsTemplateUsageModal } from './js-template-catalog/JsTemplateUsageModal';
 import { useJsTemplateCatalog } from './js-template-catalog/useJsTemplateCatalog';
@@ -46,13 +47,15 @@ export function JsTemplateCatalogPage() {
   );
   const [createOpen, setCreateOpen] = useState(false);
   const [usageEntry, setUsageEntry] = useState<JsTemplateCatalogEntry | null>(null);
-  const observedCreateJobs = useRef<Map<string, JsTemplateCreateJobSummary> | null>(null);
+  const handledTerminalCreateJobIds = useRef(new Set<string>());
 
   const handleSucceededJobs = useCallback(
     async (jobs: JsTemplateCreateJobSummary[]) => {
       for (const job of jobs) {
-        invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.targetProjectId);
-        invalidateJsTemplateRuntimeCache(flowContext.api, job.targetProjectId);
+        if (job.resultProjectId) {
+          invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.resultProjectId);
+          invalidateJsTemplateRuntimeCache(flowContext.api, job.resultProjectId);
+        }
       }
       const refreshed = await loadCatalog();
       if (refreshed) {
@@ -67,20 +70,15 @@ export function JsTemplateCatalogPage() {
   );
 
   useEffect(() => {
-    const currentJobs = new Map(createJobs.map((job) => [job.id, job]));
-    const previousJobs = observedCreateJobs.current;
-    observedCreateJobs.current = currentJobs;
-    if (!previousJobs) {
-      return;
-    }
-
-    const succeeded = [...previousJobs.values()].filter(
-      (job) => (job.status === 'pending' || job.status === 'running') && !currentJobs.has(job.id),
+    const terminal = createJobs.filter(
+      (job) =>
+        (job.status === 'succeeded' || job.status === 'failed') && !handledTerminalCreateJobIds.current.has(job.id),
     );
-    const failed = createJobs.find((job) => {
-      const previous = previousJobs.get(job.id);
-      return (previous?.status === 'pending' || previous?.status === 'running') && job.status === 'failed';
-    });
+    for (const job of terminal) {
+      handledTerminalCreateJobIds.current.add(job.id);
+    }
+    const succeeded = terminal.filter((job) => job.status === 'succeeded');
+    const failed = terminal.findLast((job) => job.status === 'failed');
 
     if (succeeded.length > 0) {
       handleSucceededJobs(succeeded).catch(() => undefined);
@@ -95,14 +93,6 @@ export function JsTemplateCatalogPage() {
       });
     }
   }, [createJobs, handleSucceededJobs, setNotice, t]);
-
-  useEffect(() => {
-    for (const job of createJobs) {
-      if (job.status === 'failed') {
-        dismissCreateJob(job.id).catch(() => undefined);
-      }
-    }
-  }, [createJobs, dismissCreateJob]);
 
   useEffect(() => {
     if (searchParams.get('create') === '1' && !createOpen) {
@@ -153,6 +143,8 @@ export function JsTemplateCatalogPage() {
           type={notice.type}
         />
       ) : null}
+
+      <JsTemplateCreateJobStatusList jobs={createJobs} marginBottom={token.margin} onDismiss={dismissCreateJob} />
 
       <JsTemplateCatalogTable
         deletingTemplateId={deletingTemplateId}

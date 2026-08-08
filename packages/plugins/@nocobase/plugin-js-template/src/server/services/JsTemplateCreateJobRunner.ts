@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { randomUUID } from 'crypto';
+
 import { isJsTemplateError, mapRemoteSyncErrorToJsTemplate } from '../../shared/errors';
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { RemoteSyncError } from '../vsc-file/remotes';
@@ -34,22 +36,32 @@ export interface JsTemplateCreateJobRunnerOptions {
   eventQueue: JsTemplateCreateJobEventQueue;
   logger: JsTemplateCreateJobLogger;
   cleanupIntervalMs?: number;
-  pendingTimeoutMs?: number;
   runningTimeoutMs?: number;
+  heartbeatIntervalMs?: number;
+  scanBatchSize?: number;
+  claimOwner?: string;
 }
 
 const queueChannel = 'js-template.create-jobs';
 
 export class JsTemplateCreateJobRunner {
-  private readonly cleanupIntervalMs: number;
+  private readonly scanIntervalMs: number;
 
-  private readonly pendingTimeoutMs: number;
+  private readonly leaseDurationMs: number;
 
-  private readonly runningTimeoutMs: number;
+  private readonly heartbeatIntervalMs: number;
+
+  private readonly scanBatchSize: number;
+
+  private readonly claimOwner: string;
 
   private started = false;
 
-  private cleanupTimer?: ReturnType<typeof setInterval>;
+  private scanTimer?: ReturnType<typeof setInterval>;
+
+  private scanPromise?: Promise<void>;
+
+  private readonly activeRuns = new Set<Promise<void>>();
 
   constructor(
     private readonly store: JsTemplateCreateJobStore,
@@ -57,9 +69,18 @@ export class JsTemplateCreateJobRunner {
     private readonly options: JsTemplateCreateJobRunnerOptions,
     private readonly auditService?: JsTemplateAuditService,
   ) {
-    this.cleanupIntervalMs = options.cleanupIntervalMs ?? 60_000;
-    this.pendingTimeoutMs = options.pendingTimeoutMs ?? 5 * 60_000;
-    this.runningTimeoutMs = options.runningTimeoutMs ?? 10 * 60_000;
+    this.scanIntervalMs = options.cleanupIntervalMs ?? 5_000;
+    this.leaseDurationMs = options.runningTimeoutMs ?? 10 * 60_000;
+    this.heartbeatIntervalMs = options.heartbeatIntervalMs ?? Math.min(30_000, Math.floor(this.leaseDurationMs / 3));
+    this.scanBatchSize = options.scanBatchSize ?? 100;
+    this.claimOwner = options.claimOwner || `${options.applicationName}:${randomUUID()}`;
+    validatePositiveInteger(this.scanIntervalMs, 'scan interval');
+    validatePositiveInteger(this.leaseDurationMs, 'lease duration');
+    validatePositiveInteger(this.heartbeatIntervalMs, 'heartbeat interval');
+    validatePositiveInteger(this.scanBatchSize, 'scan batch size');
+    if (this.heartbeatIntervalMs >= this.leaseDurationMs) {
+      throw new TypeError('Creation job heartbeat interval must be shorter than the lease duration');
+    }
   }
 
   async start(): Promise<void> {
@@ -74,114 +95,228 @@ export class JsTemplateCreateJobRunner {
         const jobId = getJobId(message);
         if (jobId) {
           await this.run(jobId);
+        } else {
+          await this.scanClaimable();
         }
       },
     });
-    await this.cleanupStale();
-    this.cleanupTimer = setInterval(() => this.cleanupStale(), this.cleanupIntervalMs);
-    this.cleanupTimer.unref();
+    this.triggerScan();
+    this.scanTimer = setInterval(() => {
+      this.triggerScan();
+    }, this.scanIntervalMs);
+    this.scanTimer.unref();
   }
 
   async stop(): Promise<void> {
-    if (!this.started) {
-      return;
+    if (this.started) {
+      this.started = false;
+      this.options.eventQueue.unsubscribe(queueChannel);
     }
-    this.started = false;
-    this.options.eventQueue.unsubscribe(queueChannel);
-    if (this.cleanupTimer) {
-      clearInterval(this.cleanupTimer);
-      this.cleanupTimer = undefined;
+    if (this.scanTimer) {
+      clearInterval(this.scanTimer);
+      this.scanTimer = undefined;
     }
+    await this.scanPromise;
+    await Promise.all([...this.activeRuns]);
   }
 
   async publish(jobId: string): Promise<void> {
-    await this.options.eventQueue.publish(queueChannel, { jobId });
+    try {
+      await this.options.eventQueue.publish(queueChannel, { jobId });
+    } catch (error) {
+      this.options.logger.warn('JS Template create-job wake-up publish failed', {
+        jobId,
+        ...safeErrorMeta(error),
+      });
+    }
   }
 
   async run(jobId: string): Promise<void> {
-    let job: JsTemplateCreateJob | null = null;
+    const execution = this.runClaimedJob(jobId);
+    this.activeRuns.add(execution);
+    try {
+      await execution;
+    } finally {
+      this.activeRuns.delete(execution);
+    }
+  }
+
+  private async runClaimedJob(jobId: string): Promise<void> {
+    const job = await this.claimWithSqliteRetry(jobId);
+    if (!job?.claimToken) {
+      return;
+    }
+    const claimToken = job.claimToken;
+    const startedAt = Date.now();
+    await this.recordAuditBestEffort(job, 'createJobStart', 'success');
+    const heartbeat = this.startHeartbeat(job, claimToken);
+    let resultProjectId: string;
+    try {
+      resultProjectId = await this.executor.execute(job, claimToken);
+    } catch (error) {
+      await heartbeat.stop();
+      await this.handleExecutionFailure(job, claimToken, error, startedAt);
+      return;
+    }
+    await heartbeat.stop();
+
+    let succeeded: JsTemplateCreateJob | null;
+    try {
+      succeeded = await this.store.succeed(job.id, this.options.applicationName, claimToken, resultProjectId);
+    } catch (error) {
+      this.options.logger.warn('JS Template create-job success was not persisted', {
+        jobId: job.id,
+        ...safeErrorMeta(error),
+      });
+      return;
+    }
+    if (!succeeded) {
+      this.options.logger.warn('JS Template create job finished after its claim was lost', { jobId: job.id });
+      return;
+    }
+    await this.recordAuditBestEffort(job, 'createJobSucceed', 'success', undefined, Date.now() - startedAt);
+    this.options.logger.info('JS Template create job succeeded', {
+      jobId: job.id,
+      sourceType: job.sourceType,
+      resultProjectId,
+    });
+  }
+
+  private async handleExecutionFailure(
+    job: JsTemplateCreateJob,
+    claimToken: string,
+    error: unknown,
+    startedAt: number,
+  ): Promise<void> {
+    const safeError = normalizeCreateJobError(error);
+    try {
+      await this.executor.cleanup(job, claimToken);
+    } catch (cleanupError) {
+      this.options.logger.warn('JS Template failed-creation cleanup was skipped', {
+        jobId: job.id,
+        targetProjectId: job.targetProjectId,
+        ...safeErrorMeta(cleanupError),
+      });
+    }
+
+    let failed: JsTemplateCreateJob | null = null;
+    try {
+      failed = await this.store.fail(
+        job.id,
+        this.options.applicationName,
+        claimToken,
+        safeError.code,
+        safeError.message,
+        safeError.reasonCode,
+      );
+    } catch (storeError) {
+      this.options.logger.warn('JS Template create-job failure was not persisted', {
+        jobId: job.id,
+        ...safeErrorMeta(storeError),
+      });
+    }
+    if (!failed) {
+      this.options.logger.warn('JS Template create-job failure ignored after claim loss', { jobId: job.id });
+      return;
+    }
+    await this.recordAuditBestEffort(
+      job,
+      'createJobFail',
+      'blocked',
+      safeError.reasonCode || safeError.code,
+      Date.now() - startedAt,
+    );
+    this.options.logger.warn('JS Template create job failed', { jobId: job.id, errorCode: safeError.code });
+  }
+
+  private startHeartbeat(job: JsTemplateCreateJob, claimToken: string): { stop: () => Promise<void> } {
+    let pending = Promise.resolve();
+    const timer = setInterval(() => {
+      pending = pending
+        .then(async () => {
+          const renewed = await this.store.heartbeat(
+            job.id,
+            this.options.applicationName,
+            claimToken,
+            this.leaseDurationMs,
+          );
+          if (!renewed) {
+            clearInterval(timer);
+          }
+        })
+        .catch((error) => {
+          clearInterval(timer);
+          this.options.logger.warn('JS Template create-job heartbeat failed', {
+            jobId: job.id,
+            ...safeErrorMeta(error),
+          });
+        });
+    }, this.heartbeatIntervalMs);
+    timer.unref();
+    return {
+      stop: async () => {
+        clearInterval(timer);
+        await pending;
+      },
+    };
+  }
+
+  private async scanClaimable(): Promise<void> {
+    if (this.scanPromise) {
+      return this.scanPromise;
+    }
+    const scan = this.drainClaimable();
+    this.scanPromise = scan;
+    try {
+      await scan;
+    } finally {
+      if (this.scanPromise === scan) {
+        this.scanPromise = undefined;
+      }
+    }
+  }
+
+  private triggerScan(): void {
+    this.scanClaimable().catch((error) => {
+      this.options.logger.error('JS Template create-job scan failed', safeErrorMeta(error));
+    });
+  }
+
+  private async drainClaimable(): Promise<void> {
+    while (this.started) {
+      const jobIds = await this.store.findClaimableIds(this.options.applicationName, this.scanBatchSize);
+      if (!jobIds.length) {
+        return;
+      }
+      for (const jobId of jobIds) {
+        if (!this.started) {
+          return;
+        }
+        try {
+          await this.run(jobId);
+        } catch (error) {
+          this.options.logger.error('JS Template create-job execution failed unexpectedly', {
+            jobId,
+            ...safeErrorMeta(error),
+          });
+        }
+      }
+      if (jobIds.length < this.scanBatchSize) {
+        return;
+      }
+    }
+  }
+
+  private async claimWithSqliteRetry(jobId: string): Promise<JsTemplateCreateJob | null> {
     for (let attempt = 0; ; attempt += 1) {
       try {
-        job = await this.store.start(jobId, this.options.applicationName);
-        break;
+        return await this.store.claim(jobId, this.options.applicationName, this.claimOwner, this.leaseDurationMs);
       } catch (error) {
         if (!isSqliteBusyError(error) || attempt >= 2) {
           throw error;
         }
         await delay(100);
       }
-    }
-    if (!job) {
-      return;
-    }
-    const startedAt = Date.now();
-    await this.recordAuditBestEffort(job, 'createJobStart', 'success');
-    try {
-      await this.executor.execute(job);
-      const completed = await this.store.complete(job.id, this.options.applicationName);
-      if (!completed) {
-        await this.cleanupJob(job);
-        this.options.logger.warn('JS Template create job finished after it expired', { jobId: job.id });
-        return;
-      }
-      await this.recordAuditBestEffort(job, 'createJobSucceed', 'success', undefined, Date.now() - startedAt);
-      this.options.logger.info('JS Template create job succeeded', {
-        jobId: job.id,
-        sourceType: job.sourceType,
-        targetProjectId: job.targetProjectId,
-      });
-    } catch (error) {
-      const safeError = normalizeCreateJobError(error);
-      try {
-        await this.store.fail(
-          job.id,
-          this.options.applicationName,
-          safeError.code,
-          safeError.message,
-          safeError.reasonCode,
-        );
-      } catch (storeError) {
-        this.options.logger.warn('JS Template create-job failure was not persisted', {
-          jobId: job.id,
-          ...safeErrorMeta(storeError),
-        });
-      }
-      await this.cleanupJob(job);
-      await this.recordAuditBestEffort(
-        job,
-        'createJobFail',
-        'blocked',
-        safeError.reasonCode || safeError.code,
-        Date.now() - startedAt,
-      );
-      this.options.logger.warn('JS Template create job failed', { jobId: job.id, errorCode: safeError.code });
-    }
-  }
-
-  private async cleanupStale(): Promise<void> {
-    try {
-      const jobs = await this.store.failStale(this.options.applicationName, {
-        pendingTimeoutMs: this.pendingTimeoutMs,
-        runningTimeoutMs: this.runningTimeoutMs,
-      });
-      for (const job of jobs) {
-        await this.cleanupJob(job);
-        await this.recordAuditBestEffort(job, 'createJobFail', 'blocked', job.errorCode || undefined);
-      }
-    } catch (error) {
-      this.options.logger.error('JS Template create-job cleanup failed', safeErrorMeta(error));
-    }
-  }
-
-  private async cleanupJob(job: JsTemplateCreateJob): Promise<void> {
-    try {
-      await this.executor.cleanup(job);
-    } catch (error) {
-      this.options.logger.warn('JS Template failed-creation cleanup failed', {
-        jobId: job.id,
-        targetProjectId: job.targetProjectId,
-        ...safeErrorMeta(error),
-      });
     }
   }
 
@@ -265,6 +400,12 @@ function isSqliteBusyError(error: unknown): boolean {
     candidate.original?.code === 'SQLITE_BUSY' ||
     candidate.parent?.code === 'SQLITE_BUSY'
   );
+}
+
+function validatePositiveInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`Creation job ${label} must be a positive integer`);
+  }
 }
 
 function delay(ms: number): Promise<void> {

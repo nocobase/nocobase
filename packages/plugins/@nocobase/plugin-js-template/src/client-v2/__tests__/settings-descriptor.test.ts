@@ -516,6 +516,7 @@ function registerSettingsDescriptorMutationTests() {
       description: null,
       sourceType: 'starter',
       status: 'pending',
+      resultProjectId: null,
       errorCode: null,
       errorMessage: null,
       startedAt: null,

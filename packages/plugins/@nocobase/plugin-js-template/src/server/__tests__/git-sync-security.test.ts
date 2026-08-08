@@ -432,7 +432,7 @@ async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId
     if (job?.get('status') === 'failed') {
       throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
     }
-    if (!job) {
+    if (job?.get('status') === 'succeeded' && job.get('resultProjectId') === projectId) {
       const project = await app.db.getRepository('jsTemplateProjects').findOne({ filterByTk: projectId });
       if (project) {
         return;

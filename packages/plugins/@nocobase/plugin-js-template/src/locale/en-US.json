@@ -488,6 +488,9 @@
   "renamed": "renamed",
   "unchanged": "unchanged",
   "Creating": "Creating",
+  "Creation pending": "Pending",
+  "Creation running": "Running",
+  "Creation tasks": "Creation tasks",
   "Creation succeeded": "Creation succeeded",
   "Creation succeeded: {{name}}": "Creation succeeded: {{name}}",
   "Creation failed": "Creation failed",
@@ -497,6 +500,8 @@
   "Remove failed creation?": "Remove failed creation?",
   "Failed to retry creation": "Failed to retry creation",
   "Failed to remove failed creation": "Failed to remove failed creation",
+  "Remove creation task": "Remove creation task",
+  "Failed to remove creation task": "Failed to remove creation task",
   "JS Template creation failed": "JS Template creation failed",
   "Creation task": "Creation task",
   "Select": "Select"

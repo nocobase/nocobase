@@ -12,7 +12,8 @@ import { vi } from 'vitest';
 
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
-import type { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
+import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
+import type { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import type { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
 import { toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
@@ -21,12 +22,46 @@ import type { JsTemplateCompileService } from '../services/JsTemplateCompileServ
 describe('JS Template durable creation jobs', () => {
   it('returns 202 after reservation persistence without compiling in the request', async () => {
     const job = createJobRecord();
+    let durableStatus: JsTemplateCreateJob['status'] | 'empty' = 'empty';
+    const claimedJob = createJobRecord({
+      status: 'running',
+      claimToken: 'claim-scanner',
+      claimOwner: 'scanner-test',
+      leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+      heartbeatAt: new Date().toISOString(),
+      attempt: 1,
+      startedAt: new Date().toISOString(),
+    });
     const store = {
-      enqueue: vi.fn(async () => job),
+      enqueue: vi.fn(async () => {
+        durableStatus = 'pending';
+        return job;
+      }),
+      findClaimableIds: vi.fn(async () => (durableStatus === 'pending' ? [job.id] : [])),
+      claim: vi.fn(async () => {
+        if (durableStatus !== 'pending') {
+          return null;
+        }
+        durableStatus = 'running';
+        return claimedJob;
+      }),
+      succeed: vi.fn(async () => {
+        durableStatus = 'succeeded';
+        return createJobRecord({ status: 'succeeded', resultProjectId: job.targetProjectId });
+      }),
+      heartbeat: vi.fn(async () => true),
     } as unknown as JsTemplateCreateJobStore;
-    const runner = {
-      publish: vi.fn(async () => undefined),
-    } as unknown as JsTemplateCreateJobRunner;
+    const publish = vi.fn(async () => Promise.reject(new Error('injected queue outage')));
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const executor = {
+      execute: vi.fn(async () => job.targetProjectId),
+      cleanup: vi.fn(async () => false),
+    } as unknown as JsTemplateCreateJobExecutor;
+    const runner = new JsTemplateCreateJobRunner(store, executor, {
+      applicationName: 'main',
+      eventQueue: { subscribe: vi.fn(), unsubscribe: vi.fn(), publish },
+      logger,
+    });
     const projectService = {
       normalizeCreateMetadata: vi.fn(() => ({
         name: 'Demo',
@@ -83,8 +118,20 @@ describe('JS Template durable creation jobs', () => {
       }),
       expect.anything(),
     );
-    expect(runner.publish).toHaveBeenCalledWith(job.id);
+    expect(publish).toHaveBeenCalledWith('js-template.create-jobs', { jobId: job.id });
+    expect(logger.warn).toHaveBeenCalledWith(
+      'JS Template create-job wake-up publish failed',
+      expect.objectContaining({ jobId: job.id, errorCode: 'Error' }),
+    );
     expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
+
+    await runner.start();
+    await vi.waitFor(() => expect(executor.execute).toHaveBeenCalledTimes(1));
+    await runner.stop();
+
+    expect(executor.execute).toHaveBeenCalledWith(claimedJob, 'claim-scanner');
+    expect(durableStatus).toBe('succeeded');
+    await expect(store.findClaimableIds('main')).resolves.toEqual([]);
   });
 
   it('rejects caller-supplied target repository identifiers before persistence', async () => {
@@ -114,9 +161,11 @@ describe('JS Template durable creation jobs', () => {
     expect(store.enqueue).not.toHaveBeenCalled();
   });
 
-  it('builds summaries without payload, auth, or actor fields', () => {
+  it('builds succeeded summaries with result identity and without internal execution fields', () => {
     const summary = toCreateJobSummary(
       createJobRecord({
+        status: 'succeeded',
+        resultProjectId: 'jtp_target',
         errorReasonCode: 'default-branch-unavailable',
         payload: {
           sourceType: 'git',
@@ -129,9 +178,15 @@ describe('JS Template durable creation jobs', () => {
     const serialized = JSON.stringify(summary);
 
     expect(serialized).not.toContain('SECRET_TOKEN');
+    expect(summary.resultProjectId).toBe('jtp_target');
     expect(summary.errorReasonCode).toBe('default-branch-unavailable');
     expect(summary).not.toHaveProperty('payload');
     expect(summary).not.toHaveProperty('actorUserId');
+    expect(summary).not.toHaveProperty('requestId');
+    expect(summary).not.toHaveProperty('claimToken');
+    expect(summary).not.toHaveProperty('claimOwner');
+    expect(summary).not.toHaveProperty('leaseExpiresAt');
+    expect(summary).not.toHaveProperty('heartbeatAt');
   });
 });
 
@@ -146,12 +201,18 @@ function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTempla
     description: null,
     sourceType: 'starter',
     status: 'pending',
+    resultProjectId: null,
     payload: { sourceType: 'starter', message: 'Initial JS Template source' },
     errorCode: null,
     errorMessage: null,
     reservationKey: 'sha256:reservation',
     actorUserId: '7',
     requestId: 'request-1',
+    claimToken: null,
+    claimOwner: null,
+    leaseExpiresAt: null,
+    heartbeatAt: null,
+    attempt: 0,
     startedAt: null,
     finishedAt: null,
     createdAt: '2026-07-27T00:00:00.000Z',

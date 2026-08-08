@@ -80,16 +80,16 @@ export function useJsTemplateCreateJobs(): UseJsTemplateCreateJobsResult {
     };
   }, [refresh]);
 
-  const hasActiveJobs = jobs.some((job) => job.status === 'pending' || job.status === 'running');
+  const hasVisibleJobs = jobs.length > 0;
   useEffect(() => {
-    if (!hasActiveJobs && !error) {
+    if (!hasVisibleJobs && !error) {
       return;
     }
     const timer = setInterval(() => {
       refresh().catch(() => undefined);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [error, hasActiveJobs, refresh]);
+  }, [error, hasVisibleJobs, refresh]);
 
   const addAcceptedJob = useCallback((job: JsTemplateCreateJobSummary) => {
     setJobs((current) => [job, ...current.filter((candidate) => candidate.id !== job.id)]);

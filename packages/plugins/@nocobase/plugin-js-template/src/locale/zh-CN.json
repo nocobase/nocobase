@@ -488,6 +488,9 @@
   "renamed": "重命名",
   "unchanged": "未变更",
   "Creating": "创建中",
+  "Creation pending": "等待创建",
+  "Creation running": "创建中",
+  "Creation tasks": "创建任务",
   "Creation succeeded": "创建成功",
   "Creation succeeded: {{name}}": "创建成功：{{name}}",
   "Creation failed": "创建失败",
@@ -497,6 +500,8 @@
   "Remove failed creation?": "移除失败任务？",
   "Failed to retry creation": "重试创建失败",
   "Failed to remove failed creation": "移除失败任务失败",
+  "Remove creation task": "移除创建任务",
+  "Failed to remove creation task": "移除创建任务失败",
   "JS Template creation failed": "JS 模板创建失败",
   "Creation task": "创建任务",
   "Select": "选择"

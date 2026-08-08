@@ -12,7 +12,7 @@ import type { Database } from '@nocobase/database';
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCreateJob, JsTemplateTreeEntryInput } from '../../shared/types';
 import { JsTemplateCreateFromRemoteService } from './JsTemplateCreateFromRemoteService';
-import type { JsTemplateCreateJobPayload } from './JsTemplateCreateJobStore';
+import { JsTemplateCreateJobStore, type JsTemplateCreateJobPayload } from './JsTemplateCreateJobStore';
 import { JsTemplateProjectService, type JsTemplateServiceContext } from './JsTemplateProjectService';
 import { JsTemplateCompileService } from './JsTemplateCompileService';
 import { isStrictUtf8Text, parseJsTemplateSourceArchive } from './JsTemplateSourceArchive';
@@ -23,11 +23,26 @@ export class JsTemplateCreateJobExecutor {
     private readonly projectService: JsTemplateProjectService,
     private readonly runtimeCompileService: JsTemplateCompileService,
     private readonly createFromRemoteService: JsTemplateCreateFromRemoteService,
+    private readonly store: JsTemplateCreateJobStore,
   ) {}
 
-  async execute(job: JsTemplateCreateJob): Promise<string> {
+  async execute(job: JsTemplateCreateJob, claimToken: string): Promise<string> {
     const existing = await this.projectService.findInternalProjectById(job.targetProjectId);
     if (existing) {
+      if (existing.creationJobId === job.id && existing.healthStatus === 'ready' && existing.headCommitId) {
+        return existing.id;
+      }
+      if (existing.creationJobId === job.id && existing.healthStatus !== 'ready') {
+        await this.cleanup(job, claimToken);
+      } else {
+        throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template creation target already exists', {
+          details: { projectId: job.targetProjectId },
+        });
+      }
+    }
+
+    const afterCleanup = await this.projectService.findInternalProjectById(job.targetProjectId);
+    if (afterCleanup) {
       throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template creation target already exists', {
         details: { projectId: job.targetProjectId },
       });
@@ -50,7 +65,12 @@ export class JsTemplateCreateJobExecutor {
           authRef: payload.authRef,
         },
         ctx,
-        { targetProjectId: job.targetProjectId },
+        {
+          targetProjectId: job.targetProjectId,
+          creationJobId: job.id,
+          assertCurrentClaim: (transaction) =>
+            this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction),
+        },
       );
       return created.project.id;
     }
@@ -61,6 +81,7 @@ export class JsTemplateCreateJobExecutor {
         : normalizeInitialFiles(payload.initialFiles);
     assertTextSourceFiles(initialFiles || []);
     return this.db.sequelize.transaction(async (transaction) => {
+      await this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction);
       const transactionContext = { ...ctx, transaction };
       const project = await this.projectService.createProject(
         {
@@ -71,7 +92,7 @@ export class JsTemplateCreateJobExecutor {
           message: payload.message,
         },
         transactionContext,
-        { projectId: job.targetProjectId },
+        { projectId: job.targetProjectId, creationJobId: job.id },
       );
       if (!project.headCommitId) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template initial source commit is missing', {
@@ -86,19 +107,28 @@ export class JsTemplateCreateJobExecutor {
     });
   }
 
-  async cleanup(job: JsTemplateCreateJob): Promise<void> {
-    const existing = await this.projectService.findInternalProjectById(job.targetProjectId);
-    if (!existing) {
-      return;
-    }
-    await this.projectService.deleteProject(
-      { projectId: job.targetProjectId },
-      {
-        actorUserId: job.actorUserId,
-        requestId: job.requestId || `create-job-cleanup:${job.id}`,
-        requestSource: `js-template-create-job-cleanup:${job.sourceType}`,
-      },
-    );
+  async cleanup(job: JsTemplateCreateJob, claimToken: string): Promise<boolean> {
+    return this.db.sequelize.transaction(async (transaction) => {
+      await this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction);
+      const existing = await this.projectService.findInternalProjectById(job.targetProjectId, { transaction });
+      if (!existing || existing.creationJobId !== job.id || existing.healthStatus === 'ready') {
+        return false;
+      }
+      const locked = await this.projectService.lockInternalProjectForUpdate(job.targetProjectId, { transaction });
+      if (locked.creationJobId !== job.id || locked.healthStatus === 'ready') {
+        return false;
+      }
+      await this.projectService.deleteProject(
+        { projectId: job.targetProjectId },
+        {
+          actorUserId: job.actorUserId,
+          requestId: job.requestId || `create-job-cleanup:${job.id}`,
+          requestSource: `js-template-create-job-cleanup:${job.sourceType}`,
+          transaction,
+        },
+      );
+      return true;
+    });
   }
 }
 

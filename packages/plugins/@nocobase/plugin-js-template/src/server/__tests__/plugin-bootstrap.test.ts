@@ -191,6 +191,37 @@ describe('plugin-js-template bootstrap', () => {
     expect(infrastructure().compileWorkerPool).toBeUndefined();
     expect(beforeStopListeners).toHaveLength(0);
   }, 60_000);
+
+  it('rebuilds and starts the create-job scanner when enable follows a cleared runner', async () => {
+    const app = {
+      db: { hasCollection: vi.fn(() => true) } as unknown as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
+      eventQueue: {},
+      logger: {},
+      resourceManager: { define: vi.fn(), options: {} },
+    } as unknown as Application;
+    const plugin = new PluginJsTemplateServer(app, {
+      name: 'js-template',
+      packageName: NAMESPACE,
+    });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
+    const start = vi.fn(async () => undefined);
+    const state = plugin as unknown as {
+      createJobRunner?: { start: () => Promise<void> };
+      compileWorkerPool?: object;
+      runRemoteRecovery: () => Promise<void>;
+    };
+    const load = vi.spyOn(plugin, 'load').mockImplementation(async () => {
+      state.createJobRunner = { start };
+      state.compileWorkerPool = {};
+    });
+    state.runRemoteRecovery = vi.fn(async () => undefined);
+
+    await plugin.afterEnable();
+
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(1);
+  });
 });
 
 function createCompileJob(ordinal: number): JsTemplateCompileJob {

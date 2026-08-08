@@ -44,6 +44,11 @@ export default defineCollection({
       name: 'jst_project_head_idx',
       fields: ['headCommitId'],
     },
+    {
+      name: 'jst_project_creation_job_uq',
+      unique: true,
+      fields: ['creationJobId'],
+    },
   ],
   fields: [
     {
@@ -102,6 +107,12 @@ export default defineCollection({
     {
       type: 'date',
       name: 'lastCompiledAt',
+    },
+    {
+      type: 'string',
+      name: 'creationJobId',
+      length: 64,
+      unique: true,
     },
   ],
 });
