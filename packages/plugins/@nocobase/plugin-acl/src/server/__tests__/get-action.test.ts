@@ -14,12 +14,11 @@ describe('get action with acl', () => {
   let app: MockServer;
 
   let Post;
-
   let Comment;
   let userAgent;
 
-  beforeEach(async () => {
-    app = await prepareApp();
+  async function setupApp(options?: Parameters<typeof prepareApp>[0]) {
+    app = await prepareApp(options);
     const UserRepo = app.db.getCollection('users').repository;
     const users = await UserRepo.create({
       values: [{ nickname: 'a', roles: [{ name: 'test' }] }],
@@ -53,9 +52,29 @@ describe('get action with acl', () => {
     });
 
     await app.db.sync();
+  }
+
+  afterEach(async () => {
+    if (app) {
+      await app.destroy();
+    }
   });
 
+  function useCurrentRole(role = 'test') {
+    app.resourceManager.use(
+      (ctx, next) => {
+        ctx.state.currentRole = role;
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+  }
+
   it('should get with fields', async () => {
+    await setupApp();
+
     const testRole = app.acl.define({
       role: 'test',
     });
@@ -77,15 +96,7 @@ describe('get action with acl', () => {
       ],
     });
 
-    app.resourceManager.use(
-      (ctx, next) => {
-        ctx.state.currentRole = 'test';
-        return next();
-      },
-      {
-        before: 'acl',
-      },
-    );
+    useCurrentRole();
 
     const response = await userAgent.resource('posts').get({
       filterByTk: p1.get('id'),
@@ -94,9 +105,142 @@ describe('get action with acl', () => {
 
     expect(response.status).toBe(200);
 
-    console.log(response.body);
     // expect only has comments
     expect(response.body.data.title).toBeUndefined();
     expect(response.body.data.comments).toBeDefined();
+  });
+
+  it('should keep nested many-to-many file table fields allowed by association target permissions for templates', async () => {
+    await setupApp({
+      plugins: ['file-manager'],
+    });
+
+    app.db.collection({
+      name: 'files',
+      template: 'file',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'text',
+          name: 'url',
+        },
+      ],
+    });
+
+    Comment.setField('files', {
+      type: 'belongsToMany',
+      target: 'files',
+      through: 'comments_files',
+    });
+
+    await app.db.sync();
+
+    const testRole = app.acl.define({
+      role: 'test',
+    });
+
+    testRole.grantAction('posts:view', {
+      fields: ['title', 'comments'],
+    });
+
+    testRole.grantAction('comments:view', {
+      fields: ['content', 'files'],
+    });
+
+    testRole.grantAction('files:view', {
+      fields: ['title'],
+    });
+
+    const [p1] = await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          comments: [
+            {
+              content: 'c1',
+              files: [
+                {
+                  title: 'file1',
+                  url: 'https://example.com/file1.png',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    useCurrentRole();
+
+    const response = await userAgent.resource('posts').get({
+      filterByTk: p1.get('id'),
+      fields: ['comments', 'comments.files'],
+      isTemplate: true,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.comments[0].files[0].title).toBe('file1');
+    expect(response.body.data.comments[0].files[0].url).toBeUndefined();
+  });
+
+  it('should keep nested attachment fields allowed by attachment field permissions for templates', async () => {
+    await setupApp({
+      plugins: ['file-manager'],
+    });
+
+    Comment.setField('attachments', {
+      type: 'belongsToMany',
+      target: 'attachments',
+      through: 'comments_attachments',
+      interface: 'attachment',
+    });
+
+    await app.db.sync();
+
+    const testRole = app.acl.define({
+      role: 'test',
+    });
+
+    testRole.grantAction('posts:view', {
+      fields: ['title', 'comments'],
+    });
+
+    testRole.grantAction('comments:view', {
+      fields: ['content', 'attachments'],
+    });
+
+    const [p1] = await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          comments: [
+            {
+              content: 'c1',
+              attachments: [
+                {
+                  title: 'file1',
+                  url: 'https://example.com/file1.png',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    useCurrentRole();
+
+    const response = await userAgent.resource('posts').get({
+      filterByTk: p1.get('id'),
+      fields: ['comments', 'comments.attachments'],
+      isTemplate: true,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.comments[0].attachments[0].title).toBe('file1');
+    expect(response.body.data.comments[0].attachments[0].url).toBe('https://example.com/file1.png');
   });
 });

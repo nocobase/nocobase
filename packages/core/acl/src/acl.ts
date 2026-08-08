@@ -18,6 +18,7 @@ import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
 import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
+import { filterAppendsByAssociationReadPermission, isAllowedAppendPath } from './read-append-permissions';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 import Database from '@nocobase/database';
@@ -496,7 +497,7 @@ export class ACL extends EventEmitter {
 
             if (parsedParams.appends && resourcerAction.params.fields) {
               for (const queryField of resourcerAction.params.fields) {
-                if (parsedParams.appends.indexOf(queryField) !== -1) {
+                if (isAllowedAppendPath(queryField, parsedParams.appends)) {
                   // move field to appends
                   if (!resourcerAction.params.appends) {
                     resourcerAction.params.appends = [];
@@ -517,12 +518,22 @@ export class ACL extends EventEmitter {
                 if (!y) {
                   return x;
                 }
-                return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+                return (x as any[]).filter((i) => isAllowedAppendPath(i, y));
               },
             });
 
             if (isEmptyFields) {
               resourcerAction.params.fields = [];
+            }
+
+            if (resourcerAction.params.appends) {
+              resourcerAction.params.appends = filterAppendsByAssociationReadPermission({
+                ctx,
+                db,
+                resourceName,
+                actionName,
+                appends: resourcerAction.params.appends,
+              });
             }
 
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
