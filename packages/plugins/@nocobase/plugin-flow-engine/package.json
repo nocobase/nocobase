@@ -14,13 +14,16 @@
     "koa-static": "^5.0.0"
   },
   "dependencies": {
+    "@nocobase/runjs-workspace": "2.2.0-beta.16",
     "acorn": "^8.10.0",
     "acorn-jsx": "^5.3.2",
     "acorn-walk": "8.3.4",
     "ses": "^1.14.0"
   },
   "peerDependencies": {
+    "@nocobase/acl": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/client-v2": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",

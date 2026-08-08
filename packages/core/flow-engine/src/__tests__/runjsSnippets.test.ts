@@ -115,7 +115,7 @@ describe('RunJS Snippets', () => {
 
     it('should expose new style snippets for matching contexts', async () => {
       const tableSnippets = await listSnippetsForContext('JSColumnRunJSContext', 'v1', 'zh-CN');
-      const fieldSnippets = await listSnippetsForContext('FormJSFieldItemRunJSContext', 'v1', 'zh-CN');
+      const fieldSnippets = await listSnippetsForContext('JSEditableFieldRunJSContext', 'v1', 'zh-CN');
       const detailEventSnippets = await listSnippetsForContext('DetailsItemModel', 'v1', 'zh-CN');
       const tableEventSnippets = await listSnippetsForContext('TableColumnModel', 'v1', 'zh-CN');
 

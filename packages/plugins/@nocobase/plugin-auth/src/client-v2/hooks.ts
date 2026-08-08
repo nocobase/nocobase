@@ -42,7 +42,7 @@ export function useRedirect(next = '/admin') {
     const target = redirect || next;
     const basename = app.router.getBasename?.();
     navigate(stripV2Basename(target, basename), { replace: true });
-  }, [app.router, navigate, next, searchParams]);
+  }, [app, navigate, next, searchParams]);
 }
 
 export function useDocumentTitle(title: string) {

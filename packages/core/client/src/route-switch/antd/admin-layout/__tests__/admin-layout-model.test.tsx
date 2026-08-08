@@ -112,6 +112,18 @@ describe('AdminLayout legacy wrapper', () => {
     });
   });
 
+  it('should keep the menu initializer interactive', () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<AdminLayoutModelV1>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModelV1,
+    });
+
+    const route = model.toProLayoutRoute({ designable: true, isMobile: false, t: (title) => title });
+
+    expect(route.children[0].disabled).not.toBe(true);
+  });
+
   it('should register AdminLayoutModel key with AdminLayoutModelV1 class', async () => {
     const registerModels = vi.fn();
     const schemaSettingsAdd = vi.fn();

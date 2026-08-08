@@ -18,6 +18,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import './runjs-source-inspector.setup';
 import { uid } from '@nocobase/utils';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
@@ -6912,9 +6913,10 @@ ctx.render(React.createElement(DashboardKPIs));
     expect(addBlockResponse.status, readErrorMessage(addBlockResponse)).toBe(200);
     const addBlockReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
     expect(addBlockReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: addBlockCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(addBlockReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Add block KPI');
 
     const composeCode = "ctx.render('<div>Compose KPI</div>');";
     const composeResponse = await rootAgent.resource('flowSurfaces').compose({
@@ -6937,9 +6939,10 @@ ctx.render(React.createElement(DashboardKPIs));
     const composedUid = getData(composeResponse).blocks?.[0]?.uid;
     const composedReadback = await getSurface(rootAgent, { uid: composedUid });
     expect(composedReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: composeCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(composedReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Compose KPI');
 
     const configureCode = "ctx.render('<div>Configured KPI</div>');";
     const configureResponse = await rootAgent.resource('flowSurfaces').configure({
@@ -6955,9 +6958,10 @@ ctx.render(React.createElement(DashboardKPIs));
     expect(configureResponse.status, readErrorMessage(configureResponse)).toBe(200);
     const configuredReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
     expect(configuredReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: configureCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(configuredReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Configured KPI');
   });
 
   it('should return no-skip RunJS repair guidance from flowSurfaces write errors', async () => {

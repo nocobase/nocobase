@@ -54,10 +54,12 @@ function normalizeInputValue(nextValue: unknown): InputProps['value'] {
 
 export class InputFieldModel extends FieldModel {
   render() {
+    const fieldProps = { ...this.props };
+    delete fieldProps.titleField;
     if (this.props.enableScan) {
-      return <ScanInput {...this.props} />;
+      return <ScanInput {...fieldProps} />;
     }
-    const { enableScan, disableManualInput, ...inputProps } = this.props;
+    const { enableScan, disableManualInput, ...inputProps } = fieldProps;
     return <IMESafeInput {...inputProps} />;
   }
 }

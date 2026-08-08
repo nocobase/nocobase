@@ -285,19 +285,22 @@ function extractBodyParameters(requestBody: any, usedFlagNames: Set<string>) {
   const properties = normalizeCompositeSchema(schema)?.properties;
   const required = new Set<string>(normalizeCompositeSchema(schema)?.required ?? []);
 
-  return Object.entries<any>(properties ?? {}).map(([name, propertySchema]) => ({
-    name,
-    flagName: createUniqueFlagName(toKebabCase(name), usedFlagNames),
-    in: 'body' as const,
-    required: required.has(name),
-    description: propertySchema.description,
-    type: inferParameterType(propertySchema),
-    format: propertySchema.format,
-    isArray: propertySchema.type === 'array',
-    isFile: propertySchema.type === 'string' && propertySchema.format === 'binary',
-    jsonEncoded: propertySchema.type === 'object' || propertySchema.type === 'array',
-    jsonShape: describeSchemaShape(propertySchema),
-  }));
+  return Object.entries<any>(properties ?? {}).map(([name, propertySchema]) => {
+    const parameterType = inferParameterType(propertySchema);
+    return {
+      name,
+      flagName: createUniqueFlagName(toKebabCase(name), usedFlagNames),
+      in: 'body' as const,
+      required: required.has(name),
+      description: propertySchema.description,
+      type: parameterType,
+      format: propertySchema.format,
+      isArray: parameterType === 'array',
+      isFile: parameterType === 'string' && propertySchema.format === 'binary',
+      jsonEncoded: parameterType === 'object' || parameterType === 'array',
+      jsonShape: describeSchemaShape(propertySchema),
+    };
+  });
 }
 
 function splitParagraphs(value?: string) {
@@ -339,7 +342,7 @@ function formatFlagExample(parameter: GeneratedParameter) {
       return `--${parameter.flagName} '[]'`;
     }
 
-    return `--${parameter.flagName} '{\"key\":\"value\"}'`;
+    return `--${parameter.flagName} '{"key":"value"}'`;
   }
 
   if (parameter.isArray) {
@@ -385,6 +388,14 @@ export function buildExamples(commandId: string, operation: { parameters: Genera
   const requiredFlags = requiredParameters.map(formatFlagExample);
   const requiredNonBodyFlags = requiredParameters.filter((parameter) => parameter.in !== 'body').map(formatFlagExample);
   const outputFlag = operation.responseType === 'binary' ? ' --output <path>' : '';
+  const complexBodyParameterCount = operation.parameters.filter(
+    (parameter) => parameter.in === 'body' && parameter.jsonEncoded,
+  ).length;
+  if (operation.hasBody && operation.requestContentType !== 'multipart/form-data' && complexBodyParameterCount > 1) {
+    const prefix = `nb api ${commandId}${requiredNonBodyFlags.length ? ` ${requiredNonBodyFlags.join(' ')}` : ''}`;
+    return [`${prefix} --body-file <path>${outputFlag}`];
+  }
+
   const examples = [`nb api ${commandId}${requiredFlags.length ? ` ${requiredFlags.join(' ')}` : ''}${outputFlag}`];
   const firstOptional = operation.parameters.find((parameter) => !parameter.required);
 

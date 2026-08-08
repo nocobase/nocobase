@@ -8,8 +8,13 @@
  */
 
 import React from 'react';
-import { isRunJSValue, normalizeRunJSValue, type RunJSValue } from '@nocobase/flow-engine';
-import { CodeEditor } from './code-editor';
+import type { RunJSValue } from '@nocobase/flow-engine';
+import {
+  RunJSEditorField,
+  type EmbeddedRunJSEditorController,
+  type RunJSSourceLocator,
+  type RunJSSurfaceStyle,
+} from './runjs-studio';
 
 export interface RunJSValueEditorProps {
   t?: (key: string) => string;
@@ -18,7 +23,13 @@ export interface RunJSValueEditorProps {
   disabled?: boolean;
   height?: string;
   scene?: string;
+  locator?: RunJSSourceLocator;
+  sourceLocator?: RunJSSourceLocator;
+  sourceLabel?: string;
+  surfaceStyle?: RunJSSurfaceStyle;
   containerStyle?: React.CSSProperties;
+  editorChrome?: 'standalone' | 'embedded';
+  onEmbeddedEditorControllerChange?: (controller: EmbeddedRunJSEditorController | null) => void;
 }
 
 export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
@@ -32,27 +43,25 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     containerStyle = { flex: 1, minWidth: 0 },
   } = props;
 
-  const current: RunJSValue = isRunJSValue(value) ? normalizeRunJSValue(value) : { code: '', version: 'v2' };
-  const tip = t?.('Use return to output value') ?? 'Use return to output value';
-  const placeholderText = `// ${tip}`;
-
   return (
-    <div style={containerStyle}>
-      <CodeEditor
-        value={current.code}
-        onChange={(code) => {
-          if (disabled) {
-            return;
-          }
-          onChange?.({ ...current, code });
-        }}
-        version={current.version}
-        height={height}
-        readonly={disabled}
-        enableLinter
-        placeholder={placeholderText}
-        scene={scene}
-      />
-    </div>
+    <RunJSEditorField
+      t={t}
+      value={value}
+      onChange={(nextValue) => {
+        if (typeof nextValue !== 'string') {
+          onChange?.(nextValue);
+        }
+      }}
+      height={height}
+      scene={scene}
+      locator={props.locator}
+      sourceLocator={props.sourceLocator}
+      sourceLabel={props.sourceLabel}
+      surfaceStyle={props.surfaceStyle}
+      containerStyle={containerStyle}
+      disabled={disabled}
+      editorChrome={props.editorChrome}
+      onEmbeddedEditorControllerChange={props.onEmbeddedEditorControllerChange}
+    />
   );
 };

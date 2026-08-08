@@ -104,6 +104,7 @@ export * from './antd-config-provider';
 export * from './api-client';
 export * from './appInfo';
 export * from './application';
+export * from './runjs-editor';
 export * from './async-data-provider';
 export * from './block-configs';
 export * from './block-provider';

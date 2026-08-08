@@ -9,7 +9,6 @@
 
 import { FlowEngine } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
-import '@nocobase/client';
 import { initDragSortParams } from '../dragSort';
 import { TableBlockModel } from '../TableBlockModel';
 

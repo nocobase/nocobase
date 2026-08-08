@@ -8,6 +8,7 @@
  */
 
 import { ISchema } from '@formily/json-schema';
+import type { ReactNode } from 'react';
 import { SubModelItem } from './components';
 import type { PropertyOptions } from './flowContext';
 import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
@@ -210,6 +211,10 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
         | Promise<Record<string, (this: TCtx, ...args: any[]) => any>>);
 }
 
+export interface ActionRegistrationOptions {
+  warnOnOverwrite?: boolean;
+}
+
 /**
  * Flow 事件名称集合。
  * - 收录内置常用事件，便于智能提示；
@@ -280,13 +285,54 @@ export type EventDefinition<
   TCtx extends FlowContext = FlowContext,
 > = ActionDefinition<TModel, TCtx>;
 
+export interface StepCascadeMenuContext {
+  model?: FlowModel;
+  flowKey?: string;
+  stepKey?: string;
+  params: ParamObject;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}
+
+export interface StepCascadeMenuLoadContext extends StepCascadeMenuContext {
+  defaultParams: ParamObject;
+}
+
+export interface StepCascadeMenuItem {
+  key: string;
+  label: ReactNode;
+  children?: StepCascadeMenuItem[];
+  disabled?: boolean;
+  searchText?: string;
+  selected?: boolean;
+  onSelect?: (ctx: StepCascadeMenuLoadContext) => ParamObject | void | Promise<ParamObject | void>;
+}
+
+export interface StepCascadeMenuUIMode {
+  type: 'cascadeMenu';
+  key?: string;
+  props?: {
+    loadItems?: (ctx: StepCascadeMenuLoadContext) => StepCascadeMenuItem[] | Promise<StepCascadeMenuItem[]>;
+    getDisplayLabel?: (ctx: StepCascadeMenuContext) => ReactNode;
+    searchPlaceholder?: string;
+    loadingLabel?: string;
+    emptyLabel?: string;
+    errorLabel?: string;
+    showSearch?: boolean;
+  };
+}
+
 export type StepUIMode =
   | 'dialog'
   | 'drawer'
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
+  | StepCascadeMenuUIMode
+  | {
+      type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch';
+      props?: Record<string, any>;
+      key?: string;
+    };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -303,8 +349,14 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   sort?: number; // Sort order for step execution, lower numbers execute first
 
   // Step configuration
+  params?: ActionDefinition<TModel, FlowRuntimeContext<TModel>>['defaultParams'];
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
+  /**
+   * Whether the settings form values are persisted under this step key.
+   * Runtime-only settings steps can set this to false and persist through beforeParamsSave instead.
+   */
+  persistParams?: boolean;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 

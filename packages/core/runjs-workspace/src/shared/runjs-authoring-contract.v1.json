@@ -1,0 +1,30 @@
+{
+  "authoringContractVersion": "1",
+  "inlineWorkspace": {
+    "available": true,
+    "saveMode": "delta",
+    "supportsMaterialize": true,
+    "ownerKinds": ["js-block", "js-page", "js-field", "js-column", "js-action", "js-item"],
+    "modelUses": [
+      "JSPageModel",
+      "JSBlockModel",
+      "JSFieldModel",
+      "JSEditableFieldModel",
+      "JSColumnModel",
+      "JSItemModel",
+      "JSItemActionModel",
+      "JSActionModel",
+      "JSRecordActionModel",
+      "JSCollectionActionModel",
+      "JSFormActionModel",
+      "FilterFormJSActionModel"
+    ]
+  },
+  "externalization": {
+    "available": true,
+    "entryKinds": ["js-block", "js-page", "js-field", "js-action", "js-item"],
+    "destinationTypes": ["existing", "new"],
+    "supportsIdempotency": true,
+    "supportsDetachToInline": true
+  }
+}

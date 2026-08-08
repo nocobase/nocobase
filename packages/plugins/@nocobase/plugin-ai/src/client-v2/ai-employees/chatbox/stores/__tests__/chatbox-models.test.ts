@@ -208,6 +208,8 @@ describe('chatbox runtime models', () => {
     });
 
     model.addSessionMessage(undefined, textMessage('draft-message'));
+    model.setSessionContextItems(undefined, [contextItem('code-workspace', 'workspace-a')]);
+    model.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
 
     expect(model.sessions).toBe(initialSessions);
     expect(model.sessions[CHAT_DEFAULT_SESSION_KEY]).toBe(initialDefaultSession);
@@ -218,7 +220,16 @@ describe('chatbox runtime models', () => {
     dispose();
 
     expect(model.getSessionState('created-session').messages.map((message) => message.key)).toEqual(['draft-message']);
+    expect(model.getSessionState('created-session')).toMatchObject({
+      contextItems: [contextItem('code-workspace', 'workspace-a')],
+      workspaceSurfaceId: 'workspace-a',
+    });
     expect(model.getSessionState().messages).toEqual([]);
+    expect(model.getSessionState().contextItems).toEqual([]);
+    expect(model.getSessionState().workspaceSurfaceId).toBeUndefined();
+
+    model.resetSessionState('created-session');
+    expect(model.getSessionState('created-session').workspaceSurfaceId).toBeUndefined();
   });
 
   it('does not replace other ChatMessageModel sessions when one session field changes', () => {

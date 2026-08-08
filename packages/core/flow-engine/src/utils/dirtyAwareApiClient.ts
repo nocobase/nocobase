@@ -434,7 +434,12 @@ function createDirtyAwareResource(
   return new Proxy(resource, {
     get(target, prop, receiver) {
       const original = Reflect.get(target, prop, receiver);
-      if (typeof prop !== 'string' || typeof original !== 'function' || !isMutatingResourceAction(prop)) {
+      if (typeof prop !== 'string' || typeof original !== 'function') {
+        return original;
+      }
+
+      const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
+      if (!dirtyResourceAction || !isMutatingResourceAction(dirtyResourceAction.actionName)) {
         return original;
       }
 

@@ -26,7 +26,7 @@ import {
   getFormItemPreferredFieldPath,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import { RunJSValueEditor } from './RunJSValueEditor';
+import { RunJSValueEditor, type RunJSValueEditorProps } from './RunJSValueEditor';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
@@ -72,6 +72,7 @@ interface Props {
   /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
   allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
+  sourceLabel?: string;
   disabled?: boolean;
   variableConverters?: VariableInputProps['converters'];
 }
@@ -445,6 +446,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   associationFieldNamesOverride,
   allowRunJS = true,
   maxAssociationFieldDepth = 2,
+  sourceLabel,
   disabled = false,
   variableConverters,
 }) => {
@@ -463,7 +465,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   React.useEffect(() => {
     extraMetaTreeRef.current = extraMetaTree;
   }, [extraMetaTree]);
-
   // 优先：表单上已配置的字段（含子表单/子表单列表的子字段）
   const itemModel = React.useMemo(() => {
     if (!targetPath) return null;
@@ -932,13 +933,19 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return N;
   }, [flowCtx]);
 
+  const sourceLabelRef = React.useRef(sourceLabel);
+  sourceLabelRef.current = sourceLabel;
+
   const RunJSComponent = React.useMemo(() => {
-    const C: React.FC<any> = (inputProps) => (
+    const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange' | 'disabled'>): JSX.Element => (
       <RunJSValueEditor
         t={flowCtx.t}
         value={inputProps?.value}
         onChange={inputProps?.onChange}
         disabled={inputProps?.disabled}
+        sourceLabel={sourceLabelRef.current}
+        surfaceStyle="value"
+        editorChrome="embedded"
       />
     );
     return C;

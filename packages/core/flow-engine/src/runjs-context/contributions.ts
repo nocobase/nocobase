@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRunJSContext } from '../flowContext';
+import type { FlowRunJSContext } from '../flowContext';
 import { RunJSContextRegistry, type RunJSVersion } from './registry';
 
 export type RunJSContextContributionApi = {
@@ -21,6 +21,11 @@ export type RunJSContextContribution = (api: RunJSContextContributionApi) => voi
 const contributions = new Set<RunJSContextContribution>();
 const appliedByVersion = new Map<RunJSVersion, Set<RunJSContextContribution>>();
 const setupDoneVersions = new Set<RunJSVersion>();
+let flowRunJSContext: typeof FlowRunJSContext | undefined;
+
+export function setRunJSContextContributionBase(base: typeof FlowRunJSContext) {
+  flowRunJSContext = base;
+}
 
 async function applyContributionOnce(version: RunJSVersion, contribution: RunJSContextContribution) {
   const applied = appliedByVersion.get(version) || new Set<RunJSContextContribution>();
@@ -31,10 +36,13 @@ async function applyContributionOnce(version: RunJSVersion, contribution: RunJSC
   // If it fails, remove the marker so a later setup retry can re-apply.
   applied.add(contribution);
   try {
+    if (!flowRunJSContext) {
+      throw new Error('[flow-engine] RunJS context contributions require setupRunJSContexts()');
+    }
     await contribution({
       version,
       RunJSContextRegistry,
-      FlowRunJSContext,
+      FlowRunJSContext: flowRunJSContext,
     });
   } catch (error) {
     applied.delete(contribution);
@@ -57,14 +65,9 @@ export function registerRunJSContextContribution(contribution: RunJSContextContr
 
   // Apply immediately for already-setup versions (late registration).
   for (const version of setupDoneVersions) {
-    void applyContributionOnce(version, contribution).catch((error) => {
+    applyContributionOnce(version, contribution).catch((error) => {
       // Avoid unhandled rejections in late registrations
-      try {
-        // eslint-disable-next-line no-console
-        console.error('[flow-engine] RunJS context contribution failed:', error);
-      } catch (_) {
-        void 0;
-      }
+      console.error('[flow-engine] RunJS context contribution failed:', error);
     });
   }
 }

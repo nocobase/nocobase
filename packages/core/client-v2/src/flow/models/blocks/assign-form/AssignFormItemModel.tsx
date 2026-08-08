@@ -293,6 +293,8 @@ export class AssignFormItemModel extends FormItemModel {
             value={inputProps?.value}
             onChange={inputProps?.onChange}
             containerStyle={{ width: '100%' }}
+            sourceLabel={`${this.context.t('Assign field')} / ${this.context.t('RunJS')}`}
+            surfaceStyle="value"
           />
         );
       };

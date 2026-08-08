@@ -12,11 +12,13 @@ import type { Context } from '@nocobase/actions';
 import {
   extractFrontendToolManifests,
   findCurrentFrontendTool,
+  getBlockedFrontendToolNames,
   prepareToolsForFrontendConversation,
   shouldAutoExecuteFrontendTool,
 } from '../frontend-tools';
 import loadFrontendTool from '../../ai/tools/loadFrontendTool';
 import executeFrontendTool from '../../ai/tools/executeFrontendTool';
+import { WORKSPACE_AUTHORING_TOOL_NAMES } from '../../common/workspace-authoring';
 
 const frontendTool = {
   id: 'block-1:refresh_dashboard',
@@ -33,6 +35,34 @@ const frontendTool = {
   },
 };
 
+const workspaceApplyTool = {
+  id: 'workspace-1:workspaceApplyPreparedChanges',
+  blockUid: 'workspace-1',
+  name: 'workspaceApplyPreparedChanges',
+  title: 'Apply prepared workspace changes',
+  description: 'Apply a prepared plan without saving.',
+  permission: 'ASK' as const,
+  inputSchema: {
+    type: 'object',
+    required: ['planId'],
+    properties: { planId: { type: 'string' } },
+    additionalProperties: false,
+  },
+};
+
+const workspaceTools = Object.values(WORKSPACE_AUTHORING_TOOL_NAMES).map((name) =>
+  name === workspaceApplyTool.name
+    ? workspaceApplyTool
+    : {
+        id: `workspace-1:${name}`,
+        blockUid: 'workspace-1',
+        name,
+        description: `${name} tool.`,
+        permission: 'ALLOW' as const,
+        inputSchema: { type: 'object' },
+      },
+);
+
 describe('frontend tools', () => {
   it('keeps the generic executor allowed while concrete tools control automatic execution', () => {
     expect(loadFrontendTool.execution).toBe('frontend');
@@ -44,6 +74,69 @@ describe('frontend tools', () => {
     );
     expect(shouldAutoExecuteFrontendTool([frontendTool], { toolId: 'block-1:unknown' })).toBe(false);
     expect(shouldAutoExecuteFrontendTool([frontendTool], null)).toBe(false);
+    expect(shouldAutoExecuteFrontendTool([workspaceApplyTool], { toolId: workspaceApplyTool.id })).toBe(false);
+  });
+
+  it('keeps workspace apply bound to the first conversation catalog and accepts only planId', async () => {
+    const conversation: { options: Record<string, unknown> } = { options: {} };
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            sessionId: 'workspace-session',
+            messages: [
+              {
+                role: 'user',
+                workContext: [
+                  {
+                    type: 'code-workspace',
+                    uid: 'workspace-1',
+                    frontendTools: [workspaceApplyTool],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      },
+      db: {
+        getRepository: (name: string) => {
+          if (name !== 'aiConversations') {
+            throw new Error(`Unexpected repository: ${name}`);
+          }
+          return {
+            findOne: vi.fn().mockImplementation(async () => conversation),
+            update: vi.fn().mockImplementation(async ({ values }) => {
+              conversation.options = values.options;
+              return [1];
+            }),
+          };
+        },
+      },
+    } as unknown as Context;
+
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
+    expect(workspaceApplyTool.inputSchema).toEqual({
+      type: 'object',
+      required: ['planId'],
+      properties: { planId: { type: 'string' } },
+      additionalProperties: false,
+    });
+
+    ctx.action.params.values.messages = [
+      {
+        role: 'user',
+        workContext: [
+          {
+            type: 'code-workspace',
+            uid: 'workspace-2',
+            frontendTools: [{ ...workspaceApplyTool, id: 'workspace-2:workspaceApplyPreparedChanges' }],
+          },
+        ],
+      },
+    ];
+    await expect(findCurrentFrontendTool(ctx, 'workspace-2:workspaceApplyPreparedChanges')).resolves.toBeUndefined();
+    await expect(findCurrentFrontendTool(ctx, workspaceApplyTool.id)).resolves.toEqual(workspaceApplyTool);
   });
 
   it('exposes frontend tools only for bound conversations and keeps the catalog on the loader', () => {
@@ -67,6 +160,34 @@ describe('frontend tools', () => {
       prepared[2].definition.schema.safeParse({ toolId: frontendTool.id, args: { riskLevel: 'high' } }).success,
     ).toBe(true);
     expect(prepared[2].definition.schema.safeParse({ toolId: '__catalog__', args: {} }).success).toBe(false);
+  });
+
+  it('hides legacy single-file coding tools when a workspace authoring catalog is bound', () => {
+    const tools = [
+      { definition: { name: 'readJSCode', description: 'Read current editor code.' } },
+      { definition: { name: 'writeJSCode', description: 'Write current editor code.' } },
+      { definition: { name: 'patchJSCode', description: 'Patch current editor code.' } },
+      { definition: { name: 'lintAndTestJS', description: 'Lint current editor code.' } },
+      { definition: { name: 'getSkill', description: 'Load a skill.' } },
+      { definition: { name: 'loadFrontendTool', description: 'Load a frontend tool.' } },
+      { definition: { name: 'executeFrontendTool', description: 'Execute a frontend tool.' } },
+    ];
+
+    const prepared = prepareToolsForFrontendConversation(tools, workspaceTools);
+
+    expect(prepared.map((tool) => tool.definition.name)).toEqual([
+      'getSkill',
+      'loadFrontendTool',
+      'executeFrontendTool',
+    ]);
+    expect(getBlockedFrontendToolNames(workspaceTools)).toEqual([
+      'readJSCode',
+      'writeJSCode',
+      'patchJSCode',
+      'lintAndTestJS',
+    ]);
+    expect(getBlockedFrontendToolNames([workspaceApplyTool])).toEqual([]);
+    expect(getBlockedFrontendToolNames([frontendTool])).toEqual([]);
   });
 
   it('extracts valid manifests from work context', () => {

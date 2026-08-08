@@ -12,6 +12,7 @@ import { createSchemaField, FormProvider, ISchema } from '@formily/react';
 import { autorun, toJS } from '@formily/reactive';
 import { Button, Space } from 'antd';
 import React, { useEffect } from 'react';
+import { FlowRuntimeContext } from '../../../../flowContext';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { StepSettingsDialogProps } from '../../../../types';
 import {
@@ -21,6 +22,9 @@ import {
   resolveDefaultParams,
   resolveStepUiSchema,
   FlowCancelSaveException,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  setupRuntimeContextSteps,
 } from '../../../../utils';
 import { FlowExitAllException } from '../../../../utils/exceptions';
 import { observer } from '../../../../reactive';
@@ -56,12 +60,15 @@ const openStepSettingsDialog = async ({
 
   // 获取流程和步骤信息
   const flow = model.getFlow(flowKey);
-  const step = flow?.steps?.[stepKey];
 
   if (!flow) {
     message.error(t('Flow with key {{flowKey}} not found', { flowKey }));
     throw new Error(t('Flow with key {{flowKey}} not found', { flowKey }));
   }
+
+  const flowSteps = await getFlowSettingSteps(model, flow, flowKey);
+  const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flowKey);
+  const step = flowSteps[stepKey];
 
   if (!step) {
     message.error(t('Step with key {{stepKey}} not found', { stepKey }));
@@ -84,9 +91,7 @@ const openStepSettingsDialog = async ({
   }
 
   // 获取流程定义
-  const flowDefinition = model.getFlow(flowKey);
-
-  const mergedUiSchema = await resolveStepUiSchema(model, flowDefinition, step);
+  const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, step);
 
   // 如果没有可配置的UI Schema，显示提示
   if (!mergedUiSchema) {
@@ -94,7 +99,8 @@ const openStepSettingsDialog = async ({
     return {};
   }
 
-  const flowRuntimeContext = ctx;
+  const flowRuntimeContext = ctx || new FlowRuntimeContext(model, flowKey, 'settings');
+  setupRuntimeContextSteps(flowRuntimeContext, flowSteps, model, flowKey);
 
   // 确保上下文中设置了当前步骤
   if (!flowRuntimeContext.currentStep || flowRuntimeContext.currentStep !== step) {
@@ -118,6 +124,11 @@ const openStepSettingsDialog = async ({
   // 保存旧参数用于 onParamsChange 回调
   const previousParams = { ...toJS(stepParams) };
 
+  const resolvedUiModeProps = toJS(uiModeProps) || {};
+  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
+  const fillAvailableContent = restUiModeProps.footer === null;
+  const shouldRenderDefaultFooter = restUiModeProps.footer !== null;
+
   // 构建表单Schema
   const formSchema: ISchema = {
     type: 'object',
@@ -127,6 +138,17 @@ const openStepSettingsDialog = async ({
         'x-component': 'FormLayout',
         'x-component-props': {
           layout: 'vertical', // 垂直布局
+          ...(fillAvailableContent
+            ? {
+                style: {
+                  display: 'flex',
+                  flex: '1 1 0',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: 0,
+                },
+              }
+            : {}),
         },
         properties: mergedUiSchema,
       },
@@ -134,8 +156,6 @@ const openStepSettingsDialog = async ({
   };
 
   const openView = model.context.viewer[mode].bind(model.context.viewer);
-  const resolvedUiModeProps = toJS(uiModeProps) || {};
-  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
   const resolveDialogZIndex = (rawZIndex?: number) => {
     const nextZIndex =
       typeof model.context.viewer?.getNextZIndex === 'function'
@@ -189,60 +209,77 @@ const openStepSettingsDialog = async ({
         return (
           <FormProvider form={form}>
             <FlowSettingsContextProvider value={flowRuntimeContext}>
-              <SchemaField
-                schema={compiledFormSchema}
-                components={{
-                  ...flowEngine.flowSettings?.components,
-                }}
-                scope={scopes}
-              />
-              <currentDialog.Footer>
-                <Space align="end">
-                  <Button
-                    type="default"
-                    onClick={() => {
-                      currentDialog.close();
-                    }}
-                  >
-                    {t('Cancel')}
-                  </Button>
-                  <Button
-                    type="primary"
-                    onClick={async () => {
-                      try {
-                        await form.submit();
-                        const currentValues = form.values;
-                        model.setStepParams(flowKey, stepKey, currentValues);
-
-                        // Call beforeParamsSave callback if it exists
-                        if (beforeParamsSave) {
-                          await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
-                        }
-
-                        currentDialog.close();
-                        await model.saveStepParams();
-                        message.success(t('Configuration saved'));
-                        // Call afterParamsSave callback if it exists
-                        if (afterParamsSave) {
-                          await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
-                        }
-                      } catch (error) {
-                        if (error instanceof FlowCancelSaveException) {
-                          return;
-                        }
-                        if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
-                          currentDialog.close();
-                          return;
-                        }
-                        console.error(t('Error saving configuration'), ':', error);
-                        message.error(t('Error saving configuration, please check console'));
+              <div
+                style={
+                  fillAvailableContent
+                    ? {
+                        display: 'flex',
+                        flex: '1 1 0',
+                        flexDirection: 'column',
+                        minHeight: 0,
                       }
-                    }}
-                  >
-                    {t('OK')}
-                  </Button>
-                </Space>
-              </currentDialog.Footer>
+                    : undefined
+                }
+              >
+                <SchemaField
+                  schema={compiledFormSchema}
+                  components={{
+                    ...flowEngine.flowSettings?.components,
+                  }}
+                  scope={scopes}
+                />
+              </div>
+              {shouldRenderDefaultFooter ? (
+                <currentDialog.Footer>
+                  <Space align="end">
+                    <Button
+                      type="default"
+                      onClick={() => {
+                        currentDialog.close();
+                      }}
+                    >
+                      {t('Cancel')}
+                    </Button>
+                    <Button
+                      type="primary"
+                      onClick={async () => {
+                        try {
+                          await form.submit();
+                          const currentValues = form.values;
+                          if (step.persistParams !== false) {
+                            model.setStepParams(flowKey, stepKey, currentValues);
+                          }
+
+                          // Call beforeParamsSave callback if it exists
+                          if (beforeParamsSave) {
+                            await beforeParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          }
+
+                          currentDialog.close();
+                          await model.saveStepParams();
+                          message.success(t('Configuration saved'));
+                          // Call afterParamsSave callback if it exists
+                          if (afterParamsSave) {
+                            await afterParamsSave(flowRuntimeContext, currentValues, previousParams);
+                          }
+                        } catch (error) {
+                          if (error instanceof FlowCancelSaveException) {
+                            return;
+                          }
+                          if (error instanceof FlowExitException || error instanceof FlowExitAllException) {
+                            currentDialog.close();
+                            return;
+                          }
+                          console.error(t('Error saving configuration'), ':', error);
+                          message.error(t('Error saving configuration, please check console'));
+                        }
+                      }}
+                    >
+                      {t('OK')}
+                    </Button>
+                  </Space>
+                </currentDialog.Footer>
+              ) : null}
             </FlowSettingsContextProvider>
           </FormProvider>
         );

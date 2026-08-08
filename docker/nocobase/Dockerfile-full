@@ -121,6 +121,8 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   fi; \
   apt-get update; \
   apt-get install -y --no-install-recommends \
+    git \
+    openssh-client \
     libaio1 \
     postgresql-client-16 \
     postgresql-client-17 \
@@ -171,7 +173,9 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   /tmp/libreoffice-debs.list \
   /tmp/LibreOffice*_Linux_*_deb \
   /usr/share/keyrings/nginx-archive-keyring.gpg \
-  /var/lib/apt/lists/* && \
+  /var/lib/apt/lists/* \
+  /usr/share/doc/* \
+  /usr/share/man/* && \
   printf '%s\n' \
   '#!/bin/sh' \
   'exec /opt/libreoffice24.8/program/oosplash "$@"' \
@@ -183,7 +187,9 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   chmod +x /usr/bin/libreoffice && \
   chmod +x /usr/bin/soffice && \
   echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
-  ldconfig
+  ldconfig && \
+  git --version && \
+  ssh -V
 
 FROM runtime-base
 

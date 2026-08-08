@@ -90,6 +90,94 @@
     }
   },
   "commands": {
+    "jsTemplate": {
+      "flags": {
+        "project": "JS Template project id",
+        "template": "JS Template id",
+        "dir": "Local workspace directory",
+        "env": "Environment name",
+        "apiBaseUrl": "NocoBase API base URL",
+        "role": "Role override, sent as X-Role",
+        "authenticator": "Authenticator override, sent as X-Authenticator",
+        "token": "API key override",
+        "jsonOutput": "Print machine-readable JSON"
+      },
+      "operations": {
+        "templateRead": "JS Template read",
+        "pull": "JS Template pull",
+        "workspaceCheck": "JS Template workspace check",
+        "save": "JS Template save"
+      },
+      "pull": {
+        "summary": "Pull a JS Template (JS Block or JS Page) into a local source workspace",
+        "dirtyRefusal": "The target directory has local source changes ({{paths}}). Review or remove them before pulling.",
+        "unknownLocalState": "unknown local state",
+        "success": "Pulled {{count}} files into {{workspace}}.",
+        "baseHead": "Base Head: {{head}}",
+        "errors": {
+          "templateProjectMismatch": "Template \"{{template}}\" belongs to project \"{{actualProject}}\", not \"{{selectedProject}}\"."
+        }
+      },
+      "check": {
+        "summary": "Run the authoritative check for a complete local JS Template workspace",
+        "noProblems": "No diagnostics.",
+        "workspaceLocation": "workspace",
+        "success": "Workspace check accepted snapshot {{snapshotId}}.",
+        "baseHead": "Base Head: {{head}}",
+        "templatesAccepted": "{{count}} templates accepted.",
+        "errors": {
+          "rejected": "Workspace check rejected snapshot {{snapshotId}}.\n{{problems}}",
+          "notAccepted": "Workspace check did not accept snapshot {{snapshotId}}.\n{{problems}}"
+        }
+      },
+      "save": {
+        "summary": "Review and save the checked local JS Template source delta",
+        "flags": {
+          "message": "Source commit message",
+          "yes": "Confirm saving the displayed source delta"
+        },
+        "defaultMessage": "Update JS Template source",
+        "deltaSummary": "Delta: {{changedFiles}} files, {{additions}} additions, {{deletions}} deletions.",
+        "confirm": "Save this source delta to the JS Template project?",
+        "success": "Saved {{count}} files at Head {{head}}.",
+        "errors": {
+          "noChanges": "There are no local source changes to save.",
+          "confirmationRequired": "Saving requires an interactive confirmation or the explicit --yes flag.",
+          "cancelled": "Save cancelled.",
+          "conflict": "{{message}} Local files and the Pull baseline were kept unchanged. Pull the new Head and replay this patch; the CLI will not retry with a replaced Head."
+        }
+      },
+      "errors": {
+        "invalidValue": "{{label}} is missing or invalid.",
+        "missingApiBaseUrl": "Env \"{{envName}}\" does not have an API base URL. Use --api-base-url or configure the env first.",
+        "targetMismatch": "This workspace belongs to a different NocoBase app or env. Pull it again for the selected target before checking or saving.",
+        "checkAcceptedInvalid": "Workspace check accepted is missing or invalid.",
+        "checkArraysInvalid": "Workspace check diagnostics are missing or invalid.",
+        "httpFailure": "{{operation}} failed with HTTP {{status}}.",
+        "clientTemplatesOnly": "The local JS Template workflow only supports client templates.",
+        "unsupportedTemplateKind": "The local JS Template workflow supports js-block, js-page, js-field, js-action, and js-item templates; received \"{{kind}}\".",
+        "pullFilesMissing": "Pull response must include the complete files array.",
+        "invalidWorkspacePath": "Invalid workspace path: {{path}}",
+        "nonUtf8Unsupported": "Binary or non-UTF-8 files are not supported by the first local Agent workflow: {{path}}.",
+        "controlBytesUnsupported": "Binary files and source containing NUL/control bytes are not supported by the first local Agent workflow: {{path}}.",
+        "symlinkUnsupported": "Symbolic links are not supported in a JS Template workspace: {{path}}",
+        "stateVersion": "Unsupported JS Template workspace state version: {{version}}. Pull the workspace again.",
+        "workspaceTemplateKind": "Unsupported workspace template kind: {{kind}}",
+        "stateMissing": "No JS Template workspace state was found at {{statePath}}. Run `nb js-template pull` first.",
+        "stateInvalid": "The JS Template workspace state at {{statePath}} is invalid.",
+        "duplicatePullPath": "Pull response contains a duplicate path: {{path}}",
+        "base64Unsupported": "Base64 or binary files are not supported by the first local Agent workflow: {{path}}.",
+        "pullUtf8Missing": "Pull response did not include UTF-8 content for {{path}}.",
+        "pullSelectionMismatch": "The selected project, template, and pull response do not match.",
+        "archivedProject": "Archived Source Projects cannot enter the local Agent workflow.",
+        "templateFilesMissing": "The pulled project does not contain the selected template source and descriptor. Repair the project before using the local Agent workflow.",
+        "baselineMissing": "The Pull baseline for {{path}} is missing. Pull the workspace again before saving.",
+        "baselineHashMismatch": "The Pull baseline for {{path}} does not match the workspace state. Pull the workspace again before reviewing or saving changes.",
+        "checkRequired": "The current local snapshot has not passed the authoritative workspace check. Run `nb js-template check` after the latest file change.",
+        "saveProjectMismatch": "Save response project does not match the local workspace.",
+        "unsafeDirectory": "Refusing to use an unsafe workspace directory: {{path}}"
+      }
+    },
     "envAdd": {
       "prompts": {
         "name": {

@@ -7,10 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { registerJsTemplateDomainAvailabilityGuard } from '@nocobase/plugin-js-template/server';
 import { findBuiltInPlugins, findLocalPlugins, packageNameTrim, Plugin, PluginManager } from '@nocobase/server';
 import _ from 'lodash';
 
+const JS_TEMPLATE_NAME = 'js-template';
+
 export class PresetNocoBase extends Plugin {
+  async load() {
+    registerJsTemplateDomainAvailabilityGuard(
+      this.app,
+      async () => {
+        if (this.pm.get(JS_TEMPLATE_NAME)?.enabled) {
+          return true;
+        }
+        const record = await this.pm.repository.findOne({
+          filter: { name: JS_TEMPLATE_NAME },
+        });
+        return record ? Boolean(record.get('enabled')) : true;
+      },
+      'preset-js-template-domain-availability',
+    );
+  }
+
   splitNames(name: string) {
     return (name || '').split(',').filter(Boolean);
   }
@@ -60,11 +79,7 @@ export class PresetNocoBase extends Plugin {
     const { packageName } = await PluginManager.parseName(name);
     const packageJson = require(`${packageName}/package.json`);
     const deps = await PluginManager.checkAndGetCompatible(packageJson.name);
-    const instance = await repository.findOne({
-      filter: {
-        packageName: packageJson.name,
-      },
-    });
+    const instance = await repository.findOne({ filter: { packageName: packageJson.name } });
     const langMap = {
       'zh-CN': 'cn/',
       'en-US': '',
@@ -167,16 +182,14 @@ export class PresetNocoBase extends Plugin {
   async updateOrCreatePlugins() {
     const repository = this.pm.repository;
     const plugins = await this.getPluginToBeUpgraded();
-    await this.db.sequelize.transaction((transaction) => {
-      return Promise.all(
-        plugins.map((values) =>
-          repository.updateOrCreate({
-            transaction,
-            values,
-            filterKeys: ['name'],
-          }),
-        ),
-      );
+    await this.db.sequelize.transaction(async (transaction) => {
+      for (const values of plugins) {
+        await repository.updateOrCreate({
+          transaction,
+          values,
+          filterKeys: ['name'],
+        });
+      }
     });
   }
 

@@ -15,6 +15,13 @@ export * from './utils';
 export { compileRunJs } from './utils/jsxTransform';
 export { registerRunJSLib } from './runjsLibs';
 export type { RunJSLibCache, RunJSLibLoader } from './runjsLibs';
+export { subscribeRunJSRenderDiagnostics } from './runjsDiagnosticsChannel';
+export type {
+  RunJSRenderDiagnostic,
+  RunJSRenderDiagnosticListener,
+  RunJSRenderDiagnosticTarget,
+} from './runjsDiagnosticsChannel';
+export { resetRunJSRuntimeElement } from './runjsRuntimeElement';
 
 // 资源类
 export * from './resources';

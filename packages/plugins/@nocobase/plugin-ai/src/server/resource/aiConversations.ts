@@ -8,6 +8,7 @@
  */
 
 import actions, { Context, Next } from '@nocobase/actions';
+import type { ToolsEntry } from '@nocobase/ai';
 import PluginAIServer from '../plugin';
 import { Model, Op } from '@nocobase/database';
 import { ResourceActionError, sendSSEError } from '../utils';
@@ -370,8 +371,9 @@ export default {
         if (!Array.isArray(messages)) {
           throw new ResourceActionError(400, ctx.t('messages must be an array'));
         }
-        normalizeIncomingMessageAttachments(ctx, messages);
-        const userMessage = messages.find((message: any) => message.role === 'user');
+        const incomingMessages = messages as AIMessageInput[];
+        normalizeIncomingMessageAttachments(ctx, incomingMessages);
+        const userMessage = incomingMessages.find((message) => message.role === 'user');
         if (!userMessage) {
           throw new ResourceActionError(400, ctx.t('user message is required'));
         }
@@ -391,19 +393,23 @@ export default {
         }
 
         if (!conversation.title) {
-          const textUserMessage = messages.find(
-            (message: any) => message.role === 'user' && message.content?.type === 'text' && message.content?.content,
+          const textUserMessage = incomingMessages.find(
+            (message) =>
+              message.role === 'user' &&
+              message.content?.type === 'text' &&
+              typeof message.content.content === 'string' &&
+              message.content.content,
           );
 
-          if (textUserMessage) {
-            const content = textUserMessage.content.content;
+          const content = textUserMessage?.content.content;
+          if (typeof content === 'string' && content) {
             conversation.title = content.substring(0, 30);
             await conversation.save();
           }
         }
 
         if (await isReachParallelLimit(ctx)) {
-          await saveUserMessages(ctx, sessionId, messages, editingMessageId);
+          await saveUserMessages(ctx, sessionId, incomingMessages, editingMessageId);
           throw new ResourceActionError(400, ctx.t('There are conversations in progress. Please try again later.'));
         }
 
@@ -437,7 +443,7 @@ export default {
             if (toolMessages?.length) {
               for (let i = toolMessages.length - 1; i >= 0; i--) {
                 const toolMessage = toolMessages[i];
-                messages.unshift({
+                incomingMessages.unshift({
                   role: toolMessage.role,
                   content: toolMessage.content,
                   toolCalls: toolMessage.toolCalls,
@@ -451,9 +457,9 @@ export default {
         }
 
         if (shouldStream) {
-          await aiEmployee.stream({ userMessages: messages, messageId: editingMessageId });
+          await aiEmployee.stream({ userMessages: incomingMessages, messageId: editingMessageId });
         } else {
-          ctx.body = await aiEmployee.invoke({ userMessages: messages, messageId: editingMessageId });
+          ctx.body = await aiEmployee.invoke({ userMessages: incomingMessages, messageId: editingMessageId });
         }
       } catch (err) {
         ctx.log.error(err);
@@ -771,7 +777,7 @@ export default {
         toolMessages.map((toolMessage: Model) => [toolMessage.toolCallId, toolMessage]),
       );
 
-      const toolsList = await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId, ctx });
+      const toolsList = (await plugin.ai.toolsManager.listTools({ sessionId: message.sessionId, ctx })) as ToolsEntry[];
       const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
 
       for (const toolCall of toolCalls) {

@@ -129,6 +129,8 @@ const GRID_LAYOUT_CAPABILITIES: FlowSurfaceLayoutCapabilities = { supported: tru
 const AI_EMPLOYEE_ACTION_USE = 'AIEmployeeButtonModel';
 const AI_EMPLOYEE_FLOW_SURFACE_OWNER_PLUGIN = '@nocobase/plugin-ai';
 const RUN_JS_ALLOWED_PATHS = ['runJs.code', 'runJs.version'];
+const RUN_JS_SOURCE_ALLOWED_PATHS = ['runJs.sourceMode', 'runJs.sourceBinding', 'runJs.settings.*'];
+const JS_BLOCK_RUN_JS_ALLOWED_PATHS = [...RUN_JS_ALLOWED_PATHS, 'runJs.sourceRef.*', ...RUN_JS_SOURCE_ALLOWED_PATHS];
 const OPEN_VIEW_ALLOWED_PATHS = [
   'openView.mode',
   'openView.size',
@@ -260,14 +262,77 @@ const RUN_JS_SETTINGS_GROUP = {
     'runJs.version': STRING_SCHEMA,
   },
 };
-const JS_BLOCK_SETTINGS_GROUP = {
-  allowedPaths: [...RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
+type FlowSurfaceRunJsSourceBindingKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+
+function createRunJsSourceBindingSchema(kind: FlowSurfaceRunJsSourceBindingKind) {
+  return {
+    type: 'object',
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['js-template-entry'],
+      },
+      projectId: STRING_SCHEMA,
+      templateId: STRING_SCHEMA,
+      kind: {
+        type: 'string',
+        enum: [kind],
+      },
+    },
+    required: ['type', 'projectId', 'templateId', 'kind'],
+    additionalProperties: false,
+  };
+}
+
+function createJsTemplateRunJsSettingsGroup(kind: FlowSurfaceRunJsSourceBindingKind) {
+  return {
+    allowedPaths: [...RUN_JS_ALLOWED_PATHS, ...RUN_JS_SOURCE_ALLOWED_PATHS],
+    mergeStrategy: 'deep' as const,
+    eventBindingSteps: ['runJs'],
+    pathSchemas: {
+      ...RUN_JS_SETTINGS_GROUP.pathSchemas,
+      'runJs.sourceMode': {
+        type: 'string',
+        enum: ['inline', 'js-template'],
+      },
+      'runJs.sourceBinding': createRunJsSourceBindingSchema(kind),
+      'runJs.settings': OBJECT_SCHEMA,
+    },
+  };
+}
+
+const JS_BLOCK_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-block');
+const JS_PAGE_RUN_JS_SETTINGS_GROUP = {
+  allowedPaths: RUN_JS_SOURCE_ALLOWED_PATHS,
   mergeStrategy: 'deep' as const,
   eventBindingSteps: ['runJs'],
   pathSchemas: {
-    ...RUN_JS_SETTINGS_GROUP.pathSchemas,
+    'runJs.sourceMode': {
+      type: 'string',
+      enum: ['inline', 'js-template'],
+    },
+    'runJs.sourceBinding': createRunJsSourceBindingSchema('js-page'),
+    'runJs.settings': OBJECT_SCHEMA,
+  },
+};
+const JS_FIELD_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-field');
+const JS_ACTION_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-action');
+const JS_ITEM_RUN_JS_SETTINGS_GROUP = createJsTemplateRunJsSettingsGroup('js-item');
+const JS_BLOCK_SETTINGS_GROUP = {
+  allowedPaths: [...JS_BLOCK_RUN_JS_ALLOWED_PATHS, 'showBlockCard.showBlockCard'],
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['runJs'],
+  pathSchemas: {
+    ...JS_BLOCK_RUN_JS_SETTINGS_GROUP.pathSchemas,
+    'runJs.sourceRef': OBJECT_SCHEMA,
     'showBlockCard.showBlockCard': BOOLEAN_SCHEMA,
   },
+};
+const JS_ITEM_SETTINGS_GROUP = {
+  allowedPaths: JS_ITEM_RUN_JS_SETTINGS_GROUP.allowedPaths,
+  mergeStrategy: 'deep' as const,
+  eventBindingSteps: ['runJs'],
+  pathSchemas: JS_ITEM_RUN_JS_SETTINGS_GROUP.pathSchemas,
 };
 const FIELD_SETTINGS_INIT_GROUP = {
   allowedPaths: [
@@ -888,6 +953,29 @@ PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
       'general.enableHeader': BOOLEAN_SCHEMA,
     },
   },
+});
+
+const JS_PAGE_NODE_CONTRACT = createContract({
+  editableDomains: ['props', 'stepParams'],
+  props: ['title', 'displayTitle'],
+  stepParams: ['pageSettings', 'jsSettings'],
+  eventBindings: {
+    jsSettings: {
+      stepKeys: ['runJs'],
+    },
+  },
+});
+JS_PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
+  pageSettings: {
+    allowedPaths: ['general.title', 'general.documentTitle', 'general.displayTitle'],
+    mergeStrategy: 'deep',
+    pathSchemas: {
+      'general.title': STRING_SCHEMA,
+      'general.documentTitle': STRING_SCHEMA,
+      'general.displayTitle': BOOLEAN_SCHEMA,
+    },
+  },
+  jsSettings: JS_PAGE_RUN_JS_SETTINGS_GROUP,
 });
 
 const TRIGGER_CHILD_PAGE_NODE_CONTRACT = createContract({
@@ -1746,7 +1834,7 @@ JS_COLUMN_CONTRACT.domains.stepParams = groupedDomain({
       'title.title': STRING_SCHEMA,
     },
   },
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_FIELD_RUN_JS_SETTINGS_GROUP,
 });
 
 const FIELD_NODE_CONTRACT = createContract({
@@ -1835,7 +1923,7 @@ JS_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     eventBindingSteps: ['openView'],
     pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_FIELD_RUN_JS_SETTINGS_GROUP,
 });
 
 const JS_ITEM_CONTRACT = createContract({
@@ -1854,7 +1942,7 @@ const JS_ITEM_CONTRACT = createContract({
   },
 });
 JS_ITEM_CONTRACT.domains.stepParams = groupedDomain({
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_ITEM_SETTINGS_GROUP,
 });
 
 const DIVIDER_ITEM_CONTRACT = createContract({
@@ -2555,7 +2643,7 @@ const JS_ACTION_CONTRACT = createContract({
 });
 JS_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
-  clickSettings: RUN_JS_SETTINGS_GROUP,
+  clickSettings: JS_ACTION_RUN_JS_SETTINGS_GROUP,
 });
 
 const JS_ITEM_ACTION_CONTRACT = createContract({
@@ -2579,7 +2667,7 @@ const JS_ITEM_ACTION_CONTRACT = createContract({
 });
 JS_ITEM_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_ITEM_SETTINGS_GROUP,
 });
 
 const AI_EMPLOYEE_ACTION_CONTRACT = createContract({
@@ -2694,7 +2782,7 @@ PATTERN_FORM_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     eventBindingSteps: ['openView'],
     pathSchemas: OPEN_VIEW_PATH_SCHEMAS,
   },
-  jsSettings: RUN_JS_SETTINGS_GROUP,
+  jsSettings: JS_FIELD_RUN_JS_SETTINGS_GROUP,
 });
 
 const APPROVAL_ACTION_CONTRACT = createContract({
@@ -2744,6 +2832,7 @@ function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
 
 const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['RootPageModel', PAGE_NODE_CONTRACT],
+  ['JSPageModel', JS_PAGE_NODE_CONTRACT],
   ['ChildPageModel', PAGE_NODE_CONTRACT],
   ['TriggerChildPageModel', TRIGGER_CHILD_PAGE_NODE_CONTRACT],
   ['ApprovalChildPageModel', APPROVAL_CHILD_PAGE_NODE_CONTRACT],
@@ -2800,7 +2889,6 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['JSColumnModel', JS_COLUMN_CONTRACT],
   ['JSItemModel', JS_ITEM_CONTRACT],
   ['DividerItemModel', DIVIDER_ITEM_CONTRACT],
-  ['FormJSFieldItemModel', JS_ITEM_CONTRACT],
   ['AddNewActionModel', POPUP_ACTION_CONTRACT],
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
   ['EditActionModel', POPUP_ACTION_CONTRACT],

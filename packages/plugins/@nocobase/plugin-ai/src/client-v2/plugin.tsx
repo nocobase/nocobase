@@ -14,6 +14,7 @@ import { registerPluginAIClientV2BuiltinTools } from './ai-employees/tools';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { chartConfigWorkContext } from './ai-employees/context/chart-config';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
+import { CodeWorkspaceContext } from './ai-employees/context/code-workspace';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { AIConfigRepository } from './repositories/AIConfigRepository';
@@ -132,6 +133,7 @@ export class PluginAIClientV2 extends Plugin<object, Application> {
     registerPluginAIClientV2BuiltinTools(this.ai.toolsManager);
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
+    this.aiManager.registerWorkContext('code-workspace', CodeWorkspaceContext);
     this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
     setupAICoding();
     this.flowEngine.registerModels({

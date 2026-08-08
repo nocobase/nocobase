@@ -38,7 +38,7 @@ import {
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base/BlockModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
-import { EditFormModel } from '../../blocks';
+import { EditFormModel } from '../../blocks/form/EditFormModel';
 import { hasAncestorModel } from './recordSelectSettingsUtils';
 
 function isPlainObject(val: unknown): val is Record<string, any> {

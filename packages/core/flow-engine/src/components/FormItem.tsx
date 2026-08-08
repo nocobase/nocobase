@@ -11,9 +11,10 @@ import React from 'react';
 import { Tooltip, Form } from 'antd';
 import type { FormItemProps, TooltipProps } from 'antd';
 
-type ChildExtraProps = Record<string, any>;
+type ChildExtraProps = Record<string, unknown>;
 
 interface ExtendedFormItemProps extends FormItemProps {
+  asterisk?: boolean;
   labelWidth?: number | string;
   labelWrap?: boolean;
   showLabel?: boolean;
@@ -22,16 +23,21 @@ interface ExtendedFormItemProps extends FormItemProps {
 export const verticalFormItemLabelStyle = { paddingBottom: 0 };
 export const formItemStyle = { marginBottom: 12 };
 
-const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
+const formItemPropKeys = [
   'colon',
+  'className',
   'dependencies',
   'extra',
+  'fieldKey',
   'getValueFromEvent',
   'getValueProps',
   'hasFeedback',
   'help',
+  'hidden',
   'htmlFor',
+  'id',
   'initialValue',
+  'isListField',
   'label',
   'labelAlign',
   'labelCol',
@@ -52,9 +58,37 @@ const formItemPropKeys: (keyof ExtendedFormItemProps)[] = [
   'layout',
   'required',
   'showLabel',
+  'shouldUpdate',
+  'style',
+  'prefixCls',
+  'rootClassName',
+  'validateDebounce',
+  'validateFirst',
 ];
 
-const modelInternalPropKeys = ['globalSort'];
+const formItemPropKeySet = new Set<string>(formItemPropKeys);
+const localOnlyPropKeySet = new Set<string>(['asterisk', 'globalSort']);
+
+function splitFormItemProps(props: ExtendedFormItemProps & ChildExtraProps) {
+  const formItemProps: Record<string, unknown> = {};
+  const childProps: Record<string, unknown> = {};
+
+  Object.entries(props).forEach(([key, value]) => {
+    if (localOnlyPropKeySet.has(key)) {
+      return;
+    }
+    if (formItemPropKeySet.has(key)) {
+      formItemProps[key] = value;
+      return;
+    }
+    childProps[key] = value;
+  });
+
+  return {
+    formItemProps: formItemProps as ExtendedFormItemProps,
+    childProps,
+  };
+}
 
 export const FormItem = ({
   children,
@@ -62,24 +96,20 @@ export const FormItem = ({
   labelWidth,
   ...rest
 }: ExtendedFormItemProps & ChildExtraProps) => {
-  const forwardedRest = Object.fromEntries(
-    Object.entries(rest).filter(([key]) => !modelInternalPropKeys.includes(key)),
-  ) as ExtendedFormItemProps & ChildExtraProps;
-  // 过滤掉 Form.Item 专用 props，只保留要传给子组件的
-  const childProps = Object.fromEntries(
-    Object.entries(forwardedRest).filter(([key]) => !formItemPropKeys.includes(key as keyof ExtendedFormItemProps)),
-  );
+  // Form.Item 会把未知 props 透传到 antd Row 的 DOM 节点。
+  // 先拆分出 Form.Item 自身 props，避免模型内部配置（如 titleField）泄漏到 DOM。
+  const { formItemProps, childProps } = splitFormItemProps(rest);
 
   const processedChildren =
     typeof children === 'function'
       ? children
       : React.Children.map(children as React.ReactNode, (child) => {
           if (React.isValidElement(child)) {
-            return React.cloneElement(child, { ...childProps });
+            return React.cloneElement(child as React.ReactElement<Record<string, unknown>>, childProps);
           }
           return child;
         });
-  const { label, labelWrap, colon = true, layout } = forwardedRest;
+  const { label, labelWrap, colon = true, layout } = formItemProps;
   const effectiveLabelWrap = !layout || layout === 'vertical' ? true : labelWrap;
   const labelColStyle =
     layout === 'vertical' ? { width: labelWidth, ...verticalFormItemLabelStyle } : { width: labelWidth };
@@ -127,17 +157,17 @@ export const FormItem = ({
   };
   return (
     <Form.Item
-      {...forwardedRest}
-      style={{ ...formItemStyle, ...forwardedRest.style }}
+      {...formItemProps}
+      style={{ ...formItemStyle, ...formItemProps.style }}
       labelCol={{ style: labelColStyle }}
       layout={layout}
       label={renderLabel()}
       colon={false}
-      extra={forwardedRest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{forwardedRest.extra}</span>}
+      extra={formItemProps.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{formItemProps.extra}</span>}
       tooltip={
-        forwardedRest.tooltip &&
+        formItemProps.tooltip &&
         ({
-          title: forwardedRest.tooltip,
+          title: formItemProps.tooltip,
           overlayInnerStyle: { whiteSpace: 'pre-line' },
         } as TooltipProps)
       }

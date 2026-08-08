@@ -344,6 +344,25 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
+    if (packageJsonName === '@nocobase/js-template-sdk') {
+      paths[`${packageJsonName}/schema`] = [`${relativePath}/src/schema`];
+      paths[`${packageJsonName}/schema/server`] = [`${relativePath}/src/schema/server`];
+      paths[`${packageJsonName}/schema/entry-v1.schema.json`] = [`${relativePath}/src/schema/entry-v1.schema.json`];
+      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
+      paths[`${packageJsonName}/typegen`] = [`${relativePath}/src/typegen`];
+    }
+    if (packageJsonName === '@nocobase/runjs') {
+      paths[`${packageJsonName}/compiler`] = [`${relativePath}/src/compiler`];
+      paths[`${packageJsonName}/compiler/build-identity`] = [`${relativePath}/src/compiler/build-identity`];
+      paths[`${packageJsonName}/compiler/loader`] = [`${relativePath}/src/compiler/loader`];
+      paths[`${packageJsonName}/compiler/portable`] = [`${relativePath}/src/compiler/portable`];
+      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
+      paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
+    }
+    if (packageJsonName === '@nocobase/runjs-workspace') {
+      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
+      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
+    }
   });
 
   const tsConfigJsonPath = join(cwd, './tsconfig.paths.json');

@@ -191,6 +191,7 @@ describe('flowSurfaces applyBlueprint transaction boundary', () => {
     const events: string[] = [];
     const transaction = { id: 'tx-apply-blueprint' };
 
+    vi.spyOn(service as any, 'assertStandardPageBlueprintTarget').mockResolvedValue(undefined);
     vi.spyOn(service as any, 'transaction').mockImplementation(async (callback) => {
       events.push('transaction:start');
       const result = await callback(transaction);

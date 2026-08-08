@@ -12,6 +12,7 @@ import type FlowModelRepository from '../repository';
 import { normalizeApprovalSemanticUse } from './approval';
 import { getChartBuilderResourceInit } from './chart-config';
 import { FlowSurfaceBadRequestError } from './errors';
+import { isRouteBackedPageUse } from './page-surface-contract';
 import type { FlowSurfaceReadLocator, FlowSurfaceResolveTarget, FlowSurfaceResolvedTarget } from './types';
 
 export class SurfaceLocator {
@@ -235,7 +236,7 @@ function inferKind(use?: string): FlowSurfaceResolvedTarget['kind'] {
   if (normalized === 'RouteModel') {
     return 'node';
   }
-  if (normalized === 'RootPageModel' || normalized === 'ChildPageModel') {
+  if (isRouteBackedPageUse(normalized) || normalized === 'ChildPageModel') {
     return 'page';
   }
   if (normalized === 'RootPageTabModel' || normalized === 'ChildPageTabModel') {

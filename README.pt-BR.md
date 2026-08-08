@@ -18,19 +18,19 @@ https://github.com/user-attachments/assets/3b89d965-f60f-48e0-8110-24186c2911d2
 
 NocoBase e uma plataforma open source de IA + no-code para criar sistemas de negocio com mais rapidez. Em vez de gerar tudo do zero, a IA trabalha sobre uma infraestrutura ja validada em producao e uma interface visual WYSIWYG, combinando velocidade com confiabilidade.
 
-Site oficial:  
+Site oficial:<br>
 https://www.nocobase.com/pt
 
-Demo online:  
+Demo online:<br>
 https://demo.nocobase.com/new
 
-Documentação:  
+Documentação:<br>
 https://docs.nocobase.com/pt/
 
-Fórum:  
+Fórum:<br>
 https://forum.nocobase.com/
 
-Casos de clientes:  
+Casos de clientes:<br>
 https://www.nocobase.com/pt/blog/tags/customer-stories
 
 ## Início rápido
@@ -127,7 +127,8 @@ Toda acao da IA segue o mesmo modelo granular de permissoes aplicado aos usuario
 
 ### 3. Confiavel: infraestrutura pronta para o negocio real
 
-Modelos de dados, permissoes e workflows sao complexos e sensiveis a erros.  
+Modelos de dados, permissoes e workflows sao complexos e sensiveis a erros.
+
 A NocoBase entrega tudo isso como infraestrutura nativa, testada e validada em producao.
 
 #### Infraestrutura completa, sem recomecar do zero

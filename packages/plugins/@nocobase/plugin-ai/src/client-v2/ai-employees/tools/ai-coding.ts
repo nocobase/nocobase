@@ -33,6 +33,7 @@ type EditorToolState = ToolsOptions & {
 type FlowEditorToolState = FlowContextToolState & EditorToolState;
 
 const editorVersions = new Map<string, number>();
+const workspaceToolError = 'This conversation is bound to a code workspace. Please use Workspace tools instead.';
 
 function useCurrentRuntimeChat() {
   const runtime = useChatBoxRuntime();
@@ -49,6 +50,14 @@ function useEditorToolState<T extends EditorToolState>(state: T) {
   return state;
 }
 
+function assertLegacyToolAvailable(state: EditorToolState) {
+  const runtime = state.chatBoxRuntime;
+  const sessionId = runtime?.chatConversationModel.currentConversation;
+  if (runtime?.chatMessageModel.getSessionState(sessionId).workspaceSurfaceId) {
+    throw new Error(workspaceToolError);
+  }
+}
+
 function getCurrentEditorRef(state: EditorToolState) {
   const chatMessageModel = state.chatBoxRuntime?.chatMessageModel;
   const uid = chatMessageModel?.currentEditorRefUid;
@@ -57,6 +66,7 @@ function getCurrentEditorRef(state: EditorToolState) {
 }
 
 function getEditorState(state: EditorToolState) {
+  assertLegacyToolAvailable(state);
   const { uid, editorRef } = getCurrentEditorRef(state);
   if (!uid || !editorRef) {
     throw new Error('Current code editor is not available.');
@@ -236,6 +246,17 @@ export const writeJSCodeTool: [string, ToolsOptions] = [
   'writeJSCode',
   {
     async invoke(this: EditorToolState, _app, args: { code?: unknown }) {
+      try {
+        assertLegacyToolAvailable(this);
+      } catch (error) {
+        return {
+          status: 'error',
+          content: {
+            success: false,
+            message: `Write code failed: ${getErrorMessage(error)}`,
+          },
+        };
+      }
       if (typeof args?.code !== 'string') {
         return {
           status: 'error',
@@ -310,6 +331,17 @@ export const patchJSCodeTool: [string, ToolsOptions] = [
   'patchJSCode',
   {
     async invoke(this: EditorToolState, _app, args: { patch?: unknown }) {
+      try {
+        assertLegacyToolAvailable(this);
+      } catch (error) {
+        return {
+          status: 'error',
+          content: {
+            success: false,
+            message: `Patch failed: ${getErrorMessage(error)}`,
+          },
+        };
+      }
       if (typeof args?.patch !== 'string' || args.patch.length === 0) {
         return {
           status: 'error',
@@ -355,6 +387,19 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
   'lintAndTestJS',
   {
     async invoke(this: FlowEditorToolState, app, args: { code?: unknown }) {
+      let editorState: ReturnType<typeof getEditorState> | null;
+      try {
+        assertLegacyToolAvailable(this);
+        editorState = typeof args?.code === 'string' ? null : getEditorState(this);
+      } catch (error) {
+        return {
+          status: 'error',
+          content: {
+            success: false,
+            message: `Preview execution error: ${getErrorMessage(error)}`,
+          },
+        };
+      }
       let ctx = this.flowContext;
       if (!ctx) {
         ctx = app.flowEngine?.context as FlowInfoContext | undefined;
@@ -369,7 +414,6 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
         };
       }
       try {
-        const editorState = typeof args?.code === 'string' ? null : getEditorState(this);
         const code = typeof args?.code === 'string' ? args.code : editorState.code;
         const content = await ctx.previewRunJS(code);
         let ranCurrentEditor = false;

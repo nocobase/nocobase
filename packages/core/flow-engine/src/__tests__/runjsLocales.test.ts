@@ -37,4 +37,19 @@ describe('RunJS locales patch (engine doc)', () => {
     expect(String(getRunJSDocText(doc?.properties?.message))).toMatch(/Ant Design 全局消息 API/);
     expect(String(getRunJSDocText(doc?.methods?.t))).toMatch(/国际化函数/);
   });
+
+  it('keeps JS page English and Chinese facade docs aligned', () => {
+    const englishContext = new FlowContext();
+    englishContext.defineProperty('model', { value: { constructor: { name: 'JSPageModel' } } });
+    const chineseContext = new FlowContext();
+    chineseContext.defineProperty('model', { value: { constructor: { name: 'JSPageModel' } } });
+    chineseContext.defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
+
+    const english = getRunJSDocFor(englishContext, { version: 'v2' });
+    const chinese = getRunJSDocFor(chineseContext, { version: 'v2' });
+    expect(Object.keys(chinese?.properties?.page?.properties || {})).toEqual(
+      Object.keys(english?.properties?.page?.properties || {}),
+    );
+    expect(chinese?.label).toContain('JS 页面');
+  });
 });

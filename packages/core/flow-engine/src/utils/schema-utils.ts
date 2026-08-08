@@ -12,6 +12,12 @@ import { Schema } from '@formily/json-schema';
 import type { FlowModel } from '../models';
 import { FlowRuntimeContext } from '../flowContext';
 import type { EventDefinition, StepDefinition, StepUIMode } from '../types';
+import {
+  applyRuntimeFlowSettingDiagnosticStep,
+  clearRuntimeFlowSettingDiagnostic,
+  isRuntimeFlowSettingDiagnosticError,
+  recordRuntimeFlowSettingDiagnostic,
+} from './runtimeFlowSettingSteps';
 import { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 /**
@@ -292,13 +298,21 @@ export async function shouldHideStepInSettings<TModel extends FlowModel = FlowMo
   }
 
   if (typeof hideInSettings === 'function') {
+    const flowKey = String(flow.key || '');
+    const stepKey = String(step.key || '');
     try {
-      const ctx = new FlowRuntimeContext(model, flow.key, 'settings');
-      setupRuntimeContextSteps(ctx, flow.steps, model, flow.key);
+      const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+      setupRuntimeContextSteps(ctx, flow.steps, model, flowKey);
       ctx.defineProperty('currentStep', { value: step });
       const result = await hideInSettings(ctx as any);
+      clearRuntimeFlowSettingDiagnostic(model, flowKey, stepKey);
       return !!result;
     } catch (error) {
+      if (isRuntimeFlowSettingDiagnosticError(error)) {
+        const diagnostic = recordRuntimeFlowSettingDiagnostic(model, flowKey, stepKey, error);
+        applyRuntimeFlowSettingDiagnosticStep(model, step, diagnostic);
+        return false;
+      }
       console.warn(`Error evaluating hideInSettings for step '${step.key || ''}' in flow '${flow.key}':`, error);
       return false;
     }

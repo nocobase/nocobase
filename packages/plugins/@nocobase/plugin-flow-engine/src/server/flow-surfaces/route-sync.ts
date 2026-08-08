@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import { buildSyntheticRootPageTabModel } from './builder';
+import { JS_PAGE_MODEL_USE } from './page-surface-contract';
 
 type PageRoutePatch = {
   title?: unknown;
@@ -33,6 +34,7 @@ export class FlowSurfaceRouteSync {
       values,
       options,
     ) => repository.patch(values, options),
+    private readonly beforeRemoveTree?: (uid: string, transaction?: any) => Promise<void>,
   ) {}
 
   async buildPageTree(pageRouteLike: any, transaction?: any) {
@@ -76,9 +78,13 @@ export class FlowSurfaceRouteSync {
       };
     }
 
+    const use = readRouteOptions(pageRoute).pageType === 'js-page' ? JS_PAGE_MODEL_USE : 'RootPageModel';
+    if (use === JS_PAGE_MODEL_USE) {
+      routeBacked.enableTabs = false;
+    }
     return {
       uid: pageSchemaUid,
-      use: 'RootPageModel',
+      use,
       props: {
         routeId: pageRoute?.get?.('id') || pageRoute?.id,
         ...routeBacked,
@@ -136,6 +142,7 @@ export class FlowSurfaceRouteSync {
     });
     const children = Object.values(node?.subModels || {}).flatMap((value) => _.castArray(value as any));
     for (const child of children) {
+      await this.beforeRemoveTree?.(child.uid, transaction);
       await this.repository.remove(child.uid, { transaction });
     }
 
@@ -145,6 +152,7 @@ export class FlowSurfaceRouteSync {
       includeAsyncNode: true,
     });
     if (asyncGridChild?.uid) {
+      await this.beforeRemoveTree?.(asyncGridChild.uid, transaction);
       await this.repository.remove(asyncGridChild.uid, { transaction });
     }
   }
@@ -152,6 +160,7 @@ export class FlowSurfaceRouteSync {
   async removeTabAnchorTree(schemaUid: string, transaction?: any) {
     const tabAnchor = await this.findPersistedTabAnchor(schemaUid, transaction);
     if (tabAnchor?.uid) {
+      await this.beforeRemoveTree?.(tabAnchor.uid, transaction);
       await this.repository.remove(tabAnchor.uid, { transaction });
       return;
     }
@@ -436,7 +445,8 @@ function readRouteProp(route: any, key: string) {
 }
 
 function readRouteOptions(route: any) {
-  return route?.get?.('options') || route?.options || {};
+  const options = route?.get?.('options') ?? route?.options ?? route?.dataValues?.options;
+  return _.isPlainObject(options) ? options : {};
 }
 
 function firstDefined<T>(...values: T[]): T | undefined {

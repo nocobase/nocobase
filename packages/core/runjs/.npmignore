@@ -1,0 +1,7 @@
+/node_modules
+!/lib/
+!/lib/**
+!/es/
+!/es/**
+/src/completion-catalog/generated.ts
+/src/generated/

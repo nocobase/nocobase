@@ -24,6 +24,7 @@ export * from './event-queue';
 export * from './worker-id-allocator';
 export * from './worker-mode';
 export * from './redis-connection-manager';
+export * from './runjs-source';
 export * from './main-data-source';
 export * from './constants';
 export type { LocaleSource, LocaleSourceText } from './locale';

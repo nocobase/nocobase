@@ -9,6 +9,7 @@
 
 import { isApprovalTaskCardGridUse, normalizeApprovalSemanticUse } from './approval';
 import { FIELD_WRAPPER_USES } from './node-use-sets';
+import { JS_PAGE_MODEL_USE, supportsPageBlockAuthoring } from './page-surface-contract';
 import type { FlowSurfaceResolvedTarget } from './types';
 
 export const FLOW_SURFACE_POPUP_HOST_USES = new Set([
@@ -52,6 +53,7 @@ export const FLOW_SURFACE_GRID_USES = new Set([
 export const FLOW_SURFACE_FIELD_WRAPPER_USES = FIELD_WRAPPER_USES;
 export const FLOW_SURFACE_PAGE_MODEL_USES = new Set([
   'RootPageModel',
+  JS_PAGE_MODEL_USE,
   'ChildPageModel',
   'RootPageTabModel',
   'ChildPageTabModel',
@@ -111,7 +113,11 @@ export function canCatalogAddBlock(input: {
     return false;
   }
 
-  if (isGridUse(node?.use) || isPageModelUse(node?.use)) {
+  if (node?.use === JS_PAGE_MODEL_USE) {
+    return false;
+  }
+
+  if (isGridUse(node?.use) || supportsPageBlockAuthoring(node?.use) || isPageModelUse(node?.use)) {
     return true;
   }
 

@@ -11,45 +11,50 @@
  * RunJS context registration entry. No side-effects by default.
  */
 import { RunJSContextRegistry } from './registry';
-import { FlowRunJSContext } from '../flowContext';
-import { defineBaseContextMeta } from './contexts/base';
-import { applyRunJSContextContributions, markRunJSContextsSetupDone } from './contributions';
+import {
+  applyRunJSContextContributions,
+  markRunJSContextsSetupDone,
+  setRunJSContextContributionBase,
+} from './contributions';
 
 let done = false;
 export async function setupRunJSContexts() {
   if (done) return;
-  defineBaseContextMeta();
-
-  // Lazy import to avoid circular dependencies during module initialization
   const [
+    { FlowRunJSContext },
+    { defineBaseContextMeta },
     { JSBlockRunJSContext },
+    { JSPageRunJSContext },
     { JSFieldRunJSContext },
     { JSEditableFieldRunJSContext },
     { JSItemRunJSContext },
     { JSColumnRunJSContext },
-    { FormJSFieldItemRunJSContext },
     { JSRecordActionRunJSContext },
     { JSCollectionActionRunJSContext },
   ] = await Promise.all([
+    import('../flowContext'),
+    import('./contexts/base'),
     import('./contexts/JSBlockRunJSContext'),
+    import('./contexts/JSPageRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
     import('./contexts/JSEditableFieldRunJSContext'),
     import('./contexts/JSItemRunJSContext'),
     import('./contexts/JSColumnRunJSContext'),
-    import('./contexts/FormJSFieldItemRunJSContext'),
     import('./contexts/JSRecordActionRunJSContext'),
     import('./contexts/JSCollectionActionRunJSContext'),
   ]);
+  setRunJSContextContributionBase(FlowRunJSContext);
+  defineBaseContextMeta();
 
   const registerBuiltins = (version: 'v1' | 'v2') => {
     RunJSContextRegistry.register(version, '*', FlowRunJSContext);
     RunJSContextRegistry.register(version, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
+    RunJSContextRegistry.register(version, 'JSPageModel', JSPageRunJSContext, { scenes: ['page'] });
     RunJSContextRegistry.register(version, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
     RunJSContextRegistry.register(version, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSItemActionModel', JSItemRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
-    RunJSContextRegistry.register(version, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
     RunJSContextRegistry.register(version, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
     RunJSContextRegistry.register(version, 'JSCollectionActionModel', JSCollectionActionRunJSContext, {
       scenes: ['table'],

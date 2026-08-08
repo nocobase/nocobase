@@ -42,4 +42,22 @@ describe('vitest test routing', () => {
       'packages/plugins/@nocobase/plugin-acl/src/client-v2/**/__tests__/**/*.{test,spec}.{ts,tsx}',
     );
   });
+
+  test('client-side config includes the mixed RunJS workspace package', () => {
+    process.env.TEST_ENV = 'client-side';
+    process.argv = ['node', 'vitest'];
+
+    const config = defineConfig();
+
+    expect(config.test.exclude).toContain('packages/core/!(sdk|client|client-v2|flow-engine|runjs-workspace)/**/*');
+    expect(config.test.exclude).toContain('packages/**/src/server/**/*');
+  });
+
+  test('an explicit __tests__ directory includes its test files directly', () => {
+    process.argv = ['node', 'vitest', 'packages/core/runjs-workspace/src/client-v2/__tests__'];
+
+    expect(getFilterInclude(false).include).toEqual([
+      'packages/core/runjs-workspace/src/client-v2/__tests__/**/*.{test,spec}.{ts,tsx}',
+    ]);
+  });
 });

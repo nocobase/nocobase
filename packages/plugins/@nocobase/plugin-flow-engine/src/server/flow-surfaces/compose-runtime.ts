@@ -18,8 +18,20 @@ import {
   type FlowSurfaceComposeObject,
   type FlowSurfaceComposeTargetKey,
 } from './compose-compiler';
+import type {
+  FlowSurfaceRunJSLocator,
+  FlowSurfaceRunJSWorkspaceBootstrapResult,
+  FlowSurfaceRunJSWorkspaceError,
+} from './page-surface-contract';
 
-export type FlowSurfaceComposeBlockResult = {
+type FlowSurfaceComposeRunJSWorkspaceResult = {
+  runJSLocator?: FlowSurfaceRunJSLocator;
+  workspaceStatus?: FlowSurfaceRunJSWorkspaceBootstrapResult['status'];
+  workspaceRetryable?: boolean;
+  workspaceError?: FlowSurfaceRunJSWorkspaceError;
+};
+
+export type FlowSurfaceComposeBlockResult = FlowSurfaceComposeRunJSWorkspaceResult & {
   uid: string;
   gridUid?: string;
   itemUid?: string;
@@ -27,7 +39,7 @@ export type FlowSurfaceComposeBlockResult = {
   actionsColumnUid?: string;
 };
 
-export type FlowSurfaceComposeFieldResult = {
+export type FlowSurfaceComposeFieldResult = FlowSurfaceComposeRunJSWorkspaceResult & {
   uid?: string;
   wrapperUid?: string;
   fieldUid?: string;
@@ -37,7 +49,7 @@ export type FlowSurfaceComposeFieldResult = {
   popupGridUid?: string;
 };
 
-export type FlowSurfaceComposeActionResult = {
+export type FlowSurfaceComposeActionResult = FlowSurfaceComposeRunJSWorkspaceResult & {
   uid: string;
   parentUid?: string;
   scope?: string;
@@ -174,6 +186,7 @@ export async function executeComposeRuntime(
       itemUid: block.result.itemUid,
       itemGridUid: block.result.itemGridUid,
       actionsColumnUid: block.result.actionsColumnUid,
+      ...buildRunJSWorkspaceResultSummary(block.result),
       fields: block.fieldResults,
       actions: block.actionResults,
       recordActions: block.recordActionResults,
@@ -539,6 +552,7 @@ function buildFieldResultSummary(
     popupPageUid: createdField.popupPageUid,
     popupTabUid: createdField.popupTabUid,
     popupGridUid: createdField.popupGridUid,
+    ...buildRunJSWorkspaceResultSummary(createdField),
     ...(spec.target ? { target: spec.target } : {}),
   };
 }
@@ -554,7 +568,17 @@ function buildActionResultSummary(
     scope: createdAction.scope,
     uid: createdAction.uid,
     parentUid: createdAction.parentUid,
+    ...buildRunJSWorkspaceResultSummary(createdAction),
     ...actionKeys,
+  };
+}
+
+function buildRunJSWorkspaceResultSummary(result: FlowSurfaceComposeRunJSWorkspaceResult) {
+  return {
+    ...(result.runJSLocator ? { runJSLocator: result.runJSLocator } : {}),
+    ...(result.workspaceStatus ? { workspaceStatus: result.workspaceStatus } : {}),
+    ...(typeof result.workspaceRetryable === 'boolean' ? { workspaceRetryable: result.workspaceRetryable } : {}),
+    ...(result.workspaceError ? { workspaceError: result.workspaceError } : {}),
   };
 }
 

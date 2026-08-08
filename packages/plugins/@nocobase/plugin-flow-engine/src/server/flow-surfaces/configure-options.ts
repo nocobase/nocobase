@@ -142,6 +142,69 @@ const JS_VERSION = stringOption('JS code version', {
   example: 'v2',
 });
 
+type JS_SOURCE_BINDING_KIND = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+
+const JS_SOURCE_MODE = stringOption('JS source mode', {
+  enum: ['inline', 'js-template'],
+  example: 'js-template',
+});
+
+const JS_SOURCE_EXAMPLES: Record<
+  JS_SOURCE_BINDING_KIND,
+  { projectId: string; templateId: string; settings: Record<string, unknown> }
+> = {
+  'js-block': {
+    projectId: 'jtp_sales',
+    templateId: 'jtt_kpi_cards',
+    settings: { region: 'APAC' },
+  },
+  'js-page': {
+    projectId: 'jtp_dashboards',
+    templateId: 'jtt_sales_dashboard',
+    settings: { region: 'APAC' },
+  },
+  'js-field': {
+    projectId: 'jtp_customer_fields',
+    templateId: 'jtt_customer_level',
+    settings: { vipColor: '#d4380d' },
+  },
+  'js-action': {
+    projectId: 'jtp_sales_actions',
+    templateId: 'jtt_refresh_sales_kpi',
+    settings: { region: 'APAC' },
+  },
+  'js-item': {
+    projectId: 'jtp_customer_items',
+    templateId: 'jtt_show_level_label',
+    settings: { vipColor: '#d4380d' },
+  },
+};
+
+function createJSSourceOptions(kind: JS_SOURCE_BINDING_KIND): FlowSurfaceConfigureOptions {
+  const example = JS_SOURCE_EXAMPLES[kind];
+  return {
+    sourceMode: JS_SOURCE_MODE,
+    sourceBinding: objectOption(`JS Template source binding for ${kind}`, {
+      example: {
+        type: 'js-template-entry',
+        projectId: example.projectId,
+        templateId: example.templateId,
+        kind,
+      },
+    }),
+    settings: objectOption('Instance settings passed to the resolved JS source', {
+      example: example.settings,
+    }),
+  };
+}
+
+const JS_BLOCK_LEGACY_SOURCE_REF = objectOption('Legacy JS block sourceRef binding', {
+  example: {
+    type: 'vsc-file',
+    path: 'packages/plugins/custom/src/blocks/kpi.tsx',
+  },
+});
+
 const COMMON_BLOCK_HEADER_OPTIONS: FlowSurfaceConfigureOptions = {
   title: stringOption('Title', { example: 'User Table' }),
   description: stringOption('Description', { example: 'Team directory and summary' }),
@@ -167,6 +230,13 @@ const PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
   enableTabs: booleanOption('Whether to enable top-level tabs', { example: true }),
   icon: stringOption('Icon', { example: 'UserOutlined' }),
   enableHeader: booleanOption('Whether to display the page header', { example: true }),
+};
+
+const JS_PAGE_OPTIONS: FlowSurfaceConfigureOptions = {
+  title: PAGE_OPTIONS.title,
+  documentTitle: PAGE_OPTIONS.documentTitle,
+  displayTitle: PAGE_OPTIONS.displayTitle,
+  ...createJSSourceOptions('js-page'),
 };
 
 const TAB_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -451,6 +521,8 @@ const JS_BLOCK_OPTIONS: FlowSurfaceConfigureOptions = {
   showBlockCard: booleanOption('Whether to show the outer block card', { default: true, example: true }),
   code: JS_CODE,
   version: JS_VERSION,
+  sourceRef: JS_BLOCK_LEGACY_SOURCE_REF,
+  ...createJSSourceOptions('js-block'),
 };
 
 const ACTION_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -477,6 +549,7 @@ const TABLE_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -496,6 +569,7 @@ const DETAILS_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const FILTER_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -543,6 +617,7 @@ const FORM_FIELD_WRAPPER_OPTIONS: FlowSurfaceConfigureOptions = {
   openView: OPEN_VIEW,
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -574,6 +649,7 @@ const JS_FIELD_NODE_OPTIONS: FlowSurfaceConfigureOptions = {
   ...omitConfigureOptions(FIELD_NODE_OPTIONS, ['openView']),
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -583,6 +659,7 @@ const JS_COLUMN_OPTIONS: FlowSurfaceConfigureOptions = {
   fixed: stringOption('Fixed position', { example: 'right' }),
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-field'),
 };
 
 const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -594,6 +671,7 @@ const JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
   labelWrap: booleanOption('Whether labels should wrap', { example: false }),
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-item'),
 };
 
 const DIVIDER_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -669,6 +747,13 @@ const FILTER_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
 const ACTION_JS_OPTIONS: FlowSurfaceConfigureOptions = {
   code: JS_CODE,
   version: JS_VERSION,
+  ...createJSSourceOptions('js-action'),
+};
+
+const ACTION_JS_ITEM_OPTIONS: FlowSurfaceConfigureOptions = {
+  code: JS_CODE,
+  version: JS_VERSION,
+  ...createJSSourceOptions('js-item'),
 };
 
 const APPROVAL_RETURN_ACTION_OPTIONS: FlowSurfaceConfigureOptions = {
@@ -759,6 +844,7 @@ const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
 
 const FLOW_CONTEXT_OPTION_KEYS_BY_USE: Record<string, string[]> = {
   RootPageModel: ['documentTitle'],
+  JSPageModel: ['documentTitle'],
   RootPageTabModel: ['documentTitle'],
   TriggerChildPageModel: ['documentTitle'],
   ApprovalChildPageModel: ['documentTitle'],
@@ -856,10 +942,11 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
     case 'JSCollectionActionModel':
     case 'JSRecordActionModel':
     case 'JSFormActionModel':
-    case 'JSItemActionModel':
     case 'FilterFormJSActionModel':
     case 'JSActionModel':
       return merged(ACTION_JS_OPTIONS, ACTION_LINKAGE_OPTIONS);
+    case 'JSItemActionModel':
+      return merged(ACTION_JS_ITEM_OPTIONS, ACTION_LINKAGE_OPTIONS);
     case 'LinkActionModel':
     case 'ExportActionModel':
     case 'ExportAttachmentActionModel':
@@ -927,6 +1014,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       break;
     case 'RootPageModel':
       options = cloneOptions(PAGE_OPTIONS);
+      break;
+    case 'JSPageModel':
+      options = cloneOptions(JS_PAGE_OPTIONS);
       break;
     case 'RootPageTabModel':
       options = cloneOptions(TAB_OPTIONS);
@@ -1012,7 +1102,6 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
       options = cloneOptions(JS_COLUMN_OPTIONS);
       break;
     case 'JSItemModel':
-    case 'FormJSFieldItemModel':
       options = cloneOptions(JS_ITEM_OPTIONS);
       break;
     case 'DividerItemModel':
@@ -1034,7 +1123,9 @@ export function getConfigureOptionsForResolvedNode(input: {
   use?: string;
 }): FlowSurfaceConfigureOptions {
   if (input.kind === 'page') {
-    return annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
+    return input.use === 'JSPageModel'
+      ? annotateFlowContextSupport(input.use, cloneOptions(JS_PAGE_OPTIONS))
+      : annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
   }
   if (input.kind === 'tab') {
     return annotateFlowContextSupport('RootPageTabModel', cloneOptions(TAB_OPTIONS));

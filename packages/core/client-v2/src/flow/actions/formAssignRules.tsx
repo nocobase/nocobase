@@ -23,14 +23,15 @@ import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefa
 
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
+    const { value: propValue, onChange } = props;
     const ctx = useFlowContext();
     const t = ctx.model.translate.bind(ctx.model);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
-    const canEdit = typeof props.onChange === 'function';
+    const canEdit = typeof onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
-    }, [ctx.model]);
+    }, [ctx.model, t]);
 
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFormModel(ctx.model);
@@ -51,16 +52,16 @@ const FormAssignRulesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      const base = Array.isArray(props.value) ? props.value : [];
+      const base = Array.isArray(propValue) ? propValue : [];
       return base;
-    }, [props.value]);
+    }, [propValue]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
+      return mergeAssignRulesWithLegacyDefaults(propValue, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, propValue]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
@@ -73,10 +74,16 @@ const FormAssignRulesUI = observer(
       (next: FieldAssignRuleItem[]) => {
         if (!canEdit) return;
         markInitialized();
-        props.onChange?.(next);
+        onChange?.(next);
       },
-      [canEdit, markInitialized, props.onChange],
+      [canEdit, markInitialized, onChange],
     );
+
+    const getValueInputProps = React.useCallback(() => {
+      return {
+        sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
+      };
+    }, [t]);
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并（以免重复添加）。
     React.useEffect(() => {
@@ -89,10 +96,10 @@ const FormAssignRulesUI = observer(
       }
 
       if (!isEqual(normalizedValue, legacyAwareValue)) {
-        props.onChange?.(legacyAwareValue);
+        onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, onChange]);
 
     return (
       <FieldAssignRulesEditor
@@ -102,6 +109,7 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
+        getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
         enableDateVariableAsConstant

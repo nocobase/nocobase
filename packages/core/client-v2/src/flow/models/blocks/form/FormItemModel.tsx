@@ -391,6 +391,9 @@ FormItemModel.registerFlow({
           defaultValue: {
             'x-component': 'DefaultValue',
             'x-decorator': 'FormItem',
+            'x-component-props': {
+              sourceLabel: ctx.t('Default value'),
+            },
           },
         };
       },

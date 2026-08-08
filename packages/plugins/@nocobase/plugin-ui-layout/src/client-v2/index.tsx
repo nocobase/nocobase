@@ -9,4 +9,4 @@
 
 export { default } from './plugin';
 export { MobileLayoutModel } from './models/MobileLayoutModel';
-export { MobileChildPageModel, MobileRootPageModel } from './models/MobilePageModels';
+export { MobileChildPageModel, MobileJSPageModel, MobileRootPageModel } from './models/MobilePageModels';

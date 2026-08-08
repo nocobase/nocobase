@@ -10,6 +10,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { render, waitFor } from '@testing-library/react';
+import React from 'react';
+
+const { registerFlowMock } = vi.hoisted(() => ({
+  registerFlowMock: vi.fn(),
+}));
 
 // Mock FlowModel and other dependencies
 vi.mock('@nocobase/flow-engine', () => {
@@ -65,7 +70,9 @@ vi.mock('@nocobase/flow-engine', () => {
     observerDispose() {}
     invalidateFlowCache() {}
 
-    static registerFlow() {}
+    static registerFlow(flow: unknown) {
+      registerFlowMock(flow);
+    }
     static registerEvents() {}
     static define() {}
     static bindModelToInterface() {}
@@ -272,6 +279,82 @@ describe('PageModel', () => {
     it('should return undefined if subModels.tabs is undefined', () => {
       (pageModel as any).subModels = {};
       expect(pageModel.getFirstTab()).toBeUndefined();
+    });
+  });
+
+  describe('page capabilities', () => {
+    it('supports tabs and keeps the existing page settings schema by default', () => {
+      const pageSettings = registerFlowMock.mock.calls.find((call) => call[0]?.key === 'pageSettings')?.[0];
+      const schema = pageSettings.steps.general.uiSchema({ model: pageModel });
+
+      expect(pageModel.supportsPageTabs()).toBe(true);
+      expect(Object.keys(schema)).toEqual(['title', 'documentTitle', 'displayTitle', 'enableTabs']);
+    });
+
+    it('hides and ignores tabs when the model does not support them', () => {
+      class PageWithoutTabs extends PageModelClass {
+        supportsPageTabs() {
+          return false;
+        }
+      }
+
+      const model = new PageWithoutTabs({
+        props: {
+          routeId: 'route-1',
+          displayTitle: true,
+          enableTabs: true,
+          title: 'Title',
+        },
+        context: {
+          currentRoute: { id: 'route-1', enableTabs: true },
+        },
+      });
+      const pageSettings = registerFlowMock.mock.calls.find((call) => call[0]?.key === 'pageSettings')?.[0];
+      const schema = pageSettings.steps.general.uiSchema({ model });
+      model.renderTabs = vi.fn(() => null);
+      model.renderFirstTab = vi.fn(() => 'first tab');
+
+      const content = model.renderPageContent();
+      const header = model.renderPageHeader() as React.ReactElement;
+
+      expect(schema.enableTabs).toBeUndefined();
+      expect(content).toBe('first tab');
+      expect(model.renderTabs).not.toHaveBeenCalled();
+      expect(model.renderFirstTab).toHaveBeenCalledOnce();
+      expect(header.props.style?.paddingBottom).toBeUndefined();
+    });
+
+    it('does not write enableTabs from page settings when tabs are unsupported', async () => {
+      const pageSettings = registerFlowMock.mock.calls.find((call) => call[0]?.key === 'pageSettings')?.[0];
+      const setProps = vi.fn();
+      const model = {
+        context: { closable: true },
+        supportsPageTabs: () => false,
+        setProps,
+        updateDocumentTitle: vi.fn(),
+      };
+
+      await pageSettings.steps.general.handler(
+        {
+          model,
+          view: { type: 'page' },
+          t: (value: string) => value,
+        },
+        { title: 'Title', displayTitle: true, enableTabs: true },
+      );
+
+      expect(setProps).not.toHaveBeenCalledWith('enableTabs', true);
+    });
+
+    it('composes the page header and content extension points', () => {
+      const header = React.createElement('div', null, 'header');
+      const content = React.createElement('main', null, 'content');
+      pageModel.renderPageHeader = vi.fn(() => header);
+      pageModel.renderPageContent = vi.fn(() => content);
+
+      const result = pageModel.render() as React.ReactElement;
+
+      expect(result.props.children).toEqual([header, content]);
     });
   });
 

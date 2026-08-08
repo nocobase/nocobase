@@ -1,0 +1,7 @@
+/node_modules
+!/lib/
+!/lib/**
+!/es/
+!/es/**
+/src/flow/components/code-editor/completion-catalogs/generated/
+/src/flow/components/code-editor/type-packs/generated/

@@ -10,8 +10,12 @@
 import { Card, Collapse, Empty } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { FlowModel } from '../../../../models';
-import { StepDefinition } from '../../../../types';
-import { shouldHideStepInSettings } from '../../../../utils';
+import {
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
+  resolveStepUiSchema,
+  shouldHideStepInSettings,
+} from '../../../../utils';
 import { FlowSettings } from './FlowSettings';
 import { FlowDefinition } from '../../../../FlowDefinition';
 import { observer } from '../../../../reactive';
@@ -26,51 +30,33 @@ interface FlowsSettingsContentProps {
 
 // 默认使用 Collapse 组件渲染多个流程设置
 const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ model, expandAll = false }) => {
-  const flows = model.getFlows();
-
   const [filterFlows, setFilterFlows] = useState<FlowDefinition[]>([]);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => setRefreshTick((value) => value + 1);
+    model.emitter?.on('onStepParamsChanged', refresh);
+    return () => model.emitter?.off('onStepParamsChanged', refresh);
+  }, [model]);
 
   useEffect(() => {
     let mounted = true;
     const buildFilterFlows = async () => {
+      const flows = model.getFlows();
       const result: FlowDefinition[] = [];
       for (const flow of Array.from(flows.values())) {
+        const flowSteps = await getFlowSettingSteps(model, flow, flow.key);
+        const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flow.key);
         const configurableSteps = await Promise.all(
-          Object.entries(flow.steps).map(async ([stepKey, actionStep]) => {
+          Object.entries(flowSteps).map(async ([stepKey, actionStep]) => {
             // 如果步骤设置了 hideInSettings: true 或动态隐藏，则跳过此步骤
-            if (await shouldHideStepInSettings(model, flow, actionStep as StepDefinition)) {
+            if (await shouldHideStepInSettings(model, flowForSettings, actionStep)) {
               return null;
             }
-
-            // 从step获取uiSchema（如果存在）
-            const stepUiSchema = actionStep.uiSchema || {};
-
-            // 如果step使用了action，也获取action的uiSchema
-            let actionUiSchema = {};
-            if (actionStep.use) {
-              const action = model.flowEngine?.getAction?.(actionStep.use);
-              if (action && action.uiSchema) {
-                actionUiSchema = action.uiSchema;
-              }
-            }
-
-            // 合并uiSchema，确保step的uiSchema优先级更高
-            // 先复制action的uiSchema，然后用step的uiSchema覆盖相同的字段
-            const mergedUiSchema = { ...actionUiSchema };
-
-            // 将stepUiSchema中的字段合并到mergedUiSchema
-            Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-              if (mergedUiSchema[fieldKey]) {
-                // 如果字段已存在，则合并schema对象，保持step中的属性优先级更高
-                mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-              } else {
-                // 如果字段不存在，则直接添加
-                mergedUiSchema[fieldKey] = schema;
-              }
-            });
+            const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, actionStep);
 
             // 如果没有可配置的UI Schema，返回null
-            if (Object.keys(mergedUiSchema).length === 0) {
+            if (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) {
               return null;
             }
 
@@ -79,7 +65,7 @@ const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ mo
         ).then((steps) => steps.filter(Boolean));
 
         if (configurableSteps.length > 0) {
-          result.push(flow);
+          result.push(flowForSettings as FlowDefinition);
         }
       }
 
@@ -92,7 +78,7 @@ const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ mo
     return () => {
       mounted = false;
     };
-  }, [model, flows]);
+  }, [model, refreshTick]);
 
   const flowKeys = filterFlows.map((flow) => flow.key);
   if (flowKeys.length === 0) {
@@ -106,7 +92,7 @@ const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ mo
     <Card title="Flows设置">
       <Collapse defaultActiveKey={defaultActiveKey}>
         {flowKeys.map((flowKey) => (
-          <Panel header={flows.get(flowKey)?.title || flowKey} key={flowKey}>
+          <Panel header={filterFlows.find((flow) => flow.key === flowKey)?.title || flowKey} key={flowKey}>
             <FlowSettings model={model} flowKey={flowKey} />
           </Panel>
         ))}

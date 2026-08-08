@@ -8,8 +8,10 @@
  */
 
 import { linter, Diagnostic } from '@codemirror/lint';
+import { tsxLanguage, typescriptLanguage } from '@codemirror/lang-javascript';
 import * as acorn from 'acorn';
 import jsx from 'acorn-jsx';
+import type { CodeEditorDiagnostic } from './types';
 // acorn-walk 仅用于轻量遍历做一些静态启发式检查（非类型检查）
 // 类型定义可缺省，因此用 any 兼容
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -74,6 +76,8 @@ interface AcornError extends Error {
 export const computeDiagnosticsFromText = (
   text: string,
   options?: {
+    fileName?: string;
+    language?: string;
     /**
      * When provided, treat `ctx.<name>` / `ctx.<name>()` where `<name>` is NOT in this list as a lint issue.
      * This enables context-aware unknown ctx API detection in CodeEditor (best-effort).
@@ -82,6 +86,15 @@ export const computeDiagnosticsFromText = (
   },
 ): Diagnostic[] => {
   const diagnostics: Diagnostic[] = [];
+  const normalizedLanguage = options?.language?.trim().toLowerCase();
+  const normalizedFileName = options?.fileName?.trim().toLowerCase();
+  const isTypeScript =
+    normalizedFileName?.endsWith('.ts') === true ||
+    normalizedFileName?.endsWith('.tsx') === true ||
+    normalizedLanguage === 'ts' ||
+    normalizedLanguage === 'tsx' ||
+    normalizedLanguage === 'typescript' ||
+    normalizedLanguage === 'typescriptreact';
 
   if (!text.trim()) return diagnostics;
 
@@ -605,6 +618,40 @@ export const computeDiagnosticsFromText = (
     return result;
   };
 
+  if (isTypeScript) {
+    const parser =
+      normalizedFileName?.endsWith('.tsx') === true ||
+      normalizedLanguage === 'tsx' ||
+      normalizedLanguage === 'typescriptreact'
+        ? tsxLanguage.parser
+        : typescriptLanguage.parser;
+    const reportedSyntaxErrors = new Set<string>();
+    parser.parse(text).iterate({
+      enter(node) {
+        if (!node.type.isError) {
+          return;
+        }
+        const from = Math.min(node.from, text.length);
+        const to = Math.min(text.length, Math.max(node.to, from < text.length ? from + 1 : from));
+        const key = `${from}:${to}`;
+        if (reportedSyntaxErrors.has(key) || isIgnoredPos(from)) {
+          return;
+        }
+        reportedSyntaxErrors.add(key);
+        diagnostics.push({
+          from,
+          to,
+          severity: 'error',
+          message: 'Syntax error: Invalid TypeScript syntax.',
+          actions: [],
+        });
+      },
+    });
+    diagnostics.push(...scanUnknownCtxDiagnostics());
+    diagnostics.push(...scanNonCallableCallDiagnostics());
+    return diagnostics;
+  }
+
   let ast: any = null;
   try {
     // 使用 acorn + jsx 插件解析代码（支持 JSX），只检查语法错误
@@ -612,7 +659,7 @@ export const computeDiagnosticsFromText = (
     const ParserWithJSX = typeof jsx === 'function' ? Parser.extend(jsx()) : Parser;
     ast = ParserWithJSX.parse(text, {
       ecmaVersion: 2022,
-      sourceType: 'script',
+      sourceType: 'module',
       allowAwaitOutsideFunction: true,
       allowReturnOutsideFunction: true,
       locations: true,
@@ -741,6 +788,11 @@ export const computeDiagnosticsFromText = (
             break;
           case 'ClassDeclaration':
             addId(node.id);
+            break;
+          case 'ImportSpecifier':
+          case 'ImportDefaultSpecifier':
+          case 'ImportNamespaceSpecifier':
+            addId(node.local);
             break;
           default:
             break;
@@ -916,6 +968,9 @@ export const computeDiagnosticsFromText = (
             (parent.type === 'FunctionExpression' && parent.id === node) ||
             (parent.type === 'ClassDeclaration' && parent.id === node) ||
             (parent.type === 'ClassExpression' && parent.id === node) ||
+            (parent.type === 'ImportSpecifier' && (parent.imported === node || parent.local === node)) ||
+            (parent.type === 'ImportDefaultSpecifier' && parent.local === node) ||
+            (parent.type === 'ImportNamespaceSpecifier' && parent.local === node) ||
             (parent.type === 'Property' && parent.key === node && parent.computed !== true) ||
             (parent.type === 'MemberExpression' && parent.property === node && parent.computed !== true) ||
             (parent.type === 'LabeledStatement' && parent.label === node) ||
@@ -941,9 +996,107 @@ export const computeDiagnosticsFromText = (
   return diagnostics;
 };
 
-export const createJavaScriptLinter = (options?: { knownCtxMemberRoots?: Iterable<string> }) => {
+export const createJavaScriptLinter = (options?: {
+  externalDiagnostics?: CodeEditorDiagnostic[];
+  fileName?: string;
+  knownCtxMemberRoots?: Iterable<string>;
+  language?: string;
+}) => {
   return linter((view) => {
     const text = view.state.doc.toString();
-    return computeDiagnosticsFromText(text, options);
+    const externalDiagnostics = computeExternalDiagnosticsFromText(text, options?.externalDiagnostics);
+    const localDiagnostics = computeDiagnosticsFromText(text, options).filter(
+      (diagnostic) => !externalDiagnostics.some((external) => diagnosticsOverlap(diagnostic, external)),
+    );
+    return [...externalDiagnostics, ...localDiagnostics];
   });
 };
+
+function computeExternalDiagnosticsFromText(
+  text: string,
+  diagnostics: CodeEditorDiagnostic[] | undefined,
+): Diagnostic[] {
+  if (!diagnostics?.length) {
+    return [];
+  }
+
+  const lineStarts = [0];
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === '\n') {
+      lineStarts.push(index + 1);
+    }
+  }
+
+  const lineOffset = (line: number | undefined, column: number | undefined): number | undefined => {
+    if (typeof line !== 'number' || !Number.isFinite(line)) {
+      return undefined;
+    }
+    const lineIndex = Math.min(Math.max(Math.trunc(line) - 1, 0), lineStarts.length - 1);
+    const lineStart = lineStarts[lineIndex];
+    const nextLineStart = lineStarts[lineIndex + 1];
+    const lineEnd = typeof nextLineStart === 'number' ? Math.max(lineStart, nextLineStart - 1) : text.length;
+    const columnOffset =
+      typeof column === 'number' && Number.isFinite(column) ? Math.max(Math.trunc(column) - 1, 0) : 0;
+    return Math.min(lineStart + columnOffset, lineEnd);
+  };
+
+  const clampOffset = (offset: number): number => Math.min(Math.max(Math.trunc(offset), 0), text.length);
+  const identifierCharacter = /[$_\p{Letter}\p{Number}]/u;
+  const expandIdentifierEnd = (from: number): number => {
+    let to = from;
+    while (to < text.length && identifierCharacter.test(text[to])) {
+      to += 1;
+    }
+    if (to > from) {
+      return to;
+    }
+    return Math.min(from + 1, text.length);
+  };
+
+  const result: Diagnostic[] = [];
+  const seen = new Set<string>();
+  for (const diagnostic of diagnostics) {
+    const rawFrom =
+      typeof diagnostic.from === 'number' && Number.isFinite(diagnostic.from)
+        ? diagnostic.from
+        : lineOffset(diagnostic.line, diagnostic.column);
+    if (typeof rawFrom !== 'number') {
+      continue;
+    }
+
+    let from = clampOffset(rawFrom);
+    const rawTo =
+      typeof diagnostic.to === 'number' && Number.isFinite(diagnostic.to)
+        ? diagnostic.to
+        : lineOffset(diagnostic.endLine, diagnostic.endColumn);
+    let to = typeof rawTo === 'number' ? clampOffset(rawTo) : expandIdentifierEnd(from);
+    if (to <= from && text.length > 0) {
+      if (from === text.length) {
+        from -= 1;
+      }
+      to = Math.min(from + 1, text.length);
+    }
+
+    const key = `${from}:${to}:${diagnostic.severity}:${diagnostic.message}`;
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    result.push({
+      from,
+      to,
+      message: diagnostic.message,
+      severity: diagnostic.severity,
+      source: diagnostic.source,
+      actions: [],
+    });
+  }
+
+  return result;
+}
+
+function diagnosticsOverlap(left: Diagnostic, right: Diagnostic): boolean {
+  const leftTo = Math.max(left.from + 1, left.to);
+  const rightTo = Math.max(right.from + 1, right.to);
+  return left.from < rightTo && right.from < leftTo;
+}

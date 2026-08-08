@@ -1,0 +1,107 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { defineCollection } from '@nocobase/database';
+
+import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
+
+export default defineCollection({
+  name: JS_TEMPLATE_COLLECTIONS.projects,
+  dataCategory: 'system',
+  autoGenId: false,
+  timestamps: true,
+  indexes: [
+    {
+      name: 'jst_project_name_uq',
+      unique: true,
+      fields: ['name'],
+    },
+    {
+      name: 'jst_project_normalized_uq',
+      unique: true,
+      fields: ['normalizedName'],
+    },
+    {
+      name: 'jst_project_vsc_uq',
+      unique: true,
+      fields: ['vscRepoId'],
+    },
+    {
+      name: 'jst_project_health_idx',
+      fields: ['lifecycleStatus', 'healthStatus'],
+    },
+    {
+      name: 'jst_project_application_idx',
+      fields: ['applicationName'],
+    },
+    {
+      name: 'jst_project_head_idx',
+      fields: ['headCommitId'],
+    },
+  ],
+  fields: [
+    {
+      type: 'uid',
+      name: 'id',
+      prefix: 'jtp_',
+      primaryKey: true,
+    },
+    {
+      type: 'string',
+      name: 'vscRepoId',
+      length: 64,
+      allowNull: false,
+      unique: true,
+    },
+    {
+      type: 'string',
+      name: 'applicationName',
+    },
+    {
+      type: 'string',
+      name: 'name',
+      allowNull: false,
+      unique: true,
+    },
+    {
+      type: 'string',
+      name: 'normalizedName',
+      allowNull: false,
+      unique: true,
+    },
+    {
+      type: 'string',
+      name: 'title',
+    },
+    {
+      type: 'text',
+      name: 'description',
+    },
+    {
+      type: 'string',
+      name: 'lifecycleStatus',
+      allowNull: false,
+      defaultValue: 'enabled',
+    },
+    {
+      type: 'string',
+      name: 'healthStatus',
+      allowNull: false,
+      defaultValue: 'pending',
+    },
+    {
+      type: 'string',
+      name: 'headCommitId',
+    },
+    {
+      type: 'date',
+      name: 'lastCompiledAt',
+    },
+  ],
+});

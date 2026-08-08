@@ -29,16 +29,14 @@ function createInputFieldModel(props?: Record<string, unknown>) {
 describe('InputFieldModel', () => {
   it('renders the normal input when scan input is disabled', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const model = createInputFieldModel({ disableManualInput: true, enableScan: false });
+    const model = createInputFieldModel({ disableManualInput: true, enableScan: false, titleField: 'nickname' });
 
     render(<>{model.render()}</>);
 
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).not.toHaveAttribute('titleField');
     expect(screen.queryByRole('button', { name: 'Scan to input' })).not.toBeInTheDocument();
-    expect(consoleError).not.toHaveBeenCalledWith(
-      expect.stringContaining('React does not recognize the `disableManualInput` prop'),
-      expect.anything(),
-    );
+    expect(consoleError.mock.calls.flat().map(String).join('\n')).not.toContain('titleField');
+    expect(consoleError.mock.calls.flat().map(String).join('\n')).not.toContain('disableManualInput');
 
     consoleError.mockRestore();
   });

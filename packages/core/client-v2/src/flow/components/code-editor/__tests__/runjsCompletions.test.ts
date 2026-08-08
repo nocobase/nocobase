@@ -8,6 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EditorView } from '@codemirror/view';
 
 // Mock engine api provider
 vi.mock('@nocobase/flow-engine', () => {
@@ -91,14 +92,7 @@ vi.mock('@nocobase/flow-engine', () => {
     },
     methods,
   };
-  const domModels = new Set([
-    'JSBlockModel',
-    'JSFieldModel',
-    'JSEditableFieldModel',
-    'JSItemModel',
-    'JSColumnModel',
-    'FormJSFieldItemModel',
-  ]);
+  const domModels = new Set(['JSBlockModel', 'JSFieldModel', 'JSEditableFieldModel', 'JSItemModel', 'JSColumnModel']);
   return {
     getRunJSDocFor: (ctx: any) => (domModels.has(ctx?.model?.constructor?.name) ? domDoc : baseDoc),
     FlowRunJSContext: { getDoc: () => baseDoc },
@@ -172,6 +166,78 @@ describe('buildRunJSCompletions', () => {
     expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(true);
     // entries produced for drawer
     expect(entries.some((e) => e.name === 'Class Snippet')).toBe(true);
+  });
+
+  it('provides bare React hooks that auto import from ctx.libs.React', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v2', 'block');
+    const useEffectCompletion = completions.find((completion) => completion.label === 'useEffect');
+    const view = { dispatch: vi.fn() } as unknown as EditorView;
+
+    expect(useEffectCompletion?.detail).toBe('Auto import from ctx.libs.React');
+    expect(typeof useEffectCompletion?.apply).toBe('function');
+    if (typeof useEffectCompletion?.apply === 'function') {
+      useEffectCompletion.apply(view, useEffectCompletion, 0, 'useEff'.length);
+    }
+    expect((view.dispatch as ReturnType<typeof vi.fn>).mock.calls[0][0].changes).toEqual([
+      { from: 0, to: 0, insert: 'const { useEffect } = ctx.libs.React;\n' },
+      { from: 0, to: 'useEff'.length, insert: 'useEffect' },
+    ]);
+  });
+
+  it('does not insert the same ctx.libs React declaration more than once', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v2', 'block');
+    const useEffectCompletion = completions.find((completion) => completion.label === 'useEffect');
+    const view = new EditorView({ doc: 'useEff' });
+
+    if (typeof useEffectCompletion?.apply === 'function') {
+      useEffectCompletion.apply(view, useEffectCompletion, 0, view.state.doc.length);
+    }
+    view.dispatch({ changes: { from: view.state.doc.length, insert: '\nuseEff' } });
+    const secondFrom = view.state.doc.length - 'useEff'.length;
+    if (typeof useEffectCompletion?.apply === 'function') {
+      useEffectCompletion.apply(view, useEffectCompletion, secondFrom, view.state.doc.length);
+    }
+
+    expect(view.state.doc.toString().match(/const \{ useEffect \} = ctx\.libs\.React;/gu)).toHaveLength(1);
+    expect(view.state.doc.toString().match(/useEffect/gu)).toHaveLength(3);
+    view.destroy();
+  });
+
+  it('ignores declaration-looking text inside comments and template strings', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v2', 'block');
+    const useEffectCompletion = completions.find((completion) => completion.label === 'useEffect');
+    const source = [
+      'const example = `',
+      'const useEffect = fake;',
+      '`;',
+      '/* const useEffect = fake; */',
+      'useEff',
+    ].join('\n');
+    const view = new EditorView({ doc: source });
+    const from = source.length - 'useEff'.length;
+
+    if (typeof useEffectCompletion?.apply === 'function') {
+      useEffectCompletion.apply(view, useEffectCompletion, from, source.length);
+    }
+
+    expect(view.state.doc.toString()).toBe(`const { useEffect } = ctx.libs.React;\n${source.slice(0, from)}useEffect`);
+    view.destroy();
+  });
+
+  it('recognizes a hook binding in a multi-declarator statement', async () => {
+    const { completions } = await buildRunJSCompletions({}, 'v2', 'block');
+    const useEffectCompletion = completions.find((completion) => completion.label === 'useEffect');
+    const source = 'const marker = 1, useEffect = ctx.libs.React.useEffect;\nuseEff';
+    const view = new EditorView({ doc: source });
+    const from = source.length - 'useEff'.length;
+
+    if (typeof useEffectCompletion?.apply === 'function') {
+      useEffectCompletion.apply(view, useEffectCompletion, from, source.length);
+    }
+
+    expect(view.state.doc.toString()).toBe(`${source.slice(0, from)}useEffect`);
+    expect(view.state.doc.toString()).not.toContain('const { useEffect } = ctx.libs.React;');
+    view.destroy();
   });
 
   it('filters snippets by scene when provided', async () => {
@@ -307,6 +373,29 @@ describe('buildRunJSCompletions', () => {
     engineDoc.properties.popup.hidden = prev;
   });
 
+  it('keeps only the bare React hook completion when runtime API metadata also exposes the qualified path', async () => {
+    const hostCtx = {
+      getApiInfos: async () => ({
+        libs: {
+          properties: {
+            React: {
+              properties: {
+                useEffect: {
+                  type: 'function',
+                  completion: { insertText: 'ctx.libs.React.useEffect(() => {}, [])' },
+                },
+              },
+            },
+          },
+        },
+      }),
+    };
+
+    const { completions } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
+    expect(completions.filter((completion) => completion.label === 'useEffect')).toHaveLength(1);
+    expect(completions.some((completion) => completion.label === 'ctx.libs.React.useEffect()')).toBe(false);
+  });
+
   it('adds safe browser/runtime global completions and excludes blocked globals', async () => {
     const { completions } = await buildRunJSCompletions({}, 'v1', 'block');
     const labels = new Set(completions.map((c: any) => c.label));
@@ -344,6 +433,14 @@ describe('buildRunJSCompletions', () => {
     expect(labels.has('ctx.logger.info()')).toBe(true);
     expect(labels.has('ctx.element.setAttribute()')).toBe(true);
     expect(labels.has('ctx.libs.React.createElement()')).toBe(true);
+    expect(labels.has('ctx.libs.React.useState()')).toBe(false);
+    expect(labels.has('ctx.libs.React.useEffect()')).toBe(false);
+    expect(labels.has('ctx.libs.React.useMemo()')).toBe(false);
+    expect(labels.has('ctx.libs.React.useCallback()')).toBe(false);
+    expect(labels.has('useState')).toBe(true);
+    expect(labels.has('useEffect')).toBe(true);
+    expect(labels.has('useMemo')).toBe(true);
+    expect(labels.has('useCallback')).toBe(true);
     expect(labels.has('ctx.libs.lodash.get()')).toBe(true);
   });
 

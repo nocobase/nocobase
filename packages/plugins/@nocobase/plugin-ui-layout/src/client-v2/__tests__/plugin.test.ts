@@ -161,6 +161,9 @@ describe('PluginUiLayoutClientV2', () => {
       MobileChildPageModel: {
         loader: expect.any(Function),
       },
+      MobileJSPageModel: {
+        loader: expect.any(Function),
+      },
     });
     expect(app.flowEngine.registerActions).toHaveBeenCalledWith({
       openView: expect.objectContaining({

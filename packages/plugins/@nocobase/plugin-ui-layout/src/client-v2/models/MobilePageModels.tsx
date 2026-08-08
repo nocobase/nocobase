@@ -9,7 +9,7 @@
 
 import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ChildPageModel, RootPageModel } from '@nocobase/client-v2';
+import { ChildPageModel, JSPageModel, RootPageModel } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowSettingsButton, type CreateModelOptions } from '@nocobase/flow-engine';
 import { ConfigProvider } from 'antd';
 import React from 'react';
@@ -206,6 +206,42 @@ export class MobileRootPageModel extends RootPageModel {
       <MobilePageCompactThemeProvider>
         <MobilePageSurface title={this.props.title} displayTitle={displayTitle}>
           {enableTabs ? renderMobileTabs(this.renderTabs()) : renderMobileBody(this.renderFirstTab())}
+        </MobilePageSurface>
+      </MobilePageCompactThemeProvider>
+    );
+  }
+}
+
+export class MobileJSPageModel extends JSPageModel {
+  constructor(options: ConstructorParameters<typeof JSPageModel>[0]) {
+    super(options);
+    defineMobilePageRuntimeContext(this);
+  }
+
+  private renderBackButton() {
+    if (this.context?.view?.type !== 'embed' || this.props.displayTitle) {
+      return null;
+    }
+
+    return (
+      <div className="nb-ui-layout-mobile-titlebar">
+        <MobileBackButton />
+      </div>
+    );
+  }
+
+  render() {
+    const displayTitle = !!this.props.displayTitle && !!this.props.title;
+
+    return (
+      <MobilePageCompactThemeProvider>
+        <MobilePageSurface
+          title={this.props.title}
+          displayTitle={displayTitle}
+          titlebarLeft={displayTitle ? <MobileBackButton /> : null}
+        >
+          {this.renderBackButton()}
+          {renderMobileBody(this.renderPageContent())}
         </MobilePageSurface>
       </MobilePageCompactThemeProvider>
     );

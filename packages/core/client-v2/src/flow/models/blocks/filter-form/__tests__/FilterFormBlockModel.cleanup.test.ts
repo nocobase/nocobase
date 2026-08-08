@@ -8,7 +8,6 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import '@nocobase/client';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { waitFor } from '@testing-library/react';
 import { TableBlockModel } from '../../table/TableBlockModel';

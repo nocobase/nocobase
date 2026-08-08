@@ -17,31 +17,13 @@ import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import {
   compileUiSchema,
+  createFlowWithSettingSteps,
+  getFlowSettingSteps,
   getT,
   resolveDefaultParams,
   resolveStepUiSchema,
   setupRuntimeContextSteps,
 } from '../../../../utils';
-
-/**
- * 检查步骤是否已经有了所需的配置值
- * @param uiSchema 步骤的 UI Schema
- * @param currentParams 当前步骤的参数
- * @returns 是否已经有了所需的配置值
- */
-function hasRequiredParams(uiSchema: Record<string, any>, currentParams: Record<string, any>): boolean {
-  // 检查 uiSchema 中所有 required 为 true 的字段
-  for (const [fieldKey, fieldSchema] of Object.entries(uiSchema)) {
-    if (fieldSchema.required === true) {
-      // 如果字段是必需的，但当前参数中没有值或值为空
-      const value = currentParams[fieldKey];
-      if (value === undefined || value === null || value === '') {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 
 const SchemaField = createSchemaField();
 
@@ -50,16 +32,17 @@ const SchemaField = createSchemaField();
  * 能够根据当前步骤动态切换上下文
  */
 interface MultiStepContextProviderProps {
-  model: any;
+  model: FlowModel;
   requiredSteps: Array<{
     flowKey: string;
     stepKey: string;
     step: StepDefinition;
-    uiSchema: Record<string, any>;
+    uiSchema: Record<string, ISchema>;
     title: string;
     flowTitle: string;
+    flowSteps: Record<string, StepDefinition>;
   }>;
-  formStep: any; // FormStep实例，用于获取当前步骤
+  formStep: { current?: number } | null;
   children: React.ReactNode;
 }
 
@@ -76,10 +59,8 @@ const MultiStepContextProvider: React.FC<MultiStepContextProviderProps> = ({
   // 根据当前步骤创建上下文
   const flowRuntimeContext = React.useMemo(() => {
     const { flowKey, step } = currentStepInfo;
-    const flow = model.getFlow(flowKey);
-
     const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
-    setupRuntimeContextSteps(ctx, flow?.steps || {}, model, flowKey);
+    setupRuntimeContextSteps(ctx, currentStepInfo.flowSteps, model, flowKey);
     ctx.defineProperty('currentStep', { value: step });
     return ctx;
   }, [model, currentStepInfo]);
@@ -128,46 +109,39 @@ const openRequiredParamsStepFormDialog = async ({
           flowKey: string;
           stepKey: string;
           step: StepDefinition;
-          uiSchema: Record<string, any>;
+          uiSchema: Record<string, ISchema>;
           title: string;
           flowTitle: string;
+          flowSteps: Record<string, StepDefinition>;
         }> = [];
 
         for (const [flowKey, flow] of allFlows) {
-          for (const stepKey in flow.steps) {
-            const step = flow.steps[stepKey];
+          const flowSteps = await getFlowSettingSteps(model, flow, flowKey);
+          const flowForSettings = createFlowWithSettingSteps(flow, flowSteps, flowKey);
+          for (const stepKey in flowSteps) {
+            const step = flowSteps[stepKey];
 
             // 只处理 paramsRequired 为 true 的步骤
             if (step.paramsRequired || step.preset) {
               // 使用提取的工具函数解析并合并uiSchema
-              const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
+              const mergedUiSchema = await resolveStepUiSchema(model, flowForSettings, step);
 
               // 如果有可配置的UI Schema，检查是否已经有了所需的配置值
               if (mergedUiSchema) {
                 // 获取当前步骤的参数
-                const currentStepParams = model.getStepParams(flowKey, stepKey) || {};
-
-                // 检查是否已经有了所需的配置值
-                const hasAllRequiredParams = false; // hasRequiredParams(mergedUiSchema, currentStepParams);
-                console.log(`Flow: ${flowKey}, Step: ${stepKey}, hasAllRequiredParams:`, hasAllRequiredParams);
-
-                // 只有当缺少必需参数时才添加到列表中
-                if (!hasAllRequiredParams) {
-                  requiredSteps.push({
-                    flowKey,
-                    stepKey,
-                    step,
-                    uiSchema: mergedUiSchema,
-                    title: step.title || stepKey,
-                    flowTitle: flow.title || flowKey,
-                  });
-                }
+                requiredSteps.push({
+                  flowKey,
+                  stepKey,
+                  step,
+                  uiSchema: mergedUiSchema,
+                  title: step.title || stepKey,
+                  flowTitle: flow.title || flowKey,
+                  flowSteps,
+                });
               }
             }
           }
         }
-
-        console.log('Required steps:', requiredSteps);
 
         // 如果没有需要配置的步骤，显示提示
         if (requiredSteps.length === 0) {
@@ -178,7 +152,7 @@ const openRequiredParamsStepFormDialog = async ({
         // 获取所有步骤的初始值
         const initialValues: Record<string, any> = {};
 
-        for (const { flowKey, stepKey, step } of requiredSteps) {
+        for (const { flowKey, stepKey, step, flowSteps } of requiredSteps) {
           const stepParams = model.getStepParams(flowKey, stepKey) || {};
           // 如果step使用了action，也获取action的defaultParams
           let actionDefaultParams = {};
@@ -188,10 +162,7 @@ const openRequiredParamsStepFormDialog = async ({
           }
           // Create flowRuntimeContext for this step
           const flowRuntimeContext = new FlowRuntimeContext(model, flowKey, 'settings');
-          const flow = model.getFlow(flowKey);
-          if (flow) {
-            setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, flowKey);
-          }
+          setupRuntimeContextSteps(flowRuntimeContext, flowSteps, model, flowKey);
           flowRuntimeContext.defineProperty('currentStep', { value: step });
 
           // 解析 defaultParams
@@ -301,14 +272,40 @@ const openRequiredParamsStepFormDialog = async ({
                 const currentValues = form.values;
 
                 // 保存每个步骤的参数
-                requiredSteps.forEach(({ flowKey, stepKey }) => {
+                const savedSteps: Array<{
+                  step: StepDefinition;
+                  ctx: FlowRuntimeContext;
+                  params: Record<string, unknown>;
+                  previousParams: Record<string, unknown>;
+                }> = [];
+                for (const { flowKey, stepKey, step, flowSteps } of requiredSteps) {
                   const stepValues = currentValues[flowKey]?.[stepKey];
                   if (stepValues) {
-                    model.setStepParams(flowKey, stepKey, stepValues);
+                    const previousParams = model.getStepParams(flowKey, stepKey) || {};
+                    const ctx = new FlowRuntimeContext(model, flowKey, 'settings');
+                    setupRuntimeContextSteps(ctx, flowSteps, model, flowKey);
+                    ctx.defineProperty('currentStep', { value: step });
+                    const action = step.use ? model.getAction?.(step.use) : undefined;
+                    const beforeParamsSave = step.beforeParamsSave || action?.beforeParamsSave;
+
+                    if (step.persistParams !== false) {
+                      model.setStepParams(flowKey, stepKey, stepValues);
+                    }
+                    if (beforeParamsSave) {
+                      await beforeParamsSave(ctx, stepValues, previousParams);
+                    }
+                    savedSteps.push({ step, ctx, params: stepValues, previousParams });
                   }
-                });
+                }
 
                 await model.saveStepParams();
+                for (const { step, ctx, params, previousParams } of savedSteps) {
+                  const action = step.use ? model.getAction?.(step.use) : undefined;
+                  const afterParamsSave = step.afterParamsSave || action?.afterParamsSave;
+                  if (afterParamsSave) {
+                    await afterParamsSave(ctx, params, previousParams);
+                  }
+                }
                 // message.success('所有步骤参数配置已保存');
                 resolve(currentValues);
                 formDialog.close();

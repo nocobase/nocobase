@@ -1,0 +1,66 @@
+{
+  "name": "@nocobase/runjs",
+  "version": "2.2.0-beta.16",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "compiler/build-identity": [
+        "./lib/compiler/build-identity.d.ts"
+      ],
+      "compiler/loader": [
+        "./lib/compiler/loader.d.ts"
+      ],
+      "compiler/portable": [
+        "./lib/compiler/portable.d.ts"
+      ],
+      "server": [
+        "./lib/server.d.ts"
+      ]
+    }
+  },
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    },
+    "./compiler": {
+      "types": "./lib/compiler/index.d.ts",
+      "import": "./lib/compiler/index.js",
+      "require": "./lib/compiler/index.js"
+    },
+    "./compiler/build-identity": {
+      "types": "./lib/compiler/build-identity.d.ts",
+      "import": "./lib/compiler/build-identity.js",
+      "require": "./lib/compiler/build-identity.js"
+    },
+    "./compiler/loader": {
+      "types": "./lib/compiler/loader.d.ts",
+      "import": "./lib/compiler/loader.js",
+      "require": "./lib/compiler/loader.js"
+    },
+    "./compiler/portable": {
+      "types": "./lib/compiler/portable.d.ts",
+      "import": "./lib/compiler/portable.js",
+      "require": "./lib/compiler/portable.js"
+    },
+    "./settings": {
+      "types": "./lib/settings/index.d.ts",
+      "import": "./lib/settings/index.js",
+      "require": "./lib/settings/index.js"
+    },
+    "./server": {
+      "types": "./lib/server.d.ts",
+      "import": "./lib/server.js",
+      "require": "./lib/server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "esbuild": "~0.27.0",
+    "typescript": "5.1.3"
+  }
+}

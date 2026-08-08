@@ -117,6 +117,8 @@ describe('DisplayPreviewFieldModel', () => {
 
   it('downloads preview files', async () => {
     const click = vi.fn();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLElement & {
         click?: () => void;
@@ -140,6 +142,7 @@ describe('DisplayPreviewFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('renders nested titleField previews with separators and N/A placeholders', () => {

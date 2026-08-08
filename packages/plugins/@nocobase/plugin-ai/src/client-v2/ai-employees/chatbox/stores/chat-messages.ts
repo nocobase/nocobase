@@ -31,6 +31,7 @@ export type ChatSessionState = {
   webSearching?: WebSearching | null;
   backgroundWorking: boolean;
   resumeStreamFailed: boolean;
+  workspaceSurfaceId?: string;
 };
 
 export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
@@ -47,6 +48,7 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   webSearching: null,
   backgroundWorking: false,
   resumeStreamFailed: false,
+  workspaceSurfaceId: undefined,
 };
 
 type SessionStateUpdater<T> = T | ((prev: T) => T);
@@ -111,6 +113,7 @@ export class ChatMessageModel {
       setSessionAbortController: action,
       setSessionSkillSettings: action,
       setSessionWebSearching: action,
+      setSessionWorkspaceSurfaceId: action,
       addSessionSubAgentMessage: action,
       addSessionSubAgentMessages: action,
       updateSessionLastSubAgentMessage: action,
@@ -364,6 +367,13 @@ export class ChatMessageModel {
     this.updateSessionState(sessionId, (session) => ({
       ...session,
       webSearching,
+    }));
+  };
+
+  setSessionWorkspaceSurfaceId = (sessionId: string | undefined, workspaceSurfaceId?: string) => {
+    this.updateSessionState(sessionId, (session) => ({
+      ...session,
+      workspaceSurfaceId,
     }));
   };
 

@@ -29,7 +29,7 @@ const isUniqueConstraintError = (error: unknown) =>
   error instanceof UniqueConstraintError ||
   (typeof error === 'object' && error !== null && 'name' in error && error.name === 'SequelizeUniqueConstraintError');
 
-const throwUsernameConflict = (ctx: Context): never =>
+const throwUsernameConflict = (ctx: Context): void =>
   ctx.throw(409, {
     code: AI_EMPLOYEE_USERNAME_CONFLICT,
     message: ctx.t('Username already exists'),
@@ -45,23 +45,27 @@ const validateAndNormalizeProfileValues = (ctx: Context) => {
   }
 
   if ('username' in values) {
-    if (typeof values.username !== 'string' || !isValidAIEmployeeUsername(values.username)) {
+    const username = values.username;
+    if (typeof username !== 'string' || !isValidAIEmployeeUsername(username)) {
       ctx.throw(400, {
         code: AI_EMPLOYEE_USERNAME_INVALID,
         message: ctx.t('Use 1-64 letters, numbers, underscores, or hyphens.'),
       });
+    } else {
+      values.username = normalizeAIEmployeeName(username);
     }
-    values.username = normalizeAIEmployeeName(values.username);
   }
 
   if ('nickname' in values) {
-    if (typeof values.nickname !== 'string' || !isValidAIEmployeeNickname(values.nickname)) {
+    const nickname = values.nickname;
+    if (typeof nickname !== 'string' || !isValidAIEmployeeNickname(nickname)) {
       ctx.throw(400, {
         code: AI_EMPLOYEE_NICKNAME_INVALID,
         message: ctx.t("Use 1-64 letters, numbers, spaces, or . _ - ' ( ) & ·."),
       });
+    } else {
+      values.nickname = normalizeAIEmployeeName(nickname);
     }
-    values.nickname = normalizeAIEmployeeName(values.nickname);
   }
 };
 

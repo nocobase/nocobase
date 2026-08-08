@@ -9,7 +9,8 @@
 
 import {
   FlowModelRenderer,
-  resolveRunJSObjectValues,
+  isRunJSValue,
+  normalizeRunJSValue,
   tExpr,
   type FlowModelContext,
   useFlowEngine,
@@ -19,6 +20,7 @@ import React, { useEffect } from 'react';
 import { CollectionActionModel } from '../../base/CollectionActionModel';
 import { RecordActionModel } from '../../base/RecordActionModel';
 import { AssignFormModel } from './AssignFormModel';
+import { evaluateInlineRunJSValue } from '../../../components/runjs-source';
 
 export const ASSIGN_FIELD_VALUES_STEP_KEY = 'assignFieldValues';
 
@@ -52,6 +54,8 @@ type AssignFieldValuesStepOptions = {
   validateBeforeSave?: boolean;
   clearRecordContext?: boolean;
 };
+
+const SKIP_ASSIGN_VALUE = Symbol('SKIP_ASSIGN_VALUE');
 
 function getContextCollection(ctx: AssignFieldValuesContext | undefined): AssignFieldValuesCollection | undefined {
   const collection = ctx?.collection;
@@ -162,17 +166,61 @@ export async function resolveAssignFieldValues(
   ctx: {
     message?: { error?: (message: string) => void };
     t?: (message: string) => string;
+    model?: { uid?: string; use?: string };
   },
   rawAssignedValues: unknown,
   logName = 'AssignFieldValues',
 ): Promise<AssignedValues | null> {
   try {
-    return await resolveRunJSObjectValues(ctx, rawAssignedValues);
+    return await resolveAssignRunJSObjectValues(ctx, rawAssignedValues);
   } catch (error) {
     console.error(`[${logName}] RunJS execution failed`, error);
     ctx.message?.error?.(ctx.t?.('RunJS execution failed') || 'RunJS execution failed');
     return null;
   }
+}
+
+async function resolveAssignRunJSObjectValues(
+  ctx: {
+    model?: { uid?: string; use?: string };
+  },
+  rawAssignedValues: unknown,
+): Promise<AssignedValues> {
+  if (!rawAssignedValues || typeof rawAssignedValues !== 'object' || Array.isArray(rawAssignedValues)) {
+    return {};
+  }
+
+  const output: AssignedValues = {};
+  for (const [key, value] of Object.entries(rawAssignedValues)) {
+    if (typeof value === 'undefined') {
+      continue;
+    }
+
+    const resolved = await resolveAssignRunJSValue(ctx, value);
+    if (resolved !== SKIP_ASSIGN_VALUE) {
+      output[key] = resolved;
+    }
+  }
+
+  return output;
+}
+
+async function resolveAssignRunJSValue(
+  ctx: {
+    model?: { uid?: string; use?: string };
+  },
+  value: unknown,
+): Promise<unknown> {
+  if (isRunJSValue(value)) {
+    const normalized = normalizeRunJSValue(value);
+    if (!normalized.code.trim()) {
+      return SKIP_ASSIGN_VALUE;
+    }
+    const evaluated = await evaluateInlineRunJSValue({ ctx, runJs: normalized });
+    return typeof evaluated === 'undefined' ? SKIP_ASSIGN_VALUE : evaluated;
+  }
+
+  return value;
 }
 
 export function mergeAssignFieldValues<T extends Record<string, unknown>>(

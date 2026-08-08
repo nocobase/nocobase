@@ -29,7 +29,9 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('@nocobase/client-v2', () => ({
   useApp: () => ({
-    router: { getBasename: () => mockState.basename },
+    router: {
+      getBasename: () => mockState.basename,
+    },
     apiClient: {
       auth: { signIn: (...args: unknown[]) => mockState.signIn(...args) },
       request: (...args: unknown[]) => mockState.request(...args),

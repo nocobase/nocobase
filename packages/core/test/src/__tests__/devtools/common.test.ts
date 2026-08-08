@@ -11,7 +11,15 @@ import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
 
-const { IndexGenerator, getPackagePaths } = require('../../../../devtools/common.js');
+const { IndexGenerator, generateAllPlugins, getPackagePaths } = require('../../../../devtools/common.js');
+
+const temporaryRoots: string[] = [];
+
+function createTemporaryRoot(prefix: string) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  temporaryRoots.push(root);
+  return root;
+}
 
 function writePluginPackage(
   root: string,
@@ -30,15 +38,29 @@ function writePluginPackage(
 }
 
 describe('IndexGenerator', () => {
-  const originalPluginStoragePath = process.env.PLUGIN_STORAGE_PATH;
+  const originalEnvironment = {
+    APP_PACKAGE_ROOT: process.env.APP_PACKAGE_ROOT,
+    NOCOBASE_DEV_LOCAL_PLUGINS_ONLY: process.env.NOCOBASE_DEV_LOCAL_PLUGINS_ONLY,
+    PLUGIN_PATH: process.env.PLUGIN_PATH,
+    PLUGIN_STORAGE_PATH: process.env.PLUGIN_STORAGE_PATH,
+  };
 
   afterEach(() => {
-    process.env.PLUGIN_STORAGE_PATH = originalPluginStoragePath;
+    for (const [key, value] of Object.entries(originalEnvironment)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    for (const root of temporaryRoots.splice(0)) {
+      fs.removeSync(root);
+    }
     vi.restoreAllMocks();
   });
 
   it('should generate client-v2 manifests from client-v2.js and src/client-v2 only', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-client-v2-plugins-'));
+    const tempRoot = createTemporaryRoot('nocobase-client-v2-plugins-');
     vi.spyOn(process, 'cwd').mockReturnValue(tempRoot);
     process.env.PLUGIN_STORAGE_PATH = path.join(tempRoot, 'storage', 'plugins');
     fs.ensureDirSync(process.env.PLUGIN_STORAGE_PATH);
@@ -74,7 +96,7 @@ describe('IndexGenerator', () => {
   });
 
   it('should keep client manifests using client.js and src/client', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-client-v1-plugins-'));
+    const tempRoot = createTemporaryRoot('nocobase-client-v1-plugins-');
     vi.spyOn(process, 'cwd').mockReturnValue(tempRoot);
     process.env.PLUGIN_STORAGE_PATH = path.join(tempRoot, 'storage', 'plugins');
     fs.ensureDirSync(process.env.PLUGIN_STORAGE_PATH);
@@ -107,7 +129,7 @@ describe('IndexGenerator', () => {
   });
 
   it('should read both client and client-v2 aliases from tsconfig paths', () => {
-    const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-client-paths-'));
+    const tempRoot = createTemporaryRoot('nocobase-client-paths-');
     vi.spyOn(process, 'cwd').mockReturnValue(tempRoot);
     fs.writeJsonSync(path.join(tempRoot, 'tsconfig.paths.json'), {
       compilerOptions: {
@@ -126,5 +148,44 @@ describe('IndexGenerator', () => {
         ['@nocobase/plugin-acl/client-v2', path.join(tempRoot, 'packages/plugins/@nocobase/plugin-acl/src/client-v2')],
       ]),
     );
+  });
+
+  it('should generate the canonical JS Template entrypoint for each client runtime', () => {
+    const tempRoot = createTemporaryRoot('nocobase-all-client-plugins-');
+    vi.spyOn(process, 'cwd').mockReturnValue(tempRoot);
+    process.env.APP_PACKAGE_ROOT = path.join(tempRoot, 'packages', 'core', 'app');
+    process.env.NOCOBASE_DEV_LOCAL_PLUGINS_ONLY = 'true';
+    process.env.PLUGIN_PATH = 'packages/plugins';
+    process.env.PLUGIN_STORAGE_PATH = path.join(tempRoot, 'storage', 'plugins');
+    fs.ensureDirSync(process.env.PLUGIN_STORAGE_PATH);
+    fs.ensureDirSync(path.join(tempRoot, 'node_modules', '@nocobase'));
+
+    writePluginPackage(tempRoot, '@nocobase/plugin-js-template', {
+      clientRootFile: 'client.js',
+      clientSourceDir: 'client',
+    });
+    writePluginPackage(tempRoot, '@nocobase/plugin-js-template', {
+      clientRootFile: 'client-v2.js',
+      clientSourceDir: 'client-v2',
+    });
+
+    generateAllPlugins();
+
+    const clientRoot = path.join(process.env.APP_PACKAGE_ROOT, 'client', 'src', '.plugins');
+    const clientV2Root = path.join(process.env.APP_PACKAGE_ROOT, 'client-v2', 'src', '.plugins');
+    const expectedPackageMap = {
+      '@nocobase/plugin-js-template': 'nocobase_plugin_js_template.ts',
+    };
+    expect(fs.readJsonSync(path.join(clientRoot, 'packageMap.json'))).toEqual(expectedPackageMap);
+    expect(fs.readJsonSync(path.join(clientV2Root, 'packageMap.json'))).toEqual(expectedPackageMap);
+
+    const clientManifest = fs.readFileSync(path.join(clientRoot, 'packages', 'nocobase_plugin_js_template.ts'), 'utf8');
+    const clientV2Manifest = fs.readFileSync(
+      path.join(clientV2Root, 'packages', 'nocobase_plugin_js_template.ts'),
+      'utf8',
+    );
+    expect(clientManifest).toContain('/plugin-js-template/src/client');
+    expect(clientManifest).not.toContain('/plugin-js-template/src/client-v2');
+    expect(clientV2Manifest).toContain('/plugin-js-template/src/client-v2');
   });
 });

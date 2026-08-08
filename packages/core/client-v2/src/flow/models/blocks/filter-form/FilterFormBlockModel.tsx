@@ -43,6 +43,7 @@ import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils
 import { FormItemModel } from '../form/FormItemModel';
 import { getDefaultOperator } from '../filter-manager/utils';
 import { normalizeFilterValueByOperator } from './valueNormalization';
+import { evaluateInlineRunJSValue } from '../../../components/runjs-source';
 
 const RELATION_FIELD_TYPES = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany', 'belongsToArray'];
 const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'];
@@ -508,12 +509,16 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     const rules = (params?.value || []) as any[];
     if (!Array.isArray(rules) || rules.length === 0) return appliedValues;
 
-    const resolveValue = async (raw: any, operator?: string) => {
+    const resolveValue = async (raw: unknown, operator?: string) => {
       // RunJS support
       if (isRunJSValue(raw)) {
-        const { code, version } = normalizeRunJSValue(raw);
-        const ret = await this.context.runjs(code, undefined, { version });
-        return ret?.success ? ret.value : undefined;
+        const runJs = normalizeRunJSValue(raw);
+        if (!runJs.code.trim()) return undefined;
+        try {
+          return await evaluateInlineRunJSValue({ ctx: this.context, runJs });
+        } catch {
+          return undefined;
+        }
       }
 
       const parsedDateFilterValue = parseDateFilterDefaultValue(operator, raw);
