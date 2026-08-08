@@ -139,6 +139,7 @@ describe('vsc-file remote collections', () => {
 
   async function expectIndex(collectionName: string, fields: string[], unique: boolean) {
     const collection = db.getCollection(collectionName);
+    const columns = fields.map((field) => collection.getField(field).columnName());
     const indexes = (await db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema())) as Array<{
       unique: boolean;
       fields: Array<{ attribute?: string; name?: string } | string>;
@@ -153,17 +154,18 @@ describe('vsc-file remote collections', () => {
           return field.attribute || field.name;
         });
 
-        return index.unique === unique && fields.every((field, index) => attributes[index] === field);
+        return index.unique === unique && columns.every((column, index) => attributes[index] === column);
       }),
     ).toBe(true);
   }
 
   async function expectForeignKey(collectionName: string, columnName: string) {
     const collection = db.getCollection(collectionName);
+    const column = collection.getField(columnName).columnName();
     const references = (await db.sequelize
       .getQueryInterface()
       .getForeignKeyReferencesForTable(collection.getTableNameWithSchema())) as Array<{ columnName?: string }>;
 
-    expect(references.some((reference) => reference.columnName === columnName)).toBe(true);
+    expect(references.some((reference) => reference.columnName === column)).toBe(true);
   }
 });

@@ -44,15 +44,6 @@ export default defineCollection({
       allowNull: false,
     },
     {
-      type: 'belongsTo',
-      name: 'remote',
-      target: 'vscFileRemotes',
-      targetKey: 'id',
-      foreignKey: 'remoteId',
-      constraints: true,
-      onDelete: 'CASCADE',
-    },
-    {
       type: 'integer',
       name: 'remoteTargetVersion',
       allowNull: false,
@@ -158,6 +149,15 @@ export default defineCollection({
       type: 'string',
       name: 'lastErrorCode',
       allowNull: true,
+    },
+    {
+      type: 'belongsTo',
+      name: 'remote',
+      target: 'vscFileRemotes',
+      targetKey: 'id',
+      foreignKey: 'remoteId',
+      constraints: true,
+      onDelete: 'CASCADE',
     },
   ],
 });

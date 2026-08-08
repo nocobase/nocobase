@@ -73,6 +73,7 @@ describe('vsc-file collections', () => {
 
   async function expectIndex(collectionName: string, fields: string[], unique: boolean, name: string) {
     const collection = db.getCollection(collectionName);
+    const columns = fields.map((field) => collection.getField(field).columnName());
     const indexes = (await db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema())) as Array<{
       name?: string;
       unique: boolean;
@@ -89,7 +90,9 @@ describe('vsc-file collections', () => {
         });
 
         return (
-          index.name === name && index.unique === unique && fields.every((field, index) => attributes[index] === field)
+          index.name === name &&
+          index.unique === unique &&
+          columns.every((column, index) => attributes[index] === column)
         );
       }),
     ).toBe(true);
