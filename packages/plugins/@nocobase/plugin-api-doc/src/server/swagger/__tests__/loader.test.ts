@@ -51,8 +51,14 @@ describe('loadSwagger', () => {
     expect(() => loadSwagger(packageRoot)).toThrow('swagger module exploded');
   });
 
-  test('loads source TypeScript when a TypeScript require hook is registered', async () => {
+  test('loads source TypeScript with workspace paths when source hooks are registered', async () => {
     await import('tsx/cjs');
+    await import('tsconfig-paths/register');
+    expect(
+      require
+        .resolve('@nocobase/js-template-sdk/schema')
+        .endsWith(join('packages', 'core', 'js-template-sdk', 'src', 'schema', 'index.ts')),
+    ).toBe(true);
     const packageRoot = createFixture({
       'src/swagger/index.ts': `export default { paths: { '/source': {} } };`,
       'dist/swagger/index.js': `module.exports = { paths: { '/built': {} } };`,
