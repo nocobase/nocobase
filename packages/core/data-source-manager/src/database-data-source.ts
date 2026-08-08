@@ -16,6 +16,8 @@ import { Context } from '@nocobase/actions';
 import { CollectionOptions, FieldOptions } from './types';
 import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
+const PRESERVED_LOGICAL_FIELD_TYPES_ON_SYNC: readonly string[] = ['formula'];
+
 export abstract class DatabaseDataSource<T extends DatabaseIntrospector = DatabaseIntrospector> extends DataSource {
   declare introspector: T;
 
@@ -125,8 +127,9 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       (modelOptions.rawType
         ? fieldOptions.rawType !== modelOptions.rawType && !hasCompatibleStorageType
         : !incomingPossibleTypes.includes(modelOptions.type) && !hasCompatibleStorageType);
+    const shouldPreserveLogicalType = PRESERVED_LOGICAL_FIELD_TYPES_ON_SYNC.includes(modelOptions.type);
 
-    if (shouldUseIncomingType) {
+    if (shouldUseIncomingType && !shouldPreserveLogicalType) {
       newOptions.type = fieldOptions.type;
       newOptions.interface = fieldOptions.interface;
       newOptions.rawType = fieldOptions.rawType;
