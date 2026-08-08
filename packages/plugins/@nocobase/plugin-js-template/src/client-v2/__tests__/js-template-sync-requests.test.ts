@@ -9,13 +9,18 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import type { JsTemplateSyncConfigureInput, JsTemplateSyncPullInput } from '../../shared/types';
+import type {
+  JsTemplateSyncActionContract,
+  JsTemplateSyncConfigureInput,
+  JsTemplateSyncCreateFromGitInput,
+  JsTemplateSyncPullInput,
+} from '../../shared/types';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { JsTemplateSyncRequestInputError, requestJsTemplateSync } from '../api/jsTemplateSyncRequests';
 
 describe('js-template sync requests', () => {
   it.each([
-    ['get', { projectId: 'jtp-1' }],
+    ['get', { projectId: 'jtp-1' } satisfies JsTemplateSyncActionContract['get']['input']],
     [
       'configure',
       {
@@ -23,11 +28,17 @@ describe('js-template sync requests', () => {
         provider: 'git',
         config: gitConfig(),
         authRef: '{{ $env.GITHUB_SYNC }}',
-      },
+      } satisfies JsTemplateSyncActionContract['configure']['input'],
     ],
-    ['disconnect', { projectId: 'jtp-1' }],
-    ['testConnection', { projectId: 'jtp-1', authRef: '{{ $env.GITHUB_SYNC }}' }],
-    ['plan', { projectId: 'jtp-1' }],
+    ['disconnect', { projectId: 'jtp-1' } satisfies JsTemplateSyncActionContract['disconnect']['input']],
+    [
+      'testConnection',
+      {
+        projectId: 'jtp-1',
+        authRef: '{{ $env.GITHUB_SYNC }}',
+      } satisfies JsTemplateSyncActionContract['testConnection']['input'],
+    ],
+    ['plan', { projectId: 'jtp-1' } satisfies JsTemplateSyncActionContract['plan']['input']],
     [
       'pull',
       {
@@ -36,7 +47,7 @@ describe('js-template sync requests', () => {
         expectedRemoteRevision: 'remote-1',
         expectedRemoteTargetVersion: 2,
         planFingerprint: 'plan-1',
-      },
+      } satisfies JsTemplateSyncActionContract['pull']['input'],
     ],
     [
       'push',
@@ -46,7 +57,7 @@ describe('js-template sync requests', () => {
         expectedRemoteRevision: 'remote-1',
         expectedRemoteTargetVersion: 2,
         planFingerprint: 'plan-1',
-      },
+      } satisfies JsTemplateSyncActionContract['push']['input'],
     ],
     [
       'createFromGit',
@@ -55,7 +66,7 @@ describe('js-template sync requests', () => {
         provider: 'git',
         config: { ...gitConfig(), subdirectory: 'sales' },
         authRef: '{{ $env.GITHUB_SYNC }}',
-      },
+      } satisfies JsTemplateSyncActionContract['createFromGit']['input'],
     ],
   ] as const)('calls only the public API action for %s', async (action, input) => {
     const request = vi.fn().mockResolvedValue({ data: { data: { ok: true } } });
@@ -165,9 +176,9 @@ describe('js-template sync requests', () => {
     const api: ApiClientLike = { request };
     const input = {
       name: 'sales',
-      provider: 'git' as const,
+      provider: 'git',
       config: { ...gitConfig(), branch: null },
-    };
+    } satisfies JsTemplateSyncCreateFromGitInput;
 
     await requestJsTemplateSync(api, 'createFromGit', input);
 
@@ -185,6 +196,6 @@ function gitConfig() {
     url: 'https://git.example.com/nocobase/extensions.git',
     branch: 'main',
     subdirectory: null,
-    transport: 'https' as const,
-  };
+    transport: 'https',
+  } satisfies JsTemplateSyncConfigureInput['config'];
 }

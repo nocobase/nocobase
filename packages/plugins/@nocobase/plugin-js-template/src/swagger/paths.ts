@@ -32,21 +32,21 @@ export const jsTemplatePaths = {
   '/jsTemplateProjects:list': {
     post: {
       tags: ['jsTemplateProjects'],
-      summary: 'List JS Template projects',
-      description: 'List existing JS Template projects that the current author can manage.',
+      summary: 'List Source Projects for JS Templates',
+      description: 'List existing Source Projects for JS Templates that the current author can manage.',
       responses: {
         200: {
           description: 'Project list.',
           content: jsonContent('JsTemplateProjectListEnvelope'),
         },
-        403: errorResponse('The current user cannot read JS Template projects.'),
+        403: errorResponse('The current user cannot read Source Projects for JS Templates.'),
       },
     },
   },
   '/jsTemplateProjects:get': {
     post: {
       tags: ['jsTemplateProjects'],
-      summary: 'Get one JS Template project',
+      summary: 'Get one Source Project for JS Templates',
       description: 'Get project metadata and the current Head commit used for optimistic source editing.',
       requestBody: {
         required: true,
@@ -58,7 +58,7 @@ export const jsTemplatePaths = {
               properties: {
                 projectId: {
                   type: 'string',
-                  description: 'JS Template project id.',
+                  description: 'Source Project id.',
                 },
               },
             },
@@ -80,7 +80,7 @@ export const jsTemplatePaths = {
       tags: ['jsTemplateProjects'],
       summary: 'Add one JS Template to an existing Source Project',
       description: [
-        'Create one starter Template Entry in an existing enabled Source Project without replacing sibling Templates, shared source, Project metadata, or history.',
+        'Create one starter JS Template in an existing enabled Source Project without replacing sibling Templates, shared source, Project metadata, or history.',
         'expectedHeadCommitId must exactly match the current Source Project Head. The server validates and compiles the complete candidate workspace before atomically committing source, reconcile state, runtime artifacts, Usage refreshes, and Audit records.',
       ].join('\n\n'),
       requestBody: {
@@ -90,7 +90,7 @@ export const jsTemplatePaths = {
       },
       responses: {
         200: {
-          description: 'The Template Entry was added and the complete Source Project compiled successfully.',
+          description: 'The JS Template was added and the complete Source Project compiled successfully.',
           content: jsonContent('JsTemplateSaveSourceEnvelope'),
         },
         400: errorResponse('The destination, kind, name, title, or expected Head value is invalid.'),
@@ -98,7 +98,7 @@ export const jsTemplatePaths = {
         404: errorResponse('The Source Project does not exist.'),
         409: {
           description:
-            'The Source Project Head is stale, the destination is disabled or archived, or the Template Entry already exists.',
+            'The Source Project Head is stale, the destination is disabled or archived, or the JS Template already exists.',
           content: {
             'application/json': {
               schema: {
@@ -114,12 +114,12 @@ export const jsTemplatePaths = {
   '/jsTemplates:listCatalog': {
     post: {
       tags: ['jsTemplates'],
-      summary: 'List JS Template catalog entries',
+      summary: 'List JS Templates in the catalog',
       description:
-        'List one catalog row per reusable Template Entry, including its Source Project, effective status, and aggregate usage count.',
+        'List one catalog row per reusable JS Template, including its Source Project, effective status, and aggregate usage count.',
       responses: {
         200: {
-          description: 'Entry-centric JS Template catalog.',
+          description: 'JS Template catalog.',
           content: jsonContent('JsTemplateCatalogEntryListEnvelope'),
         },
         403: errorResponse('The current user cannot read the JS Template catalog.'),
@@ -478,7 +478,7 @@ export const jsTemplatePaths = {
       summary: 'Save an inline RunJS workspace as a JS Template',
       description: [
         'Save an inline RunJS workspace as a JS Template.',
-        'Atomically compile and save a complete inline RunJS workspace as a reusable Template Entry, then bind its Host to that JS Template.',
+        'Atomically compile and save a complete inline RunJS workspace as a reusable JS Template, then bind its Host to that JS Template.',
         'Pass the root business payload directly and use --body-file for multi-file source. destination must select an existing Source Project or describe a new Source Project. idempotencyKey is required: the same complete request replays its durable result, while a different request with the same key returns a conflict. HTTP 409 reports stale owner/source Head, Template, Source Project, binding, or idempotency conflicts. HTTP 422 reports compile or validation failure. Failed compilation or conflict does not advance the Source Project or Host state.',
       ].join('\n\n'),
       requestBody: {
@@ -544,9 +544,9 @@ export const jsTemplatePaths = {
   '/jsTemplates:delete': {
     post: {
       tags: ['jsTemplates'],
-      summary: 'Delete one JS Template entry',
+      summary: 'Delete one JS Template',
       description:
-        'Delete only the selected Template Entry source and unreferenced artifact data. Effective usages block deletion; owner_missing usages do not. Source Project deletion remains a separate operation.',
+        'Delete only the selected JS Template source and unreferenced artifact data. Effective usages block deletion; owner_missing usages do not. Source Project deletion remains a separate operation.',
       requestBody: {
         required: true,
         content: {
@@ -567,7 +567,7 @@ export const jsTemplatePaths = {
       },
       responses: {
         200: {
-          description: 'The Template Entry and only its unreferenced records were deleted.',
+          description: 'The JS Template and only its unreferenced records were deleted.',
           content: jsonContent('DeleteJsTemplateEnvelope'),
         },
         400: errorResponse('templateId is invalid.'),

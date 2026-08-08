@@ -30,6 +30,20 @@ type PackageManifest = {
 const repositoryRoot = path.resolve(__dirname, '../../../../..');
 const pluginPath = 'packages/plugins/@nocobase/plugin-js-template';
 const sdkPath = 'packages/core/js-template-sdk';
+const checkedInPluginFacades = [
+  'client.js',
+  'client.d.ts',
+  'client-v2.js',
+  'client-v2.d.ts',
+  'server.js',
+  'server.d.ts',
+] as const;
+const pluginSourceEntries = [
+  'src/client/index.ts',
+  'src/client-v2/index.tsx',
+  'src/server/index.ts',
+  'src/swagger/index.ts',
+] as const;
 
 function readText(relativePath: string) {
   return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
@@ -74,20 +88,31 @@ describe('JS Template release boundary', () => {
     expect([...workspacePackageNames].filter((name) => name === sdk.name)).toEqual([sdk.name]);
   });
 
-  it('ships every public plugin entry from the implementation package', () => {
+  it('declares every public plugin entry within the packaged release boundary', () => {
     const plugin = readPackage(pluginPath);
     const packagedFiles = new Set(plugin.files || []);
     const exportedFiles = getExportedFiles(plugin).filter((file) => file !== 'package.json');
+    const packageRoot = path.join(repositoryRoot, pluginPath);
 
     expect(exportedFiles).not.toHaveLength(0);
     for (const file of exportedFiles) {
       expect(isPackaged(file, packagedFiles)).toBe(true);
-      expect(fs.pathExistsSync(path.join(repositoryRoot, pluginPath, file))).toBe(true);
+      const relativeTarget = path.relative(packageRoot, path.resolve(packageRoot, file));
+      expect(path.isAbsolute(relativeTarget)).toBe(false);
+      expect(relativeTarget === '..' || relativeTarget.startsWith(`..${path.sep}`)).toBe(false);
+    }
+
+    for (const file of [...checkedInPluginFacades, ...pluginSourceEntries]) {
+      expect(fs.pathExistsSync(path.join(packageRoot, file))).toBe(true);
     }
 
     const releaseVersion = (JSON.parse(readText('lerna.json')) as { version: string }).version;
-    expect(getPluginTarballPath({ name: plugin.name!, version: plugin.version! }, path.join(repositoryRoot, 'storage/tar')))
-      .toBe(path.join(repositoryRoot, `storage/tar/@nocobase/plugin-js-template-${releaseVersion}.tgz`));
+    if (!plugin.name || !plugin.version) {
+      throw new Error('The JS Template plugin package identity is incomplete');
+    }
+    expect(
+      getPluginTarballPath({ name: plugin.name, version: plugin.version }, path.join(repositoryRoot, 'storage/tar')),
+    ).toBe(path.join(repositoryRoot, `storage/tar/@nocobase/plugin-js-template-${releaseVersion}.tgz`));
   });
 
   it('externalizes only the canonical SDK and installs only the canonical plugin from the preset', () => {

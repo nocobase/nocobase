@@ -433,7 +433,7 @@ export const jsTemplateSchemas = {
     properties: {
       id: {
         type: 'string',
-        description: 'Stable Template Entry id.',
+        description: 'Stable JS Template id.',
       },
       projectId: {
         type: 'string',

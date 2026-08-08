@@ -9,13 +9,14 @@
 
 import { vi } from 'vitest';
 
+import type { JsTemplateUsageListInput } from '../../shared/types';
 import { createJsPageUsageRecord, createUsageRecord, createJsTemplateUsageServiceFixture } from './usage-test-helpers';
 
 const salesUsageListInput = {
   templateId: 'jtt_sales_kpi',
   page: 1,
   pageSize: 20,
-};
+} satisfies JsTemplateUsageListInput;
 
 describe('plugin-js-template template-level Usage visibility', () => {
   it('omits hidden owners without leaking their descriptors', async () => {

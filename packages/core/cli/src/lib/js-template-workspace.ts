@@ -865,7 +865,7 @@ export async function materializePulledWorkspace(options: {
   if (options.pull.project.lifecycleStatus === 'archived') {
     throw new JsTemplateCliError(
       translateCli('commands.jsTemplate.errors.archivedProject', undefined, {
-        fallback: 'Archived JS Template projects cannot enter the local Agent workflow.',
+        fallback: 'Archived Source Projects cannot enter the local Agent workflow.',
       }),
     );
   }

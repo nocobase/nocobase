@@ -101,22 +101,26 @@ describe('JS Template runtime commands', () => {
     expect(saveAsJsTemplate.description).toContain('idempotencyKey is required');
     expect(saveAsJsTemplate.description).toContain('HTTP POST /jsTemplates:saveAsJsTemplate');
     expect(saveAsJsTemplate.examples).toEqual(['nb api js-templates save-as-js-template --body-file <path>']);
-    expect(saveAsJsTemplate.parameters.map((parameter) => parameter.flagName)).toEqual(
-      expect.arrayContaining([
-        'idempotency-key',
-        'locator',
-        'expected-owner-fingerprint',
-        'source-repo-id',
-        'source-head-commit-id',
-        'entry-path',
-        'version',
-        'files',
-        'origin-binding',
-        'destination',
-        'template-name',
-        'template-title',
-      ]),
+    const parametersByFlagName = new Map(
+      saveAsJsTemplate.parameters.map((parameter) => [parameter.flagName, parameter]),
     );
+    expect(parametersByFlagName.get('idempotency-key')).toMatchObject({ name: 'idempotencyKey', required: true });
+    expect(parametersByFlagName.get('entry-path')).toMatchObject({ name: 'entryPath', required: true });
+    expect(parametersByFlagName.get('runtime-version')).toMatchObject({ name: 'runtimeVersion', required: true });
+    expect(parametersByFlagName.has('version')).toBe(false);
+    for (const flagName of [
+      'locator',
+      'expected-owner-fingerprint',
+      'source-repo-id',
+      'source-head-commit-id',
+      'files',
+      'origin-binding',
+      'destination',
+      'template-name',
+      'template-title',
+    ]) {
+      expect(parametersByFlagName.has(flagName)).toBe(true);
+    }
 
     const flags = createGeneratedFlags(saveAsJsTemplate);
     expect(flags.destination.description).not.toContain('default');
@@ -131,19 +135,30 @@ describe('JS Template runtime commands', () => {
     const detachToInline = findCommand(commands, 'js-templates detach-to-inline');
     const listSelectable = findCommand(commands, 'js-templates list-selectable');
 
+    expect(detachToInline).toMatchObject({
+      commandId: 'js-templates detach-to-inline',
+      method: 'post',
+      pathTemplate: '/jsTemplates:detachToInline',
+      hasBody: true,
+      bodyRequired: true,
+      requestContentType: 'application/json',
+    });
     expect(detachToInline.summary).toContain('Detach a JS Template workspace to Inline');
     expect(detachToInline.description).toContain('idempotencyKey and expectedProjectHeadCommitId are required');
-    expect(detachToInline.parameters).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ name: 'idempotencyKey', flagName: 'idempotency-key', required: true }),
-        expect.objectContaining({
-          name: 'expectedProjectHeadCommitId',
-          flagName: 'expected-project-head-commit-id',
-          required: true,
-        }),
-      ]),
+    const detachParametersByFlagName = new Map(
+      detachToInline.parameters.map((parameter) => [parameter.flagName, parameter]),
     );
-    expect(detachToInline.examples).toEqual(['nb api js-templates detach-to-inline --body-file <path>']);
+    expect(detachParametersByFlagName.get('idempotency-key')).toMatchObject({ name: 'idempotencyKey', required: true });
+    expect(detachParametersByFlagName.get('locator')).toMatchObject({ name: 'locator', required: true });
+    expect(detachParametersByFlagName.get('project-id')).toMatchObject({ name: 'projectId', required: true });
+    expect(detachParametersByFlagName.get('template-id')).toMatchObject({ name: 'templateId', required: true });
+    expect(detachParametersByFlagName.get('expected-project-head-commit-id')).toMatchObject({
+      name: 'expectedProjectHeadCommitId',
+      required: true,
+    });
+    expect(detachToInline.examples.some((example) => example.startsWith('nb api js-templates detach-to-inline'))).toBe(
+      true,
+    );
     const detachToInlineFlags = createGeneratedFlags(detachToInline);
     expect(detachToInlineFlags['idempotency-key'].description).toContain('retry key');
     expect(detachToInlineFlags['body-file'].helpGroup).toBe('Raw JSON Body');

@@ -365,7 +365,7 @@
         "overrides": {
           "jsTemplateProjects": {
             "name": "js-template-projects",
-            "description": "Discover JS Template projects.",
+            "description": "Discover Source Projects for JS Templates.",
             "topLevel": true,
             "operations": {
               "includes": ["jsTemplateProjects:list", "jsTemplateProjects:get"]

@@ -10,7 +10,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { JsTemplateSyncOperationResult } from '../../shared/types';
+import type { JsTemplateSyncOperationResult, JsTemplateSyncPullInput } from '../../shared/types';
 import { listSelectableJsTemplates } from '../api/jsTemplatesRequests';
 import { useJsTemplateSync } from '../hooks/useJsTemplateSync';
 import { getOrCreateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
@@ -35,9 +35,9 @@ const executionInput = {
   expectedRemoteRevision: 'remote-1',
   expectedRemoteTargetVersion: 1,
   planFingerprint: 'plan-1',
-};
+} satisfies JsTemplateSyncPullInput;
 
-const operationResult: JsTemplateSyncOperationResult = {
+const operationResult = {
   project: {
     id: 'jtp-1',
     name: 'sales',
@@ -77,7 +77,7 @@ const operationResult: JsTemplateSyncOperationResult = {
       lastSyncedContentHash: 'sha256:content',
     },
   },
-};
+} satisfies JsTemplateSyncOperationResult;
 
 describe('useJsTemplateSync', () => {
   beforeEach(() => {

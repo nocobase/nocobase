@@ -1,4 +1,6 @@
-/src/
+/src/!(swagger)/**/*
+/src/*.*
+/src/swagger/**/__tests__/**/*
 /node_modules/
 /docs/
 /build.config.ts

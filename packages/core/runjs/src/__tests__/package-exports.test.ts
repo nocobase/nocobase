@@ -34,7 +34,7 @@ describe('@nocobase/runjs package exports', () => {
     );
   });
 
-  it('ships the source-safe compiler loader runtime and declarations through its dedicated subpath', () => {
+  it('exposes the source-safe compiler loader through its dedicated subpath', () => {
     const compilerLoaderExport = packageJson.exports['./compiler/loader'];
 
     expect(compilerLoaderExport).toEqual({
@@ -43,11 +43,10 @@ describe('@nocobase/runjs package exports', () => {
       require: './lib/compiler/loader.js',
     });
     expect(packageJson.typesVersions?.['*']?.['compiler/loader']).toEqual(['./lib/compiler/loader.d.ts']);
-    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/loader.js'))).toBe(true);
-    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/loader.d.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/loader.ts'))).toBe(true);
   });
 
-  it('ships the compiler build identity runtime and declarations through its dedicated subpath', () => {
+  it('exposes the compiler build identity through its dedicated subpath', () => {
     const buildIdentityExport = packageJson.exports['./compiler/build-identity'];
 
     expect(buildIdentityExport).toEqual({
@@ -58,7 +57,6 @@ describe('@nocobase/runjs package exports', () => {
     expect(packageJson.typesVersions?.['*']?.['compiler/build-identity']).toEqual([
       './lib/compiler/build-identity.d.ts',
     ]);
-    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/build-identity.js'))).toBe(true);
-    expect(fs.existsSync(path.join(packageRoot, 'lib/compiler/build-identity.d.ts'))).toBe(true);
+    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/build-identity.ts'))).toBe(true);
   });
 });

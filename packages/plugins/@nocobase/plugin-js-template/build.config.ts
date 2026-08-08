@@ -9,10 +9,18 @@
 
 import { defineConfig } from '@nocobase/build';
 import { spawn } from 'child_process';
+import fs from 'fs-extra';
 import path from 'path';
 
 const sourceDependencies = ['@nocobase/js-template-sdk', '@nocobase/runjs', '@nocobase/runjs-workspace'] as const;
 const repositoryRoot = path.resolve(__dirname, '../../../..');
+const requiredJavaScriptArtifacts = [
+  'dist/client/index.js',
+  'dist/client-v2/index.js',
+  'dist/server/index.js',
+  'dist/swagger/index.js',
+] as const;
+const requiredDeclarationArtifacts = ['dist/server/index.d.ts'] as const;
 
 export default defineConfig({
   beforeBuild: async (log) => {
@@ -20,7 +28,28 @@ export default defineConfig({
     log(`building source dependencies: ${sourceDependencies.join(', ')}`);
     await buildSourceDependencies(buildDeclarations);
   },
+  afterBuild: (log) => {
+    assertBuildArtifacts(requiredJavaScriptArtifacts);
+    log(`verified build artifacts: ${requiredJavaScriptArtifacts.join(', ')}`);
+
+    if (!process.argv.includes('--no-dts') && !process.argv.includes('--only-tar')) {
+      const verifyDeclarationArtifacts = () => {
+        assertBuildArtifacts(requiredDeclarationArtifacts);
+        log(`verified declaration artifacts: ${requiredDeclarationArtifacts.join(', ')}`);
+      };
+      process.once('beforeExit', verifyDeclarationArtifacts);
+    }
+  },
 });
+
+function assertBuildArtifacts(relativePaths: readonly string[]): void {
+  const missingArtifacts = relativePaths.filter(
+    (relativePath) => !fs.pathExistsSync(path.join(__dirname, relativePath)),
+  );
+  if (missingArtifacts.length) {
+    throw new Error(`Missing JS Template build artifacts: ${missingArtifacts.join(', ')}`);
+  }
+}
 
 async function buildSourceDependencies(buildDeclarations: boolean): Promise<void> {
   for (const packageName of sourceDependencies) {
