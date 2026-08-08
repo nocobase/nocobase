@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownOutlined, PlusOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  PlusOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import { DrawerFormLayout, isTitleField, Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -20,6 +27,8 @@ import {
   Dropdown,
   Form,
   Input,
+  InputNumber,
+  Segmented,
   Select,
   Space,
   Spin,
@@ -985,6 +994,10 @@ export default function FieldsPage(props: FieldsPageProps) {
   const [titleFieldLoadingKey, setTitleFieldLoadingKey] = useState<React.Key>();
   const [displayNameLoadingKey, setDisplayNameLoadingKey] = useState<React.Key>();
   const [syncFieldsLoading, setSyncFieldsLoading] = useState(false);
+  // 字段类型分组筛选：all=全部，其余按 interface 分组
+  const [fieldGroup, setFieldGroup] = useState<string>('all');
+  // 排序保存中的字段名（用于按钮 loading 反馈）
+  const [sortingFieldName, setSortingFieldName] = useState<React.Key>();
   const request = useRequest(async () => {
     const response = await ctx.api.request({
       url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'list'),
@@ -1318,6 +1331,133 @@ export default function FieldsPage(props: FieldsPageProps) {
     fieldInterfaceGroups,
   });
 
+  // ===== 字段类型分组 + 手动排序（新增功能） =====
+  // 按字段 interface 归类，用于「按类型分组」筛选
+  const fieldGroupOf = useCallback((field: Record<string, any>): string => {
+    const iface = String(field.interface || '');
+    if (field.source) return 'relation';
+    if (
+      iface.startsWith('createdBy') ||
+      iface.startsWith('updatedBy') ||
+      iface === 'createdAt' ||
+      iface === 'updatedAt'
+    ) {
+      return 'system';
+    }
+    if (['belongsTo', 'belongsToMany', 'hasOne', 'hasMany'].includes(String(field.type))) return 'relation';
+    if (['date', 'datetimeTz', 'datetimeNoTz', 'dateOnly', 'time', 'unixTimestamp'].includes(String(field.type))) {
+      return 'datetime';
+    }
+    if (['integer', 'bigInt', 'float', 'double', 'decimal', 'percent'].includes(String(field.type))) return 'number';
+    if (['boolean', 'select', 'radio', 'checkbox', 'multipleSelect'].includes(String(field.type))) return 'choice';
+    if (field.attachment) return 'media';
+    return 'text';
+  }, []);
+
+  // 分组选项（全部/文本/数字/日期/关联/附件/系统）
+  const fieldGroupOptions = useMemo(
+    () => [
+      { value: 'all', label: t('All') },
+      { value: 'text', label: t('Text') },
+      { value: 'number', label: t('Number') },
+      { value: 'datetime', label: t('Date & Time') },
+      { value: 'choice', label: t('Choices') },
+      { value: 'relation', label: t('Relation') },
+      { value: 'media', label: t('Media') },
+      { value: 'system', label: t('System info') },
+    ],
+    [t],
+  );
+
+  // 按类型过滤后的字段列表（仅用于展示；排序操作基于完整列表的序号）
+  const filteredFields = useMemo(() => {
+    const list = request.data || [];
+    if (fieldGroup === 'all') return list;
+    return list.filter((f) => fieldGroupOf(f) === fieldGroup);
+  }, [request.data, fieldGroup, fieldGroupOf]);
+
+  // 保存单个字段的 sort 值（核心排序持久化）
+  const saveFieldSort = useCallback(
+    async (field: Record<string, any>, nextSort: number) => {
+      setSortingFieldName(field.name);
+      try {
+        await ctx.api.request({
+          url: getCollectionFieldActionUrl(props.dataSourceKey, props.collection.name, 'update', field.name),
+          method: 'post',
+          data: { sort: nextSort },
+        });
+        // 刷新列表以反映新顺序（服务端按 sort 排序返回）
+        request.refresh();
+        message.success(t('Sort saved successfully'));
+      } catch (error) {
+        notification.error({ message: getErrorMessage(error, t('Save failed')) });
+        throw error;
+      } finally {
+        setSortingFieldName(undefined);
+      }
+    },
+    [ctx.api, message, notification, props.collection.name, props.dataSourceKey, request, t],
+  );
+
+  // 上移/下移：与相邻字段交换 sort 值
+  const handleFieldMove = useCallback(
+    (field: Record<string, any>, dir: 'up' | 'down') => {
+      const list = request.data || [];
+      const idx = list.findIndex((f) => f.name === field.name);
+      const target = dir === 'up' ? idx - 1 : idx + 1;
+      if (idx < 0 || target < 0 || target >= list.length) return;
+      const a = list[idx];
+      const b = list[target];
+      const sortA = Number.isFinite(Number(a.sort)) ? Number(a.sort) : 0;
+      const sortB = Number.isFinite(Number(b.sort)) ? Number(b.sort) : 0;
+      // 若两个字段 sort 相同（或都为默认 0），按列表序号交换；否则交换 sort 值
+      const runMove = async () => {
+        if (sortA === sortB) {
+          await saveFieldSort(a, target + 1);
+          await saveFieldSort(b, idx + 1);
+        } else {
+          await saveFieldSort(a, sortB);
+          await saveFieldSort(b, sortA);
+        }
+      };
+      runMove();
+    },
+    [request, saveFieldSort],
+  );
+
+  // 点击序号直接输入目标位置跳转（复用「导出字段排序」交互）
+  const handleFieldJumpTo = useCallback(
+    (field: Record<string, any>, targetIndex: number) => {
+      const list = request.data || [];
+      const from = list.findIndex((f) => f.name === field.name);
+      if (from < 0) return;
+      const clamped = Math.max(1, Math.min(targetIndex, list.length));
+      const moves: Array<Record<string, any>> = [];
+      // 构建从 from 移到 clamped 的连续交换序列（保证中间字段 sort 正确衔接）
+      if (clamped < from + 1) {
+        for (let i = from; i >= clamped; i--) moves.push({ from: i, to: i - 1 });
+      } else if (clamped > from + 1) {
+        for (let i = from; i < clamped - 1; i++) moves.push({ from: i, to: i + 1 });
+      }
+      // 依次交换相邻字段的 sort 值
+      let chain: Promise<void> = Promise.resolve();
+      for (const m of moves) {
+        const a = list[m.from];
+        const b = list[m.to];
+        chain = chain.then(
+          () => {
+            const sa = Number.isFinite(Number(a.sort)) ? Number(a.sort) : 0;
+            const sb = Number.isFinite(Number(b.sort)) ? Number(b.sort) : 0;
+            return saveFieldSort(a, sb).then(() => saveFieldSort(b, sa));
+          },
+          () => undefined,
+        );
+      }
+      return chain;
+    },
+    [request, saveFieldSort],
+  );
+
   const inheritedFieldColumns = useMemo<ColumnsType<Record<string, any>>>(
     () => [
       {
@@ -1535,6 +1675,50 @@ export default function FieldsPage(props: FieldsPageProps) {
     ];
 
     if (!configureFieldsDisabled) {
+      // 字段排序列：上移 / 下移 / 点序号输入跳转（与「导出字段排序」交互一致）
+      nextColumns.push({
+        title: t('Sort'),
+        width: 150,
+        render: (_, record) => {
+          const list = request.data || [];
+          const idx = list.findIndex((f) => f.name === record.name);
+          const total = list.length;
+          const loading = sortingFieldName === record.name;
+          return (
+            <Space size={4}>
+              <Button
+                type="text"
+                size="small"
+                disabled={idx <= 0 || loading}
+                loading={loading && idx === 0}
+                onClick={() => handleFieldMove(record, 'up')}
+              >
+                <ArrowUpOutlined />
+              </Button>
+              <InputNumber
+                size="small"
+                min={1}
+                max={total}
+                style={{ width: 48 }}
+                value={idx >= 0 ? idx + 1 : undefined}
+                disabled={loading}
+                onPressEnter={(e) => {
+                  const target = Number((e.target as HTMLInputElement).value);
+                  if (Number.isFinite(target)) handleFieldJumpTo(record, target);
+                }}
+              />
+              <Button
+                type="text"
+                size="small"
+                disabled={idx < 0 || idx >= total - 1 || loading}
+                onClick={() => handleFieldMove(record, 'down')}
+              >
+                <ArrowDownOutlined />
+              </Button>
+            </Space>
+          );
+        },
+      });
       nextColumns.push({
         title: t('Actions'),
         width: 160,
@@ -1566,10 +1750,14 @@ export default function FieldsPage(props: FieldsPageProps) {
     handleDelete,
     handleFieldDisplayNameSave,
     handleFieldInterfaceChange,
+    handleFieldJumpTo,
+    handleFieldMove,
     handleTitleFieldChange,
     openFieldForm,
     presetFieldInterfaces,
     props.collection,
+    request.data,
+    sortingFieldName,
     t,
     displayNameLoadingKey,
     titleField,
@@ -1578,7 +1766,14 @@ export default function FieldsPage(props: FieldsPageProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 16 }}>
+        {/* 字段类型分组筛选：按 interface/type 归类，仅影响展示 */}
+        <Segmented
+          options={fieldGroupOptions}
+          value={fieldGroup}
+          onChange={(v) => setFieldGroup(String(v))}
+          style={{ maxWidth: '60%', overflow: 'auto' }}
+        />
         <Space>
           {fieldDeletionVisible ? (
             <Button
@@ -1606,7 +1801,7 @@ export default function FieldsPage(props: FieldsPageProps) {
       <Table<Record<string, any>>
         rowKey="name"
         loading={request.loading}
-        dataSource={request.data || []}
+        dataSource={filteredFields}
         columns={columns}
         pagination={false}
         rowSelection={
