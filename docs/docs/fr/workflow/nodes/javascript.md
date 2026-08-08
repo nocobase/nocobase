@@ -44,6 +44,24 @@ Si cette option est cochée, les nœuds suivants seront toujours exécutés mêm
 Une fois que le script échoue, il n'y aura pas de valeur de retour et le résultat du nœud sera rempli avec le message d'erreur. Si les nœuds suivants utilisent la variable de résultat du nœud de script, cela doit être manipulé avec prudence.
 :::
 
+## Contrôle de la concurrence des Workers
+
+Les nœuds de script JavaScript placent les scripts en attente dans une file de tâches et les exécutent dans des threads Worker distincts. Vous pouvez utiliser la variable d'environnement `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` pour contrôler le nombre de scripts JavaScript que chaque instance de l'application NocoBase peut exécuter simultanément :
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Les règles de configuration sont les suivantes :
+
+- Si la variable n'est pas configurée ou si sa valeur n'est pas valide, la concurrence par défaut est de `1`
+- Un entier positif définit le nombre maximal de threads Worker pouvant s'exécuter simultanément
+- La valeur `0` supprime la limite de concurrence et permet à toutes les tâches de la file de s'exécuter simultanément
+
+Lorsque la limite de concurrence est atteinte, les nouvelles tâches restent dans la file jusqu'à ce qu'un Worker soit disponible. La configuration par défaut convient à la plupart des cas. Une concurrence plus élevée consomme davantage de CPU et de mémoire. Ajustez-la donc progressivement selon les ressources du serveur et la charge des scripts. Il est déconseillé de définir la concurrence sur `0` dans un environnement de production.
+
+Si une application s'exécute sur plusieurs instances de serveur, ce paramètre s'applique séparément à chaque instance. La capacité globale de concurrence dépend également du nombre d'instances capables de consommer les tâches. Redémarrez le service NocoBase après avoir modifié la variable d'environnement pour que la nouvelle valeur prenne effet.
+
 ## Moteur d'exécution
 
 Le nœud de script JavaScript prend en charge deux moteurs d'exécution, sélectionnés automatiquement selon que la variable d'environnement `WORKFLOW_SCRIPT_MODULES` est configurée ou non :

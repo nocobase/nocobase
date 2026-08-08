@@ -7,139 +7,43 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { once } from 'node:events';
-import path from 'node:path';
-import { Worker } from 'node:worker_threads';
 import winston, { Logger } from 'winston';
 import Joi from 'joi';
 
-import {
-  Processor,
-  Instruction,
-  JOB_STATUS,
-  FlowNodeModel,
-  IJob,
-  WorkflowTimeoutError,
-} from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
 
 import { CacheTransport } from './cache-logger';
+import { PENDING_JAVASCRIPT_TASK_CHANNEL } from './constants';
+import { ABORT_JAVASCRIPT_JOB_SYNC_MESSAGE_TYPE, getAbortReason, RunningJobs } from './RunningJobs';
+import { ScriptArguments, ScriptRunResult, ScriptWorkerRunner } from './ScriptWorkerRunner';
 
 type ScriptArgument = { name: string; value?: unknown };
 
 type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: ScriptArgument[] };
 
-type ScriptArguments = Record<string, unknown> | unknown[];
-
-type WorkerOutcome =
-  | { type: 'result'; result: unknown }
-  | { type: 'error'; error: Error }
-  | { type: 'exit'; code: number }
-  | { type: 'aborted' };
-
-function isWorkerResult(message: unknown): message is { type: 'result'; result: unknown } {
-  return typeof message === 'object' && message !== null && 'type' in message && message.type === 'result';
-}
+type JavaScriptJobMeta = {
+  args: ScriptArguments;
+  [key: string]: unknown;
+};
 
 export default class ScriptInstruction extends Instruction {
-  /**
-   * Returns the worker script path based on whether WORKFLOW_SCRIPT_MODULES is configured.
-   * - WORKFLOW_SCRIPT_MODULES set: uses Node.js vm with require support (unsafe; not a security boundary)
-   * - WORKFLOW_SCRIPT_MODULES unset: uses QuickJS (WASM) for maximum security (no require, no Node.js APIs)
-   */
   static get workerScript() {
-    const hasModules = (process.env.WORKFLOW_SCRIPT_MODULES ?? '').split(',').filter(Boolean).length > 0;
-    return path.join(__dirname, hasModules ? 'Vm.js' : 'QuickJs.js');
+    return ScriptWorkerRunner.workerScript;
   }
 
   static async run(
     source: string,
     args: ScriptArguments,
     options: { logger: Logger; timeout?: number; signal?: AbortSignal },
+  ): Promise<ScriptRunResult> {
+    return ScriptWorkerRunner.run(source, args, options);
+  }
+
+  constructor(
+    workflow: WorkflowPlugin,
+    private readonly runningJobs: RunningJobs,
   ) {
-    const { logger, timeout, signal } = options;
-
-    const worker = new Worker(this.workerScript, {
-      workerData: { source, args, options: timeout ? { timeout } : {} },
-    });
-
-    worker.stdout.on('data', (data) => {
-      logger.info(data.toString());
-    });
-    worker.stderr.on('data', (data) => {
-      logger.error(data.toString());
-    });
-
-    const outputClosed = Promise.all([once(worker.stdout, 'close'), once(worker.stderr, 'close')]);
-    const outcomePromise = new Promise<WorkerOutcome>((resolve) => {
-      const finish = (outcome: WorkerOutcome) => {
-        worker.removeListener('message', messageListener);
-        worker.removeListener('error', errorListener);
-        worker.removeListener('exit', exitListener);
-        signal?.removeEventListener('abort', abortListener);
-        resolve(outcome);
-      };
-      const messageListener = (message: unknown) => {
-        if (isWorkerResult(message)) {
-          finish({ type: 'result', result: message.result });
-        }
-      };
-      const errorListener = (error: Error) => {
-        finish({ type: 'error', error });
-      };
-      const exitListener = (code: number) => {
-        finish({ type: 'exit', code });
-      };
-      const abortListener = () => {
-        finish({ type: 'aborted' });
-      };
-
-      worker.on('message', messageListener);
-      worker.once('error', errorListener);
-      worker.once('exit', exitListener);
-      signal?.addEventListener('abort', abortListener, { once: true });
-      if (signal?.aborted) {
-        abortListener();
-      }
-    });
-
-    const outcome = await outcomePromise;
-    try {
-      if (outcome.type !== 'exit') {
-        await worker.terminate();
-      }
-      await outputClosed;
-    } catch (e) {
-      if (outcome.type === 'aborted' || signal?.aborted) {
-        throw signal.reason instanceof Error ? signal.reason : new WorkflowTimeoutError();
-      }
-      return {
-        status: JOB_STATUS.ERROR,
-        result: e instanceof Error ? e.message : String(e),
-      };
-    }
-
-    if (outcome.type === 'aborted') {
-      throw signal?.reason instanceof Error ? signal.reason : new WorkflowTimeoutError();
-    }
-
-    if (outcome.type === 'error') {
-      return {
-        status: JOB_STATUS.ERROR,
-        result: outcome.error.message,
-      };
-    }
-
-    if (outcome.type === 'exit' && outcome.code !== 0) {
-      return {
-        status: JOB_STATUS.ERROR,
-        result: `Worker stopped with exit code ${outcome.code}`,
-      };
-    }
-
-    return {
-      status: JOB_STATUS.RESOLVED,
-      result: outcome.type === 'result' ? outcome.result : undefined,
-    };
+    super(workflow);
   }
 
   configSchema = Joi.object({
@@ -188,72 +92,53 @@ export default class ScriptInstruction extends Instruction {
       };
     }
 
+    const meta: JavaScriptJobMeta = {
+      args: _args,
+    };
+
     const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
+      startedAt: null,
+      meta,
     });
 
-    processor.logger.info(`script (#${node.id}) has been started, waiting for response...`);
-
-    const abortHandle = processor.createBackgroundAbortHandle();
-    try {
-      await processor.exit();
-    } catch (error) {
-      abortHandle.dispose();
-      throw error;
-    }
-
-    const jobResult: IJob = {
-      status: JOB_STATUS.PENDING,
+    const abortQueuedJob = async () => {
+      await this.runningJobs.abortAcrossInstances(this.workflow, {
+        type: ABORT_JAVASCRIPT_JOB_SYNC_MESSAGE_TYPE,
+        jobId: id,
+        executionId: processor.execution.id,
+        reason: getAbortReason(options?.signal?.reason),
+      });
     };
 
-    // eslint-disable-next-line promise/catch-or-return
-    (this.constructor as typeof ScriptInstruction)
-      .run(content, _args, { timeout, logger: processor.logger, signal: abortHandle.signal })
-      .then((res) => {
-        if (res.status === JOB_STATUS.RESOLVED) {
-          processor.logger.info(`script (#${node.id}) get result success`);
-          jobResult.status = JOB_STATUS.RESOLVED;
-          jobResult.result = res.result;
-          processor.logger.info(`run script execution success, node id: ${node.id},the result is ${res.result}`);
+    if (options?.signal?.aborted) {
+      await abortQueuedJob();
+    } else {
+      options?.signal?.addEventListener(
+        'abort',
+        () => {
+          abortQueuedJob().catch((error) => {
+            processor.logger.error(`broadcasting JavaScript job (${id}) abort signal failed`, { error });
+          });
+        },
+        { once: true },
+      );
+    }
 
-          return;
-        }
+    processor.logger.info(`script (#${node.id}) has been queued, waiting for JavaScript Worker resource...`);
 
-        if (cont) {
-          processor.logger.warn(`script (#${node.id}) get result failed, the reason is ${res.result}`);
-          jobResult.status = JOB_STATUS.RESOLVED;
-          jobResult.result = res.result;
+    await processor.exit();
 
-          return;
-        }
-
-        processor.logger.info(`script (#${node.id}) get result failed, the reason is ${res.result}`);
-        jobResult.status = JOB_STATUS.ERROR;
-        jobResult.result = res.result;
-      })
-      .catch((e) => {
-        const message = e instanceof Error ? e.message : String(e);
-        processor.logger.error(`script (#${node.id}) get result failed, the reason is ${message}`);
-        jobResult.status = JOB_STATUS.ERROR;
-        jobResult.result = message;
-      })
-      .finally(() => {
-        abortHandle.dispose();
-        processor.logger.debug(`script (#${node.id}) ended, resume workflow...`);
-        setImmediate(async () => {
-          const job = await this.workflow.db.getRepository('jobs').findOne({ filterByTk: id });
-          const execution = await job.getExecution();
-          if (execution.status !== 0) {
-            processor.logger.warn(`script (#${node.id}) result discarded because execution (${execution.id}) is ended`);
-            return;
-          }
-          job.set(jobResult);
-          await this.workflow.resume(job).catch(() => {});
-        });
+    try {
+      await this.workflow.app.eventQueue.publish(PENDING_JAVASCRIPT_TASK_CHANNEL, {
+        jobId: id,
       });
+    } catch (error) {
+      processor.logger.error(`publishing JavaScript job (${id}) failed, recovery will republish it`, { error });
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

@@ -47,6 +47,24 @@ Jika dicentang, jika script error atau timeout error, Node berikutnya tetap akan
 Setelah script error, tidak ada return value, hasil Node akan diisi dengan informasi error. Jika Node berikutnya menggunakan variable hasil Node script, perlu ditangani dengan hati-hati.
 :::
 
+## Kontrol Konkurensi Worker
+
+Node JavaScript Script menempatkan script yang menunggu untuk dieksekusi ke dalam antrean tugas dan menjalankannya di thread Worker terpisah. Anda dapat menggunakan environment variable `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` untuk mengontrol jumlah script JavaScript yang dapat dijalankan secara bersamaan oleh setiap instance aplikasi NocoBase:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Aturan konfigurasinya adalah sebagai berikut:
+
+- Jika variable tidak dikonfigurasi atau nilainya tidak valid, konkurensi default adalah `1`
+- Bilangan bulat positif menentukan jumlah maksimum thread Worker yang dapat berjalan secara bersamaan
+- Nilai `0` menghapus batas konkurensi, sehingga semua tugas dalam antrean dapat berjalan secara bersamaan
+
+Saat batas konkurensi tercapai, tugas baru tetap berada dalam antrean hingga tersedia Worker. Konfigurasi default sudah cukup untuk sebagian besar skenario. Meningkatkan konkurensi akan menggunakan lebih banyak CPU dan memori, jadi sesuaikan secara bertahap berdasarkan resource server dan beban script. Mengatur konkurensi ke `0` tidak disarankan di environment production.
+
+Jika aplikasi berjalan pada beberapa instance server, konfigurasi ini berlaku secara terpisah untuk setiap instance. Kapasitas konkurensi keseluruhan juga bergantung pada jumlah instance yang dapat memproses tugas. Restart service NocoBase setelah mengubah environment variable agar nilai baru berlaku.
+
 ## Engine Eksekusi
 
 Node JavaScript Script mendukung dua engine eksekusi, otomatis berganti berdasarkan apakah environment variable `WORKFLOW_SCRIPT_MODULES` dikonfigurasi:

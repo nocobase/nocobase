@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { ArrayItems } from '@formily/antd-v5';
 import { CodeOutlined } from '@ant-design/icons';
 import { SchemaInitializerItemType } from '@nocobase/client';
@@ -11,6 +20,7 @@ import {
 import { Space } from 'antd';
 import React, { lazy } from 'react';
 
+import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 import { NAMESPACE, lang } from '../locale';
 import { SubModelItem } from '@nocobase/flow-engine';
 
@@ -29,7 +39,7 @@ function useScriptDescription() {
 
 export default class extends Instruction {
   title = 'JavaScript';
-  type = 'script';
+  type = SCRIPT_INSTRUCTION_TYPE;
   group = 'extended';
   description = `{{t("Execute a piece of JavaScript in an isolated Node.js environment.", { ns: "${NAMESPACE}" })}}`;
   icon = (<CodeOutlined />);

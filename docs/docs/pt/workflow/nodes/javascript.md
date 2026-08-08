@@ -44,6 +44,24 @@ Se selecionado, os nós subsequentes ainda serão executados mesmo que o script 
 Se o script falhar, ele não terá valor de retorno, e o resultado do nó será preenchido com a mensagem de erro. Se nós subsequentes utilizarem a variável de resultado do nó de script, você precisará lidar com isso com cautela.
 :::
 
+## Controle de concorrência dos Workers
+
+Os nós de script JavaScript colocam os scripts pendentes em uma fila de tarefas e os executam em threads Worker separadas. Você pode usar a variável de ambiente `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` para controlar quantos scripts JavaScript cada instância da aplicação NocoBase pode executar simultaneamente:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+As regras de configuração são as seguintes:
+
+- Se a variável não estiver configurada ou seu valor for inválido, a concorrência padrão será `1`
+- Um número inteiro positivo define o número máximo de threads Worker que podem ser executadas simultaneamente
+- O valor `0` remove o limite de concorrência, permitindo que todas as tarefas da fila sejam executadas simultaneamente
+
+Quando o limite de concorrência é atingido, novas tarefas permanecem na fila até que um Worker esteja disponível. A configuração padrão é suficiente para a maioria dos casos. Aumentar a concorrência consome mais CPU e memória, portanto, ajuste-a gradualmente de acordo com os recursos do servidor e a carga dos scripts. Não é recomendado definir a concorrência como `0` em ambientes de produção.
+
+Se uma aplicação for executada em várias instâncias de servidor, esta configuração será aplicada separadamente a cada instância. A capacidade total de concorrência também depende do número de instâncias que podem consumir tarefas. Reinicie o serviço NocoBase após alterar a variável de ambiente para que o novo valor entre em vigor.
+
 ## Motor de execução
 
 O nó de script JavaScript suporta dois motores de execução, selecionados automaticamente com base na configuração da variável de ambiente `WORKFLOW_SCRIPT_MODULES`:

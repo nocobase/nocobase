@@ -42,19 +42,39 @@ describe('workflow > Processor', () => {
   afterEach(() => app.destroy());
 
   describe('base', () => {
-    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('job id out of max safe integer', async () => {
-      const JobModel = db.getModel('jobs');
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('updates job id out of max safe integer', async () => {
+      const node = await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+      });
+      // This value is rounded to 10267424896650240 when coerced to a JavaScript number.
+      const id = '10267424896650241';
+      vi.spyOn(plugin.snowflake, 'getUniqueID').mockReturnValue(BigInt(id));
+      const processor = plugin.createProcessor(execution);
+      const job = processor.saveJob({
+        nodeId: node.id,
+        nodeKey: node.key,
+        status: JOB_STATUS.PENDING,
+        result: null,
+      });
+      await processor.exit();
+      expect(job.id).toBe(id);
 
-      const records = await JobModel.bulkCreate([
-        {
-          id: '10267424896650240',
-        },
-        {
-          id: '10267424930204672',
-        },
-      ]);
+      job.set({
+        status: JOB_STATUS.RESOLVED,
+        result: { value: 1 },
+      });
+      processor.saveJob(job);
+      await processor.exit();
 
-      expect(records.length).toBe(2);
+      const savedJob = await db.getRepository('jobs').findOne({
+        filter: { executionId: execution.id },
+      });
+      expect(savedJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(savedJob.result).toEqual({ value: 1 });
     });
 
     it('saves new jobs in batches', async () => {
@@ -85,6 +105,57 @@ describe('workflow > Processor', () => {
       expect(bulkCreate.mock.calls[1][0]).toHaveLength(100);
       expect(bulkCreate.mock.calls[2][0]).toHaveLength(1);
       expect(await execution.countJobs()).toBe(201);
+    });
+
+    it('updates existing jobs using model field mappings', async () => {
+      await app.destroy();
+      app = await getApp({
+        database: {
+          underscored: false,
+        },
+      });
+      plugin = app.pm.get('workflow');
+      db = app.db;
+
+      const WorkflowModel = db.getCollection('workflows').model;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'syncTrigger',
+      });
+      const node = await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+      });
+      const processor = plugin.createProcessor(execution);
+      const startedAt = new Date('2026-08-07T00:00:00.000Z');
+      const job = processor.saveJob({
+        nodeId: node.id,
+        nodeKey: node.key,
+        status: JOB_STATUS.PENDING,
+        result: null,
+      });
+
+      await processor.exit();
+
+      job.set({
+        status: JOB_STATUS.RESOLVED,
+        meta: { source: 'test' },
+        result: { value: 1 },
+        startedAt,
+      });
+      processor.saveJob(job);
+      await processor.exit();
+
+      const savedJob = await db.getRepository('jobs').findOne({
+        filterByTk: job.id,
+      });
+      expect(savedJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(savedJob.meta).toEqual({ source: 'test' });
+      expect(savedJob.result).toEqual({ value: 1 });
+      expect(savedJob.startedAt).toEqual(startedAt);
     });
 
     it('empty workflow without any nodes', async () => {
