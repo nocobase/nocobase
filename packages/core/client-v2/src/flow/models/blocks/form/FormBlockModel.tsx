@@ -72,6 +72,23 @@ const flowKeepMobileHorizontalClassName = css`
 function isGridDelegatedStep(flowKey: string, stepKey: string): boolean {
   return !!GRID_DELEGATED_STEP_KEYS[flowKey]?.has(stepKey);
 }
+
+interface FormModelWithAvailableData {
+  hasAvailableData(): boolean;
+}
+
+interface FormModelWithSubmit {
+  submit(): Promise<unknown>;
+}
+
+function hasAvailableDataCapability(model: object): model is FormModelWithAvailableData {
+  return 'hasAvailableData' in model && typeof model.hasAvailableData === 'function';
+}
+
+function hasSubmitCapability(model: object): model is FormModelWithSubmit {
+  return 'submit' in model && typeof model.submit === 'function';
+}
+
 export class FormBlockModel<
   T extends DefaultCollectionBlockModelStructure = DefaultCollectionBlockModelStructure,
 > extends CollectionBlockModel<T> {
@@ -81,6 +98,32 @@ export class FormBlockModel<
 
   get form() {
     return this.context.form as FormInstance;
+  }
+
+  submitFromRunJs() {
+    if (hasAvailableDataCapability(this) && !this.hasAvailableData()) {
+      return;
+    }
+
+    const submitAction = this.mapSubModels('actions', (action) => action).find((action) =>
+      action.getFlow('submitSettings'),
+    );
+    if (submitAction) {
+      return submitAction.onClick(undefined);
+    }
+
+    const isCoreForm = ['CreateFormModel', 'EditFormModel'].some((modelName) => {
+      const ModelClass = this.flowEngine.getModelClass(modelName);
+      return ModelClass && this instanceof ModelClass;
+    });
+    if (this.context.publicFormRuntime || !isCoreForm || !hasSubmitCapability(this)) {
+      return;
+    }
+
+    this.submit().catch((error: unknown) => {
+      this.context.message.error(this.context.t('Save failed'));
+      console.error('Form submission error:', error);
+    });
   }
 
   _defaultCustomModelClasses = {
