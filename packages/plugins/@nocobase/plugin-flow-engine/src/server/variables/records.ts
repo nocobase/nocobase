@@ -8,13 +8,21 @@
  */
 
 import type { Collection, RelationRepository, Repository, TargetKey } from '@nocobase/database';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { ICollectionManager, IRepository } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import _ from 'lodash';
 import { adjustSelectsForCollection } from './selects';
 
 type FilterTargetKey = string | string[] | undefined;
-type RecordRepository = Repository | RelationRepository;
+type RecordRepository = IRepository | Repository | RelationRepository;
+
+type RecordCollectionManager = Omit<ICollectionManager, 'getRepository'> & {
+  getRepository(name: string, sourceId?: TargetKey): IRepository;
+  db?: {
+    getCollection?: (name: string) => Collection | undefined;
+    getRepository?: (name: string, sourceId?: TargetKey) => RecordRepository;
+  };
+};
 
 export type RecordParams = {
   associationName?: string;
@@ -219,30 +227,35 @@ export function resolveRecordTarget(koaCtx: ResourcerContext, params: RecordPara
   if (targets.has(requestKey)) return targets.get(requestKey);
 
   const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-  const cm = ds.collectionManager as SequelizeCollectionManager;
-  if (!cm?.db) {
-    targets.set(requestKey, undefined);
-    return undefined;
+  const cm = ds.collectionManager as RecordCollectionManager;
+  let repository: RecordRepository | undefined;
+  if (typeof cm.getRepository === 'function') {
+    repository = usesAssociation
+      ? cm.getRepository(params.associationName as string, params.sourceId as TargetKey)
+      : cm.getRepository(params.collection);
+  } else if (typeof cm.db?.getRepository === 'function') {
+    repository = usesAssociation
+      ? cm.db.getRepository(params.associationName as string, params.sourceId as TargetKey)
+      : cm.db.getRepository(params.collection);
   }
-
-  const repository = usesAssociation
-    ? cm.db.getRepository<RelationRepository>(params.associationName, params.sourceId as TargetKey)
-    : cm.db.getRepository<Repository>(params.collection);
   if (!repository) {
     targets.set(requestKey, undefined);
     return undefined;
   }
 
+  const repositoryMetadata = repository as unknown as {
+    targetCollection?: Collection;
+    collection?: Collection;
+  };
   const collection =
-    ('targetCollection' in repository && repository.targetCollection) ||
-    repository.collection ||
-    cm.db.getCollection(params.associationName || params.collection);
-  if (!collection) {
-    targets.set(requestKey, undefined);
-    return undefined;
-  }
+    repositoryMetadata.targetCollection ||
+    repositoryMetadata.collection ||
+    (typeof cm.getCollection === 'function'
+      ? (cm.getCollection(params.collection) as unknown as Collection | undefined)
+      : cm.db?.getCollection?.(params.collection)) ||
+    ({ name: params.collection } as unknown as Collection);
 
-  if (usesAssociation && collection.name !== params.collection) {
+  if (usesAssociation && collection.name && collection.name !== params.collection) {
     targets.set(requestKey, undefined);
     return undefined;
   }

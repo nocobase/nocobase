@@ -48,6 +48,7 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
       dataSourceManager: {
         get: () => ({
           collectionManager: {
+            getRepository: (name: string) => repo,
             db: {
               getRepository: (name: string) => repo,
               // adjustSelectsForCollection 会从这里取模型元数据
