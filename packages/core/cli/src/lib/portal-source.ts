@@ -332,15 +332,6 @@ async function runGit(args: string[], cwd?: string): Promise<{ stdout: string; s
   });
 }
 
-async function readGitConfigValue(cwd: string, key: 'user.name' | 'user.email'): Promise<string | undefined> {
-  try {
-    const result = await runGit(['config', '--get', key], cwd);
-    return trimValue(result.stdout) || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 function isValidGitIdentity(identity: GitIdentity): boolean {
   return (
     !/[\r\n<>]/.test(identity.name) &&
@@ -350,15 +341,19 @@ function isValidGitIdentity(identity: GitIdentity): boolean {
 }
 
 async function resolveLocalGitIdentity(cwd: string): Promise<GitIdentity | undefined> {
-  const [name, email] = await Promise.all([
-    readGitConfigValue(cwd, 'user.name'),
-    readGitConfigValue(cwd, 'user.email'),
-  ]);
-  if (!name || !email) {
+  let output: string;
+  try {
+    output = (await runGit(['var', 'GIT_AUTHOR_IDENT'], cwd)).stdout;
+  } catch {
     return undefined;
   }
 
-  const identity = { name, email };
+  const match = /^(.*) <([^<>]+)> -?\d+ [+-]\d{4}$/.exec(trimValue(output));
+  if (!match) {
+    return undefined;
+  }
+
+  const identity = { name: match[1], email: match[2] };
   if (!isValidGitIdentity(identity)) {
     return undefined;
   }
