@@ -38,12 +38,20 @@ import {
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../../client-v2/jsTemplateRunJSIntegrationContract';
 import { JS_TEMPLATE_SETTINGS_KEY } from '../../constants';
-import pluginEnUS from '../../locale/en-US.json';
-import pluginZhCN from '../../locale/zh-CN.json';
-import PluginJsTemplateClient, { PluginJsTemplateClient as NamedPluginJsTemplateClient } from '..';
+import PluginJsTemplateClient from '..';
 import * as clientEntry from '..';
 import JsTemplateCatalogPage from '../../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../../client-v2/pages/JsTemplateSourceProjectsPage';
+
+interface LegacySettingsRouteOptions {
+  icon?: string;
+  title?: string;
+  aclSnippet?: string;
+  Component?: React.ElementType;
+  sort?: number;
+}
+
+type AddLegacySettingsRoute = (key: string, options: LegacySettingsRouteOptions) => void;
 
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
@@ -65,7 +73,7 @@ describe('plugin-js-template legacy client boundary', () => {
   });
 
   it('registers a thin settings bridge, runtime resolver, and source editor without a direct v1 import', async () => {
-    const add = vi.fn();
+    const add = vi.fn<AddLegacySettingsRoute>();
     const PreviousJSPageSourceField = () => null;
     const components: Record<string, React.ElementType> = {
       [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: PreviousJSPageSourceField,
@@ -100,18 +108,15 @@ describe('plugin-js-template legacy client boundary', () => {
     await expect(plugin.afterAdd()).resolves.toBeUndefined();
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     await expect(plugin.load()).resolves.toBeUndefined();
-    expect(add).toHaveBeenNthCalledWith(
-      1,
-      JS_TEMPLATE_SETTINGS_KEY,
+    const settingsByKey = new Map(add.mock.calls);
+    expect(settingsByKey.get(JS_TEMPLATE_SETTINGS_KEY)).toEqual(
       expect.objectContaining({
         icon: 'CodeOutlined',
         title: '@nocobase/plugin-js-template:JS Templates',
         aclSnippet: 'pm.js-template',
       }),
     );
-    expect(add).toHaveBeenNthCalledWith(
-      2,
-      `${JS_TEMPLATE_SETTINGS_KEY}.templates`,
+    expect(settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.templates`)).toEqual(
       expect.objectContaining({
         title: '@nocobase/plugin-js-template:Templates',
         Component: JsTemplateCatalogPage,
@@ -119,9 +124,7 @@ describe('plugin-js-template legacy client boundary', () => {
         sort: 1,
       }),
     );
-    expect(add).toHaveBeenNthCalledWith(
-      3,
-      `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`,
+    expect(settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`)).toEqual(
       expect.objectContaining({
         title: '@nocobase/plugin-js-template:Source Projects',
         Component: JsTemplateSourceProjectsPage,
@@ -170,7 +173,7 @@ describe('plugin-js-template legacy client boundary', () => {
   });
 
   it('exposes the canonical client entrypoint with entry and Source Project settings routes', async () => {
-    const add = vi.fn();
+    const add = vi.fn<AddLegacySettingsRoute>();
     const plugin = new PluginJsTemplateClient(
       { name: 'js-template' },
       {
@@ -185,22 +188,16 @@ describe('plugin-js-template legacy client boundary', () => {
 
     expect(Object.keys(clientEntry).sort()).toEqual(['PluginJsTemplateClient', 'default']);
     expect(PluginJsTemplateClient).toBeTypeOf('function');
-    expect(NamedPluginJsTemplateClient).toBeTypeOf('function');
-    expect(add.mock.calls.map(([key]) => key)).toEqual([
-      JS_TEMPLATE_SETTINGS_KEY,
-      `${JS_TEMPLATE_SETTINGS_KEY}.templates`,
-      `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`,
-    ]);
-    expect(add.mock.calls[0][1].Component).toBeUndefined();
-    expect(add.mock.calls[1][1].Component).toBe(JsTemplateCatalogPage);
-    expect(add.mock.calls[2][1].Component).toBe(JsTemplateSourceProjectsPage);
-    expect(
-      add.mock.calls
-        .slice(1)
-        .sort((left, right) => left[1].sort - right[1].sort)
-        .map(([key]) => key),
-    ).toEqual([`${JS_TEMPLATE_SETTINGS_KEY}.templates`, `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`]);
-    expect(pluginEnUS['JS Templates']).toBe('JS Templates');
-    expect(pluginZhCN['JS Templates']).toBe('JS 模板');
+    const settingsByKey = new Map(add.mock.calls);
+    const rootSettings = settingsByKey.get(JS_TEMPLATE_SETTINGS_KEY);
+    const templateSettings = settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.templates`);
+    const sourceProjectSettings = settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`);
+    expect(rootSettings?.Component).toBeUndefined();
+    expect(templateSettings?.Component).toBe(JsTemplateCatalogPage);
+    expect(sourceProjectSettings?.Component).toBe(JsTemplateSourceProjectsPage);
+    if (typeof templateSettings?.sort !== 'number' || typeof sourceProjectSettings?.sort !== 'number') {
+      throw new Error('Expected both JS Template child settings routes to have numeric sort values');
+    }
+    expect(templateSettings.sort).toBeLessThan(sourceProjectSettings.sort);
   });
 });

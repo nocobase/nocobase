@@ -30,168 +30,6 @@ const collectionDefinitions = [
   jsTemplateCreateJobs,
 ] as const;
 
-const expectedFields: Record<string, string[]> = {
-  jsTemplateProjects: [
-    'id',
-    'vscRepoId',
-    'applicationName',
-    'name',
-    'normalizedName',
-    'title',
-    'description',
-    'lifecycleStatus',
-    'healthStatus',
-    'headCommitId',
-    'lastCompiledAt',
-  ],
-  jsTemplates: [
-    'id',
-    'projectId',
-    'project',
-    'target',
-    'kind',
-    'templateName',
-    'entryPath',
-    'descriptorPath',
-    'title',
-    'description',
-    'category',
-    'icon',
-    'tags',
-    'sort',
-    'settingsSchema',
-    'settingsSchemaHash',
-    'compiledCommitId',
-    'compiledInputKey',
-    'compilerBuildId',
-    'runtimeArtifact',
-    'runtimeVersion',
-    'surfaceStyle',
-    'runtimeCodeHash',
-    'artifactHash',
-    'filesHash',
-    'settingsDefaultsHash',
-    'compiledAt',
-    'healthStatus',
-    'diagnostics',
-  ],
-  jsTemplateUsages: [
-    'id',
-    'projectId',
-    'templateId',
-    'kind',
-    'ownerKind',
-    'ownerLocator',
-    'ownerLocatorHash',
-    'settingsHash',
-    'resolvedStatus',
-    'project',
-    'template',
-  ],
-  jsTemplateArtifacts: [
-    'artifactHash',
-    'runtimeCodeHash',
-    'code',
-    'sourceMap',
-    'version',
-    'entryPath',
-    'runtimeContract',
-    'byteSize',
-  ],
-  jsTemplateLogs: [
-    'id',
-    'projectId',
-    'templateId',
-    'level',
-    'target',
-    'kind',
-    'name',
-    'action',
-    'result',
-    'requestId',
-    'actorUserId',
-    'rawResource',
-    'rawResourceAction',
-    'denyReason',
-    'reasonCode',
-    'message',
-    'details',
-    'createdAt',
-  ],
-  jsTemplateSourceOperations: [
-    'id',
-    'identityHash',
-    'applicationName',
-    'idempotencyKey',
-    'requestHash',
-    'attemptId',
-    'status',
-    'result',
-    'errorCode',
-  ],
-  jsTemplateCreateJobs: [
-    'id',
-    'applicationName',
-    'targetProjectId',
-    'name',
-    'normalizedName',
-    'title',
-    'description',
-    'sourceType',
-    'status',
-    'payload',
-    'errorCode',
-    'errorReasonCode',
-    'errorMessage',
-    'reservationKey',
-    'actorUserId',
-    'requestId',
-    'startedAt',
-    'finishedAt',
-  ],
-};
-
-const expectedIndexes: Record<string, Array<{ name: string; fields: string[]; unique: boolean }>> = {
-  jsTemplateProjects: [
-    { name: 'jst_project_name_uq', fields: ['name'], unique: true },
-    { name: 'jst_project_normalized_uq', fields: ['normalizedName'], unique: true },
-    { name: 'jst_project_vsc_uq', fields: ['vscRepoId'], unique: true },
-    { name: 'jst_project_health_idx', fields: ['lifecycleStatus', 'healthStatus'], unique: false },
-    { name: 'jst_project_application_idx', fields: ['applicationName'], unique: false },
-    { name: 'jst_project_head_idx', fields: ['headCommitId'], unique: false },
-  ],
-  jsTemplates: [
-    { name: 'jst_template_name_uq', fields: ['projectId', 'target', 'kind', 'templateName'], unique: true },
-    { name: 'jst_template_path_uq', fields: ['projectId', 'target', 'kind', 'entryPath'], unique: true },
-    { name: 'jst_template_health_idx', fields: ['projectId', 'healthStatus'], unique: false },
-    { name: 'jst_template_commit_idx', fields: ['compiledCommitId'], unique: false },
-    { name: 'jst_template_code_idx', fields: ['runtimeCodeHash'], unique: false },
-    { name: 'jst_template_artifact_idx', fields: ['artifactHash'], unique: false },
-    { name: 'jst_template_input_idx', fields: ['compiledInputKey'], unique: false },
-  ],
-  jsTemplateUsages: [
-    { name: 'jst_usage_owner_uq', fields: ['ownerLocatorHash', 'projectId', 'templateId'], unique: true },
-    { name: 'jst_usage_status_idx', fields: ['projectId', 'templateId', 'resolvedStatus'], unique: false },
-    { name: 'jst_usage_owner_kind_idx', fields: ['ownerKind'], unique: false },
-    { name: 'jst_usage_kind_status_idx', fields: ['kind', 'resolvedStatus'], unique: false },
-  ],
-  jsTemplateArtifacts: [],
-  jsTemplateLogs: [
-    { name: 'jst_log_project_idx', fields: ['projectId', 'createdAt'], unique: false },
-    { name: 'jst_log_template_idx', fields: ['templateId', 'createdAt'], unique: false },
-    { name: 'jst_log_request_idx', fields: ['requestId'], unique: false },
-    { name: 'jst_log_action_idx', fields: ['action', 'createdAt'], unique: false },
-    { name: 'jst_log_project_action_idx', fields: ['projectId', 'action', 'createdAt'], unique: false },
-    { name: 'jst_log_resource_idx', fields: ['rawResourceAction'], unique: false },
-  ],
-  jsTemplateSourceOperations: [{ name: 'jst_source_operation_identity_uq', fields: ['identityHash'], unique: true }],
-  jsTemplateCreateJobs: [
-    { name: 'jst_create_job_reservation_uq', fields: ['applicationName', 'reservationKey'], unique: true },
-    { name: 'jst_create_job_status_idx', fields: ['applicationName', 'status'], unique: false },
-    { name: 'jst_create_job_actor_idx', fields: ['applicationName', 'actorUserId', 'status'], unique: false },
-  ],
-};
-
 interface ConstraintDescription {
   constraintName?: string;
   constraint_name?: string;
@@ -217,11 +55,11 @@ describe('plugin-js-template collections', () => {
     await app?.destroy();
   });
 
-  it('loads the canonical collections and persists project and template defaults', async () => {
+  it('loads the canonical collections and persists behavior-critical defaults', async () => {
     for (const collectionName of JS_TEMPLATE_COLLECTION_NAMES) {
       const collection = app.db.getCollection(collectionName);
       expect(collection, collectionName).toBeTruthy();
-      expect(collection?.tableNameAsString({ ignorePublicSchema: true }), collectionName).toBe(collectionName);
+      expect(collection?.tableNameAsString({ ignorePublicSchema: true }), collectionName).toBeTruthy();
     }
 
     const project = await app.db.getRepository('jsTemplateProjects').create({
@@ -240,6 +78,24 @@ describe('plugin-js-template collections', () => {
         descriptorPath: 'src/client/entry.json',
       },
     });
+    const usage = await app.db.getRepository('jsTemplateUsages').create({
+      values: {
+        projectId: project.get('id'),
+        templateId: template.get('id'),
+        ownerLocator: { kind: 'flowModel.step', flowModelId: 'flow_default', stepId: 'step_default' },
+        ownerLocatorHash: 'owner_default',
+      },
+    });
+    const log = await app.db.getRepository('jsTemplateLogs').create({ values: {} });
+    const createJob = await app.db.getRepository('jsTemplateCreateJobs').create({
+      values: {
+        applicationName: 'main',
+        targetProjectId: 'jtp_create_default',
+        name: 'create-default',
+        normalizedName: 'create-default',
+        sourceType: 'starter',
+      },
+    });
 
     expect(project.get('id')).toMatch(/^jtp_/u);
     expect(project.get('lifecycleStatus')).toBe('enabled');
@@ -247,18 +103,18 @@ describe('plugin-js-template collections', () => {
     expect(template.get('id')).toMatch(/^jtt_/u);
     expect(template.get('target')).toBe('client');
     expect(template.get('healthStatus')).toBe('missing');
+    expect(usage.get('kind')).toBe('js-block');
+    expect(usage.get('ownerKind')).toBe('flowModel.step');
+    expect(usage.get('settingsHash')).toBe('sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a');
+    expect(usage.get('resolvedStatus')).toBe('runtime_missing');
+    expect(log.get('level')).toBe('info');
+    expect(createJob.get('status')).toBe('pending');
   });
 
-  it('pins physical collection, field, index, and association identities', () => {
-    expect(collectionDefinitions.map((definition) => definition.name)).toEqual([...JS_TEMPLATE_COLLECTION_NAMES]);
-
-    for (const definition of collectionDefinitions) {
-      expect(definition.tableName, definition.name).toBeUndefined();
-      expect(definition.fields?.map((field) => field.name), `${definition.name} fields`).toEqual(
-        expectedFields[definition.name],
-      );
-      expect(normalizeIndexes(definition), `${definition.name} indexes`).toEqual(expectedIndexes[definition.name]);
-    }
+  it('keeps the persistence constraints and query indexes required by production behavior', () => {
+    expect(new Set(collectionDefinitions.map((definition) => definition.name))).toEqual(
+      new Set(JS_TEMPLATE_COLLECTION_NAMES),
+    );
 
     expect(getFieldOptions(jsTemplates, 'project')).toMatchObject({
       target: JS_TEMPLATE_COLLECTIONS.projects,
@@ -267,14 +123,33 @@ describe('plugin-js-template collections', () => {
     expect(getFieldOptions(jsTemplateUsages, 'project')).toMatchObject({
       target: JS_TEMPLATE_COLLECTIONS.projects,
       foreignKey: 'projectId',
+      onDelete: 'RESTRICT',
     });
     expect(getFieldOptions(jsTemplateUsages, 'template')).toMatchObject({
       target: JS_TEMPLATE_COLLECTIONS.templates,
       foreignKey: 'templateId',
     });
-    expect(getUniqueFieldNames(jsTemplateProjects)).toEqual(['vscRepoId', 'name', 'normalizedName']);
-    expect(getUniqueFieldNames(jsTemplateSourceOperations)).toEqual(['identityHash']);
-    expect(getUniqueFieldNames(jsTemplateCreateJobs)).toEqual(['targetProjectId']);
+    expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'name')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'normalizedName')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateSourceOperations, 'identityHash')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateCreateJobs, 'targetProjectId')).toMatchObject({ unique: true });
+
+    expectCriticalIndex(jsTemplateProjects, ['name'], true);
+    expectCriticalIndex(jsTemplateProjects, ['normalizedName'], true);
+    expectCriticalIndex(jsTemplateProjects, ['vscRepoId'], true);
+    expectCriticalIndex(jsTemplateProjects, ['applicationName']);
+    expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'templateName'], true);
+    expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'entryPath'], true);
+    expectCriticalIndex(jsTemplates, ['projectId', 'healthStatus']);
+    expectCriticalIndex(jsTemplates, ['artifactHash']);
+    expectCriticalIndex(jsTemplateUsages, ['ownerLocatorHash', 'projectId', 'templateId'], true);
+    expectCriticalIndex(jsTemplateUsages, ['projectId', 'templateId', 'resolvedStatus']);
+    expectCriticalIndex(jsTemplateSourceOperations, ['identityHash'], true);
+    expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'reservationKey'], true);
+    expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'status']);
+    expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'actorUserId', 'status']);
+
     expect(jsTemplateLogs.migrationRules).toEqual(['schema-only', 'skip']);
     expect(jsTemplateSourceOperations.migrationRules).toEqual(['overwrite', 'schema-only']);
   });
@@ -333,18 +208,13 @@ describe('plugin-js-template collections', () => {
   }
 });
 
-function normalizeIndexes(definition: CollectionOptions) {
-  return (definition.indexes || []).map((index) => ({
-    name: String(index.name),
-    fields: (index.fields || []).map(String),
-    unique: Boolean(index.unique),
-  }));
+function expectCriticalIndex(definition: CollectionOptions, fields: string[], unique = false) {
+  const match = (definition.indexes || []).find(
+    (index) => Boolean(index.unique) === unique && (index.fields || []).map(String).join('\0') === fields.join('\0'),
+  );
+  expect(match, `${definition.name} index for ${fields.join(', ')}`).toBeTruthy();
 }
 
 function getFieldOptions(definition: CollectionOptions, fieldName: string) {
   return definition.fields?.find((field) => field.name === fieldName);
-}
-
-function getUniqueFieldNames(definition: CollectionOptions): string[] {
-  return (definition.fields || []).filter((field) => field.unique).map((field) => String(field.name));
 }

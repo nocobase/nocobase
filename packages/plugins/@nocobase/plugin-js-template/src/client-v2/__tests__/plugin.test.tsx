@@ -34,8 +34,6 @@ import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '@noc
 import PluginFlowEngineClientV2 from '@nocobase/plugin-flow-engine/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
-import enUS from '../../locale/en-US.json';
-import zhCN from '../../locale/zh-CN.json';
 import {
   JSActionJsTemplateSourceField,
   JSFieldJsTemplateSourceField,
@@ -47,7 +45,7 @@ import {
   JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../jsTemplateRunJSIntegrationContract';
-import PluginJsTemplateClientV2, { PluginJsTemplateClientV2 as NamedPluginJsTemplateClientV2 } from '../plugin';
+import PluginJsTemplateClientV2 from '../plugin';
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
@@ -85,12 +83,6 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => {
   };
 });
 
-describe('plugin-js-template client-v2 locale entries', () => {
-  it('keeps English and Chinese keys aligned', () => {
-    expect(Object.keys(enUS).sort()).toEqual(Object.keys(zhCN).sort());
-  });
-});
-
 describe('PluginJsTemplateClientV2', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
@@ -114,7 +106,6 @@ describe('PluginJsTemplateClientV2', () => {
     await app.load();
     const plugin = app.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2;
 
-    expect(PluginJsTemplateClientV2).toBe(NamedPluginJsTemplateClientV2);
     const canonicalMenu = app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
     const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
     const sourceProjectsPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, false);

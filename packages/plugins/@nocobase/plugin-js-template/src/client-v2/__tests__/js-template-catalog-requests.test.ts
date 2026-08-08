@@ -18,7 +18,25 @@ import {
 } from '../api/jsTemplatesRequests';
 import type { DetachJsTemplateToInlineInput } from '../../shared/types';
 
+const cacheMocks = vi.hoisted(() => ({
+  invalidateRuntime: vi.fn(),
+  invalidateSettings: vi.fn(),
+}));
+
+vi.mock('../resolvers/JsTemplateRuntimeCacheRegistry', () => ({
+  getOrLoadJsTemplateSelectableCatalog: vi.fn(),
+  invalidateJsTemplateRuntimeCache: cacheMocks.invalidateRuntime,
+}));
+
+vi.mock('../resolvers/JsTemplateSettingsDescriptorCache', () => ({
+  invalidateJsTemplateSettingsDescriptorCache: cacheMocks.invalidateSettings,
+}));
+
 describe('JS Template catalog requests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('loads the dedicated entry-centric catalog action without reusing the runtime selectable catalog', async () => {
     const catalog = [
       {
@@ -66,16 +84,28 @@ describe('JS Template catalog requests', () => {
     });
   });
 
-  it('deletes one Template Entry through the authoritative server action', async () => {
+  it('invalidates settings and runtime caches after deleting one Template Entry', async () => {
     const result = { project: { id: 'jtp_source' }, templateId: 'jtt_entry' };
     const request = vi.fn(async () => ({ data: { data: result } }));
+    const api = { request } as ApiClientLike;
 
-    await expect(deleteJsTemplate({ request } as ApiClientLike, 'jtt_entry')).resolves.toEqual(result);
+    await expect(deleteJsTemplate(api, 'jtt_entry')).resolves.toEqual(result);
     expect(request).toHaveBeenCalledWith({
       url: 'jsTemplates:delete',
       method: 'post',
       data: { templateId: 'jtt_entry' },
     });
+    expect(cacheMocks.invalidateSettings).toHaveBeenCalledWith(api, 'jtp_source');
+    expect(cacheMocks.invalidateRuntime).toHaveBeenCalledWith(api, 'jtp_source');
+  });
+
+  it('preserves caches when deleting a Template Entry fails', async () => {
+    const api = { request: vi.fn().mockRejectedValue(new Error('delete failed')) } as ApiClientLike;
+
+    await expect(deleteJsTemplate(api, 'jtt_entry')).rejects.toThrow('delete failed');
+
+    expect(cacheMocks.invalidateSettings).not.toHaveBeenCalled();
+    expect(cacheMocks.invalidateRuntime).not.toHaveBeenCalled();
   });
 
   it('sends only the five-field detach contract even when a caller object contains forged source fields', async () => {

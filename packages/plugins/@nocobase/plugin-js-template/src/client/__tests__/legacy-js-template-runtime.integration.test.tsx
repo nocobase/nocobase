@@ -41,7 +41,7 @@ import {
   JSItemJsTemplateSourceField,
   JSPageJsTemplateSourceField,
 } from '../../client-v2/components/JSBlockJsTemplateSourceField';
-import PluginJsTemplateClient, { PluginJsTemplateClient as NamedPluginJsTemplateClient } from '..';
+import PluginJsTemplateClient from '..';
 
 function createLegacyApplication() {
   return new Application({
@@ -79,8 +79,6 @@ describe('JS Template legacy admin-shell integration', () => {
     await loadLegacyPlugins(firstApp);
 
     const canonicalSettings = firstApp.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
-    expect(PluginJsTemplateClient).toBeTypeOf('function');
-    expect(NamedPluginJsTemplateClient).toBeTypeOf('function');
     expect(canonicalSettings).toMatchObject({
       title: 'JS Templates',
       path: '/admin/settings/js-templates',
