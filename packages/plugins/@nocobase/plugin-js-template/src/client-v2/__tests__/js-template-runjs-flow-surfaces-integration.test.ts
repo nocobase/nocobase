@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD,
-  JS_TEMPLATE_SOURCE_MODE as CORE_JS_TEMPLATE_SOURCE_MODE,
-} from '@nocobase/client-v2';
+import { JS_TEMPLATE_SOURCE_MODE as CORE_JS_TEMPLATE_SOURCE_MODE } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE, JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
 import {
-  JS_TEMPLATE_RUNJS_PERSISTENCE_RUNTIME_CONTRACT,
+  createJsTemplateRuntimeSourceBinding,
+  isJsTemplateRuntimeSourceBinding,
   serializeJsTemplateRunJSPersistence,
-} from '../../shared/jsTemplateRunJSPersistence';
+} from '../../shared/jsTemplateSourceBinding';
 import type {
   JsTemplateArtifact,
   JsTemplateRuntimeResolveResult,
@@ -25,8 +23,13 @@ import type {
 } from '../../shared/types';
 import type { ApiClientLike, ApiRequestOptions } from '../api/jsTemplatesRequests';
 import {
-  JS_TEMPLATE_RUNJS_FLOW_SURFACES,
-  JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT,
+  JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+  JS_TEMPLATE_KIND_BY_MODEL_USE,
+  JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
+  JS_TEMPLATE_RUNTIME_CONTEXT_KEY,
+  JS_TEMPLATE_SOURCE_MENU_GROUP_KEY,
+  JS_TEMPLATE_SOURCE_METADATA_KIND_KEY,
+  JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../jsTemplateRunJSIntegrationContract';
 import { createJsTemplateRunJSResolver } from '../resolvers/JsTemplateRunJSResolver';
 
@@ -40,41 +43,42 @@ const sourceBinding: JsTemplateRuntimeSourceBinding = {
 };
 
 describe('JS Template RunJS and Flow Surfaces integration contract', () => {
-  it('uses the canonical source mode on the established registry and FlowModel keys', () => {
-    expect(CORE_JS_TEMPLATE_SOURCE_MODE).toBe('js-template');
-    expect(JS_TEMPLATE_ACTION_FULL_SOURCE_FIELD).toBe(JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD);
-    expect(JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT).toMatchObject({
-      persistence: JS_TEMPLATE_RUNJS_PERSISTENCE_RUNTIME_CONTRACT,
-      locatorKind: 'flowModel.step',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-      versionPath: ['version'],
-      sourceMetadataKindKey: 'jsTemplateKind',
-      runtimeContextKey: 'jsTemplate',
-      sourceMenuGroupKey: 'js-template',
-      editorProviderKey: 'js-template-runjs-value',
-      toolbarContributionKey: '@nocobase/plugin-js-template/save-as-js-template',
-      modelMenuProviderKey: '@nocobase/plugin-js-template/model-menus',
-      supportedSurfaceStyles: ['render', 'value', 'action'],
-      automaticPreviewSurfaceStyles: ['render'],
-    });
-    expect(JS_TEMPLATE_RUNJS_FLOW_SURFACES).toEqual([
-      { modelUse: 'JSBlockModel', flowKey: 'jsSettings', kind: 'js-block', surfaceStyle: 'render' },
-      { modelUse: 'JSPageModel', flowKey: 'jsSettings', kind: 'js-page', surfaceStyle: 'render' },
-      { modelUse: 'JSFieldModel', flowKey: 'jsSettings', kind: 'js-field', surfaceStyle: 'render' },
-      { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', kind: 'js-field', surfaceStyle: 'render' },
-      { modelUse: 'JSColumnModel', flowKey: 'jsSettings', kind: 'js-field', surfaceStyle: 'render' },
-      { modelUse: 'JSItemModel', flowKey: 'jsSettings', kind: 'js-item', surfaceStyle: 'render' },
-      { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', kind: 'js-item', surfaceStyle: 'render' },
-      { modelUse: 'JSActionModel', flowKey: 'clickSettings', kind: 'js-action', surfaceStyle: 'action' },
-      { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', kind: 'js-action', surfaceStyle: 'action' },
-      { modelUse: 'JSCollectionActionModel', flowKey: 'clickSettings', kind: 'js-action', surfaceStyle: 'action' },
-      { modelUse: 'JSFormActionModel', flowKey: 'clickSettings', kind: 'js-action', surfaceStyle: 'action' },
-      { modelUse: 'FilterFormJSActionModel', flowKey: 'clickSettings', kind: 'js-action', surfaceStyle: 'action' },
+  it('uses unique canonical registry keys and resolves every supported kind from model use', () => {
+    expect(CORE_JS_TEMPLATE_SOURCE_MODE).toBe(JS_TEMPLATE_SOURCE_MODE);
+    expect(JS_TEMPLATE_SOURCE_METADATA_KIND_KEY).toBe('jsTemplateKind');
+    expect(JS_TEMPLATE_RUNTIME_CONTEXT_KEY).toBe('jsTemplate');
+    expect(JS_TEMPLATE_SOURCE_MENU_GROUP_KEY).toBe('js-template');
+
+    const registryKeys = [
+      JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+      JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
+      JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
+    ];
+    expect(registryKeys).toEqual([
+      'js-template-runjs-value',
+      '@nocobase/plugin-js-template/save-as-js-template',
+      '@nocobase/plugin-js-template/model-menus',
     ]);
+    expect(new Set(registryKeys).size).toBe(registryKeys.length);
+    expect(new Set(Object.values(JS_TEMPLATE_KIND_BY_MODEL_USE))).toEqual(new Set(JS_TEMPLATE_SUPPORTED_KINDS));
   });
 
-  it('round-trips a canonical FlowModel binding without persisting display fields', () => {
+  it('strictly round-trips a canonical FlowModel binding without persisting display fields', () => {
+    expect(
+      createJsTemplateRuntimeSourceBinding({
+        projectId: sourceBinding.projectId,
+        templateId: sourceBinding.templateId,
+        kind: sourceBinding.kind,
+      }),
+    ).toEqual(sourceBinding);
+    expect(isJsTemplateRuntimeSourceBinding(sourceBinding)).toBe(true);
+    expect(() =>
+      createJsTemplateRuntimeSourceBinding({
+        projectId: ' ',
+        templateId: sourceBinding.templateId,
+        kind: sourceBinding.kind,
+      }),
+    ).toThrow(TypeError);
     const flowModel = {
       uid: 'js_template_action',
       use: 'JSActionModel',
@@ -102,6 +106,42 @@ describe('JS Template RunJS and Flow Surfaces integration contract', () => {
       'sourceBinding',
       'settings',
     ]);
+  });
+
+  it.each([
+    {
+      type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
+      projectId: 'project_1',
+      templateId: 'template_1',
+    },
+    {
+      type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
+      projectId: 'project_1',
+      templateId: 'template_1',
+      kind: 'js-block',
+      title: 'Display field',
+    },
+    {
+      type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
+      projectId: ' ',
+      templateId: 'template_1',
+      kind: 'js-block',
+    },
+    {
+      type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
+      projectId: 'project_1',
+      templateId: '\t',
+      kind: 'js-block',
+    },
+    {
+      type: JS_TEMPLATE_SOURCE_BINDING_TYPE,
+      projectId: 'project_1',
+      templateId: 'template_1',
+      kind: 'unsupported',
+    },
+  ])('rejects incomplete or non-canonical bindings: $kind', (binding) => {
+    expect(isJsTemplateRuntimeSourceBinding(binding)).toBe(false);
+    expect(() => serializeJsTemplateRunJSPersistence(binding)).toThrow(TypeError);
   });
 
   it('resolves runtime code through canonical resource actions', async () => {

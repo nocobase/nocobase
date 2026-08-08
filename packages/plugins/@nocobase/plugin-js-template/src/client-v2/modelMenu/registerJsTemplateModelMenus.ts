@@ -10,16 +10,14 @@
 import { registerRunJSSurfaceMenuItemProvider } from '@nocobase/client-v2';
 
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
-import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
+import { JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY } from '../jsTemplateRunJSIntegrationContract';
 import { createJsTemplateSurfaceMenuProvider } from './createJsTemplateModelMenuProvider';
-
-const MODEL_MENU_PROVIDER_KEY = JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.modelMenuProviderKey;
 
 const activeRegistrations = new Map<symbol, ApiClientLike>();
 let unregisterProviders: (() => void) | undefined;
 
 export function registerJsTemplateModelMenus(api: ApiClientLike): () => void {
-  const registration = Symbol(MODEL_MENU_PROVIDER_KEY);
+  const registration = Symbol(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY);
   activeRegistrations.set(registration, api);
   try {
     if (!unregisterProviders) {
@@ -40,7 +38,7 @@ export function registerJsTemplateModelMenus(api: ApiClientLike): () => void {
 }
 
 function installProviders(): () => void {
-  return registerRunJSSurfaceMenuItemProvider(MODEL_MENU_PROVIDER_KEY, (context) =>
+  return registerRunJSSurfaceMenuItemProvider(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY, (context) =>
     createJsTemplateSurfaceMenuProvider(getActiveApi())(context),
   );
 }

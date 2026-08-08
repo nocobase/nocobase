@@ -31,7 +31,6 @@ export * from './modelMenu/registerJsTemplateModelMenus';
 export * from './resolvers/JsTemplateRunJSResolver';
 export * from './jsTemplateRunJSIntegration';
 export * from './jsTemplateRunJSIntegrationContract';
-export * from './jsTemplateV2UIContract';
 export * from './vsc-file/public-api';
 export * from '../shared/catalogAuthoring';
 export { PluginJsTemplateClientV2 } from './plugin';

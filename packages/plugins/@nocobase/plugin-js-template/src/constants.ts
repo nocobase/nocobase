@@ -13,10 +13,6 @@ import {
   JS_TEMPLATE_SCHEMA_VERSION,
 } from '@nocobase/js-template-sdk/schema';
 
-/** Product metadata only. User-visible text must still use the i18n layer. */
-export const JS_TEMPLATES_PRODUCT_NAME = 'JS templates';
-export const JS_TEMPLATES_PRODUCT_NAME_ZH_CN = 'JS 模板';
-
 export const JS_TEMPLATE_COLLECTIONS = {
   projects: 'jsTemplateProjects',
   templates: 'jsTemplates',

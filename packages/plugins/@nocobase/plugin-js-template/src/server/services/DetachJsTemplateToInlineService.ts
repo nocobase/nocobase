@@ -36,9 +36,9 @@ import type {
   JsTemplateRuntimeSourceBinding,
   SaveAsJsTemplateWorkspaceFile,
 } from '../../shared/types';
-import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
+import { JS_TEMPLATE_COLLECTIONS, JS_TEMPLATE_SOURCE_MODE } from '../../constants';
 import { JsTemplateError } from '../../shared/errors';
-import { isJsTemplateRuntimeSourceBinding, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
+import { isJsTemplateRuntimeSourceBinding } from '../../shared/jsTemplateSourceBinding';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import type { JsTemplateFileService } from './JsTemplateFileService';
 import { JsTemplateService, templateFromModel } from './JsTemplateService';

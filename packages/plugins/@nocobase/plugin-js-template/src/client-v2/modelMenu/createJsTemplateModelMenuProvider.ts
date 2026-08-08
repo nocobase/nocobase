@@ -21,7 +21,7 @@ import { NAMESPACE } from '../../constants';
 import {
   createJsTemplateRuntimeSourceBinding,
   serializeJsTemplateRunJSPersistence,
-} from '../../shared/jsTemplateRunJSPersistence';
+} from '../../shared/jsTemplateSourceBinding';
 import type {
   JsTemplateKind,
   JsTemplateRuntimeSourceBinding,

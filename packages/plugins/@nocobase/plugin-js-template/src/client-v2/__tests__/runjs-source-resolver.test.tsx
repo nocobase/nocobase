@@ -644,27 +644,24 @@ function registerSourceModeErrorTests() {
       expect(getSelfErrors(form.query('sourceMode').take())).toEqual([]);
     });
 
-    it('does not copy invalid source bindings in inline mode', async () => {
+    it('keeps a missing sourceMode compatible with Inline without restoring a stale binding artifact', async () => {
       const form = createForm({
         initialValues: {
-          sourceMode: 'inline',
+          code: 'ctx.render("preserved inline");',
+          version: 'v1',
           sourceBinding: {
             ...createSourceBinding(),
-            kind: 'js-action',
           },
         },
       });
 
       renderSourceField(form);
 
-      expect(screen.getByText('Copy selected JS Template code').closest('button')).toHaveProperty('disabled', true);
-      fireEvent.click(screen.getByText('Copy selected JS Template code'));
-
-      expect(mocks.request).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: 'jsTemplateRuntime:resolve',
-        }),
-      );
+      await waitFor(() => expect(form.values.sourceMode).toBe('inline'));
+      expect(form.values.code).toBe('ctx.render("preserved inline");');
+      expect(form.values.version).toBe('v1');
+      expect(form.values.sourceBinding).toEqual(createSourceBinding());
+      expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
     });
 
     it('requests and displays only js-page entries for the JS Page selector', async () => {

@@ -17,11 +17,12 @@ import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@n
 import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
 import { posix as pathPosix } from 'path';
 
-import { JS_TEMPLATE_SCHEMA_VERSION, type JsTemplateKind } from '../../constants';
 import {
   JS_TEMPLATE_ARTIFACT_CONTRACT,
   JS_TEMPLATE_RUNTIME_SURFACE_CONTRACT,
-} from '../../shared/jsTemplateRunJSPersistence';
+  JS_TEMPLATE_SCHEMA_VERSION,
+  type JsTemplateKind,
+} from '../../constants';
 import type { JsTemplateDiagnostic } from '../../shared/types';
 import { jsTemplateV1SchemaSha256 } from '../jsTemplateSchema';
 import type { CompileInputManifest } from './JsTemplateCompileKey';

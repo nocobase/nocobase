@@ -12,8 +12,7 @@ import { sha256Hex } from '@nocobase/runjs/server';
 import { isClientSettingsTypegenDescriptorPath } from '@nocobase/js-template-sdk/typegen';
 import { posix as pathPosix } from 'path';
 
-import type { JsTemplateKind } from '../../constants';
-import { JS_TEMPLATE_ARTIFACT_CONTRACT } from '../../shared/jsTemplateRunJSPersistence';
+import { JS_TEMPLATE_ARTIFACT_CONTRACT, type JsTemplateKind } from '../../constants';
 import type { JsTemplate } from '../../shared/types';
 import {
   JS_TEMPLATE_AUTHORING_SURFACES,

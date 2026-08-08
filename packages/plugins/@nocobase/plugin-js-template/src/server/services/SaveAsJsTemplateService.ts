@@ -22,15 +22,19 @@ import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import { uid } from '@nocobase/utils';
 
-import { JS_TEMPLATE_KEY_PATTERN, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';
+import {
+  JS_TEMPLATE_KEY_PATTERN,
+  JS_TEMPLATE_SOURCE_MODE,
+  JS_TEMPLATE_SUPPORTED_KINDS,
+  type JsTemplateKind,
+} from '../../constants';
 import { createJsTemplateBaseTemplate } from '../../shared/default-template';
 import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import {
   createJsTemplateRuntimeSourceBinding,
   isJsTemplateRuntimeSourceBinding,
-  JS_TEMPLATE_SOURCE_MODE,
   serializeJsTemplateRunJSPersistence,
-} from '../../shared/jsTemplateRunJSPersistence';
+} from '../../shared/jsTemplateSourceBinding';
 import type {
   JsTemplate,
   JsTemplateFileChange,

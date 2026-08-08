@@ -18,12 +18,11 @@ import {
 } from '@nocobase/client-v2';
 import { extractRunJSSettingsDefaults, normalizeJsTemplateSelection } from '@nocobase/runjs/settings';
 
-import { JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
+import { JS_TEMPLATE_SOURCE_MODE, JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
 import {
   createJsTemplateRuntimeSourceBinding,
-  JS_TEMPLATE_SOURCE_BINDING_TYPE,
-  JS_TEMPLATE_SOURCE_MODE,
-} from '../../shared/jsTemplateRunJSPersistence';
+  isJsTemplateRuntimeSourceBinding,
+} from '../../shared/jsTemplateSourceBinding';
 import type {
   JsTemplateKind,
   JsTemplateArtifact,
@@ -34,7 +33,10 @@ import type {
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { listSelectableJsTemplates, unwrapResourceResponse } from '../api/jsTemplatesRequests';
-import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
+import {
+  JS_TEMPLATE_RUNTIME_CONTEXT_KEY,
+  JS_TEMPLATE_SOURCE_MENU_GROUP_KEY,
+} from '../jsTemplateRunJSIntegrationContract';
 import {
   getJsTemplateSettingsDescriptorCache,
   type JsTemplateSettingsDescriptorCache,
@@ -102,7 +104,7 @@ function createRunJSResolver(api: ApiClientLike, transport: RuntimeTransport): J
         settings: runtime.settings,
         context: {
           ...(input.context || {}),
-          [JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.runtimeContextKey]: {
+          [JS_TEMPLATE_RUNTIME_CONTEXT_KEY]: {
             templateId: runtime.templateId,
             entryPath: runtime.entryPath,
             artifactHash: runtime.artifactHash,
@@ -521,7 +523,7 @@ async function listSourceMenuItems(
 
   return [
     {
-      key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMenuGroupKey,
+      key: JS_TEMPLATE_SOURCE_MENU_GROUP_KEY,
       label: t('JS Templates'),
       searchText: [t('JS Templates'), ...selectableTemplates.map((template) => getTemplateLabel(template))].join(' '),
       disabled: true,
@@ -618,23 +620,3 @@ function toSupportedKind(value: string | undefined): JsTemplateKind | undefined 
 
   return undefined;
 }
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function isJsTemplateRuntimeSourceBinding(value: unknown): value is JsTemplateRuntimeSourceBinding {
-  return (
-    isRecord(value) &&
-    value.type === JS_TEMPLATE_SOURCE_BINDING_TYPE &&
-    typeof value.projectId === 'string' &&
-    value.projectId.trim().length > 0 &&
-    typeof value.templateId === 'string' &&
-    value.templateId.trim().length > 0 &&
-    typeof value.kind === 'string' &&
-    (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(value.kind) &&
-    Object.keys(value).every((key) => JS_TEMPLATE_SOURCE_BINDING_KEYS.has(key))
-  );
-}
-
-const JS_TEMPLATE_SOURCE_BINDING_KEYS = new Set(['type', 'projectId', 'templateId', 'kind']);

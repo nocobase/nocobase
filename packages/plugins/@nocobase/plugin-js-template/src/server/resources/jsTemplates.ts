@@ -10,9 +10,8 @@
 import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '../vsc-file/public-api';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
-import { JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';
 import { JsTemplateError } from '../../shared/errors';
-import { JS_TEMPLATE_SOURCE_BINDING_TYPE } from '../../shared/jsTemplateRunJSPersistence';
 import type {
   SaveAsJsTemplateInput,
   DetachJsTemplateToInlineInput,

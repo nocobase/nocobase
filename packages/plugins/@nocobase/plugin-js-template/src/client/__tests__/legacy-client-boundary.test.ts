@@ -33,11 +33,14 @@ import {
 
 import { JSPageJsTemplateSourceField } from '../../client-v2/components/JSBlockJsTemplateSourceField';
 import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';
+import {
+  JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+  JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
+} from '../../client-v2/jsTemplateRunJSIntegrationContract';
 import pluginEnUS from '../../locale/en-US.json';
 import pluginZhCN from '../../locale/zh-CN.json';
 import PluginJsTemplateClient, {
   JS_TEMPLATE_SETTINGS_KEY,
-  JS_TEMPLATE_V2_UI_CONTRACT,
   JsTemplateCatalogPage,
   JsTemplateSourceProjectsPage,
   PluginJsTemplateClient as NamedPluginJsTemplateClient,
@@ -130,10 +133,12 @@ describe('plugin-js-template legacy client boundary', () => {
     expect(add).toHaveBeenCalledTimes(3);
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeTruthy();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
-    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('js-template-runjs-value');
+    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain(
+      JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+    );
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(registerToolbar).toHaveBeenCalledWith(
-      expect.objectContaining({ key: '@nocobase/plugin-js-template/save-as-js-template' }),
+      expect.objectContaining({ key: JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY }),
     );
     expect(registerComponents).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -194,7 +199,7 @@ describe('plugin-js-template legacy client boundary', () => {
         .sort((left, right) => left[1].sort - right[1].sort)
         .map(([key]) => key),
     ).toEqual([`${JS_TEMPLATE_SETTINGS_KEY}.templates`, `${JS_TEMPLATE_SETTINGS_KEY}.source-projects`]);
-    expect(pluginEnUS[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe('JS Templates');
-    expect(pluginZhCN[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe(JS_TEMPLATE_V2_UI_CONTRACT.productNameZhCN);
+    expect(pluginEnUS['JS Templates']).toBe('JS Templates');
+    expect(pluginZhCN['JS Templates']).toBe('JS 模板');
   });
 });

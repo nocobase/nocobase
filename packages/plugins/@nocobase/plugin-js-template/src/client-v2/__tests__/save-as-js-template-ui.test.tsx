@@ -18,26 +18,26 @@ import {
   createSaveAsJsTemplateContribution,
   SaveAsJsTemplate,
 } from '../components/SaveAsJsTemplate';
+import { JS_TEMPLATE_KIND_BY_MODEL_USE } from '../jsTemplateRunJSIntegrationContract';
+
+const KIND_NAME_LABELS = {
+  'js-block': 'JS Block name',
+  'js-page': 'JS page name',
+  'js-action': 'JS Action name',
+  'js-field': 'JS Field name',
+  'js-item': 'JS Item name',
+} as const;
 
 vi.mock('../locale', () => ({
   useT: () => (key: string) => key,
 }));
 
 describe('SaveAsJsTemplate', () => {
-  it.each([
-    ['JSBlockModel', 'JS Block name'],
-    ['JSPageModel', 'JS page name'],
-    ['JSActionModel', 'JS Action name'],
-    ['JSRecordActionModel', 'JS Action name'],
-    ['JSCollectionActionModel', 'JS Action name'],
-    ['JSFormActionModel', 'JS Action name'],
-    ['FilterFormJSActionModel', 'JS Action name'],
-    ['JSFieldModel', 'JS Field name'],
-    ['JSEditableFieldModel', 'JS Field name'],
-    ['JSColumnModel', 'JS Field name'],
-    ['JSItemModel', 'JS Item name'],
-    ['JSItemActionModel', 'JS Item name'],
-  ])('uses the surface-specific name label for %s', async (modelUse, expectedLabel) => {
+  it.each(
+    Object.entries(JS_TEMPLATE_KIND_BY_MODEL_USE).map(
+      ([modelUse, kind]) => [modelUse, KIND_NAME_LABELS[kind]] as const,
+    ),
+  )('uses the surface-specific name label for %s', async (modelUse, expectedLabel) => {
     const context = createContext(vi.fn());
     context.workspace.source.metadata = { modelUse };
     const request = vi.fn(async () => ({ data: { data: [] } }));

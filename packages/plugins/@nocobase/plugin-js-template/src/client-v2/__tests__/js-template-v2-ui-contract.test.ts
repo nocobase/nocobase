@@ -16,7 +16,7 @@ import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE } from '../../
 import pluginEnUS from '../../locale/en-US.json';
 import pluginZhCN from '../../locale/zh-CN.json';
 import { DEFAULT_JS_PAGE_TEMPLATE_FILES } from '../../shared/default-template-js-pages';
-import { isJsTemplateRuntimeSourceBinding } from '../../shared/jsTemplateRunJSPersistence';
+import { isJsTemplateRuntimeSourceBinding } from '../../shared/jsTemplateSourceBinding';
 import {
   JSActionJsTemplateSourceField,
   JSBlockJsTemplateSourceField,
@@ -45,7 +45,6 @@ import {
   useJsTemplateProject as exportedUseJsTemplateProject,
   useJsTemplateSync as exportedUseJsTemplateSync,
 } from '../index';
-import { JS_TEMPLATE_V2_UI_CONTRACT } from '../jsTemplateV2UIContract';
 import DirectJsTemplateCatalogPage from '../pages/JsTemplateCatalogPage';
 import DirectJsTemplateSourceProjectsPage from '../pages/JsTemplateSourceProjectsPage';
 import DirectJsTemplateSourceProjectWorkspacePage from '../pages/JsTemplateSourceProjectWorkspacePage';
@@ -54,8 +53,6 @@ import { PluginJsTemplateClientV2 as DirectPluginJsTemplateClientV2 } from '../p
 const pluginCanonicalTranslations = {
   'Compiling JS Template': '正在编译 JS 模板',
   'Connect this Source Project to a Git repository to sync its code.': '将此源码项目连接到 Git 仓库以同步代码。',
-  'Copy selected JS Template code': '复制所选 JS 模板代码',
-  'Copying JS Template code': '正在复制 JS 模板代码',
   'Create JS Template': '创建 JS 模板',
   'Create new Source Project': '创建新源码项目',
   'Create Source Project': '创建源码项目',
@@ -86,8 +83,6 @@ const pluginCanonicalTranslations = {
   'This JS Template is used in {{count}} locations; after save those locations immediately use the new code.':
     '此 JS 模板用于 {{count}} 个位置；保存后这些位置会立即使用新代码。',
   'Usage locations': '使用位置',
-  'You can copy the selected JS Template code into the inline editor, or keep the existing inline code.':
-    '你可以将所选 JS 模板代码复制到内联编辑器，也可以保留现有内联代码。',
 } as const;
 
 const coreCanonicalTranslations = {
@@ -161,7 +156,8 @@ describe('JS Templates client-v2 UI contract', () => {
       expect(coreEnUS[key]).toBe(key);
       expect(coreZhCN[key]).toBe(zhCN);
     }
-    expect(pluginZhCN[JS_TEMPLATE_V2_UI_CONTRACT.productNameKey]).toBe(JS_TEMPLATE_V2_UI_CONTRACT.productNameZhCN);
+    expect(pluginEnUS['JS Templates']).toBe('JS Templates');
+    expect(pluginZhCN['JS Templates']).toBe('JS 模板');
     const defaultJsPageSource = DEFAULT_JS_PAGE_TEMPLATE_FILES.map((file) => file.content).join('\n');
     expect(defaultJsPageSource).toContain('This page is rendered by a JS Template.');
   });

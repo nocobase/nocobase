@@ -11,7 +11,7 @@ import { ApplicationContext, validateRunJSSettings } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import type { Field } from '@formily/core';
 import { useField, useForm } from '@formily/react';
-import { Alert, Button, Modal, Select, Space, Typography } from 'antd';
+import { Alert, Button, Select, Space, Typography } from 'antd';
 import React from 'react';
 import {
   extractRunJSSettingsDefaults,
@@ -21,6 +21,10 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
+import {
+  createJsTemplateRuntimeSourceBinding,
+  isJsTemplateRuntimeSourceBinding,
+} from '../../shared/jsTemplateSourceBinding';
 import type {
   JsTemplateKind,
   JsTemplateRuntimeSourceBinding,
@@ -28,7 +32,6 @@ import type {
 } from '../../shared/types';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { listSelectableJsTemplates } from '../api/jsTemplatesRequests';
-import { resolveJsTemplateRuntimeSource } from '../resolvers/JsTemplateRunJSResolver';
 
 const INLINE_SOURCE_MODE = 'inline';
 const JS_TEMPLATE_SOURCE_MODE = 'js-template';
@@ -48,8 +51,6 @@ type ApplicationWithApi = {
 };
 
 type JSBlockRunJSFormValues = {
-  code?: string;
-  version?: string;
   sourceMode?: string;
   sourceBinding?: JsTemplateRuntimeSourceBinding;
   settings?: Record<string, unknown>;
@@ -86,21 +87,6 @@ function getSettingsSchemaPropertyNames(schema: unknown): Set<string> | null {
   }
   return new Set(Object.keys(schema.properties));
 }
-
-function isJsTemplateBinding(value: unknown, expectedKind: JsTemplateKind): value is JsTemplateRuntimeSourceBinding {
-  return (
-    isRecord(value) &&
-    value.type === 'js-template-entry' &&
-    typeof value.projectId === 'string' &&
-    value.projectId.trim().length > 0 &&
-    typeof value.templateId === 'string' &&
-    value.templateId.trim().length > 0 &&
-    value.kind === expectedKind &&
-    Object.keys(value).every((key) => JS_TEMPLATE_SOURCE_BINDING_KEYS.has(key))
-  );
-}
-
-const JS_TEMPLATE_SOURCE_BINDING_KEYS = new Set(['type', 'projectId', 'templateId', 'kind']);
 
 function setFieldErrors(field: Field, errors: string[]) {
   const target = field as Field & {
@@ -160,7 +146,6 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
   const api = ctx?.api || app?.apiClient;
   const [, rerender] = React.useReducer((count: number) => count + 1, 0);
   const formSignatureRef = React.useRef(serializeSourceFormValues(form.values as JSBlockRunJSFormValues));
-  const [copying, setCopying] = React.useState(false);
   const [sourceTemplates, setSourceTemplates] = React.useState<JsTemplateSelectableTemplateSummary[]>([]);
   const [sourceTemplatesLoading, setSourceTemplatesLoading] = React.useState(false);
   const [sourceTemplatesError, setSourceTemplatesError] = React.useState<string | null>(null);
@@ -170,9 +155,12 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
   const rendersSourceModeControl = typeof value === 'string' || getFieldPath(field) === 'sourceMode';
   const sourceMode =
     (rendersSourceModeControl && typeof value === 'string' ? value : values.sourceMode) || INLINE_SOURCE_MODE;
-  const sourceBindingFromValue = isJsTemplateBinding(value, kind) ? value : undefined;
+  const sourceBindingFromValue = isJsTemplateRuntimeSourceBinding(value) && value.kind === kind ? value : undefined;
   const sourceBinding =
-    sourceBindingFromValue || (isJsTemplateBinding(values.sourceBinding, kind) ? values.sourceBinding : undefined);
+    sourceBindingFromValue ||
+    (isJsTemplateRuntimeSourceBinding(values.sourceBinding) && values.sourceBinding.kind === kind
+      ? values.sourceBinding
+      : undefined);
   const hasSourceBinding = Boolean(sourceBinding);
   const selectedTemplate = React.useMemo(
     () =>
@@ -308,40 +296,12 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
     onChange?.(nextMode);
   };
 
-  const handleModeChange = (nextMode: string) => {
-    if (nextMode === sourceMode) {
-      return;
-    }
-
-    if (nextMode !== INLINE_SOURCE_MODE) {
-      setSourceMode(nextMode);
-      return;
-    }
-
-    if (!sourceBinding) {
-      setSourceMode(INLINE_SOURCE_MODE);
-      return;
-    }
-
-    Modal.confirm({
-      title: t('Switch to inline code?'),
-      content: t(
-        'You can copy the selected JS Template code into the inline editor, or keep the existing inline code.',
-      ),
-      okText: t('Copy code'),
-      cancelText: t('Keep existing code'),
-      onOk: async () => {
-        await copyJsTemplateToInline();
-        setSourceMode(INLINE_SOURCE_MODE);
-      },
-      onCancel: () => {
-        setSourceMode(INLINE_SOURCE_MODE);
-      },
-    });
-  };
-
   const handleSourceTemplateSelect = (template: JsTemplateSelectableTemplateSummary) => {
-    const nextBinding = createJsTemplateRuntimeSourceBinding(template);
+    const nextBinding = createJsTemplateRuntimeSourceBinding({
+      projectId: template.projectId,
+      templateId: template.id,
+      kind: template.kind,
+    });
     const defaults = extractRunJSSettingsDefaults(template.settingsSchema);
     form.setValuesIn('sourceMode', JS_TEMPLATE_SOURCE_MODE);
     form.setValuesIn('sourceBinding', nextBinding);
@@ -364,7 +324,7 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
 
   const handleSourceSelectChange = (nextValue: string) => {
     if (nextValue === INLINE_SOURCE_SELECT_VALUE) {
-      handleModeChange(INLINE_SOURCE_MODE);
+      setSourceMode(INLINE_SOURCE_MODE);
       return;
     }
 
@@ -373,25 +333,6 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
       return;
     }
     handleSourceTemplateSelect(template);
-  };
-
-  const copyJsTemplateToInline = async () => {
-    if (!sourceBinding || !api) {
-      return;
-    }
-
-    setCopying(true);
-    try {
-      const resolved = await resolveJsTemplateRuntimeSource(api, {
-        sourceMode: JS_TEMPLATE_SOURCE_MODE,
-        sourceBinding: { ...sourceBinding },
-        settings: values.settings || {},
-      });
-      form.setValuesIn('code', resolved.code);
-      form.setValuesIn('version', resolved.runtimeVersion || 'v2');
-    } finally {
-      setCopying(false);
-    }
   };
 
   const sourceSelectValue =
@@ -470,7 +411,6 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
       ) : (
         <Alert type="info" showIcon message={t('Select a JS Template to configure settings')} />
       )}
-      {copying ? <Typography.Text type="secondary">{t('Copying JS Template code')}</Typography.Text> : null}
     </Space>
   );
 
@@ -518,18 +458,7 @@ export const JSBlockJsTemplateSourceField: React.FC<JSBlockJsTemplateSourceField
       />
       <div id={descriptionId}>
         {sourceTemplatesError ? <Alert type="error" showIcon message={sourceTemplatesError} /> : null}
-        {sourceMode === JS_TEMPLATE_SOURCE_MODE ? (
-          jsTemplateBinding
-        ) : (
-          <Button
-            disabled={disabled || !sourceBinding}
-            loading={copying}
-            onClick={copyJsTemplateToInline}
-            style={{ width: 'fit-content' }}
-          >
-            {t('Copy selected JS Template code')}
-          </Button>
-        )}
+        {sourceMode === JS_TEMPLATE_SOURCE_MODE ? jsTemplateBinding : null}
       </div>
     </Space>
   );
@@ -550,17 +479,6 @@ export const JSItemJsTemplateSourceField: React.FC<Omit<JSBlockJsTemplateSourceF
 export const JSPageJsTemplateSourceField: React.FC<Omit<JSBlockJsTemplateSourceFieldProps, 'kind'>> = (props) => (
   <JSBlockJsTemplateSourceField {...props} kind="js-page" />
 );
-
-function createJsTemplateRuntimeSourceBinding(
-  template: JsTemplateSelectableTemplateSummary,
-): JsTemplateRuntimeSourceBinding {
-  return {
-    type: 'js-template-entry',
-    projectId: template.projectId,
-    templateId: template.id,
-    kind: template.kind,
-  };
-}
 
 function getJsTemplateLabel(template: JsTemplateSelectableTemplateSummary): string {
   return template.templateName || template.id;

@@ -12,9 +12,14 @@ import type { Database, Filter, Model } from '@nocobase/database';
 import { stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
 
-import { JS_TEMPLATE_COLLECTIONS, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';
+import {
+  JS_TEMPLATE_COLLECTIONS,
+  JS_TEMPLATE_SOURCE_BINDING_TYPE,
+  JS_TEMPLATE_SOURCE_MODE,
+  JS_TEMPLATE_SUPPORTED_KINDS,
+  type JsTemplateKind,
+} from '../../constants';
 import { JsTemplateError } from '../../shared/errors';
-import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
 import type {
   JsTemplate,
   JsTemplateArtifact,

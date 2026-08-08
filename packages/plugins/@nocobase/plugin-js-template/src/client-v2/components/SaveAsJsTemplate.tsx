@@ -17,10 +17,14 @@ import {
   createJsTemplateRuntimeSourceBinding,
   isJsTemplateRuntimeSourceBinding,
   serializeJsTemplateRunJSPersistence,
-} from '../../shared/jsTemplateRunJSPersistence';
+} from '../../shared/jsTemplateSourceBinding';
 import type { JsTemplateKind, SaveAsJsTemplateOriginBinding, JsTemplateProject } from '../../shared/types';
 import { type ApiClientLike, listJsTemplateProjects, saveAsJsTemplate } from '../api/jsTemplatesRequests';
-import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
+import {
+  JS_TEMPLATE_KIND_BY_MODEL_USE,
+  JS_TEMPLATE_SOURCE_METADATA_KIND_KEY,
+  JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
+} from '../jsTemplateRunJSIntegrationContract';
 import { useT } from '../locale';
 
 type SourceProjectDestinationType = 'existing' | 'new';
@@ -48,28 +52,13 @@ const KIND_NAME_LABELS: Record<JsTemplateKind, string> = {
   'js-item': 'JS Item name',
 };
 
-const MODEL_USE_KIND = new Map<string, JsTemplateKind>([
-  ['JSBlockModel', 'js-block'],
-  ['JSPageModel', 'js-page'],
-  ['JSFieldModel', 'js-field'],
-  ['JSEditableFieldModel', 'js-field'],
-  ['JSColumnModel', 'js-field'],
-  ['JSActionModel', 'js-action'],
-  ['JSRecordActionModel', 'js-action'],
-  ['JSCollectionActionModel', 'js-action'],
-  ['JSFormActionModel', 'js-action'],
-  ['FilterFormJSActionModel', 'js-action'],
-  ['JSItemModel', 'js-item'],
-  ['JSItemActionModel', 'js-item'],
-]);
-
 export function createSaveAsJsTemplateContribution(api: ApiClientLike): RunJSStudioToolbarContribution {
   const Contribution: React.FC<{ context: RunJSStudioToolbarContext }> = ({ context }) => (
     <SaveAsJsTemplate api={api} context={context} />
   );
 
   return {
-    key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.toolbarContributionKey,
+    key: JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
     order: 50,
     isVisible: (context) =>
       !context.readOnly && context.workspace.permissions.canWrite && Boolean(resolveJsTemplateKind(context)),
@@ -230,12 +219,11 @@ function resolveJsTemplateKind(context: RunJSStudioToolbarContext): JsTemplateKi
     return null;
   }
   const modelUse = context.workspace.source.metadata?.modelUse;
-  const serverKind = typeof modelUse === 'string' ? MODEL_USE_KIND.get(modelUse) : undefined;
+  const serverKind = typeof modelUse === 'string' ? JS_TEMPLATE_KIND_BY_MODEL_USE[modelUse] : undefined;
   if (serverKind) {
     return serverKind;
   }
-  const declaredKind =
-    context.sourceMetadata?.[JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMetadataKindKey];
+  const declaredKind = context.sourceMetadata?.[JS_TEMPLATE_SOURCE_METADATA_KIND_KEY];
   if (isJsTemplateKind(declaredKind)) {
     return declaredKind;
   }

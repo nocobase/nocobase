@@ -42,6 +42,11 @@ import {
   JSItemJsTemplateSourceField,
   JSPageJsTemplateSourceField,
 } from '../components/JSBlockJsTemplateSourceField';
+import {
+  JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+  JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
+  JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
+} from '../jsTemplateRunJSIntegrationContract';
 import PluginJsTemplateClientV2, { PluginJsTemplateClientV2 as NamedPluginJsTemplateClientV2 } from '../plugin';
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
@@ -157,7 +162,7 @@ describe('PluginJsTemplateClientV2', () => {
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       '@nocobase/runjs-workspace/runjs-studio',
     ]);
-    expect(getToolbarContributionKeys()).not.toContain('@nocobase/plugin-js-template/save-as-js-template');
+    expect(getToolbarContributionKeys()).not.toContain(JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY);
     expectJsTemplateRegistrations(0);
 
     await plugin.load();
@@ -192,7 +197,7 @@ describe('PluginJsTemplateClientV2', () => {
     let pluginB: PluginJsTemplateClientV2 | undefined;
 
     expectJsTemplateRegistrations(0);
-    expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(false);
+    expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(false);
 
     try {
       await appA.load();
@@ -204,7 +209,7 @@ describe('PluginJsTemplateClientV2', () => {
       expect(resolverA).not.toBeNull();
       expect(editorProviderA).toBeDefined();
       expect(toolbarContributionA).toBeDefined();
-      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(true);
+      expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(true);
 
       await appB.load();
       pluginB = appB.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2;
@@ -227,7 +232,7 @@ describe('PluginJsTemplateClientV2', () => {
       expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBe(resolverB);
       expect(getJsTemplateEditorProvider()).toBe(editorProviderB);
       expect(getJsTemplateToolbarContribution()).toBe(toolbarContributionB);
-      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(true);
+      expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(true);
       expect(appB.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
         JSPageJsTemplateSourceField,
       );
@@ -235,7 +240,7 @@ describe('PluginJsTemplateClientV2', () => {
       pluginB.dispose();
 
       expectJsTemplateRegistrations(0);
-      expect(ActionGroupModel.menuItemProviders.has(`${NAMESPACE}/model-menus`)).toBe(false);
+      expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(false);
       expect(appB.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
         JSPageSourceModeField,
       );
@@ -383,11 +388,11 @@ describe('PluginJsTemplateClientV2', () => {
 function expectJsTemplateRegistrations(count: number) {
   expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(count);
   expect(
-    RunJSEditorRegistry.getProviders().filter((provider) => provider.key === 'js-template-runjs-value'),
+    RunJSEditorRegistry.getProviders().filter((provider) => provider.key === JS_TEMPLATE_EDITOR_PROVIDER_KEY),
   ).toHaveLength(count);
-  expect(
-    getToolbarContributionKeys().filter((key) => key === '@nocobase/plugin-js-template/save-as-js-template'),
-  ).toHaveLength(count);
+  expect(getToolbarContributionKeys().filter((key) => key === JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY)).toHaveLength(
+    count,
+  );
 }
 
 function getToolbarContributionKeys(): string[] {
@@ -404,7 +409,7 @@ function getToolbarContributionKeys(): string[] {
 }
 
 function getJsTemplateEditorProvider() {
-  return RunJSEditorRegistry.getProviders().find((provider) => provider.key === 'js-template-runjs-value');
+  return RunJSEditorRegistry.getProviders().find((provider) => provider.key === JS_TEMPLATE_EDITOR_PROVIDER_KEY);
 }
 
 function getJsTemplateToolbarContribution() {
@@ -417,5 +422,5 @@ function getJsTemplateToolbarContribution() {
       },
       readOnly: false,
     } as unknown as RunJSStudioToolbarContext)
-    .find((contribution) => contribution.key === '@nocobase/plugin-js-template/save-as-js-template');
+    .find((contribution) => contribution.key === JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY);
 }

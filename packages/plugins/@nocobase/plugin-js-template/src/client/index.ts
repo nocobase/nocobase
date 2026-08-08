@@ -14,16 +14,15 @@ export * from '../shared/catalogAuthoring';
 
 export { default as JsTemplateCatalogPage } from '../client-v2/pages/JsTemplateCatalogPage';
 export { default as JsTemplateSourceProjectsPage } from '../client-v2/pages/JsTemplateSourceProjectsPage';
-export { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
+export { JS_TEMPLATE_SETTINGS_KEY } from '../constants';
 
-import { NAMESPACE } from '../constants';
+import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from '../client-v2/jsTemplateRunJSIntegration';
 import JsTemplateCatalogPage from '../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../client-v2/pages/JsTemplateSourceProjectsPage';
-import { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from '../client-v2/jsTemplateV2UIContract';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
 
 export interface JsTemplateClientOptions {
@@ -112,20 +111,20 @@ export class PluginJsTemplateClient {
 
     const settingsOptions: ClientV1SettingsOptions = {
       icon: 'CodeOutlined',
-      title: translate(this.app, JS_TEMPLATE_V2_UI_CONTRACT.productNameKey),
-      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+      title: translate(this.app, 'JS Templates'),
+      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
     };
     this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
     this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.templates`, {
       title: translate(this.app, 'Templates'),
       Component: JsTemplateCatalogPage,
-      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       sort: 1,
     });
     this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, {
       title: translate(this.app, 'Source Projects'),
       Component: JsTemplateSourceProjectsPage,
-      aclSnippet: JS_TEMPLATE_V2_UI_CONTRACT.settings.aclSnippet,
+      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       sort: 2,
     });
     activeJsTemplateClientV1Instance = this;

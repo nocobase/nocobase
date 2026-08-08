@@ -12,7 +12,7 @@ import type { Database, Filter, Model } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
-import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
+import { JS_TEMPLATE_COLLECTIONS, JS_TEMPLATE_SOURCE_MODE } from '../../constants';
 import type {
   JsTemplateKind,
   JsTemplateUsageOwnerLocator,
@@ -31,8 +31,7 @@ import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import {
   createJsTemplateRuntimeSourceBinding,
   isJsTemplateRuntimeSourceBinding,
-  JS_TEMPLATE_SOURCE_MODE,
-} from '../../shared/jsTemplateRunJSPersistence';
+} from '../../shared/jsTemplateSourceBinding';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { JsTemplatePermissionService } from './JsTemplatePermissionService';
 import type { JsTemplateCanFunction } from './JsTemplatePermissionService';

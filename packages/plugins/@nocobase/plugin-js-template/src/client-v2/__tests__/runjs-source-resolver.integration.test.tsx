@@ -192,9 +192,8 @@ function registerSourceModeRoundTripTests() {
   // save-without-clearing-inline / keeps existing JS Block inline code... -> mounts the JS Block binding editor without mutating the snapshot.
   // save-without-clearing-inline / renders as a JS Block binding editor... -> mounts the JS Block binding editor without mutating the snapshot.
   // save-without-clearing-inline / keeps the complete JS Page inline snapshot... -> renders the binding-only editor without mutating the snapshot.
-  // mode-switch-copyback / requires confirmation and copies current runtime code... -> copies current runtime code when switching inline.
   // New owner: returning to the same external binding preserves the complete inline settings snapshot.
-  // New owners: resolve and artifact-copy failures each preserve the external binding and fallback snapshot.
+  // New owner: Inline remains authoritative when historical data still has a JS Template binding.
 
   const artifactHash = 'a'.repeat(64);
 
@@ -295,6 +294,7 @@ function registerSourceModeRoundTripTests() {
           entry: 'src/client/index.tsx',
         },
       });
+      expect(form.values.sourceBinding).toEqual(sourceBinding);
       expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:listSelectable' }));
       expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
     });
@@ -330,7 +330,6 @@ function registerSourceModeRoundTripTests() {
       await waitFor(() => expect(screen.getByText('Required settings are complete')).toBeTruthy());
       expect(screen.queryByText('title')).toBeNull();
       expect(screen.queryByText('Inline code')).toBeNull();
-      expect(screen.queryByText('Copy selected JS Template code')).toBeNull();
       expect(form.values).toEqual(originalValues);
     });
 
@@ -353,8 +352,21 @@ function registerSourceModeRoundTripTests() {
       await waitFor(() => expect(screen.getByText('Required settings are complete')).toBeTruthy());
       expect(screen.queryByText('title')).toBeNull();
       expect(screen.queryByText('Inline code')).toBeNull();
-      expect(screen.queryByText('Copy selected JS Template code')).toBeNull();
       expect(form.values).toEqual(originalValues);
+    });
+
+    it('keeps Inline authoritative when historical data still has a JS Template binding', async () => {
+      const form = createRunJSForm({ sourceMode: 'inline' });
+      const originalValues = cloneValues(form.values);
+
+      renderSourceModeField(form);
+      await waitFor(() =>
+        expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:listSelectable' })),
+      );
+
+      expect(screen.getByText('Inline code')).toBeInTheDocument();
+      expect(form.values).toEqual(originalValues);
+      expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
     });
 
     it('keeps detach-to-inline out of the source selector so the CAS-protected editor action remains canonical', async () => {

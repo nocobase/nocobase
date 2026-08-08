@@ -10,12 +10,11 @@
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 
-import { JS_TEMPLATE_ACL_SNIPPET } from '../constants';
+import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY } from '../constants';
 import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from './jsTemplateRunJSIntegration';
-import { JS_TEMPLATE_SETTINGS_KEY, JS_TEMPLATE_V2_UI_CONTRACT } from './jsTemplateV2UIContract';
 import { registerJsTemplateRuntimeAuthSession } from './resolvers/JsTemplateRuntimeCacheRegistry';
 
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
@@ -39,7 +38,7 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
     this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient));
     activeJsTemplateClientV2Instance = this;
 
-    const title = this.t(JS_TEMPLATE_V2_UI_CONTRACT.productNameKey);
+    const title = this.t('JS Templates');
 
     this.pluginSettingsManager.addMenuItem({
       key: JS_TEMPLATE_SETTINGS_KEY,

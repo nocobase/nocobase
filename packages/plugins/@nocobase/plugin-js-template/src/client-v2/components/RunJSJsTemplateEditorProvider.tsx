@@ -24,15 +24,15 @@ import {
 import { Alert, Button, Flex, Space } from 'antd';
 import React from 'react';
 
-import { JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
-import { JS_TEMPLATE_SOURCE_MODE } from '../../shared/jsTemplateRunJSPersistence';
+import { JS_TEMPLATE_SOURCE_MODE, JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
+import { isJsTemplateRuntimeSourceBinding } from '../../shared/jsTemplateSourceBinding';
 import type { CompiledJsTemplateArtifact, JsTemplateKind, JsTemplateRuntimeSourceBinding } from '../../shared/types';
 import { detachJsTemplateToInline, getJsTemplate, type ApiClientLike } from '../api/jsTemplatesRequests';
-import { JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT } from '../jsTemplateRunJSIntegrationContract';
 import {
-  isJsTemplateRuntimeSourceBinding,
-  type JsTemplateRunJSSourceResolver,
-} from '../resolvers/JsTemplateRunJSResolver';
+  JS_TEMPLATE_EDITOR_PROVIDER_KEY,
+  JS_TEMPLATE_SOURCE_METADATA_KIND_KEY,
+} from '../jsTemplateRunJSIntegrationContract';
+import type { JsTemplateRunJSSourceResolver } from '../resolvers/JsTemplateRunJSResolver';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
 import JsTemplateSourceProjectWorkspacePage, {
@@ -444,7 +444,7 @@ const InlineJsTemplateWorkspaceEditor: React.FC<RunJSEditorProviderRenderProps> 
 
 export function createJsTemplateRunJSEditorProvider(): RunJSEditorProvider {
   return {
-    key: JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.editorProviderKey,
+    key: JS_TEMPLATE_EDITOR_PROVIDER_KEY,
     priority: 100,
     canHandle(props) {
       const locator = props.sourceLocator ?? props.locator;
@@ -475,7 +475,7 @@ function getJsTemplateKind(value: unknown): JsTemplateKind | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
-  const kind = value[JS_TEMPLATE_RUNJS_FLOW_SURFACES_INTEGRATION_CONTRACT.sourceMetadataKindKey];
+  const kind = value[JS_TEMPLATE_SOURCE_METADATA_KIND_KEY];
   return typeof kind === 'string' && (JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(kind)
     ? (kind as JsTemplateKind)
     : undefined;
