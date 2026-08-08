@@ -27,6 +27,7 @@ describe('@nocobase/runjs package exports', () => {
         './compiler/build-identity',
         './compiler/loader',
         './compiler/portable',
+        './compiler/static-module-references',
         './package.json',
         './server',
         './settings',
@@ -58,5 +59,19 @@ describe('@nocobase/runjs package exports', () => {
       './lib/compiler/build-identity.d.ts',
     ]);
     expect(fs.existsSync(path.join(packageRoot, 'src/compiler/build-identity.ts'))).toBe(true);
+  });
+
+  it('exposes static module reference analysis without loading the compiler entry', () => {
+    const staticReferencesExport = packageJson.exports['./compiler/static-module-references'];
+
+    expect(staticReferencesExport).toEqual({
+      types: './lib/compiler/static-module-references.d.ts',
+      import: './lib/compiler/static-module-references.js',
+      require: './lib/compiler/static-module-references.js',
+    });
+    expect(packageJson.typesVersions?.['*']?.['compiler/static-module-references']).toEqual([
+      './lib/compiler/static-module-references.d.ts',
+    ]);
+    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/static-module-references.ts'))).toBe(true);
   });
 });

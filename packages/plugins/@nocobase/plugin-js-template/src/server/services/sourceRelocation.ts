@@ -8,7 +8,10 @@
  */
 
 import { posix as pathPosix } from 'path';
-import { collectStaticModuleReferences, type StaticModuleReference } from '@nocobase/runjs/compiler';
+import {
+  collectStaticModuleReferences,
+  type StaticModuleReference,
+} from '@nocobase/runjs/compiler/static-module-references';
 import ts from 'typescript';
 
 import { JsTemplateError } from '../../shared/errors';

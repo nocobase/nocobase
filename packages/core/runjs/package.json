@@ -14,6 +14,9 @@
       "compiler/portable": [
         "./lib/compiler/portable.d.ts"
       ],
+      "compiler/static-module-references": [
+        "./lib/compiler/static-module-references.d.ts"
+      ],
       "server": [
         "./lib/server.d.ts"
       ]
@@ -45,6 +48,11 @@
       "types": "./lib/compiler/portable.d.ts",
       "import": "./lib/compiler/portable.js",
       "require": "./lib/compiler/portable.js"
+    },
+    "./compiler/static-module-references": {
+      "types": "./lib/compiler/static-module-references.d.ts",
+      "import": "./lib/compiler/static-module-references.js",
+      "require": "./lib/compiler/static-module-references.js"
     },
     "./settings": {
       "types": "./lib/settings/index.d.ts",
