@@ -492,7 +492,7 @@ function invalidJobState(message: string): JsTemplateError {
 }
 
 function claimLost(): JsTemplateError {
-  return new JsTemplateError('JS_TEMPLATE_CREATE_FAILED', 'JS Template creation claim is no longer current', {
+  return new JsTemplateError('JS_TEMPLATE_CONFLICT', 'JS Template creation claim is no longer current', {
     status: 409,
   });
 }
