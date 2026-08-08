@@ -89,6 +89,16 @@ export type PortalSourceResult = {
   noopReason?: string;
 };
 
+type GitIdentity = {
+  name: string;
+  email: string;
+};
+
+const NOCOBASE_CLI_GIT_IDENTITY: GitIdentity = {
+  name: 'NocoBase CLI',
+  email: '314549027+nocobase-cli@users.noreply.github.com',
+};
+
 const portalSourceText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalSource.${key}`, values, { fallback });
 
@@ -320,6 +330,45 @@ async function runGit(args: string[], cwd?: string): Promise<{ stdout: string; s
     cwd,
     maxBuffer: 10 * 1024 * 1024,
   });
+}
+
+async function readGitConfigValue(cwd: string, key: 'user.name' | 'user.email'): Promise<string | undefined> {
+  try {
+    const result = await runGit(['config', '--get', key], cwd);
+    return trimValue(result.stdout) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isValidGitIdentity(identity: GitIdentity): boolean {
+  return (
+    !/[\r\n<>]/.test(identity.name) &&
+    !/[\r\n<>\s]/.test(identity.email) &&
+    identity.email.includes('@')
+  );
+}
+
+async function resolveLocalGitIdentity(cwd: string): Promise<GitIdentity | undefined> {
+  const [name, email] = await Promise.all([
+    readGitConfigValue(cwd, 'user.name'),
+    readGitConfigValue(cwd, 'user.email'),
+  ]);
+  if (!name || !email) {
+    return undefined;
+  }
+
+  const identity = { name, email };
+  if (!isValidGitIdentity(identity)) {
+    return undefined;
+  }
+  if (
+    identity.name === NOCOBASE_CLI_GIT_IDENTITY.name &&
+    identity.email === NOCOBASE_CLI_GIT_IDENTITY.email
+  ) {
+    return undefined;
+  }
+  return identity;
 }
 
 async function installPortalDependencies(params: {
@@ -673,6 +722,7 @@ async function pushGitPortalSource(params: {
   message?: string;
 }): Promise<string | undefined> {
   const git = assertGitSourceConfig(params.context);
+  const localIdentity = await resolveLocalGitIdentity(params.context.portalDir);
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-cli-portal-git-push-'));
   try {
     const repoDir = await cloneGitSource({
@@ -691,18 +741,23 @@ async function pushGitPortalSource(params: {
     if (!status.stdout.trim()) {
       return undefined;
     }
-    await runGit(
-      [
-        '-c',
-        'user.name=NocoBase CLI',
-        '-c',
-        'user.email=nocobase-cli@localhost',
-        'commit',
+    const commitIdentity = localIdentity ?? NOCOBASE_CLI_GIT_IDENTITY;
+    const commitArgs = [
+      '-c',
+      `user.name=${commitIdentity.name}`,
+      '-c',
+      `user.email=${commitIdentity.email}`,
+      'commit',
+      '-m',
+      trimValue(params.message) || `chore(portal): update ${params.context.portal}`,
+    ];
+    if (localIdentity) {
+      commitArgs.push(
         '-m',
-        trimValue(params.message) || `chore(portal): update ${params.context.portal}`,
-      ],
-      repoDir,
-    );
+        `Co-authored-by: ${NOCOBASE_CLI_GIT_IDENTITY.name} <${NOCOBASE_CLI_GIT_IDENTITY.email}>`,
+      );
+    }
+    await runGit(commitArgs, repoDir);
     await runGit(['push', 'origin', git.branch], repoDir);
     const revision = await runGit(['rev-parse', 'HEAD'], repoDir);
     return revision.stdout.trim();
