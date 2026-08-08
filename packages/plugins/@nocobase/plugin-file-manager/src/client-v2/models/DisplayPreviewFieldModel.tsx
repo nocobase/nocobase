@@ -97,7 +97,7 @@ const FilePreview = ({
   );
 };
 
-const Preview = (props) => {
+export const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const { t } = useTranslation();
   const [current, setCurrent] = React.useState(0);
@@ -138,7 +138,7 @@ const Preview = (props) => {
       let link: HTMLAnchorElement | undefined;
 
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, { cache: 'reload' });
 
         if (!response.ok) {
           throw new Error(`Download failed with status ${response.status}`);
@@ -161,8 +161,9 @@ const Preview = (props) => {
         }
 
         if (blobUrl) {
+          const urlToRevoke = blobUrl;
           setTimeout(() => {
-            URL.revokeObjectURL(blobUrl!);
+            URL.revokeObjectURL(urlToRevoke);
           }, DOWNLOAD_REVOKE_DELAY);
         }
       }
