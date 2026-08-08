@@ -15,6 +15,7 @@ import { commitHistoryDefaultLimit } from '../../shared/constants';
 import { VscError } from '../../shared/errors';
 import { sha256Hex } from '../../shared/hash';
 import { VscFileService } from '../services/VscFileService';
+import { clearVscFileTestData } from './helpers/clearVscFileTestData';
 
 describe('vsc-file repository and commit services', () => {
   let db: Database;
@@ -30,7 +31,7 @@ describe('vsc-file repository and commit services', () => {
   });
 
   beforeEach(async () => {
-    await db.sequelize.truncate({ cascade: true });
+    await clearVscFileTestData(db);
     service = new VscFileService(db);
   });
 

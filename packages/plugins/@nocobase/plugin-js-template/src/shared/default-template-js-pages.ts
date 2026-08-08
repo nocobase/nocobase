@@ -12,11 +12,10 @@ import type { JsTemplateTreeEntryInput } from './types';
 export const DEFAULT_JS_PAGE_TEMPLATE_FILES: readonly JsTemplateTreeEntryInput[] = [
   {
     path: 'src/client/js-pages/hello-page/index.tsx',
-    content: `import type { JSPageContext, RunJSContext } from '@nocobase/js-template-sdk/client';
-import type { Settings } from 'js-template:settings/client/js-page/hello-page';
+    content: `import type { Context } from 'js-template:settings/client/js-page/hello-page';
 import { getPageDetails } from './page-details';
 
-const pageContext: RunJSContext & JSPageContext<Settings> = ctx;
+const pageContext = ctx as typeof ctx & Context;
 const { Button, Card, Space, Typography } = ctx.libs.antd;
 const settings = pageContext.settings;
 const refresh = async () => {

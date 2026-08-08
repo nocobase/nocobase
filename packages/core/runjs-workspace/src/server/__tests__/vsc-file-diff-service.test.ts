@@ -16,6 +16,7 @@ import { sha256Hex } from '../../shared/hash';
 import { BlobService } from '../services/BlobService';
 import { DiffService, type FileDiffEntry, type FileDiffResult } from '../services/DiffService';
 import { VscFileService } from '../services/VscFileService';
+import { clearVscFileTestData } from './helpers/clearVscFileTestData';
 
 const persistedCollections = [
   'vscFileBlobs',
@@ -45,7 +46,7 @@ describe('vsc-file diff service', () => {
   });
 
   beforeEach(async () => {
-    await db.sequelize.truncate({ cascade: true });
+    await clearVscFileTestData(db);
     service = new VscFileService(db);
     blobService = new BlobService(db);
     diffService = new DiffService(db);

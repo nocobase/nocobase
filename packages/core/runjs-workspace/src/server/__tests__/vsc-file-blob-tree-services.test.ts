@@ -16,6 +16,7 @@ import { BlobService } from '../services/BlobService';
 import type { PreparedTree } from '../services/TreeService';
 import { TreeService } from '../services/TreeService';
 import { VscFileService } from '../services/VscFileService';
+import { clearVscFileTestData } from './helpers/clearVscFileTestData';
 
 describe('vsc-file blob and tree services', () => {
   let db: Database;
@@ -32,7 +33,7 @@ describe('vsc-file blob and tree services', () => {
   });
 
   beforeEach(async () => {
-    await db.sequelize.truncate({ cascade: true });
+    await clearVscFileTestData(db);
     blobService = new BlobService(db);
     treeService = new TreeService(db, blobService);
   });
