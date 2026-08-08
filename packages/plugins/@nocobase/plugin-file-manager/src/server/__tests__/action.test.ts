@@ -19,6 +19,8 @@ import { getDocumentRoot, normalizeLocalStoragePath } from '../storages/local';
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads' } = process.env;
 
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
+const ATTACHMENTS_UPLOAD_MODE_ENV = 'FILE_MANAGER_ATTACHMENTS_UPLOAD_MODE';
+const originalAttachmentsUploadMode = process.env[ATTACHMENTS_UPLOAD_MODE_ENV];
 
 function getStorageDestPath(storage) {
   return path.join(getDocumentRoot(storage), storage.path || '');
@@ -48,6 +50,7 @@ describe('action', () => {
   let defaultStorage;
 
   beforeEach(async () => {
+    delete process.env[ATTACHMENTS_UPLOAD_MODE_ENV];
     app = await getApp();
     agent = app.agent();
     db = app.db;
@@ -71,6 +74,62 @@ describe('action', () => {
 
   afterEach(async () => {
     await app.destroy();
+    if (originalAttachmentsUploadMode === undefined) {
+      delete process.env[ATTACHMENTS_UPLOAD_MODE_ENV];
+    } else {
+      process.env[ATTACHMENTS_UPLOAD_MODE_ENV] = originalAttachmentsUploadMode;
+    }
+  });
+
+  describe('attachments upload mode', () => {
+    function useCurrentRoles(roles: string[]) {
+      app.resourcer.use(
+        async (ctx, next) => {
+          ctx.state.currentRole = roles[0];
+          ctx.state.currentRoles = roles;
+          await next();
+        },
+        {
+          tag: 'setAttachmentsUploadTestRole',
+          after: 'auth',
+          before: 'createMiddleware',
+        },
+      );
+    }
+
+    it('should keep logged-in attachment uploads enabled when the mode is not configured', async () => {
+      useCurrentRoles(['member']);
+
+      const response = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should reject non-root attachment uploads in restricted mode', async () => {
+      process.env[ATTACHMENTS_UPLOAD_MODE_ENV] = 'restricted';
+      useCurrentRoles(['member']);
+      const attachmentCount = await AttachmentRepo.count();
+
+      const response = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
+
+      expect(response.status).toBe(403);
+      expect(await AttachmentRepo.count()).toBe(attachmentCount);
+    });
+
+    it('should allow root attachment uploads in restricted mode', async () => {
+      process.env[ATTACHMENTS_UPLOAD_MODE_ENV] = 'restricted';
+      useCurrentRoles(['root']);
+
+      const response = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+      });
+
+      expect(response.status).toBe(200);
+    });
   });
 
   describe('create / upload', () => {
