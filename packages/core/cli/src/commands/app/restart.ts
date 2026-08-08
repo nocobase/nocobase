@@ -19,7 +19,9 @@ import { formatAppUrl, resolveManagedAppApiBaseUrl, waitForAppReady } from '../.
 import { recreateSavedDockerApp } from '../../lib/app-managed-resources.js';
 import { resolveAppUrlFromApiBaseUrl } from '../env/shared.js';
 import { run } from '../../lib/run-npm.js';
+import { isCliManagedSourceApp, summarizePluginWorkspaceSync, syncPluginWorkspace } from '../../lib/plugin-workspace.js';
 import { announceTargetEnv, failTask, startTask, succeedTask } from '../../lib/ui.js';
+import { printInfo, printWarning } from '../../lib/ui.js';
 import { buildHookContext, resolveHookScriptPath, runHookScriptHook } from '../../lib/hook-script.js';
 
 function argvHasToken(argv: string[], tokens: string[]): boolean {
@@ -219,6 +221,25 @@ export default class AppRestart extends Command {
     }
 
     announceTargetEnv(runtime.envName);
+
+    if (runtime.kind === 'local' && isCliManagedSourceApp({ appPath: runtime.env.appPath, sourcePath: runtime.env.sourcePath })) {
+      try {
+        const syncResult = await syncPluginWorkspace({
+          appPath: runtime.env.appPath,
+          sourcePath: runtime.env.sourcePath,
+          mode: 'all',
+        });
+        const summary = summarizePluginWorkspaceSync(syncResult);
+        if (summary.length > 0) {
+          printInfo(`Plugin workspace synced: ${summary.join('; ')}`);
+        }
+        for (const warning of syncResult.warnings) {
+          printWarning(warning);
+        }
+      } catch (error: unknown) {
+        this.error(error instanceof Error ? error.message : String(error));
+      }
+    }
 
     if (shouldSyncLicensedPlugins) {
       try {

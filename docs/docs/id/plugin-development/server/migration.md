@@ -26,23 +26,24 @@ Waktu eksekusi Migration dibagi menjadi tiga jenis:
 
 ## Membuat File Migration
 
-File Migration ditempatkan di `src/server/migrations/*.ts` di direktori plugin. NocoBase menyediakan command `create-migration` untuk dengan cepat menggenerate file migration.
+File Migration ditempatkan di `src/server/migrations/*.ts` di direktori plugin. NocoBase CLI menyediakan command `nb scaffold migration` untuk dengan cepat menggenerate file migration.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Parameter Opsional
+Parameter
 
 | Parameter | Penjelasan |
 |------|------|
-| `--pkg <pkg>` | Menentukan nama paket plugin |
-| `--on [on]`  | Menentukan waktu eksekusi, opsional `beforeLoad`, `afterSync`, `afterLoad` |
+| `<name>` | Nama migration, wajib |
+| `--pkg <pkg>` | Menentukan nama paket plugin, wajib |
+| `--on <timing>` | Menentukan waktu eksekusi, opsional `beforeLoad`, `afterSync`, `afterLoad` |
 
 Contoh
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 Path file migration yang dihasilkan adalah sebagai berikut:
@@ -146,10 +147,10 @@ Selain property umum yang tercantum di atas, Migration juga menyediakan lebih ba
 
 ## Memicu Migration
 
-Eksekusi Migration dipicu oleh command `nocobase upgrade`:
+Eksekusi Migration dipicu oleh command upgrade:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 Saat upgrade, sistem akan menentukan urutan eksekusi berdasarkan tipe Migration dan `appVersion`.
@@ -204,6 +205,6 @@ Menggunakan Mock Server dapat dengan cepat mensimulasikan skenario upgrade, dan 
 - [Collections Tabel Data](./collections.md) — Definisi struktur tabel data yang sering perlu disesuaikan dalam Migration
 - [Database Operasi Database](./database.md) — API operasi data melalui `this.db` dalam Migration
 - [Plugin](./plugin.md) — Organisasi dan cara loading file Migration dalam plugin
-- [Command Command Line](./command.md) — Memicu migrasi melalui command `nocobase upgrade` dan `create-migration`
+- [Command Command Line](./command.md) — Memicu migrasi melalui command `nb app upgrade` dan `nb scaffold migration`
 - [Test Pengujian](./test.md) — Menggunakan Mock Server untuk menguji hasil eksekusi Migration
 - [Migration API](../../api/server/migration.md) — Referensi API lengkap class Migration

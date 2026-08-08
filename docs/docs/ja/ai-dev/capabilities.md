@@ -28,7 +28,20 @@ AI プラグイン開発の機能は [nocobase-plugin-development](https://githu
 
 - **NocoBase プラグインの作成または改修であることを AI に明確に伝え、プラグイン名を指定してください** ── 例えば「nocobase-plugin-development skill を使って NocoBase プラグインを開発してください。名前は @my-scope/plugin-rating です」のように指定します。プラグイン名を指定しないと、AI がどこにコードを生成すべきか判断できない場合があります。
 - **プロンプトで nocobase-plugin-development skill の使用を明示してください** ── 例えば「nocobase-plugin-development skill を使って NocoBase プラグインを開発してください……」のように指定します。これにより AI Agent が Skills の機能を直接読み取れるようになり、plan モードに入って Skills を無視してしまうことを防げます。
-- **NocoBase ソースコードリポジトリのルートディレクトリで AI Agent を実行してください** ── これにより AI がプロジェクト構造、依存関係、既存のプラグインを自動的に検出できます。ソースコードのルートディレクトリにいない場合は、AI Agent にリポジトリのパスを別途伝える必要があります。
+- **`nb init` で作成したプロジェクトルートディレクトリで AI Agent を実行してください** ── Git ソースでプロジェクトを作成すると、AI が NocoBase のコアソースコードを直接参照できるため、開発効果がより高くなります。プロジェクトルートディレクトリにいない場合は、AI Agent にプロジェクトのパスを別途伝える必要があります。
+
+`nb init` で作成されるプロジェクトのディレクトリ構造は次のとおりです（`<app-path>`）：
+
+```bash
+<app-path>/
+├── .nb/                  # CLI が現在の env のために保存するメタデータ
+├── source/               # アプリケーションソースコードプロジェクト（NocoBase コア + 内蔵プラグイン）
+├── storage/              # ランタイムデータディレクトリ
+├── plugins/              # プラグインソースコード（nb scaffold plugin で生成）
+└── .env                  # アプリケーション環境変数ファイル
+```
+
+以下のすべてのプロンプト例は、`<app-path>` で AI Agent を開いて実行することを前提としています。
 
 ## クイックインデックス
 
@@ -49,16 +62,16 @@ AI プラグイン開発の機能は [nocobase-plugin-development](https://githu
 
 AI は要件の説明に基づいて、フロントエンド・バックエンドのエントリファイル、型定義、基本設定を含む完全な NocoBase プラグインのディレクトリ構造を生成できます。
 
-プロンプト例：
+プロジェクトルートディレクトリ（`<app-path>`）で AI Agent を開き、プロンプトを送信してください：
 
 ```
 NocoBase プラグインを作成してください。プラグイン名は @my-scope/plugin-todo です。
 ```
 
-AI が `yarn pm create @my-scope/plugin-todo` を実行し、標準的なディレクトリ構造を生成します：
+AI が `nb scaffold plugin @my-scope/plugin-todo` を実行し、標準的なディレクトリ構造を生成します：
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

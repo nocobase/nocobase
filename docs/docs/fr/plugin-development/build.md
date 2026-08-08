@@ -1,44 +1,40 @@
 ---
 title: "Construction et packaging"
-description: "Construction et packaging de plugins NocoBase : yarn build, yarn nocobase tar, configuration personnalisée build.config.ts, packaging client avec Rsbuild, packaging serveur avec tsup."
-keywords: "construction de plugin,packaging de plugin,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+description: "Construction et packaging de plugins NocoBase : nb source build, configuration personnalisée build.config.ts, packaging client avec Rsbuild, packaging serveur avec tsup."
+keywords: "construction de plugin,packaging de plugin,nb source build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
 ---
 
 # Construction et packaging
 
-Une fois le développement du plugin terminé, vous devez passer par deux étapes — construction (compilation du code source) et packaging (génération d'un `.tar.gz`) — avant de pouvoir le distribuer à d'autres applications NocoBase.
+Une fois le développement du plugin terminé, vous devez passer par deux étapes — construction (compilation du code source) et packaging (génération d'un `.tgz`) — avant de pouvoir le distribuer à d'autres applications NocoBase.
 
 ## Construire le plugin
 
-La construction compile le code source TypeScript de `src/` en JavaScript : le code client est packagé par Rsbuild, et le code serveur par tsup :
+Exécutez la commande de construction dans le répertoire source (`<app-path>/source/`). La construction compile le code TypeScript de `src/` en JavaScript — le code client est empaqueté par Rsbuild, et le code serveur par tsup :
 
 ```bash
-yarn build @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello
 ```
 
-Les artefacts de build sont produits dans le répertoire `dist/` à la racine du plugin.
+Les artefacts de construction sont produits dans le répertoire `dist/` à la racine du plugin.
 
 :::tip Astuce
 
-Si le plugin a été créé dans le dépôt source, la première construction déclenchera une vérification de type sur l'ensemble du dépôt, ce qui peut prendre du temps. Veillez à ce que les dépendances soient installées et que le dépôt soit dans un état compilable.
+La première construction peut déclencher une vérification de type sur l'ensemble du dépôt, ce qui peut prendre du temps. Veillez à ce que les dépendances soient installées et que le dépôt soit dans un état compilable.
 
 :::
 
-## Packager le plugin
+## Empaqueter le plugin
 
-Le packaging compresse les artefacts de build en un fichier `.tar.gz`, pratique pour les téléverser dans d'autres environnements :
-
-```bash
-yarn nocobase tar @my-project/plugin-hello
-```
-
-Par défaut, le fichier de package est produit dans `storage/tar/@my-project/plugin-hello.tar.gz`.
-
-Vous pouvez également utiliser le paramètre `--tar` pour combiner construction et packaging en une seule étape :
+Exécutez également dans le répertoire source (`<app-path>/source/`). Le paramètre `--tar` permet de combiner construction et packaging en une seule étape, générant un fichier compressé `.tgz` :
 
 ```bash
-yarn build @my-project/plugin-hello --tar
+cd <app-path>/source
+nb source build @my-project/plugin-hello --tar
 ```
+
+Le fichier empaqueté est produit par défaut dans le répertoire `source/storage/tar/`. Une fois la construction terminée, la commande affiche le chemin complet du tarball.
 
 ## Téléverser dans une autre application NocoBase
 
@@ -46,7 +42,7 @@ Téléversez et décompressez le fichier `.tar.gz` dans le répertoire `./storag
 
 ### Activer le plugin par défaut
 
-Après le téléversement, le plugin n'est pas automatiquement activé — il apparaît dans le «Gestionnaire de plugins» et doit être activé manuellement. Si vous maintenez votre propre application NocoBase et souhaitez que le plugin soit activé par défaut avec l'application, vous pouvez utiliser la variable d'environnement `APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut) pour le contrôler. Consultez [Rendre le plugin préinstallé ou activé par défaut](./write-your-first-plugin.md#rendre-le-plugin-préinstallé-ou-activé-par-défaut-optionnel) pour plus de détails.
+Après le téléversement, le plugin n'est pas automatiquement activé — il apparaît dans le « Gestionnaire de plugins » et doit être activé manuellement. Si vous maintenez votre propre application NocoBase et souhaitez que le plugin soit activé par défaut avec l'application, vous pouvez utiliser la variable d'environnement `APPEND_PRESET_BUILT_IN_PLUGINS` (ajouter aux plugins intégrés par défaut) pour le contrôler. Consultez [Rendre le plugin préinstallé ou activé par défaut](./write-your-first-plugin.md#rendre-le-plugin-préinstallé-ou-activé-par-défaut-optionnel) pour plus de détails.
 
 ## Configuration de construction personnalisée
 
@@ -83,9 +79,9 @@ Quelques points clés :
 
 ## Liens connexes
 
-- [Écrire votre premier plugin](./write-your-first-plugin.md) — Création d'un plugin de zéro, incluant la chaîne complète construction/packaging
-- [Structure du projet](./project-structure.md) — Comprendre le rôle des répertoires `packages/plugins`, `storage/tar`, etc.
-- [Gestion des dépendances](./dependency-management.md) — Déclaration des dépendances de plugin et dépendances globales
-- [Vue d'ensemble du développement de plugins](./index.md) — Présentation générale du développement de plugin
-- [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) — Téléverser le fichier package dans l'environnement cible
-- [Variables d'environnement](../get-started/installation/env.md) — Configuration des variables d'environnement pour les plugins préinstallés et intégrés
+- [Écrire votre premier plugin](./write-your-first-plugin.md) — création d'un plugin de zéro, incluant la chaîne complète construction/packaging
+- [Structure du répertoire du projet](./project-structure.md) — comprendre le rôle des répertoires `plugins/`, `storage/tar`, etc.
+- [Gestion des dépendances](./dependency-management.md) — déclaration des dépendances de plugin et dépendances globales
+- [Présentation du développement de plugins](./index.md) — présentation générale du développement de plugins
+- [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) — téléverser le fichier package dans l'environnement cible
+- [Variables d'environnement](../get-started/installation/env.md) — configuration des variables d'environnement pour les plugins préinstallés et intégrés

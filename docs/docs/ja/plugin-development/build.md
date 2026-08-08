@@ -1,19 +1,20 @@
 ---
 title: "ビルドとパッケージング"
-description: "NocoBase プラグインのビルドとパッケージング：yarn build、yarn nocobase tar、build.config.ts カスタム設定、Rsbuild クライアントバンドル、tsup サーバーバンドル。"
-keywords: "プラグインビルド,プラグインパッケージング,yarn build,tar,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
+description: "NocoBase プラグインのビルドとパッケージング：nb source build、build.config.ts カスタム設定、Rsbuild クライアントバンドル、tsup サーバーバンドル。"
+keywords: "プラグインビルド,プラグインパッケージング,nb source build,build.config.ts,Rsbuild,tsup,@nocobase/build,NocoBase"
 ---
 
 # ビルドとパッケージング
 
-プラグインの開発が完了したら、ビルド（ソースコードのコンパイル）とパッケージング（`.tar.gz` の生成）の 2 つのステップを経て、他の NocoBase アプリケーションに配布して使用できるようになります。
+プラグインの開発が完了したら、ビルド（ソースコードのコンパイル）とパッケージング（`.tgz` の生成）の 2 つのステップを経て、他の NocoBase アプリケーションに配布して使用できるようになります。
 
 ## プラグインのビルド
 
-ビルドでは `src/` 以下の TypeScript ソースコードを JavaScript にコンパイルします。クライアントコードは Rsbuild でバンドルされ、サーバーコードは tsup でバンドルされます：
+ソースコードディレクトリ（`<app-path>/source/`）でビルドコマンドを実行します。ビルドでは `src/` 以下の TypeScript ソースコードを JavaScript にコンパイルします。クライアントコードは Rsbuild でバンドルされ、サーバーコードは tsup でバンドルされます：
 
 ```bash
-yarn build @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello
 ```
 
 ビルド成果物はプラグインのルートディレクトリの `dist/` に出力されます。
@@ -26,19 +27,14 @@ yarn build @my-project/plugin-hello
 
 ## プラグインのパッケージング
 
-パッケージングでは、ビルド成果物を `.tar.gz` ファイルに圧縮し、他の環境へのアップロードを容易にします：
+同様にソースコードディレクトリ（`<app-path>/source/`）で実行します。`--tar` パラメータを使用すると、ビルドとパッケージングを 1 ステップにまとめ、`.tgz` 圧縮ファイルを生成できます：
 
 ```bash
-yarn nocobase tar @my-project/plugin-hello
+cd <app-path>/source
+nb source build @my-project/plugin-hello --tar
 ```
 
-パッケージファイルはデフォルトで `storage/tar/@my-project/plugin-hello.tar.gz` に出力されます。
-
-`--tar` パラメータを使用すると、ビルドとパッケージングを 1 ステップにまとめることもできます：
-
-```bash
-yarn build @my-project/plugin-hello --tar
-```
+パッケージファイルはデフォルトで `source/storage/tar/` ディレクトリに出力され、ビルド完了時にコマンドが tarball の完全なパスを表示します。
 
 ## 他の NocoBase アプリケーションへのアップロード
 
@@ -84,7 +80,7 @@ export default defineConfig({
 ## 関連リンク
 
 - [はじめてのプラグインを作成する](./write-your-first-plugin.md) -- ゼロからプラグインを作成する、ビルドとパッケージングの完全なフロー
-- [プロジェクトのディレクトリ構造](./project-structure.md) -- `packages/plugins`、`storage/tar` などのディレクトリの役割を理解する
+- [プロジェクトのディレクトリ構造](./project-structure.md) -- `plugins/`、`storage/tar` などのディレクトリの役割を理解する
 - [依存関係の管理](./dependency-management.md) -- プラグインの依存関係宣言とグローバル依存関係
 - [プラグイン開発の概要](./index.md) -- プラグイン開発の全体的な紹介
 - [プラグインのインストールとアップグレード](../get-started/install-upgrade-plugins.mdx) -- パッケージファイルをターゲット環境にアップロードする

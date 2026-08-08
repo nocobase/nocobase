@@ -28,7 +28,20 @@ Here is a list of everything AI can currently help you do. Each capability comes
 
 - **Explicitly tell AI to create or modify a NocoBase plugin and provide the plugin name** -- for example, "Help me use nocobase-plugin-development skill to develop a NocoBase plugin called @my-scope/plugin-rating". Without a plugin name, AI may not know where to generate code.
 - **Explicitly specify using nocobase-plugin-development skill in your prompt** -- for example, "Help me use nocobase-plugin-development skill to develop a NocoBase plugin...". This allows the AI Agent to directly access the Skills' capabilities, avoiding plan mode where it might ignore Skills.
-- **Run the AI Agent in the root directory of the NocoBase source code repository** -- this way AI can automatically find the project structure, dependencies, and existing plugins. If you're not in the source code root directory, you need to additionally tell the AI Agent the path to the source code repository.
+- **Run the AI Agent in the project root created by `nb init`** -- Git source is recommended, as it lets AI directly reference the NocoBase core source code for better development results. If you're not in the project root, you need to additionally tell the AI Agent the path to the project.
+
+The project directory structure created by `nb init` is as follows (referred to as `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # CLI metadata for the current env
+├── source/               # Application source code (NocoBase core + built-in plugins)
+├── storage/              # Runtime data directory
+├── plugins/              # Your plugin source code (nb scaffold plugin generates here)
+└── .env                  # Application environment variables
+```
+
+All prompt examples below assume you open AI Agent in `<app-path>`.
 
 ## Quick Reference
 
@@ -49,16 +62,16 @@ Here is a list of everything AI can currently help you do. Each capability comes
 
 AI can generate a complete NocoBase plugin directory structure based on your requirements -- including frontend and backend entry files, type definitions, and base configuration.
 
-Sample prompt:
+In the project root (`<app-path>`), open AI Agent and send the following prompt:
 
 ```
 Help me create a NocoBase plugin called @my-scope/plugin-todo
 ```
 
-AI will run `yarn pm create @my-scope/plugin-todo` and generate a standard directory:
+AI will run `nb scaffold plugin @my-scope/plugin-todo` and generate a standard directory:
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

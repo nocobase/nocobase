@@ -20,23 +20,24 @@
 
 ## Создание файлов миграции
 
-Файлы миграции должны располагаться в каталоге **плагина** по пути `src/server/migrations/*.ts`. NocoBase предоставляет команду `create-migration` для быстрого создания файлов миграции.
+Файлы миграции должны располагаться в каталоге **плагина** по пути `src/server/migrations/*.ts`. NocoBase CLI предоставляет команду `nb scaffold migration` для быстрого создания файлов миграции.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Опциональные параметры
+Параметры
 
 | Параметр      | Описание |
 | -------------- | ----------- |
-| `--pkg <pkg>`  | Укажите имя пакета **плагина** |
-| `--on [on]`    | Укажите время выполнения, варианты: `beforeLoad`, `afterSync`, `afterLoad` |
+| `<name>`       | Название миграции, обязательный |
+| `--pkg <pkg>`  | Укажите имя пакета **плагина**, обязательный |
+| `--on <timing>`| Укажите время выполнения, варианты: `beforeLoad`, `afterSync`, `afterLoad` |
 
 Пример
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 Путь к сгенерированному файлу миграции:
@@ -136,10 +137,10 @@ export default class extends Migration {
 
 ## Запуск миграций
 
-Выполнение миграций запускается командой `nocobase upgrade`:
+Выполнение миграций запускается командой upgrade:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 При обновлении система определяет порядок выполнения на основе типа миграции и `appVersion`.

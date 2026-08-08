@@ -37,7 +37,7 @@ keywords: "страница настроек плагина,pluginSettingsManage
 Полный исходный код см. в [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page). Если хотите запустить и посмотреть локально:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 Ниже шаг за шагом построим этот плагин с нуля.
@@ -47,10 +47,16 @@ yarn pm enable @nocobase-example/plugin-settings-page
 Выполните в корне репозитория:
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-Это сгенерирует базовую файловую структуру в `packages/plugins/@my-project/plugin-settings-page`, включая каталоги `src/client-v2/`, `src/server/`, `src/locale/` и т.д. Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
+Это сгенерирует базовую файловую структуру в `plugins/@my-project/plugin-settings-page`, включая каталоги `src/client-v2/`, `src/server/`, `src/locale/` и т.д. Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
+
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+```bash
+nb source dev
+```
 
 ## Шаг 2: зарегистрировать страницу настроек
 
@@ -370,7 +376,7 @@ export default function AboutPage() {
 ## Шаг 7: включить плагин
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 После включения и обновления страницы в меню «Конфигурация плагинов» появится пункт «Внешний сервис».

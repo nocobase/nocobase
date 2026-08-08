@@ -12,13 +12,13 @@ Aquí hemos recopilado los problemas más habituales al desarrollar plugins de c
 
 ### Tras crear el plugin no aparece en el gestor
 
-Compruebe que ejecutó `yarn pm create` en lugar de crear el directorio a mano. `yarn pm create`, además de generar archivos, registra el plugin en la tabla `applicationPlugins` de la base de datos. Si creó el directorio manualmente, ejecute `yarn nocobase upgrade` para que se vuelva a escanear.
+Compruebe que ejecutó `nb scaffold plugin` en lugar de crear el directorio a mano. `nb scaffold plugin`, además de generar archivos, registra el plugin en la tabla `applicationPlugins` de la base de datos. Si creó el directorio manualmente, ejecute `nb app upgrade` para que se vuelva a escanear.
 
 ### Tras activar el plugin la página no cambia
 
 Verifique en este orden:
 
-1. Que ejecutó `yarn pm enable <pluginName>`.
+1. Que ejecutó `nb plugin enable <pluginName>`.
 2. Refresque el navegador (a veces hace falta forzar el refresco con `Ctrl+Shift+R`).
 3. Compruebe la consola del navegador en busca de errores.
 
@@ -30,7 +30,7 @@ El comportamiento del hot reload depende del tipo de archivo:
 | --- | --- |
 | `.tsx` / `.ts` en `src/client-v2/` | Hot reload automático, no hay que hacer nada |
 | Archivos de traducción en `src/locale/` | **Reiniciar la aplicación** |
-| Añadir o modificar Collections en `src/server/collections/` | Ejecutar `yarn nocobase upgrade` |
+| Añadir o modificar Collections en `src/server/collections/` | Ejecutar `nb app upgrade` |
 
 Si modificó código del cliente y no se aplicó, primero pruebe a refrescar el navegador.
 
@@ -220,15 +220,15 @@ Verifique en este orden:
 
 ## Sobre el build y el despliegue
 
-### `yarn build --tar` falla con "no paths specified to add to archive"
+### `nb source build --tar` falla con "no paths specified to add to archive"
 
-Al ejecutar `yarn build <pluginName> --tar` aparece:
+Al ejecutar `nb source build <pluginName> --tar` aparece:
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-Pero `yarn build <pluginName>` (sin `--tar`) funciona. Esto suele deberse a que el `.npmignore` del plugin **utiliza la sintaxis de negación** (prefijo `!` de npm). Al hacer el `--tar`, NocoBase lee cada línea de `.npmignore` y le añade un `!` delante para convertirla en un patrón de exclusión de `fast-glob`. Si su `.npmignore` ya usa negaciones, por ejemplo:
+Pero `nb source build <pluginName>` (sin `--tar`) funciona. Esto suele deberse a que el `.npmignore` del plugin **utiliza la sintaxis de negación** (prefijo `!` de npm). Al hacer el `--tar`, NocoBase lee cada línea de `.npmignore` y le añade un `!` delante para convertirla en un patrón de exclusión de `fast-glob`. Si su `.npmignore` ya usa negaciones, por ejemplo:
 
 ```
 *
@@ -257,7 +257,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 Esto suele deberse a que **el plugin empaqueta dependencias internas de NocoBase dentro de su propio `node_modules/`**. El sistema de build de NocoBase mantiene una [lista de externals](../../dependency-management) que enumera los paquetes (por ejemplo `react`, `antd`, `axios`, `lodash`, etc.) que proporciona el host de NocoBase y que no deben empaquetarse en el plugin. Si el plugin trae una copia privada, en tiempo de ejecución puede chocar con la versión ya cargada por el host y provocar errores extraños.
 
-**Por qué en local funciona:** en desarrollo el plugin está en `packages/plugins/` y no tiene `node_modules/` privado; las dependencias se resuelven contra las versiones ya cargadas en la raíz del proyecto y no hay conflicto.
+**Por qué en local funciona:** en desarrollo el plugin está en `plugins/` y no tiene `node_modules/` privado; las dependencias se resuelven contra las versiones ya cargadas en la raíz del proyecto y no hay conflicto.
 
 **Solución:** mueva las `dependencies` del `package.json` del plugin a `devDependencies`. El sistema de build de NocoBase decidirá automáticamente qué dependencias del plugin debe empaquetar:
 

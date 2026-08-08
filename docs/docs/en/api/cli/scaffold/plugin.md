@@ -19,14 +19,22 @@ nb scaffold plugin <pkg> [flags]
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `<pkg>` | string | Plugin package name, required |
+| `--cwd`, `-c` | string | Specify the app root directory path |
 | `--force-recreate`, `-f` | boolean | Force recreating the plugin scaffold |
 
 ## Examples
 
 ```bash
-nb scaffold plugin @nocobase-example/plugin-hello
-nb scaffold plugin @nocobase-example/plugin-hello --force-recreate
+nb scaffold plugin @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello --cwd /path/to/app
+nb scaffold plugin @my-project/plugin-hello --force-recreate
 ```
+
+## Description
+
+For CLI-managed source apps (created via `nb init`), the plugin is generated under the `<app-path>/plugins/` directory, and `nb` automatically syncs it to `source/packages/plugins/` for the development and build workflow.
+
+If the target plugin already exists, the command will fail by default. Use `--force-recreate` to force recreation. If there are conflicting directories or external symlinks on the source side, you need to manually remove the conflicts before retrying.
 
 ## Related Commands
 

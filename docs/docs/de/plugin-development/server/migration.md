@@ -20,23 +20,24 @@ Der Ausführungszeitpunkt von Migrationen gliedert sich in drei Typen:
 
 ## Migrationsdateien erstellen
 
-Migrationsdateien sollten im Plugin-Verzeichnis unter `src/server/migrations/*.ts` abgelegt werden. NocoBase bietet den Befehl `create-migration`, um Migrationsdateien schnell zu generieren.
+Migrationsdateien sollten im Plugin-Verzeichnis unter `src/server/migrations/*.ts` abgelegt werden. NocoBase CLI bietet den Befehl `nb scaffold migration`, um Migrationsdateien schnell zu generieren.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Optionale Parameter
+Parameter
 
-| Parameter      | Beschreibung                                                              |
-| -------------- | ------------------------------------------------------------------------- |
-| `--pkg <pkg>`  | Geben Sie den Namen des Plugin-Pakets an                                  |
-| `--on [on]`    | Geben Sie den Ausführungszeitpunkt an, Optionen: `beforeLoad`, `afterSync`, `afterLoad` |
+| Parameter        | Beschreibung                                                              |
+| ---------------- | ------------------------------------------------------------------------- |
+| `<name>`         | Name der Migration, Pflichtfeld                                           |
+| `--pkg <pkg>`    | Geben Sie den Namen des Plugin-Pakets an, Pflichtfeld                     |
+| `--on <timing>`  | Geben Sie den Ausführungszeitpunkt an, Optionen: `beforeLoad`, `afterSync`, `afterLoad` |
 
 Beispiel
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 Der Pfad der generierten Migrationsdatei lautet wie folgt:
@@ -139,7 +140,7 @@ Zusätzlich zu den oben aufgeführten gängigen Eigenschaften bietet Migration a
 Die Ausführung von Migrationen wird durch den Befehl `nocobase upgrade` ausgelöst:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 Beim Upgrade bestimmt das System die Ausführungsreihenfolge basierend auf dem Migrationstyp und der `appVersion`.

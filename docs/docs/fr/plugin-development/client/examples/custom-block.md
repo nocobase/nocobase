@@ -36,20 +36,26 @@ Nous allons créer un bloc « Simple block » :
 Code source complet : [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block). Pour le faire tourner directement en local :
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-block
+nb plugin enable @nocobase-example/plugin-simple-block
 ```
 
 Construisons ce plugin pas à pas, à partir de zéro.
 
 ## Étape 1 : créer le squelette du plugin
 
-À la racine du dépôt :
+À la racine du dépôt ou dans le répertoire `source/` :
 
 ```bash
-yarn pm create @my-project/plugin-simple-block
+nb scaffold plugin @my-project/plugin-simple-block
 ```
 
-Cela génère la structure de fichiers de base sous `packages/plugins/@my-project/plugin-simple-block`. Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
+Cela génère la structure de fichiers de base sous `plugins/@my-project/plugin-simple-block`. Voir [Écrire votre premier plugin](../../write-your-first-plugin) pour les détails.
+
+Lancez ensuite le mode développement pour que vos modifications de code soient rechargées à chaud :
+
+```bash
+nb source dev
+```
 
 ## Étape 2 : créer le modèle de bloc
 
@@ -168,7 +174,7 @@ export default PluginSimpleBlockClient;
 ## Étape 5 : activer le plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-block
+nb plugin enable @my-project/plugin-simple-block
 ```
 
 Une fois activé, créez une nouvelle page, cliquez sur « Ajouter un bloc » et vous verrez « Simple block ». Après ajout, cliquez sur le bouton de configuration du bloc pour éditer le contenu HTML.

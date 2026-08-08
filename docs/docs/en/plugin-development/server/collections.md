@@ -191,16 +191,10 @@ All column fields support the following parameters:
 
 ## Synchronizing Database Structure
 
-When a plugin is first activated, the system will automatically synchronize Collection configurations with the database structure. If the plugin is already installed and running, after adding or modifying Collections, you need to manually execute the upgrade command:
+When a plugin is first activated, the system will automatically synchronize Collection configurations with the database structure. If the plugin is already installed and running, after adding or modifying Collections, you need to execute the upgrade command to synchronize the database structure:
 
 ```bash
-yarn nocobase upgrade
-```
-
-If exceptions or dirty data occur during synchronization, you can rebuild the table structure by reinstalling the application:
-
-```bash
-yarn nocobase install -f
+nb app upgrade
 ```
 
 If you need to migrate existing data during plugin upgrades -- such as renaming fields, splitting tables, backfilling default values, etc. -- you should handle it through [Migration](./migration.md) scripts rather than manually modifying the database.

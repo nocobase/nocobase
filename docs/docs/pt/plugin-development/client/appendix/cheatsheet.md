@@ -10,7 +10,7 @@ Ao escrever um plugin, é comum ficar pensando "isso deve ir em qual arquivo, qu
 
 ## Estrutura de diretórios do plugin
 
-Ao criar um plugin via `yarn pm create @my-project/plugin-name`, a estrutura de diretórios a seguir é gerada automaticamente. Não crie diretórios manualmente para evitar pular etapas de registro que podem fazer o plugin não funcionar. Veja [Escreva seu primeiro plugin](../../write-your-first-plugin) para detalhes.
+Ao criar um plugin via `nb scaffold plugin @my-project/plugin-name`, a estrutura de diretórios a seguir é gerada automaticamente. Não crie diretórios manualmente para evitar pular etapas de registro que podem fazer o plugin não funcionar. Veja [Escreva seu primeiro plugin](../../write-your-first-plugin) para detalhes.
 
 ```bash
 plugin-name/

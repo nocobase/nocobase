@@ -16,7 +16,6 @@ import { PkgLog } from "./utils";
 import { TAR_OUTPUT_DIR, tarIncludesFiles } from './constant'
 
 export function tarPlugin(cwd: string, log: PkgLog) {
-  log('tar package');
   const pkg = require(path.join(cwd, 'package.json'));
   const npmIgnore = path.join(cwd, '.npmignore');
   let files = pkg.files || [];
@@ -34,6 +33,7 @@ export function tarPlugin(cwd: string, log: PkgLog) {
   files = files.map((item: string) => item !== '**/*' && fs.existsSync(path.join(cwd, item.replace('!', ''))) && fs.statSync(path.join(cwd, item.replace('!', ''))).isDirectory() ? `${item}/**/*` : item);
 
   const tarball = path.join(TAR_OUTPUT_DIR, `${pkg.name}-${pkg.version}.tgz`);
+  log(`tar package -> ${tarball}`);
   const tarFiles = fg.sync(files, { cwd });
 
   fs.mkdirpSync(path.dirname(tarball));

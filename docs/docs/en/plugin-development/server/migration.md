@@ -26,23 +26,24 @@ Migration execution timing is divided into three types:
 
 ## Create Migration Files
 
-Migration files should be placed in `src/server/migrations/*.ts` in the plugin directory. NocoBase provides the `create-migration` command to quickly generate migration files.
+Migration files should be placed in `src/server/migrations/*.ts` in the plugin directory. The NocoBase CLI provides the `nb scaffold migration` command to quickly generate migration files.
 
 ```bash
-yarn nocobase create-migration [options] <name>
+nb scaffold migration <name> --pkg <pkg> [--on <timing>]
 ```
 
-Optional Parameters
+Parameters
 
-| Parameter      | Description |
-| -------------- | ----------- |
-| `--pkg <pkg>`  | Specify plugin package name |
-| `--on [on]`    | Specify execution timing, options: `beforeLoad`, `afterSync`, `afterLoad` |
+| Parameter | Description |
+|-----------|-------------|
+| `<name>` | Migration name, required |
+| `--pkg <pkg>` | Specify plugin package name, required |
+| `--on <timing>` | Specify execution timing, options: `beforeLoad`, `afterSync`, `afterLoad` |
 
 Example
 
 ```bash
-$ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
+$ nb scaffold migration update-ui --pkg @nocobase/plugin-client
 ```
 
 Generated migration file path:
@@ -146,10 +147,10 @@ In addition to the common properties listed above, Migration provides more APIs.
 
 ## Trigger Migration
 
-Migration execution is triggered by the `nocobase upgrade` command:
+Migration execution is triggered by the upgrade command:
 
 ```bash
-$ yarn nocobase upgrade
+$ nb app upgrade
 ```
 
 During upgrade, the system will determine execution order based on Migration type and `appVersion`.
@@ -207,7 +208,7 @@ Using Mock Server can quickly simulate upgrade scenarios and verify Migration ex
 - [Collections](./collections.md) -- Data table structure definitions commonly adjusted in Migration
 - [Database](./database.md) -- APIs for operating data via `this.db` in Migration
 - [Plugin](./plugin.md) -- How Migration files are organized and loaded within plugins
-- [Command](./command.md) -- Triggering migrations via `nocobase upgrade` and `create-migration` commands
+- [Command](./command.md) -- Triggering migrations via `nb app upgrade` and `nb scaffold migration` commands
 - [Test](./test.md) -- Using Mock Server to test Migration execution results
 - [Migration API](../../api/server/migration.md) -- Complete API reference for the Migration class
 

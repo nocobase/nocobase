@@ -191,16 +191,10 @@ Tất cả Field column đều hỗ trợ các tham số sau:
 
 ## Đồng bộ cấu trúc database
 
-Lần đầu kích hoạt Plugin, hệ thống sẽ tự động đồng bộ cấu hình Collection với cấu trúc database. Nếu Plugin đã được cài đặt và đang chạy, sau khi thêm hoặc sửa Collection cần chạy lệnh upgrade thủ công:
+Lần đầu kích hoạt Plugin, hệ thống sẽ tự động đồng bộ cấu hình Collection với cấu trúc database. Nếu Plugin đã được cài đặt và đang chạy, sau khi thêm hoặc sửa Collection cần chạy lệnh upgrade để đồng bộ cấu trúc database:
 
 ```bash
-yarn nocobase upgrade
-```
-
-Nếu trong quá trình đồng bộ có lỗi hoặc dữ liệu rác, có thể tái cài đặt ứng dụng để dựng lại cấu trúc bảng:
-
-```bash
-yarn nocobase install -f
+nb app upgrade
 ```
 
 Nếu khi nâng cấp Plugin cần migration dữ liệu hiện có — như đổi tên Field, tách bảng, fill ngược giá trị mặc định, v.v. — nên dùng [Migration script nâng cấp](./migration.md) thay vì sửa database thủ công.

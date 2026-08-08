@@ -10,7 +10,7 @@ keywords: "チートシート,Cheatsheet,登録方法,ファイル配置,NocoBas
 
 ## プラグインのディレクトリ構成
 
-`yarn pm create @my-project/plugin-name` でプラグインを作成すると、以下のディレクトリ構成が自動生成されます。手動でディレクトリを作成しないでください。登録手順の漏れでプラグインが動作しなくなります。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
+`nb scaffold plugin @my-project/plugin-name` でプラグインを作成すると、以下のディレクトリ構成が自動生成されます。手動でディレクトリを作成しないでください。登録手順の漏れでプラグインが動作しなくなります。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
 ```bash
 plugin-name/

@@ -74,7 +74,7 @@ Angenommen, wir möchten NocoBase um eine SMS-Benachrichtigungsfunktion erweiter
 
 ### Plugin-Erstellung
 
-1. Führen Sie den Befehl zur Plugin-Erstellung aus: `yarn pm add @nocobase/plugin-notification-example`
+1. Führen Sie den Befehl zur Plugin-Erstellung aus: `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Client-Entwicklung
 
@@ -265,8 +265,8 @@ export default PluginNotificationExampleServer;
 
 ### Plugin-Registrierung und -Start
 
-1. Führen Sie den Registrierungsbefehl aus: `yarn pm add @nocobase/plugin-notification-example`
-2. Führen Sie den Aktivierungsbefehl aus: `yarn pm enable @nocobase/plugin-notification-example`
+1. Führen Sie den Registrierungsbefehl aus: `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Führen Sie den Aktivierungsbefehl aus: `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Kanal-Konfiguration
 

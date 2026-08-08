@@ -10,7 +10,7 @@ Saat menulis plugin, sering muncul pertanyaan "barang ini sebenarnya harus ditul
 
 ## Struktur Direktori Plugin
 
-Membuat plugin melalui `yarn pm create @my-project/plugin-name`, akan otomatis menggenerate struktur direktori berikut. Jangan membuat direktori secara manual, untuk menghindari langkah registrasi yang terlewatkan menyebabkan plugin tidak berfungsi. Untuk detail lihat [Menulis Plugin Pertama](../../write-your-first-plugin).
+Membuat plugin melalui `nb scaffold plugin @my-project/plugin-name`, akan otomatis menggenerate struktur direktori berikut. Jangan membuat direktori secara manual, untuk menghindari langkah registrasi yang terlewatkan menyebabkan plugin tidak berfungsi. Untuk detail lihat [Menulis Plugin Pertama](../../write-your-first-plugin).
 
 ```bash
 plugin-name/

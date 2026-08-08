@@ -37,20 +37,26 @@ keywords: "插件设置页,pluginSettingsManager,addMenuItem,addPageTabItem,Antd
 完整源码见 [@nocobase-example/plugin-settings-page](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-settings-page)。如果你想直接在本地跑起来看效果：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-settings-page
+nb plugin enable @nocobase-example/plugin-settings-page
 ```
 
 下面从零开始，一步步搭建这个插件。
 
 ## 第一步：创建插件骨架
 
-在仓库根目录执行：
+在项目根目录或 `source/` 目录下执行：
 
 ```bash
-yarn pm create @my-project/plugin-settings-page
+nb scaffold plugin @my-project/plugin-settings-page
 ```
 
-这会在 `packages/plugins/@my-project/plugin-settings-page` 下生成基础文件结构，包括 `src/client-v2/`、`src/server/`、`src/locale/` 等目录。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
+这会在 `plugins/@my-project/plugin-settings-page` 下生成基础文件结构，包括 `src/client-v2/`、`src/server/`、`src/locale/` 等目录。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
+
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
 
 ## 第二步：注册设置页
 
@@ -370,7 +376,7 @@ export default function AboutPage() {
 ## 第七步：启用插件
 
 ```bash
-yarn pm enable @my-project/plugin-settings-page
+nb plugin enable @my-project/plugin-settings-page
 ```
 
 启用后刷新页面，在「插件配置」菜单里就能看到「外部服务配置」入口了。

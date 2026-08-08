@@ -34,7 +34,7 @@ keywords: "пользовательское действие,ActionModel,ActionS
 Полный исходный код см. в [@nocobase-example/plugin-simple-action](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-action). Если хотите запустить и посмотреть локально:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-action
+nb plugin enable @nocobase-example/plugin-simple-action
 ```
 
 Ниже шаг за шагом построим этот плагин с нуля.
@@ -44,10 +44,16 @@ yarn pm enable @nocobase-example/plugin-simple-action
 Выполните в корне репозитория:
 
 ```bash
-yarn pm create @my-project/plugin-simple-action
+nb scaffold plugin @my-project/plugin-simple-action
 ```
 
 Подробное описание см. в [Написание первого плагина](../../write-your-first-plugin).
+
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+```bash
+nb source dev
+```
 
 ## Шаг 2: создать модели действий
 
@@ -240,7 +246,7 @@ export default PluginSimpleActionClient;
 ## Шаг 5: включить плагин
 
 ```bash
-yarn pm enable @my-project/plugin-simple-action
+nb plugin enable @my-project/plugin-simple-action
 ```
 
 После включения в «Настройка действий» блока таблицы можно будет добавить эти пользовательские кнопки действий.

@@ -1,82 +1,71 @@
+---
+title: "Estrutura do Projeto"
+description: "Estrutura do projeto de plugins NocoBase: layout da aplicação nb init, diretório plugins, código-fonte source, diretório runtime storage."
+keywords: "estrutura do projeto,nb init,plugins,diretório de plugins,NocoBase"
+---
+
 # Estrutura do Projeto
 
-Seja ao clonar o código-fonte do Git ou ao inicializar um projeto com `create-nocobase-app`, o projeto NocoBase gerado é, essencialmente, um monorepo baseado em **Yarn Workspace**.
+Aplicações inicializadas através do NocoBase CLI (`nb init`) geram um diretório de aplicação padrão. O CLI suporta duas origens, npm (`create-nocobase-app`) e Git, e a estrutura de nível superior é a mesma.
 
-## Visão Geral do Diretório Raiz
-
-O exemplo a seguir usa `my-nocobase-app/` como diretório do projeto. Pode haver pequenas diferenças em ambientes distintos:
+## Visão Geral do Diretório de Nível Superior
 
 ```bash
-my-nocobase-app/
-├── packages/              # Código-fonte do projeto
-│   ├── plugins/           # Plugins em desenvolvimento (não compilados)
-├── storage/               # Dados de tempo de execução e conteúdo gerado dinamicamente
-│   ├── apps/
-│   ├── db/
-│   ├── logs/
-│   ├── uploads/
-│   ├── plugins/           # Plugins compilados (incluindo aqueles enviados pela interface)
-│   └── tar/               # Arquivos de pacote de plugins (.tar)
-├── scripts/               # Scripts de utilidade e comandos de ferramenta
-├── .env*                  # Configurações de variáveis de ambiente para diferentes ambientes
-├── lerna.json             # Configuração do workspace Lerna
-├── package.json           # Configuração do pacote raiz, declara o workspace e scripts
-├── tsconfig*.json         # Configurações TypeScript (frontend, backend, mapeamento de caminhos)
-├── vitest.config.mts      # Configuração de testes de unidade Vitest
-└── playwright.config.ts   # Configuração de testes E2E Playwright
+<app-path>/
+├── .nb/                   # Metadados salvos pelo CLI para o env atual
+├── source/                # Código-fonte da aplicação (NocoBase core + plugins integrados)
+├── storage/               # Diretório de dados em tempo de execução
+│   ├── plugins/           # Plugins compilados (enviados ou importados)
+│   └── tar/               # Arquivos de pacote de plugins (.tgz)
+├── plugins/               # Código-fonte dos seus plugins (nb scaffold plugin gera aqui)
+├── .env                   # Arquivo de variáveis de ambiente da aplicação
 ```
 
-## Descrição do Subdiretório packages/
+## Diretório de Desenvolvimento de Plugins plugins/
 
-O diretório `packages/` contém os módulos principais do NocoBase e pacotes extensíveis. O conteúdo depende da origem do projeto:
+`plugins/` é o local principal para o desenvolvimento de plugins personalizados. Plugins criados via `nb scaffold plugin` são colocados aqui.
 
-- **Projetos criados via `create-nocobase-app`**: Por padrão, incluem apenas `packages/plugins/`, usado para armazenar o código-fonte de plugins personalizados. Cada subdiretório é um pacote npm independente.
-- **Repositório de código-fonte oficial clonado**: Você verá mais subdiretórios, como `core/`, `plugins/`, `pro-plugins/`, `presets/`, etc., que correspondem ao núcleo do framework, plugins integrados e soluções predefinidas oficiais.
+O `nb` sincroniza automaticamente os plugins em `plugins/` para `source/packages/plugins/` via links simbólicos, para uso nos fluxos de desenvolvimento e construção. Você não precisa operar manualmente o conteúdo dentro do diretório `source/`.
 
-Em qualquer um dos casos, `packages/plugins` é o local principal para desenvolver e depurar plugins personalizados.
+## Diretório de Código-fonte source/
+
+O diretório `source/` contém o código-fonte completo do projeto NocoBase. O conteúdo específico depende da origem do projeto:
+
+- **Origem npm** (`create-nocobase-app`): Por padrão, contém apenas diretórios básicos como `packages/plugins/`.
+- **Origem Git** (recomendado): Contém o código-fonte completo do framework (`packages/core/`), plugins integrados, etc. Ao usar IA para desenvolvimento, permite referenciar diretamente o código-fonte.
 
 ## Diretório de Tempo de Execução storage/
 
-O diretório `storage/` armazena dados gerados em tempo de execução e saídas de build. As descrições dos subdiretórios comuns são as seguintes:
+`storage/` armazena dados gerados em tempo de execução e saídas de build:
 
-- `apps/`: Configuração e cache para cenários de múltiplas aplicações.
-- `logs/`: Logs de tempo de execução e saída de depuração.
-- `uploads/`: Arquivos e recursos de mídia enviados pelos usuários.
-- `plugins/`: Plugins empacotados enviados pela interface do usuário ou importados via CLI.
-- `tar/`: Pacotes de plugins compactados gerados após a execução de `yarn build <plugin> --tar`.
-
-> Geralmente, é recomendado adicionar o diretório `storage` ao `.gitignore` e tratá-lo separadamente durante a implantação ou backup.
-
-## Configuração de Ambiente e Scripts do Projeto
-
-- `.env`, `.env.test`, `.env.e2e`: Usados para execução local, testes de unidade/integração e testes end-to-end, respectivamente.
-- `scripts/`: Armazena scripts de manutenção comuns (como inicialização de banco de dados, utilitários de lançamento, etc.).
+- `plugins/`: Plugins empacotados, enviados pela interface do usuário ou importados via CLI.
+- `tar/`: Pacotes compactados de plugins gerados após executar `nb source build <plugin> --tar`.
 
 ## Caminhos de Carregamento e Prioridade de Plugins
 
 Plugins podem existir em vários locais. O NocoBase os carregará na seguinte ordem de prioridade ao iniciar:
 
-1.  Versão do código-fonte em `packages/plugins` (para desenvolvimento e depuração local).
-2.  Versão empacotada em `storage/plugins` (enviada pela interface do usuário ou importada via CLI).
-3.  Pacotes de dependência em `node_modules` (instalados via npm/yarn ou integrados ao framework).
+1. Versão do código-fonte em `source/packages/plugins` (para desenvolvimento e depuração local, sincronizada automaticamente pelo `nb` a partir de `plugins/`).
+2. Versão empacotada em `storage/plugins` (enviada pela interface do usuário ou importada via CLI).
+3. Pacotes de dependência em `node_modules` (instalados via npm/yarn ou integrados ao framework).
 
-Quando um plugin com o mesmo nome existe tanto no diretório de código-fonte quanto no diretório empacotado, o sistema priorizará o carregamento da versão do código-fonte, facilitando substituições locais e depuração.
+Quando um plugin com o mesmo nome existe tanto no diretório de código-fonte quanto no diretório empacotado, o NocoBase priorizará o carregamento da versão do código-fonte, facilitando substituições locais e depuração.
 
 ## Modelo de Diretório de Plugin
 
 Crie um plugin usando a CLI:
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
 A estrutura de diretórios gerada é a seguinte:
 
 ```bash
-packages/plugins/@my-project/plugin-hello/
+plugins/@my-project/plugin-hello/
 ├── dist/                    # Saída de build (gerada conforme necessário)
 ├── src/                     # Diretório do código-fonte
-│   ├── client/              # Código frontend (blocos, páginas, modelos, etc.)
+│   ├── client-v2/           # Código frontend (blocos, páginas, modelos, etc.)
 │   │   ├── plugin.ts        # Classe principal do plugin no lado do cliente
 │   │   └── index.ts         # Entrada do lado do cliente
 │   ├── locale/              # Recursos multilíngues (compartilhados entre frontend e backend)
@@ -88,13 +77,24 @@ packages/plugins/@my-project/plugin-hello/
 │       ├── plugin.ts        # Classe principal do plugin no lado do servidor
 │       └── index.ts         # Entrada do lado do servidor
 ├── index.ts                 # Exportação de ponte frontend e backend
-├── client.d.ts              # Declarações de tipo frontend
-├── client.js                # Artefato de build frontend
+├── client-v2.d.ts           # Declarações de tipo frontend
+├── client-v2.js             # Artefato de build frontend
 ├── server.d.ts              # Declarações de tipo backend
 ├── server.js                # Artefato de build backend
 ├── .npmignore               # Configuração de ignorar na publicação
 └── package.json
 ```
 
-> Após a conclusão do build, o diretório `dist/` e os arquivos `client.js`, `server.js` serão carregados quando o plugin for habilitado.
-> Durante a fase de desenvolvimento, você só precisa modificar o diretório `src/`. Antes de publicar, execute `yarn build <plugin>` ou `yarn build <plugin> --tar`.
+:::tip Dica
+
+Após a conclusão do build, o diretório `dist/` e os arquivos `client-v2.js`, `server.js` serão carregados quando o plugin for habilitado. Durante a fase de desenvolvimento, você só precisa modificar o diretório `src/`. Antes de publicar, execute `nb source build <plugin>` ou `nb source build <plugin> --tar`.
+
+:::
+
+## Links relacionados
+
+- [Escreva Seu Primeiro Plugin](./write-your-first-plugin.md) — Criando um plugin do zero e experimentando o fluxo completo de desenvolvimento
+- [Visão Geral do Desenvolvimento no Servidor](./server/index.md) — Introdução geral e conceitos centrais dos plugins do lado do servidor
+- [Visão Geral do Desenvolvimento no Cliente](./client/index.md) — Introdução geral e conceitos centrais dos plugins do lado do cliente
+- [Construção e Empacotamento](./build.md) — Fluxo de construção, empacotamento e distribuição dos plugins
+- [Gerenciamento de Dependências](./dependency-management.md) — Declaração e gerenciamento de dependências do plugin

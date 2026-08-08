@@ -271,7 +271,7 @@ export default class extends Migration {
 Membuat melalui perintah CLI:
 
 ```bash
-yarn nocobase create-migration my-migration --pkg @my-project/plugin-hello
+nb scaffold migration my-migration --pkg @my-project/plugin-hello
 ```
 
 Perintah akan menghasilkan file dengan timestamp di direktori `src/server/migrations/` plugin, template seperti berikut:

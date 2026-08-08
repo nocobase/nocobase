@@ -40,20 +40,26 @@ We're building a "Todo Items" data management plugin with the following capabili
 Full source code is available at [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). If you want to run it locally:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Let's build this plugin step by step from scratch.
 
 ## Step 1: Create the Plugin Skeleton
 
-Run the following in the repository root:
+In the project root or `source/` directory:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 For detailed instructions, see [Writing Your First Plugin](../../write-your-first-plugin).
+
+Then start dev mode so your code changes hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Step 2: Define the Data Table (Server-Side)
 
@@ -458,7 +464,7 @@ Key points:
 ## Step 9: Enable the Plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 After enabling:

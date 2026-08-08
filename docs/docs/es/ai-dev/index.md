@@ -10,6 +10,23 @@ El desarrollo de plugins con AI es la capacidad de desarrollo asistido por AI qu
 
 La capacidad de desarrollo de plugins con AI se basa en el Skill [nocobase-plugin-development](https://github.com/nocobase/skills/tree/main/skills/nocobase-plugin-development). Si ya ha inicializado su entorno mediante el CLI de NocoBase (`nb init`), este Skill se instalará automáticamente.
 
+## Dónde ejecutar el AI Agent
+
+El desarrollo de plugins con AI requiere ejecutar el AI Agent en el directorio raíz de un proyecto NocoBase creado con `nb init`. El CLI soporta dos fuentes: npm y Git. **Se recomienda usar la fuente Git**, para que la AI pueda consultar directamente el código fuente del núcleo de NocoBase y obtener mejores resultados de desarrollo.
+
+La estructura del directorio del proyecto creado por `nb init` es la siguiente (es decir, `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # Metadatos guardados por la CLI para el env actual
+├── source/               # Proyecto de código fuente (núcleo de NocoBase + plugins integrados)
+├── storage/              # Directorio de datos de ejecución
+├── plugins/              # Código fuente de sus plugins (nb scaffold plugin genera aquí)
+└── .env                  # Archivo de variables de entorno de la aplicación
+```
+
+Al abrir el AI Agent (como Claude Code, Codex, Cursor, etc.), cambie el directorio de trabajo a `<app-path>` para comenzar a desarrollar plugins.
+
 ## Inicio rápido
 
 Si ya ha instalado el [CLI de NocoBase](../ai/quick-start.md), puede omitir este paso.
@@ -25,7 +42,7 @@ Ayúdame a instalar el CLI de NocoBase y a completar la inicialización: https:/
 ### Instalación manual
 
 ```bash
-npm install -g @nocobase/cli@beta
+npm install -g @nocobase/cli
 nb init --ui
 ```
 
@@ -41,11 +58,13 @@ El navegador abrirá automáticamente la página de configuración visual y le g
 
 ## De una frase a un plugin completo
 
-Una vez completada la instalación, puede indicarle directamente a la AI en lenguaje natural qué plugin desea desarrollar. A continuación se presentan varios escenarios reales para que perciba la capacidad del desarrollo de plugins con AI.
+Una vez completada la instalación, abra el AI Agent en el directorio raíz del proyecto (`<app-path>`) y puede indicarle directamente a la AI en lenguaje natural qué plugin desea desarrollar. A continuación se presentan varios escenarios reales para que perciba la capacidad del desarrollo de plugins con AI.
 
 ### Desarrollar un plugin de marca de agua con una sola frase
 
 Con un solo prompt, la AI puede generar un plugin de marca de agua completo, incluyendo la lógica de renderizado del frontend, la detección antimanipulación, la API de almacenamiento de configuración del backend y la página de configuración del plugin.
+
+En `<app-path>`, envíe el siguiente prompt a la AI:
 
 ```
 Ayúdame a desarrollar un plugin de marca de agua para NocoBase utilizando el skill nocobase-plugin-development.
@@ -64,6 +83,8 @@ Durante todo el proceso, usted solo necesita describir las necesidades y tomar d
 ### Crear un componente de campo personalizado con una sola frase
 
 ¿Quiere que un campo integer se muestre como una valoración con estrellas? Indíquele a la AI el efecto de visualización deseado y le ayudará a generar un FlowModel personalizado para reemplazar el componente de renderizado predeterminado del campo.
+
+También en `<app-path>`, envíe el siguiente prompt a la AI:
 
 ```
 Ayúdame a desarrollar un plugin de NocoBase utilizando el skill nocobase-plugin-development, llamado @my-scope/plugin-rating.

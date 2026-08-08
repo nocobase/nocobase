@@ -80,7 +80,7 @@ Giả sử chúng ta muốn sử dụng SMS gateway của một nền tảng nà
 
 ### Tạo plugin
 
-1. Thực hiện lệnh tạo plugin `yarn pm add @nocobase/plugin-notification-example`
+1. Thực hiện lệnh tạo plugin `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Phát triển client
 
@@ -271,8 +271,8 @@ export default PluginNotificationExampleServer;
 
 ### Đăng ký và khởi động plugin
 
-1. Thực hiện lệnh đăng ký `yarn p add @nocobase/plugin-notification-example`
-2. Thực hiện lệnh kích hoạt `yarn pm enable @nocobase/plugin-notification-example`
+1. Thực hiện lệnh đăng ký `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Thực hiện lệnh kích hoạt `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Cấu hình kênh
 
