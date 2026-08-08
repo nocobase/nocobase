@@ -163,7 +163,6 @@ export class PluginAIServer extends Plugin {
     this.defineResources();
     this.registerMcpClientEvents();
     this.setPermissions();
-    this.registerAIFileAccessAuthorizer();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
     registerAIEmployeeTaskNotification(this);
@@ -280,6 +279,7 @@ export class PluginAIServer extends Plugin {
   }
 
   setPermissions() {
+    this.app.acl.appendStrategyResource('aiFiles');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
@@ -400,27 +400,6 @@ export class PluginAIServer extends Plugin {
     return {
       aiContextDatasources: this.repository('aiContextDatasources'),
     };
-  }
-
-  private registerAIFileAccessAuthorizer() {
-    this.fileManager.registerFileAccessAuthorizer({
-      name: 'ai-files',
-      authorize: async (ctx, params) => {
-        const currentUserId = ctx.state.currentUser?.id;
-        if (params.dataSourceKey !== 'main' || params.collectionName !== 'aiFiles' || !currentUserId) {
-          return false;
-        }
-
-        const file = await ctx.db.getRepository('aiFiles').findOne({
-          filter: {
-            id: params.id,
-            createdById: currentUserId,
-          },
-          fields: ['id'],
-        });
-        return Boolean(file);
-      },
-    });
   }
 
   get fileManager(): PluginFileManagerServer {
