@@ -15,8 +15,8 @@ import type {
   RunJSSourceAdapterContext,
   RunJSSourceAdapterRegistry,
   RunJSSourceLocator,
-} from '../vsc-file/public-api';
-import { buildRunJSSourceRepositoryIdentity, isVscError } from '../vsc-file/public-api';
+} from '@nocobase/runjs-workspace/server';
+import { buildRunJSSourceRepositoryIdentity, isVscError } from '@nocobase/runjs-workspace/server';
 import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';

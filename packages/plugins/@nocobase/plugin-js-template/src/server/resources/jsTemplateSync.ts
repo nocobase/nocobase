@@ -9,13 +9,13 @@
 
 import type { Database } from '@nocobase/database';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
+import type { RemoteSyncRuntime } from '../vsc-file/remotes';
+import { RemoteSyncError } from '../vsc-file/remotes';
 import type {
-  RemoteSyncRuntime,
   VscFileRemoteRecord,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-} from '../vsc-file/public-api';
-import { RemoteSyncError } from '../vsc-file/public-api';
+} from '../../shared/vsc-file/remote-sync-types';
 import { uid } from '@nocobase/utils';
 
 import { JS_TEMPLATE_COLLECTIONS, type JsTemplateAclAction } from '../../constants';

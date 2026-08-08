@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '../vsc-file/public-api';
+import { normalizeRunJSSourceLocator, type RunJSSourcePermissionResult } from '@nocobase/runjs-workspace/server';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';

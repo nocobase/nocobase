@@ -15,10 +15,10 @@ import type {
   VscPermissionAction,
   PreparedPush,
   VscRefName,
-  VscRemoteSnapshot,
-} from '../vsc-file/public-api';
-import { computeRemoteSnapshotContentHash } from '../vsc-file/public-api';
-import { VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
+} from '@nocobase/runjs-workspace/server';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import type { VscRemoteSnapshot } from '../../shared/vsc-file/remote-sync-types';
+import { computeRemoteSnapshotContentHash } from '../vsc-file/remotes/snapshot';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 

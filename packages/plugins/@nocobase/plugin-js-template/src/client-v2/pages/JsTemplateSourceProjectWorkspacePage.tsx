@@ -27,8 +27,8 @@ import {
   type RunJSWorkspacePathAccess,
   type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
-  useVscFileT,
-} from '../vsc-file/public-api';
+  useRunJSWorkspaceT,
+} from '@nocobase/runjs-workspace/client-v2';
 import { Alert, Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -150,7 +150,7 @@ function JsTemplateSourceProjectWorkspacePage({
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
   const apiClient = app.apiClient as ApiClientLike | undefined;
-  const studioT = useVscFileT();
+  const studioT = useRunJSWorkspaceT();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = projectIdProp || searchParams.get('projectId') || '';

@@ -8,7 +8,7 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import { isVscError } from '../vsc-file/public-api';
+import { isVscError } from '@nocobase/runjs-workspace/server';
 import { uid } from '@nocobase/utils';
 import { createHash, randomUUID } from 'crypto';
 

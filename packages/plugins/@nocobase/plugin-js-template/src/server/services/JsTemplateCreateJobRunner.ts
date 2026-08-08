@@ -9,7 +9,7 @@
 
 import { isJsTemplateError, mapRemoteSyncErrorToJsTemplate } from '../../shared/errors';
 import type { JsTemplateCreateJob } from '../../shared/types';
-import { RemoteSyncError } from '../vsc-file/public-api';
+import { RemoteSyncError } from '../vsc-file/remotes';
 import { JsTemplateCreateJobExecutor } from './JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobStore } from './JsTemplateCreateJobStore';
 import type { JsTemplateAuditService } from './JsTemplateAuditService';

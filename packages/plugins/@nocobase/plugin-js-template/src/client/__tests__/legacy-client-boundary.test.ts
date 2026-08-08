@@ -37,14 +37,13 @@ import {
   JS_TEMPLATE_EDITOR_PROVIDER_KEY,
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../../client-v2/jsTemplateRunJSIntegrationContract';
+import { JS_TEMPLATE_SETTINGS_KEY } from '../../constants';
 import pluginEnUS from '../../locale/en-US.json';
 import pluginZhCN from '../../locale/zh-CN.json';
-import PluginJsTemplateClient, {
-  JS_TEMPLATE_SETTINGS_KEY,
-  JsTemplateCatalogPage,
-  JsTemplateSourceProjectsPage,
-  PluginJsTemplateClient as NamedPluginJsTemplateClient,
-} from '..';
+import PluginJsTemplateClient, { PluginJsTemplateClient as NamedPluginJsTemplateClient } from '..';
+import * as clientEntry from '..';
+import JsTemplateCatalogPage from '../../client-v2/pages/JsTemplateCatalogPage';
+import JsTemplateSourceProjectsPage from '../../client-v2/pages/JsTemplateSourceProjectsPage';
 
 vi.mock('react-i18next', async (importOriginal) => ({
   ...(await importOriginal<typeof import('react-i18next')>()),
@@ -184,7 +183,9 @@ describe('plugin-js-template legacy client boundary', () => {
 
     await plugin.load();
 
-    expect(PluginJsTemplateClient).toBe(NamedPluginJsTemplateClient);
+    expect(Object.keys(clientEntry).sort()).toEqual(['PluginJsTemplateClient', 'default']);
+    expect(PluginJsTemplateClient).toBeTypeOf('function');
+    expect(NamedPluginJsTemplateClient).toBeTypeOf('function');
     expect(add.mock.calls.map(([key]) => key)).toEqual([
       JS_TEMPLATE_SETTINGS_KEY,
       `${JS_TEMPLATE_SETTINGS_KEY}.templates`,

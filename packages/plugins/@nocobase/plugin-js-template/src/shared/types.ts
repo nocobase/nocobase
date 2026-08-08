@@ -17,8 +17,8 @@ import {
   JS_TEMPLATE_SOURCE_MODE,
   type JsTemplateKind,
 } from '../constants';
+import type { RunJSSourceLocator, VscCommitRecord } from '@nocobase/runjs-workspace/shared';
 import type {
-  RunJSSourceLocator,
   VscGitRemoteConfig,
   VscGitRemoteConfigDraft,
   VscRemotePlannerAction,
@@ -27,8 +27,7 @@ import type {
   VscRemotePlannerState,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-  VscCommitRecord,
-} from './vsc-file/public-api';
+} from './vsc-file/remote-sync-types';
 
 export type { JsTemplateKind } from '../constants';
 

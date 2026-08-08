@@ -7,8 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSLegacySource, RunJSSourceAdapter, RunJSSourceLocator } from '../vsc-file';
-import { VscFileService } from '../vsc-file';
+import {
+  VscFileService,
+  type RunJSLegacySource,
+  type RunJSSourceAdapter,
+  type RunJSSourceLocator,
+} from '@nocobase/runjs-workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 import PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 

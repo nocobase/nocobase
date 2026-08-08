@@ -8,8 +8,8 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
-import { VscFileService, VscPermissionHookRegistry } from '../vsc-file';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SCHEMA_VERSION } from '../../constants';
 import type {

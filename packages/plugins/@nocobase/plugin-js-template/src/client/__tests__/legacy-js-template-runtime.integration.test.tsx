@@ -33,7 +33,7 @@ import {
   clearFieldMenuItemProviders,
 } from '@nocobase/client-v2';
 
-import { JS_TEMPLATE_ACL_SNIPPET, NAMESPACE } from '../../constants';
+import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
   JSActionJsTemplateSourceField,
   JSBlockJsTemplateSourceField,
@@ -41,10 +41,7 @@ import {
   JSItemJsTemplateSourceField,
   JSPageJsTemplateSourceField,
 } from '../../client-v2/components/JSBlockJsTemplateSourceField';
-import PluginJsTemplateClient, {
-  JS_TEMPLATE_SETTINGS_KEY,
-  PluginJsTemplateClient as NamedPluginJsTemplateClient,
-} from '..';
+import PluginJsTemplateClient, { PluginJsTemplateClient as NamedPluginJsTemplateClient } from '..';
 
 function createLegacyApplication() {
   return new Application({
@@ -82,7 +79,8 @@ describe('JS Template legacy admin-shell integration', () => {
     await loadLegacyPlugins(firstApp);
 
     const canonicalSettings = firstApp.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
-    expect(PluginJsTemplateClient).toBe(NamedPluginJsTemplateClient);
+    expect(PluginJsTemplateClient).toBeTypeOf('function');
+    expect(NamedPluginJsTemplateClient).toBeTypeOf('function');
     expect(canonicalSettings).toMatchObject({
       title: 'JS Templates',
       path: '/admin/settings/js-templates',

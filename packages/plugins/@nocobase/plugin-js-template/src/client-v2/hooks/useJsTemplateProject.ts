@@ -16,7 +16,7 @@ import type {
   JsTemplateCatalogAddTemplateInput,
   JsTemplateCatalogAddTemplateResult,
 } from '../../shared/catalogAuthoring';
-import type { VscCommitDiffResult } from '../../shared/vsc-file/public-api';
+import type { VscCommitDiffResult } from '@nocobase/runjs-workspace/shared';
 import type {
   JsTemplateChangeLifecycleInput,
   JsTemplateCommitRecord,

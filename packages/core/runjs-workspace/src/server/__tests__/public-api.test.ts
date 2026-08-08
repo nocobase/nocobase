@@ -14,17 +14,11 @@ import { describe, expect, it } from 'vitest';
 
 import * as serverPublicApi from '..';
 
-const repositoryRoot = path.resolve(__dirname, '../../../../../..');
 const serverIndexSource = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
-const jsTemplatePublicApiSource = fs.readFileSync(
-  path.resolve(repositoryRoot, 'packages/plugins/@nocobase/plugin-js-template/src/server/vsc-file/public-api.ts'),
-  'utf8',
-);
 
 describe('@nocobase/runjs-workspace/server public API', () => {
-  it('uses named exports in both public server barrels', () => {
+  it('uses named exports in the public server barrel', () => {
     expect(serverIndexSource).not.toMatch(/export\s+(?:type\s+)?\*/u);
-    expect(jsTemplatePublicApiSource).not.toMatch(/export\s+(?:type\s+)?\*/u);
   });
 
   it('keeps the production consumer surface available', () => {

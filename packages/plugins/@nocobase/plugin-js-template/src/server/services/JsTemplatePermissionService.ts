@@ -14,7 +14,7 @@ import type {
   VscPermissionHookInput,
   VscPermissionHookResult,
   VscPermissionRequestMetadata,
-} from '../vsc-file/public-api';
+} from '@nocobase/runjs-workspace/server';
 import { randomUUID } from 'crypto';
 
 import { JS_TEMPLATE_OWNER_TYPE, type JsTemplateAclAction } from '../../constants';

@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 
 import type { JsTemplateDiagnostic } from '../../../shared/types';
 import DiagnosticsPanel from '../../components/DiagnosticsPanel';
-import { CodeTab, FilesPanel, VersionHistoryDock } from '../../vsc-file/public-api';
+import { CodeTab, FilesPanel, VersionHistoryDock } from '@nocobase/runjs-workspace/client-v2';
 
 export interface WorkspaceStudioProps {
   activeFileReadOnlyNotice?: string;

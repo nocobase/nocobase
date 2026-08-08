@@ -8,12 +8,12 @@
  */
 
 import type { Database } from '@nocobase/database';
+import type { RemoteSyncRuntime } from '../vsc-file/remotes';
 import type {
-  RemoteSyncRuntime,
   VscFileRemoteRecord,
   VscRemoteProvider,
   VscRemoteSyncPlan,
-} from '../vsc-file/public-api';
+} from '../../shared/vsc-file/remote-sync-types';
 import { uid } from '@nocobase/utils';
 
 import { JsTemplateError } from '../../shared/errors';

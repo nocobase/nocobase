@@ -17,38 +17,7 @@ import pluginEnUS from '../../locale/en-US.json';
 import pluginZhCN from '../../locale/zh-CN.json';
 import { DEFAULT_JS_PAGE_TEMPLATE_FILES } from '../../shared/default-template-js-pages';
 import { isJsTemplateRuntimeSourceBinding } from '../../shared/jsTemplateSourceBinding';
-import {
-  JSActionJsTemplateSourceField,
-  JSBlockJsTemplateSourceField,
-} from '../components/JSBlockJsTemplateSourceField';
-import { JsTemplateCreateSourceSelector as DirectJsTemplateCreateSourceSelector } from '../components/JsTemplateCreateSourceSelector';
-import { createJsTemplateRunJSEditorProvider as directCreateJsTemplateRunJSEditorProvider } from '../components/RunJSJsTemplateEditorProvider';
-import { SaveAsJsTemplate as DirectSaveAsJsTemplate } from '../components/SaveAsJsTemplate';
-import { JsTemplateCredentialInput as DirectJsTemplateCredentialInput } from '../components/JsTemplateSecretVariableInput';
-import { JsTemplateSyncDrawer as DirectJsTemplateSyncDrawer } from '../components/JsTemplateSyncDrawer';
-import { useJsTemplateCreateJobs as directUseJsTemplateCreateJobs } from '../hooks/useJsTemplateCreateJobs';
-import { useJsTemplateProject as directUseJsTemplateProject } from '../hooks/useJsTemplateProject';
-import { useJsTemplateSync as directUseJsTemplateSync } from '../hooks/useJsTemplateSync';
-import {
-  createJsTemplateRunJSEditorProvider as exportedCreateJsTemplateRunJSEditorProvider,
-  JSActionJsTemplateSourceField as ExportedJSActionJsTemplateSourceField,
-  JSBlockJsTemplateSourceField as ExportedJSBlockJsTemplateSourceField,
-  JsTemplateCreateSourceSelector as ExportedJsTemplateCreateSourceSelector,
-  JsTemplateCredentialInput as ExportedJsTemplateCredentialInput,
-  JsTemplateCatalogPage as ExportedJsTemplateCatalogPage,
-  JsTemplateSourceProjectsPage as ExportedJsTemplateSourceProjectsPage,
-  JsTemplateSyncDrawer as ExportedJsTemplateSyncDrawer,
-  JsTemplateSourceProjectWorkspacePage as ExportedJsTemplateSourceProjectWorkspacePage,
-  SaveAsJsTemplate as ExportedSaveAsJsTemplate,
-  PluginJsTemplateClientV2 as ExportedPluginJsTemplateClientV2,
-  useJsTemplateCreateJobs as exportedUseJsTemplateCreateJobs,
-  useJsTemplateProject as exportedUseJsTemplateProject,
-  useJsTemplateSync as exportedUseJsTemplateSync,
-} from '../index';
-import DirectJsTemplateCatalogPage from '../pages/JsTemplateCatalogPage';
-import DirectJsTemplateSourceProjectsPage from '../pages/JsTemplateSourceProjectsPage';
-import DirectJsTemplateSourceProjectWorkspacePage from '../pages/JsTemplateSourceProjectWorkspacePage';
-import { PluginJsTemplateClientV2 as DirectPluginJsTemplateClientV2 } from '../plugin';
+import * as clientV2Entry from '../index';
 
 const pluginCanonicalTranslations = {
   'Compiling JS Template': '正在编译 JS 模板',
@@ -127,21 +96,10 @@ function collectProductionSources(directory: string): string[] {
 }
 
 describe('JS Templates client-v2 UI contract', () => {
-  it('exports the canonical client-v2 implementation', () => {
-    expect(ExportedPluginJsTemplateClientV2).toBe(DirectPluginJsTemplateClientV2);
-    expect(ExportedJsTemplateCatalogPage).toBe(DirectJsTemplateCatalogPage);
-    expect(ExportedJsTemplateSourceProjectsPage).toBe(DirectJsTemplateSourceProjectsPage);
-    expect(ExportedJsTemplateSourceProjectWorkspacePage).toBe(DirectJsTemplateSourceProjectWorkspacePage);
-    expect(ExportedJSActionJsTemplateSourceField).toBe(JSActionJsTemplateSourceField);
-    expect(ExportedJSBlockJsTemplateSourceField).toBe(JSBlockJsTemplateSourceField);
-    expect(ExportedSaveAsJsTemplate).toBe(DirectSaveAsJsTemplate);
-    expect(ExportedJsTemplateCreateSourceSelector).toBe(DirectJsTemplateCreateSourceSelector);
-    expect(ExportedJsTemplateCredentialInput).toBe(DirectJsTemplateCredentialInput);
-    expect(ExportedJsTemplateSyncDrawer).toBe(DirectJsTemplateSyncDrawer);
-    expect(exportedUseJsTemplateCreateJobs).toBe(directUseJsTemplateCreateJobs);
-    expect(exportedUseJsTemplateProject).toBe(directUseJsTemplateProject);
-    expect(exportedUseJsTemplateSync).toBe(directUseJsTemplateSync);
-    expect(exportedCreateJsTemplateRunJSEditorProvider).toBe(directCreateJsTemplateRunJSEditorProvider);
+  it('keeps the client-v2 package entry minimal', () => {
+    expect(Object.keys(clientV2Entry).sort()).toEqual(['PluginJsTemplateClientV2', 'default']);
+    expect(clientV2Entry.default).toBeTypeOf('function');
+    expect(clientV2Entry.PluginJsTemplateClientV2).toBeTypeOf('function');
   });
 
   it('keeps canonical product copy complete in en-US and zh-CN', () => {

@@ -14,12 +14,8 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import {
-  RemoteSyncAdapterRegistry,
-  RemoteSyncError,
-  RemoteSyncRuntimeService,
-  VscPermissionHookRegistry,
-} from '../vsc-file';
+import { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { RemoteSyncAdapterRegistry, RemoteSyncError, RemoteSyncRuntimeService } from '../vsc-file/remotes';
 import { vi } from 'vitest';
 
 import type { GitCommandRequest, GitCommandResult } from '../vsc-file/remotes/providers/git/GitCommandRunner';

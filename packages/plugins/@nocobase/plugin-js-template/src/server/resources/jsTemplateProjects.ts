@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { isVscError } from '../vsc-file/public-api';
+import { isVscError } from '@nocobase/runjs-workspace/server';
 import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { uid } from '@nocobase/utils';
 

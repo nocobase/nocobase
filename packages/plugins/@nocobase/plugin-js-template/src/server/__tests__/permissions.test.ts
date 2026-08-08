@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { VscPermissionHookInput } from '../vsc-file';
+import type { VscPermissionHookInput } from '@nocobase/runjs-workspace/server';
 import type { Application } from '@nocobase/server';
 import { vi } from 'vitest';
 

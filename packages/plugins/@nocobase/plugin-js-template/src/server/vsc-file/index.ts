@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './public-api';
-export * from './plugin';
-export { default } from './plugin';
+export * from './remotes';
+export * from './remotes/credentialRef';
+export * from './remotes/snapshot';
+export * from '../../shared/vsc-file/git-config-validation';
+export * from '../../shared/vsc-file/remote-sync-types';

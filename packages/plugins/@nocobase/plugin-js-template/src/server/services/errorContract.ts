@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscError } from '../vsc-file/public-api';
-import { isVscError } from '../vsc-file/public-api';
+import { isVscError, type VscError } from '@nocobase/runjs-workspace/server';
 
 import { JsTemplateError } from '../../shared/errors';
 

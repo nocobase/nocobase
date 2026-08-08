@@ -20,7 +20,11 @@ const requiredJavaScriptArtifacts = [
   'dist/server/index.js',
   'dist/swagger/index.js',
 ] as const;
-const requiredDeclarationArtifacts = ['dist/server/index.d.ts'] as const;
+const requiredDeclarationArtifacts = [
+  'dist/client/index.d.ts',
+  'dist/client-v2/index.d.ts',
+  'dist/server/index.d.ts',
+] as const;
 
 export default defineConfig({
   beforeBuild: async (log) => {

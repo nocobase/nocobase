@@ -7,31 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default as JsTemplateCatalogPage } from './pages/JsTemplateCatalogPage';
-export { default as JsTemplateSourceProjectsPage } from './pages/JsTemplateSourceProjectsPage';
-export { default as JsTemplateSourceProjectWorkspacePage } from './pages/JsTemplateSourceProjectWorkspacePage';
-export {
-  JSActionJsTemplateSourceField,
-  JSBlockJsTemplateSourceField,
-  JSFieldJsTemplateSourceField,
-  JSItemJsTemplateSourceField,
-  JSPageJsTemplateSourceField,
-} from './components/JSBlockJsTemplateSourceField';
-export * from './components/JsTemplateCreateSourceSelector';
-export * from './components/JsTemplateGitSourceFields';
-export * from './components/JsTemplateSecretVariableInput';
-export * from './components/JsTemplateSyncDrawer';
-export * from './components/RunJSJsTemplateEditorProvider';
-export * from './components/SaveAsJsTemplate';
-export * from './hooks/useJsTemplateCreateJobs';
-export * from './hooks/useJsTemplateProject';
-export * from './hooks/useJsTemplateSync';
-export * from './modelMenu/createJsTemplateModelMenuProvider';
-export * from './modelMenu/registerJsTemplateModelMenus';
-export * from './resolvers/JsTemplateRunJSResolver';
-export * from './jsTemplateRunJSIntegration';
-export * from './jsTemplateRunJSIntegrationContract';
-export * from './vsc-file/public-api';
-export * from '../shared/catalogAuthoring';
 export { PluginJsTemplateClientV2 } from './plugin';
 export { default } from './plugin';

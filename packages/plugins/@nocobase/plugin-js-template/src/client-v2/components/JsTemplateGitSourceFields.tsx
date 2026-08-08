@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscGitRemoteConfigDraft, VscGitRemoteTransport } from '../../shared/vsc-file/public-api';
+import type { VscGitRemoteConfigDraft, VscGitRemoteTransport } from '../../shared/vsc-file/remote-sync-types';
 import {
   normalizeGitRepositoryUrlSyntax,
   validateGitBranchSyntax,

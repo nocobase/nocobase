@@ -21,31 +21,33 @@ import type {
   JsTemplateSelectableTemplateSummary,
   SaveAsJsTemplateInput,
 } from '../../shared/types';
-import {
-  ApplyCompiledTemplatesService,
-  DetachJsTemplateToInlineService,
-  JsTemplateAuditService,
-  JsTemplateCompilePreviewService,
-  JsTemplateCompileService,
-  JsTemplateCompileWorkerPool,
-  JsTemplateError,
-  JsTemplatePermissionService,
-  JsTemplateProjectService,
-  JsTemplateRuntimeService,
-  JsTemplateService,
-  JsTemplateUsageService,
-  JsTemplateValidator,
-  JsTemplateWorkspaceCompilerBridge,
-  PluginJsTemplateServer,
-  SaveAsJsTemplateService,
-  buildJsTemplateCapabilities,
-  buildJsTemplateArtifactUrl,
-  jsTemplateExternalizationCapabilities,
-} from '../index';
-import type { JsTemplateServiceContext } from '../index';
-import { templateFromModel } from '../services/JsTemplateService';
+import { JsTemplateError } from '../../shared/errors';
+import * as packageEntry from '../../index';
+import * as serverEntry from '../index';
+import { PluginJsTemplateServer } from '../index';
+import { jsTemplateExternalizationCapabilities } from '../externalizationCapabilities';
+import { ApplyCompiledTemplatesService } from '../services/ApplyCompiledTemplatesService';
+import { DetachJsTemplateToInlineService } from '../services/DetachJsTemplateToInlineService';
+import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
+import { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
+import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
+import { JsTemplateCompileWorkerPool } from '../services/JsTemplateCompileWorkerPool';
+import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import { JsTemplateProjectService, type JsTemplateServiceContext } from '../services/JsTemplateProjectService';
+import { buildJsTemplateArtifactUrl, JsTemplateRuntimeService } from '../services/JsTemplateRuntimeService';
+import { JsTemplateService, templateFromModel } from '../services/JsTemplateService';
+import { JsTemplateUsageService } from '../services/JsTemplateUsageService';
+import { buildJsTemplateCapabilities, JsTemplateValidator } from '../services/JsTemplateValidator';
+import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
+import { SaveAsJsTemplateService } from '../services/SaveAsJsTemplateService';
 
 describe('JS Template server public contract', () => {
+  it('keeps the server and package root entries minimal', () => {
+    const expectedKeys = ['PluginJsTemplateServer', 'default', 'registerJsTemplateDomainAvailabilityGuard'];
+    expect(Object.keys(serverEntry).sort()).toEqual(expectedKeys);
+    expect(Object.keys(packageEntry).sort()).toEqual(expectedKeys);
+  });
+
   it('exports the canonical implementation directly', () => {
     expect(PluginJsTemplateServer.name).toBe('PluginJsTemplateServer');
     expect(JsTemplateAuditService.name).toBe('JsTemplateAuditService');

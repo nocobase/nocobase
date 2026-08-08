@@ -33,8 +33,9 @@ import {
   type VscFileService,
   type VscRepositoryRecord,
   VscError,
-} from '../vsc-file';
-import { buildRunJSSourceRepositoryIdentity, canonicalizeRunJSCompileFiles } from '../vsc-file/public-api';
+  buildRunJSSourceRepositoryIdentity,
+  canonicalizeRunJSCompileFiles,
+} from '@nocobase/runjs-workspace/server';
 
 const project: JsTemplateProject = {
   id: 'jtp_existing',

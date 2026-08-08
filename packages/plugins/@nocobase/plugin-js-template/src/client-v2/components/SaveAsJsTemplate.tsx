@@ -8,7 +8,7 @@
  */
 
 import { ExportOutlined } from '@ant-design/icons';
-import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '../vsc-file/public-api';
+import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '@nocobase/runjs-workspace/client-v2';
 import { Button, Form, Input, Modal, Radio, Select, Tooltip, message } from 'antd';
 import React from 'react';
 

@@ -14,8 +14,8 @@ import type {
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
-} from '../vsc-file/public-api';
-import { RemoteSyncError } from '../vsc-file/public-api';
+} from '../../shared/vsc-file/remote-sync-types';
+import { RemoteSyncError } from '../vsc-file/remotes';
 
 import { JsTemplateError, isJsTemplateError, mapRemoteSyncErrorToJsTemplate } from '../../shared/errors';
 import type { JsTemplateProject, JsTemplateSaveSourceResult } from '../../shared/types';

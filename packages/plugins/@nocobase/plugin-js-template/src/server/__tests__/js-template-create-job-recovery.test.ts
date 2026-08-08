@@ -10,7 +10,7 @@
 import { vi } from 'vitest';
 
 import type { JsTemplateCreateJob } from '../../shared/types';
-import { RemoteSyncError } from '../vsc-file/public-api';
+import { RemoteSyncError } from '../vsc-file/remotes';
 import type { JsTemplateAuditService, JsTemplateCreateJobAuditInput } from '../services/JsTemplateAuditService';
 import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';

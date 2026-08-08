@@ -9,13 +9,6 @@
 
 import type React from 'react';
 
-export * from './vsc-file/public-api';
-export * from '../shared/catalogAuthoring';
-
-export { default as JsTemplateCatalogPage } from '../client-v2/pages/JsTemplateCatalogPage';
-export { default as JsTemplateSourceProjectsPage } from '../client-v2/pages/JsTemplateSourceProjectsPage';
-export { JS_TEMPLATE_SETTINGS_KEY } from '../constants';
-
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
   installJsTemplateRunJSIntegrations,
@@ -25,7 +18,7 @@ import JsTemplateCatalogPage from '../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../client-v2/pages/JsTemplateSourceProjectsPage';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
 
-export interface JsTemplateClientOptions {
+interface JsTemplateClientOptions {
   name?: string;
   packageName?: string;
   [key: string]: unknown;

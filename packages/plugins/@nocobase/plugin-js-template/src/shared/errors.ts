@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RemoteSyncErrorCode } from './vsc-file/public-api';
+import type { RemoteSyncErrorCode } from './vsc-file/remote-sync-types';
 
 /** Canonical public error codes shared by HTTP, CLI, and SDK consumers. */
 export const JS_TEMPLATE_ERROR_CODES = [

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { VscRemoteSnapshotFile } from '../vsc-file';
+import type { VscRemoteSnapshotFile } from '../../shared/vsc-file/remote-sync-types';
 import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';

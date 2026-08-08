@@ -18,7 +18,7 @@ import {
   type VscPermissionHookRegistry,
   VscFileService,
 } from '@nocobase/runjs-workspace/server';
-import type { RemoteSyncRuntime } from './vsc-file/public-api';
+import type { RemoteSyncRuntime } from './vsc-file/remotes';
 import { JsTemplateRemoteSyncModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';

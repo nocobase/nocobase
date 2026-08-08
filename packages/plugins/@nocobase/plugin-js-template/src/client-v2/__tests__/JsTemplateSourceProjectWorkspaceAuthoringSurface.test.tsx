@@ -67,7 +67,7 @@ vi.mock('@nocobase/client-v2', async () => {
 
 vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
 
-vi.mock('../vsc-file/public-api', async (importOriginal) => {
+vi.mock('@nocobase/runjs-workspace/client-v2', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -79,7 +79,7 @@ vi.mock('../vsc-file/public-api', async (importOriginal) => {
     },
     mergeHistoryItems: <T,>(current: T[], next: T[]) => [...current, ...next],
     summarizeWorkspaceChanges: () => ({ files: 1, additions: 1, deletions: 1 }),
-    useVscFileT: () => (key: string) => key,
+    useRunJSWorkspaceT: () => (key: string) => key,
     FilesPanel: () => <div data-testid="files-panel" />,
     VersionHistoryDock: () => null,
     RestoreVersionModal: () => null,

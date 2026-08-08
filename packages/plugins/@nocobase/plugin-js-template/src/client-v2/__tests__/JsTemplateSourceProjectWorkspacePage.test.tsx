@@ -91,8 +91,10 @@ vi.mock('../api/jsTemplatesRequests', async (importOriginal) => {
   };
 });
 
-vi.mock('../vsc-file/public-api', () => {
+vi.mock('@nocobase/runjs-workspace/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/runjs-workspace/client-v2')>();
   return {
+    ...actual,
     inferLanguageFromPath: (path: string) => {
       const extension = path.split('.').pop();
       return extension === 'ts' || extension === 'tsx' ? 'typescript' : extension || 'text';
@@ -102,7 +104,7 @@ vi.mock('../vsc-file/public-api', () => {
       next.forEach((item) => itemsById.set(item.id, item));
       return Array.from(itemsById.values());
     },
-    useVscFileT: () => mocks.t,
+    useRunJSWorkspaceT: () => mocks.t,
     FilesPanel: ({
       files,
       folders,

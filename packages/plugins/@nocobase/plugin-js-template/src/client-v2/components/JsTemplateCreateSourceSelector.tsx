@@ -8,7 +8,7 @@
  */
 
 import { UploadOutlined } from '@ant-design/icons';
-import type { VscGitRemoteConfigDraft } from '../../shared/vsc-file/public-api';
+import type { VscGitRemoteConfigDraft } from '../../shared/vsc-file/remote-sync-types';
 import { Alert, Form, Radio, Space, Upload } from 'antd';
 import type { RcFile, UploadFile } from 'antd/es/upload/interface';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

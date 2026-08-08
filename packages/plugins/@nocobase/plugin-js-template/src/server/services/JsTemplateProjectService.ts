@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
-import { RemoteSyncError, VscFileService, VscPermissionHookRegistry } from '../vsc-file/public-api';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 
@@ -21,6 +21,7 @@ import {
 } from '../../constants';
 import { createDefaultJsTemplateTemplate } from '../../shared/default-template';
 import { JsTemplateError, mapRemoteSyncErrorToJsTemplate } from '../../shared/errors';
+import { RemoteSyncError } from '../vsc-file/remotes';
 import type {
   JsTemplateChangeLifecycleInput,
   JsTemplateCreateProjectInput,
