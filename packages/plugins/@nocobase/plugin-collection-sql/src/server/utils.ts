@@ -48,3 +48,21 @@ export const checkSQL = (sql: string) => {
     throw new Error('SQL statements contain dangerous keywords');
   }
 };
+
+const sqlVariablePattern = /'\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}'|\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}/g;
+
+export const bindSQLVariables = (sql: string, variables: Record<string, unknown> = {}) => {
+  const bind: Record<string, unknown> = {};
+  const statement = sql.replace(sqlVariablePattern, (_match, quotedName: string, unquotedName: string) => {
+    const name = quotedName || unquotedName;
+    const bindName = `sql_${name}`;
+    bind[bindName] = Object.prototype.hasOwnProperty.call(variables, name) ? variables[name] : null;
+    return `$${bindName}`;
+  });
+
+  return { sql: statement, bind };
+};
+
+export const normalizeSQLForInference = (sql: string) => {
+  return sql.replace(sqlVariablePattern, 'NULL').replace(/@@/g, '=');
+};

@@ -9,6 +9,7 @@
 
 import { Model, sqlParser, SQLParserTypes } from '@nocobase/database';
 import { selectQuery } from './query-generator';
+import { normalizeSQLForInference } from '../utils';
 
 export class SQLModel extends Model {
   static sql: string;
@@ -76,7 +77,7 @@ export class SQLModel extends Model {
     table: string;
     columns: { name: string; as?: string }[];
   }[] {
-    let { ast: _ast } = sqlParser.parse(this.sql);
+    let { ast: _ast } = sqlParser.parse(normalizeSQLForInference(this.sql));
     if (Array.isArray(_ast)) {
       _ast = _ast[0];
     }
