@@ -31,6 +31,7 @@ interface AppErrorPayload {
 }
 
 const isAppCommanding = (error?: AppErrorPayload) => error?.code === 'APP_COMMANDING';
+const isAppUpgrading = (error?: AppErrorPayload) => isAppCommanding(error) && error?.command?.name === 'upgrade';
 
 export const AppSpin = () => {
   return (
@@ -232,7 +233,7 @@ export const AppMaintainingDialog: FC<{ app: Application; error: Error }> = obse
     if (component) {
       return app.renderComponent(component, { app, error });
     }
-    if (isAppCommanding(payload)) {
+    if (isAppUpgrading(payload)) {
       return null;
     }
 
