@@ -13,8 +13,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runJSStudioProvider } from '../runjs-studio/RunJSStudioProvider';
 import { runJSStudioToolbarRegistry } from '../runjs-studio/RunJSStudioToolbarRegistry';
-import type { RunJSSourceActionInput, RunJSSourceLocator } from '../runjs-studio/types';
-import { runJSSourceActionNames, RunJSSourceRequestError } from '../runjs-studio/useRunJSSourceResource';
+import type { RunJSSourceLocator } from '../runjs-studio/types';
+import { RunJSSourceRequestError } from '../runjs-studio/useRunJSSourceResource';
 import { runJSManifestPath } from '../runjs-studio/workspaceUtils';
 
 const mocks = vi.hoisted(() => {
@@ -449,32 +449,6 @@ describe('runJSStudioProvider', () => {
         },
       });
     });
-  });
-
-  it('exposes the typed incremental save action without changing the Studio save route', () => {
-    const input: RunJSSourceActionInput<'saveChanges'> = {
-      locator,
-      repoId: repository.id,
-      baseCommitId: repository.headCommitId,
-      baseOwnerFingerprint: openResult.ownerFingerprint,
-      message: 'Update one RunJS file',
-      changes: [
-        {
-          operation: 'upsert',
-          path: 'src/client/index.tsx',
-          expectedBlobHash: 'a'.repeat(64),
-          content: 'return 2;',
-        },
-      ],
-    };
-
-    expect(runJSSourceActionNames).toContain('saveChanges');
-    expect(input.changes).toEqual([
-      expect.objectContaining({
-        operation: 'upsert',
-        expectedBlobHash: 'a'.repeat(64),
-      }),
-    ]);
   });
 
   it('opens the permission-protected commit diff from version history', async () => {

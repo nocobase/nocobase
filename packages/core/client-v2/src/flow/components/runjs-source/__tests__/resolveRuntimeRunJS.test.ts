@@ -330,37 +330,22 @@ return {
     } satisfies Partial<RunJSSourceResolverError>);
   });
 
-  it('uses the retained artifact when an external resolver is not registered', async () => {
-    await expect(
-      resolveRuntimeRunJS({
-        runJs: {
-          code: 'return "last known good";',
-          sourceMode: 'js-template',
-          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-          settings: { region: 'APAC' },
-        },
-      }),
-    ).resolves.toEqual({
-      code: 'return "last known good";',
-      version: 'v1',
-      sourceMode: 'js-template',
-      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-      settings: { region: 'APAC' },
-      context: undefined,
-    });
-  });
-
   it.each([
-    Object.assign(new Error('runtime unavailable'), { code: 'JS_TEMPLATE_RUNTIME_UNAVAILABLE', status: 409 }),
-    Object.assign(new Error('resource unavailable'), { response: { status: 404 } }),
-    Object.assign(new Error('service unavailable'), { response: { status: 503 } }),
-  ])('uses the retained artifact for an explicitly unavailable resolver service', async (resolverError) => {
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'js-template',
-      resolve: async () => {
-        throw resolverError;
-      },
-    });
+    ['an unregistered resolver', null],
+    [
+      'an unavailable runtime',
+      Object.assign(new Error('runtime unavailable'), { code: 'JS_TEMPLATE_RUNTIME_UNAVAILABLE', status: 409 }),
+    ],
+    ['a 503 resolver service', Object.assign(new Error('service unavailable'), { response: { status: 503 } })],
+  ] as const)('uses the retained artifact for %s', async (_case, resolverError) => {
+    if (resolverError) {
+      RunJSSourceResolverRegistry.registerResolver({
+        sourceMode: 'js-template',
+        resolve: async () => {
+          throw resolverError;
+        },
+      });
+    }
 
     await expect(
       resolveRuntimeRunJS({
@@ -369,12 +354,16 @@ return {
           version: 'v2',
           sourceMode: 'js-template',
           sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
+          settings: { region: 'APAC' },
         },
       }),
-    ).resolves.toMatchObject({
+    ).resolves.toEqual({
       code: 'return "last known good";',
       version: 'v2',
       sourceMode: 'js-template',
+      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
+      settings: { region: 'APAC' },
+      context: undefined,
     });
   });
 

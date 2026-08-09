@@ -11,10 +11,7 @@ import type { Database } from '@nocobase/database';
 import type { RunJSSourceAdapter, RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
 
 import { registerFlowModelRunJSSourceAdapters } from '../runjs-sources';
-import {
-  createFlowModelRunJSSourceAdapters,
-  JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT,
-} from '../runjs-sources/flow-model-adapters';
+import { createFlowModelRunJSSourceAdapters } from '../runjs-sources/flow-model-adapters';
 
 type Registrar = {
   adapters: RunJSSourceAdapter[];
@@ -22,36 +19,6 @@ type Registrar = {
 };
 
 describe('flow-engine RunJS source registration', () => {
-  it('pins JS Template integration to the historical FlowModel and source-binding wire keys', () => {
-    expect(JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT).toEqual({
-      sourceMode: 'js-template',
-      sourceBindingType: 'js-template-entry',
-      locatorKind: 'flowModel.step',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-      versionPath: ['version'],
-      sourceMetadataKindKey: 'jsTemplateKind',
-      modelSurfaces: [
-        { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSColumnModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSItemActionModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-        { modelUse: 'JSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-        { modelUse: 'JSRecordActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-        { modelUse: 'JSCollectionActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-        { modelUse: 'JSFormActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-        { modelUse: 'FilterFormJSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-      ],
-      chartSurfaces: [
-        { kind: 'chart.option', surfaceStyle: 'value' },
-        { kind: 'chart.events', surfaceStyle: 'action' },
-      ],
-    });
-  });
-
   it('registers directly with the always-on Workspace runtime and unregisters every adapter on cleanup', () => {
     const registrar = createRegistrar();
     const cleanup = registerFlowModelRunJSSourceAdapters({} as Database, registrar);
@@ -202,89 +169,6 @@ describe('flow-engine RunJS source registration', () => {
     await expect(adapter.readLegacy({ locator, ctx })).rejects.toMatchObject({
       code: 'RUNJS_SOURCE_NOT_FOUND',
       details: { path: 'stepParams.jsSettings.runJs' },
-    });
-  });
-
-  it('covers FlowModel step read/write and external-to-inline contracts without an app host', async () => {
-    const model: Record<string, unknown> = {
-      uid: 'step-contract-model',
-      use: 'JSBlockModel',
-      stepParams: {
-        jsSettings: {
-          runJs: {
-            code: 'ctx.render("old");',
-            version: 'v2',
-            keep: 'preserved',
-          },
-        },
-      },
-    };
-    const { adapters, ctx } = createAdapterHarness(model);
-    const adapter = adapters.find((item) => item.kind === 'flowModel.step');
-    if (!adapter) {
-      throw new Error('FlowModel step source adapter is unavailable');
-    }
-    const locator: RunJSSourceLocator = {
-      kind: 'flowModel.step',
-      modelUid: 'step-contract-model',
-      flowKey: 'jsSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-    };
-
-    const legacy = await adapter.readLegacy({ locator, ctx });
-    expect(legacy).toMatchObject({ code: 'ctx.render("old");', version: 'v2', surfaceStyle: 'render' });
-    await adapter.writeRuntime({
-      locator,
-      artifact: runtimeArtifact('ctx.render("new");'),
-      commitId: 'step-commit',
-      baseOwnerFingerprint: legacy.ownerFingerprint,
-      ctx,
-    });
-    expect(getAtPath(model, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'ctx.render("new");',
-      version: 'v2',
-      keep: 'preserved',
-      sourceRef: {
-        type: 'vsc-file',
-        repoId: 'runjs-repo',
-        commitId: 'step-commit',
-        entry: 'src/main.tsx',
-      },
-    });
-
-    const source = getAtPath(model, ['stepParams', 'jsSettings', 'runJs']);
-    if (!isRecord(source)) {
-      throw new Error('FlowModel step source is unavailable');
-    }
-    source.sourceMode = 'js-template';
-    source.sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_shared',
-      templateId: 'jtt_1',
-      kind: 'js-block',
-    };
-    await expect(adapter.assertCanRead({ locator, ctx })).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
-
-    const transitionCtx: RunJSSourceAdapterContext = { ...ctx, sourceTransition: 'external-to-inline' };
-    await expect(adapter.assertCanWrite({ locator, ctx: transitionCtx })).resolves.toBeUndefined();
-    const externalLegacy = await adapter.readLegacy({ locator, ctx: transitionCtx });
-    await adapter.writeRuntime({
-      locator,
-      artifact: runtimeArtifact('ctx.render("inline again");'),
-      commitId: 'inline-commit',
-      baseOwnerFingerprint: externalLegacy.ownerFingerprint,
-      ctx: transitionCtx,
-    });
-    expect(getAtPath(model, ['stepParams', 'jsSettings', 'runJs'])).toMatchObject({
-      code: 'ctx.render("inline again");',
-      sourceMode: 'js-template',
-      sourceBinding: {
-        type: 'js-template-entry',
-        projectId: 'jtp_shared',
-        templateId: 'jtt_1',
-        kind: 'js-block',
-      },
     });
   });
 

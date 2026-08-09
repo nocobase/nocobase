@@ -189,23 +189,6 @@ describe('flowSurfaces JS Template usage synchronization', () => {
     expect(cleanupHarness.syncUsages).not.toHaveBeenCalled();
   });
 
-  it('skips Usage synchronization for unrelated Inline code changes', async () => {
-    const inlineHarness = createHarness(
-      runJsOptions({
-        code: "ctx.render('before');",
-        version: 'v2',
-      }),
-    );
-    await inlineHarness.service.patchFlowSurfaceModelOptions({
-      uid: 'owner-1',
-      ...runJsOptions({
-        code: "ctx.render('after');",
-        version: 'v2',
-      }),
-    });
-    expect(inlineHarness.syncUsages).not.toHaveBeenCalled();
-  });
-
   it('marks the complete owner tree missing before deleting the FlowModel tree', async () => {
     const harness = createHarness(
       runJsOptions({

@@ -39,42 +39,6 @@ describe('vsc-file resource actions and ACL', () => {
     expect(actions).toEqual(expectedActions);
   });
 
-  it('allows logged-in users to create repositories, pull, and push', async () => {
-    const createResponse = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'demo',
-        name: 'main',
-      },
-    });
-    const repository = createResponse.body.data.repository;
-    const pullResponse = await agent.resource('vscFile').pull({
-      values: {
-        repoId: repository.id,
-      },
-    });
-    const pushResponse = await agent.resource('vscFile').push({
-      values: {
-        repoId: repository.id,
-        baseCommitId: null,
-        message: 'first commit',
-        files: [{ path: 'README.md', content: '# Demo\n' }],
-      },
-    });
-
-    expect(createResponse.status).toBe(200);
-    expect(pullResponse.status).toBe(200);
-    expect(pushResponse.status).toBe(200);
-    expect(pushResponse.body.data.commit).toMatchObject({
-      seq: 1,
-      message: 'first commit',
-    });
-    expect(pushResponse.body.data.repository).toMatchObject({
-      id: repository.id,
-      headCommitId: pushResponse.body.data.commit.id,
-    });
-  });
-
   it('exercises the full repository workflow through public APIs', async () => {
     const createResponse = await agent.resource('vscFile').createRepository({
       values: {

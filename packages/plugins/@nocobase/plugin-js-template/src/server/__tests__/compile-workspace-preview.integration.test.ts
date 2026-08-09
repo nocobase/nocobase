@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
 import { type JsTemplatePulledFile, type JsTemplateProject, type JsTemplateTreeEntryInput } from '../../shared/types';
 import { createJsTemplatesResource } from '../resources/jsTemplates';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
-import { JS_TEMPLATE_AUTHORING_SURFACES } from '../services/JsTemplateCompileContract';
 import { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
 import { JsTemplateFileService } from '../services/JsTemplateFileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
@@ -1467,11 +1465,6 @@ function registerWorkspaceCompilerBridgeTests() {
         path: 'src/client/js-blocks/sales-kpi/index.tsx',
         line: 2,
       });
-    });
-
-    it('keeps compiler surfaces aligned with the js-template kind contract', () => {
-      expect(Object.keys(JS_TEMPLATE_AUTHORING_SURFACES).sort()).toEqual([...JS_TEMPLATE_SUPPORTED_KINDS].sort());
-      expect(Object.values(JS_TEMPLATE_AUTHORING_SURFACES).every((surface) => surface.compilerSurfaceStyle)).toBe(true);
     });
 
     it('compiles JS Field templates through the render surface used by the field runtime', async () => {

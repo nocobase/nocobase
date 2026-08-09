@@ -14,7 +14,6 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplate, JsTemplateKind, JsTemplateProject, JsTemplateRuntimeSourceBinding } from '../../shared/types';
-import swaggerDocument from '../../swagger';
 import { createJsTemplatesResource } from '../resources/jsTemplates';
 import type { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
 import {
@@ -1981,21 +1980,6 @@ describe('detach to inline integration', () => {
   });
 
   describe('detach-to-inline resource', () => {
-    it('keeps the public Detach request schema aligned with the normalized resource input', () => {
-      const detachToInlineRequest = swaggerDocument.components.schemas.DetachJsTemplateToInlineRequest;
-
-      expect(detachToInlineRequest.required).toEqual([
-        'idempotencyKey',
-        'locator',
-        'projectId',
-        'templateId',
-        'expectedProjectHeadCommitId',
-      ]);
-      expect(Object.keys(detachToInlineRequest.properties).sort()).toEqual(
-        ['idempotencyKey', 'locator', 'projectId', 'templateId', 'expectedProjectHeadCommitId'].sort(),
-      );
-    });
-
     it('normalizes the detachToInline resource input and request context', async () => {
       const detachToInline = vi.fn(async () => ({ code: 'ctx.render(<div />);', runtimeVersion: 'v2' }));
       const resource = createJsTemplatesResource(

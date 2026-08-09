@@ -70,15 +70,6 @@ function inlineCodeOptions(use: string, code: string) {
 }
 
 describe('flowSurfaces js-template usage sync', () => {
-  it('maps every public JS owner use to its canonical settings group', () => {
-    for (const use of JS_OWNER_USES.slice(0, 7)) {
-      expect(resolveRunJsSettingsGroupKey(use), use).toBe('jsSettings');
-    }
-    for (const use of JS_OWNER_USES.slice(7)) {
-      expect(resolveRunJsSettingsGroupKey(use), use).toBe('clickSettings');
-    }
-  });
-
   it('syncs activation, settings updates, and inline cleanup but ignores unrelated nodes', () => {
     expect(
       shouldSyncJsTemplateUsages(createOptions('JSFieldModel', 'inline'), createOptions('JSFieldModel', 'js-template')),

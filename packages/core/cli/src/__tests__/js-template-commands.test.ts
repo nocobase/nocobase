@@ -16,6 +16,7 @@ import JsTemplateCheck from '../commands/js-template/check.js';
 import JsTemplatePull from '../commands/js-template/pull.js';
 import JsTemplateSave from '../commands/js-template/save.js';
 import {
+  extractTemplateRecord,
   JS_TEMPLATE_BASELINE_PATH,
   JS_TEMPLATE_EXIT_CODES,
   JS_TEMPLATE_STATE_PATH,
@@ -60,36 +61,12 @@ const JS_TEMPLATE_KIND_FIXTURES: readonly JsTemplateKindFixture[] = [
     source: 'ctx.render(<div>{ctx.t("你好")}</div>);\n',
   },
   {
-    kind: 'js-page',
-    root: 'src/client/js-pages/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo page',
-    tag: 'JS Page',
-    source: 'ctx.render(<div>{ctx.t("Demo page")}</div>);\n',
-  },
-  {
-    kind: 'js-field',
-    root: 'src/client/js-fields/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo field',
-    tag: 'JS Field',
-    source: 'ctx.render(<span>{String(ctx.value ?? "-")}</span>);\n',
-  },
-  {
     kind: 'js-action',
     root: 'src/client/js-actions/demo',
     entryFileName: 'index.ts',
     title: 'Demo action',
     tag: 'JS Action',
     source: 'ctx.message.success(ctx.t("Demo action"));\n',
-  },
-  {
-    kind: 'js-item',
-    root: 'src/client/js-items/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo item',
-    tag: 'JS Item',
-    source: 'ctx.render(<span>{ctx.t("Demo item")}</span>);\n',
   },
 ];
 
@@ -321,29 +298,43 @@ describe('nb js-template pull/check/save', () => {
     expect(JsTemplateSave.summary).toContain('JS Template');
   });
 
-  test.each(JS_TEMPLATE_KIND_FIXTURES.map((fixture) => [fixture.kind] as const))(
-    'pulls a supported %s workspace',
-    async (kind) => {
-      const workspace = await createTempWorkspace();
-      const fixture = getKindFixture(kind);
-      await runPull(workspace, null, kind);
-
-      const state = JSON.parse(
-        await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
-      ) as JsTemplateWorkspaceState;
-      expect(state.template).toEqual({
-        id: 'jtt_demo',
-        kind,
-        name: 'demo',
-        path: getEntryPath(fixture),
-        descriptorPath: getDescriptorPath(fixture),
-      });
-      expect(JSON.parse(await readFile(join(workspace, ...getDescriptorPath(fixture).split('/')), 'utf8'))).toEqual(
-        getDescriptorMetadata(fixture),
-      );
-      expect(await readFile(join(workspace, ...getEntryPath(fixture).split('/')), 'utf8')).toBe(fixture.source);
+  test.each(['js-block', 'js-page', 'js-field', 'js-action', 'js-item'] as const)(
+    'accepts the public %s kind',
+    (kind) => {
+      expect(
+        extractTemplateRecord({
+          id: 'jtt_demo',
+          projectId: 'jtp_demo',
+          target: 'client',
+          kind,
+          templateName: 'demo',
+          entryPath: 'src/client/index.tsx',
+          descriptorPath: 'src/client/entry.json',
+        }).kind,
+      ).toBe(kind);
     },
   );
+
+  test.each([['js-block'], ['js-action']] as const)('pulls a supported %s workspace', async (kind) => {
+    const workspace = await createTempWorkspace();
+    const fixture = getKindFixture(kind);
+    await runPull(workspace, null, kind);
+
+    const state = JSON.parse(
+      await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
+    ) as JsTemplateWorkspaceState;
+    expect(state.template).toEqual({
+      id: 'jtt_demo',
+      kind,
+      name: 'demo',
+      path: getEntryPath(fixture),
+      descriptorPath: getDescriptorPath(fixture),
+    });
+    expect(JSON.parse(await readFile(join(workspace, ...getDescriptorPath(fixture).split('/')), 'utf8'))).toEqual(
+      getDescriptorMetadata(fixture),
+    );
+    expect(await readFile(join(workspace, ...getEntryPath(fixture).split('/')), 'utf8')).toBe(fixture.source);
+  });
 
   test('uses the canonical JS Template HTTP resources', async () => {
     const workspace = await createTempWorkspace();

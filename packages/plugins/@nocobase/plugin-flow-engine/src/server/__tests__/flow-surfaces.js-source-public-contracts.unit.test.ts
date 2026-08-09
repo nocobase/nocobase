@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Team.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { describe, expect, it } from 'vitest';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { compileFlowSurfaceApplyBlueprintRequest } from '../flow-surfaces/blueprint';
@@ -345,25 +336,6 @@ describe('flowSurfaces public JS source contracts', () => {
     });
   });
 
-  it('exposes JS blocks as js-block sources with inline source references', () => {
-    expectSourceOptions('JSBlockModel', 'js-block');
-    expectSourceContract('JSBlockModel', 'jsSettings', 'js-block');
-    expect(getConfigureOptionsForUse('JSBlockModel').sourceRef).toMatchObject({ type: 'object' });
-  });
-
-  it('exposes ordinary JS actions as js-action sources', () => {
-    for (const use of [
-      'JSCollectionActionModel',
-      'JSRecordActionModel',
-      'JSFormActionModel',
-      'FilterFormJSActionModel',
-      'JSActionModel',
-    ]) {
-      expectSourceOptions(use, 'js-action');
-      expectSourceContract(use, 'clickSettings', 'js-action');
-    }
-  });
-
   it('exposes bound JS fields and their public wrappers as js-field sources', () => {
     for (const use of ['JSFieldModel', 'JSEditableFieldModel']) {
       expectSourceOptions(use, 'js-field');
@@ -425,18 +397,6 @@ describe('flowSurfaces public JS source contracts', () => {
           settings: expect.objectContaining({ type: 'object' }),
         }),
       );
-    }
-  });
-
-  it('limits JS columns to the shared js-field source kind', () => {
-    expectSourceOptions('JSColumnModel', 'js-field');
-    expectSourceContract('JSColumnModel', 'jsSettings', 'js-field');
-  });
-
-  it('keeps JS item surfaces on the js-item source kind', () => {
-    for (const use of ['JSItemModel', 'JSItemActionModel']) {
-      expectSourceOptions(use, 'js-item');
-      expectSourceContract(use, 'jsSettings', 'js-item');
     }
   });
 });

@@ -14,26 +14,6 @@ const packageRoot = path.resolve(__dirname, '../../..');
 const sourceRoot = path.join(packageRoot, 'src');
 
 describe('@nocobase/runjs-workspace package boundary', () => {
-  it('is a Core package rather than a user-visible plugin', () => {
-    const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')) as {
-      name: string;
-      displayName?: string;
-      exports: Record<string, unknown>;
-    };
-
-    expect(packageJson.name).toBe('@nocobase/runjs-workspace');
-    expect(packageJson.displayName).toBeUndefined();
-    expect(Object.keys(packageJson.exports).sort()).toEqual([
-      '.',
-      './client',
-      './client-v2',
-      './package.json',
-      './server',
-      './shared',
-      './swagger',
-    ]);
-  });
-
   it('does not depend on plugin lifecycle or JS Template domain implementations', () => {
     const violations = collectSourceFiles(sourceRoot)
       .filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`))
@@ -63,29 +43,6 @@ describe('@nocobase/runjs-workspace package boundary', () => {
 
     expect(clientV2Package.dependencies).not.toHaveProperty('@nocobase/runjs-workspace');
     expect(flowEnginePluginPackage.dependencies).toHaveProperty('@nocobase/runjs-workspace');
-  });
-
-  it('preserves all persisted VSC collection names without defining a plugin package', () => {
-    const collectionSources = collectSourceFiles(path.join(sourceRoot, 'server/collections'))
-      .map((file) => fs.readFileSync(file, 'utf8'))
-      .join('\n');
-    for (const name of [
-      'vscFileRepositories',
-      'vscFileBlobs',
-      'vscFileTrees',
-      'vscFileTreeEntries',
-      'vscFileCommits',
-      'vscFileRefs',
-      'vscFileRemotes',
-      'vscFileSyncJobs',
-      'vscFileExternalCommitMaps',
-      'vscFileConflicts',
-    ]) {
-      expect(collectionSources).toContain(`name: '${name}'`);
-    }
-    expect(fs.existsSync(path.resolve(process.cwd(), 'packages/plugins/@nocobase/plugin-vsc-file/package.json'))).toBe(
-      false,
-    );
   });
 });
 

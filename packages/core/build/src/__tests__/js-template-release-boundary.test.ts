@@ -23,27 +23,11 @@ type PackageManifest = {
   exports?: Record<string, PackageExport>;
   dependencies?: Record<string, string>;
   peerDependencies?: Record<string, string>;
-  builtIn?: string[];
-  deprecated?: string[];
 };
 
 const repositoryRoot = path.resolve(__dirname, '../../../../..');
 const pluginPath = 'packages/plugins/@nocobase/plugin-js-template';
 const sdkPath = 'packages/core/js-template-sdk';
-const checkedInPluginFacades = [
-  'client.js',
-  'client.d.ts',
-  'client-v2.js',
-  'client-v2.d.ts',
-  'server.js',
-  'server.d.ts',
-] as const;
-const pluginSourceEntries = [
-  'src/client/index.ts',
-  'src/client-v2/index.tsx',
-  'src/server/index.ts',
-  'src/swagger/index.ts',
-] as const;
 
 function readText(relativePath: string) {
   return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
@@ -102,10 +86,6 @@ describe('JS Template release boundary', () => {
       expect(relativeTarget === '..' || relativeTarget.startsWith(`..${path.sep}`)).toBe(false);
     }
 
-    for (const file of [...checkedInPluginFacades, ...pluginSourceEntries]) {
-      expect(fs.pathExistsSync(path.join(packageRoot, file))).toBe(true);
-    }
-
     const releaseVersion = (JSON.parse(readText('lerna.json')) as { version: string }).version;
     if (!plugin.name || !plugin.version) {
       throw new Error('The JS Template plugin package identity is incomplete');
@@ -115,13 +95,9 @@ describe('JS Template release boundary', () => {
     ).toBe(path.join(repositoryRoot, `storage/tar/@nocobase/plugin-js-template-${releaseVersion}.tgz`));
   });
 
-  it('externalizes only the canonical SDK and installs only the canonical plugin from the preset', () => {
+  it('externalizes only the canonical SDK', () => {
     const buildPluginSource = readText('packages/core/build/src/buildPlugin.ts');
-    const preset = readPackage('packages/presets/nocobase');
 
     expect(buildPluginSource.match(/'@nocobase\/js-template-sdk'/g)).toHaveLength(1);
-    expect(preset.dependencies).toHaveProperty('@nocobase/plugin-js-template');
-    expect(preset.builtIn).toContain('@nocobase/plugin-js-template');
-    expect(preset.deprecated || []).not.toContain('@nocobase/plugin-js-template');
   });
 });

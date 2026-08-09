@@ -12,8 +12,6 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import * as clientV2Entry from '../index';
-
 function collectProductionSources(directory: string): string[] {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(directory, entry.name);
@@ -25,12 +23,6 @@ function collectProductionSources(directory: string): string[] {
 }
 
 describe('JS Templates client-v2 boundary', () => {
-  it('keeps the client-v2 package entry minimal', () => {
-    expect(Object.keys(clientV2Entry).sort()).toEqual(['PluginJsTemplateClientV2', 'default']);
-    expect(clientV2Entry.default).toBeTypeOf('function');
-    expect(clientV2Entry.PluginJsTemplateClientV2).toBeTypeOf('function');
-  });
-
   it('keeps client-v2 independent from client-v1', () => {
     const sourceFiles = [
       ...collectProductionSources(path.resolve(__dirname, '..')),

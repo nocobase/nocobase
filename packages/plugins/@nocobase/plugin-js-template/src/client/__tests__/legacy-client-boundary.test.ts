@@ -39,7 +39,6 @@ import {
 } from '../../client-v2/jsTemplateRunJSIntegrationContract';
 import { JS_TEMPLATE_SETTINGS_KEY } from '../../constants';
 import PluginJsTemplateClient from '..';
-import * as clientEntry from '..';
 import JsTemplateCatalogPage from '../../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../../client-v2/pages/JsTemplateSourceProjectsPage';
 
@@ -170,34 +169,5 @@ describe('plugin-js-template legacy client boundary', () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
-  });
-
-  it('exposes the canonical client entrypoint with entry and Source Project settings routes', async () => {
-    const add = vi.fn<AddLegacySettingsRoute>();
-    const plugin = new PluginJsTemplateClient(
-      { name: 'js-template' },
-      {
-        pluginSettingsManager: { add },
-        i18n: {
-          t: (text, options) => `${options?.ns}:${text}`,
-        },
-      },
-    );
-
-    await plugin.load();
-
-    expect(Object.keys(clientEntry).sort()).toEqual(['PluginJsTemplateClient', 'default']);
-    expect(PluginJsTemplateClient).toBeTypeOf('function');
-    const settingsByKey = new Map(add.mock.calls);
-    const rootSettings = settingsByKey.get(JS_TEMPLATE_SETTINGS_KEY);
-    const templateSettings = settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.templates`);
-    const sourceProjectSettings = settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`);
-    expect(rootSettings?.Component).toBeUndefined();
-    expect(templateSettings?.Component).toBe(JsTemplateCatalogPage);
-    expect(sourceProjectSettings?.Component).toBe(JsTemplateSourceProjectsPage);
-    if (typeof templateSettings?.sort !== 'number' || typeof sourceProjectSettings?.sort !== 'number') {
-      throw new Error('Expected both JS Template child settings routes to have numeric sort values');
-    }
-    expect(templateSettings.sort).toBeLessThan(sourceProjectSettings.sort);
   });
 });

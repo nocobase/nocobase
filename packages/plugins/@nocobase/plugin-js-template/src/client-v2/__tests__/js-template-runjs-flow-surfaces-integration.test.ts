@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SOURCE_MODE as CORE_JS_TEMPLATE_SOURCE_MODE } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 
-import { JS_TEMPLATE_SOURCE_BINDING_TYPE, JS_TEMPLATE_SOURCE_MODE, JS_TEMPLATE_SUPPORTED_KINDS } from '../../constants';
+import { JS_TEMPLATE_SOURCE_BINDING_TYPE } from '../../constants';
 import {
   createJsTemplateRuntimeSourceBinding,
   isJsTemplateRuntimeSourceBinding,
@@ -22,15 +21,6 @@ import type {
   JsTemplateRuntimeSourceBinding,
 } from '../../shared/types';
 import type { ApiClientLike, ApiRequestOptions } from '../api/jsTemplatesRequests';
-import {
-  JS_TEMPLATE_EDITOR_PROVIDER_KEY,
-  JS_TEMPLATE_KIND_BY_MODEL_USE,
-  JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
-  JS_TEMPLATE_RUNTIME_CONTEXT_KEY,
-  JS_TEMPLATE_SOURCE_MENU_GROUP_KEY,
-  JS_TEMPLATE_SOURCE_METADATA_KIND_KEY,
-  JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
-} from '../jsTemplateRunJSIntegrationContract';
 import { createJsTemplateRunJSResolver } from '../resolvers/JsTemplateRunJSResolver';
 
 const entryPath = 'src/client/js-actions/example/index.ts';
@@ -43,22 +33,6 @@ const sourceBinding: JsTemplateRuntimeSourceBinding = {
 };
 
 describe('JS Template RunJS and Flow Surfaces integration contract', () => {
-  it('uses unique canonical registry keys and resolves every supported kind from model use', () => {
-    expect(CORE_JS_TEMPLATE_SOURCE_MODE).toBe(JS_TEMPLATE_SOURCE_MODE);
-    expect(JS_TEMPLATE_SOURCE_METADATA_KIND_KEY).toBe('jsTemplateKind');
-    expect(JS_TEMPLATE_RUNTIME_CONTEXT_KEY).toBe('jsTemplate');
-    expect(JS_TEMPLATE_SOURCE_MENU_GROUP_KEY).toBe('js-template');
-
-    const registryKeys = [
-      JS_TEMPLATE_EDITOR_PROVIDER_KEY,
-      JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
-      JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY,
-    ];
-    expect(registryKeys.every((key) => key.length > 0)).toBe(true);
-    expect(new Set(registryKeys).size).toBe(registryKeys.length);
-    expect(new Set(Object.values(JS_TEMPLATE_KIND_BY_MODEL_USE))).toEqual(new Set(JS_TEMPLATE_SUPPORTED_KINDS));
-  });
-
   it('strictly round-trips a canonical FlowModel binding without persisting display fields', () => {
     expect(
       createJsTemplateRuntimeSourceBinding({

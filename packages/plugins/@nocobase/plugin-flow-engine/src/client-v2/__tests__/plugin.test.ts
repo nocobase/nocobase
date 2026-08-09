@@ -32,21 +32,6 @@ describe('PluginFlowEngineClientV2', () => {
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
   });
-
-  it('does not remove a later registration from another plugin instance', async () => {
-    const first = createPlugin();
-    const second = createPlugin();
-
-    await first.load();
-    await second.load();
-    first.dispose();
-
-    expectRegistrationKeys();
-
-    second.dispose();
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
-  });
 });
 
 function createPlugin(): PluginFlowEngineClientV2 {

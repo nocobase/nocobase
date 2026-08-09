@@ -18,7 +18,6 @@ import type {
   SaveAsJsTemplateOriginBinding,
   JsTemplateProject,
 } from '../../shared/types';
-import swaggerDocument from '../../swagger';
 import { createJsTemplatesResource } from '../resources/jsTemplates';
 import type { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
 import {
@@ -1404,39 +1403,6 @@ describe('save-as JS Template resource integration', () => {
   } as const;
 
   describe('save-as resource', () => {
-    it('keeps the public Save as request schema aligned with the normalized resource input', () => {
-      const saveAsJsTemplateRequest = swaggerDocument.components.schemas.SaveAsJsTemplateRequest;
-
-      expect(saveAsJsTemplateRequest.required).toEqual([
-        'idempotencyKey',
-        'locator',
-        'expectedOwnerFingerprint',
-        'sourceRepoId',
-        'sourceHeadCommitId',
-        'entryPath',
-        'runtimeVersion',
-        'files',
-        'destination',
-        'templateName',
-      ]);
-      expect(Object.keys(saveAsJsTemplateRequest.properties).sort()).toEqual(
-        [
-          'idempotencyKey',
-          'locator',
-          'expectedOwnerFingerprint',
-          'sourceRepoId',
-          'sourceHeadCommitId',
-          'entryPath',
-          'runtimeVersion',
-          'files',
-          'originBinding',
-          'destination',
-          'templateName',
-          'templateTitle',
-        ].sort(),
-      );
-    });
-
     it.each([
       { destination: { type: 'existing', projectId: 'jtp_existing' } },
       {

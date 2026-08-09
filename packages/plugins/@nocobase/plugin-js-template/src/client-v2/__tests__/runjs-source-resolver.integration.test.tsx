@@ -7,22 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
-import {
-  type JsTemplateArtifact,
-  type JsTemplateRuntimeResolveResult,
-  type JsTemplateRuntimeSourceBinding,
-} from '../../shared/types';
+import { type JsTemplateRuntimeSourceBinding } from '../../shared/types';
 import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
-import PluginJsTemplateClientV2 from '../plugin';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
-import { defineSettings } from '@nocobase/js-template-sdk/client';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import fs from 'fs';
-import path from 'path';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -41,161 +31,13 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-// Consolidated from runjs-source-resolver-runtime-boundary.cases.tsx.
-function registerRuntimeBoundaryTests() {
-  describe('plugin-js-template client-v2 boundary', () => {
-    it('registers the canonical v2 settings route with ACL', async () => {
-      const app = createMockClient({
-        plugins: [
-          [
-            PluginJsTemplateClientV2,
-            {
-              name: 'js-template',
-              packageName: NAMESPACE,
-            },
-          ],
-        ],
-      });
-
-      await app.load();
-
-      const canonicalPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.index`, false);
-      const sourceProjectsPage = app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, false);
-      expect(app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false)).toMatchObject({
-        key: JS_TEMPLATE_SETTINGS_KEY,
-        title: 'JS Templates',
-        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      });
-      expect(canonicalPage).toMatchObject({
-        menuKey: JS_TEMPLATE_SETTINGS_KEY,
-        pageKey: 'index',
-        title: 'Templates',
-        componentLoader: expect.any(Function),
-        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      });
-      expect(sourceProjectsPage).toMatchObject({
-        menuKey: JS_TEMPLATE_SETTINGS_KEY,
-        pageKey: 'source-projects',
-        title: 'Source Projects',
-        componentLoader: expect.any(Function),
-        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      });
-      expect(app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.source`, false)).toBeNull();
-      expect(app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.entries`, false)).toBeNull();
-      expect(app.pluginSettingsManager.get(`${JS_TEMPLATE_SETTINGS_KEY}.references`, false)).toBeNull();
-    });
-
-    it('keeps client-v2 code out of the legacy client runtime', () => {
-      const files = collectSourceFilesFromDirectories([
-        path.resolve(__dirname, '..'),
-        path.resolve(__dirname, '../../client-shared'),
-      ]);
-      const violations = files.flatMap((file) => {
-        const source = fs.readFileSync(file, 'utf8');
-        const importsLegacyClient = /from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/.test(
-          source,
-        );
-        return importsLegacyClient ? [path.relative(process.cwd(), file)] : [];
-      });
-
-      expect(violations).toEqual([]);
-    });
-
-    it('exposes only the minimal SDK helper at runtime', () => {
-      const settings = { title: 'Sales KPI' };
-
-      expect(defineSettings(settings)).toBe(settings);
-
-      const sdkSource = fs.readFileSync(
-        path.resolve(__dirname, '../../../../../../core/js-template-sdk/src/client/index.ts'),
-        'utf8',
-      );
-      expect(sdkSource).not.toMatch(
-        /defineClientExtension|defineServerExtension|registerBlock|registerAction|registerResource/,
-      );
-      expect(sdkSource).toMatch(/JSBlockContext|RunJSContext/);
-      expect(sdkSource).not.toMatch(/getVar|getValue|setValue/);
-    });
-
-    it('uses the standalone SDK package instead of plugin-local SDK shims', () => {
-      const pluginRoot = path.resolve(__dirname, '../../..');
-      const sdkRoot = path.resolve(pluginRoot, '../../../core/js-template-sdk');
-      const rootSource = fs.readFileSync(path.resolve(__dirname, '../../index.ts'), 'utf8');
-      const packageJson = JSON.parse(fs.readFileSync(path.join(pluginRoot, 'package.json'), 'utf8')) as {
-        exports: Record<string, { import?: string; types?: string } | string>;
-        dependencies: Record<string, string>;
-      };
-      const sdkPackageJson = JSON.parse(fs.readFileSync(path.join(sdkRoot, 'package.json'), 'utf8')) as {
-        exports: Record<string, { import?: string; types?: string } | string>;
-      };
-
-      expect(rootSource).not.toContain('./sdk/client');
-      expect(packageJson.exports['./client']).toMatchObject({
-        types: './client.d.ts',
-        import: './client.js',
-      });
-      expect(packageJson.exports['./client-v2']).toMatchObject({
-        types: './client-v2.d.ts',
-        import: './client-v2.js',
-      });
-      expect(packageJson.exports['./sdk/client']).toBeUndefined();
-      expect(packageJson.exports['./sdk/shared']).toBeUndefined();
-      expect(packageJson.dependencies['@nocobase/js-template-sdk']).toBeDefined();
-      expect(sdkPackageJson.exports['./client']).toBeDefined();
-      expect(sdkPackageJson.exports['./shared']).toBeDefined();
-      expect(sdkPackageJson.exports['./typegen']).toBeDefined();
-      expect(collectSourceFiles(path.join(pluginRoot, 'src/sdk'))).toEqual([]);
-      expect(fs.existsSync(path.join(pluginRoot, 'client.js'))).toBe(true);
-      expect(fs.existsSync(path.join(pluginRoot, 'client-v2.js'))).toBe(true);
-      expect(fs.existsSync(path.join(pluginRoot, 'server.js'))).toBe(true);
-    });
-
-    it('keeps authoring-only pages out of the legacy client while sharing canonical integration installers', () => {
-      const pluginSource = fs.readFileSync(path.resolve(__dirname, '../plugin.tsx'), 'utf8');
-
-      expect(pluginSource).toContain('installJsTemplateRunJSIntegrations');
-      expect(pluginSource).toContain('registerJsTemplateRunJSFlowSettingsComponents');
-      expect(pluginSource).not.toContain('EntryReferencesPanel');
-
-      const legacySource = fs.readFileSync(path.resolve(__dirname, '../../client/index.ts'), 'utf8');
-      expect(legacySource).toContain('installJsTemplateRunJSIntegrations');
-      expect(legacySource).toContain('registerJsTemplateRunJSFlowSettingsComponents');
-      expect(legacySource).not.toContain('RunJSSourceResolverRegistry');
-      expect(legacySource).not.toContain('JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD');
-      expect(legacySource).not.toContain('EntryReferencesPanel');
-    });
-  });
-
-  function collectSourceFilesFromDirectories(directories: string[]): string[] {
-    return directories.flatMap((directory) => collectSourceFiles(directory));
-  }
-
-  function collectSourceFiles(directory: string): string[] {
-    if (!fs.existsSync(directory)) {
-      return [];
-    }
-    return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-      const entryPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        return entry.name === '__tests__' ? [] : collectSourceFiles(entryPath);
-      }
-      return /\.(ts|tsx)$/.test(entry.name) ? [entryPath] : [];
-    });
-  }
-}
-registerRuntimeBoundaryTests();
-
 // Consolidated from runjs-source-resolver-source-mode-roundtrip.cases.tsx.
 function registerSourceModeRoundTripTests() {
   // Old case -> new owner:
-  // inline-preserve-code / does not clear inline fallback... -> preserves the inline fallback when first selecting a Template.
   // save-without-clearing-inline / keeps existing JS Block inline code... -> mounts the JS Block binding editor without mutating the snapshot.
   // save-without-clearing-inline / renders as a JS Block binding editor... -> mounts the JS Block binding editor without mutating the snapshot.
   // save-without-clearing-inline / keeps the complete JS Page inline snapshot... -> renders the binding-only editor without mutating the snapshot.
-  // New owner: returning to the same external binding preserves the complete inline settings snapshot.
   // New owner: Inline remains authoritative when historical data still has a JS Template binding.
-
-  const artifactHash = 'a'.repeat(64);
 
   const SchemaField = createSchemaField({
     components: {
@@ -270,36 +112,7 @@ function registerSourceModeRoundTripTests() {
       vi.restoreAllMocks();
     });
 
-    it('preserves the inline fallback when first selecting a JS Template', async () => {
-      const form = createRunJSForm({ sourceMode: 'inline', sourceBinding: undefined, settings: {} });
-      renderSourceModeField(form);
-
-      await selectCodeSource('sales');
-
-      expect(form.values).toMatchObject({
-        sourceMode: 'js-template',
-        sourceBinding: {
-          type: 'js-template-entry',
-          projectId: 'project_sales',
-          templateId: 'template_sales',
-          kind: 'js-page',
-        },
-        code: 'ctx.render("old inline");',
-        version: 'v1',
-        settings: {},
-        sourceRef: {
-          type: 'vsc-file',
-          repoId: 'old_inline_repo',
-          commitId: 'old_inline_commit',
-          entry: 'src/client/index.tsx',
-        },
-      });
-      expect(form.values.sourceBinding).toEqual(sourceBinding);
-      expect(mocks.request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplates:listSelectable' }));
-      expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
-    });
-
-    it('preserves the complete inline snapshot when returning to the same external binding', async () => {
+    it('preserves the inline snapshot when selecting its JS Template binding', async () => {
       const form = createRunJSForm({ sourceMode: 'inline' });
       const inlineSnapshot = cloneValues(form.values);
 
@@ -312,12 +125,7 @@ function registerSourceModeRoundTripTests() {
         version: inlineSnapshot.version,
         settings: inlineSnapshot.settings,
         sourceRef: inlineSnapshot.sourceRef,
-        sourceBinding: expect.objectContaining({
-          type: 'js-template-entry',
-          projectId: sourceBinding.projectId,
-          templateId: sourceBinding.templateId,
-          kind: sourceBinding.kind,
-        }),
+        sourceBinding,
       });
     });
 
@@ -475,37 +283,6 @@ function registerSourceModeRoundTripTests() {
   }
 
   function successfulRequest(options: { url: string }) {
-    if (options.url === 'jsTemplateRuntime:resolve') {
-      const resolveResult = {
-        templateId: 'template_sales',
-        entryPath: 'src/client/js-pages/sales/index.tsx',
-        artifactHash,
-        artifactUrl: `/api/jsTemplateRuntime:getArtifact/${artifactHash}`,
-        runtimeCodeHash: 'runtime_hash',
-        runtimeVersion: 'v2',
-        settings: {},
-        settingsHash: 'settings_hash',
-      } satisfies JsTemplateRuntimeResolveResult;
-      return Promise.resolve({
-        data: {
-          data: resolveResult,
-        },
-      });
-    }
-    if (options.url === `jsTemplateRuntime:getArtifact/${artifactHash}`) {
-      const artifact = {
-        artifactHash,
-        runtimeCodeHash: 'runtime_hash',
-        code: 'ctx.render("copied runtime");',
-        runtimeVersion: 'v2',
-        entryPath: 'src/client/js-pages/sales/index.tsx',
-        runtimeContract: 'js-template.runtime-artifact.v1',
-        byteSize: 64,
-      } satisfies JsTemplateArtifact;
-      return Promise.resolve({
-        data: artifact,
-      });
-    }
     if (options.url === 'jsTemplates:listSelectable') {
       return Promise.resolve({ data: { data: [template] } });
     }

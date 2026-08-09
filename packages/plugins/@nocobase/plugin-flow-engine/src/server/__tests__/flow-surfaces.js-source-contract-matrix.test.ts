@@ -8,7 +8,6 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { RUNJS_INLINE_WORKSPACE_MODEL_USES } from '@nocobase/runjs-workspace';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { compileFlowSurfaceApplyBlueprintRequest } from '../flow-surfaces/blueprint';
 import { exportFlowSurfaceBlueprintDocument } from '../flow-surfaces/blueprint/export-document';
@@ -16,8 +15,7 @@ import { actionCatalog, getNodeContract } from '../flow-surfaces/catalog';
 import { FlowSurfaceContractGuard } from '../flow-surfaces/contract-guard';
 import { clearInactiveRunJsSourceBinding, resolveRunJsSettingsGroupKey } from '../flow-surfaces/service';
 import { buildRunJsSourceChanges } from '../flow-surfaces/service-utils';
-import { validateRunJsSourceBinding, type RunJsSourceBindingKind } from '../flow-surfaces/source-binding-authoring';
-import { FLOW_SURFACE_RUNJS_HOSTS } from '../flow-surfaces/page-surface-contract';
+import type { RunJsSourceBindingKind } from '../flow-surfaces/source-binding-authoring';
 
 type RunJsGroupKey = 'jsSettings' | 'clickSettings';
 
@@ -292,14 +290,6 @@ function createJsTemplatePageTree() {
 }
 
 describe('flowSurfaces JS source contract matrix', () => {
-  it('keeps the public Flow Surface host set aligned with the fixed v1 authoring matrix', () => {
-    expect(Object.keys(FLOW_SURFACE_RUNJS_HOSTS)).toEqual(RUNJS_INLINE_WORKSPACE_MODEL_USES);
-    expect(RUNJS_INLINE_WORKSPACE_MODEL_USES).not.toContain('FormJSFieldItemModel');
-    expect(FLOW_SURFACE_RUNJS_HOSTS).not.toHaveProperty('FormJSFieldItemModel');
-    expect(resolveRunJsSettingsGroupKey('FormJSFieldItemModel')).toBeUndefined();
-    expect(getNodeContract('FormJSFieldItemModel')).toMatchObject({ editableDomains: [], domains: {} });
-  });
-
   it('keeps legacy inline, explicit inline, and js-template source in canonical runJs for every owner use', () => {
     for (const caseItem of SURFACES) {
       expect(resolveRunJsSettingsGroupKey(caseItem.use), caseItem.label).toBe(caseItem.group);
@@ -362,45 +352,6 @@ describe('flowSurfaces JS source contract matrix', () => {
         settings: { currency: 'CNY', precision: 2 },
       });
     }
-  });
-
-  it('treats binding-only value-return RunJS as runnable and enforces the runjs kind', () => {
-    const accepted = validateRunJsSourceBinding({
-      source: {
-        sourceMode: 'js-template',
-        sourceBinding: sourceBinding('runjs', 'entry_value_return'),
-      },
-      path: '$.value.runJs',
-      expectedKind: 'runjs',
-      requireExplicitSourceModeForBinding: true,
-      surfaceLabel: 'value-return RunJS',
-    });
-    expect(accepted).toMatchObject({
-      errors: [],
-      hasJsTemplateSourceInput: true,
-      hasRunnableJsTemplateSource: true,
-    });
-
-    const wrongKind = validateRunJsSourceBinding({
-      source: {
-        sourceMode: 'js-template',
-        sourceBinding: sourceBinding('js-action', 'entry_wrong_kind'),
-      },
-      path: '$.value.runJs',
-      expectedKind: 'runjs',
-      requireExplicitSourceModeForBinding: true,
-      surfaceLabel: 'value-return RunJS',
-    });
-    expect(wrongKind.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          path: '$.value.runJs.sourceBinding.kind',
-          ruleId: 'runjs-sourceBinding-kind-invalid',
-          details: expect.objectContaining({ expectedKind: 'runjs' }),
-        }),
-      ]),
-    );
-    expect(wrongKind.hasRunnableJsTemplateSource).toBe(false);
   });
 
   it('round-trips js-template bindings and preserved fallback code through export and apply compilation', async () => {

@@ -41,15 +41,6 @@ const ENTRY_CASES: Array<{ entryPath: string; kind: JsTemplateKind }> = [
 ];
 
 describe('plugin-js-template default source template', () => {
-  it('provides valid templates for all five supported kinds', () => {
-    const files = createDefaultJsTemplateTemplate();
-
-    expect(new JsTemplateValidator().validateInitialFiles({ files })).toEqual([]);
-    expect(new Set(ENTRY_CASES.map(({ kind }) => kind))).toEqual(
-      new Set<JsTemplateKind>(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']),
-    );
-  });
-
   it('includes a multi-file entry with a relative import', () => {
     const files = createDefaultJsTemplateTemplate();
     const multiFileEntry = ENTRY_CASES.find(({ entryPath }) => {

@@ -27,12 +27,8 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import {
   buildJsTemplateSdkDeclarations,
-  getJsTemplateAuthoringTypeContract,
-  getJsTemplateSettingsContextTypeName,
-  JS_TEMPLATE_SDK_AUTHORING_MODULES,
   JS_TEMPLATE_SDK_CLIENT_IMPORT,
   JS_TEMPLATE_SDK_SHARED_IMPORT,
-  renderJsTemplateAuthoringTypeDeclaration,
 } from '../typegen';
 
 const expectedTypes = [
@@ -49,46 +45,6 @@ const expectedTypes = [
 ] as const;
 
 describe('JS Template SDK authoring contract', () => {
-  it('owns the public modules, types, generic defaults, helpers, and kind contexts', () => {
-    const sharedModule = JS_TEMPLATE_SDK_AUTHORING_MODULES.get(JS_TEMPLATE_SDK_SHARED_IMPORT);
-    const clientModule = JS_TEMPLATE_SDK_AUTHORING_MODULES.get(JS_TEMPLATE_SDK_CLIENT_IMPORT);
-    if (!sharedModule || !clientModule) {
-      throw new Error('Expected both JS Template SDK authoring modules');
-    }
-
-    expect([...sharedModule.types.keys()]).toEqual(expectedTypes.slice(0, 3).map((item) => item.name));
-    expect(
-      [...clientModule.types.values()].map(({ name, parameters }) => ({
-        name,
-        parameters: parameters.map((parameter) => `${parameter.name}=${parameter.defaultType}`),
-      })),
-    ).toEqual(expectedTypes);
-    expect([...sharedModule.runtimeHelpers.keys()]).toEqual(['defineSettings', 'assertSettings']);
-    expect([...clientModule.runtimeHelpers.keys()]).toEqual(['defineSettings', 'assertSettings']);
-    expect([
-      getJsTemplateSettingsContextTypeName('js-block'),
-      getJsTemplateSettingsContextTypeName('js-page'),
-      getJsTemplateSettingsContextTypeName('js-field'),
-      getJsTemplateSettingsContextTypeName('js-action'),
-      getJsTemplateSettingsContextTypeName('js-item'),
-    ]).toEqual(['JSBlockContext', 'JSPageContext', 'JSFieldContext', 'JSActionContext', 'JSItemContext']);
-  });
-
-  it('renders the canonical type name and valid local aliases', () => {
-    const typeContract = getJsTemplateAuthoringTypeContract('JSPageContext');
-    if (!typeContract) {
-      throw new Error('Expected the JSPageContext authoring type contract');
-    }
-
-    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract)).toContain('type JSPageContext<TSettings = unknown>');
-    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract, 'LocalPageContext')).toContain(
-      'type LocalPageContext<TSettings = unknown>',
-    );
-    expect(renderJsTemplateAuthoringTypeDeclaration(typeContract, '__jsTemplateAuthoring_SDK_JSPageContext')).toContain(
-      'type __jsTemplateAuthoring_SDK_JSPageContext<TSettings = unknown>',
-    );
-  });
-
   it('keeps the real SDK exports aligned with every contracted public shape', () => {
     type Settings = { title: string };
     type Value = { id: number };

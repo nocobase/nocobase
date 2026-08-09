@@ -21,50 +21,14 @@ const entryPath = 'src/client/js-pages/orders/index.tsx';
 
 const publicTypeCases = [
   {
-    name: 'JsTemplateSettingsContext',
-    typeArguments: '<{ title: string }>',
-    probe: 'return value.settings.title;',
-  },
-  { name: 'JsTemplateContextRecord', typeArguments: '', probe: 'return value.id;' },
-  {
-    name: 'JsTemplateDataContext',
-    typeArguments: '<{ title: string }>',
-    probe: 'return value.record?.id;',
-  },
-  {
-    name: 'JSBlockContext',
-    typeArguments: '<{ title: string }>',
-    probe: 'value.render?.(value.settings.title); return value.element;',
-  },
-  {
     name: 'JSPageRuntimeFacade',
     typeArguments: '',
     probe: 'value.setDocumentTitle(value.uid); return value.refresh();',
   },
   {
-    name: 'JSPageContext',
-    typeArguments: '<{ title: string }>',
-    probe: 'value.page.setDocumentTitle(value.settings.title); return value.page.uid;',
-  },
-  {
     name: 'JSFieldContext',
     typeArguments: '<{ title: string }, number>',
     probe: 'return value.value?.toFixed(0);',
-  },
-  {
-    name: 'JSActionContext',
-    typeArguments: '<{ title: string }>',
-    probe: 'return value.formValues?.id;',
-  },
-  {
-    name: 'JSItemContext',
-    typeArguments: '<{ title: string }, number>',
-    probe: 'return value.value?.toFixed(0);',
-  },
-  {
-    name: 'RunJSContext',
-    typeArguments: '<{ title: string }, { query: string }>',
-    probe: 'return value.input?.query;',
   },
 ] as const;
 

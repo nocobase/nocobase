@@ -35,43 +35,28 @@ describe('@nocobase/runjs package exports', () => {
     );
   });
 
-  it('exposes the source-safe compiler loader through its dedicated subpath', () => {
-    const compilerLoaderExport = packageJson.exports['./compiler/loader'];
-
-    expect(compilerLoaderExport).toEqual({
+  it.each([
+    {
+      subpath: 'compiler/loader',
       types: './lib/compiler/loader.d.ts',
-      import: './lib/compiler/loader.js',
-      require: './lib/compiler/loader.js',
-    });
-    expect(packageJson.typesVersions?.['*']?.['compiler/loader']).toEqual(['./lib/compiler/loader.d.ts']);
-    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/loader.ts'))).toBe(true);
-  });
-
-  it('exposes the compiler build identity through its dedicated subpath', () => {
-    const buildIdentityExport = packageJson.exports['./compiler/build-identity'];
-
-    expect(buildIdentityExport).toEqual({
+      runtime: './lib/compiler/loader.js',
+    },
+    {
+      subpath: 'compiler/build-identity',
       types: './lib/compiler/build-identity.d.ts',
-      import: './lib/compiler/build-identity.js',
-      require: './lib/compiler/build-identity.js',
-    });
-    expect(packageJson.typesVersions?.['*']?.['compiler/build-identity']).toEqual([
-      './lib/compiler/build-identity.d.ts',
-    ]);
-    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/build-identity.ts'))).toBe(true);
-  });
-
-  it('exposes static module reference analysis without loading the compiler entry', () => {
-    const staticReferencesExport = packageJson.exports['./compiler/static-module-references'];
-
-    expect(staticReferencesExport).toEqual({
+      runtime: './lib/compiler/build-identity.js',
+    },
+    {
+      subpath: 'compiler/static-module-references',
       types: './lib/compiler/static-module-references.d.ts',
-      import: './lib/compiler/static-module-references.js',
-      require: './lib/compiler/static-module-references.js',
+      runtime: './lib/compiler/static-module-references.js',
+    },
+  ])('maps $subpath consistently across package manifests', ({ subpath, types, runtime }) => {
+    expect(packageJson.exports[`./${subpath}`]).toEqual({
+      types,
+      import: runtime,
+      require: runtime,
     });
-    expect(packageJson.typesVersions?.['*']?.['compiler/static-module-references']).toEqual([
-      './lib/compiler/static-module-references.d.ts',
-    ]);
-    expect(fs.existsSync(path.join(packageRoot, 'src/compiler/static-module-references.ts'))).toBe(true);
+    expect(packageJson.typesVersions?.['*']?.[subpath]).toEqual([types]);
   });
 });
