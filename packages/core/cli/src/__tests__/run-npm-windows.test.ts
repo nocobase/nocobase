@@ -310,6 +310,10 @@ test('runPnpmInstallCommand retries install without trust-lockfile when the trus
   await expect(
     runPnpmInstallCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
       cwd: '/tmp/portal',
+      env: {
+        PATH: '/bin',
+      },
+      envMode: 'replace',
       errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
     }),
   ).resolves.toBe(undefined);
@@ -320,6 +324,11 @@ test('runPnpmInstallCommand retries install without trust-lockfile when the trus
       ['install', '--frozen-lockfile', '--trust-lockfile'],
       {
         cwd: '/tmp/portal',
+        env: {
+          CI: 'true',
+          PATH: '/bin',
+        },
+        envMode: 'replace',
         errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
       },
     ],
@@ -328,6 +337,11 @@ test('runPnpmInstallCommand retries install without trust-lockfile when the trus
       ['install', '--frozen-lockfile'],
       {
         cwd: '/tmp/portal',
+        env: {
+          CI: 'true',
+          PATH: '/bin',
+        },
+        envMode: 'replace',
         errorName: 'pnpm install --frozen-lockfile',
       },
     ],
@@ -342,12 +356,24 @@ test('runPnpmInstallCommand does not retry when pnpm is missing', async () => {
   const { runPnpmInstallCommand } = await import('../lib/run-npm.js');
   await expect(
     runPnpmInstallCommand(runCommand, ['install', '--frozen-lockfile', '--trust-lockfile'], {
+      env: {
+        CI: 'false',
+      },
       errorName: 'pnpm install --frozen-lockfile --trust-lockfile',
     }),
   ).rejects.toThrow(
     "Couldn't run `pnpm install --frozen-lockfile --trust-lockfile` because the pnpm executable could not be found.",
   );
   expect(runCommand).toHaveBeenCalledTimes(1);
+  expect(runCommand).toHaveBeenCalledWith(
+    'pnpm',
+    ['install', '--frozen-lockfile', '--trust-lockfile'],
+    expect.objectContaining({
+      env: {
+        CI: 'false',
+      },
+    }),
+  );
 });
 
 test('run reports a friendly error when Nginx is missing', async () => {

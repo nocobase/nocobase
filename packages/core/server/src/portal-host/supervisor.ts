@@ -70,6 +70,7 @@ const DEFAULT_PORTAL_HOST_PORT = 13010;
 const DEFAULT_START_TIMEOUT_MS = 30 * 1000;
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30 * 1000;
 const DEFAULT_HEALTH_PATH = '/__health';
+const PORTAL_HOST_CHILD_DENIED_NODE_OPTIONS = ['--preserve-symlinks', '--preserve-symlinks-main'];
 
 export class PortalHostSupervisor {
   private static instance: PortalHostSupervisor | null = null;
@@ -314,13 +315,22 @@ export class PortalHostSupervisor {
   }
 
   private basePortalHostEnv(port: number): NodeJS.ProcessEnv {
-    return {
+    const env: NodeJS.ProcessEnv = {
       ...process.env,
       PORT: `${port}`,
       PORTAL_HOST_PORT: `${port}`,
       PORTAL_HOST_BIND: this.host,
       PORTALS_DIR: this.portalsDir,
     };
+    const nodeOptions = sanitizePortalHostChildNodeOptions(env.NODE_OPTIONS);
+
+    if (nodeOptions) {
+      env.NODE_OPTIONS = nodeOptions;
+    } else {
+      delete env.NODE_OPTIONS;
+    }
+
+    return env;
   }
 
   private resolveNodeLaunchOptions(port: number): PortalHostLaunchOptions {
@@ -456,6 +466,20 @@ function normalizeUrl(value?: string): URL | undefined {
   }
 
   return new URL(value);
+}
+
+export function sanitizePortalHostChildNodeOptions(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(
+      (option) =>
+        !PORTAL_HOST_CHILD_DENIED_NODE_OPTIONS.some(
+          (deniedOption) => option === deniedOption || option.startsWith(`${deniedOption}=`),
+        ),
+    )
+    .join(' ');
 }
 
 function numberFromEnv(name: string): number | undefined {

@@ -12,6 +12,7 @@ import { PortalRegistryError } from './errors';
 import { applyFetchResponse, requestPath, toFetchRequest } from './http-adapter';
 import { DirectoryPortalCatalog } from './portal-catalog';
 import { PortalRuntimeRegistry } from './portal-registry';
+import { writePortalSystemLog } from './portal-system-log';
 
 export interface PortalHostOptions {
   port?: number;
@@ -126,6 +127,23 @@ export async function startPortalHostFromEnv(): Promise<PortalHost> {
 }
 
 function attachPortalEventLogs(registry: PortalRuntimeRegistry): void {
+  registry.events.on('portal:createFailed', (event) => {
+    const definition = registry.definition(event.portalId);
+    writePortalSystemLog({
+      level: 'error',
+      msg: 'Embedded Portal failed to initialize',
+      definition,
+      error: event.error,
+      fields: {
+        event: 'portal:createFailed',
+        version: event.version,
+        state: event.state,
+        basePath: event.basePath,
+      },
+    });
+    console.error(`[portal] failed to create ${event.portalId}@v${event.version} at ${event.basePath}`, event.error);
+  });
+
   registry.events.on('portal:created', (event) => {
     console.log(`[portal] created ${event.portalId}@v${event.version} at ${event.basePath}`);
   });

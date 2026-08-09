@@ -163,6 +163,17 @@ function formatPnpmLabel(args: string[]): string {
   return `pnpm ${args.join(' ')}`.trim();
 }
 
+function withNonInteractiveInstallEnv(options: RunProcessOptions): RunProcessOptions {
+  const env = options.env ?? {};
+  return {
+    ...options,
+    env: {
+      ...env,
+      CI: env.CI ?? 'true',
+    },
+  };
+}
+
 export async function resolvePnpmInstallCommand(cwd: string): Promise<{ args: string[]; errorName: string }> {
   const hasLockfile = await fsp
     .stat(path.join(cwd, 'pnpm-lock.yaml'))
@@ -188,15 +199,16 @@ export async function runPnpmInstallCommand(
   args: string[],
   options: RunProcessOptions,
 ): Promise<void> {
+  const installOptions = withNonInteractiveInstallEnv(options);
   try {
-    await runPnpmCommand(runCommand, args, options);
+    await runPnpmCommand(runCommand, args, installOptions);
   } catch (error) {
     const fallbackArgs = createInstallArgsWithoutTrustLockfile(args);
     if (!fallbackArgs || isFriendlyMissingPnpmError(error)) {
       throw error;
     }
     await runPnpmCommand(runCommand, fallbackArgs, {
-      ...options,
+      ...installOptions,
       errorName: formatPnpmLabel(fallbackArgs),
     });
   }
