@@ -63,6 +63,9 @@ export function registerPortalGatewayProxy(options: PortalGatewayProxyOptions = 
     if (!isPortalRequest(req, publicPath)) {
       return false;
     }
+    if (isPortalWebSocketRequest(req, publicPath)) {
+      return false;
+    }
 
     try {
       const lease = await supervisor.acquire();
@@ -85,6 +88,14 @@ function isPortalRequest(req: { url: string }, publicPath: string): boolean {
   const pathname = parse(req.url).pathname ?? '/';
   return (
     pathname === publicPath || pathname.startsWith(`${publicPath}/`) || /^\/apps\/[^/]+\/portals(?:\/|$)/.test(pathname)
+  );
+}
+
+function isPortalWebSocketRequest(req: { url: string }, publicPath: string): boolean {
+  const pathname = parse(req.url).pathname ?? '/';
+  const escapedPublicPath = publicPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return (
+    new RegExp(`^${escapedPublicPath}/[^/]+/ws$`).test(pathname) || /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname)
   );
 }
 

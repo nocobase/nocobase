@@ -106,6 +106,17 @@ function getFileAccessRestPath(pathname: string, appPublicPath = '/') {
   return prefix ? pathname.slice(prefix.length) : null;
 }
 
+function isPortalWebSocketPath(pathname = '/', publicPath = process.env.PORTAL_PUBLIC_PATH ?? '/portals') {
+  const normalizedPublicPath = normalizeBasePath(publicPath);
+  const portalPrefix = normalizedPublicPath === '/' ? '/portals' : normalizedPublicPath;
+  const escapedPortalPrefix = portalPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  return (
+    new RegExp(`^${escapedPortalPrefix}/[^/]+/ws$`).test(pathname) ||
+    /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname)
+  );
+}
+
 /** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
 function getSocketPath() {
   const socketPath = process.env.SOCKET_PATH;
@@ -1200,7 +1211,7 @@ export class Gateway extends EventEmitter {
       }
       const { pathname } = parse(request.url);
 
-      if (pathname === process.env.WS_PATH) {
+      if (pathname === process.env.WS_PATH || isPortalWebSocketPath(pathname)) {
         this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
           this.wsServer.wss.emit('connection', ws, request);
         });
