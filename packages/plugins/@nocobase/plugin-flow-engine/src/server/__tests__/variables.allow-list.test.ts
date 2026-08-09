@@ -26,6 +26,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
+  findModelByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
   findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
@@ -81,6 +82,16 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
+              findModelByParentId:
+                options.findModelByParentId ||
+                (async (parentUid: string, query?: { subKey?: string }) => {
+                  const child = Object.values(models).find((model) => {
+                    if (!model || typeof model !== 'object' || Array.isArray(model)) return false;
+                    const node = model as { parentId?: unknown; subKey?: unknown };
+                    return node.parentId === parentUid && (!query?.subKey || node.subKey === query.subKey);
+                  });
+                  return child || null;
+                }),
               findModelNodeSnapshotById:
                 options.findModelNodeSnapshotById || (async (uid: string) => models[uid] || null),
             },
@@ -359,6 +370,171 @@ describe('variables:resolve allow-list authorization', () => {
     expect(nestedBusinessObject.allowed).toBe(false);
     expect(nestedRunJsShape.allowed).toBe(false);
     expect(nonFormTree.allowed).toBe(false);
+  });
+
+  it('supports assign rules persisted on the legacy form root', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const form = {
+      ...createFlowModel('legacy-form', {}),
+      options: {
+        use: 'EditFormModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+    };
+    const grid = {
+      ...createFlowModel('legacy-form-grid', {}),
+      options: { use: 'FormGridModel' },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('legacy-form-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries([form, grid, field].map((model) => [model.uid, model])),
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it('follows a related reference form grid to its persisted assign rules', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const hostForm = { ...createFlowModel('reference-host-form', {}), options: { use: 'EditFormModel' } };
+    const referenceGrid = {
+      ...createFlowModel('reference-host-grid', {}),
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              mode: 'reference',
+              targetPath: 'subModels.grid',
+              targetUid: 'reference-target-form',
+              templateUid: 'reference-template',
+            },
+          },
+        },
+      },
+      parentId: hostForm.uid,
+      subKey: 'grid',
+    };
+    const targetForm = { ...createFlowModel('reference-target-form', {}), options: { use: 'FormBlockModel' } };
+    const targetGrid = {
+      ...createFlowModel('reference-target-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+      parentId: targetForm.uid,
+      subKey: 'grid',
+    };
+    const targetField = {
+      ...createFlowModel('reference-target-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: targetGrid.uid,
+      subKey: 'items',
+    };
+    const unrelatedForm = { ...createFlowModel('reference-unrelated-form', {}), options: { use: 'EditFormModel' } };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [hostForm, referenceGrid, targetForm, targetGrid, targetField, unrelatedForm].map((model) => [
+          model.uid,
+          model,
+        ]),
+      ),
+    });
+
+    const fromHost = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(hostForm.uid),
+      template,
+    });
+    const fromTargetField = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(targetField.uid),
+      template,
+    });
+    const fromUnrelatedForm = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(unrelatedForm.uid),
+      template,
+    });
+
+    expect(fromHost.allowed).toBe(true);
+    expect(fromTargetField.allowed).toBe(true);
+    expect(fromUnrelatedForm.allowed).toBe(false);
+  });
+
+  it('falls back to legacy host form rules when a referenced template has none', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const hostForm = {
+      ...createFlowModel('legacy-reference-host-form', {}),
+      options: {
+        use: 'EditFormModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+    };
+    const referenceGrid = {
+      ...createFlowModel('legacy-reference-host-grid', {}),
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              targetPath: 'subModels.grid',
+              targetUid: 'legacy-reference-target-form',
+              templateUid: 'legacy-reference-template',
+            },
+          },
+        },
+      },
+      parentId: hostForm.uid,
+      subKey: 'grid',
+    };
+    const targetForm = {
+      ...createFlowModel('legacy-reference-target-form', {}),
+      options: { use: 'FormBlockModel' },
+    };
+    const targetGrid = {
+      ...createFlowModel('legacy-reference-target-grid', {}),
+      options: { use: 'FormGridModel' },
+      parentId: targetForm.uid,
+      subKey: 'grid',
+    };
+    const targetField = {
+      ...createFlowModel('legacy-reference-target-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: targetGrid.uid,
+      subKey: 'items',
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [hostForm, referenceGrid, targetForm, targetGrid, targetField].map((model) => [model.uid, model]),
+      ),
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(targetField.uid),
+      template,
+    });
+
+    expect(result.allowed).toBe(true);
   });
 
   it('keeps registered variable contextParams sanitized after later validators mutate them', async () => {

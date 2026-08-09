@@ -91,6 +91,7 @@ export function analyzeVariableTemplateSafely(
 }
 
 type FlowModelCacheValue = Promise<FlowModelNodeSnapshot | null> | FlowModelNodeSnapshot | null;
+type FlowModelChildCacheValue = Promise<FlowModelNodeSnapshot | null> | FlowModelNodeSnapshot | null;
 type FlowModelContractCacheValue = Promise<FlowModelVariableContract | null> | FlowModelVariableContract | null;
 type FlowModelContractSource = 'node' | 'formAssignRules';
 
@@ -105,7 +106,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function getFormAssignRulesVariableSource(node: FlowModelNodeSnapshot): unknown | undefined {
+function readFormAssignRulesVariableSource(node: FlowModelNodeSnapshot): unknown | undefined {
   const stepParams = isObject(node.options.stepParams) ? node.options.stepParams : null;
   const formModelSettings = stepParams && isObject(stepParams.formModelSettings) ? stepParams.formModelSettings : null;
   return formModelSettings && Object.prototype.hasOwnProperty.call(formModelSettings, 'assignRules')
@@ -113,14 +114,26 @@ function getFormAssignRulesVariableSource(node: FlowModelNodeSnapshot): unknown 
     : undefined;
 }
 
-function isFormAssignRulesContractNode(node: FlowModelNodeSnapshot) {
+function isFormGridNode(node: FlowModelNodeSnapshot) {
   const use = node.options.use;
-  return (
-    node.subKey === 'grid' &&
-    typeof use === 'string' &&
-    use.endsWith('FormGridModel') &&
-    typeof getFormAssignRulesVariableSource(node) !== 'undefined'
-  );
+  return node.subKey === 'grid' && typeof use === 'string' && use.endsWith('GridModel');
+}
+
+function isReferenceFormGridNode(node: FlowModelNodeSnapshot) {
+  const use = node.options.use;
+  return isFormGridNode(node) && typeof use === 'string' && use.endsWith('ReferenceFormGridModel');
+}
+
+function getReferenceFormGridTargetUid(node: FlowModelNodeSnapshot) {
+  const stepParams = isObject(node.options.stepParams) ? node.options.stepParams : null;
+  const referenceSettings = stepParams && isObject(stepParams.referenceSettings) ? stepParams.referenceSettings : null;
+  const useTemplate =
+    referenceSettings && isObject(referenceSettings.useTemplate) ? referenceSettings.useTemplate : null;
+  const templateUid = useTemplate && typeof useTemplate.templateUid === 'string' ? useTemplate.templateUid.trim() : '';
+  if (!useTemplate || !templateUid) return '';
+  const targetPath = typeof useTemplate.targetPath === 'string' ? useTemplate.targetPath.trim() : '';
+  if (targetPath && targetPath !== 'subModels.grid') return '';
+  return typeof useTemplate.targetUid === 'string' ? useTemplate.targetUid.trim() : '';
 }
 
 function isFormAssignRulesOwnerNode(node: FlowModelNodeSnapshot) {
@@ -208,6 +221,26 @@ async function getFlowModelNode(ctx: ResourcerContext, flowModelUid: string): Pr
   return model;
 }
 
+async function getFlowModelChildNode(ctx: ResourcerContext, parentUid: string, subKey: string) {
+  const state = getRequestState(ctx);
+  const cacheKey = '__variableResolveFlowModelChildCache';
+  const cache =
+    (state[cacheKey] as Map<string, FlowModelChildCacheValue> | undefined) ||
+    new Map<string, FlowModelChildCacheValue>();
+  state[cacheKey] = cache;
+  const childCacheKey = JSON.stringify([parentUid, subKey]);
+  if (cache.has(childCacheKey)) return (await cache.get(childCacheKey)) || null;
+
+  const load = (async () => {
+    const child = await getFlowModelRepository(ctx).findModelByParentId(parentUid, { subKey });
+    return isObject(child) && typeof child.uid === 'string' ? getFlowModelNode(ctx, child.uid) : null;
+  })();
+  cache.set(childCacheKey, load);
+  const child = await load;
+  cache.set(childCacheKey, child);
+  return child;
+}
+
 async function loadFlowModelAncestors(ctx: ResourcerContext, currentNode: FlowModelNodeSnapshot) {
   const ancestors: FlowModelNodeSnapshot[] = [];
   const seen = new Set([currentNode.uid]);
@@ -223,6 +256,15 @@ async function loadFlowModelAncestors(ctx: ResourcerContext, currentNode: FlowMo
     parentId = parent.parentId;
   }
   return Object.freeze(ancestors);
+}
+
+async function resolveFormAssignRulesVariableSource(ctx: ResourcerContext, contractNode: FlowModelNodeSnapshot) {
+  const fromGrid = readFormAssignRulesVariableSource(contractNode);
+  if (typeof fromGrid !== 'undefined') return fromGrid;
+  if (!contractNode.parentId) return undefined;
+
+  const formNode = await getFlowModelNode(ctx, contractNode.parentId);
+  return formNode && isFormAssignRulesOwnerNode(formNode) ? readFormAssignRulesVariableSource(formNode) : undefined;
 }
 
 function createRecordSlotCompilerOptions(ctx: ResourcerContext, currentNode?: FlowModelNodeSnapshot) {
@@ -273,7 +315,9 @@ async function createFlowModelVariableContractFromNode(
   source: FlowModelContractSource,
 ) {
   const variableSource =
-    source === 'formAssignRules' ? getFormAssignRulesVariableSource(contractNode) ?? {} : contractNode.options;
+    source === 'formAssignRules'
+      ? (await resolveFormAssignRulesVariableSource(ctx, contractNode)) ?? {}
+      : contractNode.options;
   const prepared = prepareFlowModelVariableSource(
     variableSource,
     source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
@@ -378,18 +422,50 @@ async function resolveFormAssignRulesContractNode(
   contractModelUid: string,
 ) {
   const contractNode = await getFlowModelNode(ctx, contractModelUid);
-  if (!contractNode || !contractNode.parentId || !isFormAssignRulesContractNode(contractNode)) return null;
+  if (!contractNode || !contractNode.parentId || !isFormGridNode(contractNode)) return null;
 
   const formNode = await getFlowModelNode(ctx, contractNode.parentId);
   if (!formNode || !isFormAssignRulesOwnerNode(formNode)) return null;
-  if (runtimeNode.uid === contractNode.uid || runtimeNode.uid === formNode.uid) return contractNode;
 
+  let ancestorUids: ReadonlySet<string> | null = null;
   try {
     const ancestors = await loadFlowModelAncestors(ctx, runtimeNode);
-    return ancestors.some((ancestor) => ancestor.uid === contractNode.uid) ? contractNode : null;
+    ancestorUids = new Set(ancestors.map((ancestor) => ancestor.uid));
   } catch {
-    return null;
+    ancestorUids = null;
   }
+
+  if (isReferenceFormGridNode(contractNode)) {
+    const targetUid = getReferenceFormGridTargetUid(contractNode);
+    if (!targetUid) return null;
+    const targetFormNode = await getFlowModelNode(ctx, targetUid);
+    if (!targetFormNode || !isFormAssignRulesOwnerNode(targetFormNode)) return null;
+    const targetGridNode = await getFlowModelChildNode(ctx, targetFormNode.uid, 'grid');
+    if (!targetGridNode || !isFormGridNode(targetGridNode) || isReferenceFormGridNode(targetGridNode)) return null;
+    const targetVariableSource = await resolveFormAssignRulesVariableSource(ctx, targetGridNode);
+    let contractSourceNode = targetGridNode;
+    if (typeof targetVariableSource === 'undefined') {
+      if (typeof readFormAssignRulesVariableSource(formNode) === 'undefined') return null;
+      contractSourceNode = formNode;
+    }
+
+    const relatedToHost =
+      runtimeNode.uid === contractNode.uid ||
+      runtimeNode.uid === formNode.uid ||
+      ancestorUids?.has(contractNode.uid) === true;
+    const relatedToTarget =
+      runtimeNode.uid === targetGridNode.uid ||
+      runtimeNode.uid === targetFormNode.uid ||
+      ancestorUids?.has(targetGridNode.uid) === true;
+    return relatedToHost || relatedToTarget ? contractSourceNode : null;
+  }
+
+  if (typeof (await resolveFormAssignRulesVariableSource(ctx, contractNode)) === 'undefined') return null;
+  const related =
+    runtimeNode.uid === contractNode.uid ||
+    runtimeNode.uid === formNode.uid ||
+    ancestorUids?.has(contractNode.uid) === true;
+  return related ? contractNode : null;
 }
 
 function createPolicy(
