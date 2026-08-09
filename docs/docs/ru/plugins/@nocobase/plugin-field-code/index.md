@@ -10,7 +10,7 @@ description: |
   Редактирование кода с подсветкой синтаксиса: Java, JavaScript, Python, SQL и другие языки.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

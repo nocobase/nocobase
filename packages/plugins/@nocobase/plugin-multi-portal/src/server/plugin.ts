@@ -74,8 +74,6 @@ const MAIN_APP_NAME = 'main';
 const UNION_ROLE_KEY = '__union__';
 const MULTI_PORTAL_MANIFEST_NAMESPACE = 'multi-portal';
 const MULTI_PORTAL_MANIFEST_SYNC_MESSAGE_TYPE = 'multi-portal:app-manifest-changed';
-const DEFAULT_INIT_PORTAL_TYPE = 'ai';
-const DEFAULT_INIT_PORTAL_NAME = 'main';
 const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
@@ -85,7 +83,9 @@ const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
 const DEFAULT_MULTI_PORTAL_UID = '__default_portal__';
 const MULTI_PORTAL_SLUG_PATTERN = /^[a-z0-9_-]+$/;
-const INIT_PORTAL_TYPES = ['no-code', 'ai'] as const;
+const PORTAL_ACCESS_DENIED_CODE = 'PORTAL_ACCESS_DENIED';
+const PORTAL_CONTEXT_INVALID_CODE = 'PORTAL_CONTEXT_INVALID';
+const PORTAL_NOT_FOUND_CODE = 'PORTAL_NOT_FOUND';
 const MULTI_PORTAL_MANAGEMENT_ACTIONS = [
   'multiPortals:list',
   'multiPortals:get',
@@ -152,12 +152,19 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
-type InitPortalType = (typeof INIT_PORTAL_TYPES)[number];
+const MULTI_PORTAL_SEED_TYPES = ['no-code', 'ai'] as const;
+type MultiPortalSeedType = (typeof MULTI_PORTAL_SEED_TYPES)[number];
+const MULTI_PORTAL_SEED_TYPE_SET = new Set<string>(MULTI_PORTAL_SEED_TYPES);
+
+function isMultiPortalSeedType(value: unknown): value is MultiPortalSeedType {
+  return typeof value === 'string' && MULTI_PORTAL_SEED_TYPE_SET.has(value);
+}
+
 type DefaultMultiPortalRecord = {
   uid: string;
   title: string;
   icon: string;
-  portalType: InitPortalType;
+  portalType: MultiPortalSeedType;
   portalName: string;
   routePath: string;
   authCheck: boolean;
@@ -251,48 +258,22 @@ function trimString(value: unknown) {
   return String(value ?? '').trim();
 }
 
-function isInitPortalType(value: string): value is InitPortalType {
-  return (INIT_PORTAL_TYPES as readonly string[]).includes(value);
-}
-
-function getInitPortalType() {
-  const portalType = trimString(process.env.INIT_PORTAL_TYPE) || DEFAULT_INIT_PORTAL_TYPE;
-  if (!isInitPortalType(portalType)) {
-    throw new Error('INIT_PORTAL_TYPE must be either "no-code" or "ai".');
-  }
-  return portalType;
-}
-
-function getInitPortalName() {
-  const portalName = trimString(process.env.INIT_PORTAL_NAME) || DEFAULT_INIT_PORTAL_NAME;
-  if (!MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
-    throw new Error('INIT_PORTAL_NAME can only contain lowercase letters, numbers, hyphens, and underscores.');
-  }
-  return portalName;
-}
-
 function getInitPortalTemplate() {
   return trimString(process.env.INIT_PORTAL_TEMPLATE) || DEFAULT_INIT_PORTAL_TEMPLATE;
 }
 
-function formatInitPortalTitle(portalName: string) {
-  const title = portalName
-    .split(/[-_]/)
-    .filter(Boolean)
-    .map((segment) => `${segment.charAt(0).toUpperCase()}${segment.slice(1)}`)
-    .join(' ');
-  return title || portalName;
+function hasDeprecatedInitPortalEnv() {
+  return Boolean(trimString(process.env.INIT_PORTAL_TYPE) || trimString(process.env.INIT_PORTAL_NAME));
 }
 
-function getDefaultMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
-  const portalName = getInitPortalName();
+function getDefaultAiMultiPortalRecord(options: { isDefault?: true } = {}): DefaultMultiPortalRecord {
   return {
     uid: DEFAULT_MULTI_PORTAL_UID,
-    title: formatInitPortalTitle(portalName),
+    title: 'Main',
     icon: 'DesktopOutlined',
-    portalType: getInitPortalType(),
-    portalName,
-    routePath: `/${portalName}`,
+    portalType: 'ai',
+    portalName: 'main',
+    routePath: '/main',
     authCheck: true,
     enabled: true,
     ...(options.isDefault ? { isDefault: true } : {}),
@@ -301,7 +282,7 @@ function getDefaultMultiPortalRecord(options: { isDefault?: true } = {}): Defaul
 }
 
 function getFreshMultiPortalRecords(): DefaultMultiPortalRecord[] {
-  return [getDefaultMultiPortalRecord({ isDefault: true })];
+  return [getDefaultAiMultiPortalRecord({ isDefault: true }), ...getFixedLayoutMultiPortalRecords()];
 }
 
 function getFixedLayoutMultiPortalRecords(): DefaultMultiPortalRecord[] {
@@ -719,11 +700,20 @@ async function runPortalStorageCommandOnce(command: string, args: string[], opti
   }
 }
 
-async function buildPortalStorageItem(portalDir: string, item: MultiPortalStorageItem): Promise<void> {
+function hasRequestAppHeader(options?: DatabaseHookOptions) {
+  return Boolean(trimString(options?.context?.get('X-App')));
+}
+
+async function buildPortalStorageItem(
+  portalDir: string,
+  item: MultiPortalStorageItem,
+  options?: DatabaseHookOptions,
+): Promise<void> {
   const logPath = getPortalStorageLogPath(item);
+  const buildAppName = hasRequestAppHeader(options) ? item.appName : MAIN_APP_NAME;
   const buildEnv = getPortalStorageCommandEnv({
-    NOCOBASE_API_URL: getPortalStorageApiUrl(item.appName),
-    NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(item.appName, item.portalName),
+    NOCOBASE_API_URL: getPortalStorageApiUrl(buildAppName),
+    NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(buildAppName, item.portalName),
     SKIP_YARN_COREPACK_CHECK: '1',
     COREPACK_ENABLE_STRICT: '0',
     COREPACK_ENABLE_PROJECT_SPEC: '0',
@@ -1347,9 +1337,7 @@ async function seedFreshMultiPortals(db: Database) {
 }
 
 async function seedHistoricalMultiPortals(db: Database) {
-  if (getInitPortalType() === 'ai') {
-    await createDefaultMultiPortalBestEffort(db, getDefaultMultiPortalRecord());
-  }
+  await createDefaultMultiPortalBestEffort(db, getDefaultAiMultiPortalRecord());
   for (const portal of getFixedLayoutMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
   }
@@ -1572,6 +1560,84 @@ async function canAccessMultiPortal(ctx: ResourcerContext, multiPortalUid: strin
     },
   });
   return count > 0;
+}
+
+function throwPortalAccessGateError(ctx: ResourcerContext, status: number, code: string, message: string): never {
+  ctx.throw(status, ctx.t(message, { ns: NAMESPACE }), { code });
+  throw new Error(message);
+}
+
+function getRequestedPortalNameFromHeader(ctx: ResourcerContext) {
+  const headers = ctx.request?.headers;
+  if (!isRecordLike(headers) || !Object.prototype.hasOwnProperty.call(headers, 'x-portal')) {
+    return;
+  }
+
+  const rawPortalName = headers['x-portal'];
+  if (typeof rawPortalName !== 'string') {
+    throwPortalAccessGateError(ctx, 400, PORTAL_CONTEXT_INVALID_CODE, 'Invalid Portal context');
+  }
+
+  const portalName = rawPortalName.startsWith('/x/') ? rawPortalName.slice('/x/'.length) : rawPortalName;
+  if (!MULTI_PORTAL_SLUG_PATTERN.test(portalName)) {
+    throwPortalAccessGateError(ctx, 400, PORTAL_CONTEXT_INVALID_CODE, 'Invalid Portal context');
+  }
+  return portalName;
+}
+
+function pickPortalAccessDeniedData(ctx: ResourcerContext, portalName: string) {
+  const roleCheckBody = isRecordLike(ctx.body) ? ctx.body : {};
+  return {
+    portalName,
+    role: typeof roleCheckBody.role === 'string' ? roleCheckBody.role : '',
+    roles: Array.isArray(roleCheckBody.roles)
+      ? roleCheckBody.roles.filter((role): role is string => typeof role === 'string')
+      : [],
+    roleMode: typeof roleCheckBody.roleMode === 'string' ? roleCheckBody.roleMode : 'default',
+    allowAnonymous: roleCheckBody.allowAnonymous === true,
+  };
+}
+
+async function checkMultiPortalAccessForRolesCheck(ctx: ResourcerContext, next: () => Promise<void>) {
+  const portalName = getRequestedPortalNameFromHeader(ctx);
+  if (portalName === undefined) {
+    await next();
+    return;
+  }
+
+  const portal = await ctx.db.getRepository('multiPortals').findOne({
+    filter: {
+      portalName,
+    },
+    fields: ['uid', 'portalType', 'enabled', 'uiLayoutUid'],
+  });
+  if (
+    !portal ||
+    portal.get('enabled') !== true ||
+    !getDefaultMultiPortalType(portal) ||
+    !isMultiPortalUiLayoutUid(portal.get('uiLayoutUid'))
+  ) {
+    throwPortalAccessGateError(ctx, 404, PORTAL_NOT_FOUND_CODE, 'Portal not found');
+  }
+
+  const portalUid = String(portal.get('uid'));
+  if (isDefaultLayoutMultiPortalUid(portalUid) || (await canAccessMultiPortal(ctx, portalUid))) {
+    await next();
+    return;
+  }
+
+  await next();
+  ctx.status = 403;
+  ctx.withoutDataWrapping = true;
+  ctx.body = {
+    errors: [
+      {
+        code: PORTAL_ACCESS_DENIED_CODE,
+        message: ctx.t('You do not have access to this Portal', { ns: NAMESPACE }),
+      },
+    ],
+    data: pickPortalAccessDeniedData(ctx, portalName),
+  };
 }
 
 async function listCurrentRoleAccessibleMultiPortalUids(ctx: ResourcerContext) {
@@ -2771,12 +2837,12 @@ async function listEnabledMultiPortals(ctx: ResourcerContext, next: () => Promis
 
 const DEFAULT_MULTI_PORTAL_RESPONSE_FIELDS = ['uid', 'portalType', 'routePath'] as const;
 
-function getDefaultMultiPortalType(record: Model): InitPortalType | null {
+function getDefaultMultiPortalType(record: Model): MultiPortalSeedType | null {
   const portalType = record.get('portalType');
   if (portalType === null || portalType === undefined) {
     return 'no-code';
   }
-  return typeof portalType === 'string' && isInitPortalType(portalType) ? portalType : null;
+  return isMultiPortalSeedType(portalType) ? portalType : null;
 }
 
 function pickDefaultMultiPortalFields(record: Model) {
@@ -3052,6 +3118,7 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
 export class PluginMultiPortalServer extends Plugin {
   private portalStorageTaskKeys = new Set<string>();
   private portalStorageTasks = new Map<string, Promise<void>>();
+  private deprecatedInitPortalEnvWarningEmitted = false;
 
   async afterAdd() {}
 
@@ -3142,6 +3209,7 @@ export class PluginMultiPortalServer extends Plugin {
     item: MultiPortalStorageItem,
     template: ResolvedPortalTemplate,
     portalDir: string,
+    options?: DatabaseHookOptions,
   ) {
     const taskKey = this.getPortalStorageTaskKey(item);
     if (this.portalStorageTaskKeys.has(taskKey)) {
@@ -3168,7 +3236,7 @@ export class PluginMultiPortalServer extends Plugin {
         }
         if (item.enabled) {
           this.logPortalBuildHtml(item, 'requested', 'storage directory was initialized');
-          await buildPortalStorageItem(portalDir, item);
+          await buildPortalStorageItem(portalDir, item, options);
           this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
           return;
         }
@@ -3193,7 +3261,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   private async ensurePortalStorageItem(
     item: MultiPortalStorageItem,
-    options: {
+    options: DatabaseHookOptions & {
       forceBuild?: boolean;
     } = {},
   ) {
@@ -3203,7 +3271,7 @@ export class PluginMultiPortalServer extends Plugin {
 
     if (!(await pathExists(portalDir))) {
       const template = await resolvePortalTemplate(getInitPortalTemplate(), logPath);
-      await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir);
+      await this.schedulePortalTemplateCopyAndBuild(item, template, portalDir, options);
       return;
     }
 
@@ -3215,7 +3283,7 @@ export class PluginMultiPortalServer extends Plugin {
           'requested',
           options.forceBuild ? 'forceBuild is enabled' : 'dist/index.html does not exist',
         );
-        await buildPortalStorageItem(portalDir, item);
+        await buildPortalStorageItem(portalDir, item, options);
         this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
       } else {
         this.logPortalBuildHtml(item, 'skipped', 'dist/index.html already exists');
@@ -3245,7 +3313,7 @@ export class PluginMultiPortalServer extends Plugin {
         await this.removePortalStorageIndexHtml(previousItem);
       }
       if (currentItem) {
-        await this.ensurePortalStorageItem(currentItem, { forceBuild });
+        await this.ensurePortalStorageItem(currentItem, { ...options, forceBuild });
       }
     }, options);
   }
@@ -3586,6 +3654,7 @@ export class PluginMultiPortalServer extends Plugin {
 
   async beforeLoad() {
     this.app.db.registerRepositories({ MultiPortalDesktopRouteRepository });
+    this.app.resourceManager.registerPreActionHandler('roles:check', checkMultiPortalAccessForRolesCheck);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:list', addDesktopRouteEffectiveScopeFilter);
     this.app.resourceManager.registerPreActionHandler('desktopRoutes:get', addDesktopRouteEffectiveScopeFilter);
     this.app.resourceManager.registerPreActionHandler(
@@ -3706,6 +3775,13 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   async install() {
+    if (!this.deprecatedInitPortalEnvWarningEmitted && hasDeprecatedInitPortalEnv()) {
+      this.deprecatedInitPortalEnvWarningEmitted = true;
+      this.app.logger?.warn?.(
+        'INIT_PORTAL_TYPE and INIT_PORTAL_NAME are deprecated and no longer affect multi-portal seeding; NocoBase now creates the AI Portal "main" plus the fixed no-code "admin" and "mobile" portals by default.',
+      );
+    }
+
     const version = await this.app.version.get();
     if (!version) {
       await ensureDefaultRoleMultiPortalAccess(this.db);

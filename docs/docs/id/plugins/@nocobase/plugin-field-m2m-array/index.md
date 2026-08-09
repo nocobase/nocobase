@@ -7,7 +7,7 @@ description: |
   Mendukung pembentukan relasi many-to-many dengan menyimpan unique key tabel target di dalam array.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

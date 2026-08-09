@@ -7,7 +7,7 @@ description: |
   Cung cấp khả năng cấu hình trang di động.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

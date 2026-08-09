@@ -44,6 +44,26 @@ Se selecionado, os nós subsequentes ainda serão executados mesmo que o script 
 Se o script falhar, ele não terá valor de retorno, e o resultado do nó será preenchido com a mensagem de erro. Se nós subsequentes utilizarem a variável de resultado do nó de script, você precisará lidar com isso com cautela.
 :::
 
+## Controle de concorrência dos Workers
+
+Os nós de script JavaScript colocam os scripts pendentes em uma fila de tarefas e os executam em threads Worker separadas. Por padrão, o NocoBase não limita a concorrência dos Workers de scripts JavaScript. Se houver várias tarefas aguardando na fila, elas poderão criar Workers e ser executadas simultaneamente.
+
+Se os scripts consumirem muita memória durante a execução, vários Workers poderão aumentar rapidamente o uso de memória de uma instância da aplicação. Nesse caso, use a variável de ambiente `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` para definir um limite de concorrência. O mesmo se aplica a scripts que fazem uso intensivo de CPU: uma concorrência excessiva aumenta a competição pela CPU e pode afetar outras solicitações e workflows no NocoBase. Também é recomendável configurar essa variável se muitas tarefas de script puderem ser criadas em um curto período:
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+As regras de configuração são as seguintes:
+
+- Se a variável não estiver configurada ou seu valor for inválido, a concorrência será ilimitada
+- Um número inteiro positivo define o número máximo de threads Worker que podem ser executadas simultaneamente
+- O valor `0` remove o limite de concorrência, permitindo que todas as tarefas da fila sejam executadas simultaneamente
+
+Quando o limite de concorrência é atingido, novas tarefas permanecem na fila até que um Worker esteja disponível. Você pode manter a configuração padrão se os scripts forem executados com pouca frequência e cada execução consumir poucos recursos. Se precisar de um limite de concorrência, comece com um valor pequeno e ajuste-o gradualmente conforme o uso de memória e CPU da instância da aplicação e o tempo de espera das tarefas na fila.
+
+Se uma aplicação for executada em várias instâncias de servidor, esta configuração será aplicada separadamente a cada instância. A capacidade total de concorrência também depende do número de instâncias que podem consumir tarefas. Reinicie o serviço NocoBase após alterar a variável de ambiente para que o novo valor entre em vigor.
+
 ## Motor de execução
 
 O nó de script JavaScript suporta dois motores de execução, selecionados automaticamente com base na configuração da variável de ambiente `WORKFLOW_SCRIPT_MODULES`:

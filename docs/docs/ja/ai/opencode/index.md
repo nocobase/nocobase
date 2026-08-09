@@ -78,7 +78,7 @@ NocoBase CLI をインストールして初期化を完了してください：h
 ### 手動インストール
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 

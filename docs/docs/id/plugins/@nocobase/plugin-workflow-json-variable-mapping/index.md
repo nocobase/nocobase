@@ -7,7 +7,7 @@ description: |
   Digunakan untuk memetakan data JSON apa pun menjadi variabel terstruktur untuk digunakan oleh node selanjutnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

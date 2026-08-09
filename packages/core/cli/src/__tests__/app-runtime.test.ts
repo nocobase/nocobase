@@ -249,7 +249,7 @@ test('runLocalNocoBaseCommand falls back to the parent .env when only source/ is
     cwd: '/tmp/custom/source',
     env: {
       APP_PORT: '13000',
-      APP_ENV_PATH: path.resolve('/tmp/custom/source', '..', '.env'),
+      APP_ENV_PATH: path.join('/tmp/custom/', '.env'),
     },
     stdio: undefined,
     onStdout: undefined,

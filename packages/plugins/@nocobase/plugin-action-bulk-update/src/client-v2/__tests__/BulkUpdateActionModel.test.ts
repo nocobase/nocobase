@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, tExpr } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 import { BulkUpdateActionModel } from '../BulkUpdateActionModel';
 import { PluginActionBulkUpdateClient } from '../index';
@@ -237,6 +237,138 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(refresh).not.toHaveBeenCalled();
     expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(ctx.runAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs the configured after-success action before refresh settles and logs a later refresh failure', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-action-success', flowEngine: engine } as any);
+    const update = vi.fn(async () => ({}));
+    const refreshError = new Error('refresh failed');
+    let rejectRefresh: ((reason?: unknown) => void) | undefined;
+    const refresh = vi.fn(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectRefresh = reject;
+        }),
+    );
+    const runAction = vi.fn(async () => {});
+    const warn = vi.fn();
+    const setProps = vi.fn();
+    const ctx: any = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'confirm') {
+            return { enable: false };
+          }
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          if (stepKey === 'afterSuccess') {
+            return {
+              successMessage: 'Records updated',
+            };
+          }
+          return undefined;
+        }),
+        setProps,
+      },
+      runAction,
+      collection: {
+        name: 'users',
+        dataSourceKey: 'main',
+        filterTargetKey: 'id',
+        getPrimaryKey: () => 'id',
+        getFilterByTK: (record: { id: number }) => record.id,
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: () => [{ id: 1 }],
+          refresh,
+        },
+      },
+      api: {
+        resource: vi.fn(() => ({ update })),
+      },
+      logger: { warn },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+
+    const handlerPromise = handler(ctx, { assignedValues: { status: 'active' } });
+
+    await vi.waitFor(() => {
+      expect(runAction).toHaveBeenCalledTimes(2);
+    });
+
+    expect(update).toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: false });
+    expect(runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: 'Records updated',
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
+    expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
+    expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
+
+    expect(rejectRefresh).toBeTypeOf('function');
+    rejectRefresh?.(refreshError);
+    await handlerPromise;
+    await vi.waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(
+        { err: refreshError },
+        'Failed to refresh the block after a successful bulk update',
+      );
+    });
+  });
+
+  it('does not run the after-success action when no records are selected', async () => {
+    const engine = new FlowEngine();
+    const model = new BulkUpdateActionModel({ uid: 'bulk-update-action-empty', flowEngine: engine } as any);
+    const runAction = vi.fn(async () => {});
+    const ctx: any = {
+      model: {
+        getStepParams: vi.fn((_flowKey: string, stepKey: string) => {
+          if (stepKey === 'updateMode') {
+            return { value: 'selected' };
+          }
+          return undefined;
+        }),
+        setProps: vi.fn(),
+      },
+      runAction,
+      collection: {
+        name: 'users',
+        filterTargetKey: 'id',
+        getPrimaryKey: () => 'id',
+      },
+      blockModel: {
+        resource: {
+          getSelectedRows: () => [],
+          refresh: vi.fn(),
+        },
+      },
+      message: {
+        success: vi.fn(),
+        warning: vi.fn(),
+        error: vi.fn(),
+      },
+      t: (value: string) => value,
+    };
+    const handler = model.getFlow('apply')?.getStep('apply')?.serialize().handler;
+
+    await handler(ctx, { assignedValues: { status: 'active' } });
+
+    expect(runAction).toHaveBeenCalledTimes(1);
+    expect(runAction).toHaveBeenCalledWith('confirm', { enable: false });
+    expect(ctx.message.error).toHaveBeenCalledWith('Please select the records to be updated');
   });
 
   it('returns saved assigned values as apply default params', async () => {
@@ -307,7 +439,7 @@ describe('BulkUpdateActionModel apply action', () => {
 
     await handler?.(ctx as never, { assignedValues: { status: 'published' } } as never);
 
-    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: true, title: 'Confirm' });
+    expect(ctx.runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: true, title: 'Confirm' });
     expect(ctx.api.resource).toHaveBeenCalledWith('posts', null, {
       'x-data-source': 'main',
     });
@@ -328,7 +460,12 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+    expect(ctx.runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: tExpr('Saved successfully'),
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
   });
 
   it('updates all records with forceUpdate when the mode is all', async () => {
@@ -370,7 +507,7 @@ describe('BulkUpdateActionModel apply action', () => {
 
     await handler?.(ctx as never, { assignedValues: { status: 'archived' } } as never);
 
-    expect(ctx.runAction).toHaveBeenCalledWith('confirm', { enable: false });
+    expect(ctx.runAction).toHaveBeenNthCalledWith(1, 'confirm', { enable: false });
     expect(update).toHaveBeenCalledWith({
       values: {
         status: 'archived',
@@ -380,7 +517,12 @@ describe('BulkUpdateActionModel apply action', () => {
     expect(setProps).toHaveBeenNthCalledWith(1, { loading: true });
     expect(setProps).toHaveBeenNthCalledWith(2, { loading: false });
     expect(ctx.blockModel.resource.refresh).toHaveBeenCalledTimes(1);
-    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
+    expect(ctx.runAction).toHaveBeenNthCalledWith(2, 'afterSuccess', {
+      successMessage: tExpr('Saved successfully'),
+      manualClose: false,
+      actionAfterSuccess: 'stay',
+    });
+    expect(ctx.message.success).not.toHaveBeenCalled();
   });
 
   it('exits early when assigned values are empty or collection metadata is missing', async () => {

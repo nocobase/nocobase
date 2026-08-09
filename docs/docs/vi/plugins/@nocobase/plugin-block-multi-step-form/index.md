@@ -9,7 +9,7 @@ description: |
   Chia biểu mẫu có nhiều trường thành nhiều bước để điền, giảm tải cho người dùng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

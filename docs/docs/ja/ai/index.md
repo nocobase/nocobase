@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'NocoBase の AI 機能体系：AI 構築と開発、AI 社員、AI Agent 連携、AI ツールとリソース。'
-keywords: 'NocoBase AI,AI 構築,AI 社員,AI 開発,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'NocoBase の AI 機能体系：AI 構築、AI 社員、AI Agent 連携、AI ツールとリソース。'
+keywords: 'NocoBase AI,AI 構築,AI Portal,AI 社員,AI 開発,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: はじめに
     details: CLI をインストールし、アプリを接続して構築を開始します。すべてはここから始まります。
@@ -21,7 +21,7 @@ features:
         details: AI で NocoBase プラグイン開発を支援します。スキャフォールディングからコンポーネントコード、ビジネスロジックまで全工程をカバーします。
         link: /ai-dev
 
-  - title: AI 構築と開発
+  - title: AI 構築
     details: AI で NocoBase アプリケーションとプラグインを構築します。自然言語の記述から、使えるシステムやプラグインコードへ。
     items:
       - title: AI 構築クイックスタート
@@ -65,28 +65,6 @@ features:
         details: ワークフローノードに AI 社員を組み込み、自動化されたインテリジェントな意思決定とコンテンツ生成を実現します。
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: あなたの AI Agent を接続する
-    details: お気に入りの AI Agent が、NocoBase を操作できるようになりました。
-    items:
-      - title: OpenClaw + NocoBase：最も人気の AI Agent があなたのために働く
-        details: 世界で最も人気のあるオープンソース AI Agent。OpenClaw を 24 時間体制の NocoBase オペレーターにしましょう。
-        link: /ai/openclaw
-      - title: Hermes Agent：使うほど賢くなる NocoBase アシスタント
-        details: 成功体験を再利用可能なスキルとして自動蓄積し、使えば使うほどあなたのビジネスシステムを理解します。
-        link: /ai/hermes-agent
-      - title: WorkBuddy で NocoBase を自由自在に
-        details: Tencent 製。20 以上の組み込みスキル。企業微信、Lark などのマルチプラットフォームから NocoBase をリモート操作できます。
-        link: /ai/workbuddy
-      - title: Claude Code + NocoBase：最強の AI ブレイン、あなたの NocoBase チーフアーキテクト
-        details: 強力な AI アーキテクト。プロジェクトのコンテキストを理解し、コードを書くように自然に NocoBase を構築します。
-        link: /ai/claude-code
-      - title: Codex で NocoBase を操作、構築と開発を両立
-        details: OpenAI 製。GPT シリーズのパワーで、安全なサンドボックス内で NocoBase を構築します。すべてのステップがコントロール可能です。
-        link: /ai/codex
-      - title: OpenCode + NocoBase：オープンソースで自由、ベンダーロックインのない NocoBase 構築
-        details: 同じくオープンソースコミュニティ駆動。モデルを自由に切り替え可能。開発者のための自由な選択肢です。
-        link: /ai/opencode
-
   - title: AI ツールとリソース
     details: NocoBase の AI 機能を支えるインフラストラクチャ -- CLI、Skills、MCP。
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: AI Agent にインストール可能なドメインナレッジパッケージ。AI が NocoBase の機能と規約を理解できるようにします。
         link: /ai-builder#nocobase-skills
+      - title: nb portal コマンドリファレンス
+        details: Portal を管理するすべてのコマンド。作成、開発、ソース同期、デプロイに対応します。
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Model Context Protocol による接続。AI Agent が標準化されたプロトコルで NocoBase とやりとりできます。
         link: /ai/mcp/

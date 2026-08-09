@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Pembangunan AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Mulai Cepat",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pemilihan model",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Membangun Bersama AI Agent",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Struktur Proyek dan Tech Stack",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Komponen Standar dan Ekstensi",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Deployment dan Manajemen Source",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pembangunan Portal No-code",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi UI",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Solusi",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kontrol Versi",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Keamanan & Audit"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Konfigurasi UI"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Manajemen Workflow"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Solusi"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Manajemen Plugin"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Manajemen Publikasi"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Kontrol Versi"
   }
 ]

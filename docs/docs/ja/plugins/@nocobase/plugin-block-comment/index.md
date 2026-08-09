@@ -7,7 +7,7 @@ description: |
   レコード詳細やポップアップなどでコメントを表示・作成できるコメントブロックを提供します。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

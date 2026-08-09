@@ -8,6 +8,7 @@
  */
 
 import type { EnvConfigEntry } from './auth-store.js';
+import { normalizeAppClientEntryMode } from './app-client-entry-mode.js';
 import { normalizeEnvProxyConfig } from './env-proxy-config.js';
 import { resolveAppPublicPath } from './app-public-path.js';
 import { normalizeEnvPortalsConfig } from './env-portal-config.js';
@@ -40,8 +41,6 @@ const STRING_ENV_CONFIG_KEYS = [
   'dbSchema',
   'dbTablePrefix',
   'lang',
-  'portalType',
-  'portalName',
   'portalTemplate',
   'rootUsername',
   'rootEmail',
@@ -70,6 +69,7 @@ export type StoredEnvConfigInput = {
   schemaVersion?: unknown;
   proxy?: unknown;
   portals?: unknown;
+  appClientEntryMode?: unknown;
 } & Partial<Record<StringEnvConfigKey | BooleanEnvConfigKey, unknown>>;
 
 export type StoredEnvConfig = Partial<
@@ -119,6 +119,11 @@ export function buildStoredEnvConfig(input: StoredEnvConfigInput): StoredEnvConf
     if (value) {
       envConfig[key] = key === 'appPublicPath' ? resolveAppPublicPath(value) : value;
     }
+  }
+
+  const appClientEntryMode = normalizeAppClientEntryMode(input.appClientEntryMode);
+  if (appClientEntryMode) {
+    envConfig.appClientEntryMode = appClientEntryMode;
   }
 
   const setupState = resolveSetupState(input.setupState);

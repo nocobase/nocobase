@@ -9,7 +9,7 @@ description: |
   Gửi yêu cầu đến dịch vụ HTTP bất kỳ, hỗ trợ gửi dữ liệu ngữ cảnh đến dịch vụ đích.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

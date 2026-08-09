@@ -39,7 +39,7 @@ Bản thân lệnh gốc chủ yếu dùng để hiển thị trợ giúp và ph
 | [`nb env`](./env/index.md)           | Quản lý môi trường dự án NocoBase, env hiện tại, trạng thái, chi tiết và các lệnh runtime.  |
 | [`nb license`](./license/index.md)   | Quản lý giấy phép thương mại và các plugin được cấp phép.                                   |
 | [`nb plugin`](./plugin/index.md)     | Quản lý các plugin của env NocoBase đã chọn.                                                |
-| [`nb portal`](./portal/index.md)     | Quản lý workspace Portal: cấu hình, tạo, phát triển, đồng bộ mã nguồn, triển khai và xóa. |
+| [`nb portal`](./portal/index.md)     | Quản lý thư mục mã nguồn cục bộ của Portal: cấu hình, tạo, phát triển, đồng bộ mã nguồn, triển khai và xóa. |
 | [`nb scaffold`](./scaffold/index.md) | Tạo scaffold phát triển plugin NocoBase.                                                    |
 | [`nb self`](./self/index.md)         | Kiểm tra hoặc cập nhật chính NocoBase CLI.                                                  |
 | [`nb session`](./session/index.md)   | Cấu hình `NB_SESSION_ID` để current env được tách biệt theo shell hoặc agent runtime.       |

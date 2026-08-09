@@ -7,7 +7,7 @@ description: |
   Buat AI Employees dengan berbagai keterampilan, berkolaborasi dengan manusia untuk membangun sistem dan menangani proses bisnis.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

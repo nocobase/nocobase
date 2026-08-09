@@ -28,11 +28,10 @@ interface AppErrorPayload {
       maintainingDialog?: string;
     };
   };
-  [key: string]: unknown;
 }
 
-const isAppUpgrading = (error?: AppErrorPayload) =>
-  error?.code === 'APP_COMMANDING' && error.command?.name === 'upgrade';
+const isAppCommanding = (error?: AppErrorPayload) => error?.code === 'APP_COMMANDING';
+const isAppUpgrading = (error?: AppErrorPayload) => isAppCommanding(error) && error?.command?.name === 'upgrade';
 
 export const AppSpin = () => {
   return (
@@ -171,7 +170,7 @@ const getProps = (app: Application) => {
 export const AppError: FC<{ error: Error & { title?: string }; app: Application }> = observer(
   ({ app, error }) => {
     const props = getProps(app);
-    const upgrading = isAppUpgrading(app.error as AppErrorPayload | undefined);
+    const commanding = isAppCommanding(app.error as AppErrorPayload | undefined);
     return (
       <div>
         <Result
@@ -185,7 +184,7 @@ export const AppError: FC<{ error: Error & { title?: string }; app: Application 
           title={error?.title || app.i18n.t('App error', { ns: 'client' })}
           subTitle={app.i18n.t(error?.message)}
           extra={
-            upgrading ? null : (
+            commanding ? null : (
               <Button type="primary" key="try" onClick={() => window.location.reload()}>
                 {app.i18n.t('Try again')}
               </Button>

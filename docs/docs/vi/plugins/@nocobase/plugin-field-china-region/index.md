@@ -7,7 +7,7 @@ description: |
   Cung cấp dữ liệu khu vực hành chính Trung Quốc và loại Field tương ứng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

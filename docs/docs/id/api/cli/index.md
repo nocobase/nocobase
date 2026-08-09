@@ -39,7 +39,7 @@ Perintah root sendiri terutama digunakan untuk menampilkan bantuan dan meneruska
 | [`nb env`](./env/index.md)           | Mengelola lingkungan proyek NocoBase, env saat ini, status, detail, dan perintah runtime.        |
 | [`nb license`](./license/index.md)   | Mengelola lisensi komersial dan plugin berlisensi.                                               |
 | [`nb plugin`](./plugin/index.md)     | Mengelola plugin dari env NocoBase yang dipilih.                                                 |
-| [`nb portal`](./portal/index.md)     | Mengelola workspace Portal: konfigurasi, membuat, pengembangan, sinkronisasi source, deployment, dan penghapusan. |
+| [`nb portal`](./portal/index.md)     | Mengelola direktori source lokal Portal: konfigurasi, membuat, pengembangan, sinkronisasi source, deployment, dan penghapusan. |
 | [`nb scaffold`](./scaffold/index.md) | Menghasilkan scaffold pengembangan plugin NocoBase.                                              |
 | [`nb self`](./self/index.md)         | Memeriksa atau memperbarui NocoBase CLI itu sendiri.                                             |
 | [`nb session`](./session/index.md)   | Mengonfigurasi `NB_SESSION_ID` agar current env terisolasi berdasarkan shell atau agent runtime. |

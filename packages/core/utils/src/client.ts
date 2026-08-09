@@ -15,6 +15,7 @@ export * from './common';
 export * from './auth-cookie-name';
 export * from './date';
 export * from './forEach';
+export { generateFlowModelRdFromToken } from './flow-model-rd';
 export * from './getValuesByPath';
 export * from './handlebars';
 export * from './isValidFilter';

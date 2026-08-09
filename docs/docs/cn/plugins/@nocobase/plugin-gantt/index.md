@@ -7,7 +7,7 @@ description: |
   提供甘特图区块。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

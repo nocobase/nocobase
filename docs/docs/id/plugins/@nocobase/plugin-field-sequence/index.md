@@ -7,7 +7,7 @@ description: |
   Membuat kode secara otomatis berdasarkan aturan yang dikonfigurasi, mendukung kombinasi tanggal, angka, dan teks.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

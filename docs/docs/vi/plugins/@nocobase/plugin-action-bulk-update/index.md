@@ -10,7 +10,7 @@ description: |
   Cập nhật hàng loạt toàn bộ dữ liệu hoặc dữ liệu đã chọn.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   用于在工作流中需要并行执行的分支流程。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

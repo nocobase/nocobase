@@ -33,6 +33,7 @@ Tidak dapat dilakukan:
 - Tidak dapat merancang struktur tabel data (gunakan [Skill Pemodelan Data](./data-modeling))
 - Tidak dapat mengorkestrasi Workflow (gunakan [Skill Manajemen Workflow](./workflow))
 - Tidak dapat menangani navigasi halaman non-modern (v1), hanya mendukung penanganan halaman v2.
+- Tidak menangani source frontend AI Portal (gunakan [AI Portal](./ai-portal/index.md))
 
 ## Contoh Prompt
 
@@ -98,3 +99,4 @@ Jika konfigurasi manual dan konfigurasi AI dilakukan secara bersamaan akan salin
 - [Pemodelan Data](./data-modeling) — Gunakan AI untuk membuat dan mengelola tabel data, Field, relasi
 - [Konfigurasi Permission](./acl) — Mengonfigurasi role dan Permission akses data
 - [Manajemen Workflow](./workflow) — Membuat, mengedit, dan mendiagnosis Workflow
+- [AI Portal](./ai-portal/index.md) — Cara lain saat halaman perlu dikustomisasi dengan kode

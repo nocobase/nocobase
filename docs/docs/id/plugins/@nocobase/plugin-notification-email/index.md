@@ -7,7 +7,7 @@ description: |
   Mengirim notifikasi melalui kanal email, saat ini hanya mendukung metode transmisi SMTP.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

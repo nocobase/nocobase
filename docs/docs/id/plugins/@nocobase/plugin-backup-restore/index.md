@@ -7,7 +7,7 @@ description: |
   Backup dan restore aplikasi, dapat digunakan untuk skenario duplikasi, migrasi, dan upgrade aplikasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

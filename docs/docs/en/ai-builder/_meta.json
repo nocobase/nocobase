@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "AI Portal Building",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Quick Start",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Model Selection",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Building with an AI Agent",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Project Structure and Tech Stack",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Standard Components and Extensions",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Deployment and Source Management",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "No-code Portal Building",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "UI Configuration",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Solutions",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Version Control",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Security & Audit"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "UI Configuration"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Workflow Management"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Solutions"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Plugin Management"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Release Management"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Version Control"
   }
 ]

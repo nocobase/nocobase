@@ -7,7 +7,7 @@ description: |
   实例 ID 和授权密钥设置
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

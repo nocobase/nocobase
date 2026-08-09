@@ -333,6 +333,24 @@ describe('PortalRoutesDrawer', () => {
     expect(refreshAccessible).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['v', '/v', '/v/v/dashboard'],
+    ['x', '/x', '/v/x/dashboard'],
+  ])('keeps the prefix-shaped Portal %s name in route view URLs', async (portalName, routePath, expectedHref) => {
+    renderPortalRoutes({
+      title: `${portalName} portal`,
+      uid: `${portalName}-portal`,
+      portalType: 'no-code',
+      portalName,
+      routePath,
+      uiLayoutUid: 'admin-layout-model',
+      enabled: true,
+    });
+
+    const dashboardRow = await screen.findByRole('row', { name: /Dashboard/ });
+    expect(within(dashboardRow).getByRole('link', { name: 'View Dashboard' })).toHaveAttribute('href', expectedHref);
+  });
+
   it('uses mobile route rules and persists mobile links with the portal scope', async () => {
     const { drawer } = renderPortalRoutes({
       title: 'Mobile portal',

@@ -7,7 +7,7 @@ description: |
   Вызывает диалог печати браузера для печати записи.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

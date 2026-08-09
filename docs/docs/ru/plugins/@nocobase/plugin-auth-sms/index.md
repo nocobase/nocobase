@@ -7,7 +7,7 @@ description: |
   Аутентификация по SMS.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

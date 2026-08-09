@@ -7,7 +7,7 @@ description: |
   Серверные логи: в основном логи API-запросов и журнал работы системы; можно упаковать и скачать файлы логов.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

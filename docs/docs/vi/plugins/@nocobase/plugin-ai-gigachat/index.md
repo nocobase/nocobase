@@ -9,7 +9,7 @@ description: |
   Hỗ trợ tích hợp dịch vụ GigaChat LLM.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

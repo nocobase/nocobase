@@ -7,7 +7,7 @@ description: |
   Thêm nút sao chép cho Field văn bản
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

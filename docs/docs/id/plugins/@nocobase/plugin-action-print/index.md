@@ -7,7 +7,7 @@ description: |
   Memanggil fungsi cetak browser untuk mencetak satu data record.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

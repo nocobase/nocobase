@@ -7,7 +7,7 @@ description: |
   Menyediakan template Collection SQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

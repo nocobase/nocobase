@@ -1,12 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a portal in development mode."
-keywords: "nb portal dev,NocoBase CLI,Portal"
+description: "nb portal dev command reference: start development mode for a Portal's local source directory."
+keywords: "nb portal dev,NocoBase CLI,Portal,development mode,local development"
 ---
 
 # nb portal dev
 
-Start development mode for the specified portal
+Start development mode for the specified Portal's local source directory. It is normally used after [`nb portal create`](./create.md) or [`nb portal pull`](./pull.md).
+
+It refreshes `.env` and `.env.local` in the local source directory, then runs `pnpm dev` there.
 
 ## Usage
 
@@ -18,22 +20,32 @@ nb portal dev <portal> [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
-| `<portal>` | string | Portal name or slug. |
-| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
-| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `<portal>` | string | Portal name or slug |
+| `--env`, `-e` | string | CLI env name. If omitted, the current env is used |
+| `--yes`, `-y` | boolean | Skip the interactive confirmation when an explicit `--env` differs from the current env |
 
 ## Examples
 
+Start development mode for a Portal in the current env:
+
 ```bash
 nb portal dev customer
+```
+
+Start development mode for a Portal in a specified env:
+
+```bash
 nb portal dev customer --env dev --yes
 ```
 
 ## Notes
 
-The workspace must contain `package.json`. The command refreshes `.env` and `.env.local`, then runs `pnpm dev`. `ssh` envs are not supported in the current version.
+`dev` starts the dev server from the Portal's local source directory. It doesn't create a Portal record, and it doesn't pull remote source; if the local source directory doesn't exist, use [`nb portal create`](./create.md) or [`nb portal pull`](./pull.md) first.
+
+The local source directory must contain `package.json`. `ssh` envs don't support starting Portal development mode yet.
 
 ## Related Commands
 
-- [`nb portal`](./index.md)
-- [`nb env`](../env/index.md)
+- [`nb portal create`](./create.md)
+- [`nb portal pull`](./pull.md)
+- [`nb portal deploy`](./deploy.md)

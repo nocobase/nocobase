@@ -10,7 +10,7 @@ description: |
   Массовое редактирование всех записей или выбранных записей.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

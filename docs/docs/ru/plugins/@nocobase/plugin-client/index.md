@@ -7,7 +7,7 @@ description: |
   Клиентский интерфейс для сервера NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

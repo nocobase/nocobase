@@ -9,7 +9,7 @@ description: |
   Шаблоны блоков и всплывающих окон для повторного использования в интерфейсе.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

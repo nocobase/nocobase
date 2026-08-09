@@ -7,7 +7,7 @@ description: |
   Manage data sources, including the built-in Master database, external databases, APIs, etc.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

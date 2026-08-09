@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Construção com AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Início Rápido",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Seleção de modelo",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Construção com AI Agent",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Estrutura do projeto e stack técnica",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Componentes padrão e extensões",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Deploy e gerenciamento de código-fonte",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Construção com Portal no-code",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Configuração de Interface",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Soluções",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Controle de Versão",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Segurança e Auditoria"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Configuração de Interface"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Gerenciamento de Workflow"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Soluções"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Gerenciamento de Plugins"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Gerenciamento de Publicação"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Controle de Versão"
   }
 ]

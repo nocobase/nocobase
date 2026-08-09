@@ -7,7 +7,7 @@ description: |
   Основная база NocoBase; поддерживаются PostgreSQL, MySQL, MariaDB и другие СУБД с реляционной моделью.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

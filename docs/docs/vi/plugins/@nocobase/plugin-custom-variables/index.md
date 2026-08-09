@@ -9,7 +9,7 @@ description: |
   Hỗ trợ thêm và sử dụng biến tùy chỉnh.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

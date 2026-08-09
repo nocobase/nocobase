@@ -10,7 +10,7 @@ description: |
   Thực thi một đoạn mã JavaScript trong môi trường cách ly.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

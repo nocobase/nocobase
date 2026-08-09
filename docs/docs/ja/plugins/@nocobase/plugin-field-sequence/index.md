@@ -7,7 +7,7 @@ description: |
   Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

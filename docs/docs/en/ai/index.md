@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'NocoBase AI Capabilities: AI Building & Development, AI Employees, AI Agent Integration, AI Tools & Resources.'
-keywords: 'NocoBase AI,AI Building,AI Employees,AI Development,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'NocoBase AI Capabilities: AI Building, AI Employees, AI Agent Integration, AI Tools & Resources.'
+keywords: 'NocoBase AI,AI Building,AI Portal,AI Employees,AI Development,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: Get Started
     details: Install CLI, connect your app, start building — everything starts here.
@@ -21,7 +21,7 @@ features:
         details: Use AI to assist NocoBase plugin development, covering the full process from scaffolding and component code to business logic.
         link: /ai-dev
 
-  - title: AI Building & Development
+  - title: AI Building
     details: Build NocoBase applications and plugins with AI — from natural language descriptions to working systems or plugin code.
     items:
       - title: AI Building Quick Start
@@ -65,28 +65,6 @@ features:
         details: Connect AI employees in workflow nodes to enable automated intelligent decision-making and content generation.
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: Connect Your AI Agent
-    details: Your favorite AI Agent can now operate NocoBase too.
-    items:
-      - title: 'OpenClaw + NocoBase: The Most Popular AI Agent Working for You'
-        details: The world's most popular open-source AI Agent — let OpenClaw be your 24/7 NocoBase operator.
-        link: /ai/openclaw
-      - title: 'Hermes Agent: A NocoBase Assistant That Learns as You Use It'
-        details: Automatically distills successful experiences into reusable skills, understanding your business system better over time.
-        link: /ai/hermes-agent
-      - title: 'Go Hands-Free with WorkBuddy Driving NocoBase'
-        details: Made by Tencent, 20+ built-in skills, supporting WeCom, Lark, and multi-platform remote control of NocoBase.
-        link: /ai/workbuddy
-      - title: 'Claude Code + NocoBase: The Strongest AI Brain, Your NocoBase Chief Architect'
-        details: A powerful AI architect — understands project context and builds NocoBase as naturally as writing code.
-        link: /ai/claude-code
-      - title: 'Use Codex to Operate NocoBase for Both Building and Development'
-        details: Made by OpenAI, powered by GPT series, builds NocoBase in a secure sandbox where every step is controllable.
-        link: /ai/codex
-      - title: 'OpenCode + NocoBase: Open Source, Free, Vendor-Unlocked NocoBase Building'
-        details: Both driven by open-source communities, freely switch between models — the developer's choice for freedom.
-        link: /ai/opencode
-
   - title: AI Tools & Resources
     details: The infrastructure supporting NocoBase AI capabilities — CLI, Skills, and MCP.
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: Domain knowledge packages installable into AI Agents, enabling AI to understand NocoBase's capabilities and conventions.
         link: /ai-builder#nocobase-skills
+      - title: nb portal Command Reference
+        details: All the commands for managing a Portal — create, develop, sync source, and deploy.
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Model Context Protocol integration, enabling AI Agents to interact with NocoBase through a standardized protocol.
         link: /ai/mcp/

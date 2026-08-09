@@ -7,7 +7,7 @@ description: |
   Tạo và quản lý mẫu Block, dùng để tái sử dụng trong các trang.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

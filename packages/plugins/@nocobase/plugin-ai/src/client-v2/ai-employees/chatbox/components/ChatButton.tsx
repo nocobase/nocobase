@@ -9,7 +9,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar, Badge, theme } from 'antd';
-import { useMobileLayout } from '@nocobase/client-v2';
+import { getModernClientPrefix, stripModernClientPrefix, useApp, useMobileLayout } from '@nocobase/client-v2';
 import { observer, useFlowContext, type FlowRuntimeContext } from '@nocobase/flow-engine';
 import { useLocation } from 'react-router-dom';
 import { useT } from '../../../locale';
@@ -23,11 +23,22 @@ import { useChatBoxRuntime } from '../stores/runtime';
 const icon = new URL('../../icon.svg', import.meta.url).toString();
 
 export const ChatButton: React.FC = observer(() => {
+  const app = useApp();
   const ctx = useFlowContext<FlowRuntimeContext>();
   const t = useT();
-  const isV1Page = ctx?.pageInfo?.version === 'v1';
+  const pageVersion = ctx?.pageInfo?.version;
+  const isV1Page = pageVersion === undefined || pageVersion === 'v1';
   const { pathname } = useLocation();
-  const isV2Route = window.location.pathname.startsWith('/v/') || pathname.startsWith('/v/');
+  const publicPath = stripModernClientPrefix(app.getPublicPath()).replace(/\/$/, '');
+  const browserPathname = window.location.pathname;
+  const pathnameWithoutPublicPath =
+    publicPath && browserPathname.startsWith(`${publicPath}/`)
+      ? browserPathname.slice(publicPath.length)
+      : browserPathname;
+  const modernClientPath = `/${getModernClientPrefix()}`;
+  const isV2Route =
+    pathnameWithoutPublicPath.startsWith(`${modernClientPath}/`) &&
+    pathnameWithoutPublicPath.length > modernClientPath.length + 1;
   const isAdmin = pathname.startsWith('/admin');
   const { isMobileLayout } = useMobileLayout();
   const { token } = theme.useToken();

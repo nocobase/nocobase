@@ -7,7 +7,7 @@ description: |
   Формирование ответа и показ клиенту в сценариях событий формы и перехвата запроса.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

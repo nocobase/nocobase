@@ -7,7 +7,7 @@ description: |
   Memungkinkan pengguna mengakses HTTP API aplikasi dengan menggunakan API Key.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

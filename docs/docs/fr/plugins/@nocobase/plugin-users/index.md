@@ -7,7 +7,7 @@ description: |
   Provides basic user model, as well as created by and updated by fields.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -9,7 +9,7 @@ description: |
   Hỗ trợ lọc đa từ khóa cho các Field thông thường, hỗ trợ nhập nhanh hoặc nhập hàng loạt từ khóa từ Excel.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

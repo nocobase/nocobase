@@ -7,7 +7,7 @@ description: |
   Sử dụng chức năng in của trình duyệt để in một bản ghi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

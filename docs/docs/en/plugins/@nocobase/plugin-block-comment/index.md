@@ -7,7 +7,7 @@ description: |
   Provides a Comment block for viewing and creating comments in record details, pop-ups, and similar scenarios.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

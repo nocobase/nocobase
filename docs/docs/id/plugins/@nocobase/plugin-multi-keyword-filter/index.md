@@ -9,7 +9,7 @@ description: |
   Mendukung pemfilteran multi kata kunci untuk Field umum, mendukung input cepat atau impor batch kata kunci dari Excel.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

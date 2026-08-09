@@ -7,7 +7,7 @@ description: |
   通过短信验证码认证身份。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

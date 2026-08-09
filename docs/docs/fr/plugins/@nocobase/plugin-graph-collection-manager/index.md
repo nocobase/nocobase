@@ -9,7 +9,7 @@ description: |
   An ER diagram-like tool. Currently only the Master database is supported.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

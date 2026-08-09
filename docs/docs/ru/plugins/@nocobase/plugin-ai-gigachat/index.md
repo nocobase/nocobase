@@ -9,7 +9,7 @@ description: |
   Поддержка интеграции с сервисом языковой модели GigaChat.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

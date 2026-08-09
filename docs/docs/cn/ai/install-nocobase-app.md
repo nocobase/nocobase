@@ -16,7 +16,7 @@ description: 安装 NocoBase CLI，并通过 nb init --ui 快速创建一个新�
 先全局安装 NocoBase CLI：
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

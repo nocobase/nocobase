@@ -7,7 +7,7 @@ description: |
   Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

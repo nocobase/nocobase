@@ -16,7 +16,7 @@ description: Pasang NocoBase CLI dan buat aplikasi NocoBase baru dengan cepat me
 Pasang NocoBase CLI secara global terlebih dahulu:
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

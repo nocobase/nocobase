@@ -1,12 +1,14 @@
 ---
 title: "nb portal dev"
-description: "nb portal dev command reference: start a Portal in development mode."
-keywords: "nb portal dev,NocoBase CLI,Portal"
+description: "Referência do comando nb portal dev: inicia o modo de desenvolvimento do diretório local de código-fonte de um Portal."
+keywords: "nb portal dev,NocoBase CLI,Portal,modo de desenvolvimento,desenvolvimento local"
 ---
 
 # nb portal dev
 
-Inicia o modo de desenvolvimento para o workspace Portal especificado
+Inicia o modo de desenvolvimento do diretório local de código-fonte do Portal indicado. Normalmente é usado depois de executar [`nb portal create`](./create.md) ou [`nb portal pull`](./pull.md).
+
+Ao ser executado, atualiza `.env` e `.env.local` no diretório local de código-fonte e em seguida roda `pnpm dev` nesse mesmo diretório.
 
 ## Uso
 
@@ -18,22 +20,32 @@ nb portal dev <portal> [flags]
 
 | Parâmetro | Tipo | Descrição |
 | --- | --- | --- |
-| `<portal>` | string | Portal name or slug. |
-| `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
-| `--yes`, `-y` | boolean | Skip cross-env confirmation. |
+| `<portal>` | string | Nome ou slug do Portal |
+| `--env`, `-e` | string | Nome do env da CLI. Se omitido, é usado o env atual |
+| `--yes`, `-y` | boolean | Pula a confirmação interativa quando o `--env` informado explicitamente difere do env atual |
 
 ## Exemplos
 
+Iniciar o modo de desenvolvimento de um Portal no env atual:
+
 ```bash
 nb portal dev customer
+```
+
+Iniciar o modo de desenvolvimento de um Portal em um env específico:
+
+```bash
 nb portal dev customer --env dev --yes
 ```
 
 ## Notas
 
-The workspace must contain `package.json`. The command refreshes `.env` and `.env.local`, then runs `pnpm dev`. `ssh` envs are not supported in the current version.
+O `dev` inicia o servidor de desenvolvimento a partir do diretório local de código-fonte do Portal. Ele não cria o registro do Portal nem baixa o código-fonte remoto; se o diretório local de código-fonte não existir, use antes [`nb portal create`](./create.md) ou [`nb portal pull`](./pull.md).
+
+O diretório local de código-fonte precisa conter `package.json`. Envs do tipo `ssh` ainda não suportam iniciar o modo de desenvolvimento de um Portal.
 
 ## Comandos relacionados
 
-- [`nb portal`](./index.md)
-- [`nb env`](../env/index.md)
+- [`nb portal create`](./create.md)
+- [`nb portal pull`](./pull.md)
+- [`nb portal deploy`](./deploy.md)

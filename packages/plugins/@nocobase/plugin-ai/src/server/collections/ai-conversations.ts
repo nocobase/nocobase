@@ -37,6 +37,11 @@ export default defineCollection({
       allowNull: false,
     },
     {
+      name: 'portalName',
+      type: 'string',
+      allowNull: true,
+    },
+    {
       name: 'scope',
       type: 'string',
       index: true,

@@ -16,7 +16,7 @@ description: Installez NocoBase CLI et créez rapidement une nouvelle applicatio
 Installez d'abord NocoBase CLI globalement :
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

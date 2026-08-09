@@ -7,7 +7,7 @@ description: |
   Plugin này đã ngừng sử dụng, vui lòng không dùng, trong tương lai sẽ có plugin nhật ký kiểm toán mới.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

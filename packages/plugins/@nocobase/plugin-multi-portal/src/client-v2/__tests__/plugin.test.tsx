@@ -11,6 +11,7 @@ import { App as AntdApp, ConfigProvider, type ThemeConfig } from 'antd';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { BlockModel, createMockClient, RootPageTabModel, RouteRepository } from '@nocobase/client-v2';
 import { buildSubModelItems, FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import axios from 'axios';
 import React from 'react';
 import {
   fetchMultiPortals,
@@ -20,6 +21,7 @@ import {
   type MultiPortalRuntimeRecord,
 } from '../layoutRegistration';
 import PluginMultiPortalClientV2 from '../plugin';
+import { getPortalPathname, installMultiPortalRequestInterceptor } from '../interceptor';
 import { installMultiPortalRouteRepositoryScope, type MultiPortalRouteScopeDescriptor } from '../routeRepositoryScope';
 import packageJson from '../../../package.json';
 
@@ -179,6 +181,29 @@ describe('PluginMultiPortalClientV2', () => {
     });
   });
 
+  it('should attach the current portal name to API requests', async () => {
+    const app = createMockClient();
+    let pathname = '/nocobase/v/portal-desktop/orders';
+    installMultiPortalRequestInterceptor(app.apiClient, [desktopPortal], () =>
+      getPortalPathname(pathname, '/nocobase/v/'),
+    );
+    app.apiMock.onGet('orders:list').reply(200, { data: [] });
+
+    await app.apiClient.request({ url: 'orders:list', method: 'get' });
+    expect(app.apiMock.history.get[0].headers?.get('x-portal')).toBe('portalDesktop');
+
+    pathname = '/nocobase/v/admin';
+    await app.apiClient.request({ url: 'orders:list', method: 'get' });
+    expect(app.apiMock.history.get[1].headers?.get('x-portal')).toBeUndefined();
+
+    pathname = '/nocobase/v/portal-desktop';
+    await app.apiClient.request({
+      url: 'orders:list',
+      method: 'get',
+      headers: { 'X-Portal': 'requestPortal' },
+    });
+    expect(app.apiMock.history.get[2].headers?.get('x-portal')).toBe('requestPortal');
+  });
   it('should reject an invalid public Portal list response', async () => {
     const request = vi.fn().mockResolvedValue({
       data: {
@@ -223,7 +248,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'multiPortalLayout_desktop-portal-model',
       routePath: '/portal-desktop',
       uid: 'desktop-portal-model',
-      layoutModelClass: 'AdminLayoutModel',
+      layoutModelClass: 'MultiPortalDesktopLayoutModel',
       authCheck: true,
     });
     expect(
@@ -256,7 +281,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'multiPortalLayout___default_mobile__',
       routePath: '/mobile',
       uid: '__default_mobile__',
-      layoutModelClass: 'MobileLayoutModel',
+      layoutModelClass: 'MultiPortalMobileLayoutModel',
       rootPageModelClass: 'MobileRootPageModel',
       childPageModelClass: 'MobileChildPageModel',
       authCheck: true,
@@ -309,6 +334,11 @@ describe('PluginMultiPortalClientV2', () => {
         ),
       },
       apiClient: {
+        axios: axios.create(),
+        auth: {
+          role: 'admin',
+          setRole: vi.fn(),
+        },
         request: vi.fn().mockResolvedValue({
           data: {
             data: [
@@ -320,11 +350,14 @@ describe('PluginMultiPortalClientV2', () => {
             ],
           },
         }),
+        resource: vi.fn(),
       },
       layoutManager: createLayoutManager(),
       router: {
         add: vi.fn(),
+        getBasename: vi.fn(() => '/v'),
       },
+      use: vi.fn(),
     };
 
     const plugin = new PluginMultiPortalClientV2({}, app as never);
@@ -335,6 +368,9 @@ describe('PluginMultiPortalClientV2', () => {
       MultiPortalBlockModel: expect.any(Function),
     });
     expect(app.flowEngine.registerModelLoaders).toHaveBeenCalledWith({
+      MultiPortalDesktopLayoutModel: {
+        loader: expect.any(Function),
+      },
       MultiPortalMobileLayoutModel: {
         loader: expect.any(Function),
       },
@@ -385,7 +421,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'multiPortalLayout_desktop-portal-model',
       routePath: '/portal-desktop',
       uid: 'desktop-portal-model',
-      layoutModelClass: 'AdminLayoutModel',
+      layoutModelClass: 'MultiPortalDesktopLayoutModel',
       authCheck: true,
     });
     expect(app.layoutManager.registerLayout).toHaveBeenNthCalledWith(2, {
@@ -401,7 +437,7 @@ describe('PluginMultiPortalClientV2', () => {
       routeName: 'multiPortalLayout___default_mobile__',
       routePath: '/mobile',
       uid: '__default_mobile__',
-      layoutModelClass: 'MobileLayoutModel',
+      layoutModelClass: 'MultiPortalMobileLayoutModel',
       rootPageModelClass: 'MobileRootPageModel',
       childPageModelClass: 'MobileChildPageModel',
       authCheck: false,

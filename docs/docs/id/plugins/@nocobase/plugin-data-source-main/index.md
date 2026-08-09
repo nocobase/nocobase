@@ -7,7 +7,7 @@ description: |
   Database utama NocoBase, mendukung database relasional seperti PostgreSQL, MySQL, MariaDB, dan lainnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

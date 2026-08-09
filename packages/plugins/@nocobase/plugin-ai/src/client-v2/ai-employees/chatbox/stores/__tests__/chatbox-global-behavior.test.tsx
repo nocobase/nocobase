@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   getAIEmployees: vi.fn(),
   setResponseLoading: vi.fn(),
   switchAIEmployee: vi.fn(),
+  publicPath: '/',
+  pageVersion: 'v2' as 'v1' | 'v2' | undefined,
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -26,12 +28,16 @@ vi.mock('@nocobase/flow-engine', async () => {
     ...actual,
     useFlowContext: () => ({
       pageInfo: {
-        version: 'v2',
+        version: mocks.pageVersion,
       },
     }),
   };
 });
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  useApp: () => ({ getPublicPath: () => mocks.publicPath }),
+}));
 vi.mock('../../../../locale', () => ({
   useT: () => (text: string) => text,
 }));
@@ -85,6 +91,8 @@ const renderWithRuntime = (runtime: ChatBoxRuntime, initialEntry = '/customer1')
 
 describe('global chatbox behavior', () => {
   beforeEach(() => {
+    mocks.publicPath = '/';
+    mocks.pageVersion = 'v2';
     window.history.replaceState({}, '', '/v/customer1');
     mocks.getAIEmployees.mockResolvedValue(undefined);
     mocks.setResponseLoading.mockClear();
@@ -122,11 +130,40 @@ describe('global chatbox behavior', () => {
     expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
   });
 
-  it('hides the entry outside /v/* and /admin routes', () => {
-    window.history.replaceState({}, '', '/signin');
+  it('hides the entry while the page version is unresolved', () => {
+    mocks.pageVersion = undefined;
     const runtime = createChatBoxRuntime();
 
-    renderWithRuntime(runtime, '/signin');
+    renderWithRuntime(runtime);
+
+    expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
+  });
+
+  it('hides the entry on the modern client root route', () => {
+    window.history.replaceState({}, '', '/v/');
+    const runtime = createChatBoxRuntime();
+
+    renderWithRuntime(runtime, '/');
+
+    expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
+  });
+
+  it('renders the entry when the V2 public path includes the modern client prefix', () => {
+    mocks.publicPath = '/drol/v/';
+    window.history.replaceState({}, '', '/drol/v/test');
+    const runtime = createChatBoxRuntime();
+
+    renderWithRuntime(runtime, '/custom');
+
+    expect(screen.getByRole('button', { name: 'Open AI chat' })).toBeTruthy();
+  });
+
+  it('hides the entry for a non-V2 route under the public path', () => {
+    mocks.publicPath = '/nocobase/v/';
+    window.history.replaceState({}, '', '/nocobase/custom');
+    const runtime = createChatBoxRuntime();
+
+    renderWithRuntime(runtime, '/custom');
 
     expect(screen.queryByRole('button', { name: 'Open AI chat' })).toBeNull();
   });

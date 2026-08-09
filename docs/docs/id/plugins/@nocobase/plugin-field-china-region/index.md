@@ -7,7 +7,7 @@ description: |
   Menyediakan data dan tipe field untuk wilayah administratif Tiongkok.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

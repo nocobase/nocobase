@@ -641,13 +641,18 @@ const SectionLabel: React.FC<{ title: string; description: string }> = ({ title,
   );
 };
 
-const SkillSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => {
+export const SkillSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => {
   const t = useT();
+  const { token } = theme.useToken();
   const translateText = useTranslatedText();
   const repo = useAIConfigRepository();
   const form = Form.useFormInstance<EmployeeFormValues>();
-  const skillSettings = Form.useWatch('skillSettings', { form, preserve: true }) ?? {};
+  const skillSettings = normalizeSkillSettings(Form.useWatch('skillSettings', { form, preserve: true }));
   const selectedSkills = Array.isArray(skillSettings.skills) ? skillSettings.skills : [];
+  const [customActiveKeys, setCustomActiveKeys] = useState<string[]>(
+    builtIn && !selectedSkills.length ? [] : ['custom-skills'],
+  );
+  const previousCustomSkillsLength = React.useRef(selectedSkills.length);
 
   useEffect(() => {
     repo.getAISkills().catch((error: unknown) => {
@@ -655,17 +660,88 @@ const SkillSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) =>
     });
   }, [repo]);
 
+  const setSkills = (skills: string[]) => {
+    const current = normalizeSkillSettings(form.getFieldValue('skillSettings'));
+    form.setFieldsValue({
+      skillSettings: {
+        ...current,
+        skills,
+      },
+    });
+  };
+  const selectedSkillNames = new Set(selectedSkills);
   const skillsByName = new Map(repo.aiSkills.map((skill) => [skill.name, skill]));
   const generalSkills = repo.aiSkills.filter((skill) => skill.scope === 'GENERAL');
   const specifiedSkills = selectedSkills
     .map((name: string) => skillsByName.get(name))
     .filter((skill): skill is SkillsEntry => !!skill && skill.scope === 'SPECIFIED');
+  const availableCustomSkills = repo.aiSkills.filter((skill) => skill.scope === 'CUSTOM');
+  const customSkills = selectedSkills.filter((name) => {
+    const skill = skillsByName.get(name);
+    return !skill || skill.scope === 'CUSTOM';
+  });
+  useEffect(() => {
+    const wasEmpty = previousCustomSkillsLength.current === 0;
+    if (builtIn && customSkills.length === 0) {
+      setCustomActiveKeys([]);
+    } else if (wasEmpty && customSkills.length > 0) {
+      setCustomActiveKeys(['custom-skills']);
+    }
+    previousCustomSkillsLength.current = customSkills.length;
+  }, [builtIn, customSkills.length]);
+  const customAddSkills = availableCustomSkills
+    .filter((skill) => !selectedSkillNames.has(skill.name))
+    .map((skill) => ({
+      key: skill.name,
+      label: (
+        <div
+          style={{
+            maxWidth: token.controlHeightLG * 8,
+            minWidth: token.controlHeightLG * 4,
+          }}
+        >
+          <div>{translateText(skill.title ?? skill.name, skill.name)}</div>
+          <Typography.Text type="secondary">{translateText(skill.about ?? skill.description)}</Typography.Text>
+        </div>
+      ),
+      onClick: () => {
+        const currentSettings = normalizeSkillSettings(form.getFieldValue('skillSettings'));
+        const currentSkills = Array.isArray(currentSettings.skills) ? currentSettings.skills : [];
+        if (currentSkills.includes(skill.name)) {
+          return;
+        }
+        setSkills([...currentSkills, skill.name]);
+      },
+    }));
   const renderSkill = (skill: SkillsEntry) => (
     <List.Item key={skill.name}>
       <div>{translateText(skill.title ?? skill.name, skill.name)}</div>
       <Typography.Text type="secondary">{translateText(skill.about ?? skill.description)}</Typography.Text>
     </List.Item>
   );
+  const renderCustomSkill = (name: string) => {
+    const skill = skillsByName.get(name);
+    const title = skill ? translateText(skill.title ?? skill.name, skill.name) : name;
+    const description = skill ? translateText(skill.about ?? skill.description) : null;
+    return (
+      <List.Item
+        key={name}
+        extra={
+          <Button
+            aria-label={t('Delete')}
+            icon={<DeleteOutlined />}
+            type="text"
+            onClick={() => {
+              setSkills(selectedSkills.filter((skillName) => skillName !== name));
+            }}
+          />
+        }
+      >
+        <div>{title}</div>
+        {description ? <Typography.Text type="secondary">{description}</Typography.Text> : null}
+      </List.Item>
+    );
+  };
   const items: CollapseProps['items'] = [
     {
       key: 'general-skills',
@@ -684,7 +760,48 @@ const SkillSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) =>
     });
   }
 
-  return repo.aiSkillsLoading ? <Spin /> : <Collapse ghost size="small" defaultActiveKey={[]} items={items} />;
+  if (availableCustomSkills.length) {
+    items.push({
+      key: 'custom-skills',
+      label: (
+        <SectionLabel title={t('Custom skills')} description={t('Can be added to or removed from this AI employee.')} />
+      ),
+      extra: (
+        <div
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <Dropdown menu={{ items: customAddSkills }} disabled={!customAddSkills.length} placement="bottomRight">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              disabled={!customAddSkills.length}
+              style={{ pointerEvents: customAddSkills.length ? undefined : 'none' }}
+            >
+              {t('Add skill')}
+            </Button>
+          </Dropdown>
+        </div>
+      ),
+      children: <List itemLayout="vertical" bordered dataSource={customSkills} renderItem={renderCustomSkill} />,
+    });
+  }
+
+  return repo.aiSkillsLoading ? (
+    <Spin />
+  ) : (
+    <Collapse
+      ghost
+      size="small"
+      activeKey={customActiveKeys}
+      onChange={(keys) => setCustomActiveKeys(Array.isArray(keys) ? keys.map(String) : [String(keys)])}
+      items={items}
+    />
+  );
 });
 
 const getPermissionValue = (tool: ToolsEntry, item?: EmployeeToolSetting) => {

@@ -7,7 +7,7 @@ description: |
   可用于在工作流中发送电子邮件。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

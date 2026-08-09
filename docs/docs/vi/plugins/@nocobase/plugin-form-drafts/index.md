@@ -9,7 +9,7 @@ description: |
   Hỗ trợ lưu bản nháp khi điền biểu mẫu, có thể tiếp tục chỉnh sửa và gửi sau.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

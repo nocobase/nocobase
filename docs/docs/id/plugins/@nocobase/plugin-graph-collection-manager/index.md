@@ -7,7 +7,7 @@ description: |
   Alat seperti diagram ER, saat ini hanya mendukung database utama.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

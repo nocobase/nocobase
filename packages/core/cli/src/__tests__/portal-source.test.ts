@@ -809,6 +809,8 @@ test('pull and push Git-managed source through the configured repository path', 
   await expect(fsp.access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
 
   await runGit(['init'], portalDir);
+  await runGit(['config', 'user.name', 'Local Developer'], portalDir);
+  await runGit(['config', 'user.email', 'local-developer@example.com'], portalDir);
   await fsp.writeFile(path.join(portalDir, '.git', 'nocobase-preserve-test'), 'keep');
   await fsp.writeFile(path.join(seedRepo, 'customer', 'src', 'index.tsx'), 'export default "remote again";\n');
   await runGit(['add', 'customer/src/index.tsx'], seedRepo);
@@ -856,6 +858,20 @@ test('pull and push Git-managed source through the configured repository path', 
   await runGit(['clone', '--branch', 'main', remoteRepo, verifyRepo]);
   expect(normalizeLineEndings(await fsp.readFile(path.join(verifyRepo, 'customer', 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "local";\n',
+  );
+  const commitMetadata = await runGit(['show', '-s', '--format=%an <%ae>%n%cn <%ce>%n%B', 'HEAD'], verifyRepo);
+  expect(normalizeLineEndings(commitMetadata.stdout).trim()).toBe(
+    [
+      'Local Developer <local-developer@example.com>',
+      'Local Developer <local-developer@example.com>',
+      'Update portal source',
+      '',
+      'Co-authored-by: NocoBase CLI <314549027+nocobase-cli@users.noreply.github.com>',
+    ].join('\n'),
+  );
+  expect((await runGit(['config', '--get', 'user.name'], portalDir)).stdout.trim()).toBe('Local Developer');
+  expect((await runGit(['config', '--get', 'user.email'], portalDir)).stdout.trim()).toBe(
+    'local-developer@example.com',
   );
 });
 
@@ -953,6 +969,9 @@ test('push creates configured Git branch and uses repository root by default', a
   const portalDir = path.join(storagePath, 'portals', 'main', 'customer');
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'src', 'index.tsx'), 'export default "first push";\n');
+  await runGit(['init'], portalDir);
+  await runGit(['config', 'user.name', ''], portalDir);
+  await runGit(['config', 'user.email', ''], portalDir);
 
   const apiRequest = vi.fn(async () => ({
     ok: true,
@@ -1001,5 +1020,13 @@ test('push creates configured Git branch and uses repository root by default', a
   await runGit(['clone', '--branch', 'main', remoteRepoUrl, verifyRepo]);
   expect(normalizeLineEndings(await fsp.readFile(path.join(verifyRepo, 'src', 'index.tsx'), 'utf-8'))).toBe(
     'export default "first push";\n',
+  );
+  const commitMetadata = await runGit(['show', '-s', '--format=%an <%ae>%n%cn <%ce>%n%B', 'HEAD'], verifyRepo);
+  expect(normalizeLineEndings(commitMetadata.stdout).trim()).toBe(
+    [
+      'NocoBase CLI <314549027+nocobase-cli@users.noreply.github.com>',
+      'NocoBase CLI <314549027+nocobase-cli@users.noreply.github.com>',
+      'Initial portal source',
+    ].join('\n'),
   );
 });

@@ -35,13 +35,19 @@ describe('aiConversations scope', () => {
     mocks.list.mockResolvedValue(undefined);
   });
 
-  it('defines a queryable scope field on aiConversations', () => {
+  it('defines a nullable portalName field and queryable scope field on aiConversations', () => {
     const scopeField = aiConversationsCollection.fields?.find((field) => field.name === 'scope');
+    const portalNameField = aiConversationsCollection.fields?.find((field) => field.name === 'portalName');
 
     expect(scopeField).toMatchObject({
       name: 'scope',
       type: 'string',
       index: true,
+    });
+    expect(portalNameField).toMatchObject({
+      name: 'portalName',
+      type: 'string',
+      allowNull: true,
     });
   });
 
@@ -67,6 +73,7 @@ describe('aiConversations scope', () => {
             mergedParams.push(params);
           },
         },
+        get: () => undefined,
       }) as unknown as Context;
     const next = vi.fn();
 
@@ -82,6 +89,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: 'admin',
         scope: 'chat-box-1',
       },
     });
@@ -93,6 +101,7 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: 'admin',
       },
     });
     expect(mergedParams[2]).toEqual({
@@ -103,12 +112,114 @@ describe('aiConversations scope', () => {
         userId: 7,
         from: 'main-agent',
         category: 'chat',
+        portalName: 'admin',
       },
     });
     expect(mocks.list).toHaveBeenCalledTimes(3);
   });
 
-  it('passes scope from resource create to the conversations manager', async () => {
+  it('filters list by the x-portal header when present', async () => {
+    const mergeParams = vi.fn();
+    const ctx = {
+      auth: {
+        user: {
+          id: 7,
+        },
+      },
+      get: (name: string) => (name === 'x-portal' ? 'sales-portal' : ''),
+      action: {
+        params: {
+          filter: {},
+        },
+        mergeParams,
+      },
+    } as unknown as Context;
+
+    await getAction('list')(ctx, vi.fn());
+
+    expect(mergeParams).toHaveBeenCalledWith({
+      filter: {
+        userId: 7,
+        from: 'main-agent',
+        category: 'chat',
+        portalName: 'sales-portal',
+      },
+    });
+  });
+
+  it('defaults conversation unread counts to the admin portal when x-portal is absent', async () => {
+    const conversationCount = vi.fn().mockResolvedValue(3);
+    const workflowTaskCount = vi.fn().mockResolvedValue(2);
+    const ctx = {
+      auth: {
+        user: {
+          id: 7,
+        },
+      },
+      db: {
+        getModel: vi.fn((name: string) => ({
+          count: name === 'aiConversations' ? conversationCount : workflowTaskCount,
+        })),
+      },
+      get: () => undefined,
+    } as unknown as Context;
+    const next = vi.fn();
+
+    await getAction('unreadCounts')(ctx, next);
+
+    expect(conversationCount).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+        from: 'main-agent',
+        category: 'chat',
+        portalName: 'admin',
+      },
+    });
+    expect(workflowTaskCount).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+      },
+    });
+    expect(ctx.body).toEqual({
+      conversationUnreadCount: 3,
+      workflowTaskUnreadCount: 2,
+    });
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults the unread count to the admin portal when x-portal is absent', async () => {
+    const count = vi.fn().mockResolvedValue(3);
+    const ctx = {
+      auth: {
+        user: {
+          id: 7,
+        },
+      },
+      db: {
+        getModel: vi.fn(() => ({ count })),
+      },
+      get: () => undefined,
+    } as unknown as Context;
+    const next = vi.fn();
+
+    await getAction('unreadCount')(ctx, next);
+
+    expect(count).toHaveBeenCalledWith({
+      where: {
+        userId: 7,
+        read: false,
+        from: 'main-agent',
+        category: 'chat',
+        portalName: 'admin',
+      },
+    });
+    expect(ctx.body).toEqual({ count: 3 });
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('defaults new conversations to the admin portal when x-portal is absent', async () => {
     const createConversation = vi.fn().mockResolvedValue({ sessionId: 'session-1', scope: 'chat-box-1' });
     const findEmployee = vi.fn().mockResolvedValue({ username: 'sales' });
     const ctx = {
@@ -134,6 +245,7 @@ describe('aiConversations scope', () => {
           findOne: findEmployee,
         })),
       },
+      get: () => undefined,
       action: {
         params: {
           values: {
@@ -155,6 +267,7 @@ describe('aiConversations scope', () => {
       aiEmployee: {
         username: 'sales',
       },
+      portalName: 'admin',
       scope: 'chat-box-1',
       options: {
         systemMessage: 'Use sales tone',
@@ -167,7 +280,7 @@ describe('aiConversations scope', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('writes scope when creating a conversation through the manager', async () => {
+  it('writes portalName and scope when creating a conversation through the manager', async () => {
     const create = vi.fn().mockResolvedValue({ sessionId: 'session-1' });
     const manager = new AIConversationsManager({
       db: {
@@ -182,6 +295,7 @@ describe('aiConversations scope', () => {
       aiEmployee: {
         username: 'sales',
       },
+      portalName: 'sales-portal',
       scope: 'chat-box-1',
     });
 
@@ -195,6 +309,7 @@ describe('aiConversations scope', () => {
         options: {},
         thread: 1,
         from: 'main-agent',
+        portalName: 'sales-portal',
         scope: 'chat-box-1',
         category: 'chat',
       },

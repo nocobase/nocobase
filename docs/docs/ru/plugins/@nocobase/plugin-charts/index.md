@@ -9,7 +9,7 @@ description: |
   Плагин устарел; используйте плагин «Визуализация данных».
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

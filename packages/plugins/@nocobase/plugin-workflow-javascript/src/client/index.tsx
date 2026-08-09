@@ -10,13 +10,14 @@
 import { Plugin } from '@nocobase/client';
 import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
+import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 import ScriptInstruction from './ScriptInstruction';
 import { lang } from '../locale';
 
 export class PluginWorkflowScriptClient extends Plugin {
   async load() {
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    workflow.registerInstruction('script', ScriptInstruction);
+    workflow.registerInstruction(SCRIPT_INSTRUCTION_TYPE, ScriptInstruction);
   }
 }
 

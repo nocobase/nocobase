@@ -7,7 +7,7 @@ description: |
   可用于工作流并行分支中等待其他分支执行完成。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

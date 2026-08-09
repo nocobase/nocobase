@@ -10,7 +10,7 @@ description: |
   Sending a request to any HTTP service supports sending context data to the target service.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

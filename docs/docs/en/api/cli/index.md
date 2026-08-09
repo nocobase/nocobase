@@ -39,7 +39,7 @@ The following command groups are shown in `nb --help`:
 | [`nb env`](./env/index.md)           | Manage NocoBase project environments, the current env, status, details, and runtime commands. |
 | [`nb license`](./license/index.md)   | Manage commercial licenses and licensed plugins.                                              |
 | [`nb plugin`](./plugin/index.md)     | Manage plugins in the selected NocoBase env.                                                  |
-| [`nb portal`](./portal/index.md)     | Manage portals: configure, create, develop, sync source, deploy, and destroy.                       |
+| [`nb portal`](./portal/index.md)     | Manage a Portal's local source directory: configure, create, develop, sync source, deploy, and destroy. |
 | [`nb scaffold`](./scaffold/index.md) | Generate scaffolding for NocoBase plugin development.                                         |
 | [`nb self`](./self/index.md)         | Check or update NocoBase CLI itself.                                                          |
 | [`nb session`](./session/index.md)   | Configure `NB_SESSION_ID` so the current env is isolated by shell or agent runtime.           |

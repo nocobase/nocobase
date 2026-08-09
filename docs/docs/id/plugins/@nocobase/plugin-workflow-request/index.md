@@ -7,7 +7,7 @@ description: |
   Dapat digunakan untuk mengirim request ke layanan HTTP apa pun dalam workflow untuk pertukaran data.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

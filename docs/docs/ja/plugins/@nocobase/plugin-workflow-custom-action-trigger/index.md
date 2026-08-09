@@ -10,7 +10,7 @@ description: |
   Triggers after click a custom action button.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

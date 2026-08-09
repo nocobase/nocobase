@@ -16,7 +16,7 @@ description: Установите NocoBase CLI и быстро создайте 
 Сначала установите NocoBase CLI глобально:
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

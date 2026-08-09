@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "AI Portal 構築",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "クイックスタート",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "モデル選択",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI Agent と協働して構築",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "プロジェクト構成と技術スタック",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "標準コンポーネントと拡張",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "デプロイとソース管理",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "ノーコード Portal 構築",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "UI 設定",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "ソリューション",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "バージョン管理",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "セキュリティと監査"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "UI 設定"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "ワークフロー管理"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "ソリューション"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "プラグイン管理"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "リリース管理"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "バージョン管理"
   }
 ]

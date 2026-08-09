@@ -10,7 +10,7 @@ description: |
   Database-based foreign data wrapper (FDW) implementation for connecting to remote data tables, currently supports MySQL and PostgreSQL databases.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

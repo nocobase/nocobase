@@ -7,7 +7,7 @@ description: |
   Базовая модель пользователя, а также поля «кто создал» и «кто обновил».
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

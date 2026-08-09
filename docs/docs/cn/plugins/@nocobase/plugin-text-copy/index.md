@@ -7,7 +7,7 @@ description: |
   为文本字段添加复制按钮
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

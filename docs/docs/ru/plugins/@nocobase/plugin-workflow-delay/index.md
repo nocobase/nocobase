@@ -7,7 +7,7 @@ description: |
   Можно использовать в параллельной ветке рабочего процесса для ожидания других веток.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

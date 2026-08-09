@@ -7,7 +7,7 @@ description: |
   Резервное копирование и восстановление приложений для сценариев клонирования, миграции и обновлений.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

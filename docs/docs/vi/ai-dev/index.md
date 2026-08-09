@@ -25,7 +25,7 @@ Hãy giúp tôi cài đặt NocoBase CLI và hoàn tất khởi tạo: https://d
 ### Cài đặt thủ công
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ Mô tả chi tiết và prompt mẫu của từng khả năng → [Các khả n�
 - [NocoBase CLI](../ai/quick-start.md) — Công cụ dòng lệnh để cài đặt và quản lý NocoBase
 - [Tham chiếu NocoBase CLI](../api/cli/index.md) — Mô tả tham số đầy đủ của tất cả lệnh
 - [Phát triển Plugin](../plugin-development/index.md) — Hướng dẫn đầy đủ về phát triển plugin NocoBase
+- [AI Portal](../ai-builder/ai-portal/index.md) — Để AI viết trang frontend. Plugin là mở rộng năng lực của chính NocoBase, còn Portal là một entry độc lập dựng trên những năng lực đó
 - [Bắt đầu nhanh AI Builder](../ai-builder/index.md) — Dùng AI để xây dựng ứng dụng NocoBase (không cần viết code)

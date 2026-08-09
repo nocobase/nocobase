@@ -7,7 +7,7 @@ description: |
   提供 SQL 数据表模板
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

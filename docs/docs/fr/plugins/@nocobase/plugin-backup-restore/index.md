@@ -7,7 +7,7 @@ description: |
   Backup and restore applications for scenarios such as application replication, migration, and upgrades.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

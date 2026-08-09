@@ -7,7 +7,7 @@ description: |
   Có thể được sử dụng để thực thi bất kỳ câu lệnh SQL nào trên cơ sở dữ liệu trong workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

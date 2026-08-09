@@ -7,7 +7,7 @@ description: |
   Отправка уведомлений в рабочем процессе.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

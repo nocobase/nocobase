@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Xây dựng AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Bắt đầu nhanh",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lựa chọn mô hình",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cộng tác cùng AI Agent để xây dựng",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cấu trúc dự án và công nghệ sử dụng",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Component chuẩn và mở rộng",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Triển khai và quản lý mã nguồn",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Xây dựng Portal không cần code",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Cấu hình giao diện",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Giải pháp",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Quản lý phiên bản",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Bảo mật và kiểm toán"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Cấu hình giao diện"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Quản lý Workflow"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Giải pháp"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Quản lý Plugin"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Quản lý phát hành"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Quản lý phiên bản"
   }
 ]

@@ -52,6 +52,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Démarrage rapide de la construction par IA",
+        "link": "/ai-builder/"
+      },
+      {
+        "type": "custom-link",
         "label": "NocoBase CLI",
         "proxy": false,
         "link": "/nocobase-cli/"

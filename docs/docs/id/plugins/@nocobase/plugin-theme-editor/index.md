@@ -7,7 +7,7 @@ description: |
   Sesuaikan warna, ukuran, dan lainnya pada UI, lalu simpan hasilnya sebagai tema, dan beralih di antara beberapa tema.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

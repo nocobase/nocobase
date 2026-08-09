@@ -7,7 +7,7 @@ description: |
   Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

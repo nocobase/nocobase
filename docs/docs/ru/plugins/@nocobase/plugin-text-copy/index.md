@@ -7,7 +7,7 @@ description: |
   Добавляет кнопку копирования для текстовых полей.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

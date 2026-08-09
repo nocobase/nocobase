@@ -10,7 +10,7 @@ description: |
   Поддержка фильтрации по нескольким ключевым словам для обычных полей: быстрый ввод или пакетный импорт ключевых слов из Excel.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

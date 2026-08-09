@@ -7,7 +7,7 @@ description: |
   Mendukung pengelolaan sumber daya lokalisasi aplikasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

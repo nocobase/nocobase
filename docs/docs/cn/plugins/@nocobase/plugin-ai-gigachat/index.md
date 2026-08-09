@@ -9,7 +9,7 @@ description: |
   支持接入 GigaChat LLM 服务。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

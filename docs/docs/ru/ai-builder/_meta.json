@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Разработка в AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Быстрый старт",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Выбор модели",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Совместная разработка с ИИ агентом",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Структура проекта и технологический стек",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Стандартные компоненты и расширения",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Развёртывание и управление исходным кодом",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Разработка в Portal без кода",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Настройка интерфейса",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Решения",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Контроль версий",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Безопасность и аудит"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Настройка интерфейса"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Управление рабочими процессами"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Решения"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Управление плагинами"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Управление релизами"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Контроль версий"
   }
 ]

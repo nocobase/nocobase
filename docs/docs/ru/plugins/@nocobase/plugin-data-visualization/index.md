@@ -7,7 +7,7 @@ description: |
   Визуализация данных: блок диаграмм и блок фильтров; линейные, областные, столбчатые и более десяти видов графиков, с возможностью расширения.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

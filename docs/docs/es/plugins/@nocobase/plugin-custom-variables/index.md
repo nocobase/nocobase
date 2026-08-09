@@ -9,7 +9,7 @@ description: |
   Support for adding and using custom variables
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

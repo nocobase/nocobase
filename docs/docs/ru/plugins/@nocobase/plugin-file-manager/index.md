@@ -7,7 +7,7 @@ description: |
   Предоставляет хранение файлов: шаблон коллекции файлов и поле вложения.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

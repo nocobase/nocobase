@@ -10,7 +10,7 @@ description: |
   Sử dụng ECharts để trực quan hóa dữ liệu, hỗ trợ nhiều loại biểu đồ hơn như biểu đồ phễu, biểu đồ radar, và cung cấp cấu hình trực quan hóa thân thiện hơn.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

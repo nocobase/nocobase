@@ -10,7 +10,7 @@ description: |
   Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

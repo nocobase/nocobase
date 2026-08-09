@@ -7,7 +7,7 @@ description: |
   Централизованное хранилище схем интерфейса.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

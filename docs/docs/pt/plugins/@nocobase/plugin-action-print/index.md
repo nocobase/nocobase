@@ -7,7 +7,7 @@ description: |
   Calls the browser's print function to print a record.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

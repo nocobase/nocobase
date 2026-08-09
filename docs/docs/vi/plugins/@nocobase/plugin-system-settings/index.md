@@ -7,7 +7,7 @@ description: |
   Dùng để điều chỉnh tiêu đề, LOGO, ngôn ngữ của hệ thống, v.v.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

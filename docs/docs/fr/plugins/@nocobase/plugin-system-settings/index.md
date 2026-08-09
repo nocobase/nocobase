@@ -7,7 +7,7 @@ description: |
   Used to adjust the system title, logo, language, etc.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

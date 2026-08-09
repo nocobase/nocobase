@@ -7,7 +7,7 @@ description: |
   Digunakan untuk menyesuaikan judul, LOGO, bahasa, dan lainnya pada sistem.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

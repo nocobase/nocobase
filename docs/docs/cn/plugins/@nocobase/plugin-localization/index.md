@@ -7,7 +7,7 @@ description: |
   支持管理应用程序的本地化资源。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

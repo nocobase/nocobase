@@ -9,7 +9,7 @@ description: |
   Разбиение формы с большим числом полей на несколько шагов для удобства пользователей.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

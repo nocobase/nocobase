@@ -7,7 +7,7 @@ description: |
   Dùng để sắp xếp dữ liệu trong bảng dữ liệu.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

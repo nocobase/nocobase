@@ -671,6 +671,7 @@ test('docker app plan wires app, db, network, port, and image settings', async (
       appPort: '13000',
       storagePath: './storage/demo',
       lang: 'zh-CN',
+      appClientEntryMode: 'legacy-default',
     },
     downloadResults: {
       source: 'docker',
@@ -712,6 +713,7 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('13000:80')).toBe(true);
   expect(plan.args.includes('--port')).toBe(false);
   expect(plan.args.includes('INIT_APP_LANG=zh-CN')).toBe(true);
+  expect(plan.args.includes('APP_CLIENT_ENTRY_MODE=legacy-default')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_USERNAME=nocobase')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_EMAIL=admin@nocobase.com')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_PASSWORD=admin123')).toBe(true);
@@ -857,6 +859,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     appResults: {
       appRootPath: './apps/demo',
       appPort: '13080',
+      appClientEntryMode: 'modern-only',
       appKey: 'app-key-123',
       timeZone: 'Asia/Shanghai',
       storagePath: './storage/demo',
@@ -908,6 +911,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     buildDts: false,
     appRootPath: './apps/demo',
     appPort: '13080',
+    appClientEntryMode: 'modern-only',
     storagePath: './storage/demo',
     appKey: 'app-key-123',
     timezone: 'Asia/Shanghai',

@@ -56,7 +56,7 @@ type CascaderProps = {
   fieldNames?: Record<string, string>;
   options?: CascaderOption[];
   loadData?: (selectedOptions: CascaderOption[]) => void;
-  onChange?: (value: unknown[]) => void;
+  onChange?: (value: unknown[], selectedOptions?: CascaderOption[]) => void;
   onDropdownVisibleChange?: (open: boolean) => void;
   displayRender?: (labels: string[], selectedOptions?: CascaderOption[]) => string;
 };
@@ -437,10 +437,11 @@ describe('ExportActionModel', () => {
     });
     expect(onDropdownVisibleChange).toHaveBeenLastCalledWith(false);
 
+    const selectedOptions = [{ name: 'author' }, { name: 'nickname' }];
     act(() => {
-      cascaderProps.onChange?.([{ name: 'author' }, { name: 'nickname' }]);
+      cascaderProps.onChange?.([{ name: 'author' }, { name: 'nickname' }], selectedOptions);
     });
-    expect(onChange).toHaveBeenCalledWith(['author', 'nickname']);
+    expect(onChange).toHaveBeenCalledWith(['author', 'nickname'], selectedOptions);
 
     act(() => {
       cascaderProps.loadData?.([]);

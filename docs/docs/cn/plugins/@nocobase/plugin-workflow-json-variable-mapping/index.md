@@ -7,7 +7,7 @@ description: |
   用于将任意 JSON 数据映射为结构化的变量，以供后续节点使用。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

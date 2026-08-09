@@ -9,8 +9,8 @@ supportedVersions:
 description: |
   Menyediakan fungsi backup dan restore, mendukung backup terjadwal, memastikan keamanan data dan pemulihan cepat.
 isFree: false
-builtIn: false
-defaultEnabled: false
+builtIn: true
+defaultEnabled: true
 editionLevel: 2
 ---
 

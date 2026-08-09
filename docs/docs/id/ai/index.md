@@ -2,8 +2,8 @@
 pageType: home
 pageName: ai
 title: 'NocoBase AI'
-description: 'Sistem kemampuan AI NocoBase: Pembangunan & Pengembangan AI, Karyawan AI, Integrasi AI Agent, Tools dan sumber daya AI.'
-keywords: 'NocoBase AI,Pembangunan AI,Karyawan AI,Pengembangan AI,AI Agent,NocoBase CLI,Skills,MCP'
+description: 'Sistem kemampuan AI NocoBase: Pembangunan AI, Karyawan AI, Integrasi AI Agent, Tools dan sumber daya AI.'
+keywords: 'NocoBase AI,Pembangunan AI,AI Portal,Karyawan AI,Pengembangan AI,AI Agent,NocoBase CLI,Skills,MCP'
 features:
   - title: Mulai
     details: Pasang CLI, hubungkan aplikasi, mulai membangun — semuanya dimulai dari sini.
@@ -21,7 +21,7 @@ features:
         details: Gunakan AI untuk membantu pengembangan Plugin NocoBase, mencakup seluruh proses dari scaffolding, kode komponen, hingga logika bisnis.
         link: /ai-dev
 
-  - title: Pembangunan & Pengembangan AI
+  - title: Pembangunan AI
     details: Bangun aplikasi dan Plugin NocoBase dengan AI — dari deskripsi bahasa natural hingga sistem atau kode Plugin yang siap digunakan.
     items:
       - title: Mulai Cepat Pembangunan AI
@@ -65,28 +65,6 @@ features:
         details: Integrasikan Karyawan AI ke dalam Node Workflow untuk pengambilan keputusan cerdas dan pembuatan konten otomatis.
         link: /ai-employees/workflow/nodes/employee/configuration
 
-  - title: Integrasikan AI Agent Anda
-    details: AI Agent favorit Anda kini juga dapat mengoperasikan NocoBase.
-    items:
-      - title: OpenClaw + NocoBase, AI Agent Terpopuler Membantu Anda
-        details: AI Agent open source paling populer di dunia, jadikan OpenClaw operator NocoBase 24/7 Anda.
-        link: /ai/openclaw
-      - title: Hermes Agent, Asisten NocoBase yang Semakin Memahami Anda
-        details: Secara otomatis menyimpan pengalaman sukses sebagai Skills yang dapat digunakan kembali, semakin dipakai semakin memahami sistem bisnis Anda.
-        link: /ai/hermes-agent
-      - title: Bebaskan Tangan Anda, Gerakkan NocoBase dengan WorkBuddy
-        details: Produk Tencent, dengan 20+ Skills bawaan, mendukung kontrol jarak jauh NocoBase dari WeCom, Lark, dan platform lainnya.
-        link: /ai/workbuddy
-      - title: Claude Code + NocoBase, Otak AI Terkuat, Arsitek Utama NocoBase Anda
-        details: Arsitek AI berkemampuan tinggi, memahami konteks proyek, membangun NocoBase senatural menulis kode.
-        link: /ai/claude-code
-      - title: Operasikan NocoBase dengan Codex, Membangun & Mengembangkan Sekaligus
-        details: Produk OpenAI, didukung seri GPT, membantu Anda membangun NocoBase dalam sandbox aman, setiap langkah terkendali.
-        link: /ai/codex
-      - title: OpenCode + NocoBase, Cara Membangun NocoBase yang Open Source, Bebas, Tanpa Ikatan
-        details: Sama-sama digerakkan komunitas open source, model dapat diganti bebas, pilihan kebebasan untuk pengembang.
-        link: /ai/opencode
-
   - title: Tools dan Sumber Daya AI
     details: Infrastruktur yang mendukung kemampuan AI NocoBase — CLI, Skills, dan MCP.
     items:
@@ -96,6 +74,9 @@ features:
       - title: NocoBase Skills
         details: Paket pengetahuan domain yang dapat dipasang ke AI Agent, agar AI memahami kemampuan dan standar NocoBase.
         link: /ai-builder#nocobase-skills
+      - title: Referensi Perintah nb portal
+        details: Semua perintah untuk mengelola Portal — membuat, mengembangkan, menyinkronkan source, dan men-deploy.
+        link: /api/cli/portal/
       - title: NocoBase MCP
         details: Integrasi Model Context Protocol, agar AI Agent dapat berinteraksi dengan NocoBase melalui protokol standar.
         link: /ai/mcp/

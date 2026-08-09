@@ -7,7 +7,7 @@ description: |
   Quản lý xác thực người dùng, bao gồm xác thực mật khẩu cơ bản, xác thực SMS, xác thực giao thức SSO, có thể mở rộng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

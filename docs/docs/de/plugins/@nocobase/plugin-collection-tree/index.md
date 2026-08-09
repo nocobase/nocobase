@@ -7,7 +7,7 @@ description: |
   Provides tree collection template
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 
