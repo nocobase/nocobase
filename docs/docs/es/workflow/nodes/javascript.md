@@ -46,7 +46,9 @@ Si el script falla, no tendrá un valor de retorno, y el resultado del nodo se r
 
 ## Control de concurrencia de Workers
 
-Los nodos de script de JavaScript colocan los scripts pendientes en una cola de tareas y los ejecutan en hilos Worker independientes. Puede utilizar la variable de entorno `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` para controlar cuántos scripts de JavaScript puede ejecutar simultáneamente cada instancia de la aplicación NocoBase:
+Los nodos de script de JavaScript colocan los scripts pendientes en una cola de tareas y los ejecutan en hilos Worker independientes. De forma predeterminada, NocoBase no limita la concurrencia de los Workers de scripts de JavaScript. Si hay varias tareas esperando en la cola, pueden crear Workers y ejecutarse simultáneamente.
+
+Si los scripts consumen una cantidad significativa de memoria durante la ejecución, varios Workers pueden aumentar rápidamente el uso de memoria de una instancia de la aplicación. En ese caso, utilice la variable de entorno `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` para establecer un límite de concurrencia. Lo mismo se aplica a los scripts que hacen un uso intensivo de la CPU: una concurrencia excesiva aumenta la competencia por la CPU y puede afectar a otras solicitudes y flujos de trabajo de NocoBase. También se recomienda configurar esta variable si pueden generarse muchas tareas de script en poco tiempo:
 
 ```bash
 WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
@@ -54,11 +56,11 @@ WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
 
 Se aplican las siguientes reglas:
 
-- Si la variable no está configurada o su valor no es válido, la concurrencia predeterminada es `1`
+- Si la variable no está configurada o su valor no es válido, la concurrencia no tiene límite
 - Un entero positivo establece el número máximo de hilos Worker que pueden ejecutarse simultáneamente
 - El valor `0` elimina el límite de concurrencia y permite ejecutar simultáneamente todas las tareas de la cola
 
-Cuando se alcanza el límite de concurrencia, las nuevas tareas permanecen en la cola hasta que haya un Worker disponible. La configuración predeterminada es adecuada para la mayoría de los casos. Aumentar la concurrencia consume más CPU y memoria, por lo que se recomienda ajustarla gradualmente según los recursos del servidor y la carga de los scripts. No se recomienda establecer la concurrencia en `0` en entornos de producción.
+Cuando se alcanza el límite de concurrencia, las nuevas tareas permanecen en la cola hasta que haya un Worker disponible. Puede mantener la configuración predeterminada si los scripts se ejecutan con poca frecuencia y cada ejecución consume pocos recursos. Si necesita un límite de concurrencia, empiece con un valor pequeño y ajústelo gradualmente según el uso de memoria y CPU de la instancia de la aplicación y el tiempo de espera de las tareas en la cola.
 
 Si una aplicación se ejecuta en varias instancias de servidor, esta configuración se aplica por separado a cada instancia. La capacidad total de concurrencia también depende del número de instancias que puedan consumir tareas. Reinicie el servicio NocoBase después de cambiar la variable de entorno para que el nuevo valor entre en vigor.
 

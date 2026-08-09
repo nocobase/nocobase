@@ -49,7 +49,9 @@ Sau khi script bị lỗi sẽ không có giá trị trả về, kết quả c�
 
 ## Kiểm soát số lượng Worker thực thi đồng thời
 
-Node script JavaScript đưa các script đang chờ thực thi vào hàng đợi tác vụ và chạy chúng trong các thread Worker riêng biệt. Bạn có thể sử dụng biến môi trường `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` để kiểm soát số lượng script JavaScript mà mỗi instance ứng dụng NocoBase có thể chạy đồng thời:
+Node script JavaScript đưa các script đang chờ thực thi vào hàng đợi tác vụ và chạy chúng trong các thread Worker riêng biệt. Theo mặc định, NocoBase không giới hạn số lượng Worker script JavaScript chạy đồng thời. Nếu có nhiều tác vụ đang chờ trong hàng đợi, chúng có thể tạo Worker và chạy đồng thời.
+
+Nếu script sử dụng nhiều bộ nhớ trong khi chạy, nhiều Worker có thể nhanh chóng làm tăng mức sử dụng bộ nhớ của một instance ứng dụng. Trong trường hợp này, hãy sử dụng biến môi trường `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` để đặt giới hạn thực thi đồng thời. Điều tương tự cũng áp dụng cho các script sử dụng nhiều CPU: số lượng thực thi đồng thời quá cao làm tăng cạnh tranh CPU và có thể ảnh hưởng đến các request và workflow khác trong NocoBase. Bạn cũng nên cấu hình biến này nếu có thể phát sinh nhiều tác vụ script trong thời gian ngắn:
 
 ```bash
 WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
@@ -57,11 +59,11 @@ WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
 
 Các quy tắc cấu hình như sau:
 
-- Nếu biến chưa được cấu hình hoặc có giá trị không hợp lệ, số lượng thực thi đồng thời mặc định là `1`
+- Nếu biến chưa được cấu hình hoặc có giá trị không hợp lệ, số lượng thực thi đồng thời không bị giới hạn
 - Số nguyên dương đặt số lượng thread Worker tối đa có thể chạy đồng thời
 - Giá trị `0` loại bỏ giới hạn, cho phép tất cả tác vụ trong hàng đợi chạy đồng thời
 
-Khi đạt đến giới hạn, các tác vụ mới sẽ tiếp tục nằm trong hàng đợi cho đến khi có Worker khả dụng. Cấu hình mặc định phù hợp với hầu hết trường hợp. Việc tăng số lượng thực thi đồng thời sẽ sử dụng nhiều CPU và bộ nhớ hơn, vì vậy hãy điều chỉnh dần dựa trên tài nguyên server và tải của script. Không nên đặt giá trị thành `0` trong môi trường production.
+Khi đạt đến giới hạn, các tác vụ mới sẽ tiếp tục nằm trong hàng đợi cho đến khi có Worker khả dụng. Bạn có thể giữ cấu hình mặc định nếu script hiếm khi chạy và mỗi lần thực thi chỉ sử dụng ít tài nguyên. Nếu cần giới hạn số lượng thực thi đồng thời, hãy bắt đầu với một giá trị nhỏ và điều chỉnh dần dựa trên mức sử dụng bộ nhớ và CPU của instance ứng dụng cũng như thời gian chờ của tác vụ trong hàng đợi.
 
 Nếu ứng dụng chạy trên nhiều instance server, cấu hình này được áp dụng riêng cho từng instance. Khả năng xử lý đồng thời tổng thể cũng phụ thuộc vào số lượng instance có thể xử lý tác vụ. Sau khi thay đổi biến môi trường, hãy restart service NocoBase để giá trị mới có hiệu lực.
 
