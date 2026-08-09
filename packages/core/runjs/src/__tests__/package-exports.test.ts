@@ -11,12 +11,21 @@ import fs from 'fs';
 import path from 'path';
 
 const packageRoot = path.resolve(__dirname, '../..');
+const repositoryRoot = path.resolve(packageRoot, '../../..');
 interface RunJSPackageJson {
   exports: Record<string, unknown>;
   typesVersions?: Record<string, Record<string, string[]>>;
 }
+interface RepositoryTsConfigPaths {
+  compilerOptions: {
+    paths: Record<string, string[]>;
+  };
+}
 
 const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), 'utf8')) as RunJSPackageJson;
+const tsconfigPaths = JSON.parse(
+  fs.readFileSync(path.join(repositoryRoot, 'tsconfig.paths.json'), 'utf8'),
+) as RepositoryTsConfigPaths;
 
 describe('@nocobase/runjs package exports', () => {
   it('exposes only supported public entry points', () => {
@@ -73,5 +82,8 @@ describe('@nocobase/runjs package exports', () => {
       './lib/compiler/static-module-references.d.ts',
     ]);
     expect(fs.existsSync(path.join(packageRoot, 'src/compiler/static-module-references.ts'))).toBe(true);
+    expect(tsconfigPaths.compilerOptions.paths['@nocobase/runjs/compiler/static-module-references']).toEqual([
+      'packages/core/runjs/src/compiler/static-module-references',
+    ]);
   });
 });

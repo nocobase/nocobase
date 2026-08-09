@@ -356,6 +356,9 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       paths[`${packageJsonName}/compiler/build-identity`] = [`${relativePath}/src/compiler/build-identity`];
       paths[`${packageJsonName}/compiler/loader`] = [`${relativePath}/src/compiler/loader`];
       paths[`${packageJsonName}/compiler/portable`] = [`${relativePath}/src/compiler/portable`];
+      paths[`${packageJsonName}/compiler/static-module-references`] = [
+        `${relativePath}/src/compiler/static-module-references`,
+      ];
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
     }

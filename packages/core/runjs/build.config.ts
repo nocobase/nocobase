@@ -11,8 +11,16 @@ import { defineConfig } from '@nocobase/build';
 import fs from 'fs';
 import path from 'path';
 
-const runtimeArtifacts = ['lib/compiler/loader.js', 'lib/compiler/build-identity.js'];
-const declarationArtifacts = ['lib/compiler/loader.d.ts', 'lib/compiler/build-identity.d.ts'];
+const runtimeArtifacts = [
+  'lib/compiler/loader.js',
+  'lib/compiler/build-identity.js',
+  'lib/compiler/static-module-references.js',
+];
+const declarationArtifacts = [
+  'lib/compiler/loader.d.ts',
+  'lib/compiler/build-identity.d.ts',
+  'lib/compiler/static-module-references.d.ts',
+];
 
 function verifyArtifacts(artifacts: string[]): void {
   const missingArtifacts = artifacts.filter((artifact) => !fs.existsSync(path.resolve(__dirname, artifact)));

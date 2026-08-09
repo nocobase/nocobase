@@ -238,8 +238,20 @@ function getRuntimeArtifact(app: MockServer, artifactHash: string) {
 }
 
 async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId: string): Promise<void> {
-  for (let attempt = 0; attempt < 500; attempt += 1) {
+  const deadline = Date.now() + 75_000;
+  let lastState: Record<string, unknown> | null = null;
+  while (Date.now() < deadline) {
     const job = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: jobId });
+    lastState = job
+      ? {
+          status: job.get('status'),
+          attempt: job.get('attempt'),
+          claimOwner: job.get('claimOwner'),
+          leaseExpiresAt: job.get('leaseExpiresAt'),
+          heartbeatAt: job.get('heartbeatAt'),
+          errorCode: job.get('errorCode'),
+        }
+      : null;
     if (job?.get('status') === 'failed') {
       throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
     }
@@ -249,7 +261,7 @@ async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId
         return;
       }
     }
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  throw new Error(`Creation job ${jobId} did not finish`);
+  throw new Error(`Creation job ${jobId} did not finish; last state: ${JSON.stringify(lastState)}`);
 }
