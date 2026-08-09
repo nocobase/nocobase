@@ -29,10 +29,10 @@ import type {
   JsTemplateFileChange,
   JsTemplateFileResult,
   JsTemplateIncludeContentMode,
+  JsTemplateProject,
   JsTemplatePullResult,
   JsTemplatePulledFile,
   JsTemplatePushInput,
-  JsTemplatePushResult,
 } from '../../shared/types';
 import { validateJsTemplateWorkspace } from './JsTemplateCompileContract';
 import { JsTemplatePermissionService } from './JsTemplatePermissionService';
@@ -90,7 +90,7 @@ export interface JsTemplateReplaceSourceSnapshotInput {
 
 export interface JsTemplatePreparedSourceSnapshot {
   candidate: JsTemplatePreparedSourceCandidate | null;
-  project: JsTemplatePushResult['project'];
+  project: JsTemplateProject;
   commitId: string | null;
   contentHash: string;
   changed: boolean;
@@ -183,16 +183,6 @@ export class JsTemplateFileService {
       assertProjectArchived(project, 'read archived source');
       return this.getFileInternal(project, input, ctx, transaction, 'readArchivedSource');
     });
-  }
-
-  async push(input: JsTemplatePushInput, ctx: JsTemplateServiceContext = {}): Promise<JsTemplatePushResult> {
-    const candidate = await this.pushPreparedCandidate(input, ctx);
-
-    return {
-      project: candidate.project,
-      commit: candidate.commit,
-      tree: candidate.tree,
-    };
   }
 
   async prepareSourceCandidate(
@@ -425,94 +415,6 @@ export class JsTemplateFileService {
       transaction,
     );
     return candidate;
-  }
-
-  async pushPreparedCandidate(
-    input: JsTemplatePushInput,
-    ctx: JsTemplateServiceContext = {},
-  ): Promise<PreparedCandidateWorkspace> {
-    const requestId = getRequestId(ctx);
-
-    try {
-      return await this.withTransaction(ctx.transaction, async (transaction) => {
-        const project = await this.projectService.lockInternalProjectForUpdate(input.projectId, {
-          ...ctx,
-          transaction,
-        });
-        assertProjectNotArchived(project, 'write source');
-        assertExpectedHead(input.expectedHeadCommitId, project.headCommitId, project.id);
-        const result = await this.runVsc(project.id, () =>
-          this.vscFileService.pushWithCandidate(
-            {
-              repoId: project.vscRepoId,
-              baseCommitId: project.headCommitId,
-              message: input.message,
-              files: input.files.map(toVscFileChange),
-              allowEmptyCommit: input.allowEmptyCommit,
-              authorId: ctx.actorUserId || null,
-              metadata: buildSourceCommitMetadata(project.id, requestId, ctx),
-            },
-            this.createVscContext({
-              ctx,
-              transaction,
-              requestId,
-              projectId: project.id,
-              aclAction: 'writeSource',
-              reason: 'write js-template source files',
-              allowedActions: ['push'],
-            }),
-            {
-              validateBaseEntries: (entries) =>
-                this.assertValidSyncBatch(
-                  input.files,
-                  entries.map((entry) => entry.path),
-                ),
-            },
-          ),
-        );
-        const validation = this.validator.validateWorkspace({
-          files: result.candidate.files.map((file) => ({
-            path: file.path,
-            content: file.content,
-            blobHash: file.blobHash,
-            size: file.size,
-            language: file.language,
-          })),
-        });
-        if (hasErrorDiagnostic(validation.diagnostics)) {
-          throw new JsTemplateError('JS_TEMPLATE_VALIDATION_FAILED', 'JS Template source workspace is invalid', {
-            details: {
-              diagnostics: validation.diagnostics,
-            },
-          });
-        }
-
-        await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).update({
-          filterByTk: project.id,
-          values: {
-            headCommitId: result.repository.headCommitId || null,
-          },
-          transaction,
-        });
-        const updatedProject = await this.projectService.getInternalProject(project.id, { ...ctx, transaction });
-        const publicProject = stripInternalProject(updatedProject);
-        const publicCommit = toPublicCommit(result.commit, project.id);
-        const candidate = createPreparedCandidateWorkspace(
-          {
-            project: publicProject,
-            commit: publicCommit,
-            tree: result.tree,
-            validation,
-            vscSnapshot: result.candidate,
-          },
-          transaction,
-        );
-
-        return candidate;
-      });
-    } catch (error) {
-      throw normalizeVscBridgeError(error, input.projectId);
-    }
   }
 
   private assertValidSyncBatch(files: JsTemplateFileChange[], existingPaths: Iterable<string> = []): void {

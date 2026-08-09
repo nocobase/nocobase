@@ -8,17 +8,11 @@
  */
 
 import type { Context } from '@nocobase/actions';
-import {
-  runJSSourceAuditActionNames,
-  type VscPermissionHookInput,
-  vscFileAuditActionNames,
-} from '@nocobase/runjs-workspace/server';
+import { runJSSourceAuditActionNames, VscFileService, vscFileAuditActionNames } from '@nocobase/runjs-workspace/server';
 import { VscError, getRunJSSourceOwnerId, type RunJSSourceLocator } from '@nocobase/runjs-workspace/shared';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginJsTemplateServer from '../../plugin';
-import { RemoteStore } from '../remotes/RemoteStore';
-import { SyncJobStore } from '../remotes/SyncJobStore';
 
 type VscFileAgent = ReturnType<MockServer['agent']>;
 
@@ -27,21 +21,9 @@ type VscAuditActionRegistration = {
   getMetaData?: (ctx: Context) => Promise<Record<string, unknown>>;
 };
 
-interface VscRepositoryForTest {
-  id: string;
-  ownerType: string;
-  ownerId: string;
-  headCommitId: string | null;
-}
-
-interface VscTreeEntryModelForTest {
-  get: (key: string) => unknown;
-}
-
 describe('vsc-file permission hooks and audit registration', () => {
   let app: MockServer;
   let agent: VscFileAgent;
-  let currentUserId: string;
   let unregisterHooks: Array<() => void>;
 
   beforeEach(async () => {
@@ -53,7 +35,6 @@ describe('vsc-file permission hooks and audit registration', () => {
     });
 
     const user = await app.db.getRepository('users').findOne();
-    currentUserId = String(user.get('id'));
     agent = await app.agent().login(user);
   });
 
@@ -62,240 +43,6 @@ describe('vsc-file permission hooks and audit registration', () => {
       unregister();
     }
     await app?.destroy();
-  });
-
-  it('allows raw vscFile writes for configuration roles', async () => {
-    const response = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'demo',
-        name: 'main',
-      },
-    });
-
-    expect(response.status).toBe(200);
-    expect(response.body.data.repository).toMatchObject({
-      ownerType: 'plugin',
-      ownerId: 'demo',
-      name: 'main',
-    });
-  });
-
-  it('denies raw vscFile access to logged-in roles without configuration permission', async () => {
-    const roleName = 'vscFileRestricted';
-    app.acl.define({
-      role: roleName,
-      strategy: {
-        actions: false,
-        allowConfigure: false,
-      },
-    });
-    await app.db.getRepository('roles').create({
-      values: {
-        name: roleName,
-        allowConfigure: false,
-      },
-    });
-    const user = await app.db.getRepository('users').create({
-      values: {
-        nickname: roleName,
-        roles: [roleName],
-      },
-    });
-    const restrictedAgent = (await app.agent().login(user)).set('x-role', roleName);
-
-    const response = await restrictedAgent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'demo',
-        name: 'main',
-      },
-    });
-
-    expect(response.status).toBe(403);
-  });
-
-  it('rejects raw vscFile access for RunJS source repositories', async () => {
-    const response = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'runjs-source',
-        ownerId: 'runjs:flowModel.step:form_1:source_1',
-        name: 'source',
-      },
-    });
-
-    expect(response.status).toBe(403);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      details: {
-        ownerType: 'runjs-source',
-        denyReason: 'runjs_source_requires_adapter_resource',
-      },
-    });
-  });
-
-  it('does not let a generic permissive hook open protected js-template owners', async () => {
-    unregisterHooks.push(getPlugin().registerPermissionHook(() => true));
-
-    const response = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'js-template',
-        ownerId: 'jtp_protected',
-        name: 'main',
-      },
-    });
-
-    expect(response.status).toBe(403);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      status: 403,
-      details: {
-        ownerType: 'js-template',
-        denyReason: 'raw_resource_forbidden',
-      },
-    });
-  });
-
-  it('returns 403 when a permission hook denies a write action with false', async () => {
-    unregisterHooks.push(
-      getPlugin().registerPermissionHook((input) => {
-        return input.action === 'createRepository' ? false : true;
-      }),
-    );
-
-    const response = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'demo',
-        name: 'main',
-      },
-    });
-
-    expect(response.status).toBe(403);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      status: 403,
-    });
-  });
-
-  it('passes repository owner fields and request metadata to permission hooks', async () => {
-    const repository = await createRepository();
-    let captured: VscPermissionHookInput | null = null;
-
-    unregisterHooks.push(
-      getPlugin().registerPermissionHook((input) => {
-        if (input.action === 'push') {
-          captured = input;
-        }
-        return true;
-      }),
-    );
-
-    const response = await agent.resource('vscFile').push({
-      values: {
-        repoId: repository.id,
-        baseCommitId: null,
-        message: 'first commit',
-        files: [{ path: 'README.md', content: '# Demo\n' }],
-      },
-    });
-
-    expect(response.status).toBe(200);
-    expect(captured).toMatchObject({
-      action: 'push',
-      userId: currentUserId,
-      repoId: repository.id,
-      ownerType: 'plugin',
-      ownerId: 'demo',
-      repository: {
-        id: repository.id,
-        ownerType: 'plugin',
-        ownerId: 'demo',
-      },
-      request: {
-        resourceName: 'vscFile',
-        actionName: 'push',
-      },
-    });
-  });
-
-  it('rejects raw blob diff endpoints before they can bypass repository permission hooks', async () => {
-    const allowedRepository = await createRepository('allowed');
-    const deniedRepository = await createRepository('denied');
-    const deniedPushResponse = await agent.resource('vscFile').push({
-      values: {
-        repoId: deniedRepository.id,
-        baseCommitId: null,
-        message: 'secret commit',
-        files: [{ path: 'secret.txt', content: 'repo-b-secret\n' }],
-      },
-    });
-    const deniedTreeEntry = (await app.db.getRepository('vscFileTreeEntries').findOne({
-      filter: {
-        treeHash: deniedPushResponse.body.data.commit.treeHash,
-        path: 'secret.txt',
-      },
-    })) as VscTreeEntryModelForTest | null;
-
-    if (!deniedTreeEntry) {
-      throw new Error('Expected denied repository tree entry');
-    }
-
-    unregisterHooks.push(
-      getPlugin().registerPermissionHook((input) => {
-        return input.repoId === deniedRepository.id ? false : true;
-      }),
-    );
-
-    const response = await agent.resource('vscFile').diffFile({
-      values: {
-        repoId: allowedRepository.id,
-        from: {
-          type: 'blob',
-          blobHash: String(deniedTreeEntry.get('blobHash')),
-        },
-        to: null,
-      },
-    });
-
-    expect(response.status).toBe(400);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'PATH_INVALID',
-      status: 400,
-    });
-    expect(JSON.stringify(response.body)).not.toContain('repo-b-secret');
-  });
-
-  it('blocks raw repository archive while a remote job is active', async () => {
-    const repository = await createRepository('archive-busy');
-    const remote = await new RemoteStore(app.db).create({
-      repoId: repository.id,
-      name: 'origin',
-      provider: 'git',
-      config: {
-        url: 'https://git.example.com/nocobase/demo.git',
-        branch: 'main',
-        subdirectory: null,
-        transport: 'https',
-      },
-      authRef: null,
-    });
-    await new SyncJobStore(app.db).createOrGet({
-      remoteId: remote.id,
-      remoteTargetVersion: remote.version,
-      operation: 'push',
-      idempotencyKey: 'archive-busy',
-    });
-
-    const response = await agent.resource('vscFile').archiveRepository({
-      values: { repoId: repository.id },
-    });
-
-    expect(response.status).toBe(409);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'BUSY',
-      details: { reasonCode: 'active-sync-job' },
-    });
   });
 
   it('does not expose remote persistence collections through generic CRUD resources', async () => {
@@ -432,36 +179,33 @@ describe('vsc-file permission hooks and audit registration', () => {
   });
 
   it('adds repository owner and target commit or ref fields to audit metadata', async () => {
-    const createWithInitialResponse = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'initial-demo',
-        name: 'initial-main',
-        initialFiles: [{ path: 'README.md', content: '# Initial secret\n' }],
-      },
+    const vsc = new VscFileService(app.db);
+    const createWithInitial = await vsc.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'initial-demo',
+      name: 'initial-main',
+      initialFiles: [{ path: 'README.md', content: '# Initial secret\n' }],
     });
-    const repository = await createRepository();
-    const pushResponse = await agent.resource('vscFile').push({
-      values: {
-        repoId: repository.id,
-        baseCommitId: null,
-        message: 'first commit',
-        files: [{ path: 'README.md', content: '# Demo\n' }],
-      },
+    const { repository } = await vsc.createRepository({
+      ownerType: 'plugin',
+      ownerId: 'demo',
+      name: `main-${Math.random()}`,
     });
-    const commitId = pushResponse.body.data.commit.id;
-    const updateRefResponse = await agent.resource('vscFile').updateRef({
-      values: {
-        repoId: repository.id,
-        name: 'head',
-        targetCommitId: commitId,
-      },
+    const push = await vsc.push({
+      repoId: repository.id,
+      baseCommitId: null,
+      message: 'first commit',
+      files: [{ path: 'README.md', content: '# Demo\n' }],
+    });
+    const commitId = push.commit.id;
+    const updateRef = await vsc.updateRef({
+      repoId: repository.id,
+      name: 'head',
+      targetCommitId: commitId,
     });
 
-    expect(pushResponse.status).toBe(200);
-    expect(updateRefResponse.status).toBe(200);
-    expect(createWithInitialResponse.status).toBe(200);
-    const createWithInitialCommitId = createWithInitialResponse.body.data.initialCommit.id;
+    const createWithInitialCommitId = createWithInitial.initialCommit?.id;
+    expect(createWithInitialCommitId).toBeTruthy();
     const createMetadata = await expectAuditMetadata(
       'createRepository',
       {
@@ -473,10 +217,10 @@ describe('vsc-file permission hooks and audit registration', () => {
         },
       },
       {
-        data: createWithInitialResponse.body.data,
+        data: createWithInitial,
       },
       {
-        repoId: createWithInitialResponse.body.data.repository.id,
+        repoId: createWithInitial.repository.id,
         ownerType: 'plugin',
         ownerId: 'initial-demo',
         targetCommitId: createWithInitialCommitId,
@@ -490,7 +234,7 @@ describe('vsc-file permission hooks and audit registration', () => {
         },
       },
       {
-        data: pushResponse.body.data,
+        data: push,
       },
       {
         repoId: repository.id,
@@ -509,7 +253,7 @@ describe('vsc-file permission hooks and audit registration', () => {
         },
       },
       {
-        data: updateRefResponse.body.data,
+        data: updateRef,
       },
       {
         repoId: repository.id,
@@ -889,19 +633,6 @@ describe('vsc-file permission hooks and audit registration', () => {
 
     expect(metadata).toMatchObject(expected);
     return metadata;
-  }
-
-  async function createRepository(ownerId = 'demo'): Promise<VscRepositoryForTest> {
-    const response = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId,
-        name: `main-${ownerId}-${Math.random()}`,
-      },
-    });
-
-    expect(response.status).toBe(200);
-    return response.body.data.repository as VscRepositoryForTest;
   }
 
   async function createRunJSSourceRepository(repoId: string, locator: RunJSSourceLocator): Promise<void> {

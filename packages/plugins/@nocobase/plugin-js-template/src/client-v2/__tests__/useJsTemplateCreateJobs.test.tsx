@@ -51,13 +51,11 @@ describe('useJsTemplateCreateJobs', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('continues polling a terminal job until another tab dismisses it', async () => {
+  it('keeps a terminal job visible without scheduling another poll', async () => {
     vi.useFakeTimers();
-    mocks.api.request
-      .mockResolvedValueOnce({
-        data: { data: { jobs: [createJob({ status: 'succeeded', resultProjectId: 'jtp_1' })] } },
-      })
-      .mockResolvedValueOnce({ data: { data: { jobs: [] } } });
+    mocks.api.request.mockResolvedValue({
+      data: { data: { jobs: [createJob({ status: 'succeeded', resultProjectId: 'jtp_1' })] } },
+    });
     const { result } = renderHook(() => useJsTemplateCreateJobs());
 
     await act(async () => {
@@ -67,18 +65,37 @@ describe('useJsTemplateCreateJobs', () => {
     expect(result.current.jobs).toEqual([expect.objectContaining({ status: 'succeeded', resultProjectId: 'jtp_1' })]);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(2500);
+      await vi.advanceTimersByTimeAsync(7500);
     });
-    expect(result.current.jobs).toEqual([]);
+    expect(mocks.api.request).toHaveBeenCalledTimes(1);
+    expect(result.current.jobs).toEqual([expect.objectContaining({ status: 'succeeded', resultProjectId: 'jtp_1' })]);
+  });
+
+  it('polls every 2.5 seconds while an active job exists', async () => {
+    vi.useFakeTimers();
+    mocks.api.request.mockResolvedValue({
+      data: { data: { jobs: [createJob({ status: 'running' })] } },
+    });
+    renderHook(() => useJsTemplateCreateJobs());
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(5000);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mocks.api.request).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2499);
+    });
+    expect(mocks.api.request).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
     });
     expect(mocks.api.request).toHaveBeenCalledTimes(2);
   });
 
-  it('synchronizes an explicit terminal dismissal across two hook instances', async () => {
-    vi.useFakeTimers();
+  it('observes another hook dismissal only after an explicit refresh', async () => {
     let visibleJobs = [createJob({ status: 'failed', errorMessage: 'Safe failure' })];
     mocks.api.request.mockImplementation((options: { url: string }) => {
       if (options.url.endsWith(':dismiss')) {
@@ -103,7 +120,7 @@ describe('useJsTemplateCreateJobs', () => {
     expect(second.result.current.jobs).toHaveLength(1);
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(2500);
+      await second.result.current.refresh();
     });
     expect(second.result.current.jobs).toEqual([]);
   });

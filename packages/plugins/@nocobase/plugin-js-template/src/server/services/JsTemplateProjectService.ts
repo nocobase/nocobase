@@ -48,8 +48,6 @@ export interface JsTemplateServiceContext {
   state?: Record<string, unknown>;
   timezone?: string;
   transaction?: Transaction;
-  /** @internal Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
-  allowRemovedGenericRunJSSource?: boolean;
 }
 
 export interface JsTemplateProjectInternalRecord extends JsTemplateProject {
@@ -139,7 +137,7 @@ export class JsTemplateProjectService {
     const metadata = this.normalizeCreateMetadata(input);
     const projectId = options.projectId || `jtp_${uid()}`;
     const initialFiles = input.initialFiles?.length ? input.initialFiles : createDefaultJsTemplateTemplate();
-    this.assertValidInitialFiles(initialFiles, ctx.allowRemovedGenericRunJSSource);
+    this.assertValidInitialFiles(initialFiles);
 
     return this.withTransaction(ctx.transaction, async (transaction) => {
       await this.assertProjectNameAvailable(metadata.name, metadata.normalizedName, transaction);
@@ -230,18 +228,12 @@ export class JsTemplateProjectService {
     });
   }
 
-  private assertValidInitialFiles(
-    files: JsTemplateTreeEntryInput[] | undefined,
-    allowRemovedGenericRunJSSource = false,
-  ): void {
+  private assertValidInitialFiles(files: JsTemplateTreeEntryInput[] | undefined): void {
     if (!files) {
       return;
     }
 
-    const diagnostics = this.validator.validateInitialFiles({
-      files,
-      allowRemovedGenericRunJSSource,
-    });
+    const diagnostics = this.validator.validateInitialFiles({ files });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }

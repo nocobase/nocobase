@@ -236,12 +236,6 @@ export interface JsTemplatePushInput {
   allowEmptyCommit?: boolean;
 }
 
-export interface JsTemplatePushResult {
-  project: JsTemplateProject;
-  commit: JsTemplateCommitRecord;
-  tree: JsTemplateStoredTree;
-}
-
 export type JsTemplateDiagnosticSeverity = 'error' | 'warning';
 
 export interface JsTemplateDiagnostic {

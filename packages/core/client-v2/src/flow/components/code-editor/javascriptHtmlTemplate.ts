@@ -9,8 +9,13 @@
 
 import { html, htmlLanguage } from '@codemirror/lang-html';
 import { LanguageSupport } from '@codemirror/language';
-import type { LRLanguage } from '@codemirror/language';
-import { javascript } from '@codemirror/lang-javascript';
+import {
+  javascript,
+  javascriptLanguage,
+  jsxLanguage,
+  tsxLanguage,
+  typescriptLanguage,
+} from '@codemirror/lang-javascript';
 import { parseMixed } from '@lezer/common';
 import type { SyntaxNode } from '@lezer/common';
 
@@ -44,8 +49,14 @@ export function getTemplateHtmlRanges(node: SyntaxNode): TemplateHtmlRange[] {
 export function javascriptWithHtmlTemplates(dialect: { jsx: boolean; typescript: boolean }): LanguageSupport {
   const baseJavascript = javascript(dialect);
   const htmlSupport = html();
+  let baseLanguage = javascriptLanguage;
+  if (dialect.typescript) {
+    baseLanguage = dialect.jsx ? tsxLanguage : typescriptLanguage;
+  } else if (dialect.jsx) {
+    baseLanguage = jsxLanguage;
+  }
 
-  const mixedLanguage = (baseJavascript.language as unknown as LRLanguage).configure({
+  const mixedLanguage = baseLanguage.configure({
     wrap: parseMixed((node) => {
       if (node.type.name !== 'TemplateString') {
         return null;

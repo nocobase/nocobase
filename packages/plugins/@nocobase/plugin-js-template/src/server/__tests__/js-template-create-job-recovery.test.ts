@@ -223,12 +223,144 @@ describe('JsTemplateCreateJobRunner', () => {
     );
   });
 
-  it('prevents an old worker from writing failure or cleanup after losing its claim', async () => {
+  it('retains recovery context after cleanup failure and lets a new worker write the only terminal result', async () => {
+    let persistedJob = createJob({
+      status: 'pending',
+      claimToken: null,
+      claimOwner: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+      attempt: 0,
+      startedAt: null,
+    });
+    let leaseExpired = false;
+    let claimSequence = 0;
+    const terminalResults: JsTemplateCreateJob[] = [];
+    const claim = vi.fn(
+      async (_jobId: string, _applicationName: string, claimOwner: string): Promise<JsTemplateCreateJob | null> => {
+        const claimable = persistedJob.status === 'pending' || (persistedJob.status === 'running' && leaseExpired);
+        if (!claimable) {
+          return null;
+        }
+        claimSequence += 1;
+        leaseExpired = false;
+        persistedJob = {
+          ...persistedJob,
+          status: 'running',
+          claimToken: `claim-${claimSequence}`,
+          claimOwner,
+          leaseExpiresAt: `2030-07-27T00:${claimSequence === 1 ? '10' : '20'}:00.000Z`,
+          heartbeatAt: `2030-07-27T00:${claimSequence === 1 ? '00' : '10'}:00.000Z`,
+          attempt: claimSequence,
+          startedAt: persistedJob.startedAt || '2026-07-27T00:00:00.000Z',
+        };
+        return { ...persistedJob };
+      },
+    );
+    const fail = vi.fn(
+      async (
+        _jobId: string,
+        _applicationName: string,
+        claimToken: string,
+        errorCode: string,
+        errorMessage: string,
+      ): Promise<JsTemplateCreateJob | null> => {
+        if (persistedJob.status !== 'running' || persistedJob.claimToken !== claimToken) {
+          return null;
+        }
+        persistedJob = {
+          ...persistedJob,
+          status: 'failed',
+          payload: null,
+          reservationKey: null,
+          errorCode,
+          errorMessage,
+          claimToken: null,
+          claimOwner: null,
+          leaseExpiresAt: null,
+          heartbeatAt: null,
+          finishedAt: '2026-07-27T00:20:00.000Z',
+        };
+        terminalResults.push({ ...persistedJob });
+        return { ...persistedJob };
+      },
+    );
+    const store = createStore({ claim, fail });
+    const firstExecutor = createExecutor({
+      execute: vi.fn(async () => Promise.reject(new Error('first execution failed'))),
+      cleanup: vi.fn(async () => Promise.reject(new Error('cleanup unavailable'))),
+    });
+    const secondExecutor = createExecutor({
+      execute: vi.fn(async () => Promise.reject(new Error('recovered execution failed'))),
+      cleanup: vi.fn(async () => true),
+    });
+    const recordCreateJobEvent = vi.fn(async (_event: JsTemplateCreateJobAuditInput) => undefined);
+    const auditService = { recordCreateJobEvent } as unknown as JsTemplateAuditService;
+    const firstRunner = new JsTemplateCreateJobRunner(
+      store,
+      firstExecutor,
+      runnerOptions({ claimOwner: 'worker-one' }),
+      auditService,
+    );
+    const secondRunner = new JsTemplateCreateJobRunner(
+      store,
+      secondExecutor,
+      runnerOptions({ claimOwner: 'worker-two' }),
+      auditService,
+    );
+
+    await firstRunner.run(persistedJob.id);
+
+    expect(firstExecutor.cleanup).toHaveBeenCalledWith(expect.objectContaining({ claimToken: 'claim-1' }), 'claim-1');
+    expect(store.fail).not.toHaveBeenCalled();
+    expect(persistedJob).toMatchObject({
+      status: 'running',
+      payload: { sourceType: 'starter', message: 'Initial JS Template source' },
+      reservationKey: 'sha256:demo',
+      claimToken: 'claim-1',
+      claimOwner: 'worker-one',
+      leaseExpiresAt: '2030-07-27T00:10:00.000Z',
+      heartbeatAt: '2030-07-27T00:00:00.000Z',
+    });
+
+    leaseExpired = true;
+    await secondRunner.run(persistedJob.id);
+    await firstRunner.run(persistedJob.id);
+
+    expect(secondExecutor.execute).toHaveBeenCalledWith(expect.objectContaining({ claimToken: 'claim-2' }), 'claim-2');
+    expect(secondExecutor.cleanup).toHaveBeenCalledWith(expect.objectContaining({ claimToken: 'claim-2' }), 'claim-2');
+    expect(store.fail).toHaveBeenCalledTimes(1);
+    expect(store.fail).toHaveBeenCalledWith(
+      persistedJob.id,
+      'main',
+      'claim-2',
+      'JS_TEMPLATE_CREATE_FAILED',
+      'JS Template creation failed',
+      null,
+    );
+    expect(terminalResults).toHaveLength(1);
+    expect(persistedJob).toMatchObject({
+      status: 'failed',
+      payload: null,
+      reservationKey: null,
+      claimToken: null,
+      claimOwner: null,
+      leaseExpiresAt: null,
+      heartbeatAt: null,
+    });
+    expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual([
+      'createJobStart',
+      'createJobStart',
+      'createJobFail',
+    ]);
+  });
+
+  it('prevents a stale worker from recording a second failure or audit after losing its claim', async () => {
     const job = createJob();
     const store = createStore({ fail: vi.fn(async () => null) });
     const executor = createExecutor({
       execute: vi.fn(async () => Promise.reject(new Error('late worker failure'))),
-      cleanup: vi.fn(async () => Promise.reject(new Error('claim lost'))),
+      cleanup: vi.fn(async () => false),
     });
     const recordCreateJobEvent = vi.fn(async (_event: JsTemplateCreateJobAuditInput) => undefined);
     const runner = new JsTemplateCreateJobRunner(store, executor, runnerOptions(), {
@@ -237,6 +369,7 @@ describe('JsTemplateCreateJobRunner', () => {
 
     await runner.run(job.id);
 
+    expect(executor.cleanup).toHaveBeenCalledWith(job, job.claimToken);
     expect(store.fail).toHaveBeenCalledWith(
       job.id,
       'main',
@@ -266,7 +399,7 @@ function runnerOptionsBase() {
       warn: vi.fn(),
       error: vi.fn(),
     },
-    cleanupIntervalMs: 60_000,
+    scanIntervalMs: 60_000,
     runningTimeoutMs: 600_000,
     claimOwner: 'runner-test',
   };

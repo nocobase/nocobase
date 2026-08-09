@@ -653,7 +653,11 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(noSchema?.get('settingsSchema')).toBeNull();
     expect(noSchema?.get('settingsSchemaHash')).toBeNull();
     expect(noSchema?.get('settingsDefaultsHash')).toBeNull();
-    expect(emptySchema?.get('settingsSchema')).toEqual({ type: 'object', properties: {} });
+    expect(emptySchema?.get('settingsSchema')).toEqual({
+      type: 'object',
+      properties: {},
+      additionalProperties: false,
+    });
     expect(emptySchema?.get('settingsSchemaHash')).toMatch(/^[a-f0-9]{64}$/u);
     expect(emptySchema?.get('settingsDefaultsHash')).toMatch(/^[a-f0-9]{64}$/u);
     await expect(runtimeService.listSelectableTemplates({ projectId: repo.id })).resolves.toEqual(
@@ -666,7 +670,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
         }),
         expect.objectContaining({
           templateName: 'empty-schema',
-          settingsSchema: { type: 'object', properties: {} },
+          settingsSchema: { type: 'object', properties: {}, additionalProperties: false },
           settingsSchemaHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
           settingsDefaultsHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
         }),

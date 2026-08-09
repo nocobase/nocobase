@@ -159,8 +159,6 @@ export type {
   VscPermissionRequestMetadata,
 } from './permissions';
 
-export { createVscFileResource, vscFileActionNames } from './resources/vscFile';
-
 export {
   assertRunJSCompileInputLimits,
   canonicalizeRunJSCompileFile,

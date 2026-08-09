@@ -35,7 +35,7 @@ export interface JsTemplateCreateJobRunnerOptions {
   applicationName: string;
   eventQueue: JsTemplateCreateJobEventQueue;
   logger: JsTemplateCreateJobLogger;
-  cleanupIntervalMs?: number;
+  scanIntervalMs?: number;
   runningTimeoutMs?: number;
   heartbeatIntervalMs?: number;
   scanBatchSize?: number;
@@ -69,7 +69,7 @@ export class JsTemplateCreateJobRunner {
     private readonly options: JsTemplateCreateJobRunnerOptions,
     private readonly auditService?: JsTemplateAuditService,
   ) {
-    this.scanIntervalMs = options.cleanupIntervalMs ?? 5_000;
+    this.scanIntervalMs = options.scanIntervalMs ?? 5_000;
     this.leaseDurationMs = options.runningTimeoutMs ?? 10 * 60_000;
     this.heartbeatIntervalMs = options.heartbeatIntervalMs ?? Math.min(30_000, Math.floor(this.leaseDurationMs / 3));
     this.scanBatchSize = options.scanBatchSize ?? 100;

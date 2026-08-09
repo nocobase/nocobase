@@ -87,7 +87,6 @@ export class JsTemplateCreateFromRemoteService {
         ...ctx,
         transaction,
         requestSource: ctx.requestSource || 'js-template-create-from-git',
-        allowRemovedGenericRunJSSource: true,
       };
       const project = await this.projectService.createProjectForCompositeUseCase(
         {
@@ -157,10 +156,7 @@ export class JsTemplateCreateFromRemoteService {
         details: { diagnostics: [] },
       });
     }
-    const diagnostics = this.projectService.getValidator().validateInitialFiles({
-      files,
-      allowRemovedGenericRunJSSource: true,
-    });
+    const diagnostics = this.projectService.getValidator().validateInitialFiles({ files });
     if (!hasErrorDiagnostic(diagnostics)) {
       return;
     }

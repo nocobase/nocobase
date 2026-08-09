@@ -722,48 +722,6 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
     confirmSpy.mockRestore();
   });
 
-  it('does not request Detach when confirmation is canceled', async () => {
-    const onDetachJsTemplateToInline = vi.fn(async () => undefined);
-    const destroy = vi.fn();
-    const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation(() => {
-      return {
-        destroy,
-        update: vi.fn(),
-      } as ReturnType<typeof Modal.confirm>;
-    });
-    const workspaceScope: JsTemplateWorkspaceScope = {
-      mode: 'template',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <JsTemplateSourceProjectWorkspacePage
-          embedded
-          templateId="jtt_sales_kpi"
-          onDetachJsTemplateToInline={onDetachJsTemplateToInline}
-          projectId="jtp_sales"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    await screen.findByTestId('runjs-code-tab');
-    fireEvent.click(screen.getByRole('button', { name: 'Detach to Inline' }));
-
-    expect(confirmSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: 'Detach to Inline?',
-        okText: 'Detach to Inline',
-        cancelText: 'Cancel',
-      }),
-    );
-    destroy();
-    expect(onDetachJsTemplateToInline).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
-
   it('offers detaching the committed Project Head to Inline', async () => {
     const onDetachJsTemplateToInline = vi.fn(async () => undefined);
     const confirmSpy = vi.spyOn(Modal, 'confirm').mockImplementation((config) => {

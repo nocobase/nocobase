@@ -15,7 +15,6 @@ import { resolve } from 'node:path';
 import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
 import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
-import { createVscFileResource, vscFileActionNames } from './resources/vscFile';
 import {
   createRunJSSourcesResource,
   inspectRunJSSourceCode,
@@ -106,7 +105,6 @@ export class RunJSWorkspaceServerModule {
     }
     this.loaded = true;
     this.unregisterSourceCodeInspector = runJSSourceCodeInspectorRegistry.register(inspectRunJSSourceCode);
-    this.app.resourceManager.define(createVscFileResource(this.db, this.permissionHooks));
     this.app.resourceManager.define(
       createRunJSSourcesResource(
         this.db,
@@ -116,7 +114,6 @@ export class RunJSWorkspaceServerModule {
         this.runJSAuthoringCapabilities,
       ),
     );
-    this.app.acl.allow('vscFile', [...vscFileActionNames], 'allowConfigure');
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
     this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
     this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));

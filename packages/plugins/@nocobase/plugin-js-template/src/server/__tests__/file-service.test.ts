@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database, Transaction } from '@nocobase/database';
 import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 
@@ -22,10 +21,13 @@ import PluginJsTemplateServer from '../plugin';
 import { jsTemplateFileActionNames } from '../resources/jsTemplateFiles';
 import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
+import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateFileService } from '../services/JsTemplateFileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
+import { JsTemplateService } from '../services/JsTemplateService';
 import { JS_TEMPLATE_VALIDATION_LIMITS, JsTemplateValidator } from '../services/JsTemplateValidator';
+import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 
 describe('plugin-js-template file service resource bridge', () => {
   let app: MockServer;
@@ -240,11 +242,6 @@ describe('plugin-js-template file service resource bridge', () => {
         toCommitId: secondCommit.id,
       },
     });
-    const rawVscResponse = await agent.resource('vscFile').getRepository({
-      values: {
-        repoId: vscRepoId,
-      },
-    });
 
     expect(firstPush.status).toBe(200);
     expect(secondPush.status).toBe(200);
@@ -284,7 +281,7 @@ describe('plugin-js-template file service resource bridge', () => {
         }),
       ]),
     );
-    expect(rawVscResponse.status).toBe(403);
+    expect(() => app.resourceManager.getResource('vscFile')).toThrow('vscFile resource does not exist');
     expect(JSON.stringify([repo, firstPush.body.data, secondPush.body.data, pullResponse.body.data])).not.toContain(
       vscRepoId,
     );
@@ -375,51 +372,6 @@ describe('plugin-js-template file service resource bridge', () => {
     });
     expect(currentRepo?.get('headCommitId')).toBe(firstSave.body.data.commit.id);
     expect(await app.db.getRepository('vscFileCommits').count()).toBe(commitCountBefore + 1);
-  });
-
-  it('returns sanitized js-template errors from direct file service calls', async () => {
-    const auditService = new JsTemplateAuditService(app.db);
-    const permissionService = new JsTemplatePermissionService(auditService);
-    const projectService = new JsTemplateProjectService(app.db, auditService, permissionService);
-    const fileService = new JsTemplateFileService(app.db, permissionService, projectService);
-    const repo = await projectService.createProject({ name: 'Direct Sanitized Source Error' });
-    const projectRecord = await app.db.getRepository('jsTemplateProjects').findOne({
-      filterByTk: repo.id,
-    });
-    const vscRepoId = projectRecord?.get('vscRepoId') as string;
-
-    await app.db.getRepository('vscFileRepositories').update({
-      filterByTk: vscRepoId,
-      values: {
-        status: 'archived',
-      },
-    });
-
-    try {
-      await fileService.push({
-        projectId: repo.id,
-        expectedHeadCommitId: repo.headCommitId,
-        message: 'should fail safely',
-        files: [
-          {
-            path: 'README.md',
-            content: '# safe error\n',
-          },
-        ],
-      });
-      throw new Error('Expected direct service push to fail');
-    } catch (error) {
-      expect(error).toMatchObject({
-        code: 'JS_TEMPLATE_SOURCE_ERROR',
-        status: 409,
-        details: {
-          projectId: repo.id,
-          sourceCode: 'REPO_ARCHIVED',
-        },
-      });
-      expect(JSON.stringify(error)).not.toContain(vscRepoId);
-      expect(error instanceof Error ? error.message : '').not.toContain(vscRepoId);
-    }
   });
 
   it('ignores caller supplied push metadata and returns only generated commit metadata', async () => {
@@ -860,6 +812,14 @@ describe('plugin-js-template file service resource bridge', () => {
     });
     const projectService = new JsTemplateProjectService(app.db, auditService, permissionService, undefined, validator);
     const fileService = new JsTemplateFileService(app.db, permissionService, projectService, undefined, validator);
+    const templateService = new JsTemplateService(app.db, fileService, projectService, validator);
+    const compileService = new JsTemplateCompileService(
+      app.db,
+      fileService,
+      templateService,
+      new JsTemplateWorkspaceCompilerBridge(),
+      { auditService, validator },
+    );
     const repo = await projectService.createProject({
       name: 'Cumulative Byte Limit Source',
       initialFiles: [
@@ -870,7 +830,7 @@ describe('plugin-js-template file service resource bridge', () => {
       ],
     });
     const baselineCommitCount = await app.db.getRepository('vscFileCommits').count();
-    const firstPush = await fileService.push({
+    const firstPush = await compileService.saveSource({
       projectId: repo.id,
       expectedHeadCommitId: repo.headCommitId,
       message: 'add first source',
@@ -891,7 +851,7 @@ describe('plugin-js-template file service resource bridge', () => {
     });
 
     await expect(
-      fileService.push({
+      compileService.saveSource({
         projectId: repo.id,
         expectedHeadCommitId: firstPush.commit.id,
         message: 'exceed repo byte budget',
@@ -1167,56 +1127,3 @@ function getVscPermissionHookRegistrar(app: MockServer): {
     registerPermissionHook: PluginJsTemplateServer['registerPermissionHook'];
   };
 }
-describe('JsTemplateFileService expected Head', () => {
-  it('rejects a stale Head after locking and before reading or writing source', async () => {
-    const transaction = { id: 'tx_stale' } as unknown as Transaction;
-    const repo = {
-      id: 'jtp_sales',
-      vscRepoId: 'vsc_sales',
-      name: 'sales',
-      normalizedName: 'sales',
-      lifecycleStatus: 'enabled',
-      healthStatus: 'ready',
-      headCommitId: 'commit_2',
-    };
-    const lockInternalProjectForUpdate = vi.fn(async () => repo);
-    const db = {
-      getRepository: vi.fn(() => ({ findOne: vi.fn(async () => ({ id: repo.id })) })),
-    } as unknown as Database;
-    const projectService = {
-      lockInternalProjectForUpdate,
-      useVscPermissionHookRegistry: vi.fn(),
-    };
-    const service = new JsTemplateFileService(
-      db,
-      {} as never,
-      projectService as never,
-      new VscPermissionHookRegistry(),
-    );
-    const pullInternal = vi.fn();
-    Object.assign(service, { pullInternal });
-
-    await expect(
-      service.push(
-        {
-          projectId: repo.id,
-          expectedHeadCommitId: 'commit_1',
-          message: 'stale save',
-          files: [{ path: 'README.md', content: '# stale\n' }],
-        },
-        { transaction, requestId: 'req_stale' },
-      ),
-    ).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_SOURCE_OUTDATED',
-      status: 409,
-      details: {
-        projectId: repo.id,
-        expectedHeadCommitId: 'commit_1',
-        currentHeadCommitId: 'commit_2',
-      },
-    });
-
-    expect(lockInternalProjectForUpdate).toHaveBeenCalledWith(repo.id, expect.objectContaining({ transaction }));
-    expect(pullInternal).not.toHaveBeenCalled();
-  });
-});

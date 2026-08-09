@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { rawVscFilePaths, runJSSourcePaths } from './paths';
+import { runJSSourcePaths } from './paths';
 import { runJSSourceSchemas } from './schemas';
 
 export default {
   openapi: '3.0.2',
   info: {
-    title: 'NocoBase API - VSC file plugin',
+    title: 'NocoBase API - RunJS sources',
     version: '1.0.0',
   },
   tags: [
@@ -21,15 +21,9 @@ export default {
       name: 'runJSSources',
       description: 'Open, preview, and save owner-aware RunJS Studio workspaces.',
     },
-    {
-      name: 'vscFile',
-      description:
-        'Raw VSC compatibility actions for generic repositories. Protected RunJS and js-template owners remain permission-gated.',
-    },
   ],
   paths: {
     ...runJSSourcePaths,
-    ...rawVscFilePaths,
   },
   components: {
     schemas: runJSSourceSchemas,

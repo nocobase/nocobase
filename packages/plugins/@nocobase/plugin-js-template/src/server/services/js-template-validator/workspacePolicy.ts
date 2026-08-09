@@ -60,7 +60,6 @@ const templateFileRules: Record<JsTemplateKind, TemplateFileRule> = {
 };
 
 const allowedRepoRootFiles = new Set(['README.md', 'js-template.json', 'tsconfig.json']);
-const removedGenericRunJSRoot = 'src/client/runjs';
 
 export const sharedSourceRoot = 'src/shared';
 
@@ -201,9 +200,6 @@ export function classifySourcePath(path: string): SourcePathKind {
   if (allowedRepoRootFiles.has(path)) {
     return { status: 'ignored' };
   }
-  if (isRemovedGenericRunJSSourcePath(path)) {
-    return { status: 'ignored' };
-  }
   if (path.startsWith(`${sharedSourceRoot}/`)) {
     return { status: 'shared' };
   }
@@ -224,10 +220,6 @@ export function classifySourcePath(path: string): SourcePathKind {
   }
 
   return { status: 'unsupported' };
-}
-
-export function isRemovedGenericRunJSSourcePath(path: string): boolean {
-  return path === removedGenericRunJSRoot || path.startsWith(`${removedGenericRunJSRoot}/`);
 }
 
 export function getTemplateRootPath(kind: JsTemplateKind, templateName: string): string {

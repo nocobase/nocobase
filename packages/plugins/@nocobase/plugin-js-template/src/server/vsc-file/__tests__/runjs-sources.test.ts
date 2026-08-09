@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
+import { runJSSourceActionNames, VscFileService } from '@nocobase/runjs-workspace/server';
 import {
   maxFileSize,
   runJSManifestPath,
@@ -1886,21 +1886,17 @@ describe('runJSSources resource', () => {
       },
     });
 
-    const wrongRepositoryResponse = await agent.resource('vscFile').createRepository({
-      values: {
-        ownerType: 'plugin',
-        ownerId: 'runjs:flowModel.step:other-model:0000000000000000',
-        name: 'source',
-      },
+    const wrongRepository = await new VscFileService(app.db).createRepository({
+      ownerType: 'plugin',
+      ownerId: 'runjs:flowModel.step:other-model:0000000000000000',
+      name: 'source',
     });
     const commitCountBeforeSave = await app.db.getRepository('vscFileCommits').count();
-
-    expect(wrongRepositoryResponse.status).toBe(200);
 
     const response = await agent.resource('runJSSources').save({
       values: {
         locator: createLocator('fm_repo_guard'),
-        repoId: wrongRepositoryResponse.body.data.repository.id,
+        repoId: wrongRepository.repository.id,
         baseCommitId: null,
         baseOwnerFingerprint: 'wrong-repository-owner',
         message: 'Update guarded RunJS source',
@@ -1920,7 +1916,7 @@ describe('runJSSources resource', () => {
       code: 'PERMISSION_DENIED',
       status: 403,
       details: {
-        repoId: wrongRepositoryResponse.body.data.repository.id,
+        repoId: wrongRepository.repository.id,
         sourceKind: 'flowModel.step',
       },
     });

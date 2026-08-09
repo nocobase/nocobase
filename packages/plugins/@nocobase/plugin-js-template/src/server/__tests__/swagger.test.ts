@@ -8,7 +8,7 @@
  */
 
 import swaggerDocument from '../../swagger';
-import { runJSSourceActionNames, vscFileActionNames } from '@nocobase/runjs-workspace/server';
+import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
 import { jsTemplateActionNames } from '../resources/jsTemplates';
 import { jsTemplateFileActionNames } from '../resources/jsTemplateFiles';
 import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';
@@ -28,22 +28,6 @@ const publicActions = {
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
-  vscFile: [
-    'createRepository',
-    'getRepository',
-    'archiveRepository',
-    'pull',
-    'getFile',
-    'push',
-    'listCommits',
-    'getCommit',
-    'diff',
-    'diffFile',
-    'restoreFile',
-    'restoreCommit',
-    'listRefs',
-    'updateRef',
-  ],
 } as const;
 
 describe('js-template swagger', () => {
@@ -54,7 +38,6 @@ describe('js-template swagger', () => {
       jsTemplateUsages: jsTemplateUsageActionNames,
       jsTemplateFiles: jsTemplateFileActionNames,
       runJSSources: runJSSourceActionNames,
-      vscFile: vscFileActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
       .flatMap(([resource, actions]) => actions.map((action) => `/${resource}:${action}`))
@@ -68,6 +51,16 @@ describe('js-template swagger', () => {
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
       }
     }
+  });
+
+  it('does not expose the raw VSC transport through OpenAPI', () => {
+    expect(Object.keys(swaggerDocument.paths)).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^\/vscFile:/u)]),
+    );
+    expect(swaggerDocument.tags.map((tag) => tag.name)).not.toContain('vscFile');
+    expect(Object.keys(swaggerDocument.components.schemas)).not.toEqual(
+      expect.arrayContaining([expect.stringMatching(/^RawVscFile/u)]),
+    );
   });
 
   it('documents JS Template resources directly with canonical tags and terminology', () => {

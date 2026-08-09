@@ -15,9 +15,12 @@ import { JsTemplateError } from '../../shared/errors';
 import { DEFAULT_JS_TEMPLATE_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginJsTemplateServer from '../plugin';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
+import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateFileService } from '../services/JsTemplateFileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
+import { JsTemplateService } from '../services/JsTemplateService';
+import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 
 describe('plugin-js-template project service', () => {
   let app: MockServer;
@@ -364,11 +367,19 @@ describe('plugin-js-template project service', () => {
     const permissionService = new JsTemplatePermissionService(auditService);
     const projectService = new JsTemplateProjectService(app.db, auditService, permissionService);
     const fileService = new JsTemplateFileService(app.db, permissionService, projectService);
+    const templateService = new JsTemplateService(app.db, fileService, projectService);
+    const compileService = new JsTemplateCompileService(
+      app.db,
+      fileService,
+      templateService,
+      new JsTemplateWorkspaceCompilerBridge(),
+      { auditService },
+    );
     const project = await projectService.createProject(
       { name: 'Source Lifecycle' },
       { requestId: 'req_source_create' },
     );
-    await fileService.push(
+    await compileService.saveSource(
       {
         projectId: project.id,
         expectedHeadCommitId: project.headCommitId,

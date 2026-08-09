@@ -26,18 +26,19 @@ describe('plugin-js-template raw resource bypass guard', () => {
   let vscRepoId: string;
 
   beforeEach(async () => {
-    await setupApp([PluginFlowEngineServer, PluginJsTemplateServer]);
-  });
-
-  afterEach(async () => {
-    await app?.destroy();
-  });
-
-  async function setupApp(plugins: unknown[]) {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', ...plugins],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'data-source-manager',
+        'system-settings',
+        PluginFlowEngineServer,
+        PluginJsTemplateServer,
+      ],
     });
 
     const user = await app.db.getRepository('users').findOne();
@@ -55,131 +56,20 @@ describe('plugin-js-template raw resource bypass guard', () => {
       },
     });
     registerRunJSSourceAdapter();
-  }
-
-  it('rejects direct vscFile access for js-template repositories and records sanitized audit rows', async () => {
-    const responses = [
-      await agent.resource('vscFile').createRepository({
-        values: {
-          ownerType: 'js-template',
-          ownerId: 'jtp_raw_guard_create',
-          name: 'raw-create',
-          defaultRef: 'head',
-          metadata: {
-            settings: {
-              token: 'create-settings-secret',
-            },
-            code: 'ctx.render("create secret");',
-          },
-        },
-      }),
-      await agent.resource('vscFile').getRepository({ values: { repoId: vscRepoId } }),
-      await agent.resource('vscFile').pull({ values: { repoId: vscRepoId, includeContent: 'all' } }),
-      await agent.resource('vscFile').getFile({ values: { repoId: vscRepoId, path: 'src/client/index.tsx' } }),
-      await agent.resource('vscFile').push({
-        values: {
-          repoId: vscRepoId,
-          baseCommitId: null,
-          message: 'raw push should fail',
-          files: [
-            {
-              path: 'src/client/index.tsx',
-              content: 'ctx.render("raw secret");',
-            },
-          ],
-          metadata: {
-            code: 'ctx.render("metadata secret");',
-            sourceMap: 'metadata-source-map-secret',
-            settings: {
-              token: 'metadata-settings-secret',
-            },
-          },
-        },
-      }),
-      await agent.resource('vscFile').listRefs({ values: { repoId: vscRepoId } }),
-      await agent.resource('vscFile').updateRef({
-        values: {
-          repoId: vscRepoId,
-          name: 'head',
-          targetCommitId: 'commit_raw',
-        },
-      }),
-      await agent.resource('vscFile').archiveRepository({ values: { repoId: vscRepoId } }),
-    ];
-
-    for (const response of responses) {
-      expect(response.status).toBe(403);
-      expect(response.body.errors[0]).toMatchObject({
-        code: 'PERMISSION_DENIED',
-        status: 403,
-        details: {
-          ownerType: 'js-template',
-          result: 'denied',
-          denyReason: 'raw_resource_forbidden',
-        },
-      });
-      expect(typeof response.body.errors[0].details.requestId).toBe('string');
-    }
-
-    const logs = await app.db.getRepository('jsTemplateLogs').find({
-      filter: {
-        result: 'denied',
-      },
-      sort: ['createdAt'],
-    });
-    const rawResourceActions = logs.map((log) => log.get('rawResourceAction'));
-
-    expect(rawResourceActions).toEqual(
-      expect.arrayContaining([
-        'vscFile:getRepository',
-        'vscFile:createRepository',
-        'vscFile:pull',
-        'vscFile:getFile',
-        'vscFile:push',
-        'vscFile:listRefs',
-        'vscFile:updateRef',
-        'vscFile:archiveRepository',
-      ]),
-    );
-    expect(logs.every((log) => typeof log.get('requestId') === 'string')).toBe(true);
-    const serializedLogs = JSON.stringify(logs.map((log) => log.toJSON()));
-    expect(serializedLogs).not.toContain(vscRepoId);
-    expect(serializedLogs).not.toContain('raw secret');
-    expect(serializedLogs).not.toContain('create secret');
-    expect(serializedLogs).not.toContain('create-settings-secret');
-    expect(serializedLogs).not.toContain('metadata secret');
-    expect(serializedLogs).not.toContain('metadata-source-map-secret');
-    expect(serializedLogs).not.toContain('metadata-settings-secret');
   });
 
-  it('propagates request id and correlation id headers into deny details and audit logs', async () => {
-    const user = await app.db.getRepository('users').findOne();
-    const vscRequestId = 'req_header_vsc_file';
-    const vscResponse = await (
-      await app.agent().login(user)
-    )
-      .set('x-request-id', vscRequestId)
-      .resource('vscFile')
-      .getRepository({ values: { repoId: vscRepoId } });
+  afterEach(async () => {
+    await app?.destroy();
+  });
 
-    expect(vscResponse.status).toBe(403);
-    expect(vscResponse.body.errors[0].details).toMatchObject({
-      rawResourceAction: 'vscFile:getRepository',
-      requestId: vscRequestId,
-    });
+  it('does not register the raw vscFile HTTP resource', () => {
+    expect(() => app.resourceManager.getResource('vscFile')).toThrow('vscFile resource does not exist');
+  });
 
-    const vscLog = await app.db.getRepository('jsTemplateLogs').findOne({
-      filter: {
-        requestId: vscRequestId,
-      },
-    });
-    expect(vscLog?.get('rawResourceAction')).toBe('vscFile:getRepository');
-
-    const runjsRequestId = 'req_header_runjs_source';
-    const runjsResponse = await (
-      await app.agent().login(user)
-    )
-      .set('x-correlation-id', runjsRequestId)
+  it('propagates a correlation id through RunJS owner denials without leaking source', async () => {
+    const requestId = 'req_header_runjs_source';
+    const response = await agent
+      .set('x-correlation-id', requestId)
       .resource('runJSSources')
       .compilePreview({
         values: {
@@ -199,19 +89,19 @@ describe('plugin-js-template raw resource bypass guard', () => {
         },
       });
 
-    expect(runjsResponse.status).toBe(403);
-    expect(runjsResponse.body.errors[0].details).toMatchObject({
+    expect(response.status).toBe(403);
+    expect(response.body.errors[0].details).toMatchObject({
       rawResourceAction: 'runJSSources:compilePreview',
-      requestId: runjsRequestId,
+      requestId,
     });
 
-    const runjsLog = await app.db.getRepository('jsTemplateLogs').findOne({
+    const log = await app.db.getRepository('jsTemplateLogs').findOne({
       filter: {
-        requestId: runjsRequestId,
+        requestId,
       },
     });
-    expect(runjsLog?.get('rawResourceAction')).toBe('runJSSources:compilePreview');
-    expect(JSON.stringify(runjsLog?.toJSON())).not.toContain('header secret');
+    expect(log?.get('rawResourceAction')).toBe('runJSSources:compilePreview');
+    expect(JSON.stringify(log?.toJSON())).not.toContain('header secret');
   });
 
   it('rejects direct runJSSources preview and save paths for js-template repositories', async () => {
@@ -306,45 +196,6 @@ describe('plugin-js-template raw resource bypass guard', () => {
     expect(serializedLogs).not.toContain('save secret');
     expect(serializedLogs).not.toContain('save changes secret');
     expect(serializedLogs).not.toContain(vscRepoId);
-  });
-
-  it('registers the owner hook without a second plugin instance', async () => {
-    const response = await agent.resource('vscFile').getRepository({ values: { repoId: vscRepoId } });
-
-    expect(response.status).toBe(403);
-    expect(response.body.errors[0].details).toMatchObject({
-      ownerType: 'js-template',
-      rawResourceAction: 'vscFile:getRepository',
-      result: 'denied',
-    });
-
-    const log = await app.db.getRepository('jsTemplateLogs').findOne({
-      filter: {
-        projectId: 'jtp_raw_guard',
-        rawResourceAction: 'vscFile:getRepository',
-        result: 'denied',
-      },
-    });
-    expect(log).toBeTruthy();
-    expect(JSON.stringify(log?.toJSON())).not.toContain(vscRepoId);
-  });
-
-  it('keeps js-template vsc owners protected after the js-template hook is unregistered', async () => {
-    await getJsTemplatePlugin().afterDisable();
-
-    const response = await agent.resource('vscFile').getRepository({ values: { repoId: vscRepoId } });
-
-    expect(response.status).toBe(403);
-    expect(response.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      status: 403,
-      details: {
-        ownerType: 'js-template',
-        rawResourceAction: 'vscFile:getRepository',
-        result: 'denied',
-        denyReason: 'protected_owner_requires_permission_hook',
-      },
-    });
   });
 
   it('keeps js-template vsc owners protected when VscFileService is constructed without hooks', async () => {

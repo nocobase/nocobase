@@ -208,29 +208,33 @@ describe('JsTemplateCreateFromRemoteService', () => {
     60_000,
   );
 
-  it('preserves removed generic RunJS files as inert remote source', async () => {
-    adapter.advanceRemote([...validFiles(), ...removedGenericRunJSFiles()], { branch: 'main' });
+  it('rejects remote source that uses the removed generic RunJS root', async () => {
+    const counts = await persistenceCounts();
+    adapter.advanceRemote([...validFiles(), ...unsupportedRunJSFiles()], { branch: 'main' });
 
-    const result = await service.create({
-      name: 'Remote Legacy RunJS',
-      provider: 'git',
-      config: remoteConfig,
-      authRef: null,
+    await expect(
+      service.create({
+        name: 'Remote Legacy RunJS',
+        provider: 'git',
+        config: remoteConfig,
+        authRef: null,
+      }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/runjs/calculate-subtotal/index.ts',
+          }),
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/runjs/calculate-subtotal/entry.json',
+          }),
+        ]),
+      },
     });
-    const internalProject = await projectService.getInternalProject(result.project.id);
-    const remote = await runtime.getRemote(internalProject.vscRepoId, 'origin');
-    const templates = await app.db.getRepository('jsTemplates').find({ filter: { projectId: result.project.id } });
-    const plan = await runtime.planRemote(remote?.id as string);
-
-    expect(result).toMatchObject({
-      project: { healthStatus: 'ready' },
-      plan: { state: 'in-sync', action: 'noop' },
-      fileCount: 4,
-    });
-    expect(templates).toEqual([
-      expect.objectContaining({ kind: 'js-block', templateName: 'sales-kpi', healthStatus: 'ready' }),
-    ]);
-    expect(plan).toMatchObject({ state: 'in-sync', action: 'noop' });
+    await expect(persistenceCounts()).resolves.toEqual(counts);
   });
 
   it('keeps the fetched revision as the baseline when the remote advances later', async () => {
@@ -452,7 +456,7 @@ function updatedFiles(label: string): VscRemoteSnapshotFile[] {
   ];
 }
 
-function removedGenericRunJSFiles(): VscRemoteSnapshotFile[] {
+function unsupportedRunJSFiles(): VscRemoteSnapshotFile[] {
   return [
     {
       path: 'src/client/runjs/calculate-subtotal/index.ts',

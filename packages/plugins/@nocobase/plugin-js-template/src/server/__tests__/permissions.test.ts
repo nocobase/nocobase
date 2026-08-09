@@ -115,7 +115,8 @@ describe('plugin-js-template permission service', () => {
     await plugin.load();
 
     expect(on).not.toHaveBeenCalledWith('afterLoadPlugin', expect.any(Function));
-    expect(definedResources.find((resource) => resource.name === 'vscFile')).toBeDefined();
+    expect(definedResources.find((resource) => resource.name === 'vscFile')).toBeUndefined();
+    expect(definedResources.find((resource) => resource.name === 'runJSSources')).toBeDefined();
     expect(definedResources.find((resource) => resource.name === 'jsTemplates')?.actions).toHaveProperty(
       'detachToInline',
     );

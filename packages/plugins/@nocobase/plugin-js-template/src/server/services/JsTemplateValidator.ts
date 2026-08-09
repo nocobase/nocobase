@@ -55,7 +55,6 @@ import {
   findTemplateIndexFile,
   isAllowedSharedFilePath,
   isCodeFile,
-  isRemovedGenericRunJSSourcePath,
   normalizeFiles,
   normalizeSourcePath,
   validateDeleteSourcePath,
@@ -181,8 +180,6 @@ export class JsTemplateValidator {
   validateSyncBatch(input: {
     files: JsTemplateSourceFileInput[];
     existingPaths?: Iterable<string>;
-    /** Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
-    allowRemovedGenericRunJSSource?: boolean;
   }): JsTemplateDiagnostic[] {
     const diagnostics: JsTemplateDiagnostic[] = [];
     const existingPathSet = input.existingPaths
@@ -200,17 +197,6 @@ export class JsTemplateValidator {
     }
     for (const file of input.files) {
       const path = normalizeSourcePath(file.path);
-      if (isRemovedGenericRunJSSourcePath(path) && !input.allowRemovedGenericRunJSSource) {
-        diagnostics.push(
-          diagnostic(
-            'workspace_path_not_allowed',
-            'error',
-            'Source file path is outside the allowed js-template roots',
-            { path },
-          ),
-        );
-        continue;
-      }
       if (file.operation === 'delete') {
         diagnostics.push(...validateDeleteSourcePath(file.path, existingPathSet));
         continue;
@@ -263,11 +249,7 @@ export class JsTemplateValidator {
     return sortDiagnostics(removeBlockedGlobalDiagnostics(uniqueDiagnostics(diagnostics)));
   }
 
-  validateInitialFiles(input: {
-    files: JsTemplateSourceFileInput[];
-    /** Keeps legacy generic RunJS files inert during remote import; direct authoring remains rejected. */
-    allowRemovedGenericRunJSSource?: boolean;
-  }): JsTemplateDiagnostic[] {
+  validateInitialFiles(input: { files: JsTemplateSourceFileInput[] }): JsTemplateDiagnostic[] {
     const writeDiagnostics = this.validateSyncBatch(input);
     const workspaceValidation = this.validateWorkspace(input);
     return sortDiagnostics(uniqueDiagnostics([...writeDiagnostics, ...workspaceValidation.diagnostics]));

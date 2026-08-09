@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { HandlerType } from '@nocobase/resourcer';
-import {
-  CommitService,
-  createVscFileResource,
-  TreeService,
-  VscPermissionHookRegistry,
-} from '@nocobase/runjs-workspace/server';
+import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
 import { vi } from 'vitest';
 
 import { ExternalCommitMapStore } from '../remotes/ExternalCommitMapStore';
@@ -33,7 +27,7 @@ describe('remote sync server recovery acceptance', () => {
     await fixture?.close();
   });
 
-  it('blocks configure and archive after remote success until finalize completes, then archives through VSC', async () => {
+  it('blocks remote configuration until finalize recovery completes, then archives through internal VSC', async () => {
     fixture = await createRemoteSyncAcceptanceFixture();
     const setup = await fixture.createLocalRemote('recovery-finalize');
     const input = await fixture.createPushInput(setup.remote, setup.commitId);
@@ -67,8 +61,6 @@ describe('remote sync server recovery acceptance', () => {
         authRef: null,
       }),
     ).rejects.toMatchObject({ code: 'BUSY' });
-    const blockedArchive = await runArchiveResource(setup.repoId);
-    expect(blockedArchive).toMatchObject({ status: 409, body: { errors: [{ code: 'BUSY' }] } });
     await expect(fixture.vsc.getRepository({ repoId: setup.repoId })).resolves.toMatchObject({ status: 'active' });
 
     record.mockRestore();
@@ -82,8 +74,8 @@ describe('remote sync server recovery acceptance', () => {
     await expect(fixture.mapStore.findLatest(setup.remote.id)).resolves.toMatchObject({
       localCommitId: setup.commitId,
     });
-    const archived = await runArchiveResource(setup.repoId);
-    expect(archived.body).toMatchObject({ status: 'archived' });
+    const archived = await fixture.vsc.archiveRepository({ repoId: setup.repoId });
+    expect(archived).toMatchObject({ status: 'archived' });
   });
 
   it('allows only one of two independently keyed concurrent Push jobs to reach provider CAS', async () => {
@@ -386,19 +378,6 @@ describe('remote sync server recovery acceptance', () => {
     });
     fixture.adapter.advanceRemote([{ path: 'README.md', content: `# ${name} remote advance\n` }]);
     return setup;
-  }
-
-  async function runArchiveResource(repoId: string) {
-    const resource = createVscFileResource(fixture.db);
-    const handler = (resource.actions as Record<string, HandlerType>).archiveRepository;
-    const ctx = {
-      action: { resourceName: 'vscFile', actionName: 'archiveRepository', params: { values: { repoId } } },
-    };
-    await handler(
-      ctx,
-      vi.fn(async () => undefined),
-    );
-    return ctx as typeof ctx & { body?: unknown; status?: number };
   }
 
   async function createPullInput(

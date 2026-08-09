@@ -20,6 +20,8 @@ import { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
+import { JsTemplateValidator } from '../services/JsTemplateValidator';
+import { parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 
 describe('plugin-js-template initial source creation', () => {
   let app: MockServer;
@@ -95,10 +97,64 @@ describe('plugin-js-template initial source creation', () => {
     zip.file('src/client/runjs/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
     const zipBase64 = await zip.generateAsync({ type: 'base64' });
 
+    await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_VALIDATION_FAILED',
+      details: {
+        diagnostics: expect.arrayContaining([
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/runjs/example/index.ts',
+          }),
+          expect.objectContaining({
+            code: 'workspace_path_not_allowed',
+            path: 'src/client/runjs/example/entry.json',
+          }),
+        ]),
+      },
+    });
+
     const createResponse = await app
       .agent()
       .post('/jsTemplateProjects:create')
       .send({ name: 'Removed RunJS Source', zipBase64 });
+
+    expect(createResponse.status).toBe(202);
+    await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
+      status: 'failed',
+      errorCode: 'JS_TEMPLATE_VALIDATION_FAILED',
+    });
+  });
+
+  it('rejects directly supplied source that uses the removed generic RunJS root', async () => {
+    const initialFiles = [
+      {
+        path: 'src/client/runjs/example/index.ts',
+        content: 'return 1;\n',
+      },
+      {
+        path: 'src/client/runjs/example/entry.json',
+        content: '{"schemaVersion":1,"key":"example"}\n',
+      },
+    ];
+    const diagnostics = new JsTemplateValidator().validateInitialFiles({ files: initialFiles });
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'workspace_path_not_allowed',
+          path: 'src/client/runjs/example/index.ts',
+        }),
+        expect.objectContaining({
+          code: 'workspace_path_not_allowed',
+          path: 'src/client/runjs/example/entry.json',
+        }),
+      ]),
+    );
+
+    const createResponse = await app
+      .agent()
+      .post('/jsTemplateProjects:create')
+      .send({ name: 'Direct Removed RunJS Source', initialFiles });
 
     expect(createResponse.status).toBe(202);
     await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({

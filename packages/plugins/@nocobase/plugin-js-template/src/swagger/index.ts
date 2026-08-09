@@ -9,7 +9,7 @@
 
 import { jsTemplatePaths } from './paths';
 import { jsTemplateSchemas } from './schemas';
-import vscFileSwagger from './vsc-file';
+import runJSSourcesSwagger from './runjs-sources';
 
 export default {
   openapi: '3.0.2',
@@ -22,16 +22,16 @@ export default {
     { name: 'jsTemplates', description: 'Inspect, compile, save, detach, and delete reusable JS Templates.' },
     { name: 'jsTemplateUsages', description: 'Inspect paginated visible usage locations for one JS Template.' },
     { name: 'jsTemplateFiles', description: 'Read and save JS Template source files.' },
-    ...vscFileSwagger.tags,
+    ...runJSSourcesSwagger.tags,
   ],
   paths: {
     ...jsTemplatePaths,
-    ...vscFileSwagger.paths,
+    ...runJSSourcesSwagger.paths,
   },
   components: {
     schemas: {
       ...jsTemplateSchemas,
-      ...vscFileSwagger.components.schemas,
+      ...runJSSourcesSwagger.components.schemas,
     },
   },
 };
