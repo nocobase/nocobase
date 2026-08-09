@@ -15,12 +15,15 @@ import { vi } from 'vitest';
 import { DEFAULT_JS_TEMPLATE_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginJsTemplateServer from '../plugin';
 import type { JsTemplateCreateJob } from '../../shared/types';
+import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
 import { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
-import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
+import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
+import { JsTemplateValidator } from '../services/JsTemplateValidator';
 
 describe('plugin-js-template initial source creation', () => {
   let app: MockServer;
@@ -359,7 +362,7 @@ describe('plugin-js-template initial source creation', () => {
     ).resolves.toMatchObject({ status: 'pending', normalizedName: pending.normalizedName });
   });
 
-  it('fences old cleanup and lets the current claimant recover a residual non-ready Project', async () => {
+  it('fences old cleanup and lets the current claimant clean a real residual Project before terminal failure', async () => {
     let now = new Date('2026-07-27T00:00:00.000Z');
     const store = new JsTemplateCreateJobStore(
       app.db,
@@ -375,103 +378,83 @@ describe('plugin-js-template initial source creation', () => {
     if (!oldClaim?.claimToken) {
       throw new Error('Expected old residual-recovery claim');
     }
-    const projectRepository = app.db.getRepository('jsTemplateProjects');
-    await projectRepository.create({
-      values: {
-        id: pending.targetProjectId,
-        vscRepoId: 'vscr_residual_recovery',
-        applicationName: 'residual-recovery-app',
-        name: pending.name,
-        normalizedName: pending.normalizedName,
-        healthStatus: 'pending',
-        headCommitId: null,
-        creationJobId: pending.id,
-      },
-    });
-    const findInternalProjectById = vi.fn(async (projectId: string, ctx: { transaction?: Transaction } = {}) => {
-      const record = await projectRepository.findOne({ filterByTk: projectId, transaction: ctx.transaction });
-      return record?.toJSON() || null;
-    });
-    const lockInternalProjectForUpdate = vi.fn(async (projectId: string, ctx: { transaction?: Transaction } = {}) => {
-      const record = await app.db.getModel('jsTemplateProjects').findByPk(projectId, {
-        transaction: ctx.transaction,
-        lock: ctx.transaction?.LOCK.UPDATE,
-      });
-      if (!record) {
-        throw new Error(`Residual Project ${projectId} was not found`);
-      }
-      return record.toJSON();
-    });
-    const deleteProject = vi.fn(async (input: { projectId: string }, ctx: { transaction?: Transaction } = {}) => {
-      const record = await projectRepository.findOne({
-        filterByTk: input.projectId,
-        transaction: ctx.transaction,
-      });
-      await projectRepository.destroy({ filterByTk: input.projectId, transaction: ctx.transaction });
-      return record?.toJSON();
-    });
-    const createProject = vi.fn(
-      async (
-        input: { name: string; title?: string | null; description?: string | null },
-        ctx: { transaction?: Transaction },
-        identity: { projectId: string; creationJobId: string },
-      ) => {
-        await projectRepository.create({
-          values: {
-            id: identity.projectId,
-            vscRepoId: 'vscr_residual_recovered',
-            applicationName: 'residual-recovery-app',
-            name: input.name,
-            normalizedName: pending.normalizedName,
-            title: input.title,
-            description: input.description,
-            healthStatus: 'ready',
-            headCommitId: 'vscc_residual_recovered',
-            creationJobId: identity.creationJobId,
-          },
-          transaction: ctx.transaction,
-        });
-        return { id: identity.projectId, headCommitId: 'vscc_residual_recovered' };
-      },
+    const auditService = new JsTemplateAuditService(app.db);
+    const permissionService = new JsTemplatePermissionService(auditService);
+    const projectService = new JsTemplateProjectService(
+      app.db,
+      auditService,
+      permissionService,
+      undefined,
+      new JsTemplateValidator(),
+      'residual-recovery-app',
     );
+    await projectService.createProject(
+      { name: pending.name, message: 'Create residual recovery source' },
+      { actorUserId: pending.actorUserId, requestId: 'create-residual-recovery-source' },
+      { projectId: pending.targetProjectId, creationJobId: pending.id },
+    );
+    const projectRepository = app.db.getRepository('jsTemplateProjects');
+    const residualProject = await projectRepository.findOne({ filterByTk: pending.targetProjectId });
+    const vscRepoId = String(residualProject?.get('vscRepoId'));
+    expect(residualProject?.toJSON()).toMatchObject({
+      applicationName: 'residual-recovery-app',
+      healthStatus: 'pending',
+      creationJobId: pending.id,
+    });
+    expect(vscRepoId).toMatch(/^vscr_/);
+
+    const deleteProject = vi.spyOn(projectService, 'deleteProject');
+    const runtimeCompileService = {
+      compileCurrentRuntime: vi.fn(),
+    } as unknown as JsTemplateCompileService;
     const executor = new JsTemplateCreateJobExecutor(
       app.db,
-      {
-        findInternalProjectById,
-        lockInternalProjectForUpdate,
-        deleteProject,
-        createProject,
-      } as unknown as JsTemplateProjectService,
-      {
-        compileCurrentRuntime: vi.fn(async (projectId: string) => ({ project: { id: projectId } })),
-      } as unknown as JsTemplateCompileService,
+      projectService,
+      runtimeCompileService,
       {} as JsTemplateCreateFromRemoteService,
       store,
     );
 
     now = new Date('2026-07-27T00:00:02.000Z');
-    const currentClaim = await store.claim(pending.id, 'residual-recovery-app', 'runner-current', 1_000);
-    if (!currentClaim?.claimToken) {
-      throw new Error('Expected current residual-recovery claim');
-    }
-
     await expect(executor.cleanup(oldClaim, oldClaim.claimToken)).rejects.toMatchObject({
       code: 'JS_TEMPLATE_CONFLICT',
     });
     await expect(projectRepository.findOne({ filterByTk: pending.targetProjectId })).resolves.not.toBeNull();
-    expect(deleteProject).not.toHaveBeenCalled();
+    await expect(app.db.getRepository('vscFileRepositories').findOne({ filterByTk: vscRepoId })).resolves.toMatchObject(
+      expect.objectContaining({ status: 'active' }),
+    );
 
-    await expect(executor.execute(currentClaim, currentClaim.claimToken)).resolves.toBe(pending.targetProjectId);
-    expect(deleteProject).toHaveBeenCalledTimes(1);
-    const recoveredProject = await projectRepository.findOne({ filterByTk: pending.targetProjectId });
-    expect(recoveredProject?.toJSON()).toMatchObject({
-      healthStatus: 'ready',
-      headCommitId: 'vscc_residual_recovered',
-      creationJobId: pending.id,
+    const runner = new JsTemplateCreateJobRunner(store, executor, {
+      applicationName: 'residual-recovery-app',
+      eventQueue: { subscribe: vi.fn(), unsubscribe: vi.fn(), publish: vi.fn(async () => undefined) },
+      logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+      runningTimeoutMs: 1_000,
+      heartbeatIntervalMs: 100,
+      claimOwner: 'runner-current',
     });
+    await runner.run(pending.id);
+
+    const failed = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: pending.id });
+    expect(failed?.toJSON()).toMatchObject({
+      status: 'failed',
+      attempt: 2,
+      targetProjectId: pending.targetProjectId,
+      payload: null,
+      reservationKey: null,
+      claimToken: null,
+      leaseExpiresAt: null,
+    });
+    expect(deleteProject).toHaveBeenCalledTimes(1);
+    expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
+    await expect(projectRepository.findOne({ filterByTk: pending.targetProjectId })).resolves.toBeNull();
+    await expect(app.db.getRepository('vscFileRepositories').findOne({ filterByTk: vscRepoId })).resolves.toMatchObject(
+      expect.objectContaining({ status: 'archived' }),
+    );
     await expect(
-      store.succeed(currentClaim.id, 'residual-recovery-app', currentClaim.claimToken, pending.targetProjectId),
-    ).resolves.toMatchObject({ status: 'succeeded', attempt: 2, resultProjectId: pending.targetProjectId });
+      app.db.getRepository('vscFileRepositories').count({
+        filter: { ownerType: 'js-template', ownerId: pending.targetProjectId, name: 'source' },
+      }),
+    ).resolves.toBe(1);
   });
 
   it('lists every active job with only the newest 20 terminal jobs in stable order and owner scope', async () => {
