@@ -228,7 +228,7 @@ describe('BackupManager', async () => {
     it('should back up portals independently from local storage files', async () => {
       const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-backup-portals-'));
       const portalDir = path.join(testDir, 'portals');
-      const portalFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+      const portalFilePath = path.join(portalDir, 'customer', 'dist', 'client', 'index.html');
       const backupManager = new TestBackupManager(app, null, defaultBackupSettings);
       backupManager.setPortalDir(portalDir);
 
@@ -242,7 +242,7 @@ describe('BackupManager', async () => {
         });
 
         const entries = await listZipEntries(finalBackupFilePath);
-        expect(entries).toContain('portals/customer/dist/index.html');
+        expect(entries).toContain('portals/customer/dist/client/index.html');
         expect(entries.some((entry) => entry.startsWith('uploads/'))).toBe(false);
       } finally {
         await fs.promises.rm(testDir, { recursive: true, force: true });

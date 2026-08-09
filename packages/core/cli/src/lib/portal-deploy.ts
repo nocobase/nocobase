@@ -59,6 +59,8 @@ type PortalDeployUploadResult = {
   distPath?: string;
 };
 
+const PORTAL_CLIENT_DIST_DIR = path.join('dist', 'client');
+
 const portalDeployText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalDeploy.${key}`, values, { fallback });
 
@@ -276,7 +278,7 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const deployBase = buildPortalBasePath({ app, appPublicPath, portal });
   const portalDir = resolveSavedPortalSourcePath(options.env, portal) ?? resolvePortalSourcePath(portal);
-  const distDir = path.join(portalDir, 'dist');
+  const distDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
 
   if (!(await pathExists(portalDir))) {
     throw new Error(

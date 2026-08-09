@@ -156,8 +156,8 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
     envLocalContent: 'NOCOBASE_PORTAL_BASE=/old/base/\nLOCAL_ONLY=true\n',
   });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
   });
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
 
@@ -232,8 +232,8 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
   expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
   expect(buildHtmlScript).not.toContain('.env.local');
   expectPosixMode((await fsp.stat(portalDir)).mode, 0o755);
-  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist'))).mode, 0o755);
-  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist', 'index.html'))).mode, 0o644);
+  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist', 'client'))).mode, 0o755);
+  expectPosixMode((await fsp.stat(path.join(portalDir, 'dist', 'client', 'index.html'))).mode, 0o644);
 });
 
 test('local deploy builds from the saved source path and uploads dist', async () => {
@@ -244,8 +244,8 @@ test('local deploy builds from the saved source path and uploads dist', async ()
     app: 'crm',
   });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
   });
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
 
@@ -268,7 +268,7 @@ test('local deploy builds from the saved source path and uploads dist', async ()
     portal: 'customer',
     portalDir,
     portalBase: '/console/x/apps/crm/customer/',
-    distDir: path.join(portalDir, 'dist'),
+    distDir: path.join(portalDir, 'dist', 'client'),
     mode: 'local',
     uploaded: true,
     recordSynced: true,
@@ -301,8 +301,8 @@ test('docker deploy builds, uploads dist, and syncs the portal record', async ()
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   const portalDir = await preparePortalWorkspace({ storagePath });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
   });
   const apiRequest = vi.fn(async () => ({ ok: true, status: 200, data: { data: { uid: 'customer' } } }));
 
@@ -367,13 +367,13 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     app: 'crm',
   });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'assets'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 'console.log("ok");\n');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client', 'assets'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'assets', 'index.js'), 'console.log("ok");\n');
     await fsp.chmod(path.join(String(options?.cwd), 'dist'), 0o700);
-    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'assets'), 0o700);
-    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'index.html'), 0o600);
-    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 0o600);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'client', 'assets'), 0o700);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), 0o600);
+    await fsp.chmod(path.join(String(options?.cwd), 'dist', 'client', 'assets', 'index.js'), 0o600);
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
@@ -393,7 +393,7 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     expectPosixMode((await fsp.stat(path.join(extractDir, 'index.html'))).mode, 0o644);
     expectPosixMode((await fsp.stat(path.join(extractDir, 'assets'))).mode, 0o755);
     expectPosixMode((await fsp.stat(path.join(extractDir, 'assets', 'index.js'))).mode, 0o644);
-    return { ok: true, status: 200, data: { data: { status: 'ok', distPath: 'portals/crm/customer/dist' } } };
+    return { ok: true, status: 200, data: { data: { status: 'ok', distPath: 'portals/crm/customer/dist/client' } } };
   });
 
   await expect(
@@ -416,7 +416,7 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     mode: 'http',
     uploaded: true,
     recordSynced: true,
-    serverDistPath: 'portals/crm/customer/dist',
+    serverDistPath: 'portals/crm/customer/dist/client',
   });
 
   expect(apiRequest).toHaveBeenNthCalledWith(
@@ -471,8 +471,8 @@ test('http deploy uses env source storage when no local storagePath is configure
     const storagePath = path.join(cliRoot, 'remote1', 'source', 'storage');
     const portalDir = await preparePortalWorkspace({ storagePath });
     const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-      await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-      await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+      await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+      await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
     });
     const apiRequest = vi.fn(async (options: RequestOptions) => {
       if (options.operation.pathTemplate === '/app:getInfo') {
@@ -524,14 +524,14 @@ test('http deploy uses root portal base for custom-domain sub-apps', async () =>
     portal: 'crm',
   });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/app:getInfo') {
       return { ok: true, status: 200, data: appInfoData('demo6') };
     }
-    return { ok: true, status: 200, data: { data: { uid: 'crm', distPath: 'portals/demo6/crm/dist' } } };
+    return { ok: true, status: 200, data: { data: { uid: 'crm', distPath: 'portals/demo6/crm/dist/client' } } };
   });
 
   await expect(
@@ -555,7 +555,7 @@ test('http deploy uses root portal base for custom-domain sub-apps', async () =>
     portalDir,
     portalBase: '/x/crm/',
     uploaded: true,
-    serverDistPath: 'portals/demo6/crm/dist',
+    serverDistPath: 'portals/demo6/crm/dist/client',
   });
 
   expect(apiRequest).toHaveBeenNthCalledWith(
@@ -589,8 +589,8 @@ test('fails when portal record sync fails', async () => {
   const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
   await preparePortalWorkspace({ storagePath });
   const runCommand = vi.fn(async (_name: string, _args: string[], options?: PortalDeployRunOptions) => {
-    await fsp.mkdir(path.join(String(options?.cwd), 'dist'), { recursive: true });
-    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="root"></div>');
+    await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'client'), { recursive: true });
+    await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'client', 'index.html'), '<div id="root"></div>');
   });
   const apiRequest = vi.fn(async (options: RequestOptions) => {
     if (options.operation.pathTemplate === '/multiPortals:deploy') {

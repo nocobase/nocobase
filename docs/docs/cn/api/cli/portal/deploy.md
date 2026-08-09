@@ -8,7 +8,7 @@ keywords: "nb portal deploy,NocoBase CLI,Portal,构建,部署"
 
 构建并部署指定 Portal 工作区。通常在本地开发完成，并且需要把 Portal 更新到目标 env 时使用。
 
-执行时会先刷新工作区里的 `.env` 和 `.env.local`，再运行 `pnpm build`。构建产物需要包含 `dist/index.html`。
+执行时会先刷新工作区里的 `.env` 和 `.env.local`，再运行 `pnpm build`。构建产物需要包含 `dist/client/index.html`。
 
 ## 用法
 

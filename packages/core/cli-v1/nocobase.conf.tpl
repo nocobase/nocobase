@@ -242,13 +242,13 @@ server {
         root {{cwd}}/storage;
 
         if ($portal_path = "") {
-            rewrite ^ /portals/$subapp/$portal/dist/index.html break;
+            rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;
         }
 
         try_files
-            /portals/$subapp/$portal/dist/$portal_path
-            /portals/$subapp/$portal/dist/$portal_path/
-            /portals/$subapp/$portal/dist/index.html
+            /portals/$subapp/$portal/dist/client/$portal_path
+            /portals/$subapp/$portal/dist/client/$portal_path/
+            /portals/$subapp/$portal/dist/client/index.html
             =404;
     }
 
@@ -266,13 +266,13 @@ server {
         root {{cwd}}/storage;
 
         if ($portal_path = "") {
-            rewrite ^ /portals/main/$portal/dist/index.html break;
+            rewrite ^ /portals/main/$portal/dist/client/index.html break;
         }
 
         try_files
-            /portals/main/$portal/dist/$portal_path
-            /portals/main/$portal/dist/$portal_path/
-            /portals/main/$portal/dist/index.html
+            /portals/main/$portal/dist/client/$portal_path
+            /portals/main/$portal/dist/client/$portal_path/
+            /portals/main/$portal/dist/client/index.html
             =404;
     }
 

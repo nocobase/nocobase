@@ -72,8 +72,8 @@ async function writeTemplate(
   await fsp.writeFile(path.join(templateDir, '.git', 'HEAD'), 'ref: refs/heads/main\n');
   await fsp.mkdir(path.join(templateDir, 'node_modules', 'stale'), { recursive: true });
   await fsp.writeFile(path.join(templateDir, 'node_modules', 'stale', 'index.js'), '');
-  await fsp.mkdir(path.join(templateDir, 'dist'), { recursive: true });
-  await fsp.writeFile(path.join(templateDir, 'dist', 'index.js'), '');
+  await fsp.mkdir(path.join(templateDir, 'dist', 'client'), { recursive: true });
+  await fsp.writeFile(path.join(templateDir, 'dist', 'client', 'index.js'), '');
   await fsp.writeFile(path.join(templateDir, '.DS_Store'), '');
 }
 
@@ -236,7 +236,7 @@ test('creates a portal from a local template', async () => {
   await expect(fsp.access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.git'))).rejects.toThrow();
   await expect(fsp.access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-  await expect(fsp.access(path.join(portalDir, 'dist', 'index.js'))).resolves.toBe(undefined);
+  await expect(fsp.access(path.join(portalDir, 'dist', 'client', 'index.js'))).resolves.toBe(undefined);
   await expect(fsp.access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
   await expect(fsp.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 

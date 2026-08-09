@@ -78,6 +78,7 @@ const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
+const PORTAL_CLIENT_DIST_DIR = path.join('dist', 'client');
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
 const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
@@ -592,7 +593,7 @@ async function resolvePortalTemplate(templateSource: string, logPath: string): P
 }
 
 async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
-  const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store', '.env', '.env.local']);
+  const ignoredSegments = new Set(['.git', 'node_modules', 'dist', '.DS_Store', '.env', '.env.local']);
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
@@ -835,9 +836,11 @@ async function chmodPortalDistTree(targetDir: string): Promise<void> {
 async function ensurePortalDistPublicReadable(portalDir: string, distDir: string): Promise<void> {
   const appDir = path.dirname(portalDir);
   const portalsDir = path.dirname(appDir);
+  const distParentDir = path.dirname(distDir);
   await fs.promises.chmod(portalsDir, PORTAL_PUBLIC_DIR_MODE);
   await fs.promises.chmod(appDir, PORTAL_PUBLIC_DIR_MODE);
   await fs.promises.chmod(portalDir, PORTAL_PUBLIC_DIR_MODE);
+  await fs.promises.chmod(distParentDir, PORTAL_PUBLIC_DIR_MODE);
   await chmodPortalDistTree(distDir);
 }
 
@@ -847,7 +850,7 @@ async function replacePortalDistFromArchive(params: {
   portalName: string;
 }): Promise<string> {
   const portalDir = storagePathJoin('portals', params.appName, params.portalName);
-  const distDir = path.join(portalDir, 'dist');
+  const distDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
   const backupDir = path.join(portalDir, `.dist-backup-${Date.now()}-${Math.random().toString().slice(2)}`);
   const tarPath = path.join(os.tmpdir(), `nocobase-portal-dist-${Date.now()}-${Math.random().toString().slice(2)}.tar`);
   const uploadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), PORTAL_DEPLOY_UPLOAD_DIR_PREFIX));
@@ -874,6 +877,7 @@ async function replacePortalDistFromArchive(params: {
       await fs.promises.rename(distDir, backupDir);
       hasBackup = true;
     }
+    await fs.promises.mkdir(path.dirname(distDir), { recursive: true });
     await movePortalDeployDir(uploadDir, distDir);
     await ensurePortalDistPublicReadable(portalDir, distDir);
     if (hasBackup) {
@@ -3192,7 +3196,7 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   private async removePortalStorageIndexHtml(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
-    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'index.html'), {
+    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'client', 'index.html'), {
       force: true,
     });
   }
@@ -3266,7 +3270,7 @@ export class PluginMultiPortalServer extends Plugin {
     } = {},
   ) {
     const portalDir = storagePathJoin('portals', item.appName, item.portalName);
-    const portalIndex = path.join(portalDir, 'dist', 'index.html');
+    const portalIndex = path.join(portalDir, PORTAL_CLIENT_DIST_DIR, 'index.html');
     const logPath = getPortalStorageLogPath(item);
 
     if (!(await pathExists(portalDir))) {
@@ -3281,12 +3285,12 @@ export class PluginMultiPortalServer extends Plugin {
         this.logPortalBuildHtml(
           item,
           'requested',
-          options.forceBuild ? 'forceBuild is enabled' : 'dist/index.html does not exist',
+          options.forceBuild ? 'forceBuild is enabled' : 'dist/client/index.html does not exist',
         );
         await buildPortalStorageItem(portalDir, item, options);
         this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
       } else {
-        this.logPortalBuildHtml(item, 'skipped', 'dist/index.html already exists');
+        this.logPortalBuildHtml(item, 'skipped', 'dist/client/index.html already exists');
       }
       return;
     }

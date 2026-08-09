@@ -556,17 +556,7 @@ export class Gateway extends EventEmitter {
   }
 
   private getPortalDistRoot(portalMatch: PortalMatch) {
-    const scopedRoot = storagePathJoin('portals', portalMatch.appName, portalMatch.portalName, 'dist');
-    if (portalMatch.appName !== DEFAULT_PORTAL_APP_NAME) {
-      return scopedRoot;
-    }
-
-    const legacyRoot = storagePathJoin('portals', portalMatch.portalName, 'dist');
-    if (!fs.existsSync(resolve(scopedRoot, 'index.html')) && fs.existsSync(resolve(legacyRoot, 'index.html'))) {
-      return legacyRoot;
-    }
-
-    return scopedRoot;
+    return storagePathJoin('portals', portalMatch.appName, portalMatch.portalName, 'dist', 'client');
   }
 
   private isV2Request(pathname: string) {

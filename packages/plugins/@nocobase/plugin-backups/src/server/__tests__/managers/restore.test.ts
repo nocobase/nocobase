@@ -349,12 +349,12 @@ describe('RestoreManager', () => {
       enablePortalsBackup: true,
     };
     await createBackupArchive(backupFilePath, metadata, {
-      'portals/customer/dist/index.html': '<html>restored portal</html>',
+      'portals/customer/dist/client/index.html': '<html>restored portal</html>',
     });
     const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-restore-portals-'));
     const portalDir = path.join(testDir, 'target-app');
-    const staleFilePath = path.join(portalDir, 'stale', 'dist', 'index.html');
-    const restoredFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+    const staleFilePath = path.join(portalDir, 'stale', 'dist', 'client', 'index.html');
+    const restoredFilePath = path.join(portalDir, 'customer', 'dist', 'client', 'index.html');
     const restoreManager = new TestRestoreManager(createCtx(), {
       dialect: 'postgres',
       username: 'test',
@@ -384,7 +384,7 @@ describe('RestoreManager', () => {
     await createBackupArchive(backupFilePath, await createMetadataCompatibleWithCurrentDb());
     const testDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'nocobase-restore-legacy-portals-'));
     const portalDir = path.join(testDir, 'target-app');
-    const existingFilePath = path.join(portalDir, 'customer', 'dist', 'index.html');
+    const existingFilePath = path.join(portalDir, 'customer', 'dist', 'client', 'index.html');
     const restoreManager = new TestRestoreManager(createCtx(), {
       dialect: 'postgres',
       username: 'test',

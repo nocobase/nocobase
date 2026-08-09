@@ -49,7 +49,7 @@ const spawnMock = vi.hoisted(() => {
       }
       if (isBuildCommand && options.cwd) {
         if (process.env.TEST_PORTAL_BUILD_FAIL !== 'true') {
-          const distDir = pathSync.join(options.cwd, 'dist');
+          const distDir = pathSync.join(options.cwd, 'dist', 'client');
           fsSync.mkdirSync(distDir, { recursive: true });
           fsSync.writeFileSync(pathSync.join(distDir, 'index.html'), options.env?.NOCOBASE_PORTAL_BASE || '');
         }
@@ -1080,8 +1080,10 @@ describe('plugin-multi-portal server', () => {
 
     expect(defaultPortal?.get('portalType')).toBe('ai');
     expect(defaultPortal?.get('portalName')).toBe('main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/main/');
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/main/',
+    );
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
@@ -1101,6 +1103,8 @@ describe('plugin-multi-portal server', () => {
       '.env.local': 'LOCAL_ONLY=true\nNOCOBASE_PORTAL_BASE=/old/base/\n',
       '.git/config': '[core]\n',
       'node_modules/stale/index.js': 'module.exports = null;\n',
+      'dist/client/stale.js': 'console.log("stale client");\n',
+      'dist/server/portal.js': 'module.exports = {};\n',
       '.DS_Store': '',
       '._shadow': '',
     });
@@ -1111,13 +1115,15 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.git'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'stale.js'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'server'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '._shadow'))).rejects.toThrow();
     expect(spawnMock).toHaveBeenCalledTimes(1);
@@ -1142,7 +1148,7 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     expect(spawnMock).toHaveBeenNthCalledWith(
       1,
       'npm',
@@ -1174,7 +1180,7 @@ describe('plugin-multi-portal server', () => {
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
-    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'index.html'))).rejects.toThrow();
     await expect(
       waitForFileContent(
         path.join(storagePath as string, 'logs', 'portals', app.name || 'main', 'main.log'),
@@ -1409,14 +1415,14 @@ describe('plugin-multi-portal server', () => {
 
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'storageTemplatePortal');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-    await expect(access(path.join(portalDir, 'dist', 'favicon.ico'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'favicon.ico'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
@@ -1482,7 +1488,7 @@ describe('plugin-multi-portal server', () => {
       },
     });
     const gitPortalDir = path.join(storagePath as string, 'portals', appName, 'storageGitPortal');
-    await waitForPath(path.join(gitPortalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(gitPortalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(gitPortalDir, 'portal.config.json'))).rejects.toThrow();
 
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
@@ -1495,7 +1501,7 @@ describe('plugin-multi-portal server', () => {
     });
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
   });
@@ -1515,7 +1521,7 @@ describe('plugin-multi-portal server', () => {
     const rootAgent = await app.agent().login(rootUser);
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'api-toggle-storage-portal');
-    const portalIndex = path.join(portalDir, 'dist', 'index.html');
+    const portalIndex = path.join(portalDir, 'dist', 'client', 'index.html');
 
     const createResponse = await rootAgent.resource('multiPortals').create({
       values: {
@@ -1581,8 +1587,10 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', 'a_q7xx6p75d0e', 'test');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/nocobase/x/test/');
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/nocobase/x/test/',
+    );
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
@@ -1626,8 +1634,8 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(response.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/nocobase/x/apps/a_q7xx6p75d0e/crm/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
@@ -1659,8 +1667,8 @@ describe('plugin-multi-portal server', () => {
     const rootAgent = await app.agent().login(rootUser);
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'api-storage-template-portal');
-    await mkdir(path.join(portalDir, 'dist'), { recursive: true });
-    await writeFile(path.join(portalDir, 'dist', 'index.html'), 'stale portal dist', 'utf-8');
+    await mkdir(path.join(portalDir, 'dist', 'client'), { recursive: true });
+    await writeFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'stale portal dist', 'utf-8');
 
     const response = await rootAgent.resource('multiPortals').create({
       values: {
@@ -1676,8 +1684,8 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(response.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/api-storage-template-portal/',
     );
     expect(loggerInfoSpy).toHaveBeenCalledWith(
@@ -1742,7 +1750,7 @@ describe('plugin-multi-portal server', () => {
       },
     });
     expect(createResponse.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
 
     spawnMock.mockClear();
     loggerInfoSpy.mockClear();
@@ -1760,7 +1768,7 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         appName,
         portalName: 'skip-existing-dist-portal',
-        reason: 'dist/index.html already exists',
+        reason: 'dist/client/index.html already exists',
       }),
     );
   });
@@ -1962,22 +1970,29 @@ describe('plugin-multi-portal server', () => {
         app: 'main',
         portal: 'customer',
         basePath: '/console/x/customer/',
-        distPath: path.join('portals', 'main', 'customer', 'dist'),
+        distPath: path.join('portals', 'main', 'customer', 'dist', 'client'),
       }),
     );
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'index.html'), 'utf-8'),
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'index.html'),
+        'utf-8',
+      ),
     ).resolves.toBe('<div id="root"></div>');
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'assets', 'index.js'), 'utf-8'),
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'assets', 'index.js'),
+        'utf-8',
+      ),
     ).resolves.toBe('console.log("portal");\n');
     expectPosixMode((await stat(path.join(storagePath as string, 'portals'))).mode, 0o755);
     expectPosixMode((await stat(path.join(storagePath as string, 'portals', 'main'))).mode, 0o755);
     expectPosixMode((await stat(portalDir)).mode, 0o755);
     expectPosixMode((await stat(path.join(portalDir, 'dist'))).mode, 0o755);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets'))).mode, 0o755);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'index.html'))).mode, 0o644);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets', 'index.js'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'index.html'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets', 'index.js'))).mode, 0o644);
     await expect(readdir(portalDir)).resolves.not.toEqual(
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );
@@ -2016,14 +2031,14 @@ describe('plugin-multi-portal server', () => {
         app: 'demo6',
         portal: 'crm',
         basePath: '/x/crm/',
-        distPath: path.join('portals', 'demo6', 'crm', 'dist'),
+        distPath: path.join('portals', 'demo6', 'crm', 'dist', 'client'),
       }),
     );
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'index.html'), 'utf-8'),
+      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'client', 'index.html'), 'utf-8'),
     ).resolves.toBe('<div id="root"></div>');
     await expect(
-      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'index.html')),
+      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'client', 'index.html')),
     ).rejects.toThrow();
   });
 
@@ -2052,7 +2067,7 @@ describe('plugin-multi-portal server', () => {
 
     expect(response.status).toBe(400);
     await expect(
-      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'index.html')),
+      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'index.html')),
     ).rejects.toThrow();
   });
 

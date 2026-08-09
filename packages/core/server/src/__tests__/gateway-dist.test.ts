@@ -137,8 +137,11 @@ test('gateway redirects a portal path without trailing slash', async () => {
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
-  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client'), { recursive: true });
+  await writeFile(
+    path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client', 'index.html'),
+    '<div id="root"></div>',
+  );
 
   try {
     const gateway = Gateway.getInstance();
@@ -152,15 +155,18 @@ test('gateway redirects a portal path without trailing slash', async () => {
   }
 });
 
-test('gateway serves main portal assets from storage/portals/main/<portal>/dist', async () => {
+test('gateway serves main portal assets from storage/portals/main/<portal>/dist/client', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client'), { recursive: true });
+  await writeFile(
+    path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client', 'index.html'),
+    '<div id="root"></div>',
+  );
 
   try {
     const gateway = Gateway.getInstance();
@@ -174,10 +180,30 @@ test('gateway serves main portal assets from storage/portals/main/<portal>/dist'
       }),
       expect.anything(),
       expect.objectContaining({
-        public: path.join(storagePath, 'portals', 'main', 'admin', 'dist'),
+        public: path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client'),
         directoryListing: false,
       }),
     );
+  } finally {
+    await rm(storagePath, { recursive: true, force: true });
+  }
+});
+
+test('gateway ignores old portal dist index', async () => {
+  const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
+  process.env.APP_PUBLIC_PATH = '/console/';
+  process.env.API_BASE_PATH = '/api';
+  process.env.STORAGE_PATH = storagePath;
+
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
+  await writeFile(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'), '<div>old</div>');
+
+  try {
+    const gateway = Gateway.getInstance();
+    const response = await supertest.agent(gateway.getCallback()).get('/console/x/admin/');
+
+    expect(response.status).toBe(404);
+    expect(serveHandlerMock).not.toHaveBeenCalled();
   } finally {
     await rm(storagePath, { recursive: true, force: true });
   }
@@ -190,9 +216,9 @@ test('gateway maps portal deep links to the portal index html', async () => {
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist'), { recursive: true });
+  await mkdir(path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client'), { recursive: true });
   await writeFile(
-    path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'index.html'),
+    path.join(storagePath, 'portals', 'main', 'admin', 'dist', 'client', 'index.html'),
     [
       '<html>',
       '<head>',
@@ -224,15 +250,18 @@ test('gateway maps portal deep links to the portal index html', async () => {
   }
 });
 
-test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal name>/dist', async () => {
+test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal name>/dist/client', async () => {
   const storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-gateway-portal-'));
   process.env.APP_PUBLIC_PATH = '/console/';
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
   await mkdir(path.join(storagePath, 'portals'), { recursive: true });
-  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
+  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'client'), { recursive: true });
+  await writeFile(
+    path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'client', 'index.html'),
+    '<div id="root"></div>',
+  );
 
   try {
     const gateway = Gateway.getInstance();
@@ -246,7 +275,7 @@ test('gateway serves sub-app portal assets from storage/portals/<subapp>/<portal
       }),
       expect.anything(),
       expect.objectContaining({
-        public: path.join(storagePath, 'portals', 'crm', 'admin', 'dist'),
+        public: path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'client'),
         directoryListing: false,
       }),
     );
@@ -261,8 +290,11 @@ test('gateway redirects a sub-app portal path without trailing slash', async () 
   process.env.API_BASE_PATH = '/api';
   process.env.STORAGE_PATH = storagePath;
 
-  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist'), { recursive: true });
-  await writeFile(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'index.html'), '<div id="root"></div>');
+  await mkdir(path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'client'), { recursive: true });
+  await writeFile(
+    path.join(storagePath, 'portals', 'crm', 'admin', 'dist', 'client', 'index.html'),
+    '<div id="root"></div>',
+  );
 
   try {
     const gateway = Gateway.getInstance();

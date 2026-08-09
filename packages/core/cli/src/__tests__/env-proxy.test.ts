@@ -224,16 +224,16 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   );
   expect(bundle.appConfigContent).toContain('root /workspace/app/storage;');
   expect(bundle.appConfigContent).toContain('if ($portal_path = "") {');
-  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/$subapp/$portal/dist/index.html break;');
-  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
-  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/client/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/client/$portal_path/');
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
   expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/;');
   expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
   expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
-  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/index.html break;');
-  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path');
-  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/client/index.html break;');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/client/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/client/$portal_path/');
   expect(bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location = /console/api {'),
   );
@@ -484,7 +484,7 @@ test('writeNginxProxyBundle overwrites non-managed app.conf when force is enable
   expect(content).toContain('# BEGIN NocoBase managed config');
   expect(content).toContain('listen 8080;');
   expect(content).toContain('location ^~ /x/ {');
-  expect(content).toContain('/portals/main/$portal/dist/index.html');
+  expect(content).toContain('/portals/main/$portal/dist/client/index.html');
   expect(await readFile(bundle.indexSettingsPath, 'utf8')).toBe(bundle.indexSettingsContent);
 });
 
