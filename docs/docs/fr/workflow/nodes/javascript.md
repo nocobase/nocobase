@@ -44,6 +44,26 @@ Si cette option est cochée, les nœuds suivants seront toujours exécutés mêm
 Une fois que le script échoue, il n'y aura pas de valeur de retour et le résultat du nœud sera rempli avec le message d'erreur. Si les nœuds suivants utilisent la variable de résultat du nœud de script, cela doit être manipulé avec prudence.
 :::
 
+## Contrôle de la concurrence des Workers
+
+Les nœuds de script JavaScript placent les scripts en attente dans une file de tâches et les exécutent dans des threads Worker distincts. Par défaut, NocoBase ne limite pas la concurrence des Workers de scripts JavaScript. Si plusieurs tâches sont en attente dans la file, elles peuvent créer des Workers et s'exécuter simultanément.
+
+Si les scripts consomment beaucoup de mémoire pendant leur exécution, plusieurs Workers peuvent rapidement augmenter l'utilisation de la mémoire d'une instance de l'application. Dans ce cas, utilisez la variable d'environnement `WORKFLOW_SCRIPT_WORKER_CONCURRENCY` pour définir une limite de concurrence. Il en va de même pour les scripts gourmands en CPU : une concurrence excessive augmente la contention du CPU et peut affecter les autres requêtes et workflows de NocoBase. Il est également recommandé de configurer cette variable si un grand nombre de tâches de script peuvent être créées en peu de temps :
+
+```bash
+WORKFLOW_SCRIPT_WORKER_CONCURRENCY=4
+```
+
+Les règles de configuration sont les suivantes :
+
+- Si la variable n'est pas configurée ou si sa valeur n'est pas valide, la concurrence est illimitée
+- Un entier positif définit le nombre maximal de threads Worker pouvant s'exécuter simultanément
+- La valeur `0` supprime la limite de concurrence et permet à toutes les tâches de la file de s'exécuter simultanément
+
+Lorsque la limite de concurrence est atteinte, les nouvelles tâches restent dans la file jusqu'à ce qu'un Worker soit disponible. Vous pouvez conserver la configuration par défaut si les scripts sont rarement exécutés et si chaque exécution consomme peu de ressources. Si vous avez besoin d'une limite de concurrence, commencez par une petite valeur et ajustez-la progressivement selon l'utilisation de la mémoire et du CPU de l'instance de l'application, ainsi que le temps d'attente des tâches dans la file.
+
+Si une application s'exécute sur plusieurs instances de serveur, ce paramètre s'applique séparément à chaque instance. La capacité globale de concurrence dépend également du nombre d'instances capables de consommer les tâches. Redémarrez le service NocoBase après avoir modifié la variable d'environnement pour que la nouvelle valeur prenne effet.
+
 ## Moteur d'exécution
 
 Le nœud de script JavaScript prend en charge deux moteurs d'exécution, sélectionnés automatiquement selon que la variable d'environnement `WORKFLOW_SCRIPT_MODULES` est configurée ou non :
