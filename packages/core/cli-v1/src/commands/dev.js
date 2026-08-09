@@ -18,6 +18,7 @@ const {
   nodeCheck,
   promptForTs,
   isPortReachable,
+  storagePathJoin,
   buildWSURL,
   checkDBDialect,
   resolveAppClientEntryMode,
@@ -61,6 +62,10 @@ function normalizePublicPath(value) {
     normalized = `${normalized}/`;
   }
   return normalized.replace(/\/{2,}/g, '/');
+}
+
+function shouldStartPortalHost(processEnv = process.env) {
+  return processEnv.PORTAL_HOST_ENABLED !== 'false' && !processEnv.PORTAL_HOST_URL;
 }
 
 function createSettingsDevProcessOptions({
@@ -169,6 +174,7 @@ module.exports = (cli) => {
       let serverPort;
       let clientV2Port = APP_PORT;
       let settingsPort = resolveSettingsDevPort(APP_PORT);
+      let portalHostPort;
 
       nodeCheck();
       await postCheck(opts);
@@ -187,6 +193,12 @@ module.exports = (cli) => {
       } else if (shouldRunServer) {
         serverPort = await getPortPromise({
           port: 1 * clientPort + 1,
+        });
+      }
+
+      if (shouldRunServer && shouldStartPortalHost()) {
+        portalHostPort = await getPortPromise({
+          port: 1 * clientPort + 10,
         });
       }
 
@@ -209,6 +221,7 @@ module.exports = (cli) => {
       let subprocessClient;
       let subprocessClientV2;
       let subprocessSettings;
+      const portalsDir = process.env.PORTALS_DIR || storagePathJoin('portals');
 
       const runDevClientV2 = () => {
         console.log('starting client-v2', 1 * clientV2Port);
@@ -363,6 +376,10 @@ module.exports = (cli) => {
 
       if (shouldRunServer) {
         console.log('starting server', serverPort);
+        console.log(`server url: http://127.0.0.1:${serverPort}`);
+        if (portalHostPort) {
+          console.log(`portal-host url: http://127.0.0.1:${portalHostPort}`);
+        }
 
         const filteredArgs = process.argv.filter(
           (item, i) => !item.startsWith('--inspect') && !(process.argv[i - 1] === '--inspect' && Number.parseInt(item)),
@@ -391,6 +408,17 @@ module.exports = (cli) => {
           run('tsx', argv, {
             env: colorizedDevLogEnv(process.env, {
               APP_PORT: serverPort,
+              PORTALS_DIR: portalsDir,
+              ...(portalHostPort
+                ? {
+                    PORTAL_HOST_DRIVER: process.env.PORTAL_HOST_DRIVER || 'tsx',
+                    PORTAL_HOST_PRESTART: process.env.PORTAL_HOST_PRESTART || 'true',
+                    PORTAL_HOST_PORT: `${portalHostPort}`,
+                    PORTAL_HOST_BIND: process.env.PORTAL_HOST_BIND || '127.0.0.1',
+                    PORTAL_HOST_ENTRY: path.resolve(APP_PACKAGE_ROOT, '../server/src/portal-host/index.ts'),
+                    PORTAL_HOST_TSCONFIG: SERVER_TSCONFIG_PATH,
+                  }
+                : {}),
             }),
           }).catch((err) => {
             if (err.exitCode == 100) {

@@ -1236,17 +1236,20 @@ export class Gateway extends EventEmitter {
     this.wsServer?.close();
   }
 
-  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
-    [];
+  private static requestHandlers: ((
+    req: IncomingRequest,
+    res: ServerResponse,
+    app: Application,
+  ) => boolean | void | Promise<boolean | void>)[] = [];
 
   static registerRequestHandler(
-    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.requestHandlers.push(handler);
   }
 
   static unregisterRequestHandler(
-    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
   }
@@ -1256,16 +1259,26 @@ export class Gateway extends EventEmitter {
     socket: Duplex,
     head: Buffer,
     app: Application,
-  ) => boolean | void)[] = [];
+  ) => boolean | void | Promise<boolean | void>)[] = [];
 
   static registerWsHandler(
-    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+    wsServer: (
+      req: IncomingMessage,
+      socket: Duplex,
+      head: Buffer,
+      app: Application,
+    ) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.wsServers.push(wsServer);
   }
 
   static unregisterWsHandler(
-    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+    wsServer: (
+      req: IncomingMessage,
+      socket: Duplex,
+      head: Buffer,
+      app: Application,
+    ) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.wsServers = Gateway.wsServers.filter((ws) => ws !== wsServer);
   }
