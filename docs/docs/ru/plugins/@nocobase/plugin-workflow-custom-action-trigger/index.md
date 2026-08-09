@@ -10,7 +10,7 @@ description: |
   Срабатывает после нажатия пользовательской кнопки действия.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

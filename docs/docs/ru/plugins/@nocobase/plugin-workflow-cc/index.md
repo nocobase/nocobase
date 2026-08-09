@@ -7,7 +7,7 @@ description: |
     Копия в рамках рабочего процесса: отправка материалов на согласование или иной информации указанным пользователям.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

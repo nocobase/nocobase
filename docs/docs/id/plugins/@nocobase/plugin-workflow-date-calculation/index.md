@@ -10,7 +10,7 @@ description: |
   Dapat digunakan untuk mengoperasikan dan mengevaluasi tanggal dalam workflow, seperti penambahan/pengurangan, perbandingan, pemformatan, dan lainnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

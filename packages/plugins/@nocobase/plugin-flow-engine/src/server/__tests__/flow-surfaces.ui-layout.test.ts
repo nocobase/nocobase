@@ -97,6 +97,59 @@ describe('flowSurfaces UI layout integration', () => {
     expect(response.body?.errors?.[0]?.ruleId).toBe('navigation-portal-unsupported');
   });
 
+  it('should keep explicit Admin layout create APIs available when Multi-portal is absent', async () => {
+    const blueprint = getData(
+      await rootAgent.resource('flowSurfaces').applyBlueprint({
+        values: {
+          version: '1',
+          mode: 'create',
+          navigation: {
+            layoutUid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+            group: {
+              title: `Legacy explicit Admin group ${Date.now()}`,
+              icon: 'AppstoreOutlined',
+            },
+            item: {
+              title: `Legacy explicit Admin blueprint ${Date.now()}`,
+              icon: 'FileOutlined',
+            },
+          },
+          page: { title: `Legacy explicit Admin blueprint ${Date.now()}` },
+          tabs: [
+            {
+              title: 'Overview',
+              blocks: [{ type: 'markdown', settings: { content: 'Legacy Admin layout content' } }],
+            },
+          ],
+        },
+      }),
+    );
+    expect(await readRouteLayoutUids(app, blueprint.surface.pageRoute.id)).toEqual([DEFAULT_ADMIN_UI_LAYOUT_UID]);
+
+    const item = getData(
+      await rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          layoutUid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+          type: 'item',
+          title: `Legacy explicit Admin menu ${Date.now()}`,
+          icon: 'FileOutlined',
+        },
+      }),
+    );
+    const page = getData(
+      await rootAgent.resource('flowSurfaces').createPage({
+        values: {
+          layoutUid: DEFAULT_ADMIN_UI_LAYOUT_UID,
+          menuRouteId: item.routeId,
+          title: 'Legacy explicit Admin page',
+          tabTitle: 'Overview',
+        },
+      }),
+    );
+    expect(await readRouteLayoutUids(app, page.routeId)).toEqual([DEFAULT_ADMIN_UI_LAYOUT_UID]);
+    expect(await readRouteLayoutUids(app, page.tabRouteId)).toEqual([DEFAULT_ADMIN_UI_LAYOUT_UID]);
+  });
+
   it('should make applyBlueprint pages accessible inside the parent menu layout', async () => {
     const group = getData(
       await rootAgent.resource('desktopRoutes').create({

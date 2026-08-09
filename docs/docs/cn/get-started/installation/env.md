@@ -152,7 +152,7 @@ CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
 PLUGIN_PACKAGE_PREFIX 可以配置为：
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 则插件名称和包名对应关系如下：

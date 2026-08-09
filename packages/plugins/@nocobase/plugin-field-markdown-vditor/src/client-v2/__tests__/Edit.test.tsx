@@ -138,6 +138,7 @@ async function renderEditor(props: Record<string, unknown> = {}) {
 
 describe('Edit', () => {
   beforeEach(() => {
+    fileManagerPlugin.uploadFile.mockReset();
     vi.stubGlobal('MutationObserver', MockMutationObserver);
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {

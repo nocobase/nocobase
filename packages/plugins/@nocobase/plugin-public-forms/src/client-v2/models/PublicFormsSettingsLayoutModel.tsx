@@ -106,6 +106,7 @@ export const PublicFormsSettingsDetailView = observer((props: PublicFormsSetting
   const { message } = App.useApp();
   const { token } = theme.useToken();
   const publicFormLink = usePublicFormLink(pageUid);
+  const publicFormsSettingsPath = ctx.app.pluginSettingsManager.getRoutePath('public-forms.index');
   const resource = ctx.api.resource('publicForms');
   const { data, loading, mutate } = useRequest(
     async () => {
@@ -212,7 +213,7 @@ export const PublicFormsSettingsDetailView = observer((props: PublicFormsSetting
         <Breadcrumb
           items={[
             {
-              title: <Link to="/admin/settings/public-forms">{t('Public forms')}</Link>,
+              title: <Link to={publicFormsSettingsPath}>{t('Public forms')}</Link>,
             },
             {
               title: record.title,

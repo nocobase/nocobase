@@ -1,7 +1,7 @@
 ---
 title: "NocoBase CLI"
-description: "NocoBase CLI（nb 命令）参考：初始化、备份恢复、配置、环境管理、应用运行、源码、数据库、插件、商业授权、API、CLI 自更新和 Skills 管理。"
-keywords: "NocoBase CLI,nb,命令行,命令参考,备份,恢复,环境管理,插件管理,商业授权,API"
+description: "NocoBase CLI（nb 命令）参考：初始化、备份恢复、配置、环境管理、应用运行、Portal、源码、数据库、插件、商业授权、API、CLI 自更新和 Skills 管理。"
+keywords: "NocoBase CLI,nb,命令行,命令参考,备份,恢复,环境管理,Portal,插件管理,商业授权,API"
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ nb [command]
 | [`nb env`](./env/index.md) | 管理 NocoBase 项目环境、当前 env、状态、详情和运行时命令。 |
 | [`nb license`](./license/index.md) | 管理商业授权和授权插件。 |
 | [`nb plugin`](./plugin/index.md) | 管理选中 NocoBase env 的插件。 |
+| [`nb portal`](./portal/index.md) | 管理 Portal 本地源码目录：配置、创建、开发、同步源码、部署和删除。 |
 | [`nb scaffold`](./scaffold/index.md) | 生成 NocoBase 插件开发脚手架。 |
 | [`nb self`](./self/index.md) | 检查或更新 NocoBase CLI 本身。 |
 | [`nb session`](./session/index.md) | 配置 `NB_SESSION_ID`，让 current env 按 shell 或 agent runtime 隔离。 |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## 示例
@@ -125,6 +128,15 @@ nb config get docker.network
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+创建并开发 Portal：
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 创建并下载备份：

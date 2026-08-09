@@ -25,7 +25,7 @@ NocoBase CLI をインストールして初期化してください：https://do
 ### 手動インストール
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb init --ui
 ```
 
@@ -99,4 +99,5 @@ nocobase-plugin-development skill を使って NocoBase プラグインを開発
 - [NocoBase CLI](../ai/quick-start.md) — NocoBase のインストールと管理のためのコマンドラインツール
 - [NocoBase CLI リファレンス](../api/cli/index.md) — すべてのコマンドの完全なパラメータ説明
 - [プラグイン開発](../plugin-development/index.md) — NocoBase プラグイン開発の完全ガイド
+- [AI Portal](../ai-builder/ai-portal/index.md) — AI にフロントエンドページを書かせます。プラグインは NocoBase 自体を拡張する仕組みで、Portal はそれらの機能をベースにした独立した入口です
 - [AI ビルダークイックスタート](../ai-builder/index.md) — AI で NocoBase アプリケーションを構築する（コード不要）

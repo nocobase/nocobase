@@ -10,7 +10,7 @@ description: |
   Дублирование записи: можно открыть копию в форме, отредактировать и сохранить, либо сразу создать новую запись без промежуточного редактирования.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

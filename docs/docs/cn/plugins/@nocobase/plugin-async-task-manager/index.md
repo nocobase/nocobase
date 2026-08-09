@@ -7,7 +7,7 @@ description: |
   管理和监控数据导入导出等异步任务。支持任务进度跟踪和通知。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

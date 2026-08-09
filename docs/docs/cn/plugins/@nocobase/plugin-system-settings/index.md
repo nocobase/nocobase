@@ -7,7 +7,7 @@ description: |
   用于调整系统的标题、LOGO、语言等。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

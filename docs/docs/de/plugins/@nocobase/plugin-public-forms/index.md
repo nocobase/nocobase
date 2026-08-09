@@ -7,7 +7,7 @@ description: |
   Share public forms externally to collect information from anonymous users
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

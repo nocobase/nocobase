@@ -7,7 +7,7 @@ description: |
   管理数据源，包括内置的 Master 数据库，外部的数据库、API。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

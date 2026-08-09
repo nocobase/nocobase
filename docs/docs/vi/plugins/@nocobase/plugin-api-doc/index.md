@@ -7,7 +7,7 @@ description: |
   Trình tạo tài liệu OpenAPI cho NocoBase HTTP API.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

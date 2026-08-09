@@ -9,7 +9,7 @@ description: |
   使用 ECharts 实现数据可视化，支持漏斗图、雷达图等更多图表类型，并提供更友好的可视化配置。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

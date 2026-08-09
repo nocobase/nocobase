@@ -14,6 +14,7 @@ import { useApp } from '@nocobase/client-v2';
 import { useAuthenticator } from '../authenticator';
 import { useAuthTranslation } from '../locale';
 import { useDocumentTitle } from '../hooks';
+import { getAuthRoutePath } from '../authRoutePaths';
 
 export default function ForgotPasswordPage() {
   const app = useApp();
@@ -24,11 +25,12 @@ export default function ForgotPasswordPage() {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const signinPath = getAuthRoutePath(app, 'auth.signin');
 
   useDocumentTitle(t('Reset password'));
 
   if (!authenticator?.options?.enableResetPassword) {
-    return <Navigate to="/signin" replace />;
+    return <Navigate to={signinPath} replace />;
   }
 
   return (
@@ -65,7 +67,7 @@ export default function ForgotPasswordPage() {
           {t('Send reset email')}
         </Button>
       </Form.Item>
-      <Link to="/signin">{t('Back to login')}</Link>
+      <Link to={signinPath}>{t('Back to login')}</Link>
     </Form>
   );
 }

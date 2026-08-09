@@ -7,7 +7,7 @@ description: |
   Digunakan untuk merangkai dan menampilkan pesan respons ke client dalam event formulir dan workflow intersepsi request.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

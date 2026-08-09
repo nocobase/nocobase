@@ -10,7 +10,7 @@ description: |
   Provides comment collection template and block to add commenting functionality for any collection.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

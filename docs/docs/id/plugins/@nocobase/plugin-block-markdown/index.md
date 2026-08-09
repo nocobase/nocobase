@@ -7,7 +7,7 @@ description: |
   Menyediakan Block Markdown.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

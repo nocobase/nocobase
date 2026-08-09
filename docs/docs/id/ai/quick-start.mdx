@@ -25,6 +25,7 @@ Sebelum memulai, pastikan Anda telah memenuhi persyaratan lingkungan berikut:
 
 - Node.js >= 22
 - Yarn 1.x
+- pnpm (hanya diperlukan saat mengembangkan [AI Portal](../ai-builder/ai-portal/index.md), karena template Portal memakainya untuk memasang dependensi dan menjalankan server pengembangan)
 - Disarankan menggunakan AI Agent yang digerakkan oleh model besar arus utama seperti Claude, GPT. Hasil aktual sangat terkait dengan model yang digunakan, disarankan memilih model flagship terbaru terlebih dahulu untuk mendapatkan pengalaman terbaik.
 
 import { Tab, Tabs } from '@rspress/core/theme';
@@ -41,7 +42,7 @@ Jika Anda belum memiliki aplikasi NocoBase, Anda dapat memasang dan menginisiali
 #### Langkah 1: Pasang CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Konfirmasi instalasi berhasil
 ```
 
@@ -100,7 +101,7 @@ Jika Anda sudah memiliki instance NocoBase yang berjalan, Anda dapat langsung me
 #### Langkah 1: Pasang CLI
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version // Konfirmasi instalasi berhasil
 ```
 
@@ -145,6 +146,10 @@ Setelah konfigurasi selesai, restart sesi AI Agent Anda, dan Anda dapat mulai me
 
 ## Selanjutnya
 
+### Mulai Pembangunan AI
+
+Jelaskan kebutuhan dengan bahasa natural, AI akan membantu Anda menyelesaikan pemodelan data, pembangunan halaman, orkestrasi Workflow — gunakan percakapan sebagai pengganti konfigurasi manual, tanpa perlu menulis kode. Silakan lihat [Mulai Cepat Pembangunan AI](../ai-builder/index.md#gunakan-percakapan-sebagai-pengganti-konfigurasi-manual).
+
 ### Instalasi dan deployment production
 
 Jika Anda sedang menyiapkan NocoBase untuk deployment production, urutan ini biasanya paling cocok:
@@ -155,10 +160,6 @@ Jika Anda sedang menyiapkan NocoBase untuk deployment production, urutan ini bia
 ### Mengelola Lingkungan Aplikasi
 
 Jika Anda perlu mengelola instance NocoBase yang sudah ada (misalnya lingkungan testing, lingkungan production), atau mengelola peralihan antara beberapa lingkungan, silakan lihat [Manajemen Lingkungan](../ai-builder/env-bootstrap) — mencakup pemeriksaan lingkungan, penambahan lingkungan, upgrade, dan diagnostik masalah.
-
-### Mulai Pembangunan AI
-
-Jelaskan kebutuhan dengan bahasa natural, AI akan membantu Anda menyelesaikan pemodelan data, pembangunan halaman, orkestrasi Workflow — gunakan percakapan sebagai pengganti konfigurasi manual. Silakan lihat [Mulai Cepat Pembangunan AI](../ai-builder/index.md#gunakan-percakapan-sebagai-pengganti-konfigurasi-manual).
 
 ### Lanjutkan Pengembangan Plugin AI
 
@@ -174,6 +175,7 @@ Jika Anda sudah memiliki aplikasi NocoBase yang berjalan, atau telah berhasil me
 
 ## Tautan Terkait
 
+- [AI Portal](../ai-builder/ai-portal/index.md) — Biarkan AI Agent menulis kode frontend dengan NocoBase sebagai fondasi, dan bangun sistem yang lengkap
 - [Pembangunan AI](../ai-builder/index.md) — Bangun aplikasi NocoBase dari nol dengan AI
 - [Pengembangan Plugin AI](../ai-dev/index.md) — Gunakan AI untuk membantu mengembangkan Plugin NocoBase
 - [Karyawan AI](../ai-employees/index.md) — Berkolaborasi dengan AI di antarmuka bisnis

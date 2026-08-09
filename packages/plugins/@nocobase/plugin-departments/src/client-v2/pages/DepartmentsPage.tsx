@@ -19,7 +19,13 @@ import {
   UserDeleteOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { CollectionFilter, DrawerFormLayout, Table, type CompiledFilter } from '@nocobase/client-v2';
+import {
+  CollectionFilter,
+  DrawerFormLayout,
+  getItemActiveColors,
+  Table,
+  type CompiledFilter,
+} from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { useRequest } from 'ahooks';
@@ -757,6 +763,7 @@ const DepartmentsPage: React.FC = () => {
   const ctx = useFlowContext();
   const { modal, message } = App.useApp();
   const { token } = theme.useToken();
+  const { bg: itemActiveBg, color: itemActiveText } = getItemActiveColors(token);
   const usersCollection = ctx.dataSourceManager?.getDataSource('main')?.getCollection('users');
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentRecord | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
@@ -1238,18 +1245,18 @@ const DepartmentsPage: React.FC = () => {
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper,
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper .anticon,
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper .ant-btn {
-        color: ${token.colorText};
+        color: ${itemActiveText || token.colorText};
       }
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper,
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper:hover {
-        background: ${token.controlItemBgActive};
+        background: ${itemActiveBg};
       }
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper::before,
       .ant-tree.ant-tree-directory .ant-tree-treenode-selected .ant-tree-node-content-wrapper:hover::before {
-        background: ${token.controlItemBgActive};
+        background: ${itemActiveBg};
       }
     `,
-    [token.borderRadiusLG, token.colorText, token.controlItemBgActive],
+    [itemActiveBg, itemActiveText, token.borderRadiusLG, token.colorText],
   );
   const memberResponse = membersRequest.data;
   const members = memberResponse?.data || [];
@@ -1296,7 +1303,8 @@ const DepartmentsPage: React.FC = () => {
             style={{
               textAlign: 'center',
               justifyContent: 'center',
-              background: !selectedDepartment && !selectedUser ? token.controlItemBgActive : undefined,
+              background: !selectedDepartment && !selectedUser ? itemActiveBg : undefined,
+              color: !selectedDepartment && !selectedUser ? itemActiveText : undefined,
             }}
             onClick={() => {
               setSelectedDepartment(null);

@@ -7,7 +7,7 @@ description: |
   NocoBase HTTP API 的 OpenAPI 文档生成器。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

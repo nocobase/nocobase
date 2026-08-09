@@ -10,7 +10,7 @@ description: |
   Có thể được sử dụng để thực hiện các phép tính trên ngày tháng trong workflow, chẳng hạn như cộng trừ, so sánh, định dạng, v.v.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

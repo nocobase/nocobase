@@ -51,6 +51,7 @@ export const SUPPORTED_CLI_CONFIG_KEYS = [
   'locale',
   'default-ui-host',
   'default-api-host',
+  'default-portal-template',
   'update.policy',
   'license.pkg-url',
   'docker.network',
@@ -156,7 +157,12 @@ function pruneSettings(config: AuthConfig): void {
   }
 
   const init = config.settings?.init;
-  if (init && !trimValue(init.defaultUiHost) && !trimValue(init.defaultApiHost)) {
+  if (
+    init &&
+    !trimValue(init.defaultUiHost) &&
+    !trimValue(init.defaultApiHost) &&
+    !trimValue(init.defaultPortalTemplate)
+  ) {
     delete config.settings?.init;
   }
 
@@ -233,6 +239,8 @@ export function getExplicitCliConfigValue(config: AuthConfig, key: SupportedCliC
       return trimValue(config.settings?.init?.defaultUiHost);
     case 'default-api-host':
       return trimValue(config.settings?.init?.defaultApiHost);
+    case 'default-portal-template':
+      return trimValue(config.settings?.init?.defaultPortalTemplate);
     case 'update.policy':
       return normalizeCliUpdatePolicy(config.settings?.update?.policy);
     case 'license.pkg-url':
@@ -287,6 +295,8 @@ export function getEffectiveCliConfigValue(config: AuthConfig, key: SupportedCli
       return '127.0.0.1';
     case 'default-api-host':
       return '127.0.0.1';
+    case 'default-portal-template':
+      return explicit ?? '';
     case 'update.policy':
       return explicit ?? DEFAULT_UPDATE_POLICY;
     case 'license.pkg-url':
@@ -463,6 +473,12 @@ export async function setCliConfigValue(
         defaultApiHost: normalized,
       };
       break;
+    case 'default-portal-template':
+      config.settings.init = {
+        ...(config.settings.init ?? {}),
+        defaultPortalTemplate: normalized,
+      };
+      break;
     case 'update.policy':
       config.settings.update = {
         ...(config.settings.update ?? {}),
@@ -603,6 +619,11 @@ export async function deleteCliConfigValue(
     case 'default-api-host':
       if (config.settings.init) {
         delete config.settings.init.defaultApiHost;
+      }
+      break;
+    case 'default-portal-template':
+      if (config.settings.init) {
+        delete config.settings.init.defaultPortalTemplate;
       }
       break;
     case 'update.policy':

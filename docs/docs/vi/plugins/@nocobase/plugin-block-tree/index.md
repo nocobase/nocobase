@@ -9,7 +9,7 @@ description: |
   Cung cấp Block lọc dạng cấu trúc cây.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

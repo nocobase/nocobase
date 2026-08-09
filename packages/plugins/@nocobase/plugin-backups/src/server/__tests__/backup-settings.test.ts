@@ -36,6 +36,12 @@ describe('backup settings validation', () => {
     expect((await repository.findOne()).get('keep')).toBe(MAX_BACKUP_KEEP_COUNT);
   });
 
+  it('enables portal backups by default', async () => {
+    const settings = await app.db.getRepository(SETTINGS).findOne();
+
+    expect(settings.get('enablePortalsBackup')).toBe(true);
+  });
+
   it.each([0, 1.5, MAX_BACKUP_KEEP_COUNT + 1])('rejects an invalid backup retention value: %s', async (keep) => {
     const repository = app.db.getRepository(SETTINGS);
     const settings = await repository.findOne();

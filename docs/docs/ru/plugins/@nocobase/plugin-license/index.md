@@ -7,7 +7,7 @@ description: |
   Идентификатор экземпляра и настройки лицензионного ключа.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

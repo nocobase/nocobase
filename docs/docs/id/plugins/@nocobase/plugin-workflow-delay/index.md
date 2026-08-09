@@ -7,7 +7,7 @@ description: |
   Dapat digunakan dalam cabang paralel workflow untuk menunggu cabang lain selesai dieksekusi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

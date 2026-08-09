@@ -7,7 +7,7 @@ description: |
   Настройка цветов интерфейса, размеров и др. с сохранением результата как темы; переключение между несколькими темами.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

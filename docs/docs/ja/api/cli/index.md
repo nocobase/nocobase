@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'NocoBase CLI（`nb` コマンド）リファレンス：初期化、バックアップと復元、設定、環境管理、アプリ実行、ソースコード、データベース、プラグイン、商用ライセンス、API、CLI セルフアップデート、Skills 管理。'
-keywords: 'NocoBase CLI,nb,コマンドライン,コマンドリファレンス,バックアップ,復元,環境管理,プラグイン管理,商用ライセンス,API'
+description: 'NocoBase CLI（`nb` コマンド）リファレンス：初期化、バックアップと復元、設定、環境管理、アプリ実行、Portal、ソースコード、データベース、プラグイン、商用ライセンス、API、CLI セルフアップデート、Skills 管理。'
+keywords: 'NocoBase CLI,nb,コマンドライン,コマンドリファレンス,バックアップ,復元,環境管理,Portal,プラグイン管理,商用ライセンス,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ nb [command]
 | [`nb env`](./env/index.md)           | NocoBase プロジェクト環境、現在の env、状態、詳細、ランタイムコマンドを管理します。                         |
 | [`nb license`](./license/index.md)   | 商用ライセンスとライセンス済みプラグインを管理します。                                                      |
 | [`nb plugin`](./plugin/index.md)     | 選択した NocoBase env のプラグインを管理します。                                                            |
+| [`nb portal`](./portal/index.md)     | Portal のローカルソースディレクトリを管理します: 設定、作成、開発、ソース同期、デプロイ、削除。 |
 | [`nb scaffold`](./scaffold/index.md) | NocoBase プラグイン開発用のスキャフォールドを生成します。                                                   |
 | [`nb self`](./self/index.md)         | NocoBase CLI 自体を確認または更新します。                                                                   |
 | [`nb session`](./session/index.md)   | `NB_SESSION_ID` を設定し、current env をシェルまたは agent runtime ごとに分離します。                       |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## 例
@@ -125,6 +128,15 @@ nb config get docker.network
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Portal を作成して開発する:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 バックアップを作成してダウンロード：

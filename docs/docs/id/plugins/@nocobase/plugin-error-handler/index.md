@@ -7,7 +7,7 @@ description: |
   Menangani error dan exception dalam aplikasi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

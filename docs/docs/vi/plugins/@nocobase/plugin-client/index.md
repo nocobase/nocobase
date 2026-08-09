@@ -7,7 +7,7 @@ description: |
   Cung cấp giao diện client cho server NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

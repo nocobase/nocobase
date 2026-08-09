@@ -63,6 +63,14 @@ function resolveTextDefault(def: TextPromptBlock, out: PromptCatalogValues): str
   return String(iv ?? '');
 }
 
+function resolveSelectDefault(def: Extract<PromptBlock, { type: 'select' }>, out: PromptCatalogValues): string | undefined {
+  const iv = def.initialValue;
+  if (typeof iv === 'function') {
+    return iv(out);
+  }
+  return iv;
+}
+
 function resolvePasswordDefault(def: PasswordPromptBlock, out: PromptCatalogValues): string {
   const iv = def.initialValue;
   if (typeof iv === 'function') {
@@ -144,7 +152,7 @@ function defaultValueForInput(
       const first = def.options
         .find((o) => typeof o === 'string' || o.disabled !== true);
       const firstValue = typeof first === 'string' ? first : first?.value;
-      const i = def.initialValue;
+      const i = resolveSelectDefault(def, out);
       const enabledValues = def.options
         .filter((o) => typeof o === 'string' || o.disabled !== true)
         .map((o) => (typeof o === 'string' ? o : o.value));
@@ -1062,7 +1070,6 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
     };
 
     const servePage = (port: number) => {
-      const base = `http://${publicHost}:${port}`;
       const formInner = buildPwcFormHtml(
         catalog,
         formDefaults,
@@ -1075,8 +1082,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
       );
       const wizardClientJson = JSON.stringify({ n: pwcNSteps, stepDefs: pwcStepDefs });
       const pwcValStepUrl =
-        pwcNSteps > 1 ? JSON.stringify(base + resolveValidateStepPath) : 'null';
-      const pwcValFieldUrl = JSON.stringify(base + resolveValidateFieldPath);
+        pwcNSteps > 1 ? JSON.stringify(resolveValidateStepPath) : 'null';
+      const pwcValFieldUrl = JSON.stringify(resolveValidateFieldPath);
       const uiTextJson = JSON.stringify(uiText);
       const pwcShellClass =
         options.stages && options.stages.length > 0
@@ -1801,8 +1808,8 @@ function runPromptCatalogWebUIImpl(options: RunPromptCatalogWebUIOptions): Promi
   </div>
   <script>
   (function () {
-    var sub = ${JSON.stringify(base + submitPath)};
-    var ref = ${JSON.stringify(base + reflowPath)};
+    var sub = ${JSON.stringify(submitPath)};
+    var ref = ${JSON.stringify(reflowPath)};
     var pwcValStep = ${pwcValStepUrl};
     var pwcValField = ${pwcValFieldUrl};
     var pwcStepMeta = ${JSON.stringify(PWC_FORM_META_STEP)};

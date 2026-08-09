@@ -28,6 +28,12 @@ import {
   resolveConfiguredStoragePath,
 } from './env-paths.js';
 import { ENV_CONFIG_SCHEMA_VERSION, normalizeEnvConfigSchemaVersion } from './env-config.js';
+import type { AppClientEntryMode } from './app-client-entry-mode.js';
+import {
+  normalizeEnvPortalsConfig,
+  type EnvPortalConfigEntry,
+  type EnvPortalsConfig,
+} from './env-portal-config.js';
 import {
   cleanupCurrentSessionAfterEnvRemoval,
   resolveEffectiveCurrentEnv,
@@ -97,6 +103,8 @@ export interface EnvConfigEntry {
   cdnBaseUrl?: string;
   /** Optional internal env file path. Defaults to <app-path>/.env, or <envName>/.env for legacy Docker-only layouts. */
   envFile?: string;
+  /** Client entry mode (APP_CLIENT_ENTRY_MODE). */
+  appClientEntryMode?: AppClientEntryMode;
   /** Application HTTP port (APP_PORT). */
   appPort?: number | string;
   /** Application secret key (APP_KEY). */
@@ -107,6 +115,10 @@ export interface EnvConfigEntry {
   setupState?: 'prepared' | 'installed';
   /** Initial install language saved for prepare/install flows. */
   lang?: string;
+  /** Initial portal template npm package or local path (INIT_PORTAL_TEMPLATE). */
+  portalTemplate?: string;
+  /** Local AI portal source workspace directories keyed by portal name. */
+  portals?: EnvPortalsConfig;
   rootUsername?: string;
   rootEmail?: string;
   rootPassword?: string;
@@ -172,6 +184,7 @@ export interface AuthConfig {
     init?: {
       defaultUiHost?: string;
       defaultApiHost?: string;
+      defaultPortalTemplate?: string;
     };
   };
   lastEnv?: string;
@@ -274,12 +287,14 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     baseUrl: _baseUrl,
     apibaseUrl: _legacyApiBaseUrl,
     schemaVersion: _schemaVersion,
+    portals: _portals,
     ...rest
   } = entry as EnvConfigEntry & { kind?: unknown };
   const normalizedKind = resolveEnvKind(entry);
   const apiBaseUrl = readEnvApiBaseUrl(entry);
   const schemaVersion = normalizeEnvConfigSchemaVersion(entry.schemaVersion);
   const proxy = normalizeEnvProxyConfig(entry.proxy);
+  const portals = normalizeEnvPortalsConfig(entry.portals);
   return {
     ...rest,
     ...(schemaVersion ? { schemaVersion } : {}),
@@ -287,6 +302,7 @@ function normalizeEnvConfigEntry(entry: EnvConfigEntry | undefined): EnvConfigEn
     ...(apiBaseUrl !== undefined ? { apiBaseUrl } : {}),
     ...(normalizeOptionalString(entry.appPublicPath) ? { appPublicPath: resolveAppPublicPath(entry.appPublicPath) } : {}),
     ...(proxy ? { proxy } : {}),
+    ...(portals ? { portals } : {}),
   };
 }
 
@@ -295,6 +311,7 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
   const locale = normalizeOptionalCliLocale(settings.locale);
   const defaultUiHost = normalizeOptionalString(settings.init?.defaultUiHost);
   const defaultApiHost = normalizeOptionalString(settings.init?.defaultApiHost);
+  const defaultPortalTemplate = normalizeOptionalString(settings.init?.defaultPortalTemplate);
   const updatePolicy = normalizeOptionalCliUpdatePolicy(settings.update?.policy);
   const logRetentionDays =
     typeof settings.log?.retentionDays === 'number' && Number.isInteger(settings.log.retentionDays)
@@ -318,11 +335,12 @@ function normalizeAuthConfig(config: AuthConfig & { dockerResourcePrefix?: strin
     name: config.name || config.dockerResourcePrefix,
     settings: {
       ...(locale ? { locale } : {}),
-      ...(defaultUiHost || defaultApiHost
+      ...(defaultUiHost || defaultApiHost || defaultPortalTemplate
         ? {
             init: {
               ...(defaultUiHost ? { defaultUiHost } : {}),
               ...(defaultApiHost ? { defaultApiHost } : {}),
+              ...(defaultPortalTemplate ? { defaultPortalTemplate } : {}),
             },
           }
         : {}),
@@ -557,6 +575,7 @@ export class Env {
     put('APP_PORT', this.appPort);
     put('APP_PUBLIC_PATH', this.config.appPublicPath ? resolveAppPublicPath(this.config.appPublicPath) : undefined);
     put('CDN_BASE_URL', this.config.cdnBaseUrl);
+    put('APP_CLIENT_ENTRY_MODE', this.config.appClientEntryMode);
     put('APP_KEY', this.config.appKey);
     put('TZ', this.config.timezone);
     put('DB_DIALECT', this.config.dbDialect);
@@ -843,6 +862,74 @@ export async function setEnvRuntime(
     runtime,
   };
   await saveAuthConfig(config, options);
+}
+
+export function resolveEnvPortalPath(
+  config: Pick<EnvConfigEntry, 'portals'> | undefined,
+  portal: string,
+): string | undefined {
+  const portalName = normalizeOptionalString(portal);
+  if (!portalName) {
+    return undefined;
+  }
+  return normalizeOptionalString(config?.portals?.[portalName]?.path);
+}
+
+export async function setEnvPortalPath(
+  envName: string,
+  portal: string,
+  portalPath: string,
+  options: AuthStoreOptions = {},
+) {
+  const portalName = normalizeOptionalString(portal);
+  const normalizedPath = normalizeOptionalString(portalPath);
+  if (!portalName || !normalizedPath) {
+    return;
+  }
+
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+      const portals = normalizeEnvPortalsConfig(previous.portals) ?? {};
+      return {
+        ...previous,
+        portals: {
+          ...portals,
+          [portalName]: {
+            ...(portals[portalName] ?? {}),
+            path: normalizedPath,
+          } satisfies EnvPortalConfigEntry,
+        },
+      };
+    },
+    options,
+  );
+}
+
+export async function unsetEnvPortalPath(envName: string, portal: string, options: AuthStoreOptions = {}) {
+  const portalName = normalizeOptionalString(portal);
+  if (!portalName) {
+    return;
+  }
+
+  await writeEnv(
+    envName,
+    (previous) => {
+      if (!previous) {
+        throw new Error(`Env "${envName}" is not configured`);
+      }
+      const portals = normalizeEnvPortalsConfig(previous.portals) ?? {};
+      delete portals[portalName];
+      return {
+        ...previous,
+        ...(Object.keys(portals).length > 0 ? { portals } : { portals: undefined }),
+      };
+    },
+    options,
+  );
 }
 
 export function resolveEnvProxyEntry(

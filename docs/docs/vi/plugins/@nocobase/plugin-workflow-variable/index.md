@@ -10,7 +10,7 @@ description: |
   Dùng để tạo biến tùy chỉnh hoặc gán giá trị cho chúng trong workflow, để lưu dữ liệu tạm thời trong quy trình.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

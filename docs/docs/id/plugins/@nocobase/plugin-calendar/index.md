@@ -7,7 +7,7 @@ description: |
   Menyediakan template Collection dan Block Calendar untuk mengelola data tanggal, biasanya digunakan untuk informasi terkait tanggal/waktu seperti event, janji temu, dan task.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

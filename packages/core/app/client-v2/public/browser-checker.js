@@ -17,11 +17,38 @@ function normalizePublicPath(value) {
   return ensureTrailingSlash(normalized);
 }
 
+function isSettingsBrowserCheckerScript(script) {
+  const source = String((script && script.src) || '').split(/[?#]/)[0];
+  return source.endsWith('/settings/browser-checker.js');
+}
+
+function resolveScopedSettingsRootPath(publicPath, pathname) {
+  const normalizedPublicPath = normalizePublicPath(publicPath);
+  const rootPrefix = normalizedPublicPath === '/' ? '' : normalizedPublicPath.replace(/\/+$/g, '');
+  const settingsRootPath = `${rootPrefix}/settings`;
+  if (!pathname.startsWith(`${settingsRootPath}/`)) {
+    return null;
+  }
+
+  const relativePath = pathname.slice(settingsRootPath.length + 1);
+  if (!/^(apps|_app)\/[^/]+$/.test(relativePath)) {
+    return null;
+  }
+
+  return `${pathname}/`;
+}
+
 const basename = normalizePublicPath(window['__nocobase_public_path__'] || '/');
 const currentPath = ensureLeadingSlash(String(window.location.pathname || '/').trim() || '/').replace(/\/{2,}/g, '/');
 const basenameWithoutTrailingSlash = basename === '/' ? '/' : basename.replace(/\/+$/, '');
+const scopedSettingsRootPath = isSettingsBrowserCheckerScript(document.currentScript)
+  ? resolveScopedSettingsRootPath(basename, currentPath)
+  : null;
 
-if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
+if (scopedSettingsRootPath) {
+  const newUrl = `${window.location.origin}${scopedSettingsRootPath}${window.location.search}${window.location.hash}`;
+  window.location.replace(newUrl);
+} else if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   const newUrl = `${window.location.origin}${basename}${window.location.search}${window.location.hash}`;
   window.location.replace(newUrl);
 } else if (basename !== '/' && !currentPath.startsWith(basename)) {

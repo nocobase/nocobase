@@ -7,7 +7,7 @@ description: |
   在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

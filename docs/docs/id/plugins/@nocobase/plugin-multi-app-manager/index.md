@@ -7,7 +7,7 @@ description: |
   Multi aplikasi berjalan dengan model berbagi proses, hanya cocok untuk lingkungan pengujian dan demo, jangan gunakan di lingkungan produksi.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

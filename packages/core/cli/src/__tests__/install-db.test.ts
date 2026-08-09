@@ -25,6 +25,7 @@ beforeEach(async () => {
   process.env.NB_LOCALE = 'en-US';
   delete process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS;
   await deleteCliConfigValue('default-api-host');
+  await deleteCliConfigValue('default-portal-template');
 });
 
 afterEach(async () => {
@@ -39,6 +40,7 @@ afterEach(async () => {
     process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS = originalExtractClientAssets;
   }
   await deleteCliConfigValue('default-api-host');
+  await deleteCliConfigValue('default-portal-template');
 });
 
 type InstallStatics = {
@@ -76,7 +78,7 @@ type InstallStatics = {
   resolveAvailableDefaultPort: (defaultPort: string) => Promise<string>;
   buildAppPromptInitialValues: (params: {
     envName?: string;
-    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string };
+    flags: { 'app-port'?: string; 'app-root-path'?: string; 'storage-path'?: string; 'portal-template'?: string };
   }) => Promise<Record<string, unknown>>;
   buildDbPromptInitialValues: (params: {
     flags: { 'db-port'?: string };
@@ -669,6 +671,7 @@ test('docker app plan wires app, db, network, port, and image settings', async (
       appPort: '13000',
       storagePath: './storage/demo',
       lang: 'zh-CN',
+      appClientEntryMode: 'legacy-default',
     },
     downloadResults: {
       source: 'docker',
@@ -710,6 +713,7 @@ test('docker app plan wires app, db, network, port, and image settings', async (
   expect(plan.args.includes('13000:80')).toBe(true);
   expect(plan.args.includes('--port')).toBe(false);
   expect(plan.args.includes('INIT_APP_LANG=zh-CN')).toBe(true);
+  expect(plan.args.includes('APP_CLIENT_ENTRY_MODE=legacy-default')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_USERNAME=nocobase')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_EMAIL=admin@nocobase.com')).toBe(true);
   expect(plan.args.includes('INIT_ROOT_PASSWORD=admin123')).toBe(true);
@@ -855,6 +859,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     appResults: {
       appRootPath: './apps/demo',
       appPort: '13080',
+      appClientEntryMode: 'modern-only',
       appKey: 'app-key-123',
       timeZone: 'Asia/Shanghai',
       storagePath: './storage/demo',
@@ -906,6 +911,7 @@ test('install saved env config forwards endpoint, auth, app, storage, and db set
     buildDts: false,
     appRootPath: './apps/demo',
     appPort: '13080',
+    appClientEntryMode: 'modern-only',
     storagePath: './storage/demo',
     appKey: 'app-key-123',
     timezone: 'Asia/Shanghai',
@@ -1249,6 +1255,42 @@ test('install seeds app port initial values unless the user provided --app-port'
     ).toEqual({});
   } finally {
     resolveAvailableDefaultPort.mockRestore();
+  }
+});
+
+test('install seeds the configured default portal template', async () => {
+  const installStatics = Install as unknown as InstallStatics;
+  const resolveAvailableDefaultPort = vi
+    .spyOn(
+      Install as unknown as {
+        resolveAvailableDefaultPort: (
+          defaultPort: string,
+          options?: { label?: string; warn?: boolean },
+        ) => Promise<string>;
+      },
+      'resolveAvailableDefaultPort',
+    )
+    .mockResolvedValue('61522');
+
+  await setCliConfigValue('default-portal-template', '/workspace/portal-template', { scope: 'global' });
+  try {
+    await expect(
+      installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: {},
+      }),
+    ).resolves.toMatchObject({
+      portalTemplate: '/workspace/portal-template',
+    });
+    await expect(
+      installStatics.buildAppPromptInitialValues({
+        envName: 'demo',
+        flags: { 'portal-template': '/explicit/portal-template' },
+      }),
+    ).resolves.not.toHaveProperty('portalTemplate');
+  } finally {
+    resolveAvailableDefaultPort.mockRestore();
+    await deleteCliConfigValue('default-portal-template', { scope: 'global' });
   }
 });
 

@@ -7,7 +7,7 @@ description: |
   Menyediakan Block Komentar untuk melihat dan membuat komentar pada detail record, pop-up, dan skenario serupa.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

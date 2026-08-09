@@ -8,6 +8,7 @@
  */
 
 export * from './AppComponents';
+export * from './AttachmentUpload';
 export * from './BlankComponent';
 export * from './category-tabs';
 export * from './form/table/dnd';

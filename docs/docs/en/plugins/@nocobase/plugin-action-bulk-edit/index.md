@@ -10,7 +10,7 @@ description: |
   Batch edit all records or selected records.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

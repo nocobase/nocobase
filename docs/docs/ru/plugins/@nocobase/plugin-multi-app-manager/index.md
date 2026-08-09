@@ -7,7 +7,7 @@ description: |
   Несколько приложений в одном процессе с общими ресурсами — только для тестов и демо. Не использовать в производственной среде.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

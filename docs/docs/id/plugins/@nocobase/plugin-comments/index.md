@@ -10,7 +10,7 @@ description: |
   Menyediakan template Collection dan Block Comment, menambahkan fungsi komentar untuk data dari Collection mana pun.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

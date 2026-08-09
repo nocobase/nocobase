@@ -7,7 +7,7 @@ description: |
   多应用以进程共享的方式运行，仅适合测试和演示环境，生产环境下请勿使用。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

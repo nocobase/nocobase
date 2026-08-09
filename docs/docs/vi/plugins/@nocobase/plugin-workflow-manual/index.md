@@ -7,7 +7,7 @@ description: |
   Dùng cho quy trình mà một phần quyết định được kiểm soát thủ công.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

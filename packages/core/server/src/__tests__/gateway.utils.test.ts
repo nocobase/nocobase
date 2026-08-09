@@ -12,7 +12,9 @@ import {
   injectRuntimeScript,
   MODERN_CLIENT_DIST_DIR,
   normalizeModernClientPrefix,
+  resolveSettingsPublicPath,
   resolveV2PublicPath,
+  rewriteSettingsAssetPublicPath,
   rewriteV2AssetPublicPath,
 } from '../gateway/utils';
 
@@ -31,6 +33,10 @@ describe('gateway utils', () => {
     expect(normalizeModernClientPrefix(undefined)).toBe(DIR);
   });
 
+  it('rejects the Settings route as a modern client prefix', () => {
+    expect(() => normalizeModernClientPrefix('/settings/')).toThrow('APP_MODERN_CLIENT_PREFIX "settings" is reserved');
+  });
+
   it('should resolve modern client public path from app public path (default prefix)', () => {
     expect(resolveV2PublicPath('/')).toBe(`/${DIR}/`);
     expect(resolveV2PublicPath('/nocobase/')).toBe(`/nocobase/${DIR}/`);
@@ -40,6 +46,13 @@ describe('gateway utils', () => {
     process.env.APP_MODERN_CLIENT_PREFIX = '/admin/';
     expect(resolveV2PublicPath('/')).toBe('/admin/');
     expect(resolveV2PublicPath('/nocobase/')).toBe('/nocobase/admin/');
+  });
+
+  it('should resolve the standalone settings public path independently of the modern prefix', () => {
+    process.env.APP_MODERN_CLIENT_PREFIX = '/modern/';
+
+    expect(resolveSettingsPublicPath('/')).toBe('/settings/');
+    expect(resolveSettingsPublicPath('/nocobase/')).toBe('/nocobase/settings/');
   });
 
   it('should rewrite modern asset paths for prefixed deployment', () => {
@@ -59,6 +72,17 @@ describe('gateway utils', () => {
     const html = `<script src="/${DIR}/assets/runtime.js" type="module"></script>`;
     expect(rewriteV2AssetPublicPath(html, `https://cdn.example.com/nocobase/${DIR}/`)).toBe(
       `<script src="https://cdn.example.com/nocobase/${DIR}/assets/runtime.js" type="module"></script>`,
+    );
+  });
+
+  it('should rewrite standalone settings assets for public-path and CDN deployments', () => {
+    const html = '<script src="/settings/assets/runtime.js" type="module"></script>';
+
+    expect(rewriteSettingsAssetPublicPath(html, '/nocobase/settings/')).toBe(
+      '<script src="/nocobase/settings/assets/runtime.js" type="module"></script>',
+    );
+    expect(rewriteSettingsAssetPublicPath(html, 'https://cdn.example.com/releases/42/settings/')).toBe(
+      '<script src="https://cdn.example.com/releases/42/settings/assets/runtime.js" type="module"></script>',
     );
   });
 

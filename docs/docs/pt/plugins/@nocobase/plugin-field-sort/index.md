@@ -7,7 +7,7 @@ description: |
   Used to sort the data in a collection.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

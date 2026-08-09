@@ -7,7 +7,7 @@ description: |
   Для процессов, где часть решений принимается пользователями.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

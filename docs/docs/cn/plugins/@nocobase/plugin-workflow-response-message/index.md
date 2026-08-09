@@ -7,7 +7,7 @@ description: |
   用于在表单事件和请求拦截工作流中组装并向客户端显示响应消息。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

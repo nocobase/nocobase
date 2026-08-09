@@ -15,6 +15,8 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generateV2Plugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { isClientDevProxyPath, rewriteClientDevProxyRootPath } from '../clientDevProxy';
+import { createSettingsDevProxyOptions, isSettingsDevPath } from '../settingsDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,7 +35,11 @@ function normalizeModernClientPrefix(value: string | undefined) {
   const segment = String(value || '')
     .trim()
     .replace(/^\/+|\/+$/g, '');
-  return segment || MODERN_CLIENT_DIST_DIR;
+  const normalized = segment || MODERN_CLIENT_DIST_DIR;
+  if (normalized === 'settings') {
+    throw new Error('APP_MODERN_CLIENT_PREFIX "settings" is reserved for the standalone Settings application.');
+  }
+  return normalized;
 }
 
 function ensurePublicPath(value: string) {
@@ -147,6 +153,7 @@ export default defineConfig(({ command }) => {
   const fileBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/files/`);
   const localStorageBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/storage/uploads/`);
   const staticBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/static/`);
+  const portalBasePath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/x/`);
   const modernClientPrefix = normalizeModernClientPrefix(process.env.APP_MODERN_CLIENT_PREFIX);
   // Build bakes the FIXED dist-dir segment (`/v/`) as a sentinel that the
   // server rewrites to the runtime prefix per request. Dev serves under the
@@ -158,6 +165,7 @@ export default defineConfig(({ command }) => {
   const wsBasePath = ensurePublicPath(process.env.WS_PATH || '/ws/');
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
+  const settingsPort = toNumber(process.env.APP_SETTINGS_PORT, toNumber(process.env.APP_PORT, 13001) + 3);
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST;
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT || process.env.APP_PORT, v2Port);
   const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${process.env.APP_PORT || 13001}`;
@@ -256,8 +264,10 @@ export default defineConfig(({ command }) => {
       publicDir: {
         name: path.resolve(__dirname, 'public'),
       },
-      proxy: {
-        [apiBasePath]: {
+      proxy: [
+        createSettingsDevProxyOptions(appPublicPath, settingsPort),
+        {
+          context: apiBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
@@ -275,25 +285,36 @@ export default defineConfig(({ command }) => {
             }
           },
         },
-        [localStorageBasePath]: {
+        {
+          context: localStorageBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [fileBasePath]: {
+        {
+          context: fileBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [staticBasePath]: {
+        {
+          context: staticBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [wsBasePath]: {
+        {
+          context: (pathname) => isClientDevProxyPath(pathname, portalBasePath),
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
           xfwd: true,
         },
-      },
+        {
+          context: wsBasePath,
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true,
+        },
+      ],
       historyApiFallback: {
         disableDotRule: true,
         index: `${v2PublicPath}index.html`,
@@ -304,11 +325,12 @@ export default defineConfig(({ command }) => {
       lazyCompilation: false,
       setupMiddlewares: [
         (middlewares) => {
-          if (appClientEntryMode !== 'modern-only') {
-            return;
-          }
-
           middlewares.unshift((req, res, next) => {
+            req.url = rewriteClientDevProxyRootPath(String(req.url || '/'), v2PublicPath);
+            if (appClientEntryMode !== 'modern-only') {
+              next();
+              return;
+            }
             const [rawPathname = '/', query = ''] = String(req.url || '/').split('?');
             const pathname = normalizePathname(rawPathname);
             if (
@@ -317,7 +339,9 @@ export default defineConfig(({ command }) => {
               pathname.startsWith(apiBasePath) ||
               pathname.startsWith(wsBasePath) ||
               pathname.startsWith(localStorageBasePath) ||
-              pathname.startsWith(staticBasePath)
+              isClientDevProxyPath(pathname, portalBasePath) ||
+              pathname.startsWith(staticBasePath) ||
+              isSettingsDevPath(pathname, appPublicPath)
             ) {
               next();
               return;

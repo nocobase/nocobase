@@ -7,7 +7,7 @@ description: |
   Связь «многие ко многим» между коллекциями через массив уникальных ключей целевой коллекции.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

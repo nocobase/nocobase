@@ -5,6 +5,63 @@
     "link": "/ai-builder/"
   },
   {
+    "type": "custom-link",
+    "label": "Aufbau mit AI Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Schnellstart",
+        "link": "/ai-builder/ai-portal/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modellauswahl",
+        "link": "/ai-builder/ai-portal/model-selection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aufbau mit einem AI Agent",
+        "link": "/ai-builder/ai-portal/agent-workflow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Projektstruktur und Technologie-Stack",
+        "link": "/ai-builder/ai-portal/project-structure"
+      },
+      {
+        "type": "custom-link",
+        "label": "Standardkomponenten und Erweiterungen",
+        "link": "/ai-builder/ai-portal/components"
+      },
+      {
+        "type": "custom-link",
+        "label": "Deployment und Quellcodeverwaltung",
+        "link": "/ai-builder/ai-portal/deploy"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Aufbau mit No-Code-Portal",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Oberflächenkonfiguration",
+        "link": "/ai-builder/ui-builder"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lösungen",
+        "link": "/ai-builder/dsl-reconciler"
+      },
+      {
+        "type": "custom-link",
+        "label": "Versionsverwaltung",
+        "link": "/ai-builder/version-control"
+      }
+    ]
+  },
+  {
     "type": "file",
     "name": "security",
     "label": "Sicherheit und Audit"
@@ -21,11 +78,6 @@
   },
   {
     "type": "file",
-    "name": "ui-builder",
-    "label": "Oberflächenkonfiguration"
-  },
-  {
-    "type": "file",
     "name": "workflow",
     "label": "Workflow-Verwaltung"
   },
@@ -36,11 +88,6 @@
   },
   {
     "type": "file",
-    "name": "dsl-reconciler",
-    "label": "Lösungen"
-  },
-  {
-    "type": "file",
     "name": "plugin-manage",
     "label": "Plugin-Verwaltung"
   },
@@ -48,10 +95,5 @@
     "type": "file",
     "name": "publish",
     "label": "Release-Verwaltung"
-  },
-  {
-    "type": "file",
-    "name": "version-control",
-    "label": "Versionsverwaltung"
   }
 ]

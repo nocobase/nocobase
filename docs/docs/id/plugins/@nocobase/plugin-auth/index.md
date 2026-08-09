@@ -7,7 +7,7 @@ description: |
   Manajemen autentikasi pengguna, termasuk autentikasi password dasar, autentikasi SMS, autentikasi protokol SSO, dan lain-lain. Dapat diperluas.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

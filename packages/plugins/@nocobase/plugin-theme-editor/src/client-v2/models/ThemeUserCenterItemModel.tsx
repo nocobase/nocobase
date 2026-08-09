@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UserCenterSelectItemModel } from '@nocobase/client-v2';
+import { isSettingsApp, UserCenterSelectItemModel } from '@nocobase/client-v2';
 import { getCurrentUserThemeId, getDefaultThemeItem, listThemeItems, updateUserTheme } from '../utils/themeApi';
 import { translateThemeEditor } from '../locale';
 
@@ -19,6 +19,13 @@ export class ThemeUserCenterItemModel extends UserCenterSelectItemModel {
   label = 'Theme';
 
   async prepare() {
+    // 设置中心的外观固定跟「简约」那条主题，在这里切主题只会改业务端的样子，
+    // 当前这一页纹丝不动，看着像是坏了。所以这个入口只留在业务端。
+    if (isSettingsApp(this.context.app)) {
+      this.ready = false;
+      return;
+    }
+
     const themes = await listThemeItems(this.context.api);
     const optionalThemes = themes.filter((item) => item.optional);
     const currentThemeId = getCurrentUserThemeId(this.context.user);

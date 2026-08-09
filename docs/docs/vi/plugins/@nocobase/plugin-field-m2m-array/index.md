@@ -7,7 +7,7 @@ description: |
   Hỗ trợ thiết lập quan hệ many-to-many bằng cách lưu khóa duy nhất của bảng đích trong một mảng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

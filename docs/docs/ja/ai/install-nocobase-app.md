@@ -16,7 +16,7 @@ description: NocoBase CLI をインストールし、`nb init --ui` ですばや
 まず NocoBase CLI をグローバルインストールします：
 
 ```bash
-npm install -g @nocobase/cli
+npm install -g @nocobase/cli@alpha
 nb --version
 ```
 

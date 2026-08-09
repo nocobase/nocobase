@@ -162,7 +162,7 @@ export default class SourceDev extends Command {
       );
     }
 
-    const npmArgs = ['dev', '--rsbuild'];
+    const npmArgs = ['dev', '--rsbuild', '--quickstart'];
     if (flags['db-sync']) {
       npmArgs.push('--db-sync');
     }

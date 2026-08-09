@@ -7,7 +7,7 @@ description: |
   Khi thêm dữ liệu, tạo snapshot cho dữ liệu quan hệ của nó và lưu trong dữ liệu hiện tại. Khi dữ liệu quan hệ được cập nhật, snapshot sẽ không được cập nhật.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

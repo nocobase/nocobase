@@ -7,7 +7,7 @@ description: |
   Based on OAuth 2.1 and OpenID Connect, this plugin enables NocoBase to act as an identity provider for other systems.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

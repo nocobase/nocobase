@@ -52,5 +52,5 @@ features:
         link: /file-manager/development
       - title: Ekstensi Knowledge Base
         details: Hubungkan knowledge base eksternal atau layanan retrieval kustom untuk memperluas sumber retrieval RAG bagi AI employees.
-        link: /ai-employees/knowledge-base/dev/external-knowledge-base
+        link: /ai-employees/dev/knowledge-base/external-knowledge-base
 ---

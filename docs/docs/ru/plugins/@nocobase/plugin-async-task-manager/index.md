@@ -7,7 +7,7 @@ description: |
   Управление и мониторинг асинхронных задач, например импорта и экспорта данных. Поддерживаются прогресс и уведомления.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

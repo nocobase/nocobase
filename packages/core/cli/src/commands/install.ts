@@ -64,10 +64,16 @@ import { commandOutput, commandSucceeds, ensureDockerDaemonRunning, run, runNoco
 import { printInfo, printStage, printVerbose, printWarning, setVerboseMode } from '../lib/ui.js';
 import { omitKeys, upperFirst } from '../lib/object-utils.ts';
 import { clearEnvRootSetup, getEnv, loadAuthConfig, setCurrentEnv, type Env, upsertEnv } from '../lib/auth-store.js';
+import {
+  defaultAppClientEntryModeForDownloadVersion,
+  normalizePublicAppClientEntryMode,
+  PUBLIC_APP_CLIENT_ENTRY_MODES,
+} from '../lib/app-client-entry-mode.js';
 import { buildStoredEnvConfig, type StoredEnvConfig } from '../lib/env-config.js';
 import { resolveDockerEnvFileArg } from '../lib/docker-env-file.ts';
 import { startDockerLogFollower } from '../lib/docker-log-stream.js';
 import { buildInitAppEnvVarsFromConfig } from '../lib/managed-init-env.js';
+import { ensureManagedEnvFileDefaults } from '../lib/managed-env-file.js';
 import {
   buildHookContext,
   persistHookScript,
@@ -104,6 +110,7 @@ const DEFAULT_INSTALL_ROOT_EMAIL = 'admin@nocobase.com';
 const DEFAULT_INSTALL_ROOT_PASSWORD = 'admin123';
 const DEFAULT_INSTALL_ROOT_NICKNAME = 'Super Admin';
 const DEFAULT_INSTALL_API_HOST = '127.0.0.1';
+const DEFAULT_INSTALL_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 
 function toOptionalPromptString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
@@ -427,6 +434,8 @@ type InstallParsedFlags = {
   'app-port'?: string;
   'storage-path'?: string;
   'app-public-path'?: string;
+  'app-client-entry-mode'?: string;
+  'portal-template'?: string;
   'root-username'?: string;
   'root-email'?: string;
   'root-password'?: string;
@@ -635,6 +644,13 @@ export default class Install extends Command {
     'app-public-path': Flags.string({
       description: 'Public path for the local app, for example / or /console/',
     }),
+    'app-client-entry-mode': Flags.string({
+      description: 'UI entry mode for this app env: modern-only, modern-default, or legacy-default',
+      options: [...PUBLIC_APP_CLIENT_ENTRY_MODES],
+    }),
+    'portal-template': Flags.string({
+      description: 'Template npm package or local path for the default AI Portal "main"',
+    }),
     'root-username': Flags.string({
       description: 'Initial admin username for the installed app',
       required: false,
@@ -745,6 +761,14 @@ export default class Install extends Command {
         initialValue: '/',
         yesInitialValue: '/',
         validate: validateAppPublicPath,
+      },
+      portalTemplate: {
+        type: 'text',
+        message: installText('prompts.portalTemplate.message'),
+        placeholder: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        initialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        yesInitialValue: DEFAULT_INSTALL_PORTAL_TEMPLATE,
+        required: true,
       },
     };
   }
@@ -1033,6 +1057,20 @@ export default class Install extends Command {
       }
     }
 
+    if (flags['app-client-entry-mode'] !== undefined) {
+      const v = normalizePublicAppClientEntryMode(flags['app-client-entry-mode']);
+      if (v) {
+        preset.appClientEntryMode = v;
+      }
+    }
+
+    if (flags['portal-template'] !== undefined) {
+      const v = String(flags['portal-template'] ?? '').trim();
+      if (v) {
+        preset.portalTemplate = v;
+      }
+    }
+
     if (flags['root-username'] !== undefined) {
       preset.rootUsername = String(flags['root-username'] ?? '').trim();
     }
@@ -1133,6 +1171,8 @@ export default class Install extends Command {
       'appPort',
       'storagePath',
       'appPublicPath',
+      'appClientEntryMode',
+      'portalTemplate',
     ]);
   }
 
@@ -1456,6 +1496,7 @@ export default class Install extends Command {
     const rootPassword = Install.toOptionalPromptString(config.rootPassword);
     const rootNickname = Install.toOptionalPromptString(config.rootNickname);
     const lang = Install.toOptionalPromptString(config.lang);
+    const portalTemplate = Install.toOptionalPromptString(config.portalTemplate);
     const auth = config.auth as { type?: string; accessToken?: string } | undefined;
     const savedAuthType = Install.toOptionalPromptString(config.authType) ?? Install.toOptionalPromptString(auth?.type);
 
@@ -1466,6 +1507,7 @@ export default class Install extends Command {
       ...(appPort ? { appPort } : {}),
       ...(storagePath ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(portalTemplate ? { portalTemplate } : {}),
       ...(hookScript ? { hookScript } : {}),
     };
 
@@ -1632,7 +1674,7 @@ export default class Install extends Command {
 
   static async buildAppPromptInitialValues(params: {
     envName?: string;
-    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path'>;
+    flags: Pick<InstallParsedFlags, 'app-port' | 'app-path' | 'app-root-path' | 'storage-path' | 'portal-template'>;
     warnOnPortFallback?: boolean;
   }): Promise<PromptInitialValues> {
     const initialValues: PromptInitialValues = {};
@@ -1655,6 +1697,13 @@ export default class Install extends Command {
         label: 'Default app port',
         warn: params.warnOnPortFallback ?? true,
       });
+    }
+
+    if (params.flags['portal-template'] === undefined) {
+      const defaultPortalTemplate = Install.toOptionalPromptString(await getCliConfigValue('default-portal-template'));
+      if (defaultPortalTemplate) {
+        initialValues.portalTemplate = defaultPortalTemplate;
+      }
     }
 
     return initialValues;
@@ -1883,17 +1932,24 @@ export default class Install extends Command {
     );
   }
 
-  private static buildInitAppEnvVars(params: {
-    appResults: Record<string, PromptValue>;
-    rootResults: Record<string, PromptValue>;
-  }): Record<string, string> {
-    return buildInitAppEnvVarsFromConfig({
-      lang: String(params.appResults.lang ?? ''),
-      rootUsername: String(params.rootResults.rootUsername ?? ''),
-      rootEmail: String(params.rootResults.rootEmail ?? ''),
-      rootPassword: String(params.rootResults.rootPassword ?? ''),
-      rootNickname: String(params.rootResults.rootNickname ?? ''),
-    });
+  private static buildInitAppEnvVars(
+    params: {
+      appResults: Record<string, PromptValue>;
+      rootResults: Record<string, PromptValue>;
+    },
+    options: { includePortal?: boolean } = {},
+  ): Record<string, string> {
+    return buildInitAppEnvVarsFromConfig(
+      {
+        lang: String(params.appResults.lang ?? ''),
+        rootUsername: String(params.rootResults.rootUsername ?? ''),
+        rootEmail: String(params.rootResults.rootEmail ?? ''),
+        rootPassword: String(params.rootResults.rootPassword ?? ''),
+        rootNickname: String(params.rootResults.rootNickname ?? ''),
+        portalTemplate: String(params.appResults.portalTemplate ?? ''),
+      },
+      options,
+    );
   }
 
   private static shouldPublishBuiltinDbPort(source: PromptValue | undefined): boolean {
@@ -2341,6 +2397,7 @@ export default class Install extends Command {
     const extractClientAssets = resolveExtractClientAssetsDefaultEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
     const appKey = Install.resolveManagedAppKey(params.appResults.appKey);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const appClientEntryMode = Install.toOptionalPromptString(params.appResults.appClientEntryMode);
     const timeZone = Install.resolveManagedTimeZone(params.appResults.timeZone);
     const containerName = Install.buildDockerAppContainerName(
       params.envName,
@@ -2396,6 +2453,7 @@ export default class Install extends Command {
       `${storagePath}:/app/nocobase/storage`,
     );
     pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath);
+    pushOptionalEnvArg(args, 'APP_CLIENT_ENTRY_MODE', appClientEntryMode);
     pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema);
     pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix);
     pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);
@@ -2759,6 +2817,11 @@ export default class Install extends Command {
       }),
     };
     setOptionalEnvVar(env, 'APP_PUBLIC_PATH', Install.toOptionalPromptString(params.appResults.appPublicPath));
+    setOptionalEnvVar(
+      env,
+      'APP_CLIENT_ENTRY_MODE',
+      Install.toOptionalPromptString(params.appResults.appClientEntryMode),
+    );
     setOptionalEnvVar(env, 'DB_SCHEMA', optionalEnvString(params.dbResults.dbSchema));
     setOptionalEnvVar(env, 'DB_TABLE_PREFIX', optionalEnvString(params.dbResults.dbTablePrefix));
     setOptionalEnvVar(env, 'DB_UNDERSCORED', optionalEnvBoolean(params.dbResults.dbUnderscored));
@@ -2973,11 +3036,16 @@ export default class Install extends Command {
     dbResults: Record<string, PromptValue>;
     rootResults: Record<string, PromptValue>;
     envAddResults: Record<string, PromptValue>;
+    ensureEnvFileDefaults?: boolean;
   }): Promise<void> {
     const defaultApiHost = await resolveDefaultApiHost();
-    await upsertEnv(params.envName, Install.buildSavedEnvConfig(params, { defaultApiHost }), {
+    const savedEnvConfig = Install.buildSavedEnvConfig(params, { defaultApiHost });
+    await upsertEnv(params.envName, savedEnvConfig, {
       scope: resolveDefaultConfigScope(),
     });
+    if (params.ensureEnvFileDefaults !== false) {
+      await ensureManagedEnvFileDefaults(params.envName, savedEnvConfig);
+    }
     await setCurrentEnv(params.envName, { scope: resolveDefaultConfigScope() });
   }
 
@@ -3093,6 +3161,8 @@ export default class Install extends Command {
     const appRootPath = Install.toOptionalPromptString(params.appResults.appRootPath);
     const storagePath = Install.toOptionalPromptString(params.appResults.storagePath);
     const appPublicPath = Install.toOptionalPromptString(params.appResults.appPublicPath);
+    const appClientEntryMode = Install.toOptionalPromptString(params.appResults.appClientEntryMode);
+    const portalTemplate = Install.toOptionalPromptString(params.appResults.portalTemplate);
     const derivedAppRootPath = appPath ? deriveConfiguredSourcePath(appPath) : undefined;
     const derivedStoragePath = appPath ? deriveConfiguredStoragePath(appPath) : undefined;
     const appPort = String(params.appResults.appPort ?? DEFAULT_INSTALL_APP_PORT).trim() || DEFAULT_INSTALL_APP_PORT;
@@ -3126,8 +3196,10 @@ export default class Install extends Command {
       appPort,
       ...(storagePath && !areConfiguredPathsEquivalent(storagePath, derivedStoragePath) ? { storagePath } : {}),
       ...(appPublicPath ? { appPublicPath } : {}),
+      ...(appClientEntryMode ? { appClientEntryMode } : {}),
       ...(envFile ? { envFile } : {}),
       lang: params.appResults.lang,
+      portalTemplate,
       appKey: params.appResults.appKey,
       timezone: params.appResults.timeZone,
       builtinDb: params.dbResults.builtinDb,
@@ -3185,6 +3257,7 @@ export default class Install extends Command {
           'app-root-path': parsed['app-root-path'] ?? Install.toOptionalPromptString(appPreset.appRootPath),
           'app-port': parsed['app-port'] ?? Install.toOptionalPromptString(appPreset.appPort),
           'storage-path': parsed['storage-path'] ?? Install.toOptionalPromptString(appPreset.storagePath),
+          'portal-template': parsed['portal-template'] ?? Install.toOptionalPromptString(appPreset.portalTemplate),
         },
       }),
       values: appPreset,
@@ -3204,6 +3277,9 @@ export default class Install extends Command {
     };
     downloadOpts.yes = yes;
     const downloadResults = await runPromptCatalog(Download.prompts, downloadOpts);
+    appResults.appClientEntryMode =
+      normalizePublicAppClientEntryMode(appResults.appClientEntryMode) ??
+      defaultAppClientEntryModeForDownloadVersion(downloadResultsValue(downloadResults, 'version'));
     if (parsed['skip-download']) {
       delete downloadResults.outputDir;
       delete downloadResults.replace;
@@ -3373,6 +3449,7 @@ export default class Install extends Command {
         dbResults,
         rootResults,
         envAddResults,
+        ensureEnvFileDefaults: false,
       });
       if (!parsed['skip-save-env-log']) {
         printInfo(`Saved env config for "${envName}".`);

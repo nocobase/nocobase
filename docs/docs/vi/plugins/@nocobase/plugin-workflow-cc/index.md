@@ -7,7 +7,7 @@ description: |
   Cung cấp chức năng sao chép trong workflow, gửi bản sao của phê duyệt hoặc bất kỳ thông tin nào khác đến những người dùng cụ thể.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

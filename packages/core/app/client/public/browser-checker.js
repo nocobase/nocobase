@@ -54,7 +54,7 @@ if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
   // This client-side redirect is still needed because legacy `index.html` is
   // not always served through the node gateway. In nginx/static delivery paths
   // the browser may already be running the legacy shell by the time entry-mode
-  // logic is evaluated, so the last hop into the modern entry has to be
+  // logic is evaluated, so the last hop into the configured default entry has to be
   // recoverable in the browser as well.
   const normalizedPath = normalizePathname(currentPath);
   const relativePath =
@@ -66,15 +66,22 @@ if (basename !== '/' && currentPath === basenameWithoutTrailingSlash) {
       ? normalizePathname(normalizedPath.slice(basename.length - 1))
       : null;
   const modernBase = `${trimTrailingSlash(basename)}/${modernClientPrefix}/`.replace(/\/{2,}/g, '/');
+  const settingsBase = `${basename}settings/`;
   const isModernDefault = appClientEntryMode === 'modern-default';
   const isModernOnly = appClientEntryMode === 'modern-only';
+  const isSettingsDefault = appClientEntryMode === 'settings-default';
+  const targetBase = isSettingsDefault ? settingsBase : modernBase;
   if (
     relativePath &&
     isClientDocumentEntryPath(relativePath) &&
-    (isModernDefault || isModernOnly) &&
-    !normalizedPath.startsWith(modernBase)
+    (isModernDefault || isModernOnly || isSettingsDefault) &&
+    !normalizedPath.startsWith(targetBase)
   ) {
-    const targetPath = isModernDefault
+    const targetPath = isSettingsDefault
+      ? relativePath === '/' || relativePath === '/index.html'
+        ? settingsBase
+        : null
+      : isModernDefault
       ? relativePath === '/' || relativePath === '/index.html'
         ? relativePath === '/index.html'
           ? `${modernBase}index.html`

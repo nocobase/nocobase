@@ -7,7 +7,7 @@ description: |
   Plugin untuk pratinjau file Office berbasis layanan online Microsoft.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Map block, support Gaode map and Google map, you can also extend more map types.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

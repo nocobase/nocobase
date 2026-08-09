@@ -1,0 +1,181 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Args, Command, Flags } from '@oclif/core';
+import { getCurrentEnvName, getEnv, unsetEnvPortalPath } from '../../lib/auth-store.js';
+import { resolveDefaultConfigScope } from '../../lib/cli-home.js';
+import { translateCli } from '../../lib/cli-locale.js';
+import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { confirm } from '../../lib/inquirer.ts';
+import { destroyPortalWorkspace } from '../../lib/portal-destroy.js';
+import { isInteractiveTerminal, printInfo, printSuccess } from '../../lib/ui.js';
+
+const portalDestroyText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
+  translateCli(`commands.portalDestroy.${key}`, values, { fallback });
+
+type DestroyPathStatus = 'deleted' | 'missing' | 'retained';
+
+function portalDestroyStatus(status: DestroyPathStatus): string {
+  return portalDestroyText(`statuses.${status}`, undefined, status);
+}
+
+async function ensureDestroyConfirmed(options: { command: Command; portal: string; yes?: boolean }): Promise<boolean> {
+  if (options.yes) {
+    return true;
+  }
+
+  if (!isInteractiveTerminal()) {
+    options.command.error(
+      portalDestroyText(
+        'errors.confirmationRequired',
+        undefined,
+        'Refusing to destroy a portal in non-interactive mode without --yes.',
+      ),
+    );
+  }
+
+  try {
+    return Boolean(
+      await confirm({
+        message: portalDestroyText(
+          'prompts.confirm',
+          { portal: options.portal },
+          `Destroy portal "${options.portal}" and delete its deployment directory?`,
+        ),
+        default: false,
+      }),
+    );
+  } catch {
+    return false;
+  }
+}
+
+export default class PortalDestroy extends Command {
+  static override summary = 'Destroy a portal record and deployed files';
+
+  static override examples = [
+    '<%= config.bin %> <%= command.id %> customer --yes',
+    '<%= config.bin %> <%= command.id %> customer --delete-dev-path --yes',
+    '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --force --yes',
+  ];
+
+  static override args = {
+    portal: Args.string({
+      required: true,
+      description: 'Portal name',
+    }),
+  };
+
+  static override flags = {
+    env: Flags.string({
+      char: 'e',
+      description: 'CLI env name; omitted uses the current env',
+    }),
+    yes: Flags.boolean({
+      char: 'y',
+      description: 'Skip confirmation prompts',
+      default: false,
+    }),
+    force: Flags.boolean({
+      description: 'Ignore missing portal records or deployment files',
+      default: false,
+    }),
+    'delete-dev-path': Flags.boolean({
+      char: 'D',
+      description: 'Delete the portal development directory in addition to the deployed portal',
+      default: false,
+    }),
+  };
+
+  async run(): Promise<void> {
+    const { args, flags } = await this.parse(PortalDestroy);
+    const requestedEnv = hasExplicitEnvSelection(this.argv) ? flags.env : undefined;
+    const crossEnvConfirmed = await ensureCrossEnvConfirmed({
+      command: this,
+      requestedEnv,
+      yes: flags.yes,
+    });
+    if (!crossEnvConfirmed) {
+      return;
+    }
+
+    const destroyConfirmed = await ensureDestroyConfirmed({
+      command: this,
+      portal: args.portal,
+      yes: flags.yes,
+    });
+    if (!destroyConfirmed) {
+      return;
+    }
+
+    const scope = resolveDefaultConfigScope();
+    const envName = requestedEnv ?? (await getCurrentEnvName({ scope }));
+    const env = await getEnv(envName, { scope });
+    if (!env) {
+      this.error(
+        portalDestroyText(
+          requestedEnv ? 'errors.envNotConfigured' : 'errors.noEnvConfigured',
+          { envName },
+          requestedEnv
+            ? `Env "${envName}" is not configured. Run \`nb env add ${envName} --api-base-url <url>\` first.`
+            : 'No NocoBase env is configured yet. Run `nb init --ui` to create one first.',
+        ),
+      );
+    }
+
+    const result = await destroyPortalWorkspace({
+      portal: args.portal,
+      env,
+      envName,
+      cliVersion: String(this.config.pjson.version ?? '').trim(),
+      force: flags.force,
+      deleteDevPath: flags['delete-dev-path'],
+    });
+    await unsetEnvPortalPath(envName, result.portal, { scope });
+
+    printSuccess(
+      portalDestroyText('messages.destroyed', { portal: result.portal }, `Portal "${result.portal}" destroyed.`),
+    );
+    printInfo(portalDestroyText('messages.mode', { mode: result.mode }, `Mode: ${result.mode}`));
+    printInfo(portalDestroyText('messages.app', { app: result.app }, `App: ${result.app}`));
+    printInfo(portalDestroyText('messages.base', { base: result.portalBase }, `Base: ${result.portalBase}`));
+    printInfo(
+      portalDestroyText(
+        'messages.record',
+        { status: portalDestroyStatus(result.recordDeleted ? 'deleted' : 'missing') },
+        `Record: ${result.recordDeleted ? 'deleted' : 'missing'}`,
+      ),
+    );
+    const deploymentPathStatus = result.deploymentPathDeleted ? 'deleted' : 'missing';
+    printInfo(
+      portalDestroyText(
+        'messages.deploymentPath',
+        { dir: result.deploymentPath, status: portalDestroyStatus(deploymentPathStatus) },
+        `Deployment path: ${deploymentPathStatus} (${result.deploymentPath})`,
+      ),
+    );
+    let developmentPathStatus: DestroyPathStatus = 'missing';
+    if (result.developmentPath) {
+      developmentPathStatus = result.developmentPathDeleted ? 'deleted' : 'retained';
+    }
+    printInfo(
+      portalDestroyText(
+        result.developmentPath ? 'messages.developmentPath' : 'messages.developmentPathMissing',
+        {
+          dir: result.developmentPath,
+          status: portalDestroyStatus(developmentPathStatus),
+        },
+        result.developmentPath
+          ? `Development path: ${developmentPathStatus} (${result.developmentPath})`
+          : 'Development path: missing',
+      ),
+    );
+  }
+}

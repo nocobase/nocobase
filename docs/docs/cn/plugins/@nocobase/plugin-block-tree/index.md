@@ -9,7 +9,7 @@ description: |
   提供树结构的筛选区块
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

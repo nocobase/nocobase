@@ -1453,15 +1453,28 @@ export const EmployeesPage: React.FC = () => {
   );
 };
 
-const AIEmployeeDrawerContent: React.FC<{
+type AIEmployeeDrawerContentProps = {
   editingRecord?: SettingsAIEmployee;
   knowledgeBaseEnabled: boolean;
   onSubmitted: () => Promise<void>;
-}> = ({ editingRecord, knowledgeBaseEnabled, onSubmitted }) => {
+};
+
+const AIEmployeeDrawerContent: React.FC<AIEmployeeDrawerContentProps> = (props) => {
+  const { message } = App.useApp();
+
+  return (
+    <App component={false}>
+      <AIEmployeeDrawerContentInner {...props} message={message} />
+    </App>
+  );
+};
+
+const AIEmployeeDrawerContentInner: React.FC<
+  AIEmployeeDrawerContentProps & { message: ReturnType<typeof App.useApp>['message'] }
+> = ({ editingRecord, knowledgeBaseEnabled, onSubmitted, message }) => {
   const app = useApp();
   const ctx = useFlowContext();
   const t = useT();
-  const { message } = App.useApp();
   const [form] = Form.useForm<EmployeeFormValues>();
   const [saving, setSaving] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState('profile');

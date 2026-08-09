@@ -51,6 +51,42 @@ class AuthBootstrapRoutePlugin extends Plugin {
   }
 }
 
+class TestAdminPortalPlugin extends Plugin {
+  async load() {
+    this.app.layoutManager.registerLayout({
+      routeName: 'admin',
+      routePath: '/admin',
+      uid: 'admin-layout-model',
+      layoutModelClass: 'AdminLayoutModel',
+    });
+  }
+}
+
+class TestRootPortalPlugin extends Plugin {
+  async load() {
+    this.router.add('root', {
+      path: '/',
+      authCheck: true,
+      Component: () => <div>portal landing</div>,
+    });
+  }
+}
+
+class TestScopedPortalPlugin extends Plugin {
+  async load() {
+    this.router.add('customer-portal', {
+      path: '/customer/*',
+      authCheck: true,
+      Component: () => <div>customer portal</div>,
+    });
+    this.router.add('customer-portal-signin', {
+      path: '/customer/signin',
+      skipAuthCheck: true,
+      Component: () => <div>customer portal signin</div>,
+    });
+  }
+}
+
 describe('nocobase buildin plugin auth redirect', () => {
   const originalLocation = globalThis.window.location;
 
@@ -85,6 +121,16 @@ describe('nocobase buildin plugin auth redirect', () => {
     vi.restoreAllMocks();
   });
 
+  it('should leave Admin portal registration to runtime plugins', async () => {
+    const app = createMockClient();
+    const plugin = new NocoBaseBuildInPlugin({}, app);
+
+    await plugin.load();
+
+    expect(app.layoutManager.hasLayout('admin')).toBe(false);
+    expect(app.router.has('root')).toBe(false);
+  });
+
   it('should navigate to v2 signin when /auth:check returns no user', async () => {
     // Aligns with v1: use react-router navigate (virtual) rather than
     // `window.location.replace`, so a `window.location.href` queued elsewhere
@@ -92,7 +138,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     // overridden.
     const app = createMockClient({
       publicPath: '/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
+      plugins: [NocoBaseBuildInPlugin as any, TestAdminPortalPlugin as typeof Plugin],
       router: { type: 'memory', initialEntries: ['/v2/admin/7vu4c2sdk6h'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
@@ -115,7 +161,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     // and race the 2FA response interceptor with its own signin redirect.
     const app = createMockClient({
       publicPath: '/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
+      plugins: [NocoBaseBuildInPlugin as any, TestAdminPortalPlugin as typeof Plugin],
       router: { type: 'memory', initialEntries: ['/v2/admin'] },
     });
     app.apiClient.auth.setToken('test-token');
@@ -136,29 +182,56 @@ describe('nocobase buildin plugin auth redirect', () => {
     expect(app.apiMock.history.post.filter((request) => request.url === 'auth:syncCookies')).toHaveLength(0);
   });
 
-  it('should redirect unauthenticated v2 root access to v2 signin via <Navigate />', async () => {
+  it('should redirect an unauthenticated Portal root to v2 signin', async () => {
     const app = createMockClient({
       publicPath: '/nocobase/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
+      plugins: [NocoBaseBuildInPlugin as any, TestRootPortalPlugin as typeof Plugin],
       router: { type: 'memory', initialEntries: ['/nocobase/v2/'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
       data: { lang: 'en-US', resources: { client: {} }, cron: {} },
     });
+    app.apiMock.onGet('/auth:check').reply(200, { data: {} });
 
     const Root = app.getRootComponent();
     render(<Root />);
 
     await waitFor(() => {
       expect(app.router.router.state.location.pathname).toBe('/nocobase/v2/signin');
-      expect(app.router.router.state.location.search).toBe('?redirect=%2Fnocobase%2Fv2%2Fadmin');
+      expect(app.router.router.state.location.search).toBe('?redirect=%2Fnocobase%2Fv2');
+    });
+  });
+
+  it('should use an explicitly registered Portal signin route when unauthenticated', async () => {
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [NocoBaseBuildInPlugin as unknown as typeof Plugin, TestScopedPortalPlugin as typeof Plugin],
+      router: { type: 'memory', initialEntries: ['/v2/customer/dashboard?tab=overview#panel'] },
+    });
+    app.apiMock.onGet('app:getLang').reply(200, {
+      data: { lang: 'en-US', resources: { client: {} }, cron: {} },
+    });
+    app.apiMock.onGet('/auth:check').reply(200, { data: {} });
+
+    const Root = app.getRootComponent();
+    render(<Root />);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/v2/customer/signin');
+      expect(app.router.router.state.location.search).toBe(
+        '?redirect=%2Fv2%2Fcustomer%2Fdashboard%3Ftab%3Doverview%23panel',
+      );
     });
   });
 
   it('should check current user after navigating from skipped route to v2 admin', async () => {
     const app = createMockClient({
       publicPath: '/v2/',
-      plugins: [NocoBaseBuildInPlugin as any, SkippedPublicRoutePlugin as any],
+      plugins: [
+        NocoBaseBuildInPlugin as any,
+        TestAdminPortalPlugin as typeof Plugin,
+        SkippedPublicRoutePlugin as typeof Plugin,
+      ],
       router: { type: 'memory', initialEntries: ['/v2/public'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
@@ -385,7 +458,7 @@ describe('nocobase buildin plugin auth redirect', () => {
   it('should render v2 admin root without redirecting away', async () => {
     const app = createMockClient({
       publicPath: '/v2/',
-      plugins: [NocoBaseBuildInPlugin as any],
+      plugins: [NocoBaseBuildInPlugin as any, TestAdminPortalPlugin as typeof Plugin],
       router: { type: 'memory', initialEntries: ['/v2/admin'] },
     });
     app.apiMock.onGet('app:getLang').reply(200, {
@@ -419,7 +492,7 @@ describe('nocobase buildin plugin auth redirect', () => {
     async (pathname) => {
       const app = createMockClient({
         publicPath: '/v2/',
-        plugins: [NocoBaseBuildInPlugin as any],
+        plugins: [NocoBaseBuildInPlugin as any, TestAdminPortalPlugin as typeof Plugin],
         router: { type: 'memory', initialEntries: [pathname] },
       });
       app.apiMock.onGet('app:getLang').reply(200, {

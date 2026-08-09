@@ -10,7 +10,7 @@ description: |
   Duplikasi sebuah record. Bisa diduplikasi ke form untuk diedit lalu di-submit, atau langsung diduplikasi menjadi record baru.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

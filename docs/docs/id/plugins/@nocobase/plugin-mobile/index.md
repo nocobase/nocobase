@@ -7,7 +7,7 @@ description: |
   Sejak versi 2.0, sisi mobile digantikan oleh plugin ui-layout yang baru, dan plugin tersebut masih dalam pengembangan.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

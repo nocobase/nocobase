@@ -9,7 +9,7 @@ description: |
   Provides block templates and popup templates for UI reuse.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

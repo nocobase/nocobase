@@ -7,7 +7,7 @@ description: |
   提供文件存储服务，并提供了文件表模板和附件字段。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -7,7 +7,7 @@ description: |
   Tạo và quản lý iframe trên trang, dùng để nhúng và hiển thị trang web hoặc nội dung bên ngoài.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

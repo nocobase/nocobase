@@ -38,6 +38,7 @@ vi.mock('../../locale', () => ({
 vi.mock('@nocobase/client-v2', () => ({
   DEFAULT_PAGE_SIZE: 20,
   getRouteRuntimeVersion: () => 'modern',
+  useApp: () => holder.ctx.app,
   FormSubmitActionModel: {
     registerFlow: vi.fn(),
   },
@@ -117,7 +118,14 @@ function makeCtx(resourceMap: Record<string, any>) {
   return {
     api: { resource: (name: string) => resourceMap[name] },
     viewer: { drawer: vi.fn(), dialog: vi.fn() },
-    app: { name: 'main', pm: { get: () => mockPlugin } },
+    app: {
+      name: 'main',
+      pm: { get: () => mockPlugin },
+      pluginSettingsManager: {
+        getRouteName: () => 'admin.settings.',
+        getRoutePath: () => '/admin/settings/',
+      },
+    },
   };
 }
 
@@ -170,6 +178,60 @@ describe('WorkflowPane (request layer)', () => {
         values: expect.objectContaining({ title: 'My workflow', type: 'collection' }),
       }),
     );
+  });
+
+  it('disables execute mode until a trigger type is selected', async () => {
+    const workflows = { create: vi.fn(), update: vi.fn() };
+    holder.ctx = makeCtx({ workflows });
+
+    renderWithApp(
+      <WorkflowFormDrawer
+        mode="create"
+        plugin={mockPlugin as unknown as React.ComponentProps<typeof WorkflowFormDrawer>['plugin']}
+        categoryOptions={[]}
+        onSubmitted={() => undefined}
+      />,
+    );
+
+    const asynchronous = screen.getByRole('radio', { name: /Asynchronously/ });
+    const synchronous = screen.getByRole('radio', { name: /Synchronously/ });
+    expect(asynchronous).toBeDisabled();
+    expect(synchronous).toBeDisabled();
+
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Trigger type' }));
+    fireEvent.click(await screen.findByText('Collection event'));
+
+    await waitFor(() => {
+      expect(asynchronous).toBeEnabled();
+      expect(synchronous).toBeEnabled();
+    });
+  });
+
+  it('keeps execute mode disabled and enforces a trigger-defined mode', async () => {
+    const workflows = { create: vi.fn(), update: vi.fn() };
+    holder.ctx = makeCtx({ workflows });
+    const pluginWithForcedSync = {
+      triggers: { getEntities: () => [['forced-sync', { title: 'Forced sync' }]] },
+      getTriggerOptions: (type?: string) => (type === 'forced-sync' ? { title: 'Forced sync', sync: true } : undefined),
+    };
+
+    renderWithApp(
+      <WorkflowFormDrawer
+        mode="create"
+        type="forced-sync"
+        plugin={pluginWithForcedSync as unknown as React.ComponentProps<typeof WorkflowFormDrawer>['plugin']}
+        categoryOptions={[]}
+        onSubmitted={() => undefined}
+      />,
+    );
+
+    const asynchronous = screen.getByRole('radio', { name: /Asynchronously/ });
+    const synchronous = screen.getByRole('radio', { name: /Synchronously/ });
+    await waitFor(() => {
+      expect(asynchronous).toBeDisabled();
+      expect(synchronous).toBeDisabled();
+      expect(synchronous).toBeChecked();
+    });
   });
 
   it('fires resource.update with the correct filterByTk on submit in edit mode', async () => {

@@ -24,7 +24,6 @@ import {
   isOauthAccessTokenExpired,
   resolveServerRequestTarget,
   resolveAccessToken,
-  resolveDeviceVerificationUrlForApiBaseUrl,
   setOauthBrowserOpenerForTests,
 } from '../lib/env-auth.js';
 
@@ -143,36 +142,6 @@ test('isOauthAccessTokenExpired uses a refresh window', () => {
       now,
     ),
   ).toBe(false);
-});
-
-test('resolveDeviceVerificationUrlForApiBaseUrl aligns device URLs with api public paths', () => {
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/idpOAuth/device?user_code=ZMVQ-MBLB',
-      'http://localhost:56187/nocobase/api',
-    ),
-  ).toBe('http://localhost:56187/nocobase/idpOAuth/device?user_code=ZMVQ-MBLB');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api/__app/a_b6hhu8n6qnr',
-    ),
-  ).toBe('http://localhost:56187/nocobase/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'http://localhost:56187/nocobase/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api/__app/a_b6hhu8n6qnr',
-    ),
-  ).toBe('http://localhost:56187/nocobase/apps/a_b6hhu8n6qnr/idpOAuth/device?user_code=WDQQ-PFCZ');
-
-  expect(
-    resolveDeviceVerificationUrlForApiBaseUrl(
-      'https://provider.example.com/device?user_code=WDQQ-PFCZ',
-      'http://localhost:56187/nocobase/api',
-    ),
-  ).toBe('https://provider.example.com/device?user_code=WDQQ-PFCZ');
 });
 
 test('authenticateEnvWithBasic exchanges basic credentials for a token', async () => {
@@ -369,7 +338,8 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
 
         if (url === 'http://localhost:13000/base/api/__app/analytics/idpOAuth/device/auth') {
           expect(init?.method).toBe('POST');
-          const body = init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(String(init?.body ?? ''));
+          const body =
+            init?.body instanceof URLSearchParams ? init.body : new URLSearchParams(String(init?.body ?? ''));
           expect(body.get('client_id')).toBe('device-client-1');
           expect(body.get('scope')).toBe('openid api offline_access');
           expect(body.get('resource')).toBe('http://localhost:13000/base/api/__app/analytics/');
@@ -378,8 +348,9 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
             JSON.stringify({
               device_code: 'device-code-1',
               user_code: 'ABCD-EFGH',
-              verification_uri: 'http://localhost:13000/apps/analytics/idpOAuth/device',
-              verification_uri_complete: 'http://localhost:13000/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH',
+              verification_uri: 'http://localhost:13000/settings/apps/analytics/idpOAuth/device',
+              verification_uri_complete:
+                'http://localhost:13000/settings/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH',
               expires_in: 600,
               interval: 5,
             }),
@@ -429,7 +400,96 @@ test('authenticateEnvWithOauth uses device flow when the server supports it', as
           resource: 'http://localhost:13000/base/api/__app/analytics/',
         });
         expect(tokenAttempts).toBe(2);
-        expect(openedUrls).toEqual(['http://localhost:13000/base/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH']);
+        expect(openedUrls).toEqual([
+          'http://localhost:13000/settings/apps/analytics/idpOAuth/device?user_code=ABCD-EFGH',
+        ]);
+      } finally {
+        globalThis.fetch = originalFetch;
+        setOauthBrowserOpenerForTests();
+      }
+    });
+  });
+});
+
+test('authenticateEnvWithOauth opens the server-provided device verification URL', async () => {
+  await withOauthDevicePollDelay('0', async () => {
+    await withTempCliHome(async () => {
+      await saveAuthConfig(
+        {
+          lastEnv: 'test',
+          envs: {
+            test: {
+              baseUrl: 'http://localhost:13000/api',
+            },
+          },
+        },
+        { scope: 'global' },
+      );
+
+      const originalFetch = globalThis.fetch;
+      const openedUrls: string[] = [];
+      setOauthBrowserOpenerForTests(async (url) => {
+        openedUrls.push(url);
+        return { opened: true };
+      });
+      globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+
+        if (url.endsWith('/.well-known/oauth-authorization-server')) {
+          return new Response(
+            JSON.stringify({
+              issuer: 'http://localhost:13000/api',
+              authorization_endpoint: 'http://localhost:13000/api/idpOAuth/authorize',
+              token_endpoint: 'http://localhost:13000/api/idpOAuth/token',
+              registration_endpoint: 'http://localhost:13000/api/idpOAuth/register',
+              device_authorization_endpoint: 'http://localhost:13000/api/idpOAuth/device/auth',
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        if (url === 'http://localhost:13000/api/idpOAuth/register') {
+          expect(init?.method).toBe('POST');
+          return new Response(JSON.stringify({ client_id: 'device-client-1' }), {
+            status: 201,
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+
+        if (url === 'http://localhost:13000/api/idpOAuth/device/auth') {
+          expect(init?.method).toBe('POST');
+          return new Response(
+            JSON.stringify({
+              device_code: 'device-code-1',
+              user_code: 'FLHT-NZXD',
+              verification_uri: 'http://localhost:13000/idpOAuth/device',
+              verification_uri_complete: 'http://localhost:13000/idpOAuth/device?user_code=FLHT-NZXD',
+              expires_in: 600,
+              interval: 5,
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          );
+        }
+
+        expect(url).toBe('http://localhost:13000/api/idpOAuth/token');
+        return new Response(
+          JSON.stringify({
+            access_token: 'device-access-token',
+            refresh_token: 'device-refresh-token',
+            expires_in: 3600,
+            scope: 'openid api offline_access',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }) as typeof fetch;
+
+      try {
+        await authenticateEnvWithOauth({
+          envName: 'test',
+          scope: 'global',
+        });
+
+        expect(openedUrls).toEqual(['http://localhost:13000/idpOAuth/device?user_code=FLHT-NZXD']);
       } finally {
         globalThis.fetch = originalFetch;
         setOauthBrowserOpenerForTests();

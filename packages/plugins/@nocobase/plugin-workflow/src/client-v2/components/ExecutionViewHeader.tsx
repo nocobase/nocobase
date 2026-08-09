@@ -8,6 +8,7 @@
  */
 
 import { QuestionCircleOutlined, StopOutlined } from '@ant-design/icons';
+import { useApp } from '@nocobase/client-v2';
 import { useMemoizedFn } from 'ahooks';
 import { App, Breadcrumb, Button, Space, Tag, Tooltip, theme } from 'antd';
 import React from 'react';
@@ -21,8 +22,6 @@ import { useWorkflowRuntimePaths } from '../hooks/useWorkflowRuntimePaths';
 import { useT, useWorkflowTranslation } from '../locale';
 import { ExecutionsDropdown } from './ExecutionsDropdown';
 import { formatTime } from './workflowCanvas';
-
-const WORKFLOW_HOMEPAGE = '/admin/settings/workflow';
 
 type ExecutionWorkflow = {
   id?: number | string;
@@ -74,11 +73,13 @@ export function ExecutionViewHeader({
   refresh: () => void;
 }) {
   const { t } = useWorkflowTranslation();
+  const app = useApp();
   const compile = useT();
   const { getWorkflowCanvasPath } = useWorkflowRuntimePaths();
   const { token } = theme.useToken();
   const { modal, message } = App.useApp();
   const workflow = execution.workflow;
+  const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
   // STARTED (0) / QUEUEING (null) are the in-progress states that can be canceled.
   const cancelable = execution.status === EXECUTION_STATUS.STARTED || execution.status === EXECUTION_STATUS.QUEUEING;
 
@@ -110,7 +111,7 @@ export function ExecutionViewHeader({
       <Breadcrumb
         items={[
           {
-            title: <Link to={WORKFLOW_HOMEPAGE}>{t('Workflow')}</Link>,
+            title: <Link to={workflowHomepage}>{t('Workflow')}</Link>,
           },
           {
             title:

@@ -7,7 +7,7 @@ description: |
   提供看板区块。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

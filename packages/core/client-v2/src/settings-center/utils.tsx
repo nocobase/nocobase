@@ -7,12 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { MenuProps } from 'antd';
 import { Outlet } from 'react-router-dom';
 import type { PluginSettingsPageType } from '../PluginSettingsManager';
+
+export type SidebarMenuItem = NonNullable<MenuProps['items']>[number];
 
 export const ADMIN_SETTINGS_LAYOUT_MODEL_UID = 'admin-settings-layout-model';
 export const PLUGIN_MANAGER_SETTING_NAME = 'plugin-manager';
 export const SYSTEM_SETTINGS_SETTING_NAME = 'system-settings';
+export const MULTI_PORTAL_SETTING_NAME = 'multi-portal';
 
 /**
  * 判断配置项是否拥有可直接渲染的页面。
@@ -218,7 +222,8 @@ export function findSettingsByName(
  * @returns {string | undefined} 默认跳转路径
  */
 export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType[] = []) {
-  const preferredNames = [SYSTEM_SETTINGS_SETTING_NAME, PLUGIN_MANAGER_SETTING_NAME];
+  // Portal 中心是设置中心的门面：登录后先落在应用入口，再往下走系统配置。
+  const preferredNames = [MULTI_PORTAL_SETTING_NAME, SYSTEM_SETTINGS_SETTING_NAME, PLUGIN_MANAGER_SETTING_NAME];
 
   for (const name of preferredNames) {
     const preferred = findSettingsByName(settings, name);
@@ -237,6 +242,50 @@ export function getDefaultSettingsPath(settings: readonly PluginSettingsPageType
   }
 
   return findFirstInternalSettingsPage(settings)?.path;
+}
+
+/**
+ * 构造左侧栏菜单。
+ *
+ * 左栏只铺**一级**配置项，不下钻子菜单：备份管理器、通知管理这类插件的子页面统一走页头下的
+ * Tab（和 v1 设置中心一致），左栏折叠展开再叠一层反而多一次点击、也和 Tab 表达重复。
+ *
+ * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
+ * @returns {SidebarMenuItem[]} antd Menu items
+ */
+export function getSidebarMenuItems(settings: readonly PluginSettingsPageType[] = []): SidebarMenuItem[] {
+  return settings
+    .filter((item) => !item.hidden)
+    .map((item) => ({
+      key: item.name,
+      label: item.label ?? item.title,
+      title: typeof item.title === 'string' ? item.title : undefined,
+      icon: item.icon,
+    }));
+}
+
+/**
+ * 把当前命中的配置项换算成左侧栏里真实存在的菜单 key。
+ *
+ * 左栏只有一级，命中的可能是某个子页面（它在左栏没有自己的条目），
+ * 这里回退到它所属的那个一级项。
+ *
+ * @param {PluginSettingsPageType[]} settings 某个分组下的配置项
+ * @param {string | undefined} activeName 当前命中的配置项名称
+ * @returns {string | undefined} 左栏应选中的 key
+ */
+export function getSidebarSelectedKey(
+  settings: readonly PluginSettingsPageType[] = [],
+  activeName?: string,
+): string | undefined {
+  if (!activeName) {
+    return undefined;
+  }
+
+  const contains = (items: readonly PluginSettingsPageType[]): boolean =>
+    items.some((item) => item.name === activeName || contains(item.children || []));
+
+  return settings.find((item) => item.name === activeName || contains(item.children || []))?.name;
 }
 
 /**

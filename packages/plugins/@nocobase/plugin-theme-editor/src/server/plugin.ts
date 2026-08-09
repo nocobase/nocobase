@@ -8,7 +8,7 @@
  */
 
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { compact, compactDark, dark, defaultTheme } from './builtinThemes';
+import { compact, compactDark, dark, defaultTheme, minimal } from './builtinThemes';
 import { updateTheme } from './actions/update-user-theme';
 
 export class PluginThemeEditorServer extends Plugin {
@@ -38,7 +38,7 @@ export class PluginThemeEditorServer extends Plugin {
 
     if ((await themeRepo.count()) === 0) {
       await themeRepo.create({
-        values: [defaultTheme, dark, compact, compactDark],
+        values: [defaultTheme, dark, compact, compactDark, minimal],
       });
     }
   }

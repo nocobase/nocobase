@@ -7,7 +7,7 @@ description: |
   Quản lý nguồn dữ liệu, bao gồm cơ sở dữ liệu Master có sẵn, cơ sở dữ liệu bên ngoài và API.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

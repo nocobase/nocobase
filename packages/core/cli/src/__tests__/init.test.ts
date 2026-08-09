@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
   error: vi.fn(),
   printInfo: vi.fn(),
   printWarning: vi.fn(),
+  ensureManagedEnvFileDefaults: vi.fn(),
 }));
 
 beforeEach(() => {
@@ -40,6 +41,7 @@ beforeEach(() => {
   mocks.getEnv.mockReset();
   mocks.getEnv.mockResolvedValue(undefined);
   mocks.upsertEnv.mockResolvedValue(undefined);
+  mocks.ensureManagedEnvFileDefaults.mockResolvedValue(undefined);
   mocks.inspectSkillsStatus.mockResolvedValue({ installed: false });
   mocks.installNocoBaseSkills.mockResolvedValue({ action: 'installed', status: {} });
   mocks.updateNocoBaseSkills.mockResolvedValue({ action: 'updated', status: {} });
@@ -95,6 +97,14 @@ vi.mock('../lib/run-npm.ts', async (importOriginal) => {
   return {
     ...actual,
     run: mocks.runNpm,
+  };
+});
+
+vi.mock('../lib/managed-env-file.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/managed-env-file.js')>();
+  return {
+    ...actual,
+    ensureManagedEnvFileDefaults: mocks.ensureManagedEnvFileDefaults,
   };
 });
 
@@ -210,6 +220,34 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(webUiOptions?.stages[2]?.catalog).toMatchObject({
     appPublicPath: expect.any(Object),
     skipDownload: expect.any(Object),
+  });
+  expect(webUiOptions?.stages[3]?.sectionTitle).toEqual({
+    key: 'commands.init.webUi.downloadAppFiles.title',
+  });
+  expect(webUiOptions?.stages[3]?.catalog).toMatchObject({
+    appClientEntryMode: {
+      type: 'select',
+      options: [
+        expect.objectContaining({
+          value: 'modern-only',
+          label: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyHint' },
+        }),
+        expect.objectContaining({
+          value: 'modern-default',
+          label: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultHint' },
+        }),
+        expect.objectContaining({
+          value: 'legacy-default',
+          label: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultLabel' },
+          hint: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultHint' },
+        }),
+      ],
+    },
+  });
+  expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
+    key: 'commands.init.webUi.configureDatabase.title',
   });
   expect(webUiOptions?.stages[4]?.catalog).toMatchObject({
     dbPassword: expect.any(Object),
@@ -801,6 +839,17 @@ test('nb init saves env config before install starts so failures still leave the
     schemaVersion: ENV_CONFIG_SCHEMA_VERSION,
     timezone: expect.any(String),
   });
+  expect(mocks.ensureManagedEnvFileDefaults.mock.calls[0]).toEqual([
+    'demoapp',
+    expect.objectContaining({
+      kind: 'docker',
+      source: 'docker',
+      setupState: 'prepared',
+    }),
+  ]);
+  expect(mocks.ensureManagedEnvFileDefaults.mock.invocationCallOrder[0] < runCommand.mock.invocationCallOrder[0]).toBe(
+    true,
+  );
   expect(String(mocks.upsertEnv.mock.calls[0]?.[1]?.appKey ?? '')).toMatch(/^[a-f0-9]{64}$/);
   expect(String(mocks.error.mock.calls.at(-1)?.[0] ?? '')).toContain('install failed');
 });

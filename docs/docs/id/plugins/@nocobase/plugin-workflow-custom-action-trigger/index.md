@@ -10,7 +10,7 @@ description: |
   Dipicu setelah mengklik tombol yang terhubung dengan event kustom. Cocok untuk orkestrasi Action kustom pada baris data.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

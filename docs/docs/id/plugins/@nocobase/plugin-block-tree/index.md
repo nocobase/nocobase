@@ -9,7 +9,7 @@ description: |
   Menyediakan Block filter dengan struktur tree.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

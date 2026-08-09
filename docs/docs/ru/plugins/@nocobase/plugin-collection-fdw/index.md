@@ -10,7 +10,7 @@ description: |
   Обёртка внешних данных (FDW) на уровне БД для подключения к удалённым таблицам; поддерживаются MySQL и PostgreSQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

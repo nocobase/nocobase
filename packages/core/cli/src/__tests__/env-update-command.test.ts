@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   getEnv: vi.fn(),
   replaceEnvConfig: vi.fn(),
   updateEnvRuntime: vi.fn(),
+  upsertManagedEnvFileValues: vi.fn(),
   setVerboseMode: vi.fn(),
   startTask: vi.fn(),
   stopTask: vi.fn(),
@@ -31,6 +32,10 @@ vi.mock('../lib/auth-store.js', () => ({
 
 vi.mock('../lib/bootstrap.js', () => ({
   updateEnvRuntime: mocks.updateEnvRuntime,
+}));
+
+vi.mock('../lib/managed-env-file.js', () => ({
+  upsertManagedEnvFileValues: mocks.upsertManagedEnvFileValues,
 }));
 
 vi.mock('../lib/ui.js', () => ({
@@ -136,6 +141,7 @@ test('env update saves config without refreshing runtime for saved app settings'
     { scope: 'global' },
   );
   expect(mocks.updateEnvRuntime).not.toHaveBeenCalled();
+  expect(mocks.upsertManagedEnvFileValues).not.toHaveBeenCalled();
   expect(mocks.printInfo).toHaveBeenCalledWith(
     'Saved env config was updated. Runtime commands were not refreshed automatically.',
   );
@@ -148,6 +154,7 @@ test('env update normalizes app-public-path in saved env config', async () => {
   const { default: EnvUpdate } = await import('../commands/env/update.js');
   mocks.getEnv.mockResolvedValue(createEnv());
   mocks.replaceEnvConfig.mockResolvedValue(undefined);
+  mocks.upsertManagedEnvFileValues.mockResolvedValue('/tmp/app/.env');
 
   const command = Object.assign(Object.create(EnvUpdate.prototype), {
     parse: vi.fn(async () => ({
@@ -201,6 +208,48 @@ test('env update saves cdn-base-url in saved env config', async () => {
     { scope: 'global' },
   );
   expect(mocks.updateEnvRuntime).not.toHaveBeenCalled();
+});
+
+test('env update saves app-client-entry-mode in saved env config', async () => {
+  const { default: EnvUpdate } = await import('../commands/env/update.js');
+  mocks.getEnv.mockResolvedValue(createEnv());
+  mocks.replaceEnvConfig.mockResolvedValue(undefined);
+
+  const command = Object.assign(Object.create(EnvUpdate.prototype), {
+    parse: vi.fn(async () => ({
+      args: { name: 'local' },
+      flags: {
+        verbose: false,
+        'app-client-entry-mode': 'modern-default',
+      },
+    })),
+    error: (message: string) => {
+      throw new Error(message);
+    },
+  });
+
+  await EnvUpdate.prototype.run.call(command);
+
+  expect(mocks.replaceEnvConfig).toHaveBeenCalledWith(
+    'local',
+    expect.objectContaining({
+      appClientEntryMode: 'modern-default',
+    }),
+    { scope: 'global' },
+  );
+  expect(mocks.updateEnvRuntime).not.toHaveBeenCalled();
+  expect(mocks.upsertManagedEnvFileValues).toHaveBeenCalledWith(
+    'local',
+    expect.objectContaining({
+      appClientEntryMode: 'modern-default',
+    }),
+    {
+      APP_CLIENT_ENTRY_MODE: 'modern-default',
+    },
+  );
+  expect(mocks.printInfo).toHaveBeenCalledWith(
+    "Run `nb app restart --env local` when you're ready to apply these changes.",
+  );
 });
 
 test('env update refreshes runtime after saving a new api base url', async () => {

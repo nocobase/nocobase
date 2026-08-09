@@ -359,10 +359,68 @@ export class SyncRunner {
     });
   }
 
+  private getIndexFields(index): string[] {
+    return (index.fields || []).map((field) => {
+      if (typeof field === 'string') {
+        return field;
+      }
+
+      return field.attribute || field.name;
+    });
+  }
+
+  private indexExists(modelIndex, existingIndexes): boolean {
+    const modelIndexFields = this.getIndexFields(modelIndex);
+
+    return existingIndexes.some((existingIndex) => {
+      if (modelIndex.name && existingIndex.name === modelIndex.name) {
+        return true;
+      }
+
+      return (
+        Boolean(modelIndex.unique) === Boolean(existingIndex.unique) &&
+        JSON.stringify(modelIndexFields) === JSON.stringify(this.getIndexFields(existingIndex))
+      );
+    });
+  }
+
+  private deduplicateIndexes(indexes) {
+    return indexes.filter((index, indexPosition) => {
+      return indexes.findIndex((item) => this.indexExists(index, [item])) === indexPosition;
+    });
+  }
+
+  private async filterExistingIndexesBeforeSync(options) {
+    const indexes = this.model['_indexes'];
+
+    if (!indexes?.length) {
+      return;
+    }
+
+    const deduplicatedIndexes = this.deduplicateIndexes(indexes);
+    this.model['_indexes'] = deduplicatedIndexes;
+
+    try {
+      const existingIndexes = await this.queryInterface.showIndex(this.tableName, options);
+      this.model['_indexes'] = deduplicatedIndexes.filter((index) => !this.indexExists(index, existingIndexes));
+    } catch (error) {
+      // If the table does not exist yet, let Sequelize create it with all configured indexes.
+    }
+  }
+
   async performSync(options) {
-    return this.collection.isInherited()
-      ? await InheritedSyncRunner.syncInheritModel(this.model, options)
-      : await SequelizeModel.sync.call(this.model, options);
+    if (this.collection.isInherited()) {
+      return await InheritedSyncRunner.syncInheritModel(this.model, options);
+    }
+
+    const indexes = this.model['_indexes'];
+
+    try {
+      await this.filterExistingIndexesBeforeSync(options);
+      return await SequelizeModel.sync.call(this.model, options);
+    } finally {
+      this.model['_indexes'] = indexes;
+    }
   }
 
   async handleZeroColumnModel(options) {

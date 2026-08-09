@@ -64,9 +64,9 @@ case "${NOCOBASE_EXTRACT_CLIENT_ASSETS:-false}" in
     export NB_CLI_LOG_DISABLED=1
     APP_PUBLIC_PATH_VALUE="${APP_PUBLIC_PATH:-/}"
     PROXY_CDN_BASE_URL=''
-    if [ -n "${CDN_BASE_URL:-}" ]; then
-      PROXY_CDN_BASE_URL="${CDN_BASE_URL%/}/"
-      if [ -n "${EXPLICIT_CDN_BASE_URL}" ] && [ "${CDN_VERSION:-}" = "auto" ]; then
+    if [ -n "${EXPLICIT_CDN_BASE_URL}" ]; then
+      PROXY_CDN_BASE_URL="${EXPLICIT_CDN_BASE_URL%/}/"
+      if [ "${CDN_VERSION:-}" = "auto" ]; then
         PROXY_CDN_BASE_URL="${PROXY_CDN_BASE_URL}${ACTIVE_VERSION}/"
       fi
     fi

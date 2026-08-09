@@ -222,7 +222,7 @@ test('runLocalNocoBaseCommand injects <app-path>/.env for managed local runtimes
     cwd: '/tmp/app1/source',
     env: {
       APP_PORT: '13000',
-      APP_ENV_PATH: '/tmp/app1/.env',
+      APP_ENV_PATH: path.join('/tmp/app1', '.env'),
       CUSTOM_FLAG: '1',
     },
     stdio: 'pipe',
@@ -249,7 +249,7 @@ test('runLocalNocoBaseCommand falls back to the parent .env when only source/ is
     cwd: '/tmp/custom/source',
     env: {
       APP_PORT: '13000',
-      APP_ENV_PATH: '/tmp/custom/.env',
+      APP_ENV_PATH: path.join('/tmp/custom/', '.env'),
     },
     stdio: undefined,
     onStdout: undefined,

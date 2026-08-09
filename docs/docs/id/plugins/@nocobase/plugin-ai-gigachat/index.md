@@ -9,7 +9,7 @@ description: |
   Mendukung integrasi dengan layanan LLM GigaChat.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

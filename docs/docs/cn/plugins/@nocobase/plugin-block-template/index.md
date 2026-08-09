@@ -7,7 +7,7 @@ description: |
   创建和管理区块模板，用于在页面中重复使用。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

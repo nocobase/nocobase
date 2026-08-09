@@ -472,17 +472,7 @@ export const TreeBlockView = observer(({ model }: { model: TreeBlockModel }) => 
   const fullTreeDataRef = useRef<any[]>([]);
   const previousTreeDataRef = useRef<any[]>();
   const awaitingSearchResetRef = useRef(false);
-  const collectionFilterTargetKey = collection?.filterTargetKey;
-  const propsFieldNames = model.props?.fieldNames;
-  const fieldNames = useMemo(
-    () => ({
-      key: collectionFilterTargetKey,
-      title: propsFieldNames?.title || collectionFilterTargetKey,
-      children: 'children',
-      ...(propsFieldNames || {}),
-    }),
-    [collectionFilterTargetKey, propsFieldNames],
-  );
+  const fieldNames = model.getFieldNames();
   const titleField = fieldNames.title;
   const collectionField = collection?.getField?.(titleField);
   const titleFieldModel = model.getTitleFieldSettingsContainer().subModels.field as any;

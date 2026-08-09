@@ -52,6 +52,10 @@ const MISSING_COMMAND_SPECS = {
     displayName: 'pnpm',
     configKey: 'bin.pnpm',
   },
+  npm: {
+    displayName: 'npm',
+    configKey: 'bin.npm',
+  },
 } as const;
 const DOCKER_DAEMON_UNAVAILABLE_PATTERNS = [
   /cannot connect to the docker daemon/i,
@@ -64,35 +68,46 @@ async function resolveCommandName(name: string): Promise<string> {
   return await resolveConfiguredCommandName(name);
 }
 
-type CommandProcessOptions = {
+export type CommandProcessOptions = {
   cwd?: string;
   env?: Record<string, string>;
+  envMode?: 'inherit' | 'replace';
   errorName?: string;
   timeoutMs?: number;
 };
 
-type RunProcessOptions = CommandProcessOptions & {
+export type RunProcessOptions = CommandProcessOptions & {
   stdio?: 'inherit' | 'pipe' | 'ignore';
   onStdout?: (chunk: string) => void;
   onStderr?: (chunk: string) => void;
 };
 
+export type RunCommand = (name: string, args: string[], options?: RunProcessOptions) => Promise<void>;
+
 function shouldTeeInheritedOutput(options?: RunProcessOptions): boolean {
   return options?.stdio === 'inherit' && Boolean(String(process.env.NB_CLI_ACTIVE_LOG_FILE ?? '').trim());
 }
 
-function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
-  const code =
-    error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
-  if (code !== 'ENOENT') {
-    return undefined;
+function buildProcessEnv(options?: CommandProcessOptions): NodeJS.ProcessEnv {
+  if (options?.envMode === 'replace') {
+    return options.env ?? {};
   }
+  return {
+    ...process.env,
+    ...options?.env,
+  };
+}
 
+function createMissingCommandError(name: string, label: string, error: unknown): Error | undefined {
   if (!Object.prototype.hasOwnProperty.call(MISSING_COMMAND_SPECS, name)) {
     return undefined;
   }
 
   const spec = MISSING_COMMAND_SPECS[name as keyof typeof MISSING_COMMAND_SPECS];
+  if (!isMissingCommandError(name, spec.displayName, error)) {
+    return undefined;
+  }
+
   return new Error(
     translateCli(
       'commands.shared.missingCommand',
@@ -102,6 +117,89 @@ function createMissingCommandError(name: string, label: string, error: unknown):
       },
     ),
   );
+}
+
+function isMissingCommandError(name: string, displayName: string, error: unknown): boolean {
+  const code =
+    error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : undefined;
+  if (code === 'ENOENT') {
+    return true;
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  const lowerMessage = message.toLowerCase();
+  return (
+    lowerMessage.includes(`spawn ${name.toLowerCase()} enoent`) ||
+    lowerMessage.includes(`${name.toLowerCase()} executable could not be found`) ||
+    lowerMessage.includes(`${displayName.toLowerCase()} executable could not be found`)
+  );
+}
+
+export async function runPnpmCommand(
+  runCommand: RunCommand,
+  args: string[],
+  options: RunProcessOptions,
+): Promise<void> {
+  try {
+    await runCommand('pnpm', args, options);
+  } catch (error) {
+    throw createMissingCommandError('pnpm', options.errorName ?? `pnpm ${args.join(' ')}`.trim(), error) ?? error;
+  }
+}
+
+function createInstallArgsWithoutTrustLockfile(args: string[]): string[] | undefined {
+  if (!args.includes('install') || !args.includes('--trust-lockfile')) {
+    return undefined;
+  }
+  return args.filter((arg) => arg !== '--trust-lockfile');
+}
+
+function isFriendlyMissingPnpmError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('because the pnpm executable could not be found');
+}
+
+function formatPnpmLabel(args: string[]): string {
+  return `pnpm ${args.join(' ')}`.trim();
+}
+
+export async function resolvePnpmInstallCommand(cwd: string): Promise<{ args: string[]; errorName: string }> {
+  const hasLockfile = await fsp
+    .stat(path.join(cwd, 'pnpm-lock.yaml'))
+    .then((stats) => stats.isFile())
+    .catch(() => false);
+  if (hasLockfile) {
+    const args = ['install', '--frozen-lockfile', '--trust-lockfile'];
+    return {
+      args,
+      errorName: formatPnpmLabel(args),
+    };
+  }
+
+  const args = ['install'];
+  return {
+    args,
+    errorName: formatPnpmLabel(args),
+  };
+}
+
+export async function runPnpmInstallCommand(
+  runCommand: RunCommand,
+  args: string[],
+  options: RunProcessOptions,
+): Promise<void> {
+  try {
+    await runPnpmCommand(runCommand, args, options);
+  } catch (error) {
+    const fallbackArgs = createInstallArgsWithoutTrustLockfile(args);
+    if (!fallbackArgs || isFriendlyMissingPnpmError(error)) {
+      throw error;
+    }
+    await runPnpmCommand(runCommand, fallbackArgs, {
+      ...options,
+      errorName: formatPnpmLabel(fallbackArgs),
+    });
+  }
 }
 
 function isDockerDaemonUnavailableError(error: unknown): boolean {
@@ -192,10 +290,7 @@ export async function run(name: string, args: string[], options?: RunProcessOpti
     const child = spawn(command, [...args], {
       stdio,
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       windowsHide: process.platform === 'win32',
     });
     if (options?.stdio === 'pipe' || shouldTeeInheritedOutput(options)) {
@@ -325,10 +420,7 @@ export async function commandSucceeds(name: string, args: string[], options?: Co
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       stdio: 'ignore',
       windowsHide: process.platform === 'win32',
     });
@@ -361,10 +453,7 @@ export async function commandOutput(name: string, args: string[], options?: Comm
   return await new Promise((resolve, reject) => {
     const child = spawn(command, [...args], {
       cwd,
-      env: {
-        ...process.env,
-        ...options?.env,
-      },
+      env: buildProcessEnv(options),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: process.platform === 'win32',
     });
@@ -431,10 +520,7 @@ export async function commandOutputViaFile(
     const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
       const child = spawn(command, [...args], {
         cwd,
-        env: {
-          ...process.env,
-          ...options?.env,
-        },
+        env: buildProcessEnv(options),
         stdio: ['ignore', stdoutHandle.fd, stderrHandle.fd],
         windowsHide: process.platform === 'win32',
       });

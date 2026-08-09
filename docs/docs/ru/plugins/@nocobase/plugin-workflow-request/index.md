@@ -7,7 +7,7 @@ description: |
   Отправка HTTP-запросов к любому сервису для обмена данными в рабочем процессе.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

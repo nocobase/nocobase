@@ -7,7 +7,7 @@ description: |
   Menyediakan UI client untuk server NocoBase.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

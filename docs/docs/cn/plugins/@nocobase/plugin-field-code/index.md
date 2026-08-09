@@ -10,7 +10,7 @@ description: |
   用于代码编辑和高亮显示，支持 Java、JavaScript、Python、SQL 等语言。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

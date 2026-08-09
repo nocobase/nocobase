@@ -89,6 +89,9 @@
       "lowerCaseTableNamesRequiresUnderscored": "当 MySQL 的 lower_case_table_names=1 时，必须设置 DB_UNDERSCORED=true。"
     }
   },
+  "apiClient": {
+    "authRequiredHint": "认证失败或已保存的登录状态已过期。请运行 `{{command}}` 重新认证。"
+  },
   "commands": {
     "jsTemplate": {
       "flags": {
@@ -256,6 +259,204 @@
         "refusal": "拒绝对 env \"{{requestedEnv}}\" 执行该命令，因为当前 env 是 \"{{currentEnv}}\"，且当前 agent 会话无法进行交互确认。\n\n出于安全考虑，agent 不会自动切换 env，也不会替你自动补上 --yes。\n\n如果要继续：\n- 请先自行执行 `nb env use {{requestedEnv}}`，然后重新运行该命令，或\n- 使用相同命令并追加 `--env {{requestedEnv}} --yes`，以确认这是一次性的跨 env 操作。"
       }
     },
+    "portalCreate": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "templateInvalidDirectory": "Portal 模板 \"{{source}}\" 无效：需要是一个目录。",
+        "localTemplateMissing": "Portal 模板目录不存在：{{source}}",
+        "templateUnresolved": "无法解析 Portal 模板 \"{{source}}\"。{{details}}",
+        "templateDownloadFailed": "无法通过 npm pack 下载 Portal 模板 \"{{source}}\"。{{details}}",
+        "templateExtractFailed": "解压 Portal 模板 \"{{source}}\" 失败：{{details}}",
+        "templateMissingPackageJson": "Portal 模板 \"{{source}}\" 无效：缺少 package.json。",
+        "npmPackNoTarball": "npm pack 没有为 {{source}} 生成本地 tarball。",
+        "npmPackMultipleTarballs": "npm pack 为 {{source}} 生成了多个 tarball。",
+        "invalidPortalName": "Portal 名称 \"{{value}}\" 无效。请使用小写字母、数字、下划线或连字符，并以小写字母或数字开头。",
+        "invalidPortalAppName": "从 apiBaseUrl 解析出的 Portal app 名称 \"{{value}}\" 无效。请使用字母、数字、下划线或连字符，并以字母或数字开头。",
+        "missingApiBaseUrl": "无法创建 Portal，因为当前 env 没有 apiBaseUrl。",
+        "outsideParent": "拒绝修改 {{parentDir}} 之外的 Portal：{{portalDir}}",
+        "sshUnsupported": "第一版暂不支持为 ssh env 创建 Portal。",
+        "workspaceExists": "Portal 已存在：{{portalDir}}\n如需删除并重新创建，请追加 --force。",
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
+      },
+      "messages": {
+        "skipInstall": "未找到 {{portalDir}}/package.json，已跳过 pnpm install。",
+        "created": "Portal \"{{portal}}\" 已创建：{{portalDir}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "sourceStorage": "源码存储：{{sourceStorage}}",
+        "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
+      }
+    },
+    "portalConfig": {
+      "errors": {
+        "invalidSourceStorage": "源码存储 \"{{value}}\" 无效。请使用 \"nocobase\" 或 \"git\"。",
+        "invalidGitPath": "--git-path 必须是 Git 仓库内的相对路径。",
+        "gitOptionsForNocobaseStorage": "--git-repo、--git-branch 和 --git-path 只能与 --source-storage git 一起使用。",
+        "gitRepoRequired": "--source-storage 为 git 时必须提供 --git-repo。",
+        "gitRepoInvalid": "--git-repo 必须是完整的 Git remote URL。",
+        "updateFailed": "Portal 配置更新失败，状态码 {{status}}\n{{details}}"
+      }
+    },
+    "portalConfigure": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "noChanges": "没有提供 Portal 配置变更。请传入 --path、--source-storage 或 --git-* 参数。",
+        "notFound": "Portal \"{{portal}}\" 不存在。请运行 `nb portal list` 查看可用 Portal。"
+      },
+      "messages": {
+        "updated": "Portal \"{{portal}}\" 配置已更新。",
+        "pathUpdated": "开发路径：{{portalDir}}",
+        "remoteSynced": "远端 Portal 记录：已同步",
+        "remoteSkipped": "远端 Portal 记录：未找到，仅更新本地配置"
+      }
+    },
+    "portalDeploy": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal 无效：{{portalDir}} 中缺少 package.json。",
+        "distMissing": "Portal build 没有生成 {{distDir}}/index.html。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 部署 Portal。",
+        "uploadFailed": "Portal dist 上传失败，状态码 {{status}}\n{{details}}",
+        "recordSyncFailed": "Portal 记录同步失败，状态码 {{status}}\n{{details}}"
+      },
+      "messages": {
+        "deployed": "Portal \"{{portal}}\" 已部署。",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "record": "记录：已同步",
+        "dist": "Dist：{{dist}}",
+        "localDist": "本地 dist：{{dist}}",
+        "serverDist": "服务端 dist：{{dist}}"
+      }
+    },
+    "portalList": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 列出 Portal。",
+        "listFailed": "Portal 列表获取失败，状态码 {{status}}\n{{details}}"
+      },
+      "messages": {
+        "empty": "没有找到 Portal 记录。"
+      },
+      "table": {
+        "name": "名称",
+        "url": "访问 URL",
+        "portalType": "Portal 类型",
+        "path": "开发路径",
+        "enabled": "启用",
+        "default": "默认"
+      }
+    },
+    "portalPull": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "gitRepoRequiredForTemporaryPull": "--git-branch 和 --git-path 作为临时 Git pull 参数时必须同时提供 --git-repo。如需更新 Portal 配置，请使用 `nb portal config`。"
+      },
+      "messages": {
+        "noop": "无需执行 pull。",
+        "pulled": "Portal 源码 \"{{portal}}\" 已拉取到 {{portalDir}}",
+        "installFailed": "依赖安装没有成功完成。请在 {{portalDir}} 中手动运行 `pnpm install`。"
+      }
+    },
+    "portalSource": {
+      "errors": {
+        "workspaceNotReplaceable": "拒绝替换非 Portal 目录：{{portalDir}}\n目标目录必须为空，或包含带 nocobase 字段的 package.json。"
+      }
+    },
+    "swagger": {
+      "errors": {
+        "pluginDisabled": "API 文档插件尚未启用。请先启用该插件，再获取 Swagger 文档。",
+        "requestFailed": "Swagger 请求失败，状态码 {{status}}\n{{details}}",
+        "invalidDestinations": "swagger:getUrls 返回了无效的文档列表。",
+        "invalidDocument": "swagger:get 返回了无效的 OpenAPI 文档。"
+      },
+      "messages": {
+        "empty": "没有可用的 Swagger 文档命名空间。",
+        "saved": "Swagger 文档已保存到 {{output}}。"
+      },
+      "table": {
+        "name": "名称",
+        "namespace": "命名空间",
+        "url": "URL",
+        "field": "字段",
+        "value": "值"
+      },
+      "fields": {
+        "namespace": "命名空间",
+        "title": "标题",
+        "version": "版本",
+        "openapi": "OpenAPI",
+        "paths": "路径数"
+      }
+    },
+    "portalInfo": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "notFound": "Portal \"{{portal}}\" 不存在。"
+      },
+      "fields": {
+        "name": "名称",
+        "url": "访问 URL",
+        "portalType": "Portal 类型",
+        "developmentPath": "开发路径",
+        "deploymentPath": "部署路径",
+        "enabled": "启用"
+      }
+    },
+    "portalDestroy": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "confirmationRequired": "非交互模式下拒绝删除 Portal。请追加 --yes 后重试。",
+        "outsideParent": "拒绝删除 {{parentDir}} 之外的 Portal：{{portalDir}}",
+        "workspaceMissing": "Portal 部署路径不存在：{{portalDir}}\n如需忽略部署文件缺失，请追加 --force。",
+        "unsupportedEnvKind": "第一版暂不支持为 {{kind}} env 删除 Portal。",
+        "unsafeDevelopmentPath": "拒绝删除不安全的 Portal 开发路径：{{portalDir}}",
+        "recordDestroyFailed": "Portal 记录删除失败，状态码 {{status}}\n{{details}}"
+      },
+      "prompts": {
+        "confirm": "删除 Portal \"{{portal}}\" 并移除它的部署目录？"
+      },
+      "statuses": {
+        "deleted": "已删除",
+        "missing": "缺失",
+        "retained": "已保留"
+      },
+      "messages": {
+        "destroyed": "Portal \"{{portal}}\" 已删除。",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "record": "记录：{{status}}",
+        "deploymentPath": "部署路径：{{status}}（{{dir}}）",
+        "developmentPath": "开发路径：{{status}}（{{dir}}）",
+        "developmentPathMissing": "开发路径：缺失"
+      }
+    },
+    "portalDev": {
+      "errors": {
+        "envNotConfigured": "env \"{{envName}}\" 尚未配置。请先运行 `nb env add {{envName}} --api-base-url <url>`。",
+        "noEnvConfigured": "还没有配置 NocoBase env。请先运行 `nb init --ui` 创建一个。",
+        "workspaceMissing": "Portal 不存在：{{portalDir}}\n请先运行 `nb portal create {{portal}}`。",
+        "packageJsonMissing": "Portal 无效：{{portalDir}} 中缺少 package.json。",
+        "sshUnsupported": "第一版暂不支持为 ssh env 启动 Portal 开发服务。"
+      },
+      "messages": {
+        "starting": "正在启动 Portal \"{{portal}}\"...",
+        "mode": "Mode：{{mode}}",
+        "app": "App：{{app}}",
+        "base": "Base：{{base}}",
+        "dir": "目录：{{dir}}"
+      }
+    },
     "license": {
       "activate": {
         "interactive": {
@@ -355,7 +556,7 @@
           "betaLabel": "beta",
           "betaHint": "测试版。包含即将发布的新功能，适合提前体验和反馈。",
           "alphaLabel": "alpha",
-          "alphaHint": "开发版。功能更新最快，但可能不完整或不稳定。",
+          "alphaHint": "如果要体验 3.0 新功能，选择这个版本。",
           "otherLabel": "其他",
           "otherHint": "手动填写其他版本号、Docker tag 或 Git ref，例如分支名。"
         },
@@ -428,6 +629,21 @@
         "appPublicPath": {
           "message": "应用子路径（例如 /nocobase/）",
           "placeholder": "/ 或 /nocobase/"
+        },
+        "portalType": {
+          "message": "Portal 类型",
+          "noCodeLabel": "无代码 Portal",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>",
+          "aiLabel": "AI Portal",
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>"
+        },
+        "portalName": {
+          "message": "Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "起始模板（将复制到 ./storage/portals/）",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         },
         "storagePath": {
           "message": "上传文件和本地存储目录",
@@ -528,6 +744,30 @@
         },
         "skipDownload": {
           "message": "跳过下载 NocoBase，直接复用已有的本地应用文件或 Docker 镜像"
+        },
+        "appClientEntryMode": {
+          "message": "应用界面入口",
+          "modernOnlyLabel": "仅使用新版界面",
+          "modernOnlyHint": "只能进入新版界面，不可进入旧版界面。",
+          "modernDefaultLabel": "默认进入新版界面",
+          "modernDefaultHint": "默认进入新版界面，同时保留旧版界面入口。",
+          "legacyDefaultLabel": "默认进入旧版界面",
+          "legacyDefaultHint": "默认进入旧版界面，也可以进入新版界面。"
+        },
+        "portalType": {
+          "message": "Portal 类型",
+          "noCodeLabel": "无代码 Portal",
+          "noCodeHint": "通过可视化配置创建，AI 可以协助调整配置。访问路径：/v/<name>",
+          "aiLabel": "AI Portal",
+          "aiHint": "通过 AI Agent 和代码创建，可用自然语言提出修改要求。访问路径：/x/<name>"
+        },
+        "portalName": {
+          "message": "Portal 名称",
+          "placeholder": "admin"
+        },
+        "portalTemplate": {
+          "message": "起始模板（将复制到 ./storage/portals/）",
+          "placeholder": "git@github.com:nocobase/admin-starter.git"
         }
       },
       "webUi": {
@@ -549,6 +789,10 @@
         "downloadAppFiles": {
           "title": "应用来源和版本",
           "description": "选择应用的获取方式，以及要使用的来源和版本。"
+        },
+        "portalType": {
+          "title": "配置 Portal",
+          "description": "设置默认 Portal 的标识和类型。"
         },
         "configureDatabase": {
           "title": "配置数据库",

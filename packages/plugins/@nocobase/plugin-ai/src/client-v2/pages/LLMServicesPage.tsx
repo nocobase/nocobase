@@ -1067,16 +1067,29 @@ export const LLMServicesPage: React.FC = () => {
   );
 };
 
-const LLMServiceDrawerContent: React.FC<{
+type LLMServiceDrawerContentProps = {
   providers: ProviderOption[];
   provider?: string;
   record?: LLMServiceRecord;
   onSubmitted: () => Promise<void>;
-}> = ({ providers, provider, record, onSubmitted }) => {
+};
+
+const LLMServiceDrawerContent: React.FC<LLMServiceDrawerContentProps> = (props) => {
+  const { message } = App.useApp();
+
+  return (
+    <App component={false}>
+      <LLMServiceDrawerContentInner {...props} message={message} />
+    </App>
+  );
+};
+
+const LLMServiceDrawerContentInner: React.FC<
+  LLMServiceDrawerContentProps & { message: ReturnType<typeof App.useApp>['message'] }
+> = ({ providers, provider, record, onSubmitted, message }) => {
   const app = useApp();
   const ctx = useFlowContext();
   const t = useT();
-  const { message } = App.useApp();
   const [form] = Form.useForm<LLMServiceFormValues>();
   const [saving, setSaving] = useState(false);
   const [formDirty, setFormDirty] = useState(false);

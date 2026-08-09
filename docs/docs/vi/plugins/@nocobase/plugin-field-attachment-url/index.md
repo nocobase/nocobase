@@ -7,7 +7,7 @@ description: |
   Hỗ trợ tệp đính kèm dạng URL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -1,7 +1,7 @@
 ---
 title: 'NocoBase CLI'
-description: 'Referência da NocoBase CLI (comando `nb`): inicialização, backup e restauração, configuração, gerenciamento de ambientes, tempo de execução do aplicativo, código-fonte, banco de dados, plugins, licença comercial, API, autoatualização da CLI e gerenciamento de Skills.'
-keywords: 'NocoBase CLI,nb,linha de comando,referência de comandos,backup,restauração,gerenciamento de ambientes,gerenciamento de plugins,licença comercial,API'
+description: 'Referência da NocoBase CLI (comando `nb`): inicialização, backup e restauração, configuração, gerenciamento de ambientes, tempo de execução do aplicativo, Portal, código-fonte, banco de dados, plugins, licença comercial, API, autoatualização da CLI e gerenciamento de Skills.'
+keywords: 'NocoBase CLI,nb,linha de comando,referência de comandos,backup,restauração,gerenciamento de ambientes,Portal,gerenciamento de plugins,licença comercial,API'
 ---
 
 # NocoBase CLI
@@ -39,6 +39,7 @@ Os seguintes grupos de comandos são exibidos em `nb --help`:
 | [`nb env`](./env/index.md)           | Gerencia ambientes de projeto NocoBase, o env atual, status, detalhes e comandos de runtime.                     |
 | [`nb license`](./license/index.md)   | Gerencia licenças comerciais e plugins licenciados.                                                              |
 | [`nb plugin`](./plugin/index.md)     | Gerencia plugins do env NocoBase selecionado.                                                                    |
+| [`nb portal`](./portal/index.md)     | Gerencia o diretório local de código-fonte de um Portal: configurar, criar, desenvolver, sincronizar código-fonte, fazer deploy e excluir. |
 | [`nb scaffold`](./scaffold/index.md) | Gera scaffolding para desenvolvimento de plugins NocoBase.                                                       |
 | [`nb self`](./self/index.md)         | Verifica ou atualiza a própria NocoBase CLI.                                                                     |
 | [`nb session`](./session/index.md)   | Configura `NB_SESSION_ID` para que o env atual fique isolado por shell ou agent runtime.                         |
@@ -70,6 +71,8 @@ nb backup --help
 nb config --help
 nb api resource --help
 nb license --help
+nb portal --help
+nb portal config --help
 ```
 
 ## Exemplos
@@ -125,6 +128,15 @@ Ver o status da licença comercial:
 ```bash
 nb license status -e app1
 nb license plugins list -e app1
+```
+
+Criar e desenvolver um Portal:
+
+```bash
+nb portal create customer -e app1 --yes
+nb portal config customer -e app1 --yes --source-storage git --git-repo git@github.com:nocobase/customer-portal.git
+nb portal dev customer -e app1 --yes
+nb portal deploy customer -e app1 --yes
 ```
 
 Criar e baixar um backup:

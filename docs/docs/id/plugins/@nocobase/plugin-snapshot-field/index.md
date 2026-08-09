@@ -7,7 +7,7 @@ description: |
   Saat menambahkan data, buatlah snapshot dari data relasinya dan simpan di data saat ini. Saat data relasi diperbarui, snapshot tidak akan diperbarui.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

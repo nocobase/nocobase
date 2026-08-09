@@ -7,7 +7,7 @@ description: |
   Mendaftarkan dan mengelola sumber sinkronisasi data pengguna yang dapat diperluas, secara default menyediakan HTTP API. Mendukung sinkronisasi data ke resource seperti pengguna dan departemen.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

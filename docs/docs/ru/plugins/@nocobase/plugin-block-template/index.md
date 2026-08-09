@@ -7,7 +7,7 @@ description: |
   Create and manage block templates for reuse on pages.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

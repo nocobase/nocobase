@@ -7,7 +7,7 @@ description: |
   This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

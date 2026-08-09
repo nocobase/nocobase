@@ -10,7 +10,7 @@ description: |
   Dùng để chỉnh sửa và làm nổi bật mã, hỗ trợ các ngôn ngữ như Java, JavaScript, Python, SQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

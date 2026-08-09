@@ -28,8 +28,9 @@ interface AppErrorPayload {
       maintainingDialog?: string;
     };
   };
-  [key: string]: any;
 }
+
+const isAppCommanding = (error?: AppErrorPayload) => error?.code === 'APP_COMMANDING';
 
 export const AppSpin = () => {
   return (
@@ -168,6 +169,7 @@ const getProps = (app: Application) => {
 export const AppError: FC<{ error: Error & { title?: string }; app: Application }> = observer(
   ({ app, error }) => {
     const props = getProps(app);
+    const commanding = isAppCommanding(app.error as AppErrorPayload | undefined);
     return (
       <div>
         <Result
@@ -180,11 +182,13 @@ export const AppError: FC<{ error: Error & { title?: string }; app: Application 
           status="error"
           title={error?.title || app.i18n.t('App error', { ns: 'client' })}
           subTitle={app.i18n.t(error?.message)}
-          extra={[
-            <Button type="primary" key="try" onClick={() => window.location.reload()}>
-              {app.i18n.t('Try again')}
-            </Button>,
-          ]}
+          extra={
+            commanding ? null : (
+              <Button type="primary" key="try" onClick={() => window.location.reload()}>
+                {app.i18n.t('Try again')}
+              </Button>
+            )
+          }
           {...props}
         />
       </div>
@@ -223,9 +227,13 @@ export const AppMaintaining: FC<{ app: Application; error: Error }> = observer(
 
 export const AppMaintainingDialog: FC<{ app: Application; error: Error }> = observer(
   ({ app, error }) => {
-    const component = (error as AppErrorPayload | undefined)?.command?.components?.maintainingDialog;
+    const payload = error as AppErrorPayload | undefined;
+    const component = payload?.command?.components?.maintainingDialog;
     if (component) {
       return app.renderComponent(component, { app, error });
+    }
+    if (isAppCommanding(payload)) {
+      return null;
     }
 
     const { icon, status, title, subTitle } = getProps(app);

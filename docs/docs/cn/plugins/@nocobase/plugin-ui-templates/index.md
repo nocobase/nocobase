@@ -9,7 +9,7 @@ description: |
   提供区块模板和弹窗模板复用的能力。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

@@ -152,7 +152,7 @@ Ví dụ, thêm Plugin `hello` vào dự án `my-nocobase-app`, tên package đ�
 PLUGIN_PACKAGE_PREFIX có thể cấu hình thành:
 
 ```bash
-PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
+PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase/preset-,@my-nocobase-app/plugin-
 ```
 
 Tương ứng tên Plugin và tên package như sau:

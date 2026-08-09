@@ -7,7 +7,7 @@ description: |
   Hỗ trợ quản lý tài nguyên bản địa hóa của ứng dụng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

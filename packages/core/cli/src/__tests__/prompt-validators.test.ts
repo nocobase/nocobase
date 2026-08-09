@@ -13,7 +13,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, test, vi, expect } from 'vitest';
 import Download, { defaultDockerRegistryForLang } from '../commands/source/download.js';
-import Init from '../commands/init.js';
+import Init, { defaultInitDownloadVersionForCliVersion } from '../commands/init.js';
 import EnvAdd from '../commands/env/add.js';
 import Install from '../commands/install.js';
 import { setCliConfigValue } from '../lib/cli-config.js';
@@ -436,6 +436,7 @@ test('install prompts expose the expected defaults and validators', () => {
   const langPrompt = Install.appPrompts.lang;
   const appPathPrompt = Install.appPrompts.appPath;
   const appPortPrompt = Install.appPrompts.appPort;
+  const portalTemplatePrompt = Install.appPrompts.portalTemplate;
   const builtinDbPrompt = Install.dbPrompts.builtinDb;
   const dbDialectPrompt = Install.dbPrompts.dbDialect;
   const builtinDbImagePrompt = Install.dbPrompts.builtinDbImage;
@@ -470,6 +471,10 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(appPortPrompt.initialValue).toBe(undefined);
   expect(appPortPrompt.yesInitialValue).toBe(undefined);
   expect(typeof appPortPrompt.validate).toBe('function');
+
+  expect(portalTemplatePrompt.type).toBe('text');
+  expect(portalTemplatePrompt.initialValue).toBe('@nocobase/portal-template-default');
+  expect(portalTemplatePrompt.yesInitialValue).toBe('@nocobase/portal-template-default');
 
   expect(builtinDbPrompt.type).toBe('boolean');
   expect(builtinDbPrompt.initialValue).toBe(true);
@@ -559,9 +564,7 @@ test('install prompts expose the expected defaults and validators', () => {
   expect(rootEmailPrompt.required).toBe(true);
 
   expect(rootPasswordPrompt.type).toBe('password');
-  expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe(
-    'Initial admin password',
-  );
+  expect(resolveLocalizedText(rootPasswordPrompt.message, { locale: 'en-US' })).toBe('Initial admin password');
   expect(rootPasswordPrompt.initialValue).toBe(undefined);
   expect(rootPasswordPrompt.yesInitialValue).toBe('admin123');
   expect(rootPasswordPrompt.required).toBe(true);
@@ -781,10 +784,50 @@ test('version prompt uses presets and reveals otherVersion when needed', () => {
         : undefined,
       { locale: 'zh-CN' },
     ),
-  ).toContain('开发版');
+  ).toContain('体验 3.0 新功能');
   expect(otherVersionPrompt.type).toBe('text');
   expect(otherVersionPrompt.hidden?.({ version: 'alpha' })).toBe(true);
   expect(otherVersionPrompt.hidden?.({ version: 'other' })).toBe(false);
+});
+
+test('init download version default follows the CLI prerelease channel', () => {
+  expect(defaultInitDownloadVersionForCliVersion('3.0.0-alpha.1')).toBe('alpha');
+  expect(defaultInitDownloadVersionForCliVersion('2.1.0-beta.41')).toBe('beta');
+  expect(defaultInitDownloadVersionForCliVersion('2.1.0')).toBe('latest');
+  expect(defaultInitDownloadVersionForCliVersion('2.1.0-rc.1')).toBe('latest');
+});
+
+test('init version prompt uses the current CLI channel as its default', () => {
+  const buildPromptCatalog = (
+    Init.prototype as unknown as {
+      buildPromptCatalog: (
+        flags: { 'skip-auth'?: boolean },
+        options: { defaultApiHost: string },
+      ) => Record<string, unknown>;
+    }
+  ).buildPromptCatalog;
+  const command = Object.create(Init.prototype) as Init & {
+    config: {
+      pjson: {
+        version?: string;
+      };
+    };
+  };
+
+  command.config = {
+    pjson: {
+      version: '3.0.0-alpha.1',
+    },
+  };
+
+  const catalog = buildPromptCatalog.call(command, {}, { defaultApiHost: '127.0.0.1' });
+  const versionPrompt = catalog.version as {
+    initialValue?: string;
+    yesInitialValue?: string;
+  };
+
+  expect(versionPrompt.initialValue).toBe('alpha');
+  expect(versionPrompt.yesInitialValue).toBe('alpha');
 });
 
 test('builtin database image prompt defaults use dockerhub-compatible images by default', async () => {

@@ -33,6 +33,7 @@ Lo que no puede hacer:
 - No puede diseñar la estructura de las tablas (utilice el [Skill de modelado de datos](./data-modeling))
 - No puede orquestar flujos de trabajo (utilice el [Skill de gestión de flujos de trabajo](./workflow))
 - No puede tratar la navegación de las páginas no modernas (v1); solo admite las páginas v2.
+- No trata el código fuente frontend del AI Portal (utilice [AI Portal](./ai-portal/index.md))
 
 ## Ejemplos de prompts
 
@@ -98,3 +99,4 @@ Si la configuración manual y la configuración mediante IA se realizan al mismo
 - [Modelado de datos](./data-modeling): cree y gestione tablas, campos y relaciones con la IA
 - [Configuración de permisos](./acl): configure roles y permisos de acceso a los datos
 - [Gestión de flujos de trabajo](./workflow): cree, edite y diagnostique flujos de trabajo
+- [AI Portal](./ai-portal/index.md): la otra vía cuando una página necesita código a medida

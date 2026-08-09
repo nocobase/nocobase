@@ -7,7 +7,7 @@ description: |
   Quản lý và hiển thị tập trung các thao tác khác nhau, giúp người dùng thực hiện tác vụ nhanh chóng. Hỗ trợ mở rộng, hiện hỗ trợ các loại thao tác: popup, link, scan, custom request.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

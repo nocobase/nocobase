@@ -7,7 +7,7 @@ description: |
   Autentikasi identitas melalui kode verifikasi SMS.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

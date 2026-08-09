@@ -7,7 +7,7 @@ description: |
   Плагин устарел. В будущем будет новый плагин логов аудита.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

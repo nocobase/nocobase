@@ -7,7 +7,7 @@ description: |
   Cơ sở dữ liệu chính của NocoBase, hỗ trợ các cơ sở dữ liệu quan hệ như PostgreSQL, MySQL, MariaDB.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

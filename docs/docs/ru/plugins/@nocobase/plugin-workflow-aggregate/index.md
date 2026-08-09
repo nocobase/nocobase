@@ -7,7 +7,7 @@ description: |
   Агрегация данных в рабочем процессе на уровне БД: подсчёт, сумма, среднее и т.д.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

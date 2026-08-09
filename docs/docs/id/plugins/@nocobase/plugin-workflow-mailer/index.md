@@ -7,7 +7,7 @@ description: |
   Dapat digunakan untuk mengirim email dalam workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

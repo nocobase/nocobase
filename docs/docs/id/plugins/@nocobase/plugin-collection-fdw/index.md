@@ -10,7 +10,7 @@ description: |
   Koneksi Collection remote yang diimplementasikan menggunakan foreign data wrapper (FDW) database. Saat ini mendukung database MySQL dan PostgreSQL.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

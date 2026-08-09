@@ -8,7 +8,7 @@
  */
 
 import { DeleteOutlined, EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
-import { compatOldTheme, defaultTheme, useGlobalTheme } from '@nocobase/client-v2';
+import { compatOldTheme, defaultTheme, MINIMAL_THEME_UID, useGlobalTheme } from '@nocobase/client-v2';
 import { EMBED_REPLACING_DATA_KEY, GLOBAL_EMBED_CONTAINER_ID, useFlowContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
@@ -305,6 +305,16 @@ const ThemeCard = (props: ThemeCardProps) => {
   }, [handleDelete, handleEdit, isDefault, menu, token.colorTextDisabled]);
 
   const extra = useMemo(() => {
+    // 标出「设置中心在用哪条主题」：它同时也是一条普通可选主题，
+    // 不标的话列表上看不出谁在约束设置中心。
+    if (item.uid === MINIMAL_THEME_UID) {
+      return (
+        <Tag style={{ marginRight: 0 }} color="processing">
+          {t('Settings center')}
+        </Tag>
+      );
+    }
+
     if (item.id !== defaultThemeId && !item.optional) {
       return null;
     }
@@ -331,7 +341,7 @@ const ThemeCard = (props: ThemeCardProps) => {
         {text}
       </Tag>
     );
-  }, [currentThemeId, defaultThemeId, item.id, item.optional, t]);
+  }, [currentThemeId, defaultThemeId, item.id, item.optional, item.uid, t]);
 
   const cardStyle = useMemo(() => {
     const baseStyle = { cursor: 'default', width: 240, height: 240, overflow: 'hidden' };

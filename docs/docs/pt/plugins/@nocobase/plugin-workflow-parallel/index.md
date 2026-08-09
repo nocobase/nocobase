@@ -7,7 +7,7 @@ description: |
   Could be used for parallel execution of branch processes in the workflow.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

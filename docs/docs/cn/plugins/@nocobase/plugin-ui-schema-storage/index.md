@@ -7,7 +7,7 @@ description: |
   提供中心化的 UI schema 存储服务。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

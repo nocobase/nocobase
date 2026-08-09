@@ -7,7 +7,7 @@ description: |
   Dapat digunakan untuk melakukan query agregat ke database dalam workflow, seperti: menghitung jumlah, penjumlahan, rata-rata, dan lainnya.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

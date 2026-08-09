@@ -7,7 +7,7 @@ description: |
   支持用户在 NocoBase 应用内实时接收消息通知。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

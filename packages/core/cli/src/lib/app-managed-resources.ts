@@ -245,6 +245,7 @@ export async function buildSavedDockerRunArgs(
   const dbUnderscored =
     typeof config.dbUnderscored === 'boolean' ? config.dbUnderscored : undefined;
   const extractClientAssets = resolveDockerClientAssetsExtractEnabled(process.env.NOCOBASE_EXTRACT_CLIENT_ASSETS);
+  const appClientEntryMode = trimValue(config.appClientEntryMode);
   const dockerRegistry = trimValue(config.dockerRegistry) || DEFAULT_DOCKER_REGISTRY;
   const version = trimValue(config.downloadVersion) || DEFAULT_DOCKER_VERSION;
   const imageRef = resolveDockerImageRef(dockerRegistry, version, {
@@ -335,6 +336,7 @@ export async function buildSavedDockerRunArgs(
     `${storagePath}:${DOCKER_APP_STORAGE_DESTINATION}`,
   );
   pushOptionalEnvArg(args, 'APP_PUBLIC_PATH', appPublicPath ? resolveAppPublicPath(appPublicPath) : undefined);
+  pushOptionalEnvArg(args, 'APP_CLIENT_ENTRY_MODE', appClientEntryMode);
   pushOptionalEnvArg(args, 'DB_SCHEMA', dbSchema || undefined);
   pushOptionalEnvArg(args, 'DB_TABLE_PREFIX', dbTablePrefix || undefined);
   pushOptionalEnvArg(args, 'DB_UNDERSCORED', dbUnderscored);

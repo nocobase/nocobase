@@ -9,7 +9,48 @@
 
 import { useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useApp } from '@nocobase/client-v2';
+import { normalizeV2RedirectPath, useApp } from '@nocobase/client-v2';
+import { getDefaultAuthRedirectPath, isStandaloneSettingsApplication } from './authRoutePaths';
+
+function normalizePathname(pathname: string) {
+  const value = `/${String(pathname || '/').trim()}`.replace(/\/{2,}/g, '/');
+  const normalized = new URL(value, window.location.origin).pathname;
+  return normalized === '/' ? normalized : normalized.replace(/\/+$/, '');
+}
+
+function getSettingsScope(publicPath: string, pathname?: string) {
+  const root = normalizePathname(publicPath).replace(/\/+$/, '');
+  const path = normalizePathname(pathname || '/');
+  const relativePath = root && (path === root || path.startsWith(`${root}/`)) ? path.slice(root.length) || '/' : path;
+  return /^\/settings(\/(?:apps|_app)\/[^/]+)(?=\/|$)/.exec(relativePath)?.[1] || '';
+}
+
+function isStandaloneSettingsRedirect(
+  app: {
+    getPublicPath: () => string;
+    pluginSettingsManager: { getRouteName: (name: string) => string; getRoutePath: (name: string) => string };
+    router: { getBasename?: () => string | undefined };
+  },
+  target: string,
+) {
+  if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) {
+    return false;
+  }
+  const basename = app.router.getBasename?.();
+  const publicPath = normalizePathname(app.getPublicPath());
+  const appScope = getSettingsScope(publicPath, basename);
+  const publicPathSegments = publicPath.split('/');
+  if (!isStandaloneSettingsApplication(app)) {
+    publicPathSegments.pop();
+  }
+  const rootPublicPath = normalizePathname(publicPathSegments.join('/') || '/').replace(/\/+$/, '');
+  const settingsBasePath = appScope
+    ? `${rootPublicPath}/settings${appScope}`
+    : `${rootPublicPath}/settings` || '/settings';
+  const targetPathname = normalizePathname(target.split(/[?#]/)[0]);
+
+  return targetPathname === settingsBasePath || targetPathname.startsWith(`${settingsBasePath}/`);
+}
 
 /**
  * 把 `?redirect=` 上带 modern client basename 的目标(例如 `/nocobase/v/admin`)规约成
@@ -32,14 +73,22 @@ function stripV2Basename(target: string, basename?: string): string {
   return target;
 }
 
-export function useRedirect(next = '/admin') {
+export function useRedirect(next?: string) {
   const app = useApp();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   return useCallback(() => {
     const redirect = searchParams.get('redirect');
-    const target = redirect || next;
+    const fallbackPath = next || getDefaultAuthRedirectPath(app);
+    const target =
+      redirect || (next === undefined && isStandaloneSettingsApplication(app))
+        ? normalizeV2RedirectPath(app, redirect, fallbackPath)
+        : fallbackPath;
+    if (isStandaloneSettingsRedirect(app, target)) {
+      window.location.replace(target);
+      return;
+    }
     const basename = app.router.getBasename?.();
     navigate(stripV2Basename(target, basename), { replace: true });
   }, [app, navigate, next, searchParams]);

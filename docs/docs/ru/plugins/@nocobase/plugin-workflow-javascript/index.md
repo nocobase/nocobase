@@ -10,7 +10,7 @@ description: |
   Выполняет фрагмент JavaScript в изолированной среде Node.js.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

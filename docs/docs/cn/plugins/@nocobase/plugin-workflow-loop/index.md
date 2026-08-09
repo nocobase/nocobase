@@ -7,7 +7,7 @@ description: |
   用于对一个数组中的每个值进行重复的子流程处理，也可用于固定次数的重复子流程处理。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

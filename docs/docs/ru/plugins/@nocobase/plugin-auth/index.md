@@ -7,7 +7,7 @@ description: |
    Управление аутентификацией пользователей: пароль, SMS, поддержка единого входа (SSO) и расширяемость.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 editionLevel: 0
 ---
 

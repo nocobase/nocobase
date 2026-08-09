@@ -7,7 +7,7 @@ description: |
   Sao lưu và khôi phục ứng dụng, có thể dùng cho các tình huống sao chép, di chuyển, nâng cấp ứng dụng.
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---

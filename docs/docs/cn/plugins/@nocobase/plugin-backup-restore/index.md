@@ -7,7 +7,7 @@ description: |
   备份和还原应用，可用于应用的复制、迁移、升级等场景。
 isFree: true
 builtIn: true
-defaultEnabled: false
+defaultEnabled: true
 deprecated: true
 editionLevel: 0
 ---
