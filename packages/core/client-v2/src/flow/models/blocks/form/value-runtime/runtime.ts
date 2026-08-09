@@ -81,6 +81,10 @@ export class FormValueRuntime {
 
     this.ruleEngine = new RuleEngine({
       getBlockModelUid: () => String(this.model?.uid),
+      getAssignRulesModelUid: () => {
+        const grid = this.model?.subModels?.grid;
+        return !Array.isArray(grid) && grid?.uid ? String(grid.uid) : undefined;
+      },
       getActionName: () => this.model?.getAclActionName?.() ?? this.model?.context?.actionName,
       getBlockContext: () => this.model?.context,
       getEngine: () => this.model?.context?.engine,

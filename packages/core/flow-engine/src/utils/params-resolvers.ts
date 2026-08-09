@@ -79,6 +79,7 @@ export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 // =========================
 
 type BatchPayload = {
+  contractRd?: string;
   rd?: string;
   template: JSONValue;
   contextParams?: ServerContextParams | undefined;
@@ -172,6 +173,7 @@ export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchP
     try {
       const batch = items.map((it) => ({
         id: it.id,
+        contractRd: it.payload.contractRd,
         rd: it.payload.rd,
         template: it.payload.template,
         contextParams: it.payload.contextParams || {},

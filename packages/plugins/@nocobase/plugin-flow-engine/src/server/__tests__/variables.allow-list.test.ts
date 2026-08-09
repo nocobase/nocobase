@@ -228,6 +228,139 @@ describe('variables:resolve allow-list authorization', () => {
     expect(result.contextParams).not.toHaveProperty('user');
   });
 
+  it('uses a related form grid as the assign-rules contract owner', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const form = { ...createFlowModel('form-owner', {}), options: { use: 'EditFormModel' } };
+    const grid = {
+      ...createFlowModel('form-owner-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        props: '{{ ctx.user.unconfigured }}',
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [
+                { value: template },
+                {
+                  value: {
+                    code: "return await ctx.getVar('ctx.user.runJsAuthorized')",
+                    version: 'v2',
+                  },
+                },
+                {
+                  value: {
+                    code: '// {{ ctx.user.password }}\nreturn 1',
+                    version: 'v2',
+                  },
+                },
+                {
+                  value: {
+                    value: [
+                      {
+                        value: {
+                          code: "return await ctx.getVar('ctx.user.nestedBusinessObject')",
+                          version: 'v2',
+                        },
+                      },
+                    ],
+                    payload: {
+                      stepParams: {
+                        jsSettings: {
+                          runJs: {
+                            code: "return await ctx.getVar('ctx.user.nestedRunJsShape')",
+                            version: 'v2',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('form-owner-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const otherForm = { ...createFlowModel('other-form', {}), options: { use: 'EditFormModel' } };
+    const otherGrid = {
+      ...grid,
+      uid: 'other-form-grid',
+      parentId: otherForm.uid,
+    };
+    const markdownBlock = {
+      ...grid,
+      uid: 'markdown-block',
+      options: { ...grid.options, use: 'MarkdownBlockModel' },
+      parentId: 'block-grid',
+    };
+    const blockGrid = { ...createFlowModel('block-grid', {}), options: { use: 'BlockGridModel' } };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [form, grid, field, otherForm, otherGrid, blockGrid, markdownBlock].map((model) => [model.uid, model]),
+      ),
+    });
+
+    const allowed = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+    const crossForm = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(otherGrid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+    const unconfigured = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.unconfigured }}',
+    });
+    const runJsAuthorized = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.runJsAuthorized }}',
+    });
+    const runJsComment = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.password }}',
+    });
+    const nestedBusinessObject = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.nestedBusinessObject }}',
+    });
+    const nestedRunJsShape = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.nestedRunJsShape }}',
+    });
+    const nonFormTree = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(markdownBlock.uid),
+      rd: session.rd(markdownBlock.uid),
+      template,
+    });
+
+    expect(allowed.allowed).toBe(true);
+    expect(crossForm.allowed).toBe(false);
+    expect(unconfigured.allowed).toBe(false);
+    expect(runJsAuthorized.allowed).toBe(true);
+    expect(runJsComment.allowed).toBe(false);
+    expect(nestedBusinessObject.allowed).toBe(false);
+    expect(nestedRunJsShape.allowed).toBe(false);
+    expect(nonFormTree.allowed).toBe(false);
+  });
+
   it('keeps registered variable contextParams sanitized after later validators mutate them', async () => {
     variables.register({
       name: 'evil',

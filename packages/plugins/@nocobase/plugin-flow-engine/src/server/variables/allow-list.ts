@@ -92,6 +92,7 @@ export function analyzeVariableTemplateSafely(
 
 type FlowModelCacheValue = Promise<FlowModelNodeSnapshot | null> | FlowModelNodeSnapshot | null;
 type FlowModelContractCacheValue = Promise<FlowModelVariableContract | null> | FlowModelVariableContract | null;
+type FlowModelContractSource = 'node' | 'formAssignRules';
 
 const MAX_FLOW_MODEL_ANCESTORS = 64;
 
@@ -102,6 +103,33 @@ export function clearVariableAllowListCache(app?: object) {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getFormAssignRulesVariableSource(node: FlowModelNodeSnapshot): unknown | undefined {
+  const stepParams = isObject(node.options.stepParams) ? node.options.stepParams : null;
+  const formModelSettings = stepParams && isObject(stepParams.formModelSettings) ? stepParams.formModelSettings : null;
+  return formModelSettings && Object.prototype.hasOwnProperty.call(formModelSettings, 'assignRules')
+    ? formModelSettings.assignRules
+    : undefined;
+}
+
+function isFormAssignRulesContractNode(node: FlowModelNodeSnapshot) {
+  const use = node.options.use;
+  return (
+    node.subKey === 'grid' &&
+    typeof use === 'string' &&
+    use.endsWith('FormGridModel') &&
+    typeof getFormAssignRulesVariableSource(node) !== 'undefined'
+  );
+}
+
+function isFormAssignRulesOwnerNode(node: FlowModelNodeSnapshot) {
+  const use = node.options.use;
+  return typeof use === 'string' && (use.endsWith('FormModel') || use.endsWith('FormBlockModel'));
+}
+
+function isFormAssignRulesRunJsValuePath(pathTail: readonly string[]) {
+  return pathTail.length === 3 && pathTail[0] === 'value' && /^\d+$/.test(pathTail[1]) && pathTail[2] === 'value';
 }
 
 function isRecordParams(value: unknown): value is RecordParams {
@@ -218,7 +246,9 @@ function createRecordSlotCompilerOptions(ctx: ResourcerContext, currentNode?: Fl
 
 async function getFlowModelVariableContract(
   ctx: ResourcerContext,
-  flowModelUid: string,
+  contractNode: FlowModelNodeSnapshot,
+  runtimeNode: FlowModelNodeSnapshot,
+  source: FlowModelContractSource,
 ): Promise<FlowModelVariableContract | null> {
   const state = getRequestState(ctx);
   const cacheKey = '__variableResolveContractCache';
@@ -226,19 +256,28 @@ async function getFlowModelVariableContract(
     (state[cacheKey] as Map<string, FlowModelContractCacheValue> | undefined) ||
     new Map<string, FlowModelContractCacheValue>();
   state[cacheKey] = cache;
-  if (cache.has(flowModelUid)) return (await cache.get(flowModelUid)) || null;
+  const contractCacheKey = JSON.stringify([source, contractNode.uid, runtimeNode.uid]);
+  if (cache.has(contractCacheKey)) return (await cache.get(contractCacheKey)) || null;
 
-  const load = createFlowModelVariableContractFromNode(ctx, flowModelUid);
-  cache.set(flowModelUid, load);
+  const load = createFlowModelVariableContractFromNode(ctx, contractNode, runtimeNode, source);
+  cache.set(contractCacheKey, load);
   const contract = await load;
-  cache.set(flowModelUid, contract);
+  cache.set(contractCacheKey, contract);
   return contract;
 }
 
-async function createFlowModelVariableContractFromNode(ctx: ResourcerContext, flowModelUid: string) {
-  const node = await getFlowModelNode(ctx, flowModelUid);
-  if (!node) return null;
-  const prepared = prepareFlowModelVariableSource(node.options);
+async function createFlowModelVariableContractFromNode(
+  ctx: ResourcerContext,
+  contractNode: FlowModelNodeSnapshot,
+  runtimeNode: FlowModelNodeSnapshot,
+  source: FlowModelContractSource,
+) {
+  const variableSource =
+    source === 'formAssignRules' ? getFormAssignRulesVariableSource(contractNode) ?? {} : contractNode.options;
+  const prepared = prepareFlowModelVariableSource(
+    variableSource,
+    source === 'formAssignRules' ? { isRunJsValuePath: isFormAssignRulesRunJsValuePath } : undefined,
+  );
   const contractSource = prepared.ok
     ? prepared.runJsTemplates.length
       ? [prepared.templateSource, ...prepared.runJsTemplates]
@@ -246,7 +285,7 @@ async function createFlowModelVariableContractFromNode(ctx: ResourcerContext, fl
     : {};
   const result = analyzeVariableTemplateSafely(contractSource, { mode: 'flow-model' });
   const analysis = result.ok ? result.analysis : analyzeVariableTemplate({}, { mode: 'flow-model' });
-  return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, node));
+  return await createFlowModelVariableContract(analysis, createRecordSlotCompilerOptions(ctx, runtimeNode));
 }
 
 function getCurrentRoleNames(ctx: ResourcerContext): string[] {
@@ -333,6 +372,26 @@ export async function resolveFlowModelNodeFromRequestRd(ctx: ResourcerContext, r
   return flowModelUid ? getFlowModelNode(ctx, flowModelUid) : null;
 }
 
+async function resolveFormAssignRulesContractNode(
+  ctx: ResourcerContext,
+  runtimeNode: FlowModelNodeSnapshot,
+  contractModelUid: string,
+) {
+  const contractNode = await getFlowModelNode(ctx, contractModelUid);
+  if (!contractNode || !contractNode.parentId || !isFormAssignRulesContractNode(contractNode)) return null;
+
+  const formNode = await getFlowModelNode(ctx, contractNode.parentId);
+  if (!formNode || !isFormAssignRulesOwnerNode(formNode)) return null;
+  if (runtimeNode.uid === contractNode.uid || runtimeNode.uid === formNode.uid) return contractNode;
+
+  try {
+    const ancestors = await loadFlowModelAncestors(ctx, runtimeNode);
+    return ancestors.some((ancestor) => ancestor.uid === contractNode.uid) ? contractNode : null;
+  } catch {
+    return null;
+  }
+}
+
 function createPolicy(
   allowAll = false,
   allowedPaths: ReadonlySet<string> = new Set(),
@@ -367,6 +426,7 @@ function recordBindingPlanAllowed(plan: RecordBindingPlan) {
 export async function authorizeVariablesResolve(
   ctx: ResourcerContext,
   options: {
+    contractRd?: string | number;
     contextParams?: Record<string, unknown>;
     rd?: string | number;
     template: JSONValue;
@@ -374,6 +434,8 @@ export async function authorizeVariablesResolve(
 ): Promise<AuthorizationResult> {
   let contextParams = sanitizeContextParams(options.contextParams || {});
   const flowModelUid = resolveFlowModelUidFromRequestRd(ctx, options.rd);
+  const hasContractRd = typeof options.contractRd !== 'undefined';
+  const contractModelUid = hasContractRd ? resolveFlowModelUidFromRequestRd(ctx, options.contractRd) : flowModelUid;
   const unrestrictedVariables = new Set<string>();
   let policy = createPolicy(false, new Set(), unrestrictedVariables);
   let recordSlotPolicies: RecordSlotPolicies = new Map();
@@ -457,7 +519,23 @@ export async function authorizeVariablesResolve(
     return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies);
   }
 
-  const contract = flowModelUid ? await getFlowModelVariableContract(ctx, flowModelUid) : null;
+  let contractNode = currentNode;
+  let contractSource: FlowModelContractSource = 'node';
+  if (hasContractRd) {
+    contractNode =
+      currentNode && contractModelUid
+        ? await resolveFormAssignRulesContractNode(ctx, currentNode, contractModelUid)
+        : null;
+    contractSource = 'formAssignRules';
+    if (!contractNode) {
+      return denied(analysis, bindingPlan.contextParams, policy, recordSlotPolicies, flowModelUid || undefined);
+    }
+  }
+
+  const contract =
+    contractNode && currentNode
+      ? await getFlowModelVariableContract(ctx, contractNode, currentNode, contractSource)
+      : null;
   const allowedPaths = contract?.allowedPaths || null;
   recordSlotPolicies = contract?.recordSlots || new Map();
   policy = createPolicy(false, allowedPaths || new Set(), unrestrictedVariables);
