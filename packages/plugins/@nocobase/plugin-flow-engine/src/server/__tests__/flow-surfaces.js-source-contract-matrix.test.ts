@@ -7,14 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { compileFlowSurfaceApplyBlueprintRequest } from '../flow-surfaces/blueprint';
 import { exportFlowSurfaceBlueprintDocument } from '../flow-surfaces/blueprint/export-document';
 import { actionCatalog, getNodeContract } from '../flow-surfaces/catalog';
 import { FlowSurfaceContractGuard } from '../flow-surfaces/contract-guard';
-import { clearInactiveRunJsSourceBinding, resolveRunJsSettingsGroupKey } from '../flow-surfaces/service';
-import { buildRunJsSourceChanges } from '../flow-surfaces/service-utils';
+import {
+  clearInactiveRunJsSourceBinding,
+  FlowSurfacesService,
+  resolveRunJsSettingsGroupKey,
+} from '../flow-surfaces/service';
+import { buildRunJsSourceChanges, splitComposeFieldChanges } from '../flow-surfaces/service-utils';
 import type { RunJsSourceBindingKind } from '../flow-surfaces/source-binding-authoring';
 
 type RunJsGroupKey = 'jsSettings' | 'clickSettings';
@@ -35,6 +39,22 @@ type RunJsState = {
 };
 
 type RunJsStepParams = Partial<Record<RunJsGroupKey, { runJs: RunJsState }>>;
+
+type FieldDispatcherService = {
+  configureFieldWrapper(
+    target: { uid: string },
+    current: Record<string, unknown>,
+    changes: Record<string, unknown>,
+    options: Record<string, unknown>,
+  ): Promise<unknown>;
+  configureFieldNode(
+    target: { uid: string },
+    changes: Record<string, unknown>,
+    options: Record<string, unknown>,
+  ): Promise<unknown>;
+  resolveEnabledPluginPackages(options: Record<string, unknown>): Promise<ReadonlySet<string>>;
+  resolveTitleFieldSyncDecision(): Promise<{ shouldSync: boolean; titleField: undefined }>;
+};
 
 const NON_ACTION_SURFACES: SurfaceCase[] = [
   { label: 'JS Block', use: 'JSBlockModel', kind: 'js-block', group: 'jsSettings' },
@@ -96,6 +116,14 @@ function mergeSource(caseItem: SurfaceCase, current: RunJsState, changes: Record
     contract,
     caseItem.use,
   );
+}
+
+function createFieldDispatcher() {
+  const service = new FlowSurfacesService({ db: {} } as ConstructorParameters<typeof FlowSurfacesService>[0]);
+  return {
+    service,
+    dispatcher: service as unknown as FieldDispatcherService,
+  };
 }
 
 function jsTemplateRunJs(kind: SurfaceCase['kind'], templateId: string, code: string): RunJsState {
@@ -352,6 +380,53 @@ describe('flowSurfaces JS source contract matrix', () => {
         settings: { currency: 'CNY', precision: 2 },
       });
     }
+  });
+
+  it('forwards wrapper source changes to the persisted JS field node', async () => {
+    const { service, dispatcher } = createFieldDispatcher();
+    const { wrapperChanges, fieldChanges } = splitComposeFieldChanges(
+      {
+        label: 'Amount',
+        sourceBinding: { templateId: 'jtt_new' },
+        settings: { currency: 'USD' },
+      },
+      'FormItemModel',
+    );
+    expect(wrapperChanges).toEqual({ label: 'Amount' });
+    expect(fieldChanges).toEqual({
+      sourceBinding: { templateId: 'jtt_new' },
+      settings: { currency: 'USD' },
+    });
+
+    vi.spyOn(dispatcher, 'resolveEnabledPluginPackages').mockResolvedValue(new Set());
+    vi.spyOn(dispatcher, 'resolveTitleFieldSyncDecision').mockResolvedValue({
+      shouldSync: false,
+      titleField: undefined,
+    });
+    vi.spyOn(service, 'updateSettings').mockResolvedValue({ uid: 'wrapper-1' });
+    const configureFieldNode = vi.spyOn(dispatcher, 'configureFieldNode').mockResolvedValue({ uid: 'field-1' });
+
+    await dispatcher.configureFieldWrapper(
+      { uid: 'wrapper-1' },
+      {
+        uid: 'wrapper-1',
+        use: 'FormItemModel',
+        subModels: {
+          field: {
+            uid: 'field-1',
+            use: 'JSEditableFieldModel',
+          },
+        },
+      },
+      fieldChanges,
+      {},
+    );
+
+    expect(configureFieldNode).toHaveBeenCalledWith(
+      { uid: 'field-1' },
+      fieldChanges,
+      expect.objectContaining({ enabledPackages: expect.any(Set) }),
+    );
   });
 
   it('round-trips js-template bindings and preserved fallback code through export and apply compilation', async () => {
