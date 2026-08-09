@@ -23,6 +23,7 @@ import {
   JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
   JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS,
   JS_TEMPLATE_SETTINGS_SCHEMA_TYPES,
+  JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
   JS_TEMPLATE_X_COMPONENT_WHITELIST,
   jsTemplateV1Schema,
   jsTemplateV1SchemaJson,
@@ -192,7 +193,7 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
       additionalProperties: false,
       required: ['mode'],
       properties: {
-        mode: { type: 'string' },
+        mode: { type: 'string', [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: true },
         groups: {
           type: 'array',
           items: {
@@ -200,13 +201,13 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
             additionalProperties: false,
             required: ['label'],
             properties: {
-              label: { type: 'string' },
+              label: { type: 'string', [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: true },
               options: {
                 type: 'object',
                 additionalProperties: false,
                 required: ['enabled'],
                 properties: {
-                  enabled: { type: 'boolean' },
+                  enabled: { type: 'boolean', [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: true },
                 },
               },
             },
@@ -250,11 +251,42 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
         $comment: JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
         additionalProperties: false,
         required: [],
+        [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: [],
       },
     });
     const validateSettings = ajv.compile(settingsSchema);
     expect(validateSettings({ metadata: {} })).toBe(true);
     expect(validateSettings({ metadata: 'not-an-object' })).toBe(false);
+    expect(buildJsTemplateSettingsDefinition(settingsSchema)).toEqual(settings);
+  });
+
+  it('roundtrips nested required arrays separately from field-level required flags', () => {
+    const settings = {
+      options: {
+        type: 'object',
+        required: ['explicit'],
+        properties: {
+          explicit: { type: 'string' },
+          flagged: { type: 'string', required: true },
+        },
+      },
+      optional: { type: 'string', required: false },
+    };
+    const settingsSchema = buildJsTemplateSettingsSchema(settings);
+
+    expect(settingsSchema.properties).toEqual({
+      options: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['explicit', 'flagged'],
+        [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: ['explicit'],
+        properties: {
+          explicit: { type: 'string' },
+          flagged: { type: 'string', [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: true },
+        },
+      },
+      optional: { type: 'string', [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: false },
+    });
     expect(buildJsTemplateSettingsDefinition(settingsSchema)).toEqual(settings);
   });
 });

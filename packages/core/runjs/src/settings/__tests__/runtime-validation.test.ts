@@ -75,6 +75,40 @@ describe('RunJS runtime settings validation', () => {
     expect(normalizeRunJSSettingsValue(schema, undefined)).toEqual([{ enabled: true }]);
   });
 
+  it('preserves default and schema key order before submitted-only keys', () => {
+    const schema = {
+      type: 'object',
+      default: { explicitDefault: true },
+      properties: {
+        schemaDefault: { type: 'string', default: 'schema' },
+        display: {
+          type: 'object',
+          properties: {
+            density: { type: 'string', default: 'compact' },
+          },
+        },
+        submitted: { type: 'string' },
+      },
+    };
+
+    const normalized = normalizeRunJSSettingsValue(schema, {
+      unknown: true,
+      submitted: 'value',
+      schemaDefault: 'override',
+      display: { unknownNested: true, density: 'comfortable' },
+    }) as Record<string, unknown>;
+
+    expect(Object.keys(normalized)).toEqual(['schemaDefault', 'display', 'explicitDefault', 'unknown', 'submitted']);
+    expect(Object.keys(normalized.display as Record<string, unknown>)).toEqual(['density', 'unknownNested']);
+    expect(normalized).toEqual({
+      schemaDefault: 'override',
+      display: { density: 'comfortable', unknownNested: true },
+      explicitDefault: true,
+      unknown: true,
+      submitted: 'value',
+    });
+  });
+
   it('keeps binding required fields pending and rejects them only in runtime mode', () => {
     const schema = {
       type: 'object',
@@ -103,6 +137,37 @@ describe('RunJS runtime settings validation', () => {
       { code: 'required', path: ['options', 'limit'] },
     ]);
     expect(runtime.missingRequiredPaths).toEqual(binding.missingRequiredPaths);
+
+    const explicitUndefined = validateRunJSSettings({
+      mode: 'binding',
+      schema,
+      settings: { title: undefined, options: { limit: undefined } },
+    });
+    expect(explicitUndefined.issues).toEqual([]);
+    expect(explicitUndefined.missingRequiredPaths).toEqual([['title'], ['options', 'limit']]);
+  });
+
+  it('keeps object-level defaults effective for binding and runtime required fields', () => {
+    const schema = {
+      type: 'object',
+      default: { options: { title: 'Default title' } },
+      required: ['options'],
+      properties: {
+        options: {
+          type: 'object',
+          required: ['title'],
+          properties: { title: { type: 'string' } },
+        },
+      },
+    };
+
+    for (const mode of ['binding', 'runtime'] as const) {
+      expect(validateRunJSSettings({ mode, schema, settings: { options: {} } })).toEqual({
+        issues: [],
+        missingRequiredPaths: [],
+        normalizedValue: { options: { title: 'Default title' } },
+      });
+    }
   });
 
   it.each([
@@ -197,6 +262,81 @@ describe('RunJS runtime settings validation', () => {
     ).toEqual([]);
   });
 
+  it('uses stable JSON number equality for enum values, including nested signed zero', () => {
+    expect(
+      validateRunJSSettingsValue({ mode: 'runtime', schema: { type: 'number', enum: [0] }, value: -0 }).issues,
+    ).toEqual([]);
+    expect(
+      validateRunJSSettingsValue({
+        mode: 'runtime',
+        schema: {
+          type: 'object',
+          enum: [{ payload: { count: 0 } }],
+          properties: {
+            payload: {
+              type: 'object',
+              properties: { count: { type: 'number' } },
+            },
+          },
+        },
+        value: { payload: { count: -0 } },
+      }).issues,
+    ).toEqual([]);
+  });
+
+  it('collects every applicable enum, string, and number issue', () => {
+    expect(
+      validateRunJSSettingsValue({
+        mode: 'runtime',
+        path: ['label'],
+        schema: { type: 'string', enum: ['allowed@example.com'], minLength: 3, maxLength: 0, format: 'email' },
+        value: 'x',
+      }).issues,
+    ).toEqual([
+      { code: 'enum', path: ['label'] },
+      { code: 'minLength', details: { limit: 3 }, path: ['label'] },
+      { code: 'maxLength', details: { limit: 0 }, path: ['label'] },
+      { code: 'format', details: { format: 'email' }, path: ['label'] },
+    ]);
+    expect(
+      validateRunJSSettingsValue({
+        mode: 'runtime',
+        path: ['count'],
+        schema: { type: 'number', enum: [1], minimum: 10, maximum: -1 },
+        value: 0,
+      }).issues,
+    ).toEqual([
+      { code: 'enum', path: ['count'] },
+      { code: 'minimum', details: { limit: 10 }, path: ['count'] },
+      { code: 'maximum', details: { limit: -1 }, path: ['count'] },
+    ]);
+  });
+
+  it('can preserve the client first-issue short circuit without changing server collection', () => {
+    expect(
+      validateRunJSSettingsValue({
+        mode: 'runtime',
+        path: ['label'],
+        scalarIssueMode: 'first',
+        schema: { type: 'string', enum: ['allowed@example.com'], minLength: 3, format: 'email' },
+        value: 'x',
+      }).issues,
+    ).toEqual([{ code: 'enum', path: ['label'] }]);
+    expect(
+      validateRunJSSettingsValue({
+        mode: 'runtime',
+        path: ['options'],
+        scalarIssueMode: 'first',
+        schema: {
+          type: 'object',
+          enum: [{ enabled: true }],
+          properties: { enabled: { type: 'boolean' } },
+        },
+        value: { enabled: 'invalid' },
+      }).issues,
+    ).toEqual([{ code: 'enum', path: ['options'] }]);
+  });
+
   it('uses neutral nested path segments and preserves legacy dot and JSON path formatting', () => {
     const schema = {
       type: 'object',
@@ -222,22 +362,66 @@ describe('RunJS runtime settings validation', () => {
     expect(formatRunJSSettingsJsonPath([])).toBe('$');
   });
 
-  it('reports unknown fields before child validation issues and stops after the first scalar issue', () => {
-    const result = validateRunJSSettings({
-      mode: 'runtime',
-      schema: {
-        type: 'object',
-        properties: {
-          title: { type: 'string', minLength: 3 },
-        },
+  it('preserves the existing server and client object issue traversal orders', () => {
+    const schema = {
+      type: 'object',
+      required: ['requiredTitle'],
+      properties: {
+        requiredTitle: { type: 'string' },
+        title: { type: 'string', enum: ['valid@example.com'], minLength: 3, format: 'email' },
       },
-      settings: { extra: true, title: 2 },
-    });
+    };
+    const settings = { extra: true, title: 'x' };
+    const server = validateRunJSSettings({ mode: 'runtime', schema, settings });
 
-    expect(result.issues).toEqual([
+    expect(server.issues).toEqual([
+      { code: 'required', path: ['requiredTitle'] },
       { code: 'unknownProperty', path: ['extra'] },
-      expect.objectContaining({ code: 'type', path: ['title'] }),
+      { code: 'enum', path: ['title'] },
+      { code: 'minLength', details: { limit: 3 }, path: ['title'] },
+      { code: 'format', details: { format: 'email' }, path: ['title'] },
     ]);
+    expect(server.missingRequiredPaths).toEqual([['requiredTitle']]);
+
+    const client = validateRunJSSettings({ mode: 'runtime', objectIssueOrder: 'client', schema, settings });
+    expect(client.issues).toEqual([
+      { code: 'unknownProperty', path: ['extra'] },
+      { code: 'required', path: ['requiredTitle'] },
+      { code: 'enum', path: ['title'] },
+      { code: 'minLength', details: { limit: 3 }, path: ['title'] },
+      { code: 'format', details: { format: 'email' }, path: ['title'] },
+    ]);
+    expect(client.missingRequiredPaths).toEqual([['requiredTitle']]);
+  });
+
+  it('treats untyped structured enums as opaque JSON values', () => {
+    const schema = { enum: [{ size: 'small', columns: [1, 2] }] };
+    expect(
+      validateRunJSSettingsValue({ mode: 'runtime', schema, value: { columns: [1, 2], size: 'small' } }).issues,
+    ).toEqual([]);
+    expect(
+      validateRunJSSettingsValue({ mode: 'runtime', schema, value: { columns: [2, 1], size: 'small' } }).issues,
+    ).toEqual([{ code: 'enum', path: [] }]);
+  });
+
+  it('traverses untyped nested object values as closed object schemas', () => {
+    expect(
+      validateRunJSSettings({
+        mode: 'runtime',
+        schema: { properties: { payload: {} } },
+        settings: { payload: { extra: true } },
+      }).issues,
+    ).toEqual([{ code: 'unknownProperty', path: ['payload', 'extra'] }]);
+  });
+
+  it('does not treat non-record property schemas as known properties', () => {
+    expect(
+      validateRunJSSettings({
+        mode: 'runtime',
+        schema: { type: 'object', properties: { payload: null } },
+        settings: { payload: { extra: true } },
+      }).issues,
+    ).toEqual([{ code: 'unknownProperty', path: ['payload'] }]);
   });
 
   it.each([
@@ -248,6 +432,42 @@ describe('RunJS runtime settings validation', () => {
     expect(validateRunJSSettings({ mode: 'runtime', schema, settings: { extra: true } }).issues).toEqual([
       { code: 'unknownProperty', path: ['extra'] },
     ]);
+  });
+
+  it('keeps the settings facade object-rooted while value validation remains generic', () => {
+    expect(validateRunJSSettingsValue({ mode: 'runtime', schema: { type: 'string' }, value: 'valid' }).issues).toEqual(
+      [],
+    );
+    expect(validateRunJSSettings({ mode: 'runtime', schema: { type: 'string' }, settings: 'valid' })).toEqual({
+      issues: [
+        {
+          code: 'type',
+          path: [],
+          details: { actualType: 'string', expectedType: 'object' },
+        },
+      ],
+      missingRequiredPaths: [],
+      normalizedValue: 'valid',
+    });
+    expect(
+      validateRunJSSettings({ mode: 'runtime', schema: { type: 'array', items: {} }, settings: [] }).issues,
+    ).toEqual([
+      expect.objectContaining({ code: 'type', path: [], details: { actualType: 'array', expectedType: 'object' } }),
+    ]);
+    expect(
+      validateRunJSSettings({ mode: 'runtime', schema: { type: ['object', 'null'] }, settings: null }).issues,
+    ).toEqual([
+      expect.objectContaining({ code: 'type', path: [], details: { actualType: 'null', expectedType: 'object' } }),
+    ]);
+
+    const binding = validateRunJSSettings({ mode: 'binding', schema: { type: 'object' }, settings: undefined });
+    const runtime = validateRunJSSettings({ mode: 'runtime', schema: { type: 'object' }, settings: undefined });
+    expect(binding).toEqual({ issues: [], missingRequiredPaths: [[]], normalizedValue: undefined });
+    expect(runtime).toEqual({
+      issues: [{ code: 'required', path: [] }],
+      missingRequiredPaths: [[]],
+      normalizedValue: undefined,
+    });
   });
 
   it('handles prototype-sensitive properties as own data without changing any prototype', () => {

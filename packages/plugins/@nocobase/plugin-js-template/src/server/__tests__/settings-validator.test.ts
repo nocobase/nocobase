@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT } from '@nocobase/js-template-sdk/schema';
+import {
+  JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
+  JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
+} from '@nocobase/js-template-sdk/schema';
 
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 
@@ -309,6 +312,43 @@ describe('plugin-js-template settings condition validator', () => {
         details: expect.objectContaining({
           schemaPath: '$.settings.options',
           keyword: '$comment',
+        }),
+      }),
+    );
+  });
+
+  it('keeps required-definition provenance internal while accepting nested required arrays', () => {
+    const accepted = validateDescriptorSettings({
+      settings: {
+        options: {
+          type: 'object',
+          required: ['explicit'],
+          properties: {
+            explicit: { type: 'string' },
+            flagged: { type: 'string', required: true },
+          },
+        },
+      },
+    });
+    expect(accepted.accepted).toBe(true);
+    expect(accepted.diagnostics).toEqual([]);
+
+    const rejected = validateDescriptorSettings({
+      settings: {
+        options: {
+          type: 'object',
+          [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: ['explicit'],
+          properties: { explicit: { type: 'string' } },
+        },
+      },
+    });
+    expect(rejected.accepted).toBe(false);
+    expect(rejected.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'settings_schema_keyword_not_allowed',
+        details: expect.objectContaining({
+          schemaPath: '$.settings.options',
+          keyword: JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
         }),
       }),
     );

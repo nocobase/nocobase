@@ -282,6 +282,51 @@ describe('JsTemplateSettingsService', () => {
     }
   });
 
+  it('preserves server issue multiplicity and traversal order', () => {
+    const source = createSource({
+      type: 'object',
+      required: ['requiredTitle'],
+      properties: {
+        requiredTitle: { type: 'string' },
+        title: { type: 'string', enum: ['valid@example.com'], minLength: 3, format: 'email' },
+      },
+    });
+
+    expect(() => service.resolveRuntimeSettings(source, { extra: true, title: 'x' })).toThrowError(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          issues: [
+            expect.objectContaining({ path: '$.requiredTitle', code: 'settings_required' }),
+            expect.objectContaining({ path: '$.extra', code: 'settings_unknown_property' }),
+            expect.objectContaining({ path: '$.title', code: 'settings_enum_mismatch' }),
+            expect.objectContaining({ path: '$.title', code: 'settings_min_length' }),
+            expect.objectContaining({ path: '$.title', code: 'settings_format' }),
+          ],
+        }),
+      }),
+    );
+  });
+
+  it('treats untyped structured enums as opaque JSON values', () => {
+    const source = createSource({
+      type: 'object',
+      properties: {
+        layout: { enum: [{ size: 'small', columns: [1, 2] }] },
+      },
+    });
+
+    expect(service.resolveRuntimeSettings(source, { layout: { columns: [1, 2], size: 'small' } })).toEqual({
+      layout: { columns: [1, 2], size: 'small' },
+    });
+    expect(() => service.resolveRuntimeSettings(source, { layout: { columns: [2, 1], size: 'small' } })).toThrowError(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          issues: [expect.objectContaining({ path: '$.layout', code: 'settings_enum_mismatch' })],
+        }),
+      }),
+    );
+  });
+
   it('prunes unknown stored reference settings while retaining schema fields', () => {
     const source = createSource({
       type: 'object',

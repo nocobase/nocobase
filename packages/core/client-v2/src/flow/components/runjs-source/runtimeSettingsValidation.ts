@@ -79,6 +79,8 @@ export function validateRunJSSettingValue(options: {
       value: options.value,
       required: options.required,
       mode: options.mode,
+      objectIssueOrder: 'client',
+      scalarIssueMode: 'first',
       path: options.path ? [options.path] : [],
     }),
   );
@@ -89,7 +91,9 @@ export function validateRunJSSettings(options: {
   settings: unknown;
   mode: RunJSSettingsValidationMode;
 }): RunJSSettingsValidationResult {
-  return toClientValidationResult(validateSharedRunJSSettings(options));
+  return toClientValidationResult(
+    validateSharedRunJSSettings({ ...options, objectIssueOrder: 'client', scalarIssueMode: 'first' }),
+  );
 }
 
 function toClientValidationResult(

@@ -125,6 +125,19 @@ describe('runtimeSettingsValidation client adapter', () => {
     });
     expect(isSettingValueValid(schema, 'invalid', true)).toBe(false);
     expect(isSettingValueValid(schema, 'valid@example.com', true)).toBe(true);
+
+    expect(
+      validateRunJSSettingValue({
+        schema: { type: 'string', enum: ['valid@example.com'], minLength: 3, format: 'email' },
+        value: 'x',
+        required: true,
+        mode: 'runtime',
+        path: 'contact.email',
+      }),
+    ).toEqual({
+      errors: [{ code: 'enum', path: 'contact.email' }],
+      missingRequiredPaths: [],
+    });
   });
 
   it('rejects non-object root settings with the existing root path', () => {

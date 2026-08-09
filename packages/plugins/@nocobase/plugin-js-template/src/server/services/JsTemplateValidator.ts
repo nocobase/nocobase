@@ -63,7 +63,7 @@ import {
 } from './js-template-validator/workspacePolicy';
 
 export const JS_TEMPLATE_VALIDATOR_VERSION = 'js-template-validator-v4';
-export const JS_TEMPLATE_SDK_TEMPLATE_VERSION = 'js-template-sdk-template-v3';
+export const JS_TEMPLATE_SDK_TEMPLATE_VERSION = 'js-template-sdk-template-v4';
 
 export const JS_TEMPLATE_VALIDATION_LIMITS: JsTemplateValidationLimits = {
   maxProjectFiles: 200,

@@ -13,6 +13,7 @@ import {
   JS_TEMPLATE_SCHEMA_VERSION,
   JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
   JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN,
+  JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
 } from '@nocobase/js-template-sdk/schema';
 
 import type { RunJSWorkspaceDiagnostic } from '../../../shared/runjs-source-contracts';
@@ -316,7 +317,16 @@ export class RunJSWorkspaceSchemaValidator {
       const isDerivedClosedObjectKeyword =
         input.allowDerivedSettingsKeywords && key === 'additionalProperties' && node[key] === false;
       const isDerivedInferredObjectKeyword = key === '$comment' && hasDerivedInferredObjectAnnotation;
-      if (!keywordSet.has(key) && !isDerivedClosedObjectKeyword && !isDerivedInferredObjectKeyword) {
+      const isDerivedRequiredDefinitionKeyword =
+        input.allowDerivedSettingsKeywords &&
+        key === JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY &&
+        isRequiredDefinition(node[key]);
+      if (
+        !keywordSet.has(key) &&
+        !isDerivedClosedObjectKeyword &&
+        !isDerivedInferredObjectKeyword &&
+        !isDerivedRequiredDefinitionKeyword
+      ) {
         input.diagnostics.push(
           diagnostic(
             'settings_schema_keyword_not_allowed',
@@ -489,7 +499,7 @@ export class RunJSWorkspaceSchemaValidator {
     target: DiagnosticTarget,
     schemaPath: string,
   ): void {
-    for (const keyword of ['additionalProperties', '$comment']) {
+    for (const keyword of ['additionalProperties', '$comment', JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]) {
       if (Object.prototype.hasOwnProperty.call(node, keyword)) {
         diagnostics.push(
           diagnostic(
@@ -1111,6 +1121,10 @@ function isValidStringFormat(format: unknown, value: string): boolean {
 
 function containsExpressionSyntax(value: string): boolean {
   return value.includes('{{') || value.includes('}}') || value.includes('${');
+}
+
+function isRequiredDefinition(value: unknown): boolean {
+  return typeof value === 'boolean' || (Array.isArray(value) && value.every((item) => typeof item === 'string'));
 }
 
 function optionalStringField(

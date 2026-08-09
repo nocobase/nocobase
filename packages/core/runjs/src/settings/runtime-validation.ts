@@ -8,6 +8,8 @@
  */
 
 export type RunJSSettingsValidationMode = 'binding' | 'runtime';
+export type RunJSSettingsObjectIssueOrder = 'client' | 'server';
+export type RunJSSettingsScalarIssueMode = 'all' | 'first';
 
 export type RunJSSettingsValidationIssueCode =
   | 'required'
@@ -44,6 +46,8 @@ export interface RunJSSettingsValidationResult {
 
 export interface ValidateRunJSSettingsValueOptions {
   mode: RunJSSettingsValidationMode;
+  objectIssueOrder?: RunJSSettingsObjectIssueOrder;
+  scalarIssueMode?: RunJSSettingsScalarIssueMode;
   path?: RunJSSettingsPath;
   required?: boolean;
   schema: unknown;
@@ -52,6 +56,8 @@ export interface ValidateRunJSSettingsValueOptions {
 
 export interface ValidateRunJSSettingsOptions {
   mode: RunJSSettingsValidationMode;
+  objectIssueOrder?: RunJSSettingsObjectIssueOrder;
+  scalarIssueMode?: RunJSSettingsScalarIssueMode;
   schema: unknown;
   settings: unknown;
 }
@@ -65,6 +71,8 @@ export function validateRunJSSettingsValue(options: ValidateRunJSSettingsValueOp
     issues,
     missingRequiredPaths,
     mode: options.mode,
+    objectIssueOrder: options.objectIssueOrder || 'server',
+    scalarIssueMode: options.scalarIssueMode || 'all',
     path: options.path ? [...options.path] : [],
     required: options.required === true,
     schema: options.schema,
@@ -76,12 +84,33 @@ export function validateRunJSSettingsValue(options: ValidateRunJSSettingsValueOp
 
 export function validateRunJSSettings(options: ValidateRunJSSettingsOptions): RunJSSettingsValidationResult {
   const schema = getRunJSSettingsRootSchema(options.schema);
-  return validateRunJSSettingsValue({
+  const result = validateRunJSSettingsValue({
     mode: options.mode,
+    objectIssueOrder: options.objectIssueOrder,
+    scalarIssueMode: options.scalarIssueMode,
     required: true,
     schema,
     value: options.settings,
   });
+
+  if (typeof result.normalizedValue !== 'undefined' && !isRecord(result.normalizedValue)) {
+    return {
+      issues: [
+        {
+          code: 'type',
+          path: [],
+          details: {
+            actualType: getRunJSSettingsValueType(result.normalizedValue),
+            expectedType: 'object',
+          },
+        },
+      ],
+      missingRequiredPaths: [],
+      normalizedValue: result.normalizedValue,
+    };
+  }
+
+  return result;
 }
 
 export function normalizeRunJSSettingsValue(schema: unknown, value: unknown): unknown {
@@ -123,26 +152,34 @@ export function normalizeRunJSSettingsValue(schema: unknown, value: unknown): un
     return cloneSettingsValue(effectiveValue);
   }
 
-  const output: Record<string, unknown> = {};
+  let output: Record<string, unknown> = {};
   let hasValue = false;
-  if (isRecord(effectiveValue)) {
-    for (const [key, childValue] of Object.entries(effectiveValue)) {
-      defineOwnSetting(output, key, cloneSettingsValue(childValue));
-      hasValue = true;
-    }
-  }
 
   for (const [key, childSchema] of Object.entries(properties)) {
     if (!isRecord(childSchema)) {
       continue;
     }
-    const hasChildValue = isRecord(effectiveValue) && hasOwn(effectiveValue, key);
-    const childValue = hasChildValue ? effectiveValue[key] : undefined;
-    const normalizedChildValue = normalizeRunJSSettingsValue(childSchema, childValue);
-    if (hasChildValue || typeof normalizedChildValue !== 'undefined') {
-      defineOwnSetting(output, key, normalizedChildValue);
+    const normalizedChildDefault = normalizeRunJSSettingsValue(childSchema, undefined);
+    if (typeof normalizedChildDefault !== 'undefined') {
+      defineOwnSetting(output, key, normalizedChildDefault);
       hasValue = true;
     }
+  }
+
+  if (isRecord(explicitDefault)) {
+    output = mergeSettingsRecords(output, explicitDefault);
+    hasValue = true;
+  }
+  if (isRecord(value)) {
+    output = mergeSettingsRecords(output, value);
+    hasValue = true;
+  }
+
+  for (const [key, childSchema] of Object.entries(properties)) {
+    if (!isRecord(childSchema) || !hasOwn(output, key)) {
+      continue;
+    }
+    defineOwnSetting(output, key, normalizeRunJSSettingsValue(childSchema, output[key]));
   }
 
   return hasValue || typeof effectiveValue !== 'undefined' ? output : undefined;
@@ -167,12 +204,15 @@ function collectRunJSSettingsIssues(options: {
   issues: RunJSSettingsValidationIssue[];
   missingRequiredPaths: RunJSSettingsPath[];
   mode: RunJSSettingsValidationMode;
+  objectIssueOrder: RunJSSettingsObjectIssueOrder;
+  scalarIssueMode: RunJSSettingsScalarIssueMode;
   path: RunJSSettingsPath;
   required: boolean;
   schema: unknown;
   value: unknown;
 }): void {
-  const { issues, missingRequiredPaths, mode, path, required, schema, value } = options;
+  const { issues, missingRequiredPaths, mode, objectIssueOrder, scalarIssueMode, path, required, schema, value } =
+    options;
 
   if (required && typeof value === 'undefined') {
     missingRequiredPaths.push([...path]);
@@ -201,21 +241,23 @@ function collectRunJSSettingsIssues(options: {
   const enumValues = getOwnArray(schema, 'enum');
   if (enumValues && !enumValues.some((item) => settingsValuesEqual(item, value))) {
     issues.push({ code: 'enum', path: [...path] });
-    return;
+    if (scalarIssueMode === 'first') {
+      return;
+    }
   }
 
   if (typeof value === 'string') {
-    const stringIssue = getRunJSSettingsStringIssue(schema, value, path);
-    if (stringIssue) {
-      issues.push(stringIssue);
+    const stringIssues = getRunJSSettingsStringIssues(schema, value, path);
+    issues.push(...(scalarIssueMode === 'first' ? stringIssues.slice(0, 1) : stringIssues));
+    if (scalarIssueMode === 'first' && stringIssues.length > 0) {
       return;
     }
   }
 
   if (typeof value === 'number') {
-    const numberIssue = getRunJSSettingsNumberIssue(schema, value, path);
-    if (numberIssue) {
-      issues.push(numberIssue);
+    const numberIssues = getRunJSSettingsNumberIssues(schema, value, path);
+    issues.push(...(scalarIssueMode === 'first' ? numberIssues.slice(0, 1) : numberIssues));
+    if (scalarIssueMode === 'first' && numberIssues.length > 0) {
       return;
     }
   }
@@ -230,6 +272,8 @@ function collectRunJSSettingsIssues(options: {
         issues,
         missingRequiredPaths,
         mode,
+        objectIssueOrder,
+        scalarIssueMode,
         path: appendRunJSSettingsPath(path, index),
         required: false,
         schema: items,
@@ -239,76 +283,131 @@ function collectRunJSSettingsIssues(options: {
     return;
   }
 
-  if (!isRecord(value) || !schemaTypes.includes('object')) {
+  if (!isRecord(value)) {
     return;
   }
 
-  const properties = getOwnRecord(schema, 'properties') || {};
-  const requiredProperties = new Set(
-    (getOwnArray(schema, 'required') || []).filter((item): item is string => typeof item === 'string'),
-  );
-
-  for (const key of Object.keys(value)) {
-    if (!hasOwn(properties, key)) {
-      issues.push({ code: 'unknownProperty', path: appendRunJSSettingsPath(path, key) });
-    }
+  if (
+    schemaTypes.length === 0 &&
+    enumValues &&
+    !getOwnRecord(schema, 'properties') &&
+    !getOwnArray(schema, 'required')
+  ) {
+    return;
   }
 
-  for (const [key, childSchema] of Object.entries(properties)) {
-    if (!isRecord(childSchema)) {
+  const propertyEntries = Object.entries(getOwnRecord(schema, 'properties') || {}).filter(
+    (entry): entry is [string, Record<string, unknown>] => isRecord(entry[1]),
+  );
+  const knownProperties = new Set(propertyEntries.map(([key]) => key));
+  const requiredProperties = Array.from(
+    new Set((getOwnArray(schema, 'required') || []).filter((item): item is string => typeof item === 'string')),
+  );
+  const requiredPropertySet = new Set(requiredProperties);
+
+  const collectUnknownProperties = () => {
+    for (const key of Object.keys(value)) {
+      if (!knownProperties.has(key)) {
+        issues.push({ code: 'unknownProperty', path: appendRunJSSettingsPath(path, key) });
+      }
+    }
+  };
+
+  if (objectIssueOrder === 'client') {
+    collectUnknownProperties();
+    for (const [key, childSchema] of propertyEntries) {
+      collectRunJSSettingsIssues({
+        issues,
+        missingRequiredPaths,
+        mode,
+        objectIssueOrder,
+        scalarIssueMode,
+        path: appendRunJSSettingsPath(path, key),
+        required: requiredPropertySet.has(key),
+        schema: childSchema,
+        value: hasOwn(value, key) ? value[key] : undefined,
+      });
+    }
+    return;
+  }
+
+  for (const key of requiredProperties) {
+    if (hasOwn(value, key) && typeof value[key] !== 'undefined') {
       continue;
     }
     collectRunJSSettingsIssues({
       issues,
       missingRequiredPaths,
       mode,
+      objectIssueOrder,
+      scalarIssueMode,
       path: appendRunJSSettingsPath(path, key),
-      required: requiredProperties.has(key),
+      required: true,
+      schema: {},
+      value: undefined,
+    });
+  }
+  collectUnknownProperties();
+
+  for (const [key, childSchema] of propertyEntries) {
+    if (!hasOwn(value, key)) {
+      continue;
+    }
+    collectRunJSSettingsIssues({
+      issues,
+      missingRequiredPaths,
+      mode,
+      objectIssueOrder,
+      scalarIssueMode,
+      path: appendRunJSSettingsPath(path, key),
+      required: false,
       schema: childSchema,
-      value: hasOwn(value, key) ? value[key] : undefined,
+      value: value[key],
     });
   }
 }
 
-function getRunJSSettingsStringIssue(
+function getRunJSSettingsStringIssues(
   schema: Record<string, unknown>,
   value: string,
   path: RunJSSettingsPath,
-): RunJSSettingsValidationIssue | undefined {
+): RunJSSettingsValidationIssue[] {
+  const issues: RunJSSettingsValidationIssue[] = [];
   const minLength = getOwnNumber(schema, 'minLength');
   if (typeof minLength === 'number' && value.length < minLength) {
-    return { code: 'minLength', details: { limit: minLength }, path: [...path] };
+    issues.push({ code: 'minLength', details: { limit: minLength }, path: [...path] });
   }
 
   const maxLength = getOwnNumber(schema, 'maxLength');
   if (typeof maxLength === 'number' && value.length > maxLength) {
-    return { code: 'maxLength', details: { limit: maxLength }, path: [...path] };
+    issues.push({ code: 'maxLength', details: { limit: maxLength }, path: [...path] });
   }
 
   const format = getOwnNonEmptyString(schema, 'format');
   if (format && !isValidRunJSSettingsStringFormat(format, value)) {
-    return { code: 'format', details: { format }, path: [...path] };
+    issues.push({ code: 'format', details: { format }, path: [...path] });
   }
 
-  return undefined;
+  return issues;
 }
 
-function getRunJSSettingsNumberIssue(
+function getRunJSSettingsNumberIssues(
   schema: Record<string, unknown>,
   value: number,
   path: RunJSSettingsPath,
-): RunJSSettingsValidationIssue | undefined {
+): RunJSSettingsValidationIssue[] {
+  const issues: RunJSSettingsValidationIssue[] = [];
   const minimum = getOwnNumber(schema, 'minimum');
   if (typeof minimum === 'number' && value < minimum) {
-    return { code: 'minimum', details: { limit: minimum }, path: [...path] };
+    issues.push({ code: 'minimum', details: { limit: minimum }, path: [...path] });
   }
 
   const maximum = getOwnNumber(schema, 'maximum');
   if (typeof maximum === 'number' && value > maximum) {
-    return { code: 'maximum', details: { limit: maximum }, path: [...path] };
+    issues.push({ code: 'maximum', details: { limit: maximum }, path: [...path] });
   }
 
-  return undefined;
+  return issues;
 }
 
 function getRunJSSettingsSchemaTypes(schema: unknown): string[] {
@@ -405,7 +504,7 @@ function isValidRunJSSettingsStringFormat(format: string, value: string): boolea
 }
 
 function settingsValuesEqual(left: unknown, right: unknown): boolean {
-  if (Object.is(left, right)) {
+  if (left === right) {
     return true;
   }
   if (Array.isArray(left) || Array.isArray(right)) {
