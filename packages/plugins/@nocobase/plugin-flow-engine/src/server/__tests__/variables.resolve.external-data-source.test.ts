@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { TargetKey } from '@nocobase/database';
 import { CollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { generateFlowModelRd } from '@nocobase/utils';
@@ -106,7 +107,7 @@ describe('variables:resolve external data source records', () => {
     const sourceId = { accountId: 'account-9', tenantId: 'tenant-1' };
 
     class AssociationCollectionManager extends CollectionManager {
-      override getRepository(name: string, sourceId?: string | number) {
+      override getRepository(name: string, sourceId?: TargetKey) {
         expect(name).toBe('accounts.contacts');
         expect(sourceId).toEqual({ accountId: 'account-9', tenantId: 'tenant-1' });
         return repository;

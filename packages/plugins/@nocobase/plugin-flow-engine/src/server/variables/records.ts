@@ -16,8 +16,7 @@ import { adjustSelectsForCollection } from './selects';
 type FilterTargetKey = string | string[] | undefined;
 type RecordRepository = IRepository | Repository | RelationRepository;
 
-type RecordCollectionManager = Omit<ICollectionManager, 'getRepository'> & {
-  getRepository(name: string, sourceId?: TargetKey): IRepository;
+type RecordCollectionManager = ICollectionManager & {
   db?: {
     getCollection?: (name: string) => Collection | undefined;
     getRepository?: (name: string, sourceId?: TargetKey) => RecordRepository;
@@ -471,12 +470,10 @@ export function getExtraKeyFieldsForSelect(
           ? options.filterTargetKey
           : [];
 
-    // 仅在模型声明了 rawAttributes 且字段存在时才追加，避免无效字段导致 SQL 报错
-    if (options.rawAttributes) {
-      for (const k of tkKeys) {
-        if (k && Object.prototype.hasOwnProperty.call(options.rawAttributes, k)) {
-          extra.push(k);
-        }
+    // Sequelize 模型仅追加真实字段，避免无效字段导致 SQL 报错；其他 collection 信任其 filterTargetKey 声明。
+    for (const k of tkKeys) {
+      if (k && (!options.rawAttributes || Object.prototype.hasOwnProperty.call(options.rawAttributes, k))) {
+        extra.push(k);
       }
     }
   }
