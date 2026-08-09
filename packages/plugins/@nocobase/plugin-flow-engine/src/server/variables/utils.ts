@@ -89,7 +89,7 @@ export async function prefetchRecordsForResolve(
           group.preferFullRecord,
         );
         if (findRecordRequestCacheValue(cache, query).hit) continue;
-        setRecordRequestCache(cache, query, await fetchRecordOrRecordsJson(query.repository, query));
+        setRecordRequestCache(cache, query, await fetchRecordOrRecordsJson(query.repository, query, koaCtx));
       } catch (error) {
         log?.debug('[variables.resolve] prefetch query error', {
           ...group.target.cacheIdentity,

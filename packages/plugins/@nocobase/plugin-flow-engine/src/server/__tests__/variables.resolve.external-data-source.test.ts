@@ -20,6 +20,7 @@ import {
 } from '../variables/resolve';
 import { createBuiltInRecordSlotResolvers } from '../variables/record-slot-policy';
 import { getRecordSlotResolverRegistry } from '../variables/record-slot-resolvers';
+import { resolveRecordTarget } from '../variables/records';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('variables:resolve external data source records', () => {
@@ -27,7 +28,7 @@ describe('variables:resolve external data source records', () => {
     resetVariablesRegistryForTest();
   });
 
-  it('resolves a plain JSON popup record through a non-Sequelize collection manager', async () => {
+  it('resolves a plain JSON popup record with a query-scoped request context', async () => {
     const collectionManager = new CollectionManager();
     collectionManager.defineCollection({
       name: 'leads',
@@ -47,11 +48,14 @@ describe('variables:resolve external data source records', () => {
       };
     });
     const koaContext = {
+      action: { params: { values: { template: true } } },
       app: {
         dataSourceManager: { get: getDataSource },
         environment: { getVariables: () => ({}) },
         logger: { child: () => ({ debug: vi.fn(), warn: vi.fn() }) },
       },
+      getBearerToken: () => 'rest-token',
+      request: { headers: { authorization: 'Bearer rest-token' } },
       state: {},
     } as unknown as ResourcerContext;
     const disposers = createBuiltInRecordSlotResolvers().map((resolver) =>
@@ -72,17 +76,33 @@ describe('variables:resolve external data source records', () => {
 
     expect(result).toEqual({ value: 'acme@example.test' });
     expect(findOne).toHaveBeenCalledTimes(1);
+    const repositoryContext = (findOne.mock.calls[0][0] as { context: ResourcerContext }).context;
+    expect(Object.getPrototypeOf(repositoryContext)).toBe(koaContext);
+    expect(repositoryContext.action.params).toEqual({
+      values: { template: true },
+      filterByTk: 'lead-1',
+      fields: ['email'],
+      appends: undefined,
+    });
+    expect(repositoryContext.getBearerToken()).toBe('rest-token');
+    expect(repositoryContext.request.headers).toBe(koaContext.request.headers);
     expect(findOne).toHaveBeenCalledWith({
       filterByTk: 'lead-1',
       fields: ['email'],
       appends: undefined,
+      context: repositoryContext,
     });
     disposers.forEach((dispose) => dispose());
   });
 
   it('passes association lookups through the collection manager contract', async () => {
     const findOne = vi.fn(async () => ({ id: 'contact-3', email: 'owner@example.test' }));
-    const repository = { findOne } as unknown as ReturnType<CollectionManager['getRepository']>;
+    const targetCollection = { name: 'contacts', filterTargetKey: 'id' };
+    const repository = {
+      collection: targetCollection,
+      findOne,
+      targetCollection,
+    } as unknown as ReturnType<CollectionManager['getRepository']>;
     const sourceId = { accountId: 'account-9', tenantId: 'tenant-1' };
 
     class AssociationCollectionManager extends CollectionManager {
@@ -127,22 +147,47 @@ describe('variables:resolve external data source records', () => {
       filterByTk: 'contact-3',
       fields: ['email'],
       appends: undefined,
+      context: koaContext,
     });
     disposers.forEach((dispose) => dispose());
   });
 
-  it('preserves explicit fields for a non-Sequelize collection manager', async () => {
-    const collectionManager = new CollectionManager();
-    collectionManager.defineCollection({
+  it('fails closed when an association repository has no target collection metadata', () => {
+    const findOne = vi.fn();
+    const context = {
+      app: {
+        dataSourceManager: {
+          get: () => ({ collectionManager: { getRepository: () => ({ findOne }) } }),
+        },
+      },
+      state: {},
+    } as unknown as ResourcerContext;
+
+    expect(
+      resolveRecordTarget(context, {
+        associationName: 'accounts.contacts',
+        collection: 'secrets',
+        dataSourceKey: 'crm_external',
+        filterByTk: 'secret-1',
+        sourceId: 'account-9',
+      }),
+    ).toBeUndefined();
+    expect(findOne).not.toHaveBeenCalled();
+  });
+
+  it('preserves explicit fields when external model metadata has no Sequelize attributes', async () => {
+    const findOne = vi.fn(async () => ({ id: 'lead-1' }));
+    const collection = {
       name: 'leads',
-      tableName: 'leads',
       filterTargetKey: 'id',
-      fields: [],
-    });
-    const repository = collectionManager.getRepository('leads');
-    const findOne = vi.spyOn(repository, 'findOne').mockResolvedValue({
-      id: 'lead-1',
-    } as unknown as Awaited<ReturnType<typeof repository.findOne>>);
+      model: { primaryKeyAttribute: 'id' },
+    };
+    const collectionManager = {
+      db: {
+        getCollection: () => collection,
+        getRepository: () => ({ collection, findOne }),
+      },
+    };
     const koaContext = {
       app: {
         dataSourceManager: {
@@ -181,6 +226,7 @@ describe('variables:resolve external data source records', () => {
       filterByTk: 'lead-1',
       fields: ['id'],
       appends: undefined,
+      context: koaContext,
     });
     disposers.forEach((dispose) => dispose());
   });
@@ -249,8 +295,9 @@ describe('variables:resolve external data source records', () => {
     expect(findOne).toHaveBeenCalledTimes(1);
     expect(findOne).toHaveBeenCalledWith({
       filterByTk: 'lead-1',
-      fields: undefined,
+      fields: ['email'],
       appends: undefined,
+      context: koaContext,
     });
     expect(analyze).toHaveBeenCalledTimes(1);
     analyze.mockRestore();
@@ -322,7 +369,7 @@ describe('variables:resolve external data source records', () => {
     expect(findOne).not.toHaveBeenCalled();
   });
 
-  it('resolves the external association target submitted in the exact slot', async () => {
+  it('resolves an association popup descriptor that names the source collection', async () => {
     const targetCollection = {
       name: 'contacts',
       filterTargetKey: 'id',
@@ -373,7 +420,7 @@ describe('variables:resolve external data source records', () => {
       contextParams: {
         'backend.record': {
           associationName: 'accounts.contacts',
-          collection: 'contacts',
+          collection: 'accounts',
           dataSourceKey: 'crm_external',
           filterByTk: 'contact-3',
           sourceId: 'account-9',
@@ -392,7 +439,7 @@ describe('variables:resolve external data source records', () => {
       ),
     ).resolves.toEqual({ value: 'owner@example.test' });
     expect(getRepository).toHaveBeenCalledWith('accounts.contacts', 'account-9');
-    expect(findOne).toHaveBeenCalledWith(expect.objectContaining({ filterByTk: 'contact-3' }));
+    expect(findOne).toHaveBeenCalledWith(expect.objectContaining({ context, filterByTk: 'contact-3' }));
     dispose();
   });
 
@@ -436,7 +483,12 @@ describe('variables:resolve external data source records', () => {
     );
 
     expect(result).toEqual({ value: { email: 'parent@example.test', id: 'parent-1' } });
-    expect(findOne).toHaveBeenCalledWith({ filterByTk: 'parent-1', fields: undefined, appends: undefined });
+    expect(findOne).toHaveBeenCalledWith({
+      filterByTk: 'parent-1',
+      fields: undefined,
+      appends: undefined,
+      context,
+    });
     dispose();
   });
 
@@ -488,7 +540,12 @@ describe('variables:resolve external data source records', () => {
     expect(getDataSource).toHaveBeenCalledWith('crm_external');
     expect(getCollection).toHaveBeenCalledWith('leads');
     expect(getRepository).toHaveBeenCalledWith('leads');
-    expect(findOne).toHaveBeenCalledWith({ filterByTk: 'lead-1', fields: undefined, appends: undefined });
+    expect(findOne).toHaveBeenCalledWith({
+      filterByTk: 'lead-1',
+      fields: ['name'],
+      appends: undefined,
+      context,
+    });
     disposers.forEach((dispose) => dispose());
   });
 
