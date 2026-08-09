@@ -8,14 +8,14 @@
  */
 
 import type { HandlerType } from '@nocobase/resourcer';
+import type { Database, Model } from '@nocobase/database';
 import { vi } from 'vitest';
 
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
 import type { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
-import type { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
-import { toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
+import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 
@@ -188,7 +188,41 @@ describe('JS Template durable creation jobs', () => {
     expect(summary).not.toHaveProperty('leaseExpiresAt');
     expect(summary).not.toHaveProperty('heartbeatAt');
   });
+
+  it('prefers the terminal snapshot when a job changes status between list queries', async () => {
+    const running = createJobRecord({
+      status: 'running',
+      claimToken: 'claim-list-race',
+      claimOwner: 'runner-list-race',
+    });
+    const succeeded = createJobRecord({
+      status: 'succeeded',
+      resultProjectId: 'jtp_target',
+      claimToken: null,
+      claimOwner: null,
+      finishedAt: '2026-07-27T00:00:02.000Z',
+    });
+    const find = vi
+      .fn()
+      .mockResolvedValueOnce([createJobModel(running)])
+      .mockResolvedValueOnce([createJobModel(succeeded)]);
+    const store = new JsTemplateCreateJobStore({
+      getRepository: vi.fn(() => ({ find })),
+    } as unknown as Database);
+
+    await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual([
+      expect.objectContaining({ id: running.id, status: 'succeeded', resultProjectId: 'jtp_target' }),
+    ]);
+  });
 });
+
+function createJobModel(job: JsTemplateCreateJob): Model {
+  return {
+    get(attribute: string) {
+      return job[attribute as keyof JsTemplateCreateJob];
+    },
+  } as unknown as Model;
+}
 
 function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTemplateCreateJob {
   return {

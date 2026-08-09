@@ -192,11 +192,12 @@ export class JsTemplateCreateJobRunner {
     try {
       await this.executor.cleanup(job, claimToken);
     } catch (cleanupError) {
-      this.options.logger.warn('JS Template failed-creation cleanup was skipped', {
+      this.options.logger.warn('JS Template failed-creation cleanup failed; job retained for lease recovery', {
         jobId: job.id,
         targetProjectId: job.targetProjectId,
         ...safeErrorMeta(cleanupError),
       });
+      return;
     }
 
     let failed: JsTemplateCreateJob | null = null;

@@ -223,27 +223,29 @@ describe('JsTemplateCreateJobRunner', () => {
     );
   });
 
-  it('prevents an old worker from writing failure or cleanup after losing its claim', async () => {
+  it('keeps the running job recoverable when failed-creation cleanup loses its claim', async () => {
+    vi.useFakeTimers();
     const job = createJob();
-    const store = createStore({ fail: vi.fn(async () => null) });
+    const store = createStore();
     const executor = createExecutor({
       execute: vi.fn(async () => Promise.reject(new Error('late worker failure'))),
       cleanup: vi.fn(async () => Promise.reject(new Error('claim lost'))),
     });
     const recordCreateJobEvent = vi.fn(async (_event: JsTemplateCreateJobAuditInput) => undefined);
-    const runner = new JsTemplateCreateJobRunner(store, executor, runnerOptions(), {
+    const options = runnerOptions();
+    const runner = new JsTemplateCreateJobRunner(store, executor, options, {
       recordCreateJobEvent,
     } as unknown as JsTemplateAuditService);
 
     await runner.run(job.id);
+    await vi.advanceTimersByTimeAsync(600_000);
 
-    expect(store.fail).toHaveBeenCalledWith(
-      job.id,
-      'main',
-      job.claimToken,
-      'JS_TEMPLATE_CREATE_FAILED',
-      'JS Template creation failed',
-      null,
+    expect(executor.cleanup).toHaveBeenCalledWith(job, job.claimToken);
+    expect(store.heartbeat).not.toHaveBeenCalled();
+    expect(store.fail).not.toHaveBeenCalled();
+    expect(options.logger.warn).toHaveBeenCalledWith(
+      'JS Template failed-creation cleanup failed; job retained for lease recovery',
+      expect.objectContaining({ jobId: job.id, targetProjectId: job.targetProjectId, errorCode: 'Error' }),
     );
     expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual(['createJobStart']);
   });

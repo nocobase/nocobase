@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION = 1;
+export const RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION = 2;
 
 export const RUNJS_IMPORTABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
 
@@ -121,20 +121,22 @@ export function normalizeRunJSVirtualPath(value: string): string {
     .replace(/^\/+|\/+$/gu, '')
     .replace(/\/+/gu, '/');
   const segments: string[] = [];
+  let escaped = 0;
   for (const segment of normalized.split('/')) {
     if (!segment || segment === '.') {
       continue;
     }
     if (segment === '..') {
-      if (segments.length === 0) {
-        return `../${normalized}`;
+      if (segments.length > 0) {
+        segments.pop();
+      } else {
+        escaped += 1;
       }
-      segments.pop();
       continue;
     }
     segments.push(segment);
   }
-  return segments.join('/');
+  return `${'../'.repeat(escaped)}${segments.join('/')}`.replace(/\/$/u, '');
 }
 
 export function runJSVirtualDirname(path: string): string {

@@ -136,6 +136,61 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     expect(result.artifact.code).toContain(expectedCode);
   });
 
+  it('uses the sorted materialized workspace snapshot for compiler file identity', async () => {
+    const entryContent = `import { value } from './value'; return value;`;
+    const valueContent = `export const value = 'final';`;
+    const inputs = [
+      [
+        { path: 'index.ts', content: entryContent },
+        { path: 'value.ts', content: valueContent },
+      ],
+      [
+        { path: 'value.ts', content: valueContent },
+        { path: 'index.ts', content: entryContent },
+      ],
+      [
+        { path: 'obsolete.ts', content: `export const obsolete = true;` },
+        { path: 'value.ts', content: `export const value = 'stale';` },
+        { path: 'index.ts', content: entryContent },
+        { path: 'obsolete.ts', operation: 'delete' as const },
+        { path: 'value.ts', content: valueContent },
+      ],
+    ];
+    const results = await Promise.all(
+      inputs.map((files) => compileRunJSSourceWorkspace({ files, entry: 'index.ts', surfaceStyle: 'value' })),
+    );
+
+    for (const result of results) {
+      expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    }
+    expect(new Set(results.map((result) => result.artifact.filesHash)).size).toBe(1);
+    expect(new Set(results.map((result) => result.artifact.code)).size).toBe(1);
+    expect(new Set(results.map((result) => result.artifact.sourceMap)).size).toBe(1);
+    expect(results[0].artifact.code).toMatch(/\/\/# sourceURL=nocobase-runjs:\/\/bundle\/[a-f0-9]{16}\.js$/u);
+  });
+
+  it('includes final path, content, and language in compiler file identity', async () => {
+    const compile = (path: string, content: string, language?: string) =>
+      compileRunJSSourceWorkspace({
+        files: [{ path, content, language }],
+        entry: path,
+        surfaceStyle: 'value',
+      });
+    const [baseline, changedPath, changedContent, changedLanguage] = await Promise.all([
+      compile('index.ts', 'return 1;', 'typescript'),
+      compile('main.ts', 'return 1;', 'typescript'),
+      compile('index.ts', 'return 2;', 'typescript'),
+      compile('index.ts', 'return 1;', 'javascript'),
+    ]);
+
+    for (const result of [baseline, changedPath, changedContent, changedLanguage]) {
+      expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    }
+    expect(baseline.artifact.filesHash).not.toBe(changedPath.artifact.filesHash);
+    expect(baseline.artifact.filesHash).not.toBe(changedContent.artifact.filesHash);
+    expect(baseline.artifact.filesHash).not.toBe(changedLanguage.artifact.filesHash);
+  });
+
   it.each([
     {
       name: 'syntax error',

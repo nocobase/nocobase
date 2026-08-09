@@ -15,7 +15,7 @@ import type { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobSt
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 
 describe('JS Template create-job permissions', () => {
-  it('lists jobs when the resourcer includes routing metadata in action params', async () => {
+  it('lists jobs in the authenticated application and actor scope', async () => {
     const store = {
       listOwnVisibleJobs: vi.fn(async () => []),
     } as unknown as JsTemplateCreateJobStore;
@@ -30,7 +30,7 @@ describe('JS Template create-job permissions', () => {
         params: {
           resourceName: 'jsTemplateCreateJobs',
           actionName: 'list',
-          values: {},
+          values: { applicationName: 'secondary', actorUserId: '8' },
         },
       },
       auth: { user: { id: 7 } },

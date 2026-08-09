@@ -80,18 +80,20 @@ export function useJsTemplateCreateJobs(): UseJsTemplateCreateJobsResult {
     };
   }, [refresh]);
 
-  const hasVisibleJobs = jobs.length > 0;
+  const hasActiveJobs = jobs.some((job) => job.status === 'pending' || job.status === 'running');
   useEffect(() => {
-    if (!hasVisibleJobs && !error) {
+    if (!hasActiveJobs && !error) {
       return;
     }
     const timer = setInterval(() => {
       refresh().catch(() => undefined);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [error, hasVisibleJobs, refresh]);
+  }, [error, hasActiveJobs, refresh]);
 
   const addAcceptedJob = useCallback((job: JsTemplateCreateJobSummary) => {
+    requestControllerRef.current?.abort();
+    requestControllerRef.current = null;
     setJobs((current) => [job, ...current.filter((candidate) => candidate.id !== job.id)]);
   }, []);
 
@@ -99,6 +101,8 @@ export function useJsTemplateCreateJobs(): UseJsTemplateCreateJobsResult {
     async (jobId: string) => {
       await dismissJsTemplateCreateJob(ctx.api, jobId);
       if (mountedRef.current) {
+        requestControllerRef.current?.abort();
+        requestControllerRef.current = null;
         setJobs((current) => current.filter((job) => job.id !== jobId));
       }
     },

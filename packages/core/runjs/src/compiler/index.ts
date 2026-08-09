@@ -151,7 +151,7 @@ export async function compileRunJSSourceWorkspace(
 ): Promise<CompileRunJSSourceWorkspaceResult> {
   const entryPath = normalizePath(input.entry);
   const files = contentFilesFromChanges(input.files);
-  const filesHash = buildRunJSFilesHash(input.files);
+  const filesHash = buildRunJSCompilerFilesHash(files);
   const sourceURL = buildRunJSSourceURL(filesHash);
   const diagnostics: RunJSCompileDiagnostic[] = [];
   const entry = files.get(entryPath);
@@ -256,6 +256,13 @@ function contentFilesFromChanges(files: RunJSCompileFileInput[]): Map<string, Ru
   }
 
   return contentFiles;
+}
+
+function buildRunJSCompilerFilesHash(files: ReadonlyMap<string, RunJSContentFile>): string {
+  const snapshot = [...files.values()]
+    .sort((left, right) => (left.path < right.path ? -1 : left.path > right.path ? 1 : 0))
+    .map(({ path, content, language }) => ({ path, content, language }));
+  return buildRunJSFilesHash(snapshot);
 }
 
 function toSourceInspectionInput(

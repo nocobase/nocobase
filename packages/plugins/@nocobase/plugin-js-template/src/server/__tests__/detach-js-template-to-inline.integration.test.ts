@@ -1369,8 +1369,14 @@ describe('detach to inline integration', () => {
         surfaceStyle: 'render',
         compiler: { module: 'virtual-esm', jsx: true },
       });
-      expect(result.filesHash).toBe(buildRunJSFilesHash(canonicalFiles));
-      expect(buildRunJSFilesHash(materializedCommittedFiles)).toBe(result.filesHash);
+      const compilerIdentityFiles = canonicalFiles.map(({ path, content, language }) => ({ path, content, language }));
+      const committedCompilerIdentityFiles = materializedCommittedFiles.map(({ path, content, language }) => ({
+        path,
+        content,
+        language,
+      }));
+      expect(result.filesHash).toBe(buildRunJSFilesHash(compilerIdentityFiles));
+      expect(buildRunJSFilesHash(committedCompilerIdentityFiles)).toBe(result.filesHash);
       const sourceId = createHash('sha256').update(result.filesHash).digest('hex').slice(0, 16);
       expect(result.code).toContain(`nocobase-runjs://bundle/${sourceId}.js`);
       const pushMetadata = ensureAndPush.mock.calls[0][0].metadata as Record<string, unknown>;

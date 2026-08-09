@@ -56,6 +56,16 @@ export type JsTemplateCreateJobStoreClock = () => Date;
 
 export type JsTemplateCreateJobClaimTokenFactory = () => string;
 
+const visibleTerminalJobLimit = 20;
+
+const retainedTerminalJobLimit = 100;
+
+const terminalJobPruneBatchSize = 100;
+
+const activeJobStatuses = ['pending', 'running'] as const;
+
+const terminalJobStatuses = ['succeeded', 'failed'] as const;
+
 export class JsTemplateCreateJobStore {
   constructor(
     private readonly db: Database,
@@ -209,7 +219,7 @@ export class JsTemplateCreateJobStore {
     if (!resultProjectId.trim()) {
       throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job result Project identity is required');
     }
-    return this.withLockedJob(jobId, async (record, transaction) => {
+    const succeeded = await this.withLockedJob(jobId, async (record, transaction) => {
       const now = this.clock();
       if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
         return null;
@@ -233,6 +243,10 @@ export class JsTemplateCreateJobStore {
       );
       return createJobFromModel(record);
     });
+    if (succeeded) {
+      await this.pruneTerminalJobsBestEffort(applicationName, succeeded.actorUserId);
+    }
+    return succeeded;
   }
 
   async fail(
@@ -243,7 +257,7 @@ export class JsTemplateCreateJobStore {
     errorMessage: string,
     errorReasonCode: string | null = null,
   ): Promise<JsTemplateCreateJob | null> {
-    return this.withLockedJob(jobId, async (record, transaction) => {
+    const failed = await this.withLockedJob(jobId, async (record, transaction) => {
       const now = this.clock();
       if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
         return null;
@@ -267,6 +281,10 @@ export class JsTemplateCreateJobStore {
       );
       return createJobFromModel(record);
     });
+    if (failed) {
+      await this.pruneTerminalJobsBestEffort(applicationName, failed.actorUserId);
+    }
+    return failed;
   }
 
   async getOwn(
@@ -299,11 +317,48 @@ export class JsTemplateCreateJobStore {
   }
 
   async listOwnVisibleJobs(applicationName: string, actorUserId: string): Promise<JsTemplateCreateJobSummary[]> {
-    const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).find({
-      filter: { applicationName, actorUserId, status: { $in: ['pending', 'running', 'succeeded', 'failed'] } },
-      sort: ['-createdAt'],
+    const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs);
+    const activeRecords = await repository.find({
+      filter: { applicationName, actorUserId, status: { $in: activeJobStatuses } },
+      sort: ['-createdAt', '-id'],
     });
-    return records.map((record) => toCreateJobSummary(createJobFromModel(record)));
+    const terminalRecords = await repository.find({
+      filter: { applicationName, actorUserId, status: { $in: terminalJobStatuses } },
+      sort: ['-createdAt', '-id'],
+      limit: visibleTerminalJobLimit,
+    });
+    const jobsById = new Map<string, JsTemplateCreateJobSummary>();
+    for (const record of [...activeRecords, ...terminalRecords]) {
+      const summary = toCreateJobSummary(createJobFromModel(record));
+      jobsById.set(summary.id, summary);
+    }
+    return [...jobsById.values()].sort(compareCreateJobsNewestFirst);
+  }
+
+  private async pruneTerminalJobsBestEffort(applicationName: string, actorUserId: string | null): Promise<void> {
+    try {
+      const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs);
+      let staleJobIds: string[];
+      do {
+        const staleRecords = await repository.find({
+          filter: { applicationName, actorUserId, status: { $in: terminalJobStatuses } },
+          fields: ['id'],
+          sort: ['-createdAt', '-id'],
+          offset: retainedTerminalJobLimit,
+          limit: terminalJobPruneBatchSize,
+        });
+        staleJobIds = staleRecords.map((record) => String(record.get('id')));
+        if (staleJobIds.length) {
+          await repository.destroy({ filterByTk: staleJobIds });
+        }
+      } while (staleJobIds.length);
+    } catch (error) {
+      this.db.logger.warn('JS Template create-job terminal-history pruning failed', {
+        applicationName,
+        actorUserId,
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      });
+    }
   }
 
   private async withLockedJob<T>(
@@ -334,6 +389,11 @@ export class JsTemplateCreateJobStore {
       }
     }
   }
+}
+
+function compareCreateJobsNewestFirst(left: JsTemplateCreateJobSummary, right: JsTemplateCreateJobSummary): number {
+  const createdAtDifference = Date.parse(right.createdAt) - Date.parse(left.createdAt);
+  return createdAtDifference || right.id.localeCompare(left.id);
 }
 
 export function toCreateJobSummary(job: JsTemplateCreateJob): JsTemplateCreateJobSummary {
