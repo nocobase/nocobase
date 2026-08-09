@@ -51,7 +51,7 @@ export interface RunJSSourceAdapterContext {
   timezone?: string;
   transaction?: unknown;
   can?: (input: RunJSSourcePermissionCheck) => RunJSSourcePermissionResult | null;
-  sourceTransition?: 'external-to-inline';
+  sourceTransition?: 'external-to-inline' | 'external-binding-replay';
 }
 
 export interface RunJSLegacySource {

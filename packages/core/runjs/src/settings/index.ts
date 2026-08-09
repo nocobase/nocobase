@@ -7,10 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { normalizeRunJSSettingsValue } from './runtime-validation';
+
 export type RunJSSettingsRecord = Record<string, unknown>;
 
 export * from './condition';
 export * from './defaults';
+export * from './runtime-validation';
 
 export interface JsTemplateSettingsDescriptorLike {
   entryId: string;
@@ -53,26 +56,27 @@ export function normalizeJsTemplateSettings(
     return mergeDefaults(defaults, current);
   }
 
-  return Object.fromEntries(
-    Object.entries(properties).flatMap(([propertyName, propertySchema]) => {
-      const hasCurrent = Object.prototype.hasOwnProperty.call(current, propertyName);
-      const hasDefault = Object.prototype.hasOwnProperty.call(defaults, propertyName);
-      const hasSchemaDefault =
-        isRecord(propertySchema) && Object.prototype.hasOwnProperty.call(propertySchema, 'default');
+  const output: RunJSSettingsRecord = {};
+  for (const [propertyName, propertySchema] of Object.entries(properties)) {
+    const hasCurrent = Object.prototype.hasOwnProperty.call(current, propertyName);
+    const hasDefault = Object.prototype.hasOwnProperty.call(defaults, propertyName);
+    const hasSchemaDefault =
+      isRecord(propertySchema) && Object.prototype.hasOwnProperty.call(propertySchema, 'default');
 
-      if (!hasCurrent && !hasDefault && !hasSchemaDefault) {
-        return [];
-      }
+    if (!hasCurrent && !hasDefault && !hasSchemaDefault) {
+      continue;
+    }
 
-      const defaultValue = hasDefault
-        ? defaults[propertyName]
-        : hasSchemaDefault
-          ? (propertySchema as RunJSSettingsRecord).default
-          : undefined;
-      const value = hasCurrent ? mergeDefaultValue(defaultValue, current[propertyName]) : cloneJsonValue(defaultValue);
-      return [[propertyName, value]];
-    }),
-  );
+    const defaultValue = hasDefault ? defaults[propertyName] : hasSchemaDefault ? propertySchema.default : undefined;
+    const mergedValue = hasCurrent
+      ? mergeDefaultValue(defaultValue, current[propertyName])
+      : cloneJsonValue(defaultValue);
+    const normalizedValue = isRecord(propertySchema)
+      ? normalizeRunJSSettingsValue(propertySchema, mergedValue)
+      : mergedValue;
+    defineOwnSetting(output, propertyName, normalizedValue);
+  }
+  return output;
 }
 
 export function normalizeJsTemplateSelection(input: NormalizeJsTemplateSelectionInput): RunJSSettingsRecord {
@@ -103,7 +107,7 @@ export function setJsTemplateTopLevelSetting(
   if (typeof value === 'undefined') {
     delete next[propertyName];
   } else {
-    next[propertyName] = cloneJsonValue(value);
+    defineOwnSetting(next, propertyName, cloneJsonValue(value));
   }
   return next;
 }
@@ -151,9 +155,13 @@ function pruneSettingsValue(schema: unknown, value: unknown): unknown {
 function mergeDefaults(defaults: RunJSSettingsRecord, current: RunJSSettingsRecord): RunJSSettingsRecord {
   const result = cloneJsonValue(current);
   for (const [key, defaultValue] of Object.entries(defaults)) {
-    result[key] = Object.prototype.hasOwnProperty.call(current, key)
-      ? mergeDefaultValue(defaultValue, current[key])
-      : cloneJsonValue(defaultValue);
+    defineOwnSetting(
+      result,
+      key,
+      Object.prototype.hasOwnProperty.call(current, key)
+        ? mergeDefaultValue(defaultValue, current[key])
+        : cloneJsonValue(defaultValue),
+    );
   }
   return result;
 }
@@ -184,6 +192,15 @@ function shortHash(input: string): string {
     hash = Math.imul(hash, 0x01000193);
   }
   return (hash >>> 0).toString(36).padStart(6, '0').slice(0, 8);
+}
+
+function defineOwnSetting(target: RunJSSettingsRecord, key: string, value: unknown): void {
+  Object.defineProperty(target, key, {
+    configurable: true,
+    enumerable: true,
+    value,
+    writable: true,
+  });
 }
 
 function isRecord(value: unknown): value is RunJSSettingsRecord {

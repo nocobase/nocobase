@@ -240,7 +240,10 @@ export class SaveAsJsTemplateService {
     if (!supportsExternalBinding(adapter)) {
       throw unsupportedLocator(input.locator);
     }
-    await adapter.assertCanWrite({ locator: input.locator, ctx: { ...ctx.adapterContext } });
+    await adapter.assertCanWrite({
+      locator: input.locator,
+      ctx: { ...ctx.adapterContext, sourceTransition: 'external-binding-replay' },
+    });
   }
 
   private async saveAsJsTemplateToExistingProject(

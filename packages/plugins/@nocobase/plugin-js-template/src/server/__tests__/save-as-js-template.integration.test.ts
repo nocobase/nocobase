@@ -958,10 +958,33 @@ describe('SaveAsJsTemplateService', () => {
     const operationModel = createJsTemplateSourceOperationModel();
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
-    const service = createFailureService({ saveSource, writeExternalBinding, operationModel });
+    const assertCanWrite = vi.fn();
+    const readLegacy = vi.fn(async () => ({
+      code: 'return 1;',
+      version: 'v2',
+      label: 'JS block',
+      surfaceStyle: 'render',
+      language: 'typescript',
+      ownerFingerprint: 'owner_before',
+      metadata: { modelUse: 'JSBlockModel' },
+    }));
+    const syncUsages = vi.fn();
+    const sourceSnapshotValidator = { assertCurrent: vi.fn() };
+    const service = createFailureService({
+      saveSource,
+      writeExternalBinding,
+      operationModel,
+      assertCanWrite,
+      readLegacy,
+      syncUsages,
+      sourceSnapshotValidator,
+    });
     const input = createSaveAsJsTemplateInput({ idempotencyKey: '  save-sales-kpi-v1  ' });
 
     const first = await service.saveAsJsTemplate(input, { adapterContext: {} });
+    const readCountAfterFirst = readLegacy.mock.calls.length;
+    const snapshotCountAfterFirst = sourceSnapshotValidator.assertCurrent.mock.calls.length;
+    const operationUpdateCountAfterFirst = operationModel.model.update.mock.calls.length;
     const replay = await service.saveAsJsTemplate(
       { ...input, idempotencyKey: 'save-sales-kpi-v1' },
       { adapterContext: {} },
@@ -970,6 +993,14 @@ describe('SaveAsJsTemplateService', () => {
     expect(replay).toEqual(first);
     expect(saveSource).toHaveBeenCalledTimes(1);
     expect(writeExternalBinding).toHaveBeenCalledTimes(1);
+    expect(syncUsages).toHaveBeenCalledTimes(1);
+    expect(readLegacy).toHaveBeenCalledTimes(readCountAfterFirst);
+    expect(sourceSnapshotValidator.assertCurrent).toHaveBeenCalledTimes(snapshotCountAfterFirst);
+    expect(operationModel.model.update).toHaveBeenCalledTimes(operationUpdateCountAfterFirst);
+    expect(assertCanWrite).toHaveBeenLastCalledWith({
+      locator,
+      ctx: { sourceTransition: 'external-binding-replay' },
+    });
     expect(operationModel.getValues()).toMatchObject({
       idempotencyKey: 'save-sales-kpi-v1',
       status: 'completed',
@@ -977,17 +1008,54 @@ describe('SaveAsJsTemplateService', () => {
     });
   });
 
+  it('reauthorizes a completed replay without changing its persisted result or repeating writes', async () => {
+    const operationModel = createJsTemplateSourceOperationModel();
+    const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
+    const writeExternalBinding = vi.fn(async () => ({ ownerFingerprint: 'owner_after' }));
+    const syncUsages = vi.fn();
+    let allowReplay = true;
+    const assertCanWrite = vi.fn(async ({ ctx }: { ctx: { sourceTransition?: string } }) => {
+      if (ctx.sourceTransition === 'external-binding-replay' && !allowReplay) {
+        throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'host write permission was revoked');
+      }
+    });
+    const service = createFailureService({
+      saveSource,
+      writeExternalBinding,
+      operationModel,
+      assertCanWrite,
+      syncUsages,
+    });
+    const input = createSaveAsJsTemplateInput({ idempotencyKey: 'save-as-replay-permission' });
+
+    const first = await service.saveAsJsTemplate(input, { adapterContext: {} });
+    const operationUpdateCountAfterFirst = operationModel.model.update.mock.calls.length;
+    allowReplay = false;
+
+    await expect(service.saveAsJsTemplate(input, { adapterContext: {} })).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+    });
+    expect(saveSource).toHaveBeenCalledOnce();
+    expect(writeExternalBinding).toHaveBeenCalledOnce();
+    expect(syncUsages).toHaveBeenCalledOnce();
+    expect(operationModel.model.update).toHaveBeenCalledTimes(operationUpdateCountAfterFirst);
+    expect(operationModel.getValues()).toMatchObject({ status: 'completed', result: first });
+  });
+
   it('rejects reuse of a JS Template source operation key with a different request', async () => {
     const operationModel = createJsTemplateSourceOperationModel();
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
-    const service = createFailureService({ saveSource, operationModel });
+    const assertCanWrite = vi.fn();
+    const service = createFailureService({ saveSource, operationModel, assertCanWrite });
     const input = createSaveAsJsTemplateInput({ idempotencyKey: 'save-as-sales-kpi-v1' });
 
     await service.saveAsJsTemplate(input, { adapterContext: {} });
+    const permissionCheckCountAfterFirst = assertCanWrite.mock.calls.length;
     await expect(
       service.saveAsJsTemplate({ ...input, templateName: 'different-entry' }, { adapterContext: {} }),
     ).rejects.toMatchObject({ code: 'JS_TEMPLATE_IDEMPOTENCY_CONFLICT' });
     expect(saveSource).toHaveBeenCalledTimes(1);
+    expect(assertCanWrite).toHaveBeenCalledTimes(permissionCheckCountAfterFirst);
   });
 
   it('reclaims a failed JS Template source operation for the same request', async () => {
@@ -1135,6 +1203,7 @@ function createFailureService(options: {
   saveSource: ReturnType<typeof vi.fn>;
   writeExternalBinding?: ReturnType<typeof vi.fn>;
   assertCanWrite?: ReturnType<typeof vi.fn>;
+  readLegacy?: ReturnType<typeof vi.fn>;
   syncUsages?: ReturnType<typeof vi.fn>;
   onTransactionSuccess?: () => void;
   operationModel?: ReturnType<typeof createJsTemplateSourceOperationModel>;
@@ -1212,15 +1281,17 @@ function createFailureService(options: {
         require: () => ({
           kind: 'flowModel.step',
           assertCanWrite: options.assertCanWrite || vi.fn(),
-          readLegacy: vi.fn(async () => ({
-            code: 'return 1;',
-            version: 'v2',
-            label: 'JS block',
-            surfaceStyle: options.surfaceStyle || 'render',
-            language: 'typescript',
-            ownerFingerprint: options.ownerFingerprint || 'owner_before',
-            metadata: { modelUse: options.modelUse || 'JSBlockModel' },
-          })),
+          readLegacy:
+            options.readLegacy ||
+            vi.fn(async () => ({
+              code: 'return 1;',
+              version: 'v2',
+              label: 'JS block',
+              surfaceStyle: options.surfaceStyle || 'render',
+              language: 'typescript',
+              ownerFingerprint: options.ownerFingerprint || 'owner_before',
+              metadata: { modelUse: options.modelUse || 'JSBlockModel' },
+            })),
           writeExternalBinding:
             options.writeExternalBinding || vi.fn(async () => ({ ownerFingerprint: 'owner_after' })),
           getFingerprint: vi.fn(async () => 'owner_after'),

@@ -19,7 +19,7 @@ import {
 } from './portable';
 
 export const RUNJS_COMPILER_CONTRACT_VERSION = 'runjs.compiler.v1';
-export const RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION = 'runjs.entry-adapter.v1';
+export const RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION = 'runjs.entry-adapter.v2';
 export const RUNJS_COMPILER_SOURCE_MAP_CONTRACT_VERSION = 'runjs.source-map.v1';
 export const RUNJS_COMPILER_SOURCE_INSPECTION_POLICY_VERSION = 'runjs.source-inspection.v3';
 

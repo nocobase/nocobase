@@ -371,6 +371,84 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     await expect(executeArtifact(result.artifact.code, { libs: {} })).resolves.toBe('AB');
   });
 
+  it.each([
+    {
+      name: 'declaration-level type-only',
+      declaration: `export type { Foo } from './re-exported';`,
+    },
+    {
+      name: 'specifier-level type-only',
+      declaration: `export { type Foo } from './re-exported';`,
+    },
+  ])('does not execute $name re-export targets', async ({ declaration }) => {
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        { path: 'index.ts', content: `${declaration}\nreturn 'entry-ran';` },
+        {
+          path: 're-exported.ts',
+          content: `throw new Error('type-only re-export target executed'); export type Foo = string;`,
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    await expect(executeArtifact(result.artifact.code, { libs: {} })).resolves.toBe('entry-ran');
+  });
+
+  it.each([
+    {
+      name: 'mixed type and value',
+      declaration: `export { type Foo, runtimeValue } from './re-exported';`,
+    },
+    {
+      name: 'named value',
+      declaration: `export { runtimeValue } from './re-exported';`,
+    },
+    {
+      name: 'star',
+      declaration: `export * from './re-exported';`,
+    },
+    {
+      name: 'namespace',
+      declaration: `export * as runtimeNamespace from './re-exported';`,
+    },
+    {
+      name: 'empty named',
+      declaration: `export {} from './re-exported';`,
+    },
+  ])('executes $name re-export targets exactly once', async ({ declaration }) => {
+    const executions: string[] = [];
+    const result = await compileRunJSSourceWorkspace({
+      files: [
+        {
+          path: 'index.ts',
+          content: `${declaration}\nreturn 'entry-ran';`,
+        },
+        {
+          path: 're-exported.ts',
+          content: [
+            `ctx.message.success('re-exported');`,
+            `export type Foo = string;`,
+            `export const runtimeValue = 'runtime';`,
+          ].join('\n'),
+        },
+      ],
+      entry: 'index.ts',
+      surfaceStyle: 'value',
+    });
+
+    expect(result.failureCode, JSON.stringify(result.artifact.diagnostics, null, 2)).toBeUndefined();
+    await expect(
+      executeArtifact(result.artifact.code, {
+        libs: {},
+        message: { success: (message: string) => executions.push(message) },
+      }),
+    ).resolves.toBe('entry-ran');
+    expect(executions).toEqual(['re-exported']);
+  });
+
   it('supports namespace imports and top-level await in the executable entry', async () => {
     const result = await compileRunJSSourceWorkspace({
       files: [

@@ -344,16 +344,11 @@ function buildTemplateTypes(template: JsTemplateSettingsTypegenTemplate): string
 }
 
 function buildIndexTypes(templates: JsTemplateSettingsTypegenTemplate[]): string {
-  const imports = templates.map(
-    (template) =>
-      `import type { Settings as ${templateTypeIdentifier(template)} } from "./client/${template.kind}/${
-        template.templateName
-      }";`,
+  const mapEntries = templates.map(
+    (template) => `  "${template.entryKey}": import("./client/${template.kind}/${template.templateName}").Settings;`,
   );
-  const mapEntries = templates.map((template) => `  "${template.entryKey}": ${templateTypeIdentifier(template)};`);
   return [
     generatedHeader(),
-    ...imports,
     '',
     'export interface JsTemplateSettingsMap {',
     ...mapEntries,
@@ -381,18 +376,6 @@ function parseClientEntryDescriptorPath(
     }
   }
   return null;
-}
-
-function templateTypeIdentifier(template: JsTemplateSettingsTypegenTemplate): string {
-  return `${toPascalCase(template.target)}${toPascalCase(template.kind)}${toPascalCase(template.templateName)}Settings`;
-}
-
-function toPascalCase(value: string): string {
-  return value
-    .split(/[^a-zA-Z0-9]+/)
-    .filter(Boolean)
-    .map((item) => `${item.charAt(0).toUpperCase()}${item.slice(1)}`)
-    .join('');
 }
 
 function isValidTemplateName(value: string): boolean {

@@ -96,6 +96,8 @@ const CHART_EVENTS_DEFAULT_CODE = `// The chart variable is the ECharts instance
 //   ctx.message.info(params.name);
 // });`;
 const UNSAFE_JSON_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+const JS_TEMPLATE_SOURCE_BINDING_KEYS = new Set(['type', 'projectId', 'templateId', 'kind']);
+const JS_TEMPLATE_SOURCE_BINDING_KINDS = new Set(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']);
 
 export function createFlowModelRunJSSourceAdapters(db: Database): RunJSSourceAdapter[] {
   return [
@@ -115,7 +117,10 @@ function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelS
     },
     async assertCanWrite({ locator, ctx }) {
       await assertFlowModelPermission(db, ctx, locator.modelUid, 'save', ['stepParams']);
-      assertFlowModelStepSourceIsInline(await loadFlowModel(db, locator.modelUid, ctx), locator, ctx);
+      const model = await loadFlowModel(db, locator.modelUid, ctx);
+      if (ctx.sourceTransition !== 'external-binding-replay' || !isCanonicalJsTemplateExternalBinding(model, locator)) {
+        assertFlowModelStepSourceIsInline(model, locator, ctx);
+      }
     },
     async readLegacy({ locator, ctx }) {
       const model = await loadFlowModel(db, locator.modelUid, ctx);
@@ -571,6 +576,30 @@ function assertFlowModelStepSourceIsInline(
       sourceMode,
     },
   });
+}
+
+function isCanonicalJsTemplateExternalBinding(model: JsonRecord, locator: FlowModelStepLocator): boolean {
+  const sourceRootPath: JsonPath = ['stepParams', locator.flowKey, locator.stepKey, ...locator.paramPath.slice(0, -1)];
+  const sourceBinding = getAtPath(model, [...sourceRootPath, 'sourceBinding']);
+  if (!isRecord(sourceBinding)) {
+    return false;
+  }
+  const keys = Object.keys(sourceBinding);
+
+  return (
+    getAtPath(model, [...sourceRootPath, 'sourceMode']) === JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.sourceMode &&
+    keys.length === JS_TEMPLATE_SOURCE_BINDING_KEYS.size &&
+    keys.every((key) => JS_TEMPLATE_SOURCE_BINDING_KEYS.has(key)) &&
+    sourceBinding.type === JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT.sourceBindingType &&
+    isNonEmptyString(sourceBinding.projectId) &&
+    isNonEmptyString(sourceBinding.templateId) &&
+    typeof sourceBinding.kind === 'string' &&
+    JS_TEMPLATE_SOURCE_BINDING_KINDS.has(sourceBinding.kind)
+  );
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && Boolean(value.trim());
 }
 
 function isInitializableFlowModelRunJSSource(model: JsonRecord, locator: FlowModelStepLocator): boolean {

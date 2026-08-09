@@ -20,6 +20,7 @@ import {
   JS_TEMPLATE_SETTINGS_CONDITION_LIMITS,
   JS_TEMPLATE_SETTINGS_CONDITION_LOGICS,
   JS_TEMPLATE_SETTINGS_CONDITION_OPERATORS,
+  JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
   JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS,
   JS_TEMPLATE_SETTINGS_SCHEMA_TYPES,
   JS_TEMPLATE_X_COMPONENT_WHITELIST,
@@ -99,6 +100,30 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
         settingsSchema: { type: 'object', properties: {} },
       }),
     ).toBe(false);
+    expect(
+      validate({
+        schemaVersion: 1,
+        key: 'sales',
+        settings: {
+          options: {
+            type: 'object',
+            additionalProperties: false,
+          },
+        },
+      }),
+    ).toBe(false);
+    expect(
+      validate({
+        schemaVersion: 1,
+        key: 'sales',
+        settings: {
+          options: {
+            properties: { label: { type: 'string' } },
+            $comment: JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
+          },
+        },
+      }),
+    ).toBe(false);
     expect(jsTemplateV1SchemaJson).not.toMatch(/meta\.json|settings\.json|"runjs"|\$not"/u);
   });
 
@@ -136,7 +161,7 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
     ).toBe(false);
   });
 
-  it('normalizes required flags recursively through objects and array items', () => {
+  it('normalizes required flags and closes object schemas recursively through objects and array items', () => {
     const settings = {
       mode: { type: 'string', required: true },
       groups: {
@@ -154,11 +179,17 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
           },
         },
       },
+      metadata: {
+        properties: {
+          region: { type: 'string' },
+        },
+      },
     };
     const settingsSchema = buildJsTemplateSettingsSchema(settings);
 
     expect(settingsSchema).toEqual({
       type: 'object',
+      additionalProperties: false,
       required: ['mode'],
       properties: {
         mode: { type: 'string' },
@@ -166,11 +197,13 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
           type: 'array',
           items: {
             type: 'object',
+            additionalProperties: false,
             required: ['label'],
             properties: {
               label: { type: 'string' },
               options: {
                 type: 'object',
+                additionalProperties: false,
                 required: ['enabled'],
                 properties: {
                   enabled: { type: 'boolean' },
@@ -179,8 +212,49 @@ describe('@nocobase/js-template-sdk entry.json schema', () => {
             },
           },
         },
+        metadata: {
+          type: 'object',
+          $comment: JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
+          additionalProperties: false,
+          properties: {
+            region: { type: 'string' },
+          },
+        },
       },
     });
+    const validateSettings = ajv.compile(settingsSchema);
+    expect(validateSettings({ mode: 'grid', groups: [], metadata: { region: 'APAC' } })).toBe(true);
+    expect(validateSettings({ mode: 'grid', groups: [], metadata: 'APAC' })).toBe(false);
+    expect(validateSettings({ mode: 'grid', groups: [], unknown: true })).toBe(false);
+    expect(validateSettings({ mode: 'grid', groups: [], metadata: { region: 'APAC', unknown: true } })).toBe(false);
+    expect(
+      validateSettings({
+        mode: 'grid',
+        groups: [{ label: 'Group A', options: { enabled: true }, unknown: true }],
+      }),
+    ).toBe(false);
+    expect(buildJsTemplateSettingsDefinition(settingsSchema)).toEqual(settings);
+  });
+
+  it('types required-only inferred object schemas and removes the derived annotation on roundtrip', () => {
+    const settings = {
+      metadata: {
+        required: [],
+      },
+    };
+    const settingsSchema = buildJsTemplateSettingsSchema(settings);
+
+    expect(settingsSchema.properties).toEqual({
+      metadata: {
+        type: 'object',
+        $comment: JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
+        additionalProperties: false,
+        required: [],
+      },
+    });
+    const validateSettings = ajv.compile(settingsSchema);
+    expect(validateSettings({ metadata: {} })).toBe(true);
+    expect(validateSettings({ metadata: 'not-an-object' })).toBe(false);
     expect(buildJsTemplateSettingsDefinition(settingsSchema)).toEqual(settings);
   });
 });

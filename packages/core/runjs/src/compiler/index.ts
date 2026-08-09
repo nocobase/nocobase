@@ -532,7 +532,13 @@ function adaptRunJSEntry(file: RunJSContentFile): RunJSEntryAdaptation {
       continue;
     }
     if (ts.isExportDeclaration(statement)) {
-      if (statement.moduleSpecifier) {
+      const hasRuntimeExport =
+        !statement.isTypeOnly &&
+        (!statement.exportClause ||
+          !ts.isNamedExports(statement.exportClause) ||
+          statement.exportClause.elements.length === 0 ||
+          statement.exportClause.elements.some((specifier) => !specifier.isTypeOnly));
+      if (statement.moduleSpecifier && hasRuntimeExport) {
         const specifier = getStringLiteralText(statement.moduleSpecifier);
         if (specifier) {
           const position = sourceFile.getLineAndCharacterOfPosition(statement.getStart(sourceFile));

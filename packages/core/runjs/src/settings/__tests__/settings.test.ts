@@ -8,6 +8,7 @@
  */
 
 import {
+  extractRunJSSettingsDefaults,
   getJsTemplateSettingStepKey,
   normalizeJsTemplateSelection,
   normalizeJsTemplateSettings,
@@ -54,6 +55,38 @@ describe('@nocobase/runjs/settings', () => {
         pageSize: 50,
         color: 'blue',
       },
+    });
+  });
+
+  it('applies item property defaults to explicit and submitted array values', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        rows: {
+          type: 'array',
+          default: [{}],
+          items: {
+            type: 'object',
+            properties: {
+              enabled: { type: 'boolean', default: true },
+              label: { type: 'string', default: 'Untitled' },
+            },
+          },
+        },
+      },
+    };
+    const arrayDescriptor = {
+      entryId: 'entry-array-defaults',
+      settingsSchemaHash: 'schema-array-defaults',
+      schema,
+      defaults: extractRunJSSettingsDefaults(schema),
+    };
+
+    expect(normalizeJsTemplateSettings(arrayDescriptor, {})).toEqual({
+      rows: [{ enabled: true, label: 'Untitled' }],
+    });
+    expect(normalizeJsTemplateSettings(arrayDescriptor, { rows: [{ label: 'Revenue' }] })).toEqual({
+      rows: [{ enabled: true, label: 'Revenue' }],
     });
   });
 
@@ -144,6 +177,36 @@ describe('@nocobase/runjs/settings', () => {
     const next = setJsTemplateTopLevelSetting(current, 'displayOptions', { pageSize: 30 });
     expect(next).toEqual({ mode: 1, displayOptions: { pageSize: 30 } });
     expect(current).toEqual({ mode: 1 });
+  });
+
+  it('keeps prototype-sensitive dynamic keys as own settings data', () => {
+    const schema = JSON.parse(`{
+      "type":"object",
+      "properties":{
+        "__proto__":{"type":"object","properties":{"settingsPolluted":{"type":"boolean"}}},
+        "constructor":{"type":"string"},
+        "prototype":{"type":"boolean"}
+      }
+    }`) as Record<string, unknown>;
+    const defaults = JSON.parse(
+      '{"__proto__":{"settingsPolluted":true},"constructor":"safe","prototype":false}',
+    ) as Record<string, unknown>;
+    const normalized = normalizeJsTemplateSettings(
+      { entryId: 'entry-safe-keys', settingsSchemaHash: 'schema-safe-keys', schema, defaults },
+      JSON.parse('{"prototype":true}') as Record<string, unknown>,
+    );
+
+    expect(Object.prototype.hasOwnProperty.call(normalized, '__proto__')).toBe(true);
+    expect(normalized.__proto__).toEqual({ settingsPolluted: true });
+    expect(normalized.constructor).toBe('safe');
+    expect(normalized.prototype).toBe(true);
+    expect(Object.getPrototypeOf(normalized)).toBe(Object.prototype);
+
+    const updated = setJsTemplateTopLevelSetting({}, '__proto__', { settingsPolluted: true });
+    expect(Object.prototype.hasOwnProperty.call(updated, '__proto__')).toBe(true);
+    expect(updated.__proto__).toEqual({ settingsPolluted: true });
+    expect(Object.getPrototypeOf(updated)).toBe(Object.prototype);
+    expect(({} as { settingsPolluted?: unknown }).settingsPolluted).toBeUndefined();
   });
 
   it('removes a cleared override so the descriptor default becomes effective again', () => {

@@ -48,6 +48,12 @@ Inline RunJS workspaces use `runJSSources:open` or `runJSSources:openLatest`, fo
 
 Project-backed source uses the JS Template domain APIs. Raw `runJSSources`, VSC resources, direct artifact writes, and ZIP round-trips are not alternate save paths for an active project.
 
+## Runtime Artifact lifecycle
+
+Runtime Artifacts are immutable, content-addressed compile outputs. An enabled Template resolves to an Artifact hash, and the hash URL returns the corresponding output with `Cache-Control: private, max-age=31536000, immutable`. Disabling or archiving the Source Project blocks new Template resolution, but a direct request for a known hash remains available while the Artifact row exists; the Artifact route does not repeat the Project lifecycle check.
+
+Deleting a Template removes its Artifact row only when no other Template references that hash. A shared Artifact remains available until its last reference is deleted. Once the row is removed, a subsequent request that reaches the origin returns `404`; database deletion can affect only later origin requests. It cannot revoke a response that a browser or intermediary has already cached or delivered. Although `private` tells shared caches not to store the response, Runtime Artifacts must never contain credentials, temporary tokens, or other secrets whose revocation depends on deleting the database row.
+
 ## Check and Save
 
 The project authoring flow is:

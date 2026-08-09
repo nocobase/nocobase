@@ -11,6 +11,7 @@ import {
   buildJsTemplateSettingsSchema,
   JS_TEMPLATE_SCHEMA_URI,
   JS_TEMPLATE_SCHEMA_VERSION,
+  JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
   JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN,
 } from '@nocobase/js-template-sdk/schema';
 
@@ -43,6 +44,7 @@ interface SettingsSchemaValidationInput {
   rootSchema: Record<string, unknown>;
   conditionOwners: Map<string, ConditionOwner>;
   insideArray: boolean;
+  allowDerivedSettingsKeywords: boolean;
 }
 
 interface ConditionComplexityState {
@@ -187,6 +189,7 @@ export class RunJSWorkspaceSchemaValidator {
       return null;
     }
 
+    this.rejectAuthorDerivedSettingsKeywords(value, diagnostics, target, '$.settings');
     const rootSchema = buildJsTemplateSettingsSchema(value);
     const properties = isPlainRecord(rootSchema.properties) ? rootSchema.properties : {};
     const required = Array.isArray(rootSchema.required)
@@ -206,6 +209,7 @@ export class RunJSWorkspaceSchemaValidator {
         rootSchema,
         conditionOwners,
         insideArray: false,
+        allowDerivedSettingsKeywords: true,
       },
       target,
       '$.settings',
@@ -246,6 +250,7 @@ export class RunJSWorkspaceSchemaValidator {
       rootSchema: value,
       conditionOwners,
       insideArray: false,
+      allowDerivedSettingsKeywords: false,
     });
     this.validateConditionCycles(conditionOwners, diagnostics, target);
 
@@ -302,8 +307,16 @@ export class RunJSWorkspaceSchemaValidator {
       return;
     }
 
+    const hasDerivedInferredObjectAnnotation =
+      input.allowDerivedSettingsKeywords &&
+      node.type === 'object' &&
+      node.$comment === JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT &&
+      node.additionalProperties === false;
     for (const key of Object.keys(node)) {
-      if (!keywordSet.has(key)) {
+      const isDerivedClosedObjectKeyword =
+        input.allowDerivedSettingsKeywords && key === 'additionalProperties' && node[key] === false;
+      const isDerivedInferredObjectKeyword = key === '$comment' && hasDerivedInferredObjectAnnotation;
+      if (!keywordSet.has(key) && !isDerivedClosedObjectKeyword && !isDerivedInferredObjectKeyword) {
         input.diagnostics.push(
           diagnostic(
             'settings_schema_keyword_not_allowed',
@@ -448,6 +461,55 @@ export class RunJSWorkspaceSchemaValidator {
           insideArray: true,
         });
       }
+    }
+  }
+
+  private rejectAuthorDerivedSettingsKeywords(
+    properties: Record<string, unknown>,
+    diagnostics: RunJSWorkspaceDiagnostic[],
+    target: DiagnosticTarget,
+    propertiesPath: string,
+  ): void {
+    for (const [propertyName, propertySchema] of Object.entries(properties)) {
+      if (!isPlainRecord(propertySchema)) {
+        continue;
+      }
+      this.rejectAuthorDerivedSettingsKeywordInNode(
+        propertySchema,
+        diagnostics,
+        target,
+        `${propertiesPath}.${propertyName}`,
+      );
+    }
+  }
+
+  private rejectAuthorDerivedSettingsKeywordInNode(
+    node: Record<string, unknown>,
+    diagnostics: RunJSWorkspaceDiagnostic[],
+    target: DiagnosticTarget,
+    schemaPath: string,
+  ): void {
+    for (const keyword of ['additionalProperties', '$comment']) {
+      if (Object.prototype.hasOwnProperty.call(node, keyword)) {
+        diagnostics.push(
+          diagnostic(
+            'settings_schema_keyword_not_allowed',
+            'error',
+            `entry.json settings schema keyword "${keyword}" is not supported`,
+            {
+              ...target,
+              details: { schemaPath, keyword },
+            },
+          ),
+        );
+      }
+    }
+
+    if (isPlainRecord(node.properties)) {
+      this.rejectAuthorDerivedSettingsKeywords(node.properties, diagnostics, target, `${schemaPath}.properties`);
+    }
+    if (isPlainRecord(node.items)) {
+      this.rejectAuthorDerivedSettingsKeywordInNode(node.items, diagnostics, target, `${schemaPath}.items`);
     }
   }
 

@@ -12,6 +12,7 @@ export const JS_TEMPLATE_SCHEMA_URI = 'https://schemas.nocobase.com/js-template/
 export const JS_TEMPLATE_SCHEMA_LOCAL_PATH = '/js-templates/schemas/entry-v1.schema.json';
 export const JS_TEMPLATE_KEY_PATTERN = '^[a-z0-9][a-z0-9-]{0,62}$';
 export const JS_TEMPLATE_SETTINGS_PROPERTY_PATTERN = '^[A-Za-z_][A-Za-z0-9_-]{0,63}$';
+export const JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT = 'nocobase:inferred-object';
 
 export const JS_TEMPLATE_SETTINGS_SCHEMA_TYPES = ['object', 'array', 'string', 'number', 'integer', 'boolean'] as const;
 
@@ -81,6 +82,7 @@ export function buildJsTemplateSettingsSchema(settings: Record<string, unknown>)
   const normalized = normalizeSettingsProperties(settings);
   return {
     type: 'object',
+    additionalProperties: false,
     ...(normalized.required.length ? { required: normalized.required } : {}),
     properties: normalized.properties,
   };
@@ -116,12 +118,29 @@ function normalizeSettingsProperties(settings: Record<string, unknown>): {
 
 function normalizeSettingsSchemaNode(schema: Record<string, unknown>): Record<string, unknown> {
   const entries = Object.entries(schema)
-    .filter(([key]) => key !== 'required' && key !== 'properties' && key !== 'items')
+    .filter(
+      ([key]) =>
+        key !== 'required' &&
+        key !== 'properties' &&
+        key !== 'items' &&
+        key !== 'additionalProperties' &&
+        key !== '$comment',
+    )
     .map(([key, value]) => [key, cloneJsonValue(value)] as const);
   const normalized = Object.fromEntries(entries);
   const properties = schema.properties;
   const items = schema.items;
   const explicitRequired = schema.required;
+  const isInferredObject =
+    typeof schema.type === 'undefined' && (isRecord(properties) || Array.isArray(explicitRequired));
+
+  if (isInferredObject) {
+    normalized.type = 'object';
+    normalized.$comment = JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT;
+  }
+  if (schema.type === 'object' || isInferredObject) {
+    normalized.additionalProperties = false;
+  }
 
   if (isRecord(properties)) {
     const nested = normalizeSettingsProperties(properties);
@@ -170,8 +189,16 @@ function restoreSettingsProperties(
 }
 
 function restoreSettingsSchemaNode(schema: Record<string, unknown>, required: boolean): Record<string, unknown> {
+  const isInferredObject = schema.type === 'object' && schema.$comment === JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT;
   const entries = Object.entries(schema)
-    .filter(([key]) => key !== 'required' && key !== 'properties' && key !== 'items')
+    .filter(
+      ([key]) =>
+        key !== 'required' &&
+        key !== 'properties' &&
+        key !== 'items' &&
+        key !== 'additionalProperties' &&
+        (!isInferredObject || (key !== 'type' && key !== '$comment')),
+    )
     .map(([key, value]) => [key, cloneJsonValue(value)] as const);
   const restored = Object.fromEntries(entries);
   const properties = schema.properties;
@@ -184,6 +211,9 @@ function restoreSettingsSchemaNode(schema: Record<string, unknown>, required: bo
     restored.properties = restoreSettingsProperties(properties, schema.required);
   } else if (typeof properties !== 'undefined') {
     restored.properties = cloneJsonValue(properties);
+  }
+  if (!isRecord(properties) && Array.isArray(schema.required)) {
+    restored.required = cloneJsonValue(schema.required);
   }
   if (isRecord(items)) {
     restored.items = restoreSettingsSchemaNode(items, false);
