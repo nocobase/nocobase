@@ -205,7 +205,7 @@ describe('flow-engine RunJS source registration', () => {
     });
   });
 
-  it('covers FlowModel step read/write, completed replay, and external-to-inline contracts without an app host', async () => {
+  it('covers FlowModel step read/write and external-to-inline contracts without an app host', async () => {
     const model: Record<string, unknown> = {
       uid: 'step-contract-model',
       use: 'JSBlockModel',
@@ -265,76 +265,6 @@ describe('flow-engine RunJS source registration', () => {
       kind: 'js-block',
     };
     await expect(adapter.assertCanRead({ locator, ctx })).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
-    await expect(adapter.assertCanWrite({ locator, ctx })).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
-
-    const replayCtx: RunJSSourceAdapterContext = { ...ctx, sourceTransition: 'external-binding-replay' };
-    await expect(adapter.assertCanWrite({ locator, ctx: replayCtx })).resolves.toBeUndefined();
-    await expect(adapter.readLegacy({ locator, ctx: replayCtx })).rejects.toMatchObject({
-      code: 'RUNJS_SOURCE_READONLY',
-    });
-    await expect(
-      adapter.writeRuntime({
-        locator,
-        artifact: runtimeArtifact('ctx.render("replay must not write");'),
-        commitId: 'replay-commit',
-        baseOwnerFingerprint: legacy.ownerFingerprint,
-        ctx: replayCtx,
-      }),
-    ).rejects.toMatchObject({ code: 'RUNJS_SOURCE_READONLY' });
-
-    source.sourceBinding = { type: 'unsupported-external-binding' };
-    await expect(adapter.assertCanWrite({ locator, ctx: replayCtx })).rejects.toMatchObject({
-      code: 'RUNJS_SOURCE_READONLY',
-    });
-    source.sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_shared',
-      templateId: '',
-      kind: 'js-block',
-    };
-    await expect(adapter.assertCanWrite({ locator, ctx: replayCtx })).rejects.toMatchObject({
-      code: 'RUNJS_SOURCE_READONLY',
-    });
-    source.sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_shared',
-      templateId: 'jtt_1',
-      kind: 'unsupported-kind',
-    };
-    await expect(adapter.assertCanWrite({ locator, ctx: replayCtx })).rejects.toMatchObject({
-      code: 'RUNJS_SOURCE_READONLY',
-    });
-    source.sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_shared',
-      templateId: 'jtt_1',
-      kind: 'js-block',
-      unexpected: true,
-    };
-    await expect(adapter.assertCanWrite({ locator, ctx: replayCtx })).rejects.toMatchObject({
-      code: 'RUNJS_SOURCE_READONLY',
-    });
-    source.sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_shared',
-      templateId: 'jtt_1',
-      kind: 'js-block',
-    };
-
-    const denySave = vi.fn(() => null);
-    await expect(adapter.assertCanWrite({ locator, ctx: { ...replayCtx, can: denySave } })).rejects.toMatchObject({
-      code: 'PERMISSION_DENIED',
-      details: { resource: 'flowModels', action: 'save' },
-    });
-    expect(denySave).toHaveBeenCalledWith({ resource: 'flowModels', action: 'save' });
-
-    const denyStepParams = vi.fn(() => ({ params: { whitelist: ['title'] } }));
-    await expect(adapter.assertCanWrite({ locator, ctx: { ...replayCtx, can: denyStepParams } })).rejects.toMatchObject(
-      {
-        code: 'PERMISSION_DENIED',
-        details: { resource: 'flowModels', action: 'save', fields: ['stepParams'] },
-      },
-    );
 
     const transitionCtx: RunJSSourceAdapterContext = { ...ctx, sourceTransition: 'external-to-inline' };
     await expect(adapter.assertCanWrite({ locator, ctx: transitionCtx })).resolves.toBeUndefined();

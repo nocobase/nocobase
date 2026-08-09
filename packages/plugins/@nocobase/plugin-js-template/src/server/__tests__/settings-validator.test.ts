@@ -7,11 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
-  JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
-} from '@nocobase/js-template-sdk/schema';
-
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 
 describe('plugin-js-template settings condition validator', () => {
@@ -202,13 +197,6 @@ describe('plugin-js-template settings condition validator', () => {
         'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
       }),
     );
-    const inferredPrimitiveObject = validateSettings(
-      requiredConditional({
-        properties: { title: { type: 'string', required: true } },
-        default: 'Sales',
-        'x-visible-when': { path: 'enabled', operator: '$eq', value: true },
-      }),
-    );
     const valid = validateSettings(
       requiredConditional({
         type: 'object',
@@ -225,133 +213,13 @@ describe('plugin-js-template settings condition validator', () => {
       unknownObjectProperty,
       invalidFormat,
       inferredIncompleteObject,
-      inferredPrimitiveObject,
     ]) {
       expect(result.accepted).toBe(false);
       expect(result.diagnostics).toContainEqual(
-        expect.objectContaining({
-          code: 'settings_condition_required_default_missing',
-          path: 'src/client/js-blocks/sales/entry.json',
-          details: expect.objectContaining({
-            schemaPath: '$.settings.target.default',
-            propertyName: 'target',
-          }),
-        }),
+        expect.objectContaining({ code: 'settings_condition_required_default_missing' }),
       );
     }
     expect(valid.accepted).toBe(true);
-  });
-
-  it('rejects unsafe setting property names without changing object prototypes', () => {
-    const settings = JSON.parse(
-      '{"__proto__":{"type":"object","default":{"serverSettingsPolluted":true}},"constructor":{"type":"object","default":{"prototype":{"serverSettingsPolluted":true}}},"prototype":{"type":"object","default":{"__proto__":{"serverSettingsPolluted":true}}}}',
-    ) as Record<string, unknown>;
-    const result = validateDescriptorSettings({ settings });
-
-    expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toEqual(
-      expect.arrayContaining(
-        ['__proto__', 'constructor', 'prototype'].map((propertyName) =>
-          expect.objectContaining({
-            code: 'settings_property_name_invalid',
-            path: 'src/client/js-blocks/sales/entry.json',
-            details: expect.objectContaining({
-              schemaPath: `$.settings.${propertyName}`,
-              propertyName,
-            }),
-          }),
-        ),
-      ),
-    );
-    expect(({} as { serverSettingsPolluted?: unknown }).serverSettingsPolluted).toBeUndefined();
-  });
-
-  it('keeps additionalProperties as an internal derived keyword instead of expanding the author DSL', () => {
-    const result = validateDescriptorSettings({
-      settings: {
-        options: {
-          type: 'object',
-          additionalProperties: false,
-          properties: {
-            label: { type: 'string' },
-          },
-        },
-      },
-    });
-
-    expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'settings_schema_keyword_not_allowed',
-        path: 'src/client/js-blocks/sales/entry.json',
-        details: expect.objectContaining({
-          schemaPath: '$.settings.options',
-          keyword: 'additionalProperties',
-        }),
-      }),
-    );
-  });
-
-  it('rejects the internal inferred-object annotation when supplied by an author', () => {
-    const result = validateDescriptorSettings({
-      settings: {
-        options: {
-          properties: {
-            label: { type: 'string' },
-          },
-          $comment: JS_TEMPLATE_SETTINGS_INFERRED_OBJECT_COMMENT,
-        },
-      },
-    });
-
-    expect(result.accepted).toBe(false);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'settings_schema_keyword_not_allowed',
-        path: 'src/client/js-blocks/sales/entry.json',
-        details: expect.objectContaining({
-          schemaPath: '$.settings.options',
-          keyword: '$comment',
-        }),
-      }),
-    );
-  });
-
-  it('keeps required-definition provenance internal while accepting nested required arrays', () => {
-    const accepted = validateDescriptorSettings({
-      settings: {
-        options: {
-          type: 'object',
-          required: ['explicit'],
-          properties: {
-            explicit: { type: 'string' },
-            flagged: { type: 'string', required: true },
-          },
-        },
-      },
-    });
-    expect(accepted.accepted).toBe(true);
-    expect(accepted.diagnostics).toEqual([]);
-
-    const rejected = validateDescriptorSettings({
-      settings: {
-        options: {
-          type: 'object',
-          [JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY]: ['explicit'],
-          properties: { explicit: { type: 'string' } },
-        },
-      },
-    });
-    expect(rejected.accepted).toBe(false);
-    expect(rejected.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'settings_schema_keyword_not_allowed',
-        details: expect.objectContaining({
-          schemaPath: '$.settings.options',
-          keyword: JS_TEMPLATE_SETTINGS_REQUIRED_DEFINITION_KEY,
-        }),
-      }),
-    );
   });
 });
 

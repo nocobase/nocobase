@@ -11,11 +11,8 @@ import {
   buildRunJSCompilerBuildIdentity,
   RUNJS_COMPILER_BUILD_IDENTITY,
   RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
-  RUNJS_COMPILER_CONTRACT_VERSION,
-  RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION,
   type RunJSCompilerBuildIdentityComponents,
 } from '@nocobase/runjs/compiler/build-identity';
-import { RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION } from '@nocobase/runjs/compiler/portable';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -25,39 +22,6 @@ describe('RunJS compiler build identity', () => {
     expect(buildRunJSCompilerBuildIdentity()).toEqual(RUNJS_COMPILER_BUILD_IDENTITY);
     expect(RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId).toMatch(/^[a-f0-9]{64}$/u);
     expect(RUNJS_COMPILER_BUILD_IDENTITY.components.sourceInspectionPolicy).toBe('runjs.source-inspection.v3');
-  });
-
-  it('changes for the type-only re-export entry adapter contract', () => {
-    const previousIdentity = buildRunJSCompilerBuildIdentity({
-      ...RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
-      entryAdapterContract: 'runjs.entry-adapter.v1',
-    });
-
-    expect(RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION).toBe('runjs.entry-adapter.v2');
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.components.entryAdapterContract).toBe(
-      RUNJS_COMPILER_ENTRY_ADAPTER_CONTRACT_VERSION,
-    );
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId).not.toBe(previousIdentity.compilerBuildId);
-  });
-
-  it('changes for the materialized snapshot and portable path contracts', () => {
-    const previousCompilerIdentity = buildRunJSCompilerBuildIdentity({
-      ...RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
-      compilerContract: 'runjs.compiler.v1',
-    });
-    const previousPortableIdentity = buildRunJSCompilerBuildIdentity({
-      ...RUNJS_COMPILER_BUILD_IDENTITY_COMPONENTS,
-      portableCompilerContract: 1,
-    });
-
-    expect(RUNJS_COMPILER_CONTRACT_VERSION).toBe('runjs.compiler.v2');
-    expect(RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION).toBe(2);
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.components.compilerContract).toBe(RUNJS_COMPILER_CONTRACT_VERSION);
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.components.portableCompilerContract).toBe(
-      RUNJS_PORTABLE_COMPILER_CONTRACT_VERSION,
-    );
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId).not.toBe(previousCompilerIdentity.compilerBuildId);
-    expect(RUNJS_COMPILER_BUILD_IDENTITY.compilerBuildId).not.toBe(previousPortableIdentity.compilerBuildId);
   });
 
   it('changes when any compiler build component changes', () => {

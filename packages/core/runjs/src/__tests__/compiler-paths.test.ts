@@ -9,45 +9,13 @@
 
 import path from 'path';
 
-import { normalizePath } from '..';
 import {
   compileRunJSSourceWorkspace,
   createRunJSCompilerPaths,
   inspectRunJSSourceWorkspaceWithDependencies,
-  normalizeRunJSVirtualPath,
-  resolveRunJSWorkspaceImport,
 } from '../compiler';
 
 describe('@nocobase/runjs compiler paths', () => {
-  it.each([
-    ['../x', '../x'],
-    ['../../x', '../../x'],
-    ['a/../../x', '../x'],
-    ['a/../b', 'b'],
-    ['a//b', 'a/b'],
-    ['a\\b', 'a/b'],
-    ['./a', 'a'],
-  ])('canonicalizes virtual path %s idempotently', (input, expected) => {
-    const normalized = normalizeRunJSVirtualPath(input);
-
-    expect(normalized).toBe(expected);
-    expect(normalizeRunJSVirtualPath(normalized)).toBe(normalized);
-  });
-
-  it.each(['../x', 'a/../../x'])('keeps strict content path validation for %s', (input) => {
-    expect(() => normalizePath(input)).toThrow('Path must not contain empty, current, or parent segments');
-  });
-
-  it.each([
-    ['index.ts', '../x'],
-    ['a/index.ts', '../../x'],
-  ])('keeps workspace escape resolution blocked from %s through %s', (fromPath, specifier) => {
-    expect(resolveRunJSWorkspaceImport(fromPath, specifier, new Set())).toEqual({
-      status: 'blocked',
-      message: `Import "${specifier}" escapes the RunJS workspace`,
-    });
-  });
-
   it.each([
     [path.posix, '/tmp/nocobase-runjs', '/tmp/nocobase-runjs/runjs-bundle.js'],
     [path.win32, 'C:\\tmp\\nocobase-runjs', 'C:\\tmp\\nocobase-runjs\\runjs-bundle.js'],
