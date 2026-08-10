@@ -83,6 +83,9 @@ describe('create-nginx-conf routing', () => {
     expect(config).toContain(`return 302 ${modernRoot}$is_args$args;`);
     expect(config).toContain(`if ($uri ~ ^${portalRoot}/apps/(?<subapp>[A-Za-z0-9_-]+)/?$) {`);
     expect(config).toContain(`return 302 ${modernRoot}apps/$subapp/$is_args$args;`);
+    expect(config).toContain(`location ~ ^${publicPath}(?<portal_host_path>portals(?:/.*)?)$`);
+    expect(config).toContain('rewrite ^ /$portal_host_path break;');
+    expect(config).toContain(`location ~ ^${publicPath}(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$`);
     expect(config).toContain('rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;');
     expect(config).toContain('/portals/$subapp/$portal/dist/client/$portal_path');
     expect(config).toContain('/portals/main/$portal/dist/client/$portal_path');

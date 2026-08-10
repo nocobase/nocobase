@@ -198,6 +198,16 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent.indexOf('location ^~ /console/files/ {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location /console/ {'),
   );
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/console/(?<portal_host_path>portals(?:/.*)?)$ {',
+  );
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/console/(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {',
+  );
+  expect(bundle.appConfigContent).toContain('rewrite ^ /$portal_host_path break;');
+  expect(bundle.appConfigContent.indexOf('location ~ ^/console/(?<portal_host_path>portals')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {'),
+  );
   expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
@@ -302,6 +312,10 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).not.toContain('location ^~ / {');
   expect(bundle.appConfigContent).toContain('location ^~ /x/apps/ {');
+  expect(bundle.appConfigContent).toContain('location ~ ^/(?<portal_host_path>portals(?:/.*)?)$ {');
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {',
+  );
   expect(bundle.appConfigContent).toContain('location = /x {');
   expect(bundle.appConfigContent).toContain('location = /x/ {');
   expect(bundle.appConfigContent).toContain('return 302 /v/$is_args$args;');
@@ -678,6 +692,8 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
+  expect(result.content).toContain('@portalHost path_regexp portalHost ^/(portals(?:/.*)?)$');
+  expect(result.content).toContain('rewrite * /{re.portalHost.1}');
   expect(result.content).toContain('handle /x {');
   expect(result.content).toContain('handle /x/* {');
 });
@@ -695,6 +711,8 @@ test('buildEnvProxyConfig renders explicit Caddy redirects when app public path 
   expect(result.content).toContain('redir * /nocobase{uri} 302');
   expect(result.content).toContain('handle /nocobase/files/* {');
   expect(result.content).toContain('handle /files/* {');
+  expect(result.content).toContain('@portalHost path_regexp portalHost ^/nocobase/(portals(?:/.*)?)$');
+  expect(result.content).toContain('@appPortalHost path_regexp appPortalHost ^/nocobase/(apps/[^/]+/portals(?:/.*)?)$');
   expect(result.content.indexOf('handle /nocobase/files/* {')).toBeLessThan(
     result.content.indexOf('handle_path /nocobase/* {'),
   );
@@ -725,6 +743,14 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.appConfigContent).not.toContain('route {');
   expect(bundle.appConfigContent).toContain('handle /console/files/* {');
   expect(bundle.appConfigContent).toContain('handle /files/* {');
+  expect(bundle.appConfigContent).toContain('@portalHost path_regexp portalHost ^/console/(portals(?:/.*)?)$');
+  expect(bundle.appConfigContent).toContain(
+    '@appPortalHost path_regexp appPortalHost ^/console/(apps/[^/]+/portals(?:/.*)?)$',
+  );
+  expect(bundle.appConfigContent).toContain('rewrite * /{re.portalHost.1}');
+  expect(bundle.appConfigContent.indexOf('@portalHost path_regexp portalHost ^/console/')).toBeLessThan(
+    bundle.appConfigContent.indexOf('handle /console/x {'),
+  );
   expect(bundle.appConfigContent).toContain('handle /console/x {');
   expect(bundle.appConfigContent).toContain('handle /console/x/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');

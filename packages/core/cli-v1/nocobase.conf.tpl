@@ -213,6 +213,44 @@ server {
     }
 
 
+    location ~ ^{{publicPath}}(?<portal_host_path>portals(?:/.*)?)$ {
+        rewrite ^ /$portal_host_path break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
+    location ~ ^{{publicPath}}(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {
+        rewrite ^ /$portal_host_path break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
 
     location = {{publicPath}}{{portalClientPrefix}} {
         absolute_redirect off;
