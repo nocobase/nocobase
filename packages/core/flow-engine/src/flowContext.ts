@@ -50,11 +50,11 @@ import {
   resolveModuleUrl,
 } from './utils';
 import { FlowExitAllException } from './utils/exceptions';
-import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
+import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { getDirtyAwareApiClient } from './utils/dirtyAwareApiClient';
-import { inferRecordRef } from './utils/variablesParams';
+import { inferRecordRef, inferViewRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
@@ -165,6 +165,10 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+export type ResolveJsonTemplateOptions = {
+  contractModelUid?: string | number | null;
+};
+
 export type FlowContextDocRef = string | { url: string; title?: string };
 
 export type FlowDeprecationDoc =
@@ -221,6 +225,8 @@ export interface MetaTreeNode {
   // 变量禁用状态与原因（用于变量选择器 UI 展示）
   disabled?: boolean | (() => boolean);
   disabledReason?: string | (() => string | undefined);
+  // 允许节点仅用于展开子级，而不能作为变量值被选中
+  selectable?: boolean;
   children?: MetaTreeNode[] | (() => Promise<MetaTreeNode[]>);
 }
 
@@ -3044,7 +3050,7 @@ class BaseFlowEngineContext extends FlowContext {
    * @deprecated use `resolveJsonTemplate` instead
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
-  declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue, options?: ResolveJsonTemplateOptions) => Promise<any>;
   declare getVar: (path: string) => Promise<any>;
   declare request: (options: RequestOptions) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
@@ -3227,7 +3233,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
-    this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+    const resolveJsonTemplate = async function (
+      this: BaseFlowEngineContext,
+      template: any,
+      options?: ResolveJsonTemplateOptions,
+    ) {
       // 提取模板使用到的变量及其子路径
       const used = extractUsedVariablePaths(template);
       const usedVarNames = Object.keys(used || {});
@@ -3316,6 +3326,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         const inputFromMeta = await collectFromMeta();
         const autoInput = { ...inputFromMeta } as Record<string, any>;
 
+        const viewPaths = serverVarPaths.view || [];
+        if (
+          !autoInput.view &&
+          viewPaths.some((path) => path === 'record' || path.startsWith('record.') || path.startsWith('record['))
+        ) {
+          const recordRef = inferViewRecordRef(this);
+          if (recordRef) autoInput.view = { record: recordRef };
+        }
+
         // Special-case: formValues
         // If server needs to resolve some formValues paths but meta params only cover association anchors
         // (e.g. formValues.customer) and some top-level paths are missing (e.g. formValues.status),
@@ -3387,7 +3406,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
+            const contractRd = buildFlowModelResolveDescriptor(
+              this as FlowRuntimeContext<FlowModel>,
+              options?.contractModelUid,
+            );
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              ...(contractRd ? { contractRd } : {}),
+              rd: buildFlowModelResolveDescriptor(this as FlowRuntimeContext<FlowModel>, this.model?.uid),
               template,
               contextParams: autoContextParams || {},
             });
@@ -3399,7 +3424,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }
 
       return resolveExpressions(serverResolved, this);
-    });
+    };
+    this.defineMethod('resolveJsonTemplate', resolveJsonTemplate);
 
     // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
     // Example: await ctx.getVar('ctx.record.id')

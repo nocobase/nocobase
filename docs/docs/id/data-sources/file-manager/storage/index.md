@@ -1,66 +1,66 @@
 ---
-title: "Storage Engine File"
-description: "Storage engine field lampiran: penyimpanan lokal, Aliyun OSS, Amazon S3, Tencent COS, S3 Pro, mengonfigurasi judul, path, URL akses, dan lainnya."
-keywords: "penyimpanan file,Storage,OSS,S3,COS,penyimpanan lokal,cloud storage,NocoBase"
+title: "Mesin Penyimpanan File"
+description: "Mesin penyimpanan untuk field lampiran: penyimpanan lokal, Alibaba Cloud OSS, Amazon S3, Tencent Cloud COS, S3 Pro, konfigurasi judul, jalur, URL akses, dan lainnya."
+keywords: "Penyimpanan file,Storage,OSS,S3,COS,Penyimpanan lokal,Penyimpanan cloud,NocoBase"
 ---
 
 # Ikhtisar
 
-## Engine Bawaan
+## Mesin Bawaan
 
-Tipe engine yang saat ini didukung secara bawaan oleh NocoBase sebagai berikut:
+Saat ini, NocoBase secara bawaan mendukung jenis mesin berikut:
 
-- [Penyimpanan Lokal](./local.md)
-- [Aliyun OSS](./aliyun-oss.md)
+- [Penyimpanan lokal](./local.md)
+- [Alibaba Cloud OSS](./aliyun-oss.md)
 - [Amazon S3](./amazon-s3.md)
-- [Tencent COS](./tencent-cos.md)
+- [Tencent Cloud COS](./tencent-cos.md)
 
-Saat sistem diinstal, akan otomatis ditambahkan satu storage engine penyimpanan lokal, yang dapat langsung digunakan. Anda juga dapat menambahkan engine baru atau mengedit parameter engine yang sudah ada.
+Saat sistem diinstal, satu mesin penyimpanan lokal akan ditambahkan secara otomatis dan dapat langsung digunakan. Anda juga dapat menambahkan mesin baru atau mengedit parameter mesin yang sudah ada.
 
-## Parameter Umum Engine
+## Parameter Umum Mesin
 
-Selain parameter khusus dari masing-masing kategori engine, bagian berikut adalah parameter umum (mengambil contoh penyimpanan lokal):
+Selain parameter khusus untuk setiap jenis mesin, bagian berikut berisi parameter umum, dengan penyimpanan lokal sebagai contoh:
 
-![Contoh konfigurasi storage engine](https://static-docs.nocobase.com/20240529115151.png)
+![Contoh konfigurasi mesin penyimpanan file](https://static-docs.nocobase.com/20240529115151.png)
 
 ### Judul
 
-Nama storage engine, digunakan untuk identifikasi manual.
+Nama mesin penyimpanan, yang digunakan untuk identifikasi oleh pengguna.
 
 ### Nama Sistem
 
-Nama sistem storage engine, digunakan untuk identifikasi sistem. Harus unik dalam sistem. Jika tidak diisi, akan otomatis dihasilkan acak oleh sistem.
+Nama sistem mesin penyimpanan, yang digunakan untuk identifikasi oleh sistem. Nama ini harus unik di dalam sistem. Jika tidak diisi, sistem akan membuat nama acak secara otomatis.
 
-### URL Akses Dasar
+### Dasar URL Akses
 
-Bagian prefix alamat URL yang dapat diakses untuk file ini, dapat berupa URL akses dasar CDN, contohnya: "`https://cdn.nocobase.com/app`" (tanpa "`/`" di akhir).
+Bagian awalan alamat URL yang dapat digunakan untuk mengakses file dari luar, yang dapat berupa dasar URL akses CDN, misalnya: “`https://cdn.nocobase.com/app`” (tidak perlu diakhiri dengan “`/`”).
 
-### Path
+### Jalur
 
-Path relatif yang digunakan saat menyimpan file. Saat akses, bagian ini juga akan otomatis digabungkan ke URL final. Contoh: "`user/avatar`" (tanpa "`/`" di awal dan akhir).
+Jalur relatif yang digunakan saat menyimpan file. Saat diakses, bagian ini juga akan otomatis digabungkan ke URL akhir. Misalnya: “`user/avatar`” (tidak perlu diawali atau diakhiri dengan “`/`”).
 
-### Batasan Ukuran File
+### Batas Ukuran File
 
-Batasan ukuran saat upload file ke storage engine ini. File yang melebihi ukuran yang diatur tidak akan dapat diupload. Default sistem dibatasi 20MB, dapat disesuaikan hingga maksimum 1GB.
+Batas ukuran file saat mengunggah file ke mesin penyimpanan ini. File yang melebihi ukuran yang ditetapkan tidak dapat diunggah. Batas bawaan sistem adalah 20MB, dan dapat disesuaikan hingga maksimum 1GB.
 
-### Tipe File
+### Jenis File
 
-Dapat membatasi tipe file yang diupload, menggunakan sintaks [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types) untuk mendeskripsikan format. Contohnya: `image/*` mewakili file kategori gambar. Beberapa tipe dapat dipisahkan dengan koma, seperti: `image/*, application/pdf` yang berarti mengizinkan file tipe gambar dan PDF.
+Jenis file yang diunggah dapat dibatasi menggunakan format deskripsi sintaksis [MIME](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types). Misalnya: `image/*` berarti file gambar. Beberapa jenis dapat dipisahkan dengan koma dalam bahasa Inggris, misalnya: `image/*, application/pdf` berarti mengizinkan file gambar dan PDF.
 
-### Storage Engine Default
+### Mesin Penyimpanan Default
 
-Setelah dicentang, akan diatur sebagai storage engine default sistem. Saat field lampiran atau Collection File tidak menentukan storage engine, file yang diupload semuanya akan disimpan ke storage engine default. Storage engine default tidak dapat dihapus.
+Setelah dicentang, mesin ini ditetapkan sebagai mesin penyimpanan default sistem. Jika mesin penyimpanan tidak ditentukan pada field lampiran atau tabel file, file yang diunggah akan disimpan ke mesin penyimpanan default. Mesin penyimpanan default tidak dapat dihapus.
 
-### Pertahankan File saat Record Dihapus
+### Simpan File Saat Menghapus Data
 
-Setelah dicentang, ketika record data Collection lampiran atau Collection File dihapus, file yang sudah diupload di storage engine tetap dipertahankan. Default tidak dicentang, yaitu saat record dihapus, file di storage engine juga akan dihapus secara bersamaan.
+Setelah dicentang, file yang telah diunggah ke mesin penyimpanan akan tetap dipertahankan saat data pada tabel lampiran atau tabel file dihapus. Secara default, opsi ini tidak dicentang, sehingga file dalam mesin penyimpanan juga akan dihapus saat data dihapus.
 
-:::info{title=Tips}
-Setelah file diupload, path akses final akan dibentuk dari beberapa bagian yang digabung:
+:::info{title=Catatan}
+Setelah file diunggah, jalur akses akhirnya akan terbentuk dari penggabungan beberapa bagian:
 
 ```
-<URL Akses Dasar>/<Path>/<Nama File><Ekstensi>
+<访问 URL 基础>/<路径>/<文件名><后缀名>
 ```
 
-Contoh: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+Contoh: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`。
 :::

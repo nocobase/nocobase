@@ -465,11 +465,17 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
 
   it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
     const model = await setupFormModel();
+    const sessionPayload = Buffer.from(JSON.stringify({ userId: 1, signInTime: 'form-record-slots' })).toString(
+      'base64url',
+    );
     // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求
     const api = {
+      auth: { token: `test.${sessionPayload}.sig` },
       request: vi.fn(async (config: any) => {
-        const payload = config?.data?.values || {};
-        const batch = payload.batch || [];
+        const requestValues = config?.data?.values || {};
+        const batch = requestValues.batch || [];
+        expect(batch[0]?.rd).toEqual(expect.any(String));
+        expect(batch[0]?.template).toEqual({ who: '{{ ctx.formValues.assignees.org.name }}' });
         const cp = batch[0]?.contextParams || {};
         const keys = Object.keys(cp).sort();
         // 聚合为单键，不再使用索引键

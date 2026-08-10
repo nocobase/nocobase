@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "operations-dashboard",
+    "label": "連携可能な運用ダッシュボード"
+  },
+  {
+    "type": "file",
+    "name": "ai-fill-js-block-form",
+    "label": "AI 従業員で JS ブロックのカスタムフォームを入力する"
+  }
+]

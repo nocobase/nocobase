@@ -22,12 +22,14 @@ import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
+import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
 > {
   async load() {
+    registerDeviceTypeContext(this.flowEngine);
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
     const filteredModels = Object.fromEntries(

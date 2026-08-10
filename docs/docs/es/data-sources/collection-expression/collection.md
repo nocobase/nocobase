@@ -1,23 +1,29 @@
-# Colección de expresiones
+---
+title: "Tabla de expresiones"
+description: "La tabla de expresiones se utiliza para realizar cálculos mediante expresiones dinámicas en los flujos de trabajo. Almacena reglas de cálculo y fórmulas, admite campos de diferentes modelos de datos como variables y permite asociarlos con los datos del negocio."
+keywords: "tabla de expresiones,expresiones dinámicas,expresiones de flujo de trabajo,reglas de cálculo,fórmulas,NocoBase"
+---
 
-## Crear una colección de plantilla de "expresiones"
+# Tabla de expresiones
 
-Antes de utilizar nodos de operación de expresiones dinámicas dentro de un flujo de trabajo, es esencial que primero cree una colección de plantilla de "expresiones" en la herramienta de gestión de colecciones. Esta colección servirá como un repositorio para almacenar diversas expresiones:
+## Crear una tabla plantilla de "expresiones"
 
-![Crear una colección de expresiones](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
+Antes de utilizar el nodo de cálculo mediante expresiones dinámicas en un flujo de trabajo, es necesario crear primero una tabla plantilla de "expresiones" en la herramienta de gestión de tablas de datos, que se utilizará para almacenar diferentes expresiones:
 
-## Introducir datos de expresión
+![Crear una tabla plantilla de expresiones](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
 
-Luego, puede configurar un bloque de tabla e introducir varias entradas de fórmula en la colección de plantilla. Cada fila en la colección de plantilla de "expresiones" se puede considerar como una regla de cálculo diseñada para un modelo de datos específico dentro de la colección. Puede utilizar diferentes campos de los modelos de datos de varias colecciones como variables, creando expresiones únicas como reglas de cálculo. Además, puede aprovechar diferentes motores de cálculo según sea necesario.
+## Introducir datos de expresiones
 
-![Introducir datos de expresión](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+A continuación, crea un bloque de tabla para añadir varias fórmulas a la tabla plantilla. Cada fila de la tabla plantilla de "expresiones" puede entenderse como una regla de cálculo para un modelo de datos de tabla específico. En cada fila de fórmulas se pueden utilizar como variables los valores de los campos de los modelos de datos de distintas tablas y escribir diferentes expresiones como reglas de cálculo. Por supuesto, también se pueden utilizar diferentes motores de cálculo.
 
-:::info{title=Sugerencia}
-Una vez que las fórmulas estén establecidas, es necesario vincularlas con los datos de negocio. Asociar directamente cada fila de datos de negocio con los datos de fórmula puede ser tedioso. Por lo tanto, un enfoque común es utilizar una colección de metadatos, similar a una colección de clasificación, para crear una relación de muchos a uno (o de uno a uno) con la colección de fórmulas. Luego, los datos de negocio se asocian con los metadatos clasificados en una relación de muchos a uno. Este enfoque le permite simplemente especificar los metadatos clasificados relevantes al crear datos de negocio, facilitando la localización y utilización de los datos de fórmula correspondientes a través de la ruta de asociación establecida.
+![Introducir datos de expresiones](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+
+:::info{title=Nota}
+Después de crear las fórmulas, también es necesario asociar los datos del negocio con ellas. Como asociar directamente cada fila de datos del negocio con una fila de datos de fórmulas sería bastante laborioso, normalmente se utiliza una tabla de metadatos similar a una tabla de categorías para establecer una relación de muchos a uno (o de uno a uno) con la tabla de fórmulas, y luego se establece una relación de muchos a uno entre los datos del negocio y los metadatos de categoría. De este modo, al crear datos del negocio solo es necesario especificar los metadatos de categoría correspondientes; posteriormente, se pueden encontrar y utilizar los datos de fórmulas asociados siguiendo esta ruta de relación.
 :::
 
-## Cargar datos relevantes en el proceso
+## Cargar los datos correspondientes en el flujo de trabajo
 
-Como ejemplo, considere crear un flujo de trabajo que se active por un evento de colección. Cuando se crea un pedido, el disparador debe precargar los datos del producto asociado junto con los datos de expresión relacionados con el producto:
+Tomemos como ejemplo un evento de tabla de datos: crea un flujo de trabajo que se active cuando se cree un pedido y que precargue los datos de los productos asociados al pedido, así como los datos de las expresiones relacionadas con esos productos:
 
-![Evento de colección_Configuración del disparador](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)
+![Configuración del disparador del evento de tabla de datos](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

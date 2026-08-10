@@ -8,6 +8,7 @@
  */
 
 import { Document } from '@langchain/core/documents';
+import { readFile } from 'node:fs/promises';
 import * as XLSX from 'xlsx';
 
 const normalizeCellValue = (value: unknown): string => {
@@ -43,10 +44,10 @@ const sheetToLines = (sheet: XLSX.WorkSheet): string[] => {
     .filter((line) => line.trim().length > 0);
 };
 
-export const loadXlsx = async (blob: Blob): Promise<Document[]> => {
-  const buffer = await blob.arrayBuffer();
+export const loadXlsx = async (filePath: string, mimeType?: string): Promise<Document[]> => {
+  const buffer = await readFile(filePath);
   const workbook = XLSX.read(buffer, {
-    type: 'array',
+    type: 'buffer',
     cellText: true,
   });
 
@@ -69,8 +70,8 @@ export const loadXlsx = async (blob: Blob): Promise<Document[]> => {
       new Document({
         pageContent: [`Sheet: ${sheetName}`, ...lines].join('\n'),
         metadata: {
-          source: 'blob',
-          blobType: blob.type,
+          source: filePath,
+          blobType: mimeType,
           sheetName,
           sheetIndex: index,
         },

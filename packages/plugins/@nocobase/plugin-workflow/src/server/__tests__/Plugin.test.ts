@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import fs from 'node:fs/promises';
+
 import { MockServer } from '@nocobase/test';
 import Database, { Transaction } from '@nocobase/database';
+import { storagePathJoin } from '@nocobase/utils';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
+import { vi } from 'vitest';
 
 import Plugin, { Processor } from '..';
-import { EXECUTION_STATUS } from '../constants';
-import type { ExecutionModel } from '../types';
+import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
+import type { ExecutionModel, JobModel } from '../types';
 
 describe('workflow > Plugin', () => {
   let app: MockServer;
@@ -22,7 +26,12 @@ describe('workflow > Plugin', () => {
   let WorkflowModel;
   let plugin: Plugin;
 
+  const removeEventQueueStorage = async (appName = 'main') => {
+    await fs.rm(storagePathJoin('apps', appName, 'event-queue.json'), { force: true });
+  };
+
   beforeEach(async () => {
+    await removeEventQueueStorage();
     app = await getApp();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -30,7 +39,16 @@ describe('workflow > Plugin', () => {
     plugin = app.pm.get(Plugin) as Plugin;
   });
 
-  afterEach(() => app.destroy());
+  afterEach(async () => {
+    if (!app) {
+      await removeEventQueueStorage();
+      return;
+    }
+
+    const appName = app.name;
+    await app.destroy();
+    await removeEventQueueStorage(appName);
+  });
 
   describe('useDataSourceTransaction', () => {
     it('create should reuse the incoming same-datasource transaction', async () => {
@@ -281,8 +299,122 @@ describe('workflow > Plugin', () => {
   });
 
   describe('dispatcher', () => {
+    type DispatcherState = {
+      saving: Promise<unknown> | null;
+      executing: Promise<unknown> | null;
+    };
+
+    type PersistedWorkflowQueueTask = {
+      executionId: number | string;
+      jobId?: number | string;
+      rerun?: {
+        nodeId?: number | string;
+        overwrite?: boolean;
+      };
+    };
+
+    type PersistedQueueMessage = {
+      id: string;
+      content: PersistedWorkflowQueueTask;
+      options?: unknown;
+    };
+
+    const getDispatcher = () => (plugin as unknown as { dispatcher: DispatcherState }).dispatcher;
+
+    const waitFor = async <T>(load: () => Promise<T>, matched: (value: T) => boolean): Promise<T> => {
+      let value = await load();
+      for (let i = 0; i < 40; i++) {
+        if (matched(value)) {
+          return value;
+        }
+        await sleep(100);
+        value = await load();
+      }
+      return value;
+    };
+
+    const drainDispatcher = async () => {
+      const dispatcher = getDispatcher();
+      await dispatcher.saving?.catch(() => null);
+      await dispatcher.executing?.catch(() => null);
+    };
+
+    const closeQueueAndReadPersistedTasks = async (): Promise<PersistedQueueMessage[]> => {
+      await app.eventQueue.close();
+      const raw = await fs.readFile(storagePathJoin('apps', app.name, 'event-queue.json'), 'utf8');
+      const queues = JSON.parse(raw) as Record<string, PersistedQueueMessage[]>;
+      return queues[app.eventQueue.getFullChannel(plugin.channelPendingExecution)] ?? [];
+    };
+
+    it('should preserve resume save errors for awaiting callers', async () => {
+      const error = new Error('simulated save failure');
+      const job = {
+        id: 'job-1',
+        executionId: 'execution-1',
+        changed: () => true,
+        save: vi.fn().mockRejectedValue(error),
+      } as unknown as JobModel;
+
+      await expect(plugin.resume(job)).rejects.toBe(error);
+    });
+
+    it('should preserve resume publish errors for awaiting callers', async () => {
+      type EnqueueDispatcher = DispatcherState & {
+        enqueue(task: { executionId: number | string; jobId: number | string }): Promise<void>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: EnqueueDispatcher }).dispatcher;
+      const error = new Error('simulated publish failure');
+      const enqueue = vi.spyOn(dispatcher, 'enqueue').mockRejectedValueOnce(error);
+      const job = {
+        id: 'job-1',
+        executionId: 'execution-1',
+        changed: () => false,
+      } as unknown as JobModel;
+
+      await expect(plugin.resume(job)).rejects.toBe(error);
+      expect(enqueue).toHaveBeenCalledWith({ executionId: job.executionId, jobId: job.id });
+    });
+
+    it('should serialize queue callbacks delivered concurrently by an adapter', async () => {
+      type SerialDispatcher = DispatcherState & {
+        onQueueTask(event: { executionId: string }, options?: unknown): Promise<void>;
+        resolveTask(task: { executionId: string }): Promise<null>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: SerialDispatcher }).dispatcher;
+      const calls: string[] = [];
+      let notifyFirstEntered!: () => void;
+      let releaseFirst!: () => void;
+      const firstEntered = new Promise<void>((resolve) => {
+        notifyFirstEntered = resolve;
+      });
+      const firstBlocked = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      const resolveTask = vi.spyOn(dispatcher, 'resolveTask').mockImplementation(async (task) => {
+        calls.push(`start:${task.executionId}`);
+        if (task.executionId === 'first') {
+          notifyFirstEntered();
+          await firstBlocked;
+        }
+        calls.push(`end:${task.executionId}`);
+        return null;
+      });
+
+      const first = dispatcher.onQueueTask({ executionId: 'first' });
+      await firstEntered;
+      const second = dispatcher.onQueueTask({ executionId: 'second' });
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(calls).toEqual(['start:first']);
+
+      releaseFirst();
+      await Promise.all([first, second]);
+      expect(calls).toEqual(['start:first', 'end:first', 'start:second', 'end:second']);
+      expect(dispatcher.executing).toBeNull();
+      resolveTask.mockRestore();
+    });
+
     it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
-      'should acquire pending execution only once under concurrent dispatch',
+      'should acquire queueing execution only once under concurrent prepare',
       async () => {
         const w1 = await WorkflowModel.create({
           enabled: true,
@@ -299,10 +431,10 @@ describe('workflow > Plugin', () => {
           filterByTk: e1.id,
         })) as ExecutionModel;
 
-        type PendingDispatcher = {
-          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        type QueueingDispatcher = {
+          prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         };
-        const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
 
         const acquired = await Promise.all([
           dispatcher.prepare(e1, { immediate: true }),
@@ -318,7 +450,7 @@ describe('workflow > Plugin', () => {
       },
     );
 
-    it('should not acquire pending execution when acquire transaction fails', async () => {
+    it('should not acquire queueing execution when acquire transaction fails', async () => {
       const w1 = await WorkflowModel.create({
         enabled: true,
         type: 'asyncTrigger',
@@ -331,10 +463,10 @@ describe('workflow > Plugin', () => {
         status: EXECUTION_STATUS.QUEUEING,
       });
 
-      type PendingDispatcher = {
-        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+      type QueueingDispatcher = {
+        prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
       };
-      const dispatcher = (plugin as unknown as { dispatcher: PendingDispatcher }).dispatcher;
+      const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
       const transaction = db.sequelize.transaction;
       db.sequelize.transaction = (async () => {
         throw new Error('simulated transaction failure');
@@ -352,11 +484,58 @@ describe('workflow > Plugin', () => {
       expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
     });
 
-    it('should recover after unexpected dispatch error before cleanup', async () => {
+    it('should notify trigger failure callback when async execution creation fails', async () => {
+      type SavingDispatcher = {
+        saving: Promise<unknown> | null;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: SavingDispatcher }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const error = new Error('duplicate execution id');
+      const createExecution = vi.spyOn(workflow, 'createExecution').mockRejectedValueOnce(error);
+      const onTriggerFail = vi.fn(async () => {
+        await sleep(10);
+      });
+
+      plugin.trigger(workflow, { data: true }, { eventKey: 'failed-event', onTriggerFail });
+
+      await dispatcher.saving?.catch(() => null);
+
+      expect(createExecution).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail.mock.calls[0]).toEqual([
+        workflow,
+        { data: true },
+        { eventKey: 'failed-event', onTriggerFail },
+        error,
+      ]);
+    });
+
+    it('should notify trigger failure callback when async event context is null', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const onTriggerFail = vi.fn(async () => {
+        await sleep(10);
+      });
+
+      await plugin.trigger(workflow, null as unknown as object, { eventKey: 'invalid-context-event', onTriggerFail });
+
+      expect(onTriggerFail).toHaveBeenCalledTimes(1);
+      expect(onTriggerFail.mock.calls[0][0]).toBe(workflow);
+      expect(onTriggerFail.mock.calls[0][1]).toBeNull();
+      expect(onTriggerFail.mock.calls[0][2]).toEqual({ eventKey: 'invalid-context-event', onTriggerFail });
+      expect(onTriggerFail.mock.calls[0][3]).toBeInstanceOf(Error);
+    });
+
+    it('should recover after unexpected recovery error before cleanup', async () => {
       type RecoveringDispatcher = {
-        dispatch(): void;
+        recover(): Promise<void>;
         executing: Promise<unknown> | null;
-        pending: unknown[];
+        saving: Promise<unknown> | null;
         idle: boolean;
       };
       const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
@@ -385,17 +564,20 @@ describe('workflow > Plugin', () => {
       }) as typeof plugin.serving;
 
       try {
-        dispatcher.dispatch();
+        await dispatcher.recover();
+        await dispatcher.saving?.catch(() => null);
         await dispatcher.executing?.catch(() => null);
 
         for (let i = 0; i < 20; i++) {
-          if (!dispatcher.executing) {
+          if (!dispatcher.executing && !dispatcher.saving) {
             break;
           }
           await sleep(50);
         }
+        await dispatcher.saving?.catch(() => null);
 
         expect(dispatcher.executing).toBeNull();
+        expect(dispatcher.saving).toBeNull();
         expect(dispatcher.idle).toBe(true);
 
         plugin.serving = serving;
@@ -423,18 +605,19 @@ describe('workflow > Plugin', () => {
         expect(e2?.dispatched).toBe(true);
       } finally {
         plugin.serving = serving;
+        await dispatcher.saving?.catch(() => null);
         await dispatcher.executing?.catch(() => null);
+        dispatcher.saving = null;
         dispatcher.executing = null;
-        dispatcher.pending = [];
       }
     });
 
-    it('should stop retrying local pending after repeated unexpected dispatch errors', async () => {
+    it('should stop retrying queued task after repeated unexpected queue errors', async () => {
       type RecoveringDispatcher = {
-        run(pending: { execution: ExecutionModel }): Promise<void>;
-        prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
+        enqueue(task: { executionId: number | string; jobId?: number | string; rerun?: unknown }): Promise<void>;
+        prepare(input: ExecutionModel, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
         executing: Promise<unknown> | null;
-        pending: unknown[];
+        saving: Promise<unknown> | null;
       };
       const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
       const prepare = dispatcher.prepare;
@@ -460,13 +643,13 @@ describe('workflow > Plugin', () => {
       }) as typeof dispatcher.prepare;
 
       try {
-        await dispatcher.run({ execution: e1 });
+        await dispatcher.enqueue({ executionId: e1.id });
 
-        for (let i = 0; i < 20; i++) {
-          if (!dispatcher.executing && !dispatcher.pending.length) {
+        for (let i = 0; i < 40; i++) {
+          if (prepareCalls >= 3 && !dispatcher.executing) {
             break;
           }
-          await sleep(50);
+          await sleep(100);
         }
 
         const callsAfterDrain = prepareCalls;
@@ -475,7 +658,6 @@ describe('workflow > Plugin', () => {
         expect(callsAfterDrain).toBe(3);
         expect(prepareCalls).toBe(callsAfterDrain);
         expect(dispatcher.executing).toBeNull();
-        expect(dispatcher.pending).toHaveLength(0);
 
         dispatcher.prepare = prepare;
 
@@ -501,9 +683,249 @@ describe('workflow > Plugin', () => {
         expect(e2?.status).toBe(EXECUTION_STATUS.RESOLVED);
       } finally {
         dispatcher.prepare = prepare;
+        await dispatcher.saving?.catch(() => null);
         await dispatcher.executing?.catch(() => null);
+        dispatcher.saving = null;
         dispatcher.executing = null;
-        dispatcher.pending = [];
+      }
+    });
+
+    it('should ignore duplicate start task for already started execution', async () => {
+      type QueueingDispatcher = {
+        enqueue(task: { executionId: number | string }): Promise<void>;
+        executing: Promise<unknown> | null;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
+
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+      const e1 = await w1.createExecution({
+        key: w1.key,
+        context: {},
+        dispatched: true,
+        status: EXECUTION_STATUS.STARTED,
+        startedAt: new Date(),
+      });
+
+      await dispatcher.enqueue({ executionId: e1.id });
+      await sleep(500);
+
+      for (let i = 0; i < 20; i++) {
+        if (!dispatcher.executing) {
+          break;
+        }
+        await sleep(50);
+      }
+      await dispatcher.executing?.catch(() => null);
+
+      const jobs = await e1.getJobs();
+      await e1.reload();
+      expect(jobs).toHaveLength(0);
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+    });
+
+    it('should persist queued start task outside dispatcher memory and process after queue reconnects', async () => {
+      const serving = plugin.serving;
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await w1.createNode({
+        type: 'echo',
+      });
+
+      plugin.serving = (() => false) as typeof plugin.serving;
+
+      try {
+        plugin.trigger(w1, { queued: true });
+        await drainDispatcher();
+
+        const [e1] = await waitFor(
+          () => w1.getExecutions({ order: [['id', 'ASC']] }) as Promise<ExecutionModel[]>,
+          (executions) => executions.length === 1,
+        );
+
+        await sleep(500);
+        await e1.reload();
+        expect(e1.dispatched).toBe(false);
+        expect(e1.status).toBe(EXECUTION_STATUS.QUEUEING);
+        expect(await e1.getJobs()).toHaveLength(0);
+
+        const queuedTasks = await closeQueueAndReadPersistedTasks();
+        expect(queuedTasks).toEqual([
+          expect.objectContaining({
+            content: {
+              executionId: e1.id,
+            },
+          }),
+        ]);
+
+        plugin.serving = serving;
+        await app.eventQueue.connect();
+
+        const [processed] = await waitFor(
+          async () => {
+            await e1.reload();
+            return [e1] as ExecutionModel[];
+          },
+          ([execution]) => execution.status === EXECUTION_STATUS.RESOLVED,
+        );
+        expect(processed.dispatched).toBe(true);
+        expect(processed.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        plugin.serving = serving;
+        if (!app.eventQueue.isConnected()) {
+          await app.eventQueue.connect();
+        }
+        await drainDispatcher();
+      }
+    });
+
+    it('should persist queued resume task outside dispatcher memory and process after queue reconnects', async () => {
+      const serving = plugin.serving;
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const n1 = await w1.createNode({
+        type: 'pending',
+      });
+      const n2 = await w1.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      plugin.trigger(w1, {});
+
+      const [e1] = await waitFor(
+        () => w1.getExecutions({ order: [['id', 'ASC']] }) as Promise<ExecutionModel[]>,
+        ([execution]) => execution?.status === EXECUTION_STATUS.STARTED,
+      );
+      const [pendingJob] = await waitFor(
+        () => e1.getJobs({ where: { nodeId: n1.id } }),
+        (jobs) => jobs.length === 1 && jobs[0].status === JOB_STATUS.PENDING,
+      );
+
+      plugin.serving = (() => false) as typeof plugin.serving;
+
+      try {
+        await pendingJob.update({
+          status: JOB_STATUS.RESOLVED,
+          result: {
+            resumed: true,
+          },
+        });
+        await plugin.resume(pendingJob);
+
+        await sleep(500);
+        await e1.reload();
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+        expect(await e1.getJobs({ where: { nodeId: n2.id } })).toHaveLength(0);
+
+        const queuedTasks = await closeQueueAndReadPersistedTasks();
+        expect(queuedTasks).toEqual([
+          expect.objectContaining({
+            content: {
+              executionId: e1.id,
+              jobId: pendingJob.id,
+            },
+          }),
+        ]);
+
+        plugin.serving = serving;
+        await app.eventQueue.connect();
+
+        const [processed] = await waitFor(
+          async () => {
+            await e1.reload();
+            return [e1] as ExecutionModel[];
+          },
+          ([execution]) => execution.status === EXECUTION_STATUS.RESOLVED,
+        );
+        expect(processed.status).toBe(EXECUTION_STATUS.RESOLVED);
+        expect(await e1.getJobs({ where: { nodeId: n2.id } })).toHaveLength(1);
+      } finally {
+        plugin.serving = serving;
+        if (!app.eventQueue.isConnected()) {
+          await app.eventQueue.connect();
+        }
+        await drainDispatcher();
+      }
+    });
+
+    it('should persist queued rerun task outside dispatcher memory and process after queue reconnects', async () => {
+      const serving = plugin.serving;
+      const w1 = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      const n1 = await w1.createNode({
+        type: 'echo',
+      });
+      const n2 = await w1.createNode({
+        type: 'pending',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      plugin.trigger(w1, {});
+
+      const [e1] = await waitFor(
+        () => w1.getExecutions({ order: [['id', 'ASC']] }) as Promise<ExecutionModel[]>,
+        ([execution]) => execution?.status === EXECUTION_STATUS.STARTED,
+      );
+      await waitFor(
+        () => e1.getJobs({ order: [['id', 'ASC']] }),
+        (jobs) =>
+          jobs.filter((job) => job.nodeId === n1.id).length === 1 &&
+          jobs.filter((job) => job.nodeId === n2.id).length === 1,
+      );
+
+      plugin.serving = (() => false) as typeof plugin.serving;
+
+      try {
+        await plugin.rerun(e1, { nodeId: n1.id });
+
+        await sleep(500);
+        const jobsBeforeReconnect = await e1.getJobs({ order: [['id', 'ASC']] });
+        expect(jobsBeforeReconnect.filter((job) => job.nodeId === n1.id)).toHaveLength(1);
+        expect(jobsBeforeReconnect.filter((job) => job.nodeId === n2.id)).toHaveLength(1);
+
+        const queuedTasks = await closeQueueAndReadPersistedTasks();
+        expect(queuedTasks).toEqual([
+          expect.objectContaining({
+            content: {
+              executionId: e1.id,
+              rerun: {
+                nodeId: n1.id,
+              },
+            },
+          }),
+        ]);
+
+        plugin.serving = serving;
+        await app.eventQueue.connect();
+
+        const jobsAfterReconnect = await waitFor(
+          () => e1.getJobs({ order: [['id', 'ASC']] }),
+          (jobs) =>
+            jobs.filter((job) => job.nodeId === n1.id).length === 2 &&
+            jobs.filter((job) => job.nodeId === n2.id).length === 2,
+        );
+        expect(jobsAfterReconnect.filter((job) => job.nodeId === n1.id)).toHaveLength(2);
+        expect(jobsAfterReconnect.filter((job) => job.nodeId === n2.id)).toHaveLength(2);
+      } finally {
+        plugin.serving = serving;
+        if (!app.eventQueue.isConnected()) {
+          await app.eventQueue.connect();
+        }
+        await drainDispatcher();
       }
     });
 
@@ -517,40 +939,9 @@ describe('workflow > Plugin', () => {
       expect(dispatcher.isConcurrentAcquireError(error)).toBe(true);
     });
 
-    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')(
-      'should acquire queueing execution only once under concurrent dispatch',
-      async () => {
-        const w1 = await WorkflowModel.create({
-          enabled: true,
-          type: 'asyncTrigger',
-        });
-
-        const e1 = await w1.createExecution({
-          key: w1.key,
-          context: {},
-          dispatched: false,
-          status: EXECUTION_STATUS.QUEUEING,
-        });
-
-        type QueueingDispatcher = {
-          prepare(input: ExecutionModel | null, options?: { immediate?: boolean }): Promise<ExecutionModel | null>;
-        };
-        const dispatcher = (plugin as unknown as { dispatcher: QueueingDispatcher }).dispatcher;
-
-        const acquired = await Promise.all([dispatcher.prepare(null), dispatcher.prepare(null)]);
-
-        const acquiredExecutions = acquired.filter((execution): execution is ExecutionModel => Boolean(execution));
-        expect(acquiredExecutions.map((execution) => execution.id)).toEqual([e1.id]);
-
-        await e1.reload();
-        expect(e1.dispatched).toBe(true);
-        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
-      },
-    );
-
     it('should skip non-queueing undispatched executions when fetching from db', async () => {
       type DbFetchDispatcher = {
-        dispatch(): void;
+        recover(): Promise<void>;
         executing: Promise<unknown> | null;
       };
       const dispatcher = (plugin as unknown as { dispatcher: DbFetchDispatcher }).dispatcher;
@@ -583,7 +974,7 @@ describe('workflow > Plugin', () => {
         status: EXECUTION_STATUS.QUEUEING,
       });
 
-      dispatcher.dispatch();
+      await dispatcher.recover();
 
       for (let i = 0; i < 20; i++) {
         await queueing.reload();
@@ -600,6 +991,113 @@ describe('workflow > Plugin', () => {
       expect(queueing.dispatched).toBe(true);
 
       await dispatcher.executing?.catch(() => null);
+    });
+
+    it('should publish all queueing executions during one recovery', async () => {
+      const dispatcher = (plugin as unknown as { dispatcher: { recover(): Promise<void> } }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const executions = await Promise.all(
+        Array.from({ length: 3 }, (_, index) =>
+          workflow.createExecution({
+            key: workflow.key,
+            context: { index },
+            dispatched: false,
+            status: EXECUTION_STATUS.QUEUEING,
+          }),
+        ),
+      );
+
+      await Promise.all([dispatcher.recover(), dispatcher.recover()]);
+
+      const processed = await waitFor(
+        async () => {
+          await Promise.all(executions.map((execution) => execution.reload()));
+          return executions;
+        },
+        (items) => items.every((execution) => execution.status === EXECUTION_STATUS.RESOLVED),
+      );
+      expect(processed.map((execution) => execution.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
+      for (const execution of executions) {
+        expect(await execution.getJobs()).toHaveLength(1);
+      }
+    });
+
+    it('should skip recently created queueing executions during periodic recovery', async () => {
+      type RecoveringDispatcher = {
+        recover(options?: { gracePeriod?: number }): Promise<void>;
+      };
+      const dispatcher = (plugin as unknown as { dispatcher: RecoveringDispatcher }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const oldExecution = await workflow.createExecution({
+        key: workflow.key,
+        context: { old: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+      await sleep(1200);
+      const recentExecution = await workflow.createExecution({
+        key: workflow.key,
+        context: { recent: true },
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+
+      await dispatcher.recover({ gracePeriod: 1000 });
+
+      await waitFor(
+        async () => {
+          await oldExecution.reload();
+          return [oldExecution] as ExecutionModel[];
+        },
+        ([execution]) => execution.status === EXECUTION_STATUS.RESOLVED,
+      );
+      await recentExecution.reload();
+      expect(oldExecution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(recentExecution.status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(recentExecution.dispatched).toBe(false);
+    });
+
+    it('should skip recovery when another instance holds the recovery lock', async () => {
+      const dispatcher = (plugin as unknown as { dispatcher: { recover(): Promise<void> } }).dispatcher;
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+      await workflow.createNode({ type: 'echo' });
+      const execution = await workflow.createExecution({
+        key: workflow.key,
+        context: {},
+        dispatched: false,
+        status: EXECUTION_STATUS.QUEUEING,
+      });
+      const lock = await app.lockManager.tryAcquire(`workflow:recover:${app.name}`);
+
+      try {
+        await dispatcher.recover();
+        await execution.reload();
+        expect(execution.status).toBe(EXECUTION_STATUS.QUEUEING);
+        expect(execution.dispatched).toBe(false);
+      } finally {
+        await lock.release();
+      }
+
+      await dispatcher.recover();
+      await waitFor(
+        async () => {
+          await execution.reload();
+          return [execution] as ExecutionModel[];
+        },
+        ([item]) => item.status === EXECUTION_STATUS.RESOLVED,
+      );
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
     });
 
     it('multiple triggers in same event', async () => {
@@ -630,18 +1128,18 @@ describe('workflow > Plugin', () => {
         },
       });
 
-      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
-      const [e1] = await w1.getExecutions();
-      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
-
-      const [e2] = await w2.getExecutions();
-      expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
-
-      const [e3] = await w3.getExecutions();
-      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const executions = await waitFor(
+        async () => {
+          const [e1] = await w1.getExecutions();
+          const [e2] = await w2.getExecutions();
+          const [e3] = await w3.getExecutions();
+          return [e1, e2, e3] as ExecutionModel[];
+        },
+        (executions) => executions.every((execution) => execution?.status === EXECUTION_STATUS.RESOLVED),
+      );
+      expect(executions.map((execution) => execution?.status)).toEqual(Array(3).fill(EXECUTION_STATUS.RESOLVED));
     });
 
     it('multiple events on same workflow', async () => {
@@ -913,7 +1411,7 @@ describe('workflow > Plugin', () => {
       expect(e1s[0].dispatched).toBe(true);
       expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
 
-      plugin.start(e1s[0]);
+      await plugin.start(e1s[0]);
 
       await sleep(500);
 

@@ -82,6 +82,81 @@ describe('flowSurfaces linkage rule condition normalization', () => {
     });
   });
 
+  it('fills canonical runtime defaults for partial linkage rules', () => {
+    const result = mergeStepParams('UpdateRecordActionModel', {
+      buttonSettings: {
+        linkageRules: {
+          value: [
+            {
+              key: 'hide-update',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.buttonSettings.linkageRules.value[0]).toEqual({
+      key: 'hide-update',
+      title: 'Linkage rule 1',
+      enable: true,
+      condition: {
+        logic: '$and',
+        items: [],
+      },
+      actions: [],
+    });
+  });
+
+  it('normalizes public when/then linkage aliases to the runtime shape', () => {
+    const then = [
+      {
+        key: 'hide',
+        name: 'linkageSetActionProps',
+        params: {
+          value: 'hidden',
+        },
+      },
+    ];
+    const result = mergeStepParams('UpdateRecordActionModel', {
+      buttonSettings: {
+        linkageRules: {
+          value: [
+            {
+              key: 'hideFromSales',
+              when: {
+                $and: [
+                  {
+                    'user.roles.name': {
+                      $eq: 'sales',
+                    },
+                  },
+                ],
+              },
+              then,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.buttonSettings.linkageRules.value[0]).toEqual({
+      key: 'hideFromSales',
+      title: 'Linkage rule 1',
+      enable: true,
+      condition: {
+        logic: '$and',
+        items: [
+          {
+            path: 'user.roles.name',
+            operator: '$eq',
+            value: 'sales',
+          },
+        ],
+      },
+      actions: then,
+    });
+  });
+
   it('normalizes enabled alias without rewriting existing raw actions', () => {
     const actions = [
       {
@@ -139,6 +214,26 @@ describe('flowSurfaces linkage rule condition normalization', () => {
         },
       }),
     ).toThrow(/actions.*array/);
+  });
+
+  it('rejects linkage rules whose then alias is not an array', () => {
+    expect(() =>
+      mergeStepParams('RefreshActionModel', {
+        buttonSettings: {
+          linkageRules: {
+            value: [
+              {
+                condition: {
+                  logic: '$and',
+                  items: [{ path: 'is_key', operator: '$isFalse' }],
+                },
+                then: {},
+              },
+            ],
+          },
+        },
+      }),
+    ).toThrow(/actions\/then.*array/);
   });
 
   it('normalizes backend field-root and nested relation linkage conditions', () => {

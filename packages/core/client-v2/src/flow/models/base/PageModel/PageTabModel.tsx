@@ -9,6 +9,7 @@
 
 import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-engine';
 import { Icon, type NocoBaseDesktopRoute } from '../../../../flow-compat';
+import type { RouteRepository } from '../../../../RouteRepository';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
@@ -50,6 +51,25 @@ function normalizePersistedRoute(payload: unknown): Partial<NocoBaseDesktopRoute
     return payload as Partial<NocoBaseDesktopRoute>;
   }
   return undefined;
+}
+
+type RefreshableRouteRepository = Pick<RouteRepository, 'refreshAccessible'>;
+
+const routeRefreshQueues = new WeakMap<RefreshableRouteRepository, Promise<unknown>>();
+
+async function refreshRouteRepository(repository: RefreshableRouteRepository) {
+  const previous = routeRefreshQueues.get(repository) || Promise.resolve();
+  const current = previous.catch(() => undefined).then(() => repository.refreshAccessible());
+
+  routeRefreshQueues.set(repository, current);
+
+  try {
+    await current;
+  } finally {
+    if (routeRefreshQueues.get(repository) === current) {
+      routeRefreshQueues.delete(repository);
+    }
+  }
 }
 
 export class BasePageTabModel extends FlowModel<{
@@ -168,22 +188,36 @@ export class RootPageTabModel extends BasePageTabModel {
   async save() {
     const json = this.serialize();
     const documentTitle = this.stepParams?.pageTabSettings?.tab?.documentTitle;
-    const response = await this.context.api.request({
-      method: 'post',
-      url: 'desktopRoutes:updateOrCreate',
-      params: {
-        filterKeys: ['schemaUid'],
+    const route = this.props.route || {};
+    const persisted = route.id != null;
+    const currentRoute =
+      persisted && route.schemaUid ? this.context.routeRepository?.getRouteBySchemaUid?.(route.schemaUid) : undefined;
+    const data = {
+      ...(persisted ? { schemaUid: route.schemaUid } : route),
+      title: this.getTabTitle(''),
+      icon: this.getTabIcon(),
+      options: {
+        ...(currentRoute ? currentRoute.options : route.options),
+        flowRegistry: json.flowRegistry,
+        documentTitle,
       },
-      data: {
-        ...this.props.route,
-        title: this.getTabTitle(''),
-        icon: this.getTabIcon(),
-        options: {
-          flowRegistry: json.flowRegistry,
-          documentTitle,
-        },
-      },
-    });
+    };
+    const response = await this.context.api.request(
+      persisted
+        ? {
+            method: 'post',
+            url: `desktopRoutes:update?filter[id]=${route.id}`,
+            data,
+          }
+        : {
+            method: 'post',
+            url: 'desktopRoutes:updateOrCreate',
+            params: {
+              filterKeys: ['schemaUid'],
+            },
+            data,
+          },
+    );
     const persistedRoute = normalizePersistedRoute(response?.data?.data);
 
     // 新建 tab 首次保存后需要立即拿到持久化 route id，拖拽排序会直接依赖它。
@@ -196,6 +230,20 @@ export class RootPageTabModel extends BasePageTabModel {
           ...persistedRoute.options,
         },
       });
+    }
+
+    // 后续保存会从 RouteRepository 读取扩展 options，当前写入完成后必须先同步最新路由快照。
+    try {
+      if (this.context.routeRepository?.refreshAccessible) {
+        await refreshRouteRepository(this.context.routeRepository);
+      } else {
+        await this.context.refreshDesktopRoutes?.();
+      }
+    } catch (error) {
+      this.context.logger?.warn?.(
+        { err: error },
+        '[client-v2] Failed to refresh desktop routes after saving a page tab',
+      );
     }
   }
 

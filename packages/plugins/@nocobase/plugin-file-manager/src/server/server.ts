@@ -55,6 +55,20 @@ export type UploadFileOptions = {
   documentRoot?: string;
 };
 
+type FileStreamResult = { stream: Readable; contentType?: string };
+
+type FileStreamDataSource = {
+  getFileStream(file: AttachmentModel, options?: GetFileStreamOptions): Promise<FileStreamResult>;
+};
+
+function supportsFileStream(dataSource: unknown): dataSource is FileStreamDataSource {
+  return Boolean(
+    dataSource &&
+      typeof dataSource === 'object' &&
+      typeof (dataSource as { getFileStream?: unknown }).getFileStream === 'function',
+  );
+}
+
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
@@ -380,6 +394,14 @@ export class PluginFileManagerServer extends Plugin {
     file: AttachmentModel,
     options?: GetFileStreamOptions,
   ): Promise<{ stream: Readable; contentType?: string }> {
+    const dataSourceKey = file.source?.dataSourceKey;
+    if (dataSourceKey && dataSourceKey !== 'main') {
+      const dataSource = this.app.dataSourceManager.get(dataSourceKey);
+      if (supportsFileStream(dataSource)) {
+        return dataSource.getFileStream(file, options);
+      }
+    }
+
     if (!file.storageId) {
       throw new Error('File storageId not found');
     }

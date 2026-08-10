@@ -122,6 +122,25 @@ describe('belongsToMany', () => {
     expect(error).toBeDefined();
   });
 
+  it('should throw error when through and target are the same collection', async () => {
+    await expect(
+      Field.repository.create({
+        values: {
+          name: 'confirmors',
+          type: 'belongsToMany',
+          collectionName: 'posts',
+          target: 'tags',
+          through: 'tags',
+          sourceKey: 'id',
+          targetKey: 'id',
+          foreignKey: 'post_id',
+          otherKey: 'tag_id',
+        },
+        context: {},
+      }),
+    ).rejects.toThrow('cannot use target collection "tags" as through collection');
+  });
+
   it('should define belongs to many when change alias name', async () => {
     await Collection.repository.create({
       values: {

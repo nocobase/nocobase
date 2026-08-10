@@ -1441,15 +1441,17 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         default_type text/markdown;
         add_header Cache-Control "public";
         add_header Content-Disposition "inline";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
     }
 
-    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|svg|svgz|xhtml|pdf))$ {
+    location ~* ^${context.appPublicPath}storage/uploads/(.*\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt))$ {
         alias ${context.uploadsPath}/$1;
         add_header Cache-Control "public";
         add_header Content-Disposition "attachment" always;
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -1458,6 +1460,7 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
     location ${context.appPublicPath}storage/uploads/ {
         alias ${context.uploadsPath}/;
         add_header Cache-Control "public";
+        add_header Content-Security-Policy "sandbox" always;
         add_header X-Content-Type-Options "nosniff" always;
         access_log off;
         autoindex off;
@@ -1589,10 +1592,14 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
     `${siteAddress} {`,
     `    encode zstd gzip${rootRedirectBlock}${appPublicPathRedirectBlock}${modernClientRedirectBlock}${shorthandModernClientRedirectBlock}`,
     '',
+    '    @activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+    '',
     `    handle_path ${uploadsPathMatcher} {`,
     `        root * ${context.uploadsPath}`,
     '        header Cache-Control public',
+    '        header Content-Security-Policy sandbox',
     '        header X-Content-Type-Options nosniff',
+    '        header @activeUploadedContent Content-Disposition attachment',
     '        file_server',
     '    }',
     '',

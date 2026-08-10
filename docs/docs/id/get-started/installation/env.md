@@ -369,7 +369,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Saat tidak dikonfigurasi**: Semua request keluar `http` / `https` tetap diizinkan untuk menjaga kompatibilitas. Namun, jika target adalah alamat loopback, private, link-local, metadata, atau domain yang resolve ke alamat tersebut, server akan menulis warning di log.
 
-**Setelah dikonfigurasi**: Hanya request yang cocok dengan whitelist yang diizinkan, request yang tidak cocok akan menghasilkan error. Versi mendatang dapat memperketat perilaku default secara bertahap. Jika deployment kamu perlu mengakses layanan internal, konfigurasikan whitelist eksplisit lebih awal.
+**Setelah dikonfigurasi**: Request awal dan setiap tujuan redirect harus cocok dengan whitelist. Jika tidak cocok, NocoBase akan menghasilkan error sebelum mengirim request ke hop berikutnya. Versi mendatang dapat memperketat perilaku default secara bertahap. Jika deployment kamu perlu mengakses layanan internal, konfigurasikan whitelist eksplisit lebih awal.
 
 Format yang didukung:
 

@@ -171,6 +171,21 @@ const OPEN_VIEW_PATH_SCHEMAS = {
   'openView.tryTemplate': BOOLEAN_SCHEMA,
 };
 const CONFIRM_ALLOWED_PATHS = ['confirm.enable', 'confirm.title', 'confirm.content'];
+const AFTER_SUCCESS_ALLOWED_PATHS = [
+  'afterSuccess.successMessage',
+  'afterSuccess.manualClose',
+  'afterSuccess.actionAfterSuccess',
+  'afterSuccess.redirectTo',
+];
+const AFTER_SUCCESS_PATH_SCHEMAS = {
+  'afterSuccess.successMessage': STRING_SCHEMA,
+  'afterSuccess.manualClose': BOOLEAN_SCHEMA,
+  'afterSuccess.actionAfterSuccess': {
+    type: 'string',
+    enum: ['stay', 'previous', 'redirect'],
+  },
+  'afterSuccess.redirectTo': STRING_SCHEMA,
+};
 const TABLE_COLUMN_BASE_ALLOWED_PATHS = ['title.title'];
 const TABLE_FIELD_COLUMN_ALLOWED_PATHS = [...TABLE_COLUMN_BASE_ALLOWED_PATHS, 'fieldNames.label'];
 const FILTER_FORM_ITEM_ALLOWED_PATHS = [
@@ -2065,7 +2080,7 @@ const UPDATE_RECORD_ACTION_CONTRACT = createContract({
       stepKeys: ['general', 'linkageRules'],
     },
     assignSettings: {
-      stepKeys: ['confirm', 'assignFieldValues'],
+      stepKeys: ['confirm', 'assignFieldValues', 'afterSuccess'],
     },
     apply: {
       stepKeys: ['apply'],
@@ -2084,15 +2099,17 @@ UPDATE_RECORD_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.content',
       'assignFieldValues.assignedValues',
       'assignFieldValues.assignedValues.*',
+      ...AFTER_SUCCESS_ALLOWED_PATHS,
     ],
     clearable: true,
     mergeStrategy: 'deep',
-    eventBindingSteps: ['confirm', 'assignFieldValues'],
+    eventBindingSteps: ['confirm', 'assignFieldValues', 'afterSuccess'],
     pathSchemas: {
       'confirm.enable': BOOLEAN_SCHEMA,
       'confirm.title': STRING_SCHEMA,
       'confirm.content': STRING_SCHEMA,
       'assignFieldValues.assignedValues': OBJECT_SCHEMA,
+      ...AFTER_SUCCESS_PATH_SCHEMAS,
     },
   },
   apply: {
@@ -2221,7 +2238,7 @@ const BULK_UPDATE_ACTION_CONTRACT = createContract({
       stepKeys: ['general', 'linkageRules'],
     },
     assignSettings: {
-      stepKeys: ['confirm', 'updateMode', 'assignFieldValues'],
+      stepKeys: ['confirm', 'updateMode', 'assignFieldValues', 'afterSuccess'],
     },
     apply: {
       stepKeys: ['apply'],
@@ -2238,16 +2255,18 @@ BULK_UPDATE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'updateMode.value',
       'assignFieldValues.assignedValues',
       'assignFieldValues.assignedValues.*',
+      ...AFTER_SUCCESS_ALLOWED_PATHS,
     ],
     clearable: true,
     mergeStrategy: 'deep',
-    eventBindingSteps: ['confirm', 'updateMode', 'assignFieldValues'],
+    eventBindingSteps: ['confirm', 'updateMode', 'assignFieldValues', 'afterSuccess'],
     pathSchemas: {
       'confirm.enable': BOOLEAN_SCHEMA,
       'confirm.title': STRING_SCHEMA,
       'confirm.content': STRING_SCHEMA,
       'updateMode.value': STRING_SCHEMA,
       'assignFieldValues.assignedValues': OBJECT_SCHEMA,
+      ...AFTER_SUCCESS_PATH_SCHEMAS,
     },
   },
   apply: {

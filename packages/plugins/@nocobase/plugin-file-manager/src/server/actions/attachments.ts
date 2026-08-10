@@ -25,7 +25,15 @@ import {
 import { StorageClassType, StorageType } from '../storages';
 import { getDocumentRoot, normalizeLocalStoragePath, resolveSafePath } from '../storages/local';
 
-const ACTIVE_CONTENT_MIMETYPES = new Set(['application/pdf', 'application/xhtml+xml', 'image/svg+xml', 'text/html']);
+const ACTIVE_CONTENT_MIMETYPES = new Set([
+  'application/pdf',
+  'application/xhtml+xml',
+  'application/xml',
+  'application/xslt+xml',
+  'image/svg+xml',
+  'text/html',
+  'text/xml',
+]);
 
 function matchesMimePattern(mimetype: string, pattern: string | string[] = '*') {
   const normalizedPattern = pattern.toString().trim();

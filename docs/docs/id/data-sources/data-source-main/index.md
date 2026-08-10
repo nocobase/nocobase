@@ -1,102 +1,134 @@
 ---
-pkg: "@nocobase/plugin-data-source-main"
 title: "Database Utama"
-description: "Database utama NocoBase: menyimpan data bisnis dan metadata, mendukung MySQL/PostgreSQL/MariaDB, sinkronisasi tabel yang sudah ada dari database, membuat Collection Umum/Tree/SQL, dan lainnya."
-keywords: "database utama,MySQL,PostgreSQL,MariaDB,sinkronisasi Collection,penyimpanan metadata,NocoBase"
+description: "Database utama NocoBase: menyimpan data tabel sistem dan data bisnis, mendukung MySQL/PostgreSQL/MariaDB/KingbaseES/OceanBase, menyinkronkan tabel dari database, serta membuat tabel biasa/tabel hierarki/tabel SQL, dan lainnya"
+keywords: "database utama,MySQL、PostgreSQL、MariaDB、KingbaseES、OceanBase,sinkronisasi tabel data"
 ---
 # Database Utama
 
-## Pengantar
+## Pendahuluan
 
-Database utama NocoBase dapat digunakan untuk menyimpan data bisnis sekaligus menyimpan metadata aplikasi, termasuk data tabel sistem, data tabel custom, dan lainnya. Database utama mendukung database relasional seperti MySQL, PostgreSQL, dan lainnya. Saat menginstal aplikasi NocoBase, database utama harus diinstal secara bersamaan dan tidak dapat dihapus.
+Database yang dikonfigurasi melalui [Deploy NocoBase](/ai/install-nocobase-app) digunakan untuk menyimpan data tabel sistem NocoBase, serta mendukung penyimpanan tabel data bisnis pengguna.
 
-## Instalasi
+Versi database dan edisi komersial yang didukung oleh database utama adalah sebagai berikut:
 
-Plugin bawaan, tidak perlu diinstal secara terpisah.
+| Database | Versi yang didukung | Edisi Komunitas | Edisi Standar | Edisi Profesional | Edisi Enterprise |
+| --- | --- | --- | --- | --- | --- |
+| MySQL | >= 8.0.17 | ✅ | ✅ | ✅ | ✅ |
+| PostgreSQL | >= 10 | ✅ | ✅ | ✅ | ✅ |
+| MariaDB | >= 10.9 | ✅ | ✅ | ✅ | ✅ |
+| KingbaseES | >=V9 | ❌ | ❌ | ✅ | ✅ |
+| OceanBase | >=4.3 | ❌ | ❌ | ❌ | ✅ |
 
-## Manajemen Collection
+:::tip Catatan
 
-Data source utama menyediakan fungsi manajemen Collection yang lengkap. Anda dapat membuat tabel baru melalui NocoBase, dan juga menyinkronkan struktur tabel yang sudah ada di database.
+KingbaseES hanya mendukung mode kompatibilitas PostgreSQL, sedangkan OceanBase hanya mendukung mode kompatibilitas MySQL.
 
-![20240322230134](https://static-docs.nocobase.com/20240322230134.png)
+:::
 
-### Sinkronisasi Tabel yang Sudah Ada dari Database
+## Pemasangan plugin
+
+| Database | Plugin terkait | Metode pemasangan |
+| --- | --- | --- |
+| MySQL | Tidak ada | Plugin bawaan, tidak perlu dipasang secara terpisah. |
+| PostgreSQL | Tidak ada | Plugin bawaan, tidak perlu dipasang secara terpisah. |
+| MariaDB | Tidak ada | Plugin bawaan, tidak perlu dipasang secara terpisah. |
+| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Memerlukan lisensi komersial; plugin diaktifkan secara default setelah pemasangan. |
+| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Memerlukan lisensi komersial; plugin diaktifkan secara default setelah pemasangan. |
+
+## Mengakses sumber data utama
+
+1. Klik menu sumber data pada fungsi sistem untuk mengakses halaman beranda sumber data.
+2. Pilih sumber data **Main** dari daftar sumber data, lalu klik operasi **Konfigurasi** untuk mengakses database utama dan mengelolanya.
+
+![configure_main_datasource](https://static-docs.nocobase.com/configure_main_datasource.png)
+
+## Pengelolaan sumber data utama
+
+Database utama menyediakan fungsi pengelolaan tabel data. Anda dapat mencari, membuat, mengubah, dan menghapus tabel data, serta menyinkronkan kolom tabel data yang sudah ada di database; fungsi ini juga menyediakan pembuatan, perubahan, dan penghapusan kolom tabel data.
+- **Filter**: mencari tabel data yang dikelola oleh database utama NocoBase
+- **Buat tabel data**: menambahkan tabel data bisnis baru
+- **Edit**: mengubah tabel data bisnis
+- **Hapus**: menghapus tabel data bisnis
+- **Sinkronkan dari database**: menyinkronkan struktur tabel data yang sudah ada di database
+- **Konfigurasi kolom**: membuat, mengubah, dan menghapus kolom tabel data
+-  **+** : **+** pada tab digunakan untuk mengelola kategori tabel data, termasuk membuat, mengubah, dan menghapus kategori
+![main_datasource_management](https://static-docs.nocobase.com/main_datasource_management.png)
+
+### Menyinkronkan tabel yang sudah ada dari database
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-Salah satu fitur penting dari data source utama adalah dapat menyinkronkan tabel yang sudah ada di database ke NocoBase untuk dikelola. Ini berarti:
+Salah satu fitur penting sumber data utama adalah kemampuannya untuk menyinkronkan tabel yang sudah ada di database ke NocoBase agar dapat dikelola. Artinya:
 
-- **Melindungi Investasi yang Ada**: Jika database Anda sudah memiliki banyak tabel bisnis, tidak perlu membuat ulang, dapat langsung disinkronkan dan digunakan
-- **Integrasi Fleksibel**: Dapat menyertakan tabel yang dibuat melalui alat lain (seperti script SQL, alat manajemen database, dan lainnya) ke dalam manajemen NocoBase
-- **Migrasi Bertahap**: Mendukung migrasi sistem yang sudah ada ke NocoBase secara bertahap, bukan refactor sekaligus
+- **Melindungi investasi yang ada**: jika database Anda sudah memiliki banyak tabel bisnis, Anda tidak perlu membuatnya ulang dan dapat langsung menyinkronkannya
+- **Integrasi fleksibel**: tabel yang dibuat melalui alat lain, seperti skrip SQL atau alat pengelolaan database, dapat dikelola di NocoBase
+- **Migrasi bertahap**: mendukung migrasi sistem yang ada ke NocoBase secara bertahap, bukan melakukan rekonstruksi sekaligus
 
-Melalui fungsi "Load dari Database", Anda dapat:
-1. Browse semua tabel di database
-2. Pilih tabel yang ingin disinkronkan
-3. Otomatis mengenali struktur tabel dan tipe field
-4. Impor sekali klik ke NocoBase untuk dikelola
+Melalui fitur "Muat dari database", Anda dapat:
+1. menelusuri semua tabel di database
+2. memilih tabel yang perlu disinkronkan
+3. mengenali struktur tabel dan tipe kolom secara otomatis
+4. mengimpor tabel ke NocoBase untuk dikelola hanya dengan satu klik
 
-### Mendukung Berbagai Tipe Struktur Tabel
+### Mendukung berbagai jenis struktur tabel
 
 ![nocobase_doc-2025-10-29-19-47-14](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
 
-NocoBase mendukung pembuatan dan pengelolaan berbagai jenis Collection:
-- **Collection Umum**: Memiliki field sistem umum yang sudah terpasang;
-- **Collection Inheritance**: Anda dapat membuat Collection parent, lalu menurunkan Collection child dari parent tersebut. Collection child akan mewarisi struktur Collection parent, dan juga dapat mendefinisikan kolomnya sendiri.
-- **Collection Tree**: Tabel struktur tree, saat ini hanya mendukung desain adjacency list;
-- **Collection Calendar**: Digunakan untuk membuat tabel event terkait kalender;
-- **Collection File**: Digunakan untuk manajemen penyimpanan file;
-- **Collection Expression**: Digunakan untuk skenario expression dinamis pada workflow;
-- **Collection SQL**: Bukan tabel database aktual, melainkan menampilkan kueri SQL secara cepat dan terstruktur;
-- **Collection View**: Menghubungkan ke database view yang sudah ada;
-- **Collection Eksternal**: Memungkinkan sistem database mengakses dan mengkueri data secara langsung dari data source eksternal, berbasis teknologi FDW;
+NocoBase mendukung pembuatan dan pengelolaan berbagai jenis tabel data:
+- **Tabel biasa**: memiliki kolom sistem umum bawaan;
+- **Tabel turunan**: Anda dapat membuat tabel induk, lalu membuat tabel anak yang diturunkan dari tabel tersebut. Tabel anak akan mewarisi struktur tabel induk dan juga dapat memiliki kolomnya sendiri.
+- **Tabel hierarki**: tabel dengan struktur hierarki, saat ini hanya mendukung desain tabel adjacency;
+- **Tabel kalender**: digunakan untuk membuat tabel acara terkait kalender;
+- **Tabel file**: digunakan untuk mengelola penyimpanan file;
+- **Tabel SQL**: bukan tabel database sebenarnya, melainkan menampilkan hasil kueri SQL secara terstruktur dengan cepat;
+- **Tabel view**: menghubungkan view database yang sudah ada;
 
-### Mendukung Manajemen Kategori Collection
+### Pengelolaan kategori tabel data
 
 ![20240322231520](https://static-docs.nocobase.com/20240322231520.png)
 
-### Menyediakan Beragam Tipe Field
+### Menyediakan berbagai jenis kolom
 
 ![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
 
-#### Konversi Tipe Field yang Fleksibel
+#### Konversi tipe kolom yang fleksibel
 
-NocoBase mendukung konversi tipe field yang fleksibel pada tipe database yang sama.
+NocoBase mendukung konversi tipe kolom secara fleksibel dalam jenis database yang sama.
 
-**Contoh: Opsi Konversi Field Tipe String**
+**Contoh: Opsi konversi kolom tipe String**
 
-Ketika field di database adalah tipe String, dapat dikonversi di NocoBase ke salah satu bentuk berikut:
+Jika kolom dalam database bertipe String, kolom tersebut dapat dikonversi di NocoBase menjadi salah satu bentuk berikut:
 
-- **Tipe Dasar**: Teks Satu Baris, Teks Multi Baris, Nomor Telepon, Email, URL, Password, Warna, Ikon
-- **Tipe Pilihan**: Dropdown (Pilihan Tunggal), Radio Button
-- **Tipe Rich Media**: Markdown, Markdown (Vditor), Rich Text, Lampiran (URL)
-- **Tipe Datetime**: Datetime (dengan Timezone), Datetime (tanpa Timezone)
-- **Tipe Lanjutan**: Auto Sequence, Collection Selector, Enkripsi
+- **Tipe dasar**: teks satu baris, teks multi-baris, nomor ponsel, email, URL, kata sandi, warna, ikon
+- **Tipe pilihan**: menu tarik-turun (pilihan tunggal), tombol radio
+- **Tipe media kaya**: Markdown, Markdown (Vditor), teks kaya, lampiran (URL)
+- **Tipe tanggal dan waktu**: tanggal dan waktu (dengan zona waktu), tanggal dan waktu (tanpa zona waktu)
+- **Tipe lanjutan**: penomoran otomatis, pemilih tabel data, enkripsi
 
 Mekanisme konversi yang fleksibel ini berarti:
-- **Tidak Perlu Mengubah Struktur Database**: Tipe penyimpanan field di lapisan bawah tetap tidak berubah, hanya bentuk representasi di NocoBase yang berubah
-- **Beradaptasi dengan Perubahan Bisnis**: Seiring perubahan kebutuhan bisnis, dapat dengan cepat menyesuaikan cara tampilan dan interaksi field
-- **Keamanan Data**: Proses konversi tidak akan memengaruhi integritas data yang sudah ada
+- **Tidak perlu mengubah struktur database**: tipe penyimpanan dasar kolom tetap tidak berubah; hanya bentuk tampilannya di NocoBase yang berubah
+- **Menyesuaikan dengan perubahan bisnis**: seiring perubahan kebutuhan bisnis, cara menampilkan dan berinteraksi dengan kolom dapat disesuaikan dengan cepat
+- **Keamanan data**: proses konversi tidak memengaruhi integritas data yang sudah ada
 
-### Sinkronisasi Field yang Fleksibel
+### Sinkronisasi fleksibel tingkat kolom
 
-NocoBase tidak hanya dapat menyinkronkan seluruh tabel, tetapi juga mendukung manajemen sinkronisasi field yang lebih halus:
+NocoBase tidak hanya dapat menyinkronkan seluruh tabel, tetapi juga mendukung pengelolaan sinkronisasi secara terperinci pada tingkat kolom:
 
 ![nocobase_doc-2025-10-29-19-49-56](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
 
-#### Karakteristik Sinkronisasi Field:
+#### Karakteristik sinkronisasi kolom:
 
-1. **Sinkronisasi Real-time**: Ketika struktur tabel database berubah, field baru dapat disinkronkan kapan saja
-2. **Sinkronisasi Selektif**: Dapat memilih field yang dibutuhkan untuk disinkronkan, bukan semua field
-3. **Pengenalan Tipe Otomatis**: Otomatis mengenali tipe field database dan memetakannya ke tipe field NocoBase
-4. **Mempertahankan Integritas Data**: Proses sinkronisasi tidak akan memengaruhi data yang sudah ada
+1. **Sinkronisasi real-time**: ketika struktur tabel database berubah, Anda dapat menyinkronkan kolom baru kapan saja
+2. **Sinkronisasi selektif**: Anda dapat memilih kolom yang perlu disinkronkan, bukan seluruh kolom
+3. **Pengenalan tipe otomatis**: mengenali tipe kolom database secara otomatis dan memetakannya ke tipe kolom NocoBase
+4. **Menjaga integritas data**: proses sinkronisasi tidak memengaruhi data yang sudah ada
 
-#### Skenario Penggunaan:
+#### Skenario penggunaan:
 
-- **Evolusi Struktur Database**: Ketika kebutuhan bisnis berubah dan perlu menambahkan field baru di database, dapat dengan cepat disinkronkan ke NocoBase
-- **Kolaborasi Tim**: Ketika anggota tim lain atau DBA menambahkan field di database, dapat disinkronkan tepat waktu
-- **Mode Manajemen Hybrid**: Sebagian field dikelola melalui NocoBase, sebagian field dikelola dengan cara tradisional, kombinasi yang fleksibel
+- **Evolusi struktur database**: ketika kebutuhan bisnis berubah dan kolom baru perlu ditambahkan ke database, kolom tersebut dapat disinkronkan dengan cepat ke NocoBase
+- **Kolaborasi tim**: ketika anggota tim lain atau DBA menambahkan kolom ke database, kolom tersebut dapat segera disinkronkan
+- **Model pengelolaan hibrida**: sebagian kolom dikelola melalui NocoBase dan sebagian lainnya melalui cara tradisional, sehingga dapat dikombinasikan secara fleksibel
 
-Mekanisme sinkronisasi yang fleksibel ini memungkinkan NocoBase berintegrasi dengan baik ke dalam arsitektur teknologi yang ada, tidak perlu mengubah cara manajemen database yang lama, dan tetap dapat menikmati kemudahan pengembangan low-code yang dibawa NocoBase.
+Mekanisme sinkronisasi yang fleksibel ini memungkinkan NocoBase terintegrasi dengan baik ke dalam arsitektur teknologi yang ada tanpa perlu mengubah cara pengelolaan database sebelumnya, sekaligus menikmati kemudahan pengembangan low-code yang ditawarkan NocoBase.
 
-Untuk lebih lanjut, lihat bagian "[Field Collection / Ikhtisar](/data-sources/data-modeling/collection-fields)"
+Untuk informasi selengkapnya, lihat bab "[Kolom tabel data / Ikhtisar](../data-modeling/collection-fields/index.md)".

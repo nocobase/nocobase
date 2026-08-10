@@ -1,6 +1,8 @@
 {
   "Application": "应用",
   "Authorization is complete. You can return to the terminal.": "授权已完成。你可以返回终端。",
+  "Authentication failed": "认证失败",
+  "Authorize application": "授权应用",
   "Back to home": "返回首页",
   "Cancel": "取消",
   "Confirm device": "确认设备",
@@ -12,10 +14,18 @@
   "Enter the code shown in your terminal to continue signing in.": "输入终端中显示的代码以继续登录。",
   "Enter the device code.": "请输入设备代码。",
   "Failed to load device sign-in.": "加载设备登录失败。",
+  "Failed to load interaction.": "加载授权交互失败。",
   "Failed to submit device sign-in.": "提交设备登录失败。",
+  "Failed to submit interaction.": "提交授权交互失败。",
+  "Invalid interaction path": "无效的授权交互路径",
+  "Issuer": "签发方",
+  "Please wait while authorization continues.": "授权正在继续，请稍候。",
+  "Redirecting...": "正在跳转...",
+  "Requested permissions": "请求的权限",
   "The device code has already been used.": "设备代码已被使用。",
   "The device code has expired.": "设备代码已过期。",
   "The device code was not found.": "未找到设备代码。",
   "The device sign-in request was cancelled.": "设备登录请求已取消。",
+  "{{clientName}} requests access to your account.": "{{clientName}} 请求访问你的账户。",
   "{{clientName}} is requesting access. Confirm that this code matches the one shown in your terminal.": "{{clientName}} 正在请求访问。请确认此代码与终端中显示的代码一致。"
 }

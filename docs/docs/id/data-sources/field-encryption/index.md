@@ -1,92 +1,93 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
-title: "Enkripsi Field"
-description: "Mengenkripsi data bisnis privat (nomor telepon, email, nomor kartu, dan lainnya) untuk penyimpanan, disimpan dalam bentuk ciphertext ke database, melindungi informasi sensitif."
-keywords: "enkripsi field,Encryption,data sensitif,penyimpanan ciphertext,NocoBase"
+title: "Enkripsi bidang"
+description: "Menyimpan data bisnis rahasia (seperti nomor ponsel, email, nomor kartu, dll.) secara terenkripsi dalam basis data untuk melindungi informasi sensitif."
+keywords: "Enkripsi bidang,Encryption,data sensitif,penyimpanan terenkripsi,NocoBase"
 ---
+<!-- translation-inline-code: `应用密钥` `/storage/apps/main/encryption-field-keys` `应用密钥` `.key` `应用密钥` `应用密钥` `/storage/apps/${子应用name}/encryption-field-keys` `应用密钥` `字段密钥` `应用密钥` `字段加密向量` `AES` `fields` `options` `fields` `options` `字段密钥` `字段加密向量` `应用密钥` `字段加密向量` `字段密钥` `字段密钥` `数据加密向量` `AES` `字段密钥` `HMAC-SHA256` `数据签名` `数据加密向量` `数据密文` `数据签名` `数据密文` `应用密钥` `ENCRYPTION_FIELD_KEY_PATH` `应用密钥` `应用密钥` `.key` `字段密钥` `应用密钥` `字段密钥` `字段密钥` `HMAC-SHA256` `.` `nocobase key-rotation` `nocobase key-rotation` `应用密钥` `应用密钥` `--app-name` `name` -->
 # Enkripsi
 
-## Pengantar
+## Pengenalan
 
-Beberapa data bisnis privat, seperti nomor telepon pelanggan, alamat email, nomor kartu, dan lainnya, dapat dienkripsi. Setelah dienkripsi, data akan disimpan ke database dalam bentuk ciphertext.
+Beberapa data bisnis rahasia, seperti nomor ponsel pelanggan, alamat email, nomor kartu, dan sebagainya, dapat dienkripsi. Setelah dienkripsi, data disimpan dalam basis data dalam bentuk teks sandi.
 
 ![20251104192513](https://static-docs.nocobase.com/20251104192513.png)
 
-## Cara Enkripsi
+## Metode enkripsi
 
 :::warning
-Plugin akan otomatis menghasilkan satu `Application Key`, kunci ini disimpan di direktori `/storage/apps/main/encryption-field-keys`.
+Plugin akan secara otomatis menghasilkan sebuah , dan kunci tersebut disimpan di direktori .
 
-Nama file `Application Key` adalah ID kunci, dengan ekstensi `.key`. Harap jangan mengubah nama file secara sembarangan.
+Nama file  adalah ID kunci, dengan ekstensi . Jangan mengubah nama file sembarangan.
 
-Harap simpan file `Application Key` dengan baik. Jika file `Application Key` hilang, data terenkripsi tidak dapat didekripsi.
+Simpan file  dengan baik. Jika file  hilang, data terenkripsi tidak dapat didekripsi.
 
-Jika sub-aplikasi yang mengaktifkan plugin, kunci akan disimpan di direktori default `/storage/apps/${nama_sub_aplikasi}/encryption-field-keys`
+Jika plugin diaktifkan pada sub-aplikasi, direktori penyimpanan kunci default adalah
 :::
 
-### Prinsip Kerja
+### Prinsip kerja
 
-Menggunakan metode envelope encryption
+Menggunakan enkripsi amplop
 
 ![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
 
-### Alur Pembuatan Kunci
-1. Saat field terenkripsi pertama kali dibuat, sistem akan otomatis menghasilkan `Application Key` 32-bit, disimpan ke direktori penyimpanan default dengan encoding base64.
-2. Setiap kali field terenkripsi baru dibuat, akan dihasilkan `Field Key` random 32-bit untuk field ini, lalu dienkripsi dengan `Application Key` dan `Field Initialization Vector` random 16-bit (algoritma enkripsi `AES`), lalu disimpan di field `options` dari tabel `fields`.
+### Proses pembuatan kunci
+1. Saat pertama kali membuat bidang terenkripsi, sistem akan secara otomatis menghasilkan sebuah  32-bit, yang disimpan dalam direktori penyimpanan default dengan pengodean base64.
+2. Setiap kali membuat bidang terenkripsi baru, sebuah  acak 32-bit akan dibuat untuk bidang tersebut, lalu dienkripsi menggunakan  dan  acak 16-bit (algoritme enkripsi ), kemudian disimpan ke bidang  pada tabel .
 
-### Alur Enkripsi Field
-1. Setiap kali data ditulis ke field terenkripsi, `Field Key` terenkripsi dan `Field Initialization Vector` akan diambil terlebih dahulu dari field `options` tabel `fields`.
-2. Gunakan `Application Key` dan `Field Initialization Vector` untuk mendekripsi `Field Key` yang sudah dienkripsi, lalu gunakan `Field Key` dan `Data Initialization Vector` random 16-bit untuk mengenkripsi data (algoritma enkripsi `AES`).
-3. Gunakan `Field Key` yang sudah didekripsi untuk men-sign data (algoritma digest `HMAC-SHA256`), dan dikonversi ke string dengan encoding base64 (`Data Signature` yang dihasilkan akan digunakan kemudian untuk pencarian data).
-4. Gabungkan `Data Initialization Vector` 16-bit dan `Data Ciphertext` yang sudah dienkripsi secara biner, dikonversi ke string dengan encoding base64.
-5. Gabungkan string encoding base64 `Data Signature` dan string encoding base64 `Data Ciphertext` yang sudah digabung, dipisahkan dengan '.'.
-6. Simpan string final yang sudah digabung ke database.
+### Proses enkripsi bidang
+1. Setiap kali data ditulis ke bidang terenkripsi,  dan  terenkripsi akan terlebih dahulu diambil dari bidang options pada tabel fields.
+2. Gunakan  dan  untuk mendekripsi  yang telah dienkripsi, lalu gunakan  dan  acak 16-bit untuk mengenkripsi data (algoritme enkripsi ).
+3. Gunakan  yang telah didekripsi untuk menandatangani data (algoritme ringkasan ), lalu ubah menjadi string dengan pengodean base64 ( yang dihasilkan akan digunakan kemudian untuk pencarian data).
+4. Gabungkan secara biner  16-bit dan  terenkripsi, lalu ubah menjadi string dengan pengodean base64.
+5. Gabungkan string berpengodean base64  dan string berpengodean base64  yang telah digabungkan menggunakan pemisah '.'.
+6. Simpan string gabungan akhir ke dalam basis data.
 
 
-## Environment Variable
+## Variabel lingkungan
 
-Jika Anda ingin menentukan `Application Key`, dapat menggunakan environment variable `ENCRYPTION_FIELD_KEY_PATH`. Plugin akan memuat file pada path tersebut sebagai `Application Key`.
+Jika ingin menentukan , Anda dapat menggunakan variabel lingkungan . Plugin akan memuat file pada jalur tersebut sebagai .
 
-Persyaratan format file `Application Key`:
-1. Ekstensi file harus `.key`.
-2. Nama file akan digunakan sebagai ID kunci, sebaiknya menggunakan uuid untuk memastikan keunikan.
-3. Konten file adalah data biner 32-bit dengan encoding base64.
+Persyaratan format file :
+1. Ekstensi file harus .
+2. Nama file akan digunakan sebagai ID kunci; sebaiknya gunakan uuid untuk memastikan keunikan.
+3. Isi file berupa data biner 32-bit yang dikodekan dengan base64.
 
 ```bash
 ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ```
 
-## Konfigurasi Field
+## Konfigurasi bidang
 
 ![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
 
-## Pengaruh terhadap Filter setelah Enkripsi
+## Dampak enkripsi terhadap pemfilteran
 
-Field yang sudah dienkripsi hanya mendukung: equal, not equal, exist, not exist.
+Bidang terenkripsi hanya mendukung: sama dengan, tidak sama dengan, ada, tidak ada.
 
 ![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
 
-Cara filter data:
-1. Ambil `Field Key` dari field terenkripsi, gunakan `Application Key` untuk mendekripsi `Field Key`.
-2. Gunakan `Field Key` untuk men-sign teks pencarian yang diinput pengguna (algoritma digest `HMAC-SHA256`).
-3. Gunakan teks pencarian yang sudah di-sign dengan separator `.`, untuk melakukan pencarian prefix matching pada field terenkripsi di database.
+Metode pemfilteran data:
+1. Ambil  dari bidang terenkripsi, lalu gunakan  untuk mendekripsi .
+2. Gunakan  untuk menandatangani teks pencarian yang dimasukkan pengguna (algoritme ringkasan ).
+3. Gabungkan teks pencarian yang telah ditandatangani dengan pemisah , lalu lakukan pencarian kecocokan awalan pada bidang terenkripsi dalam basis data.
 
-## Rotasi Kunci
+## Rotasi kunci
 
 :::warning
-Sebelum menggunakan perintah rotasi kunci `nocobase key-rotation`, pastikan aplikasi sudah memuat plugin ini.
+Sebelum menggunakan perintah rotasi kunci , pastikan aplikasi telah memuat plugin ini.
 :::
 
-Setelah aplikasi dimigrasi ke environment baru, jika Anda tidak ingin terus menggunakan kunci yang sama dengan environment lama, dapat menggunakan perintah `nocobase key-rotation` untuk mengganti `Application Key`.
+Setelah aplikasi dimigrasikan ke lingkungan baru, jika tidak ingin terus menggunakan kunci yang sama dengan lingkungan lama, Anda dapat menggunakan perintah  untuk mengganti .
 
-Menjalankan perintah rotasi kunci memerlukan penentuan Application Key dari environment lama. Setelah perintah dijalankan, akan dihasilkan Application Key baru, dan menggantikan kunci lama. Application Key baru akan disimpan ke direktori penyimpanan default dengan encoding base64.
+Menjalankan perintah rotasi kunci memerlukan penentuan kunci aplikasi dari lingkungan lama. Setelah perintah dijalankan, kunci aplikasi baru akan dibuat dan menggantikan kunci lama. Kunci aplikasi baru disimpan di direktori penyimpanan default dengan pengodean base64.
 
 ```bash
-# --key-path menunjukkan file Application Key dari environment lama yang sesuai dengan data terenkripsi di database
+# --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
  yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
 
-Jika mengganti `Application Key` sub-aplikasi, perlu menambahkan parameter `--app-name`, untuk menentukan `name` sub-aplikasi
+Jika mengganti  sub-aplikasi, Anda perlu menambahkan parameter  untuk menentukan  sub-aplikasi.
 
 ```bash
  yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key

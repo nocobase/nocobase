@@ -1,18 +1,18 @@
 ---
-title: "Phát triển mở rộng File Manager"
-description: "Mở rộng component preview kiểu file, custom field attachment, logic upload, dựa trên các API như attachmentFileTypes, mime-match, v.v."
-keywords: "Mở rộng file manager,Mở rộng field attachment,Mở rộng preview file,attachmentFileTypes,NocoBase"
+title: "Phát triển tiện ích mở rộng trình quản lý tệp"
+description: "Mở rộng thành phần xem trước loại tệp, tùy chỉnh trường tệp đính kèm và logic tải lên dựa trên các API như attachmentFileTypes, mime-match."
+keywords: "tiện ích mở rộng trình quản lý tệp, tiện ích mở rộng trường tệp đính kèm, tiện ích mở rộng xem trước tệp,attachmentFileTypes,NocoBase"
 ---
 
-# Phát triển mở rộng
+# Phát triển tiện ích mở rộng
 
-## Mở rộng kiểu file frontend
+## Mở rộng loại tệp ở frontend
 
-Đối với các file đã upload xong, trên giao diện frontend có thể hiển thị nội dung preview khác nhau dựa trên các kiểu file khác nhau. Field attachment của file manager đã tích hợp preview file dựa trên trình duyệt (nhúng trong iframe), cách này hỗ trợ hầu hết các định dạng file (hình ảnh, video, audio và PDF, v.v.) trực tiếp preview trong trình duyệt. Khi định dạng file không hỗ trợ preview trên trình duyệt, hoặc có nhu cầu tương tác preview đặc biệt, có thể thực hiện thông qua việc mở rộng component preview dựa trên kiểu file.
+Đối với các tệp đã tải lên hoàn tất, giao diện frontend có thể hiển thị nội dung xem trước khác nhau dựa trên từng loại tệp. Trường tệp đính kèm của trình quản lý tệp tích hợp sẵn tính năng xem trước tệp dựa trên trình duyệt (được nhúng trong iframe). Phương thức này hỗ trợ xem trước trực tiếp trên trình duyệt đối với hầu hết các định dạng tệp (hình ảnh, video, âm thanh, PDF, v.v.). Khi định dạng tệp không được trình duyệt hỗ trợ xem trước hoặc cần tương tác xem trước đặc biệt, có thể mở rộng thành phần xem trước dựa trên loại tệp để thực hiện.
 
 ### Ví dụ
 
-Ví dụ muốn mở rộng một component carousel chuyển đổi cho file kiểu hình ảnh, có thể thực hiện theo cách code sau:
+Ví dụ, nếu muốn mở rộng một thành phần chuyển đổi dạng carousel cho các tệp hình ảnh, có thể sử dụng đoạn mã sau:
 
 ```ts
 import match from 'mime-match';
@@ -64,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Trong đó `attachmentFileTypes` là object entry được cung cấp bởi package `@nocobase/client` để mở rộng kiểu file, sử dụng method `add` của nó để mở rộng một object mô tả kiểu file.
+Trong đó `attachmentFileTypes` là đối tượng đầu vào dùng để mở rộng loại tệp do gói `@nocobase/client` cung cấp; sử dụng phương thức `add` do đối tượng này cung cấp để mở rộng một đối tượng mô tả loại tệp.
 
-Mỗi kiểu file phải implement một method `match()`, dùng để kiểm tra kiểu file có thỏa mãn yêu cầu hay không, trong ví dụ thông qua method được cung cấp bởi package `mime-match` để kiểm tra thuộc tính `mimetype` của file, nếu match kiểu `image/*`, thì coi là kiểu file cần xử lý. Nếu match không thành công, sẽ rớt xuống xử lý kiểu mặc định tích hợp sẵn.
+Mỗi loại tệp phải triển khai phương thức `match()` để kiểm tra xem loại tệp có đáp ứng yêu cầu hay không. Trong ví dụ, phương thức do gói `mime-match` cung cấp được sử dụng để kiểm tra thuộc tính `mimetype` của tệp. Nếu khớp với loại `image/*` thì tệp được xem là loại cần xử lý. Nếu không khớp, hệ thống sẽ chuyển sang phương thức xử lý loại tệp tích hợp sẵn.
 
-Thuộc tính `Previewer` trên object mô tả kiểu chính là component dùng để preview, khi kiểu file match, sẽ render component này để preview. Thông thường khuyến nghị sử dụng component dạng popup làm container cơ sở (ví dụ `<Modal />`, v.v.), rồi đặt nội dung preview và tương tác cần thiết vào component này, để thực hiện chức năng preview.
+Thuộc tính `Previewer` trên đối tượng mô tả loại tệp là thành phần dùng để xem trước. Khi loại tệp khớp, thành phần này sẽ được render để xem trước. Thông thường, nên sử dụng thành phần dạng hộp thoại làm container cơ sở (chẳng hạn như `<Modal />`), sau đó đặt nội dung xem trước và nội dung cần tương tác vào thành phần đó để triển khai chức năng xem trước.
 
 ### API
 
@@ -102,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` là một global instance, được import thông qua `@nocobase/client`:
+`attachmentFileTypes` là một instance toàn cục, được import thông qua `@nocobase/client`:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -110,34 +110,34 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Đăng ký object mô tả kiểu file mới vào registry kiểu file. Kiểu của object mô tả là `AttachmentFileType`.
+Đăng ký đối tượng mô tả loại tệp mới vào trung tâm đăng ký loại tệp. Kiểu của đối tượng mô tả là `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
 ##### `match()`
 
-Method match định dạng file.
+Phương thức khớp định dạng tệp.
 
-Tham số `file` được truyền vào là object dữ liệu của file đã upload xong, chứa các thuộc tính liên quan có thể dùng để xác định kiểu:
+Tham số `file` là đối tượng dữ liệu của tệp đã tải lên, chứa các thuộc tính liên quan có thể dùng để xác định loại:
 
-* `mimetype`: Mô tả mimetype
-* `extname`: Phần mở rộng file, bao gồm "."
-* `path`: Đường dẫn tương đối lưu trữ file
-* `url`: URL của file
+* `mimetype`: mô tả mimetype
+* `extname`: phần mở rộng tệp, bao gồm “.”
+* `path`: đường dẫn tương đối nơi tệp được lưu trữ
+* `url`: URL của tệp
 
-Giá trị trả về là kiểu `boolean`, biểu thị kết quả có match hay không.
+Giá trị trả về có kiểu `boolean`, biểu thị kết quả có khớp hay không.
 
 ##### `Previewer`
 
-React component dùng để preview file.
+Thành phần React dùng để xem trước tệp.
 
-Tham số Props được truyền vào là:
+Các tham số Props truyền vào gồm:
 
-* `index`: Index của file trong danh sách attachment
-* `list`: Danh sách attachment
-* `onSwitchIndex`: Method dùng để chuyển đổi index
+* `index`: chỉ mục của tệp trong danh sách tệp đính kèm
+* `list`: danh sách tệp đính kèm
+* `onSwitchIndex`: phương thức dùng để chuyển đổi chỉ mục
 
-Trong đó `onSwitchIndex` có thể truyền vào một giá trị index bất kỳ trong list, dùng để chuyển sang file khác. Nếu sử dụng `null` làm tham số chuyển, thì sẽ đóng trực tiếp component preview.
+Trong đó, `onSwitchIndex` có thể nhận bất kỳ giá trị chỉ mục nào trong list để chuyển sang tệp khác. Nếu sử dụng `null` làm tham số chuyển đổi, thành phần xem trước sẽ được đóng trực tiếp.
 
 ```ts
 onSwitchIndex(null);

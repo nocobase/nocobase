@@ -1,51 +1,113 @@
 ---
 title: "Database Eksternal"
-description: "Menambahkan MySQL/MariaDB/PostgreSQL/MSSQL/Oracle eksternal sebagai data source, sinkronisasi Collection, konfigurasi field, pembuatan field relasi, koneksi read-only ke database yang sudah ada."
-keywords: "database eksternal,MySQL,PostgreSQL,MSSQL,Oracle,sinkronisasi Collection,field relasi,NocoBase"
+description: "Database eksternal NocoBase: menghubungkan database MySQL/PostgreSQL/MariaDB/KingbaseES/OceanBase/MSSQL/Oracle/ClickHouse/Doris yang sudah ada, membaca struktur tabel data, mengonfigurasi pemetaan field dan field relasi."
+keywords: "database eksternal,MySQL,PostgreSQL,MariaDB,KingbaseES,OceanBase,MSSQL,Oracle,ClickHouse,Doris,sinkronisasi tabel data,pemetaan field,NocoBase"
 ---
 
 # Database Eksternal
 
-## Pengantar
+## Pengenalan
 
-Menggunakan database eksternal yang sudah ada sebagai data source. Database eksternal yang saat ini didukung meliputi MySQL, MariaDB, PostgreSQL, MSSQL, Oracle.
+Database eksternal digunakan untuk menghubungkan database bisnis yang sudah ada ke NocoBase, membaca tabel data, field, dan view dari database eksternal, sehingga tabel-tabel tersebut dapat digunakan di blok halaman, izin, workflow, dan API.
 
-## Petunjuk Penggunaan
+Berbeda dengan [database utama](../data-source-main/index.md), struktur tabel database eksternal dikelola oleh sistem asal atau klien database. NocoBase bertanggung jawab membaca struktur tabel dan view, dan tidak akan mengubah struktur tabel sebenarnya pada database eksternal.
 
-### Menambahkan Database Eksternal
+Versi database dan edisi komersial yang didukung oleh database eksternal adalah sebagai berikut:
 
-Setelah plugin diaktifkan, Anda dapat memilih dan menambahkannya melalui dropdown Add new pada manajemen data source.
+| Database | Versi yang didukung | Edisi Komunitas | Edisi Standar | Edisi Profesional | Edisi Enterprise |
+| --- | --- | --- | --- | --- | --- |
+| MySQL | >= 5.7 | ❌ | ✅ | ✅ | ✅ |
+| PostgreSQL | >= 9.5 | ❌ | ✅ | ✅ | ✅ |
+| MariaDB | >= 10.3 | ❌ | ✅ | ✅ | ✅ |
+| MSSQL | 2014-2019 | ❌ | ✅ | ✅ | ✅ |
+| KingbaseES | >=V9 | ❌ | ❌ | ✅ | ✅ |
+| OceanBase | >=4.3 | ❌ | ❌ | ❌ | ✅ |
+| Oracle | >= 11g | ❌ | ❌ | ❌ | ✅ |
+| ClickHouse | >= 20.2 | ❌ | ❌ | ❌ | ✅ |
+| Doris | >= 2.1.0 | ❌ | ❌ | ❌ | ✅ |
+
+:::tip Catatan
+
+KingbaseES hanya mendukung mode kompatibilitas PostgreSQL, sedangkan OceanBase, ClickHouse, dan Doris hanya mendukung mode kompatibilitas MySQL.
+
+:::
+
+Skenario penggunaan database eksternal:
+
+- Menghubungkan database sistem bisnis yang sudah ada (seperti ERP lama, MES, atau WMS), lalu memanfaatkan kemampuan NocoBase untuk membangun antarmuka manajemen, kontrol izin, workflow, dan laporan dengan cepat tanpa mengubah struktur tabel database asal.
+- Menambahkan kemampuan aplikasi ringan ke sistem yang sudah ada, seperti persetujuan, koreksi data, penanganan pengecualian, dan dasbor operasional, tanpa perlu mengganti sistem asal.
+- Melakukan kueri hanya-baca, analisis statistik, atau menampilkan BI dari database yang sudah ada untuk mengurangi ketergantungan pada halaman sistem bisnis asal.
+- Memigrasikan sistem lama secara bertahap: menghubungkan database lama ke NocoBase terlebih dahulu agar tetap dapat digunakan, lalu secara bertahap menyimpan data bisnis baru di database utama.
+- Struktur database tetap dikelola oleh DBA, skrip migrasi, atau sistem bisnis asal, sementara NocoBase hanya bertanggung jawab membaca struktur, mengonfigurasi antarmuka, dan menggunakan data.
+
+:::warning Perhatian
+
+Database eksternal bukan database sistem NocoBase. NocoBase tidak mengambil alih pencadangan, pemulihan, migrasi, atau struktur tabel database eksternal. Semua hal tersebut tetap harus dikelola di database eksternal.
+
+:::
+
+## Instalasi plugin
+
+Database eksternal disediakan oleh plugin sumber data yang sesuai. Setelah plugin diinstal dan diaktifkan, jenis database yang sesuai dapat dipilih dari menu 「Add new」 di 「Manajemen sumber data」.
+
+| Database | Plugin terkait | Metode instalasi |
+| --- | --- | --- |
+| MySQL | `@nocobase/plugin-data-source-external-mysql` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| PostgreSQL | `@nocobase/plugin-data-source-external-postgres` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| MariaDB | `@nocobase/plugin-data-source-external-mariadb` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| KingbaseES | `@nocobase/plugin-data-source-kingbase` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| OceanBase | `@nocobase/plugin-data-source-oceanbase` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| MSSQL | `@nocobase/plugin-data-source-external-mssql` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| Oracle | `@nocobase/plugin-data-source-external-oracle` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| ClickHouse | `@nocobase/plugin-data-source-external-clickhouse` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+| Doris | `@nocobase/plugin-data-source-external-doris` | Memerlukan lisensi komersial. Gunakan setelah plugin diinstal dan diaktifkan. |
+
+![add_new_database](https://static-docs.nocobase.com/add_new_database.png)
+
+Jika jenis database yang dituju tidak ada di menu 「Add new」, biasanya perlu memastikan hal-hal berikut terlebih dahulu:
+
+- Apakah plugin terkait sudah diinstal
+- Apakah plugin sudah diaktifkan
+- Apakah lisensi komersial saat ini mencakup plugin tersebut
+- Apakah pengguna saat ini memiliki izin untuk mengelola sumber data
+
+
+## Panduan penggunaan
+
+### Menambahkan database eksternal
+
+Setelah plugin diaktifkan, database dapat dipilih dan ditambahkan dari menu tarik-turun Add new di manajemen sumber data.
 
 ![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
 
-Isi informasi database yang akan diintegrasikan
+Isi informasi database yang ingin dihubungkan
 
 ![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
 
-### Sinkronisasi Collection
+### Sinkronisasi tabel data
 
-Setelah database eksternal terhubung, semua Collection di data source akan langsung dibaca. Database eksternal tidak mendukung penambahan Collection langsung atau modifikasi struktur tabel. Jika perlu modifikasi, dapat dioperasikan melalui database client, lalu klik tombol "Refresh" di antarmuka untuk sinkronisasi.
+Setelah koneksi ke database eksternal dibuat, semua tabel data di sumber data akan langsung dibaca. Database eksternal tidak mendukung penambahan tabel data atau perubahan struktur tabel secara langsung. Jika perlu melakukan perubahan, gunakan klien database, lalu klik tombol 「Refresh」 di antarmuka untuk menyinkronkannya.
 
 ![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
 
-### Konfigurasi Field
+### Konfigurasi field
 
-Database eksternal akan otomatis membaca field dari Collection yang sudah ada, dan menampilkannya. Anda dapat dengan cepat melihat dan mengonfigurasi judul field, tipe data (Field type), dan tipe UI (Field interface). Anda juga dapat mengklik tombol "Edit" untuk mengubah konfigurasi lebih lanjut.
+Database eksternal akan secara otomatis membaca field dari tabel data yang sudah ada dan menampilkannya. Anda dapat dengan cepat melihat dan mengonfigurasi judul field, tipe data (Field type), dan tipe UI (Field interface), atau mengeklik tombol 「Edit」 untuk mengubah konfigurasi lainnya.
 
 ![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
 
-Karena database eksternal tidak mendukung modifikasi struktur tabel, saat menambahkan field, hanya tipe field relasi yang dapat dipilih. Field relasi bukanlah field aktual, melainkan digunakan untuk membangun koneksi antar Collection.
+Karena database eksternal tidak mendukung perubahan struktur tabel, saat menambahkan field, hanya tipe yang tersedia adalah field relasi. Field relasi bukanlah field sebenarnya, melainkan digunakan untuk membuat hubungan antara tabel.
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-Untuk lebih lanjut, lihat bagian [Field Collection / Ikhtisar](/data-sources/data-modeling/collection-fields).
+Lihat bab [Field tabel data / Ikhtisar](../data-modeling/collection-fields/index.md) untuk informasi selengkapnya.
 
-### Pemetaan Tipe Field
+### Pemetaan tipe field
 
-NocoBase akan otomatis memetakan tipe data (Field type) dan tipe UI (Field Interface) yang sesuai untuk tipe field database eksternal.
+NocoBase akan secara otomatis memetakan tipe field database eksternal ke tipe data (Field type) dan tipe UI (Field Interface) yang sesuai.
 
-- Tipe Data (Field type): Digunakan untuk mendefinisikan jenis, format, dan struktur data yang dapat disimpan field;
-- Tipe UI (Field interface): Mengacu pada tipe kontrol yang digunakan untuk menampilkan dan menginput nilai field di antarmuka pengguna.
+- Tipe data (Field type): digunakan untuk menentukan jenis, format, dan struktur data yang dapat disimpan oleh field;
+- Tipe UI (Field interface): mengacu pada tipe kontrol yang digunakan untuk menampilkan dan memasukkan nilai field di antarmuka pengguna.
 
 | PostgreSQL | MySQL/MariaDB | NocoBase Data Type | NocoBase Interface Type |
 | - | - | - | - |
@@ -69,24 +131,23 @@ NocoBase akan otomatis memetakan tipe data (Field type) dan tipe UI (Field Inter
 | POLYGON<br/>GEOMETRY(POLYGON) | POLYGON | polygon | json<br/>polygon |
 | GEOMETRY | GEOMETRY |  -  |  -  |
 | BLOB | BLOB | blob |  -  |
-| ENUM | ENUM | enum | select<br/>radioGroup |
 | ARRAY |  -  | array | multipleSelect<br/>checkboxGroup |
 | BIT | BIT | - | - |
 | SET | SET | set | multipleSelect<br/>checkboxGroup |
 | RANGE | - | - | - |
 
-### Tipe Field yang Tidak Didukung
+### Tipe field yang tidak didukung
 
-Tipe field yang tidak didukung akan ditampilkan secara terpisah. Field-field ini perlu dikembangkan adaptasinya sebelum dapat digunakan.
+Tipe field yang tidak didukung akan ditampilkan secara terpisah. Field tersebut baru dapat digunakan setelah dilakukan penyesuaian oleh pengembang.
 
 ![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
 
-### Filter Target Key
+### Identifikasi unik record
 
-Collection yang digunakan sebagai tampilan block harus mengonfigurasi Filter target key. Filter target key mengacu pada filter data berdasarkan field tertentu, dan nilai field harus memiliki keunikan. Filter target key secara default adalah field Primary Key Collection. Jika Collection adalah view atau Collection tanpa Primary Key, atau Collection dengan Primary Key gabungan, perlu mengkustomisasi filter target key.
+Tabel data yang digunakan untuk ditampilkan sebagai blok harus memiliki 「identifikasi unik record」(Record unique key). Identifikasi unik record digunakan untuk menemukan satu record di blok halaman, biasanya berupa primary key atau field unik.
 
-![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
+Untuk view, tabel tanpa primary key, atau tabel dengan primary key gabungan, 「Record unique key」 harus diatur secara manual dalam konfigurasi tabel data. Jika tidak ada identifikasi unik yang tersedia, blok halaman mungkin tidak dapat dibuat dengan benar, atau record tidak dapat dilihat maupun diedit. Penjelasan selengkapnya dapat dilihat di [Database utama / Mengedit tabel data](../main/index.md).
 
-Hanya Collection yang sudah diatur filter target key-nya yang dapat ditambahkan ke halaman
+![edit_collection](https://static-docs.nocobase.com/edit_collection.png)
 
-![20240507222827](https://static-docs.nocobase.com/20240507222827.png)
+![edit_collection_configure](https://static-docs.nocobase.com/edit_collection_configure.png)

@@ -72,6 +72,12 @@ interface LinkageRule {
   }[];
 }
 
+export function updateLinkageRules<T>(rules: T[], updater: (nextRules: T[]) => void): T[] {
+  const nextRules = _.cloneDeep(rules);
+  updater(nextRules);
+  return nextRules;
+}
+
 const previewValueForLog = (value: any) => {
   if (value == null) return value;
   const t = typeof value;
@@ -658,6 +664,30 @@ export const linkageSetBlockProps = defineAction({
   },
 });
 
+const ACTION_LINKAGE_STATE_OPTIONS = [
+  { label: 'Visible', value: 'visible' },
+  { label: 'Hidden', value: 'hidden' },
+  { label: 'Hidden text', value: 'hiddenText' },
+  { label: 'Enabled', value: 'enabled' },
+  { label: 'Disabled', value: 'disabled' },
+] as const;
+
+type ActionLinkageState = (typeof ACTION_LINKAGE_STATE_OPTIONS)[number]['value'];
+
+export function getActionLinkageStateOptions(
+  model: { supportedActionLinkageStates?: readonly ActionLinkageState[] },
+  t: (key: string) => string,
+) {
+  const supportedStates = model.supportedActionLinkageStates ? new Set(model.supportedActionLinkageStates) : undefined;
+
+  return ACTION_LINKAGE_STATE_OPTIONS.filter((option) => !supportedStates || supportedStates.has(option.value)).map(
+    (option) => ({
+      label: t(option.label),
+      value: option.value,
+    }),
+  );
+}
+
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
   title: tExpr('Set button state'),
@@ -678,13 +708,7 @@ export const linkageSetActionProps = defineAction({
             onChange={onChange}
             placeholder={t('Please select state')}
             style={{ width: '100%' }}
-            options={[
-              { label: t('Visible'), value: 'visible' },
-              { label: t('Hidden'), value: 'hidden' },
-              { label: t('Hidden text'), value: 'hiddenText' },
-              { label: t('Enabled'), value: 'enabled' },
-              { label: t('Disabled'), value: 'disabled' },
-            ]}
+            options={getActionLinkageStateOptions(ctx.model, t)}
             allowClear
           />
         );
@@ -1469,12 +1493,25 @@ async function resolveLinkageRulesParamsPreservingRunJsScripts(ctx: FlowContext,
 }
 
 const LinkageRulesUI = observer(
-  (props: { readonly value: LinkageRule[]; supportedActions: string[]; title?: string }) => {
-    const { value: rules, supportedActions } = props;
+  (props: {
+    readonly value: LinkageRule[];
+    onChange?: (value: LinkageRule[]) => void;
+    supportedActions: string[];
+    title?: string;
+  }) => {
+    const { value: rules = [], onChange, supportedActions } = props;
     const ctx = useFlowContext();
     const flowEngine = useFlowEngine();
     const t = ctx.model.translate.bind(ctx.model);
     const assignPriorityTip = t('Assignment takes precedence over form field assignment');
+
+    const replaceRules = (updater: (nextRules: LinkageRule[]) => void) => {
+      if (onChange) {
+        onChange(updateLinkageRules(rules, updater));
+      } else {
+        updater(rules);
+      }
+    };
 
     // 创建新规则的默认值
     const createNewRule = (): LinkageRule => ({
@@ -1492,7 +1529,7 @@ const LinkageRulesUI = observer(
 
     // 删除规则
     const handleDeleteRule = (index: number) => {
-      rules.splice(index, 1);
+      replaceRules((nextRules) => nextRules.splice(index, 1));
     };
 
     // 上移规则
@@ -1531,7 +1568,9 @@ const LinkageRulesUI = observer(
 
     // 切换规则启用状态
     const handleToggleEnable = (index: number, enable: boolean) => {
-      rules[index].enable = enable;
+      replaceRules((nextRules) => {
+        nextRules[index].enable = enable;
+      });
     };
 
     // 获取可用的动作类型
@@ -2174,17 +2213,30 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
               }
             : props;
 
-        // 存储原始值，用于恢复
-        if (!model.__originalProps) {
-          model.__originalProps = {
-            hiddenModel: model.hidden,
-            hiddenText: undefined,
-            disabled: undefined,
-            required: undefined,
-            hidden: undefined,
-            ...model.props,
-          };
-        }
+        // 只记录联动实际控制的属性，避免恢复状态时覆盖标题等无关的最新配置。
+        const originalProps = model.__originalProps || (model.__originalProps = {});
+        const rememberOriginalProp = (key: string, value: unknown) => {
+          if (!Object.prototype.hasOwnProperty.call(originalProps, key)) {
+            originalProps[key] = value;
+          }
+        };
+        Object.keys(normalizedProps || {}).forEach((key) => {
+          if (key === 'hiddenModel') {
+            rememberOriginalProp(
+              key,
+              Object.prototype.hasOwnProperty.call(model.props || {}, key) ? model.props?.[key] : model.hidden,
+            );
+            return;
+          }
+
+          rememberOriginalProp(key, model.props?.[key]);
+          if (key === 'hiddenText' && normalizedProps[key]) {
+            rememberOriginalProp('title', model.props?.title);
+          }
+          if (key === 'required') {
+            rememberOriginalProp('rules', model.props?.rules);
+          }
+        });
 
         // 临时存起来，遍历完所有规则后，再统一处理
         patchPropsByModel.set(model, {
@@ -2242,7 +2294,6 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     const newProps = { ...model.__originalProps, ...patchProps };
     const prevHidden = !!model.hidden;
     const nextHidden = !!newProps.hiddenModel;
-
     model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText', LINKAGE_ASSIGN_MODE_PROP]));
     syncFieldOptionsToForks(model, patchProps);
     if (typeof model.setHidden === 'function') {

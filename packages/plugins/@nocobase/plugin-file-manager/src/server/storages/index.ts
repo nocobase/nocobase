@@ -36,7 +36,14 @@ export interface AttachmentModel {
   mimetype?: string;
   path: string;
   url?: string;
-  storageId: number;
+  storageId?: number | null;
+  source?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+    field?: string;
+    documentCache?: boolean;
+    trustworthy?: boolean;
+  };
 }
 
 export abstract class StorageType {

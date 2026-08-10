@@ -37,7 +37,17 @@
   },
   {
     "type": "custom-link",
+    "label": "Multiportal",
+    "link": "/multi-app/multi-portal/"
+  },
+  {
+    "type": "custom-link",
     "label": "Multi-space",
     "link": "/multi-app/multi-space/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Multiaplicação vs Multiportal vs Multi-space",
+    "link": "/multi-app/multi-app-vs-multi-portal-vs-multi-space"
   }
 ]

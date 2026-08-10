@@ -10,23 +10,20 @@
 import React from 'react';
 import { Input } from 'antd';
 import { define, observable } from '@formily/reactive';
-import {
-  FlowModelRenderer,
-  FormItem,
-  VariableInput,
-  tExpr,
-  isVariableExpression,
-  parseValueToPath,
-  isRunJSValue,
-  EditableItemModel,
-  jioToJoiSchema,
-} from '@nocobase/flow-engine';
+import { FlowModelRenderer, FormItem, tExpr, EditableItemModel, jioToJoiSchema } from '@nocobase/flow-engine';
 // 无需类型导入（避免未使用的类型）
 import { FormItemModel } from '../form/FormItemModel';
 import { EditFormModel } from '../form/EditFormModel';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
 import { RunJSValueEditor } from '../../../components/RunJSValueEditor';
+import {
+  DEFAULT_DATE_VARIABLE_COMPONENT_PROPS,
+  FieldValueVariableInput,
+  getFieldInterface,
+  isDateLikeField,
+  resolveDateVariableComponentProps,
+} from '../../../components/field-value-variable';
 
 type AssignFormTempOriginField = {
   uid?: string;
@@ -285,7 +282,9 @@ export class AssignFormItemModel extends FormItemModel {
         ) : null;
       };
 
-      const NullComponent: React.FC = () => <Input placeholder={'<Null>'} readOnly style={{ width: '100%' }} />;
+      const NullComponent: React.FC = () => (
+        <Input placeholder={`<${this.context.t?.('Null') ?? 'Null'}>`} readOnly style={{ width: '100%' }} />
+      );
 
       const RunJSComponent: React.FC<any> = (inputProps: any) => {
         return (
@@ -298,45 +297,17 @@ export class AssignFormItemModel extends FormItemModel {
         );
       };
 
-      const converters = {
-        renderInputComponent: (meta: any) => {
-          const firstPath = meta?.paths?.[0];
-          if (firstPath === 'constant') return ConstantValueEditor as any;
-          if (firstPath === 'null') return NullComponent as any;
-          if (firstPath === 'runjs') return RunJSComponent as any;
-          return undefined;
-        },
-        resolveValueFromPath: (item: any) => {
-          const firstPath = item?.paths?.[0];
-          if (firstPath === 'constant') return '';
-          if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v2' };
-          return undefined;
-        },
-        resolvePathFromValue: (currentValue: any) => {
-          if (currentValue === null) return ['null'];
-          if (isRunJSValue(currentValue)) return ['runjs'];
-          return isVariableExpression(currentValue) ? parseValueToPath(currentValue) : ['constant'];
-        },
-      } as any;
-
-      // 合并变量树：在最前面追加“常量/空值”两个选项
-      const mergedMetaTree = async () => {
+      const baseMetaTree = async () => {
         const getTree = (this.context as any)?.getPropertyMetaTree;
-        const base: any[] = typeof getTree === 'function' ? await getTree() : [];
-        return [
-          {
-            title: tExpr('Constant'),
-            name: 'constant',
-            type: 'string',
-            paths: ['constant'],
-            render: ConstantValueEditor,
-          },
-          { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-          { title: tExpr('RunJS'), name: 'runjs', type: 'object', paths: ['runjs'], render: RunJSComponent },
-          ...base,
-        ];
+        return typeof getTree === 'function' ? await getTree() : [];
       };
+
+      const targetCollectionField = collection?.getField?.(this.fieldPath);
+      const targetFieldInterface = getFieldInterface(targetCollectionField);
+      const dateLike = isDateLikeField(targetCollectionField, this.fieldPath?.split('.').slice(-1)[0]);
+      const dateComponentProps = dateLike
+        ? resolveDateVariableComponentProps(targetCollectionField, targetFieldInterface)
+        : DEFAULT_DATE_VARIABLE_COMPONENT_PROPS;
 
       // 计算 label：优先使用配置中的 label，其次集合字段标题，最后回退字段路径
       let labelText = this.props?.label ?? this.fieldPath ?? '';
@@ -357,14 +328,18 @@ export class AssignFormItemModel extends FormItemModel {
             const formValue = formBindingProps?.__assign_value__;
             const mergedValue = typeof formValue === 'undefined' ? this.assignValue : formValue;
             return (
-              <VariableInput
+              <FieldValueVariableInput
                 value={mergedValue}
-                onChange={(v: any) => {
+                onChange={(v) => {
                   this.assignValue = v;
                   formBindingProps?.__assign_trigger__?.(v);
                 }}
-                metaTree={mergedMetaTree}
-                converters={converters}
+                baseMetaTree={baseMetaTree}
+                constantComponent={ConstantValueEditor}
+                nullComponent={NullComponent}
+                runJSComponent={RunJSComponent}
+                isDateLikeField={dateLike}
+                dateComponentProps={dateComponentProps}
                 clearValue={''}
               />
             );

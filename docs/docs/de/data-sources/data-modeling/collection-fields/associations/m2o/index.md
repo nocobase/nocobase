@@ -1,38 +1,45 @@
-# Viele-zu-Eins
+---
+title: "Viele-zu-eins"
+description: "Viele-zu-eins-Beziehungsfeld (M2O): Mehrere Entitäten werden mit derselben übergeordneten Entität verknüpft, z. B. Schüler und Klasse."
+keywords: "Viele-zu-eins,M2O,BelongsTo,Beziehung,NocoBase"
+---
 
-Stellen Sie sich eine Bibliotheksdatenbank mit zwei Entitäten vor: Büchern und Autoren. Ein Autor kann mehrere Bücher schreiben, aber jedes Buch hat (meistens) nur einen Autor. In diesem Fall besteht eine Viele-zu-Eins-Beziehung zwischen Autoren und Büchern. Mehrere Bücher können demselben Autor zugeordnet sein, aber jedes Buch kann nur einen Autor haben.
 
-ER-Diagramm:
+# Viele-zu-eins
 
-![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
+Eine Bibliotheksdatenbank mit zwei Entitäten: Bücher und Autoren. Ein Autor kann mehrere Bücher schreiben, aber jedes Buch hat (in den meisten Fällen) nur einen Autor. In diesem Fall besteht zwischen Autoren und Büchern eine Viele-zu-eins-Beziehung. Mehrere Bücher können mit demselben Autor verknüpft werden, aber jedes Buch kann nur einen Autor haben.
 
-Feldkonfiguration:
+Die ER-Beziehung sieht wie folgt aus:
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
+![Alternativtext](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
+
+Feldkonfiguration
+
+![Alternativtext](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## Parameterbeschreibung
 
-### Quell-Sammlung
+### Quellsammlung
 
-Die Quell-Sammlung ist die Sammlung, in der sich das aktuelle Feld befindet.
+Die Quelltabelle, also die Tabelle, in der sich das aktuelle Feld befindet.
 
-### Ziel-Sammlung
+### Zielsammlung
 
-Die Ziel-Sammlung ist die Sammlung, mit der die Verknüpfung hergestellt wird.
+Die Zieltabelle, mit der die Verknüpfung hergestellt wird.
 
 ### Fremdschlüssel
 
-Das Feld in der Quell-Sammlung, das verwendet wird, um die Verknüpfung zwischen den beiden Sammlungen herzustellen.
+Das Feld der Quelltabelle, das zum Herstellen der Verknüpfung zwischen den beiden Tabellen verwendet wird.
 
 ### Zielschlüssel
 
-Das Feld in der Ziel-Sammlung, auf das der Fremdschlüssel verweist. Es muss eindeutig sein.
+Das Feld, auf das die Fremdschlüsselbeschränkung verweist. Es muss eindeutig sein.
 
 ### ON DELETE
 
-ON DELETE bezieht sich auf die Regeln, die auf Fremdschlüsselreferenzen in verknüpften Kind-Sammlungen angewendet werden, wenn Datensätze in der Eltern-Sammlung gelöscht werden. Es ist eine Option, die beim Definieren einer Fremdschlüssel-Einschränkung verwendet wird. Gängige ON DELETE-Optionen sind:
+ON DELETE bezeichnet die Regel für den Umgang mit Fremdschlüsselverweisen in der untergeordneten Tabelle, wenn ein Datensatz in der übergeordneten Tabelle gelöscht wird. Diese Option wird beim Definieren von Fremdschlüsselbeschränkungen verwendet. Zu den gängigen ON-DELETE-Optionen gehören:
 
-- **CASCADE**: Wenn ein Datensatz in der Eltern-Sammlung gelöscht wird, werden alle verknüpften Datensätze in der Kind-Sammlung automatisch ebenfalls gelöscht.
-- **SET NULL**: Wenn ein Datensatz in der Eltern-Sammlung gelöscht wird, werden die Fremdschlüsselwerte in den verknüpften Datensätzen der Kind-Sammlung auf NULL gesetzt.
-- **RESTRICT**: Dies ist die Standardoption. Sie verhindert das Löschen eines Datensatzes in der Eltern-Sammlung, wenn verknüpfte Datensätze in der Kind-Sammlung existieren.
-- **NO ACTION**: Ähnlich wie RESTRICT verhindert diese Option das Löschen eines Datensatzes in der Eltern-Sammlung, wenn verknüpfte Datensätze in der Kind-Sammlung vorhanden sind.
+- CASCADE: Beim Löschen eines Datensatzes in der übergeordneten Tabelle werden automatisch alle damit verknüpften Datensätze in der untergeordneten Tabelle gelöscht.
+- SET NULL: Beim Löschen eines Datensatzes in der übergeordneten Tabelle wird der entsprechende Fremdschlüsselwert in der untergeordneten Tabelle auf NULL gesetzt.
+- RESTRICT: Die Standardoption. Wenn beim Versuch, einen Datensatz in der übergeordneten Tabelle zu löschen, verknüpfte Datensätze in der untergeordneten Tabelle vorhanden sind, wird das Löschen des Datensatzes in der übergeordneten Tabelle abgelehnt.
+- NO ACTION: Ähnlich wie RESTRICT. Wenn verknüpfte Datensätze in der untergeordneten Tabelle vorhanden sind, wird das Löschen des Datensatzes in der übergeordneten Tabelle abgelehnt.

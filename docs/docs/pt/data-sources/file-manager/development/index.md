@@ -1,12 +1,18 @@
-# Desenvolvimento de Extensões
+---
+title: "Desenvolvimento de extensões do gerenciador de arquivos"
+description: "Extensão de componentes de visualização de tipos de arquivo, campos de anexos personalizados e lógica de upload, com base nas APIs attachmentFileTypes, mime-match e outras."
+keywords: "extensão do gerenciador de arquivos, extensão de campo de anexo, extensão de visualização de arquivos,attachmentFileTypes,NocoBase"
+---
 
-## Estendendo Tipos de Arquivo no Frontend
+# Desenvolvimento de extensões
 
-Para arquivos já carregados, a interface do usuário (UI) no frontend pode exibir diferentes pré-visualizações com base nos tipos de arquivo. O campo de anexo do gerenciador de arquivos possui uma pré-visualização de arquivo integrada baseada no navegador (embutida em um iframe), que suporta a maioria dos formatos de arquivo (como imagens, vídeos, áudios e PDFs) para visualização direta. Quando um tipo de arquivo não é suportado para pré-visualização no navegador, ou quando há necessidade de uma interação de pré-visualização especial, você pode estender os componentes de pré-visualização com base no tipo de arquivo.
+## Tipos de arquivo no frontend da extensão
+
+Para arquivos que já foram enviados, é possível exibir diferentes conteúdos de visualização na interface do frontend com base nos diferentes tipos de arquivo. O campo de anexos do gerenciador de arquivos já inclui a visualização baseada no navegador (incorporada em um iframe), que oferece suporte à visualização direta no navegador da maioria dos formatos de arquivo (imagens, vídeos, áudios e PDFs, entre outros). Quando o formato do arquivo não é compatível com a visualização do navegador ou quando são necessárias interações especiais de visualização, é possível implementar isso estendendo componentes de visualização com base no tipo de arquivo.
 
 ### Exemplo
 
-Por exemplo, se você quiser estender um componente de carrossel para arquivos de imagem, pode usar o seguinte código:
+Por exemplo, para adicionar um componente de carrossel a arquivos do tipo imagem, isso pode ser feito usando o código a seguir:
 
 ```ts
 import match from 'mime-match';
@@ -58,11 +64,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-O `attachmentFileTypes` é um objeto de entrada fornecido pelo pacote `@nocobase/client` para estender tipos de arquivo. Você pode usar o método `add` dele para estender um descritor de tipo de arquivo.
+Nesse código, `attachmentFileTypes` é o objeto de entrada para a extensão de tipos de arquivo fornecido pelo pacote `@nocobase/client`. O método `add` fornecido por ele é usado para estender um objeto de descrição de tipo de arquivo.
 
-Cada tipo de arquivo deve implementar um método `match()` para verificar se o tipo de arquivo atende aos requisitos. No exemplo, o pacote `mime-match` é usado para verificar o atributo `mimetype` do arquivo. Se ele corresponder a `image/*`, é considerado um tipo de arquivo que precisa ser processado. Se não houver correspondência, ele retornará ao tratamento de tipo integrado.
+Cada tipo de arquivo deve implementar um método `match()`, usado para verificar se o tipo de arquivo atende aos requisitos. No exemplo, o método fornecido pelo pacote `mime-match` é usado para verificar a propriedade `mimetype` do arquivo. Se ela corresponder ao tipo `image/*`, o arquivo será considerado um tipo que precisa ser processado. Se não houver correspondência, será usado o tratamento de tipo integrado como alternativa.
 
-A propriedade `Previewer` no descritor de tipo é o componente usado para pré-visualização. Quando o tipo de arquivo corresponde, este componente será renderizado para a pré-visualização. Geralmente, é recomendado usar um componente modal (como `<Modal />`) como contêiner base e colocar o conteúdo de pré-visualização e interação dentro desse componente para implementar a funcionalidade de pré-visualização.
+A propriedade `Previewer` no objeto de descrição do tipo é o componente usado para a visualização. Quando o tipo de arquivo corresponder, esse componente será renderizado para realizar a visualização. Em geral, recomenda-se usar um componente do tipo janela modal como contêiner básico (como `<Modal />`, entre outros) e inserir nele o conteúdo de visualização e as interações necessárias para implementar a funcionalidade.
 
 ### API
 
@@ -96,7 +102,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` é uma instância global, importada do pacote `@nocobase/client`:
+`attachmentFileTypes` é uma instância global, importada por meio de `@nocobase/client`:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -104,34 +110,34 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Registra um novo descritor de tipo de arquivo no registro de tipos de arquivo. O tipo do descritor é `AttachmentFileType`.
+Registra um novo objeto de descrição de tipo de arquivo no registro de tipos de arquivo. O tipo do objeto de descrição é `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
 ##### `match()`
 
-Um método para corresponder formatos de arquivo.
+Método de correspondência de formatos de arquivo.
 
-O parâmetro `file` é um objeto de dados para o arquivo carregado, contendo propriedades que podem ser usadas para verificação de tipo:
+O parâmetro `file` recebe o objeto de dados do arquivo enviado, que contém propriedades relevantes para determinar o tipo:
 
-*   `mimetype`: O mimetype do arquivo.
-*   `extname`: A extensão do arquivo, incluindo o `.`.
-*   `path`: O caminho de armazenamento relativo do arquivo.
-*   `url`: A URL do arquivo.
+* `mimetype`: descrição do mimetype
+* `extname`: extensão do arquivo, incluindo “.”
+* `path`: caminho relativo de armazenamento do arquivo
+* `url`: URL do arquivo
 
-Retorna um valor booleano indicando se o arquivo corresponde.
+O valor de retorno é do tipo `boolean` e indica se houve correspondência.
 
 ##### `Previewer`
 
-Um componente React para pré-visualizar o arquivo.
+Componente React usado para visualizar o arquivo.
 
-Parâmetros de Props:
+Os parâmetros de Props são:
 
-*   `index`: O índice do arquivo na lista de anexos.
-*   `list`: A lista de anexos.
-*   `onSwitchIndex`: Uma função para alternar o arquivo pré-visualizado pelo seu índice.
+* `index`: índice do arquivo na lista de anexos
+* `list`: lista de anexos
+* `onSwitchIndex`: método usado para alterar o índice
 
-A função `onSwitchIndex` pode ser chamada com qualquer índice da `list` para alternar para outro arquivo. Chamá-la com `null` fecha o componente de pré-visualização.
+Em `onSwitchIndex`, pode ser informado qualquer índice da lista para alternar para outro arquivo. Se `null` for usado como parâmetro de alternância, o componente de visualização será fechado diretamente.
 
 ```ts
 onSwitchIndex(null);

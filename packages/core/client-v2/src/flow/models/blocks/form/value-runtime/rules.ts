@@ -8,7 +8,14 @@
  */
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
-import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue, runjsWithSafeGlobals } from '@nocobase/flow-engine';
+import {
+  FlowContext,
+  FlowModel,
+  isRunJSValue,
+  normalizeRunJSValue,
+  runjsWithSafeGlobals,
+  type ResolveJsonTemplateOptions,
+} from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
@@ -49,6 +56,7 @@ type RuntimeRule = {
   getValue: () => any;
   getCondition?: () => any;
   getContext: () => any;
+  getContractModelUid?: () => string | undefined;
 };
 
 type ObservableBinding = {
@@ -83,8 +91,18 @@ type ToManyAggregateSourceInfo = {
   lastWrite?: FormValueWriteMeta;
 };
 
+type RuntimeItemChain = {
+  index?: number;
+  length?: number;
+  __is_new__?: boolean;
+  __is_stored__?: boolean;
+  value: unknown;
+  parentItem?: RuntimeItemChain;
+};
+
 export type RuleEngineOptions = {
   getBlockModelUid: () => string;
+  getAssignRulesModelUid: () => string | undefined;
   getActionName: () => string | undefined;
   getBlockContext: () => any;
   getEngine: () => any;
@@ -208,6 +226,7 @@ export class RuleEngine {
         getValue: () => template?.value,
         getCondition: () => template?.condition,
         getContext: () => this.options.getBlockContext(),
+        getContractModelUid: this.options.getAssignRulesModelUid,
       };
 
       this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -545,6 +564,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => this.options.getBlockContext(),
+          getContractModelUid: this.options.getAssignRulesModelUid,
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -913,6 +933,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => model?.context,
+          getContractModelUid: this.options.getAssignRulesModelUid,
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -1662,7 +1683,7 @@ export class RuleEngine {
       }
     }
 
-    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector, targetNamePath);
+    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector, targetNamePath, rule.getContractModelUid?.());
     return { collector, evalCtx, rawValue, isRunJS };
   }
 
@@ -2001,7 +2022,12 @@ export class RuleEngine {
     return canOverwrite;
   }
 
-  private createRuleEvaluationContext(baseCtx: any, collector: DepCollector, targetNamePath: NamePath | null) {
+  private createRuleEvaluationContext(
+    baseCtx: any,
+    collector: DepCollector,
+    targetNamePath: NamePath | null,
+    contractModelUid?: string,
+  ) {
     const trackingFormValues = this.options.createTrackingFormValues(collector);
     const ctx: any = new FlowContext();
     try {
@@ -2021,12 +2047,19 @@ export class RuleEngine {
     }
 
     const delegatedResolveJsonTemplate =
-      typeof ctx.resolveJsonTemplate === 'function' ? ctx.resolveJsonTemplate.bind(ctx) : undefined;
+      typeof ctx.resolveJsonTemplate === 'function'
+        ? (ctx.resolveJsonTemplate.bind(ctx) as (
+            template: unknown,
+            options?: ResolveJsonTemplateOptions,
+          ) => Promise<unknown>)
+        : undefined;
     ctx.defineMethod('resolveJsonTemplate', async (template: unknown) => {
       const tokenStore = this.createLocalTemplateTokenStore();
       const localResolved = this.resolveLocalFormValuesTemplates(baseCtx, template, collector, tokenStore);
       const nextTemplate = localResolved.matched ? localResolved.value : template;
-      const resolved = delegatedResolveJsonTemplate ? await delegatedResolveJsonTemplate(nextTemplate) : nextTemplate;
+      const resolved = delegatedResolveJsonTemplate
+        ? await delegatedResolveJsonTemplate(nextTemplate, contractModelUid ? { contractModelUid } : undefined)
+        : nextTemplate;
       return this.restoreLocalTemplateTokens(resolved, tokenStore);
     });
 
@@ -2038,7 +2071,7 @@ export class RuleEngine {
     // - parentItem：上级项（同结构，可链式 parentItem.parentItem...）
     // 计算顺序：
     // 1) 优先按 targetNamePath 从 formValues 构建“关联链 item”
-    // 2) 若无法构建（例如目标字段是顶层路径），回退到上游显式注入的 baseCtx.item
+    // 2) 若无法构建（例如目标字段是顶层非关联字段），回退到上游显式注入的 baseCtx.item
     //    （如 PopupSubTable 新增弹窗传入的 parentItem 链）
     let itemCached: any;
     let itemCachedReady = false;
@@ -2209,9 +2242,23 @@ export class RuleEngine {
         parentItem,
       };
     };
-    const defaultRoot = buildNode(trackingFormValues, undefined, undefined, undefined);
-    // item 仅用于“关系字段的子路径”场景；
-    // 顶层字段/非关联嵌套对象字段应使用 formValues。
+    const blockCtx = this.options.getBlockContext();
+    const formRootItem = (() => {
+      try {
+        const item = blockCtx?.item as RuntimeItemChain | undefined;
+        if (!item || typeof item !== 'object') return undefined;
+        return item.value === blockCtx?.formValues ? item : undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    const defaultRoot = {
+      ...buildNode(trackingFormValues, formRootItem?.index, formRootItem?.length, formRootItem?.parentItem),
+      __is_new__: formRootItem?.__is_new__ ?? trackingFormValues?.__is_new__,
+      __is_stored__: formRootItem?.__is_stored__ ?? trackingFormValues?.__is_stored__,
+    };
+    // item 用于“关系字段目标或其子路径”场景；
+    // 顶层非关联字段/非关联嵌套对象字段应使用 formValues。
     if (!targetNamePath || !Array.isArray(targetNamePath) || !targetNamePath.length) return undefined;
     if (!rootCollection?.getField) return undefined;
 
@@ -2219,7 +2266,9 @@ export class RuleEngine {
     const prefix: NamePath = [];
     let collection = rootCollection;
 
-    for (let i = 0; i < targetNamePath.length - 1; i++) {
+    // The target itself can be an association. Keep that final association in the item chain so
+    // ctx.item.parentItem continues to point at the containing row instead of skipping directly to the form root.
+    for (let i = 0; i < targetNamePath.length; i++) {
       const seg = targetNamePath[i];
       if (typeof seg !== 'string') break;
 
@@ -2231,9 +2280,12 @@ export class RuleEngine {
 
       if (toMany) {
         const next = targetNamePath[i + 1];
-        if (typeof next !== 'number') break;
-        prefix.push(next);
-        i += 1;
+        if (typeof next === 'number') {
+          prefix.push(next);
+          i += 1;
+        } else if (i !== targetNamePath.length - 1) {
+          break;
+        }
       }
 
       const targetCollection = field?.targetCollection;
@@ -2248,9 +2300,11 @@ export class RuleEngine {
       const assocEntry = assocEntries[idx];
       const value = _.get(trackingFormValues, assocEntry.path);
       const lastSeg = assocEntry.path[assocEntry.path.length - 1];
-      const index = assocEntry.toMany && typeof lastSeg === 'number' ? lastSeg : undefined;
+      const isIndexedToManyItem = assocEntry.toMany && typeof lastSeg === 'number';
+      const index = isIndexedToManyItem ? lastSeg : undefined;
       const length = (() => {
         if (!assocEntry.toMany) return undefined;
+        if (!isIndexedToManyItem) return Array.isArray(value) ? value.length : undefined;
         // assocEntry.path: [..., associationKey, rowIndex]
         const listPath = assocEntry.path.slice(0, -1);
         const list = _.get(trackingFormValues, listPath);

@@ -17,6 +17,7 @@ import { capitalize } from 'lodash';
 import '../../../../base/ActionModel';
 import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModelCore';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
+import { buildOpenerUids } from '../../recordSelectShared';
 import { bindPopupSubTableBeforeClose } from './popupSubTableBeforeClose';
 
 function FieldWithoutPermissionPlaceholder({ targetModel, children }) {
@@ -29,7 +30,7 @@ function FieldWithoutPermissionPlaceholder({ targetModel, children }) {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, []);
+  }, [collection, dataSource.displayName, dataSource.key, name, t]);
   const { actionName } = fieldModel.forbidden || {};
   const messageValue = useMemo(() => {
     return t(
@@ -39,7 +40,7 @@ function FieldWithoutPermissionPlaceholder({ targetModel, children }) {
         actionName: t(capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
-  }, [nameValue, t]);
+  }, [actionName, nameValue, t]);
   return <Tooltip title={messageValue}>{children}</Tooltip>;
 }
 
@@ -347,6 +348,11 @@ PopupSubTableEditActionModel.registerFlow({
             return undefined;
           }
         })();
+        const associationName = ctx.collectionField?.resourceName;
+        const sourceId = parentItem?.value
+          ? ctx.collectionField?.collection?.getFilterByTK?.(parentItem.value)
+          : undefined;
+        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -357,6 +363,7 @@ PopupSubTableEditActionModel.registerFlow({
             scene: 'subForm',
             dataSourceKey: ctx.collection.dataSourceKey,
             collectionName: ctx.collectionField?.target,
+            ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
             record: ctx.record,
             parentItem,
@@ -364,6 +371,7 @@ PopupSubTableEditActionModel.registerFlow({
             parentItemResolver: parentItemOptions?.resolveOnServer,
             itemIndex,
             itemLength,
+            openerUids,
           },
           content: () => <EditFormContent model={ctx.model} />,
           styles: {

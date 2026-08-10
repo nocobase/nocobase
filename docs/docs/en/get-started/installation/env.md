@@ -359,7 +359,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **When not set**: All `http` / `https` outbound requests are allowed to keep existing behavior. However, if the target is a loopback, private, link-local, or metadata address, or if a domain resolves to one of these addresses, the server logs a warning.
 
-**When set**: Only requests whose host matches a whitelist entry are permitted; non-matching requests will raise an error. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
+**When set**: The initial request and every redirect destination must match a whitelist entry; non-matching requests will raise an error before the next request is sent. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
 
 Supported formats:
 

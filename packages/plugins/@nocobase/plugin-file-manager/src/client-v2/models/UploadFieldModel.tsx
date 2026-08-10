@@ -88,7 +88,7 @@ export const CardUpload = (props) => {
     }
     const filename = getDownloadFileName(target, url);
     // eslint-disable-next-line promise/catch-or-return
-    fetch(url)
+    fetch(url, { cache: 'reload' })
       .then((response) => response.blob())
       .then((blob) => {
         const blobUrl = URL.createObjectURL(new Blob([blob]));

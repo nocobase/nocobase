@@ -694,6 +694,35 @@ test('nb config set/get/delete supports nb image settings', async () => {
   });
 });
 
+test('nb config get nb-image-registry falls back to aliyun when locale is zh-CN', async () => {
+  await withTempCliHome(async () => {
+    const { default: ConfigSet } = await import('../commands/config/set.js');
+    const { default: ConfigGet } = await import('../commands/config/get.js');
+
+    const setLocaleCommand = Object.assign(Object.create(ConfigSet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'locale',
+          value: 'zh-CN',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigSet.prototype.run.call(setLocaleCommand);
+
+    const getRegistryCommand = Object.assign(Object.create(ConfigGet.prototype), {
+      parse: vi.fn(async () => ({
+        args: {
+          key: 'nb-image-registry',
+        },
+      })),
+      log: vi.fn(),
+    });
+    await ConfigGet.prototype.run.call(getRegistryCommand);
+    expect(getRegistryCommand.log).toHaveBeenCalledWith('aliyun');
+  });
+});
+
 test('nb config list prints only explicit settings', async () => {
   await withTempCliHome(async () => {
     const { default: ConfigSet } = await import('../commands/config/set.js');

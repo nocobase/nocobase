@@ -13,10 +13,19 @@ import http from 'node:http';
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
-import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, {
+  abortExecution,
+  EXECUTION_REASON,
+  EXECUTION_STATUS,
+  JOB_STATUS,
+} from '@nocobase/plugin-workflow';
+import { vi } from 'vitest';
 import winston from 'winston';
+import { SCRIPT_INSTRUCTION_TYPE } from '../../common/constants';
 import { CacheTransport } from '../cache-logger';
+import { PENDING_JAVASCRIPT_TASK_CHANNEL } from '../constants';
 import ScriptInstruction from '../ScriptInstruction';
+import { ScriptWorkerRunner } from '../ScriptWorkerRunner';
 
 import Plugin from '..';
 
@@ -69,7 +78,7 @@ describe('workflow > instructions > script', () => {
   describe('syntax', () => {
     it('syntax error', async () => {
       const n1 = await workflow.createNode({
-        type: 'script',
+        type: SCRIPT_INSTRUCTION_TYPE,
         config: {
           arguments: [{ name: 'aaa', value: 6 }],
           content: 'const\nreturn "Hello world!";',
@@ -92,7 +101,7 @@ describe('workflow > instructions > script', () => {
   describe('arguments', () => {
     it('should accept variable', async () => {
       const n1 = await workflow.createNode({
-        type: 'script',
+        type: SCRIPT_INSTRUCTION_TYPE,
         config: {
           arguments: [{ name: 'aaa', value: '{{$context.data.title}}' }],
           content: 'return aaa + 90;',
@@ -113,7 +122,7 @@ describe('workflow > instructions > script', () => {
 
     it('arguments types', async () => {
       const n1 = await workflow.createNode({
-        type: 'script',
+        type: SCRIPT_INSTRUCTION_TYPE,
         config: {
           arguments: [
             { name: 'boolean', value: true },
@@ -209,6 +218,118 @@ describe('workflow > instructions > script', () => {
   });
 
   describe('promise and timeout', () => {
+    it('should persist, claim and consume an async JavaScript job once', async () => {
+      let resolveRun: ((result: { status: number; result: string }) => void) | undefined;
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation(() => {
+        return new Promise((resolve) => {
+          resolveRun = resolve;
+        });
+      });
+
+      try {
+        await workflow.update({ sync: false });
+        await workflow.createNode({
+          type: SCRIPT_INSTRUCTION_TYPE,
+          config: {
+            arguments: [{ name: 'title', value: '{{$context.data.title}}' }],
+            content: 'return title;',
+          },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        let job;
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = execution ? await execution.getJobs() : [];
+          if (job?.startedAt && runSpy.mock.calls.length === 1) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(job?.status).toBe(JOB_STATUS.PENDING);
+        expect(job?.startedAt).toBeTruthy();
+        expect(job?.meta).toMatchObject({
+          args: { title: 'post' },
+        });
+        expect(runSpy).toHaveBeenCalledWith(
+          'return title;',
+          { title: 'post' },
+          expect.objectContaining({ logger: expect.any(Object) }),
+        );
+        expect(runSpy).toHaveBeenCalledTimes(1);
+
+        await app.eventQueue.publish(PENDING_JAVASCRIPT_TASK_CHANNEL, { jobId: job.id });
+        await sleep(100);
+        expect(runSpy).toHaveBeenCalledTimes(1);
+
+        resolveRun?.({ status: JOB_STATUS.RESOLVED, result: 'queued-result' });
+
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = await execution.getJobs();
+          if (execution?.status === EXECUTION_STATUS.RESOLVED && job?.status === JOB_STATUS.RESOLVED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(job.status).toBe(JOB_STATUS.RESOLVED);
+        expect(job.result).toBe('queued-result');
+        expect(execution?.status).toBe(EXECUTION_STATUS.RESOLVED);
+      } finally {
+        runSpy.mockRestore();
+      }
+    });
+
+    it('should discard a worker result that arrives after manual cancellation', async () => {
+      let resolveRun: ((result: { status: number; result: string }) => void) | undefined;
+      let workerSignal: AbortSignal | undefined;
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation((_source, _args, options) => {
+        workerSignal = options.signal;
+        return new Promise((resolve) => {
+          resolveRun = resolve;
+        });
+      });
+
+      try {
+        await workflow.update({ sync: false });
+        await workflow.createNode({
+          type: SCRIPT_INSTRUCTION_TYPE,
+          config: { content: 'return "late";' },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        let job;
+        for (let i = 0; i < 30; i++) {
+          [execution] = await workflow.getExecutions();
+          [job] = execution ? await execution.getJobs() : [];
+          if (job?.startedAt && runSpy.mock.calls.length === 1) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        const workflowPlugin = app.pm.get(WorkflowPlugin) as WorkflowPlugin;
+        await abortExecution(workflowPlugin, execution, { reason: EXECUTION_REASON.MANUAL_CANCEL });
+        expect(workerSignal?.aborted).toBe(true);
+        resolveRun?.({ status: JOB_STATUS.RESOLVED, result: 'late' });
+        await sleep(100);
+        await execution.reload();
+        await job.reload();
+
+        expect(execution.status).toBe(EXECUTION_STATUS.ABORTED);
+        expect(job.status).toBe(JOB_STATUS.ABORTED);
+        expect(job.result).not.toBe('late');
+      } finally {
+        runSpy.mockRestore();
+      }
+    });
+
     it('should fail when Promise is reject', async () => {
       const script = `
         return Promise.reject(new Error('fail'));
@@ -248,6 +369,87 @@ describe('workflow > instructions > script', () => {
 
       expect(result.status).toBe(JOB_STATUS.RESOLVED);
       expect(result.result).toBe(180);
+    });
+
+    it('should finish after returning a result when the script leaves an active handle', async () => {
+      const controller = new AbortController();
+      const script = `
+        const { setInterval } = require('node:timers');
+        setInterval(() => {}, 1000);
+        return 'finished';
+      `;
+      const runPromise = ScriptInstruction.run(script, [], {
+        logger,
+        timeout: 200,
+        signal: controller.signal,
+      });
+
+      try {
+        const result = await Promise.race([runPromise, sleep(1000).then(() => null)]);
+
+        expect(result).not.toBeNull();
+        expect(result?.status).toBe(JOB_STATUS.RESOLVED);
+        expect(result?.result).toBe('finished');
+      } finally {
+        controller.abort();
+        await runPromise.catch(() => undefined);
+      }
+    });
+
+    it('should abort a background script when an async workflow times out', async () => {
+      let backgroundSignal: AbortSignal | undefined;
+      const runSpy = vi.spyOn(ScriptWorkerRunner, 'run').mockImplementation((_source, _args, options) => {
+        backgroundSignal = options.signal;
+        return new Promise((resolve) => {
+          const abort = () => resolve({ status: JOB_STATUS.ERROR, result: 'aborted' });
+          options.signal?.addEventListener('abort', abort, { once: true });
+          if (options.signal?.aborted) {
+            abort();
+          }
+        });
+      });
+
+      try {
+        await workflow.update({ sync: false, options: { timeout: 100 } });
+        await workflow.createNode({
+          type: SCRIPT_INSTRUCTION_TYPE,
+          config: { content: 'return new Promise(() => {});' },
+        });
+
+        await PostRepo.create({ values: { title: 'post' } });
+
+        let execution;
+        for (let i = 0; i < 20; i++) {
+          [execution] = await workflow.getExecutions();
+          if (execution?.status === EXECUTION_STATUS.ABORTED) {
+            break;
+          }
+          await sleep(50);
+        }
+
+        expect(execution?.status).toBe(EXECUTION_STATUS.ABORTED);
+        expect(backgroundSignal?.aborted).toBe(true);
+      } finally {
+        runSpy.mockRestore();
+      }
+    });
+
+    it('should terminate the Worker when its signal is aborted', async () => {
+      const controller = new AbortController();
+      const abortError = new Error('workflow aborted');
+      const script = `
+        const { setInterval } = require('node:timers');
+        setInterval(() => {}, 1000);
+        return new Promise(() => {});
+      `;
+      const runPromise = ScriptInstruction.run(script, [], {
+        logger,
+        signal: controller.signal,
+      });
+
+      setTimeout(() => controller.abort(abortError), 50);
+
+      await expect(runPromise).rejects.toBe(abortError);
     });
   });
 

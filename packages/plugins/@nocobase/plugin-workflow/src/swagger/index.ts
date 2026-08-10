@@ -407,7 +407,8 @@ export default {
           '**autoRevision:** When set to `1`, if the workflow has never been executed',
           '(`executed === 0`), a new revision is created automatically after execution.',
           '',
-          '**Returns:** `{ execution: { id, status }, newVersionId? }`',
+          '**Returns:** `{ execution: { id, status } | null, newVersionId? }`.',
+          '`execution` is `null` when the request is valid but no execution is started.',
         ].join('\n'),
         parameters: [
           {
@@ -447,6 +448,7 @@ export default {
                   properties: {
                     execution: {
                       type: 'object',
+                      nullable: true,
                       properties: {
                         id: { type: 'integer', description: 'Execution ID' },
                         status: { type: 'integer', description: 'Execution status code' },
@@ -463,7 +465,7 @@ export default {
             },
           },
           400: {
-            description: 'Bad Request. Request body or `filterByTk` is missing/invalid, or workflow not triggered.',
+            description: 'Bad Request. Request body or `filterByTk` is missing/invalid.',
           },
           404: { description: 'Not Found. Workflow does not exist.' },
         },

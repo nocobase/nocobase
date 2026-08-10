@@ -1,151 +1,167 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
-title: "Field Sort"
-description: "Field sort untuk mengurutkan record Collection, mendukung pengelompokan terlebih dahulu lalu sort (sort1), digunakan untuk mengkustomisasi urutan tampilan record."
-keywords: "field sort,Field Sort,sort grouping,sort1,NocoBase"
+title: "Bidang pengurutan"
+description: "Bidang pengurutan mengurutkan catatan tabel data, mendukung pengelompokan sebelum pengurutan, untuk menyesuaikan urutan tampilan catatan."
+keywords: "bidang pengurutan,Bidang Sort,pengurutan grup,sort,NocoBase"
 ---
-# Field Sort
+<!-- translation-inline-code: `sort1` `Class ID` `sort2` `Class ID` -->
 
-## Pengantar
+# Bidang pengurutan
 
-Field Sort digunakan untuk mengurutkan record dalam Collection, mendukung pengelompokan terlebih dahulu lalu sort (sort1).
+## Pengenalan
 
-:::warning
-Karena Field Sort adalah field di Collection yang sama, saat sort dengan grouping, satu record yang sama tidak dapat berada di beberapa grup.
+Di NocoBase, **bidang pengurutan (Sort)** digunakan untuk mencatat nilai urutan catatan dalam tabel data. Bidang ini umum digunakan untuk pengurutan drag-and-drop pada blok seperti tabel dan kanban.
+
+Bidang pengurutan mendukung pengurutan tanpa pengelompokan, serta pengelompokan sebelum pengurutan. Pengurutan berdasarkan kelompok cocok untuk skenario “pengurutan mandiri dalam kelompok yang sama”, misalnya mengurutkan siswa berdasarkan kelas atau tugas berdasarkan status kanban.
+
+:::warning Catatan
+
+Karena bidang pengurutan adalah bidang dalam tabel yang sama, saat pengurutan berdasarkan kelompok, satu catatan tidak dapat muncul di beberapa kelompok secara bersamaan.
+
 :::
 
 ## Instalasi
 
-Plugin bawaan, tidak perlu diinstal secara terpisah.
+Bidang pengurutan disediakan oleh plugin bawaan dan tidak memerlukan instalasi terpisah.
 
-## Panduan Penggunaan
+## Membuat bidang pengurutan
 
-### Membuat Field Sort
+Pada halaman «Configure fields» tabel data, klik «Add field», lalu pilih «Urutkan» untuk membuat bidang pengurutan.
 
 ![20240409091123_rec_](https://static-docs.nocobase.com/20240409091123_rec_.gif)
 
-Saat membuat Field Sort, nilai sort akan diinisialisasi:
+Saat membuat bidang pengurutan, NocoBase akan menginisialisasi nilai urutan:
 
-- Jika tidak memilih grouping sort, akan diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan.
-- Jika memilih grouping sort, data akan dikelompokkan terlebih dahulu, lalu diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan.
+- Jika pengurutan berdasarkan kelompok tidak dipilih, inisialisasi akan dilakukan berdasarkan bidang kunci utama dan bidang tanggal pembuatan
+- Jika pengurutan berdasarkan kelompok dipilih, data akan dikelompokkan terlebih dahulu, lalu diinisialisasi berdasarkan bidang kunci utama dan bidang tanggal pembuatan
 
-:::warning{title="Penjelasan Konsistensi Transaksi"}
-- Saat membuat field, jika inisialisasi nilai sort gagal, Field Sort tidak akan dibuat;
-- Dalam suatu rentang, ketika suatu record dipindah dari posisi A ke posisi B, nilai sort semua record dalam rentang AB akan berubah. Jika ada satu yang gagal, perpindahan akan gagal, dan nilai sort record terkait tidak akan berubah.
+:::warning Catatan
+
+Saat membuat bidang, jika inisialisasi nilai urutan gagal, bidang pengurutan tidak akan dibuat. Dalam suatu rentang, jika sebuah catatan dipindahkan dari posisi A ke posisi B, nilai urutan semua catatan dalam interval AB akan berubah; jika salah satunya gagal, pemindahan akan gagal dan nilai urutan catatan terkait tidak akan berubah.
+
 :::
 
-#### Contoh 1: Membuat Field sort1
+### Membuat bidang pengurutan tanpa kelompok
 
-Field sort1 tanpa grouping
+Berikut adalah contoh pembuatan bidang , yang tidak menggunakan pengurutan berdasarkan kelompok.
 
 ![20240409091510](https://static-docs.nocobase.com/20240409091510.png)
 
-Field sort setiap record akan diinisialisasi berdasarkan field Primary Key dan field tanggal pembuatan:
+Bidang pengurutan setiap catatan akan diinisialisasi berdasarkan bidang kunci utama dan bidang tanggal pembuatan.
 
 ![20240409092305](https://static-docs.nocobase.com/20240409092305.png)
 
-#### Contoh 2: Membuat Field sort2 dengan Grouping berdasarkan Class ID
+### Membuat bidang pengurutan berdasarkan kelompok
+
+Berikut adalah pembuatan bidang  berdasarkan pengelompokan .
 
 ![20240409092620](https://static-docs.nocobase.com/20240409092620.png)
 
-Saat ini, semua record dalam Collection akan dikelompokkan terlebih dahulu (berdasarkan Class ID), lalu Field Sort (sort2) akan diinisialisasi. Nilai inisialisasi setiap record:
+Pada saat ini, semua catatan dalam tabel data akan dikelompokkan terlebih dahulu berdasarkan Class ID, lalu bidang pengurutan akan diinisialisasi.
 
 ![20240409092847](https://static-docs.nocobase.com/20240409092847.png)
 
-### Drag and Drop Sort
+## Pengurutan drag-and-drop
 
-Field Sort terutama digunakan untuk drag and drop sort record di berbagai block. Block yang saat ini mendukung drag and drop sort meliputi tabel dan kanban.
+Bidang pengurutan terutama digunakan untuk pengurutan drag-and-drop catatan di berbagai blok. Saat ini, blok yang mendukung pengurutan drag-and-drop adalah tabel dan kanban.
 
-:::warning
-- Saat Field Sort yang sama digunakan sebagai drag and drop sort, penggunaan campuran multi block dapat merusak sort yang sudah ada;
-- Field drag and drop sort tabel tidak dapat memilih Field Sort dengan aturan grouping;
-  - Pengecualian: Pada block tabel relasi One to Many, foreign key dapat digunakan sebagai grouping;
-- Saat ini hanya block kanban yang mendukung drag and drop sort dengan grouping.
+:::warning Catatan
+
+- Saat bidang pengurutan yang sama digunakan untuk pengurutan drag-and-drop, penggunaan campuran di beberapa blok dapat merusak urutan yang sudah ada
+- Bidang untuk pengurutan drag-and-drop tabel tidak dapat memilih bidang pengurutan dengan aturan pengelompokan
+- Dalam blok tabel relasi satu-ke-banyak, kunci asing dapat digunakan sebagai kelompok
+- Saat ini, hanya blok kanban yang mendukung pengurutan drag-and-drop berdasarkan kelompok
+
 :::
 
-#### Drag and Drop Sort Baris Tabel
+### Pengurutan drag-and-drop baris tabel
 
-Block tabel
+Blok tabel dapat menggunakan bidang pengurutan untuk menyesuaikan urutan catatan dengan drag-and-drop.
 
 ![20240409104621_rec_](https://static-docs.nocobase.com/20240409104621_rec_.gif)
 
-Block tabel relasi
+Blok tabel relasi juga dapat menggunakan bidang pengurutan untuk pengurutan drag-and-drop.
 
-<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Title"></video>
+<video controls width="100%" src="https://static-docs.nocobase.com/20240409111903_rec_.mp4" title="Pengurutan drag-and-drop blok tabel relasi"></video>
 
-:::warning
-Pada block relasi One to Many
+:::warning Catatan
 
-- Jika yang dipilih adalah Field Sort tanpa grouping, maka semua record dapat berpartisipasi dalam sort;
-- Jika sort dengan grouping berdasarkan foreign key terlebih dahulu, maka aturan sort hanya akan memengaruhi data dalam grup saat ini.
+Dalam blok relasi satu-ke-banyak, jika memilih bidang pengurutan tanpa kelompok, semua catatan mungkin ikut diurutkan; jika dikelompokkan terlebih dahulu berdasarkan kunci asing lalu diurutkan, aturan pengurutan hanya akan memengaruhi data dalam kelompok saat ini. Hasil akhirnya mungkin tampak sama, tetapi cakupan catatan yang ikut diurutkan berbeda.
 
-Hasil akhirnya konsisten, tetapi jumlah record yang berpartisipasi dalam sort berbeda. Untuk penjelasan lebih detail, lihat [Penjelasan Aturan Sort](#penjelasan-aturan-sort)
 :::
 
-#### Drag and Drop Sort Kartu Kanban
+### Pengurutan drag-and-drop kartu kanban
+
+Blok kanban dapat menggunakan bidang pengurutan untuk menyesuaikan urutan kartu dengan drag-and-drop.
 
 ![20240409110423_rec_](https://static-docs.nocobase.com/20240409110423_rec_.gif)
 
-### Penjelasan Aturan Sort
+## Penjelasan aturan pengurutan
 
-#### Pergeseran antar Elemen Tanpa Grouping (atau Grup yang Sama)
+### Pemindahan antarcatatan tanpa kelompok
 
-Misalkan ada sekelompok data
+Misalkan ada sekumpulan data:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-Ketika suatu elemen, misalnya 5 dipindah ke depan ke posisi 3, saat ini, hanya nomor urut 3,4,5 yang berubah, 5 menempati posisi 3, 3,4 masing-masing bergeser satu posisi ke belakang.
+Saat 5 dipindahkan ke depan ke posisi 3, hanya nomor urut 3, 4, dan 5 yang berubah. 5 menempati posisi 3, sedangkan 3 dan 4 masing-masing mundur satu posisi.
 
-```
+```text
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Saat ini lanjutkan dengan memindah 6 ke belakang ke posisi 8, 6 menempati posisi 8, 7,8 masing-masing bergeser satu posisi ke depan.
+Kemudian, jika 6 dipindahkan ke belakang ke posisi 8, 6 menempati posisi 8, sedangkan 7 dan 8 masing-masing maju satu posisi.
 
-```
+```text
 [1,2,5,3,4,7,8,6,9]
 ```
 
-#### Perpindahan Elemen antar Grup yang Berbeda
+### Pemindahan antar kelompok yang berbeda
 
-Saat sort dengan grouping, ketika suatu record dipindah ke grup lain, grup miliknya juga akan berubah. Contoh sebagai berikut:
+Dalam pengurutan berdasarkan kelompok, saat sebuah catatan dipindahkan ke kelompok lain, kelompok tempat catatan tersebut berada juga akan berubah. Misalkan ada dua kelompok data:
 
-```
+```text
 A: [1,2,3,4]
 B: [5,6,7,8]
 ```
 
-Ketika 1 dipindah ke 6 (default di belakang), grup tempat 1 berada juga akan berubah dari A menjadi B
+Saat 1 dipindahkan ke belakang 6, kelompok tempat 1 berada juga akan berubah dari A menjadi B.
 
-```
+```text
 A: [2,3,4]
 B: [5,6,1,7,8]
 ```
 
-#### Perubahan Sort Tidak Terkait dengan Data yang Ditampilkan UI
+### Perubahan pengurutan tidak terkait dengan data yang ditampilkan di antarmuka
 
-Contoh ada sekelompok data
+Misalkan ada sekumpulan data:
 
-```
+```text
 [1,2,3,4,5,6,7,8,9]
 ```
 
-UI hanya menampilkan
+Antarmuka hanya menampilkan:
 
-```
+```text
 [1,5,9]
 ```
 
-Ketika 1 dipindah ke posisi 9, posisi data 2,3,4,5,6,7,8 di tengah semua akan berubah
+Saat 1 dipindahkan ke posisi 9, posisi 2, 3, 4, 5, 6, 7, dan 8 di antaranya semuanya akan berubah.
 
-```
+```text
 [2,3,4,5,6,7,8,9,1]
 ```
 
-UI menampilkan
+Tampilan akhir antarmuka adalah:
 
-```
+```text
 [5,9,1]
 ```
+
+## Tautan terkait
+
+- [Bidang tabel data](../index.md) — Lihat tipe bidang dan penjelasan pemetaan bidang
+- [Blok tabel](../../interface-builder/blocks/data-blocks/table.md) — Gunakan pengurutan drag-and-drop dalam tabel
+- [Blok kanban](../../interface-builder/blocks/data-blocks/kanban.md) — Gunakan pengurutan drag-and-drop dalam kanban

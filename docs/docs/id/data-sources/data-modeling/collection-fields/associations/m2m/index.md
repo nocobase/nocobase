@@ -1,56 +1,56 @@
 ---
-title: "Many to Many"
-description: "Field relasi Many to Many (M2M), entitas dua Collection terhubung many-to-many, biasanya butuh tabel perantara, seperti siswa-mata kuliah."
-keywords: "Many to Many,M2M,BelongsToMany,tabel perantara,field terkait,NocoBase"
+title: "Banyak-ke-banyak"
+description: "Bidang relasi banyak-ke-banyak (M2M), asosiasi banyak-ke-banyak antar-entitas dari dua tabel, biasanya memerlukan tabel perantara, seperti siswa-kursus."
+keywords: "Banyak-ke-banyak,M2M,BelongsToMany,tabel perantara,bidang relasi,NocoBase"
 ---
 
-# Many to Many
+# Banyak-ke-banyak
 
-Dalam sistem pemilihan mata kuliah, ada dua entitas: siswa dan mata kuliah. Seorang siswa dapat memilih banyak mata kuliah, dan satu mata kuliah juga dapat dipilih oleh banyak siswa, hal ini membentuk relasi Many to Many. Dalam database relasional, untuk merepresentasikan hubungan Many to Many antara siswa dan mata kuliah, biasanya digunakan tabel perantara, seperti tabel pemilihan mata kuliah. Tabel ini dapat mencatat mata kuliah apa saja yang dipilih oleh setiap siswa, dan mata kuliah apa saja yang dipilih oleh siswa mana. Desain seperti ini dapat dengan baik merepresentasikan hubungan Many to Many antara siswa dan mata kuliah.
+Dalam sistem pemilihan kursus, terdapat dua entitas, yaitu siswa dan kursus. Seorang siswa dapat mengikuti banyak kursus, dan sebuah kursus juga dapat diikuti oleh banyak siswa. Hal ini membentuk relasi banyak-ke-banyak. Dalam basis data relasional, untuk merepresentasikan relasi banyak-ke-banyak antara siswa dan kursus, biasanya digunakan sebuah tabel perantara, misalnya tabel pemilihan kursus. Tabel ini dapat mencatat kursus yang dipilih oleh setiap siswa dan siswa yang mengikuti setiap kursus. Desain seperti ini dapat merepresentasikan relasi banyak-ke-banyak antara siswa dan kursus dengan baik.
 
-Relasi ER seperti berikut
+Relasi ER adalah sebagai berikut
 
 ![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-Konfigurasi field
+Konfigurasi bidang
 
 ![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
-## Penjelasan Parameter
+## Penjelasan parameter
 
 ### Source collection
 
-Collection sumber, yaitu Collection tempat field saat ini berada.
+Tabel sumber, yaitu tabel tempat bidang saat ini berada.
 
 ### Target collection
 
-Collection target, dengan Collection mana akan dihubungkan.
+Tabel target, yang menjadi tabel relasi.
 
 ### Through collection
 
-Tabel perantara, ketika ada hubungan Many to Many antara dua entitas, perlu menggunakan tabel perantara untuk menyimpan hubungan ini. Tabel perantara memiliki dua foreign key, yang digunakan untuk menyimpan hubungan antar dua entitas.
+Tabel perantara. Ketika terdapat relasi banyak-ke-banyak antara dua entitas, tabel perantara diperlukan untuk menyimpan relasi tersebut. Tabel perantara memiliki dua kunci asing yang digunakan untuk menyimpan relasi antara kedua entitas.
 
 ### Source key
 
-Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan.
+Bidang yang dirujuk oleh batasan kunci asing dan harus memiliki nilai unik.
 
 ### Foreign key 1
 
-Field tabel perantara, digunakan untuk membangun relasi dengan Collection sumber.
+Bidang pada tabel perantara yang digunakan untuk membangun relasi dengan tabel sumber.
 
 ### Foreign key 2
 
-Field tabel perantara, digunakan untuk membangun relasi dengan Collection target.
+Bidang pada tabel perantara yang digunakan untuk membangun relasi dengan tabel target.
 
 ### Target key
 
-Field yang dirujuk oleh constraint foreign key, harus memiliki keunikan.
+Bidang yang dirujuk oleh batasan kunci asing dan harus memiliki nilai unik.
 
 ### ON DELETE
 
-ON DELETE merujuk pada aturan operasi terhadap referensi foreign key di tabel anak yang terkait saat menghapus record di tabel parent. Ini adalah opsi yang digunakan saat mendefinisikan constraint foreign key. Opsi ON DELETE yang umum meliputi:
+ON DELETE merujuk pada aturan operasi terhadap referensi kunci asing di tabel anak yang terkait ketika rekaman di tabel induk dihapus. Ini merupakan salah satu opsi saat mendefinisikan batasan kunci asing. Opsi ON DELETE yang umum meliputi:
 
-- CASCADE: Ketika record di tabel parent dihapus, semua record yang terkait di tabel anak akan otomatis dihapus.
-- SET NULL: Ketika record di tabel parent dihapus, nilai foreign key di tabel anak yang terkait akan diatur menjadi NULL.
-- RESTRICT: Opsi default. Ketika mencoba menghapus record di tabel parent, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.
-- NO ACTION: Mirip dengan RESTRICT, jika ada record di tabel anak yang terkait, penghapusan record tabel parent akan ditolak.
+- CASCADE: ketika rekaman di tabel induk dihapus, semua rekaman terkait di tabel anak akan dihapus secara otomatis.
+- SET NULL: ketika rekaman di tabel induk dihapus, nilai kunci asing yang terkait di tabel anak akan diatur menjadi NULL.
+- RESTRICT: opsi default. Ketika mencoba menghapus rekaman di tabel induk, penghapusan akan ditolak jika terdapat rekaman terkait di tabel anak.
+- NO ACTION: mirip dengan RESTRICT. Jika terdapat rekaman terkait di tabel anak, penghapusan rekaman di tabel induk akan ditolak.

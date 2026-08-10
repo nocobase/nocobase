@@ -1,157 +1,157 @@
 ---
 title: 'NocoBase externe'
-description: 'Connectez une autre application NocoBase comme source de données externe et découvrez la configuration, les fonctionnalités disponibles et les limites des workflows.'
-keywords: 'NocoBase externe,source de données NocoBase,gestionnaire de sources de données,workflow,NocoBase'
+description: 'Connectez une autre application NocoBase comme source de données externe à l’application actuelle, et découvrez sa configuration, ses fonctionnalités disponibles ainsi que ses limites d’utilisation dans les workflows.'
+keywords: 'NocoBase externe,source de données NocoBase,gestion des sources de données,workflow,NocoBase'
 ---
 
 # NocoBase externe
 
-## Introduction
+## Présentation
 
-La source de données NocoBase externe connecte une autre application NocoBase à l'application actuelle tout en conservant les métadonnées de l'application distante, notamment les collections, les interfaces de champs, les titres et les champs d'association.
+Une source de données NocoBase externe permet de connecter une autre application NocoBase à l’application actuelle, tout en conservant les métadonnées configurées dans l’application distante, telles que les tables de données, les interfaces de champs, les titres et les champs de relation.
 
-Par rapport à une source de données de base de données externe, il n'est généralement pas nécessaire de reconfigurer les interfaces de champs ni de créer manuellement les champs d'association. En plus de consulter, créer, modifier et supprimer des enregistrements, elle prend aussi en charge le téléversement et l'aperçu de fichiers, l'importation et l'exportation, les requêtes de graphiques ainsi que certains scénarios de workflow.
+Par rapport à une source de données de base de données externe, la connexion à un NocoBase externe ne nécessite généralement pas de reconfigurer les interfaces de champs ni de créer manuellement les champs de relation. Outre la consultation, la création, la modification et la suppression d’enregistrements, elle prend également en charge l’importation et l’exportation, l’importation et la prévisualisation de fichiers, les requêtes de graphiques ainsi que certains scénarios de workflow.
 
-## Ajouter une Source de Données
+## Ajouter une source de données
 
-Après avoir activé le plugin, ajoutez une source de données NocoBase externe dans le gestionnaire de sources de données, puis renseignez les informations d'accès de l'application distante.
+Après avoir activé le plugin, ajoutez une source de données NocoBase externe dans « Gestion des sources de données », puis renseignez les informations d’accès de l’application distante.
 
-| Option | Description |
-| --- | --- |
-| URL de l'API | L'URL complète de l'API de l'application NocoBase distante, par exemple `https://example.com/api` |
-| Origin | L'origine publique de l'application NocoBase distante, par exemple `https://example.com`. Elle sert principalement à gérer les URL d'aperçu des fichiers locaux de l'application distante |
-| API key | L'identifiant utilisé par l'application actuelle pour accéder à l'application NocoBase distante |
-| En-têtes de requête | En-têtes supplémentaires envoyés à l'application distante, par exemple les informations d'espace |
-| Délai d'expiration | Délai d'expiration des requêtes vers l'application distante |
+| Élément de configuration | Description                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| Adresse API              | Adresse API complète de l’application NocoBase distante, par exemple `https://example.com/api` |
+| Origin                   | Origine d’accès de l’application NocoBase distante, par exemple `https://example.com` ; principalement utilisée pour traiter les adresses de prévisualisation des fichiers locaux de l’application distante |
+| API key                  | Identifiant utilisé par l’application actuelle pour accéder au NocoBase distant              |
+| En-têtes de requête      | En-têtes de requête supplémentaires à transmettre à l’application distante, comme les informations d’espace |
+| Délai d’expiration       | Délai d’expiration des requêtes vers l’application distante                                |
 
-Une fois la source de données activée, le système charge les collections de l'application distante.
+Après l’activation de la source de données, le système charge les tables de données de l’application distante.
 
 ![](https://static-docs.nocobase.com/202606101149185.png)
 
-## Autorisations
+## Informations sur les autorisations
 
-Une source de données NocoBase externe est soumise aux autorisations de l'application actuelle et de l'application distante.
+Une source de données NocoBase externe est soumise aux autorisations de l’application actuelle et de l’application distante.
 
-- Dans l'application actuelle, vous pouvez configurer les autorisations d'accès aux différentes collections et champs comme pour les autres sources de données externes.
-- Dans l'application distante, les données sont lues et modifiées selon les autorisations de l'API key configurée.
+- L’application actuelle peut configurer les autorisations d’accès à différentes tables et différents champs, comme pour les autres sources de données externes ;
+- L’application distante lit et manipule les données correspondantes selon les autorisations de l’API key configurée.
 
-Les sources de données NocoBase externes ne renvoient pas les métadonnées d'autorisation utilisées pour contrôler finement la visibilité des boutons côté frontend. Certains boutons peuvent donc ne pas être masqués automatiquement selon les autorisations comme avec la source de données principale. Qu'un bouton soit visible ou non, les opérations soumises passent toujours par la vérification des autorisations côté serveur dans l'application actuelle, et les opérations non autorisées sont refusées.
+Une source de données NocoBase externe ne renvoie pas les métadonnées d’autorisation utilisées pour contrôler finement côté frontend l’affichage des boutons. Certains boutons peuvent donc ne pas être masqués automatiquement selon les autorisations comme dans la source de données principale. Que le bouton soit affiché ou non, l’opération de soumission fait toujours l’objet d’un contrôle des autorisations côté serveur de l’application actuelle ; les opérations non autorisées sont refusées.
 
-:::warning{title=Remarque}
-Préparez une API key dédiée pour la source de données NocoBase externe et n'accordez que les autorisations de collections et d'opérations nécessaires. Si un utilisateur dispose d'une autorisation dans l'application actuelle mais que l'opération échoue, vérifiez les autorisations de l'API key distante.
+:::warning{title=Attention}
+Il est recommandé de préparer une API key dédiée à la source de données NocoBase externe et de lui accorder uniquement les autorisations nécessaires sur les tables et les opérations. Si une autorisation existe dans l’application actuelle mais que l’opération échoue, vérifiez les autorisations de l’API key distante.
 :::
 
-## Utiliser les Collections
+## Utiliser les tables de données
 
-Une fois les collections chargées, sélectionnez cette source de données dans la configuration des pages, des blocs, des graphiques ou des workflows pour utiliser les collections de l'application distante.
+Une fois les tables de données chargées, sélectionnez cette source de données dans la configuration des pages, des blocs, des graphiques ou des workflows pour utiliser les tables de données de l’application distante.
 
-Lorsque la structure des collections change dans l'application distante, rechargez les collections dans l'application actuelle.
+Après toute modification de la structure des tables de données dans l’application distante, rechargez les tables de données dans l’application actuelle.
 
 ## Fonctionnalités
 
-Les sources de données NocoBase externes servent principalement à utiliser dans l'application actuelle les collections et les données d'une application distante. La structure des collections, la configuration des champs et les données réelles restent gérées par l'application distante.
+Une source de données NocoBase externe sert principalement à utiliser les tables de données et les données de l’application distante dans l’application actuelle. La structure des tables, la configuration des champs et les données réelles continuent d’être gérées par l’application distante.
 
-### Collections et Champs
+### Tables de données et champs
 
-L'application actuelle charge les métadonnées de l'application distante, notamment les collections, les interfaces de champs, les titres et les champs d'association. Par rapport à une source de données de base de données externe, vous n'avez généralement pas besoin de reconfigurer les interfaces de champs ni de créer manuellement les champs d'association dans l'application actuelle.
+L’application actuelle charge les métadonnées de l’application distante, notamment les tables de données, les interfaces de champs, les titres et les champs de relation. Par rapport à une source de données de base de données externe, il n’est généralement pas nécessaire de reconfigurer les interfaces de champs ni de créer manuellement les champs de relation dans l’application actuelle.
 
-L'application actuelle ne permet pas de configurer directement les champs d'une source de données NocoBase externe. Pour ajouter des champs, ajuster des types de champs ou modifier des champs d'association, effectuez les changements dans l'application distante, puis rechargez les collections dans l'application actuelle.
+L’application actuelle ne permet pas de configurer directement les champs d’une source de données NocoBase externe. Pour ajouter des champs, modifier leur type ou modifier des champs de relation, effectuez ces opérations dans l’application distante, puis rechargez les tables de données dans l’application actuelle.
 
-### Enregistrements et Données Associées
+### Enregistrements et données associées
 
-Les sources de données NocoBase externes permettent de consulter, créer, modifier et supprimer des enregistrements dans les blocs de page, ainsi que de consulter et maintenir les données associées. Les opérations sont lancées par l'application actuelle et envoyées à l'application distante via l'API key configurée.
+Une source de données NocoBase externe permet de consulter, créer, modifier et supprimer des enregistrements dans les blocs de page, ainsi que de consulter et gérer les données associées. Les opérations sont lancées par l’application actuelle, qui envoie des requêtes à l’application distante au moyen de l’API key configurée.
 
-### Fichiers et Pièces Jointes
+### Fichiers et pièces jointes
 
-Les fichiers sont téléversés vers le stockage utilisé par l'application distante. L'application actuelle lance les requêtes de téléversement, d'aperçu et de téléchargement, mais les fichiers eux-mêmes ne sont pas stockés dans l'application actuelle.
+Les fichiers sont téléversés dans le stockage utilisé par l’application distante. L’application actuelle se charge d’initier les requêtes d’envoi, de prévisualisation et de téléchargement ; les fichiers eux-mêmes ne sont pas enregistrés dans l’application actuelle.
 
-Origin sert principalement à gérer les URL d'aperçu des fichiers stockés localement par l'application distante. Si l'application distante renvoie un chemin relatif, l'application actuelle utilise Origin pour compléter l'URL d'accès au fichier. Origin doit être l'adresse d'accès publique de l'application NocoBase distante, par exemple :
+Origin sert principalement à traiter les adresses de prévisualisation des fichiers du stockage local de l’application distante. Si l’adresse renvoyée par l’application distante est un chemin relatif, l’application actuelle utilise Origin pour compléter l’adresse d’accès au fichier. Origin doit être renseigné avec l’adresse d’accès publique de l’application NocoBase distante, par exemple :
 
 ```text
 https://example.com
 ```
 
-N'utilisez pas l'URL de l'API comme Origin.
+Ne renseignez pas l’adresse API dans Origin.
 
-### Importation et Exportation
+### Importation et exportation
 
-Les opérations d'importation et d'exportation lisent ou écrivent dans la source de données au moyen de fichiers externes et sont transmises à l'application distante pour exécution. L'application actuelle traite les opérations utilisateur, relaie les requêtes et renvoie les résultats de téléchargement. Les lectures et écritures réelles des données sont effectuées par l'application distante.
+L’importation et l’exportation sont des opérations de lecture et d’écriture de la source de données via des fichiers externes ; elles sont exécutées par l’intermédiaire de l’application distante. L’application actuelle se charge de recevoir l’action de l’utilisateur, de transmettre la requête et de renvoyer le résultat du téléchargement ; la lecture et l’écriture réelles des données sont effectuées par l’application distante.
 
-- Importer des enregistrements : l'application actuelle reçoit le fichier d'importation téléversé et le transmet à l'application distante pour exécuter l'importation.
-- Exporter des enregistrements : l'application actuelle transmet la requête à l'application distante pour exporter les enregistrements. En mode synchrone, le fichier d'enregistrements renvoyé par l'application distante est diffusé vers le navigateur pour téléchargement. En mode asynchrone, une tâche asynchrone locale est créée, l'exportation est lancée dans l'application distante, la progression est synchronisée avec la tâche locale et le fichier résultat est diffusé depuis l'application distante lors du téléchargement.
-- Exporter des pièces jointes : l'application actuelle transmet la requête à l'application distante pour exporter les pièces jointes. En mode synchrone, l'archive de pièces jointes renvoyée par l'application distante est diffusée vers le navigateur pour téléchargement. En mode asynchrone, une tâche asynchrone locale est créée, l'exportation des pièces jointes est lancée dans l'application distante, la progression est synchronisée avec la tâche locale et l'archive est diffusée depuis l'application distante lors du téléchargement.
+- Importer des enregistrements : l’application actuelle reçoit le fichier d’importation téléversé, puis le transmet à l’application distante pour exécution ;
+- Exporter des enregistrements : l’application actuelle transmet à l’application distante la demande d’exportation des enregistrements. En mode synchrone, le flux du fichier d’enregistrements renvoyé par l’application distante est transmis au navigateur pour téléchargement ; en mode asynchrone, une tâche asynchrone locale est créée, l’exportation des enregistrements est lancée dans l’application distante et sa progression est synchronisée, puis le fichier d’enregistrements est récupéré en flux depuis l’application distante au moment du téléchargement.
+- Exporter des pièces jointes : l’application actuelle transmet à l’application distante la demande d’exportation des pièces jointes. En mode synchrone, le flux de l’archive de pièces jointes renvoyée par l’application distante est transmis au navigateur pour téléchargement ; en mode asynchrone, une tâche asynchrone locale est créée, l’exportation des pièces jointes est lancée dans l’application distante et sa progression est synchronisée, puis l’archive de pièces jointes est récupérée en flux depuis l’application distante au moment du téléchargement.
 
-### Impression de Modèle
+### Impression de modèles
 
-L'impression de modèle peut utiliser les enregistrements d'une source de données NocoBase externe. Les modèles d'impression et la configuration des actions d'impression sont stockés dans l'application actuelle. Lors de l'impression, l'application actuelle lit les enregistrements distants et les données associées, puis génère le fichier d'impression dans l'application actuelle.
+L’impression de modèles peut utiliser des enregistrements provenant d’une source de données NocoBase externe. Les modèles d’impression et la configuration des actions d’impression sont enregistrés dans l’application actuelle. Lors de l’impression, l’application actuelle lit les enregistrements et les données associées distants, puis génère le fichier d’impression dans l’application actuelle.
 
 ### Graphiques
 
-#### Panneau de Requête
+#### Panneau de requête
 
-Les sources de données NocoBase externes peuvent être utilisées dans le panneau de requête des graphiques. L'application actuelle traite les paramètres de requête selon les autorisations locales configurées pour les graphiques, la source de données, la collection et les champs, puis demande les résultats à l'application distante.
+Une source de données NocoBase externe peut être utilisée dans un panneau de requête de graphique. L’application actuelle traite les paramètres de requête selon la configuration locale des graphiques, de la source de données, des tables de données et des autorisations de champs, puis envoie une requête à l’application distante pour obtenir le résultat.
 
-L'API key distante doit également disposer de l'accès aux données correspondantes, sinon la requête échoue.
+L’API key distante doit également disposer des autorisations d’accès aux données correspondantes, faute de quoi la requête échouera.
 
 #### Panneau SQL
 
-Le panneau SQL est le mode de requête SQL des graphiques et sert uniquement aux requêtes. L'application actuelle enregistre la configuration SQL et lance l'appel, tandis que le SQL est transmis à l'application distante pour exécution.
+Le panneau SQL est le mode de requête SQL des graphiques et sert uniquement à effectuer des requêtes. L’application actuelle enregistre la configuration SQL et lance l’appel ; la requête SQL est exécutée par l’intermédiaire de l’application distante.
 
-Lors de l'utilisation du panneau SQL, l'utilisateur local doit disposer des autorisations de configuration de l'interface dans l'application actuelle, et l'API key distante doit également disposer des autorisations de configuration de l'interface dans l'application distante. Le SQL n'est pas décomposé par autorisations de collection et de champ comme dans le panneau de requête. Accordez donc avec prudence les autorisations de configuration de l'interface aux utilisateurs locaux et à l'API key correspondante.
+Lors de l’utilisation d’un panneau SQL, l’utilisateur local doit disposer des autorisations de configuration de l’interface utilisateur dans l’application actuelle, et l’API key distante doit également disposer des autorisations de configuration de l’interface utilisateur dans l’application distante. Contrairement au panneau de requête, le panneau SQL ne décompose pas les paramètres de requête selon les autorisations des tables et des champs. Accordez donc avec prudence les autorisations de configuration de l’interface utilisateur aux utilisateurs locaux et à l’API key correspondante.
 
 ### Workflows
 
-Les sources de données NocoBase externes peuvent impliquer des workflows dans l'application actuelle et dans l'application distante. L'application actuelle réagit aux événements des pages locales, des boutons et des chaînes de requêtes API. Après réception des requêtes transmises, l'application distante les traite selon sa propre configuration de workflow.
+Une source de données NocoBase externe peut impliquer deux ensembles de workflows : ceux de l’application actuelle et ceux de l’application distante. L’application actuelle répond aux événements de la chaîne des requêtes provenant des pages, des boutons et des API locales ; après réception d’une requête transmise, l’application distante la traite selon sa propre configuration de workflows.
 
-L'application actuelle n'écoute pas les événements de création, de mise à jour ou de suppression qui se produisent dans les collections distantes. Les événements des collections distantes ne sont déclenchés que dans l'application distante.
+Notez que l’application actuelle n’écoute pas les événements de création, de mise à jour ou de suppression qui se produisent au sein des tables de données distantes. Les événements des tables de données distantes ne sont déclenchés que dans l’application distante.
 
 #### Déclencheurs
 
-Le tableau suivant indique le comportement des déclencheurs affectés par les sources de données NocoBase externes dans l'application actuelle et l'application distante lorsque le workflow correspondant est activé.
+Le tableau suivant décrit, lorsque le workflow correspondant est activé, le comportement dans l’application actuelle et l’application distante des déclencheurs influencés par une source de données NocoBase externe.
 
-| Déclencheur | Application actuelle | Application distante | Description |
-| --- | --- | --- | --- |
-| Événement avant action | Déclenché | Déclenché uniquement en mode global | Dans l'application actuelle, le mode global est déclenché et le mode local suit les liaisons de boutons de l'application actuelle. Après réception de la requête transmise par l'application distante, seul le mode global est déclenché |
-| Événement après action | Déclenché | Déclenché uniquement en mode global | Dans l'application actuelle, le mode global est déclenché et le mode local suit les liaisons de boutons de l'application actuelle. Après réception de la requête transmise par l'application distante, seul le mode global est déclenché |
-| Événement d'action personnalisée | Déclenché | Non déclenché | Un bouton "Déclencher le workflow" lié dans l'application actuelle déclenche le workflow local. Les requêtes CRUD transmises ne déclenchent pas d'événements d'action personnalisée distants |
-| Événement de collection | Non déclenché | Déclenché | Les données réelles changent dans l'application distante. L'application actuelle ne déclenche pas d'événements de collection locaux, tandis que l'application distante déclenche ses propres événements de collection |
-| Déclencheur planifié par champ de date | Non déclenché | Déclenché | L'application actuelle ne se déclenche pas sur la base des champs des collections distantes. L'application distante se déclenche selon sa propre configuration de champs de date |
+| Déclencheur                         | Application actuelle | Application distante | Description                                                                                 |
+| ----------------------------------- | -------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| Événement avant la requête          | Déclenché             | Déclenché uniquement en mode global | Dans l’application actuelle, déclenché en mode global ; en mode local, déclenché selon le bouton auquel il est associé ; dans l’application distante, après réception de la requête transmise, déclenché uniquement en mode global |
+| Événement après la requête          | Déclenché             | Déclenché uniquement en mode global | Dans l’application actuelle, déclenché en mode global ; en mode local, déclenché selon le bouton auquel il est associé ; dans l’application distante, après réception de la requête transmise, déclenché uniquement en mode global |
+| Événement d’opération personnalisée | Déclenché             | Non déclenché        | Le bouton « Déclencher un workflow » associé dans l’application actuelle déclenche le processus local ; les requêtes CRUD transmises ne déclenchent pas l’événement d’opération personnalisée distant |
+| Événement de table de données       | Non déclenché         | Déclenché            | Les données réelles étant modifiées à distance, l’application actuelle ne déclenche pas l’événement local de table de données ; l’application distante déclenche son propre événement de table de données |
+| Déclenchement planifié par champ de date | Non déclenché     | Déclenché            | L’application actuelle ne déclenche pas le workflow à partir des champs des tables de données distantes ; l’application distante le déclenche selon sa propre configuration des champs de date |
 
-Les déclencheurs qui ne dépendent pas des sources de données se déclenchent dans l'application actuelle et l'application distante selon leurs propres configurations.
+Les déclencheurs qui ne dépendent pas d’une source de données sont exécutés dans l’application actuelle et l’application distante selon leurs configurations respectives.
 
-Pour orchestrer dans l'application actuelle des workflows qui opèrent sur des données NocoBase externes, utilisez les événements avant action, les événements après action ou les événements d'action personnalisée. Les workflows existants dans l'application distante s'exécutent indépendamment dans l'application distante.
+Pour orchestrer dans l’application actuelle un processus qui manipule des données NocoBase externes, il est recommandé d’utiliser un événement avant la requête, un événement après la requête ou un événement d’opération personnalisée. Les workflows déjà présents dans l’application distante sont exécutés indépendamment par cette dernière.
 
 #### Nœuds
 
-Le tableau suivant ne liste que les nœuds liés aux sources de données. Les nœuds généraux, comme condition, calcul, boucle et traitement JSON, ne dépendent pas du type de source de données et peuvent être utilisés normalement.
+Le tableau suivant répertorie uniquement les nœuds liés aux sources de données. Les nœuds génériques tels que les conditions, les calculs, les boucles et le traitement JSON ne dépendent pas du type de source de données et peuvent être utilisés comme dans un workflow classique.
 
-| Nœud | Disponible | Description |
-| --- | --- | --- |
-| Rechercher des enregistrements | Disponible | Recherche les enregistrements dans l'application distante |
-| Créer un enregistrement | Disponible | Crée des enregistrements dans l'application distante |
-| Mettre à jour un enregistrement | Disponible | Met à jour les enregistrements dans l'application distante |
-| Supprimer un enregistrement | Disponible | Supprime les enregistrements dans l'application distante |
-| Nœud SQL | Non disponible | Le nœud SQL de workflow prend uniquement en charge les sources de données de base de données |
-| Nœud d'agrégation | Non disponible | Le nœud d'agrégation prend uniquement en charge les sources de données de base de données |
+| Nœud                 | Disponible | Description                                      |
+| -------------------- | ---------- | ------------------------------------------------ |
+| Rechercher des enregistrements | Disponible | Rechercher des enregistrements dans l’application distante |
+| Créer un enregistrement       | Disponible | Créer des enregistrements dans l’application distante |
+| Mettre à jour un enregistrement | Disponible | Mettre à jour des enregistrements dans l’application distante |
+| Supprimer un enregistrement    | Disponible | Supprimer des enregistrements dans l’application distante |
+| Nœud SQL              | Indisponible | Les nœuds SQL des workflows prennent uniquement en charge les sources de données de base de données |
+| Nœud d’agrégation     | Indisponible | Les nœuds d’agrégation prennent uniquement en charge les sources de données de base de données |
 
-## FAQ
+## Questions fréquentes
 
-### Les Collections N'apparaissent Pas
+### La table de données n’apparaît pas
 
-Vérifiez que la source de données est activée et que l'URL de l'API et l'API key sont correctes. L'application distante doit également autoriser cette API key à accéder aux collections correspondantes.
+Vérifiez que la source de données est activée et que l’adresse API ainsi que l’API key sont correctes. L’application distante doit également autoriser cette API key à accéder à la table de données correspondante.
 
-### Les Fichiers Sont Téléversés Mais Ne Peuvent Pas Être Prévisualisés
+### Le téléversement du fichier a réussi, mais il est impossible de le prévisualiser
 
-Si l'application actuelle ou l'application distante utilise un stockage local de fichiers, vérifiez qu'Origin est bien l'adresse d'accès publique de l'application correspondante. Origin ne doit pas être l'URL de l'API.
+Si l’application actuelle ou l’application distante utilise un stockage de fichiers local, vérifiez qu’Origin est renseigné avec l’adresse d’accès publique de l’application concernée. Origin ne doit pas contenir l’adresse API.
 
-### L'application Actuelle A Les Autorisations, Mais L'opération Échoue
+### L’opération échoue malgré les autorisations dans l’application actuelle
 
-Vérifiez les autorisations de l'API key dans l'application distante. Les sources de données NocoBase externes sont soumises aux autorisations de l'application actuelle et de l'application distante.
+Vérifiez les autorisations de l’API key de l’application distante. Une source de données NocoBase externe est soumise à la fois aux autorisations de l’application actuelle et à celles de l’application distante.
 
-### Les Collections Ne Sont Plus Utilisables Après Une Erreur Du Service Distant
+### La table de données est inutilisable après une anomalie du service distant
 
-Si l'application distante renvoie 502, redémarre ou est temporairement indisponible, l'application actuelle peut temporairement ne pas lire les métadonnées des collections distantes. Une fois le service distant rétabli, l'application actuelle recharge automatiquement les métadonnées lors du prochain accès aux collections de cette source de données.
+Si l’application distante renvoie une erreur 502, redémarre ou devient temporairement indisponible, l’application actuelle peut ne plus parvenir temporairement à lire les métadonnées des tables de données distantes. Une fois le service distant rétabli, l’application actuelle recharge automatiquement les métadonnées lors de la prochaine consultation des tables de données de cette source.
 
-### Pourquoi Les Champs Ne Peuvent Pas Être Configurés Dans L'application Actuelle
+### Pourquoi est-il impossible de configurer les champs dans l’application actuelle ?
 
-Les sources de données NocoBase externes utilisent la structure des collections et la configuration des champs de l'application distante. Modifiez les champs dans l'application distante, puis rechargez les collections dans l'application actuelle.
+Une source de données NocoBase externe utilise la structure des tables de données et la configuration des champs de l’application distante. Modifiez les champs dans l’application distante, puis rechargez les tables de données dans l’application actuelle.

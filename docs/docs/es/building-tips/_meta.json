@@ -1,0 +1,12 @@
+[
+  {
+    "type": "file",
+    "name": "operations-dashboard",
+    "label": "Panel de operaciones interactivo"
+  },
+  {
+    "type": "file",
+    "name": "ai-fill-js-block-form",
+    "label": "Completar formularios personalizados de bloques JS con empleados de IA"
+  }
+]

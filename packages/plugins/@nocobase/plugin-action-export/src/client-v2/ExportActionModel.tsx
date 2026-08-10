@@ -11,9 +11,10 @@ import { escapeT } from '@nocobase/flow-engine';
 import { ActionModel, ActionSceneEnum } from '@nocobase/client-v2';
 import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
-import { Cascader } from 'antd';
+import { Cascader, Spin, type CascaderProps } from 'antd';
 import React from 'react';
 import type { ButtonProps } from 'antd/es/button';
+import type { ExportFieldOption } from './buildExportFieldOptions';
 import { createLazyOptionFieldsCache } from './getOptionFields';
 import { NAMESPACE } from './locale';
 import { createExportFieldsOptionsSnapshot, normalizeExportFieldValue } from './exportFieldValue';
@@ -24,10 +25,28 @@ const exportFieldNames = {
   children: 'children',
 };
 
-const ExportFieldsCascader = (props) => {
-  const { optionsCache, value, onChange, onDropdownVisibleChange, ...others } = props;
+const SEARCH_DEBOUNCE_DELAY = 150;
+
+type ExportFieldsCascaderProps = Omit<
+  CascaderProps<ExportFieldOption, 'name', false>,
+  'fieldNames' | 'loadData' | 'onChange' | 'options' | 'showSearch' | 'value'
+> & {
+  optionsCache: ReturnType<typeof createLazyOptionFieldsCache>;
+  value?: unknown[];
+  onChange?: (value: string[] | null, selectedOptions: ExportFieldOption[]) => void;
+};
+
+export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
+  const { optionsCache, value, onChange, onDropdownVisibleChange, onSearch, notFoundContent, ...others } = props;
   const [cascaderOptions, setCascaderOptions] = React.useState(() => createExportFieldsOptionsSnapshot(optionsCache));
+  const [searchOptions, setSearchOptions] = React.useState<ExportFieldOption[]>([]);
+  const [searchStatus, setSearchStatus] = React.useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const lastPreloadedValueRef = React.useRef<string | null>(null);
+  const searchAbortControllerRef = React.useRef<AbortController>();
+  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
+  const searchValueRef = React.useRef('');
+  const optionsCacheRef = React.useRef(optionsCache);
+  const mountedRef = React.useRef(false);
   const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value) || undefined, [value]);
 
   const refreshOptions = React.useCallback(() => {
@@ -35,8 +54,29 @@ const ExportFieldsCascader = (props) => {
   }, [optionsCache]);
 
   React.useEffect(() => {
+    optionsCacheRef.current = optionsCache;
+    searchValueRef.current = '';
+    searchAbortControllerRef.current?.abort();
+    searchAbortControllerRef.current = undefined;
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+      searchTimerRef.current = undefined;
+    }
+    setSearchOptions([]);
+    setSearchStatus('idle');
     refreshOptions();
-  }, [refreshOptions]);
+  }, [optionsCache, refreshOptions]);
+
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      searchAbortControllerRef.current?.abort();
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    };
+  }, []);
 
   const getValueKey = React.useCallback((path) => {
     if (!Array.isArray(path)) {
@@ -83,11 +123,71 @@ const ExportFieldsCascader = (props) => {
   );
 
   const handleChange = React.useCallback(
-    (value) => {
-      onChange?.(normalizeExportFieldValue(value));
+    (nextValue: string[], selectedOptions: ExportFieldOption[]) => {
+      onChange?.(normalizeExportFieldValue(nextValue), selectedOptions);
     },
     [onChange],
   );
+
+  const handleSearch = React.useCallback(
+    (searchValue) => {
+      searchValueRef.current = searchValue;
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = undefined;
+      }
+      searchAbortControllerRef.current?.abort();
+      searchAbortControllerRef.current = undefined;
+
+      if (!searchValue.trim()) {
+        setSearchOptions([]);
+        setSearchStatus('idle');
+      } else {
+        setSearchOptions([]);
+        setSearchStatus('loading');
+        searchTimerRef.current = setTimeout(async () => {
+          const activeOptionsCache = optionsCache;
+          const activeSearchValue = searchValue;
+          const abortController = new AbortController();
+          searchAbortControllerRef.current = abortController;
+          searchTimerRef.current = undefined;
+          try {
+            const matchedOptions = await activeOptionsCache.searchOptionsAsync(activeSearchValue, {
+              signal: abortController.signal,
+            });
+            if (
+              abortController.signal.aborted ||
+              !mountedRef.current ||
+              optionsCacheRef.current !== activeOptionsCache ||
+              searchValueRef.current !== activeSearchValue
+            ) {
+              return;
+            }
+            setSearchOptions(matchedOptions);
+            setSearchStatus('ready');
+          } catch {
+            if (
+              !abortController.signal.aborted &&
+              mountedRef.current &&
+              optionsCacheRef.current === activeOptionsCache &&
+              searchValueRef.current === activeSearchValue
+            ) {
+              setSearchOptions([]);
+              setSearchStatus('error');
+            }
+          } finally {
+            if (searchAbortControllerRef.current === abortController) {
+              searchAbortControllerRef.current = undefined;
+            }
+          }
+        }, SEARCH_DEBOUNCE_DELAY);
+      }
+      onSearch?.(searchValue);
+    },
+    [onSearch, optionsCache],
+  );
+
+  const searchIsActive = Boolean(searchValueRef.current.trim());
 
   const displayRender = React.useCallback(
     (labels, selectedOptions) => {
@@ -109,10 +209,13 @@ const ExportFieldsCascader = (props) => {
       {...others}
       value={cascaderValue}
       fieldNames={exportFieldNames}
-      options={cascaderOptions}
+      options={searchIsActive ? searchOptions : cascaderOptions}
       loadData={loadData}
+      notFoundContent={searchStatus === 'loading' ? <Spin size="small" /> : notFoundContent}
       onChange={handleChange}
       onDropdownVisibleChange={handleDropdownVisibleChange}
+      onSearch={handleSearch}
+      showSearch
       displayRender={displayRender}
     />
   );

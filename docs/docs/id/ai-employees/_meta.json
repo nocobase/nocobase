@@ -289,6 +289,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Otomatisasi riset latar belakang perusahaan",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
         "label": "Viz: Konfigurasi Skenario CRM",
         "link": "/ai-employees/scenarios/viz-crm"
       },

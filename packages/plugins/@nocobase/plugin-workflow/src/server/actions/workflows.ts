@@ -185,6 +185,12 @@ export async function execute(context: Context, next) {
   let processor;
   try {
     processor = (await plugin.execute(workflow, values, { manually: true })) as Processor;
+    if (processor === null) {
+      context.body = {
+        execution: null,
+      };
+      return next();
+    }
     if (!processor) {
       return context.throw(400, 'workflow not triggered');
     }
@@ -195,7 +201,7 @@ export async function execute(context: Context, next) {
     filter: { key: workflow.key },
   });
   let newVersion;
-  if (executed == 0 && autoRevision) {
+  if (executed === 0 && Number(autoRevision) === 1) {
     newVersion = await repository.revision({
       filterByTk: workflow.id,
       filter: { key: workflow.key },

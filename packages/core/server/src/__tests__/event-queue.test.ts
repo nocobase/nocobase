@@ -221,6 +221,37 @@ describe('memory queue adapter', () => {
     expect(mockPlugin.idle).toBe(true);
   });
 
+  test('consume next message immediately after processing completes', async () => {
+    let resolveFirst!: () => void;
+    const firstProcessing = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const processedMessages: string[] = [];
+
+    await app.eventQueue.subscribe('test1', {
+      interval: 1000,
+      idle: () => true,
+      process: async (message) => {
+        if (message === 'message1') {
+          await firstProcessing;
+        }
+        processedMessages.push(message);
+      },
+    });
+    await app.eventQueue.connect();
+
+    await app.eventQueue.publish('test1', 'message1');
+    await app.eventQueue.publish('test1', 'message2');
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(processedMessages).toHaveLength(0);
+    resolveFirst();
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(processedMessages).toEqual(['message1', 'message2']);
+  });
+
   describe('error handling and retry', () => {
     test('message processing failure with retry', async () => {
       const mockListener = vi.fn().mockImplementation(() => {
@@ -269,6 +300,39 @@ describe('memory queue adapter', () => {
   });
 
   describe('concurrency control', () => {
+    test('treats zero concurrency as unlimited', async () => {
+      const releases: Array<() => void> = [];
+      let active = 0;
+
+      await app.eventQueue.connect();
+      await app.eventQueue.subscribe('unlimited-test', {
+        concurrency: 0,
+        idle: () => true,
+        process: async () => {
+          active += 1;
+          await new Promise<void>((resolve) => {
+            releases.push(resolve);
+          });
+          active -= 1;
+        },
+      });
+
+      await app.eventQueue.publish('unlimited-test', 1);
+      await app.eventQueue.publish('unlimited-test', 2);
+      await app.eventQueue.publish('unlimited-test', 3);
+
+      for (let i = 0; i < 20 && releases.length < 3; i++) {
+        await sleep(50);
+      }
+
+      expect(releases).toHaveLength(3);
+      expect(active).toBe(3);
+
+      releases.forEach((release) => release());
+      await sleep(100);
+      expect(active).toBe(0);
+    });
+
     test('concurrent message processing with custom concurrency', async () => {
       const mockPlugin = app.pm.get(MockPlugin1);
       await app.start();
@@ -323,6 +387,41 @@ describe('memory queue adapter', () => {
   });
 
   describe('storage', () => {
+    test('graceful shutdown waits for in-flight processing', async () => {
+      let resolveProcessing!: () => void;
+      const processing = new Promise<void>((resolve) => {
+        resolveProcessing = resolve;
+      });
+      let processingStarted!: () => void;
+      const started = new Promise<void>((resolve) => {
+        processingStarted = resolve;
+      });
+      let closed = false;
+
+      await app.eventQueue.subscribe('test1', {
+        idle: () => true,
+        process: async () => {
+          processingStarted();
+          await processing;
+        },
+      });
+      await app.eventQueue.connect();
+      await app.eventQueue.publish('test1', 'message1');
+      await started;
+
+      const closing = app.eventQueue.close().then(() => {
+        closed = true;
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(closed).toBe(false);
+
+      resolveProcessing();
+      await closing;
+
+      expect(closed).toBe(true);
+    });
+
     test('graceful shutdown, will create storage', async () => {
       const mockListener = vi.fn();
       const queueFile = storagePathJoin('apps', app.name, 'event-queue.json');

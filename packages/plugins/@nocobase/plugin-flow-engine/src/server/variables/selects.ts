@@ -26,6 +26,9 @@ export function adjustSelectsForCollection(
   const ds = koaCtx.app.dataSourceManager.get(dataSourceKey || 'main');
   const cm = ds.collectionManager as SequelizeCollectionManager;
   const coll = cm?.db?.getCollection?.(collection);
+  if (!coll?.model?.rawAttributes) {
+    return { fields, appends };
+  }
 
   const assocKeys: string[] = Object.keys(coll?.model?.associations || {});
   const rawAttrs: Record<string, unknown> = (coll?.model?.rawAttributes as Record<string, unknown>) || {};

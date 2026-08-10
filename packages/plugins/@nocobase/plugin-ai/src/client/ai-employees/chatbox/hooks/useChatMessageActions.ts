@@ -26,6 +26,39 @@ import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
+type UploadAttachmentSource = {
+  dataSourceKey: string;
+  collectionName: string;
+  field?: string;
+};
+
+type UploadFieldModelWithContext = UploadFieldModel & {
+  context?: {
+    collection?: {
+      dataSourceKey?: string;
+    };
+    collectionField?: {
+      collectionName?: string;
+      name?: string;
+      target?: string;
+    };
+  };
+};
+
+const getUploadAttachmentSource = (model: UploadFieldModelWithContext): UploadAttachmentSource | null => {
+  const collectionField = model.context?.collectionField;
+  const collectionName = collectionField?.target;
+  if (!collectionName || !collectionField?.collectionName || !collectionField?.name) {
+    return null;
+  }
+
+  return {
+    dataSourceKey: model.context?.collection?.dataSourceKey || 'main',
+    collectionName,
+    field: `${collectionField.collectionName}.${collectionField.name}`,
+  };
+};
+
 type MessagesResponse = {
   data: Message[];
   meta: {
@@ -119,7 +152,14 @@ export const useChatMessageActions = () => {
             subModel.props?.value?.length &&
             typeof subModel.props.value !== 'string'
           ) {
-            attachments.push(...subModel.props.value.map((it) => ({ ...it, status: 'done' })));
+            const source = getUploadAttachmentSource(subModel);
+            attachments.push(
+              ...subModel.props.value.map((it) => ({
+                ...it,
+                status: 'done',
+                ...(source ? { source } : {}),
+              })),
+            );
           }
         });
       }

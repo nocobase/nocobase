@@ -81,6 +81,23 @@ function isInputBlock(def: PromptBlock): boolean {
   );
 }
 
+function buildPromptComputationSeed(
+  catalog: PromptsCatalog,
+  userPreset: PromptInitialValues,
+): Record<string, PromptValue> {
+  const catalogKeys = new Set(Object.keys(catalog));
+  const seed: Record<string, PromptValue> = {};
+
+  for (const [key, value] of Object.entries(userPreset)) {
+    if (catalogKeys.has(key) || value === undefined || value === null) {
+      continue;
+    }
+    seed[key] = value as PromptValue;
+  }
+
+  return seed;
+}
+
 /**
  * Merges CLI/env **`userPreset`** with catalog block defaults, in the same key order and with the
  * same `hidden` / `run` semantics as {@link isPromptBlockSkipped}, so the web form can prefill
@@ -90,7 +107,7 @@ export function buildWebFormValuesFromCatalog(
   catalog: PromptsCatalog,
   userPreset: PromptInitialValues = {},
 ): PromptInitialValues {
-  const out: Record<string, PromptValue> = {};
+  const out: Record<string, PromptValue> = buildPromptComputationSeed(catalog, userPreset);
   for (const [key, def] of Object.entries(catalog)) {
     if (def.type === 'intro' || def.type === 'outro') {
       continue;
@@ -156,7 +173,7 @@ export function reflowWebFormState(
   raw: Record<string, unknown>,
   userSeed: PromptInitialValues = {},
 ): ReflowState {
-  const out: Record<string, PromptValue> = {};
+  const out: Record<string, PromptValue> = buildPromptComputationSeed(catalog, userSeed);
   const show: Record<string, boolean> = {};
   for (const [key, def] of Object.entries(catalog)) {
     if (def.type === 'intro' || def.type === 'outro') {
