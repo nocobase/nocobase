@@ -445,6 +445,43 @@ describe('FormValueRuntime (default rules)', () => {
 });
 
 describe('FormValueRuntime (form assign rules)', () => {
+  it('uses the form grid as the variable contract owner', async () => {
+    const engineEmitter = new EventEmitter();
+    const formStub = createFormStub({ b: 'licensed' });
+    const onResolveJsonTemplate = vi.fn();
+    const blockModel: any = {
+      uid: 'form-contract-owner',
+      subModels: { grid: { uid: 'form-contract-owner-grid' } },
+      flowEngine: { emitter: engineEmitter },
+      emitter: new EventEmitter(),
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    const blockCtx = createFieldContext(runtime);
+    const resolveJsonTemplate = blockCtx.resolveJsonTemplate.bind(blockCtx);
+    blockCtx.defineMethod('resolveJsonTemplate', async (template: unknown, options?: unknown) => {
+      onResolveJsonTemplate(options);
+      return resolveJsonTemplate(template, options);
+    });
+    blockModel.context = blockCtx;
+    runtime.mount({ sync: true });
+
+    runtime.syncAssignRules([
+      {
+        key: 'license-version',
+        enable: true,
+        targetPath: 'a',
+        mode: 'assign',
+        condition: { logic: '$and', items: [] },
+        value: '__B__',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('licensed'));
+    expect(onResolveJsonTemplate).toHaveBeenCalledWith({ contractModelUid: 'form-contract-owner-grid' });
+  });
+
   it('migrates block-level rule to field instance on mount and restores on unmount', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
