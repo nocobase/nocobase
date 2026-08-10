@@ -18,6 +18,19 @@ describe('TreeBlockModel', () => {
     vi.restoreAllMocks();
   });
 
+  it('prefers a business title field when the collection title field is the primary key', () => {
+    const titleFieldName = TreeBlockModel.prototype.getTitleFieldName.call({
+      props: {},
+      collection: {
+        filterTargetKey: 'id',
+        titleCollectionField: { name: 'id' },
+        getField: (name: string) => (name === 'title' ? { name: 'title' } : undefined),
+      },
+    });
+
+    expect(titleFieldName).toBe('title');
+  });
+
   it('hides single relation entries from associated records in tree filter block menu', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ TreeBlockModel });
