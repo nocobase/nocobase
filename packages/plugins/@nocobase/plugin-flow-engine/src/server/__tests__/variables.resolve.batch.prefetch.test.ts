@@ -281,7 +281,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
         params: {
           associationName: 'users.roles',
           collection,
-          filterByTk: collection === 'roles' ? 'root' : 'secret',
+          filterByTk: collection === 'secrets' ? 'secret' : 'root',
           sourceId: 1,
         },
         prefix: ['record'],
@@ -294,11 +294,11 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
       return calls;
     };
 
-    await expect(run(['roles', 'secrets'])).resolves.toEqual([
-      { appends: undefined, fields: ['name'], filterByTk: 'root' },
+    await expect(run(['users', 'secrets'])).resolves.toEqual([
+      { appends: undefined, context: expect.anything(), fields: ['name'], filterByTk: 'root' },
     ]);
-    await expect(run(['secrets', 'roles'])).resolves.toEqual([
-      { appends: undefined, fields: ['name'], filterByTk: 'root' },
+    await expect(run(['secrets', 'users'])).resolves.toEqual([
+      { appends: undefined, context: expect.anything(), fields: ['name'], filterByTk: 'root' },
     ]);
   });
 
@@ -350,7 +350,12 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
     );
 
     expect(findOne).toHaveBeenCalledTimes(1);
-    expect(findOne).toHaveBeenCalledWith({ appends: undefined, fields: ['email', 'id'], filterByTk: 1 });
+    expect(findOne).toHaveBeenCalledWith({
+      appends: undefined,
+      fields: ['email', 'id'],
+      filterByTk: 1,
+      context,
+    });
     expect(strict).toBe(raw);
     expect(projectRecord(strict, [['id']])).toEqual({ id: 1 });
   });
