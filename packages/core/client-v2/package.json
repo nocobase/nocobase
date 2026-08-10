@@ -40,8 +40,6 @@
     "@lezer/common": "1.2.3",
     "@nocobase/evaluators": "3.0.0-alpha.7",
     "@nocobase/flow-engine": "3.0.0-alpha.7",
-    "@nocobase/js-template-sdk": "3.0.0-alpha.7",
-    "@nocobase/runjs": "3.0.0-alpha.7",
     "@nocobase/sdk": "3.0.0-alpha.7",
     "@nocobase/shared": "3.0.0-alpha.7",
     "@nocobase/utils": "3.0.0-alpha.7",

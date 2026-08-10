@@ -33,6 +33,7 @@ describe('vitest test routing', () => {
     const config = defineConfig();
 
     expect(config.test.exclude).toContain('packages/**/src/client-v2/**/*');
+    expect(config.test.exclude).toContain('packages/core/runjs/src/workspace/client-v2/**/*');
   });
 
   test('client-side package filter includes plugin client-v2 tests', () => {
@@ -49,15 +50,16 @@ describe('vitest test routing', () => {
 
     const config = defineConfig();
 
-    expect(config.test.exclude).toContain('packages/core/!(sdk|client|client-v2|flow-engine|runjs-workspace)/**/*');
+    expect(config.test.exclude).toContain('packages/core/!(sdk|client|client-v2|flow-engine|runjs)/**/*');
     expect(config.test.exclude).toContain('packages/**/src/server/**/*');
+    expect(config.test.exclude).toContain('packages/core/runjs/src/workspace/server/**/*');
   });
 
   test('an explicit __tests__ directory includes its test files directly', () => {
-    process.argv = ['node', 'vitest', 'packages/core/runjs-workspace/src/client-v2/__tests__'];
+    process.argv = ['node', 'vitest', 'packages/core/runjs/src/workspace/client-v2/__tests__'];
 
     expect(getFilterInclude(false).include).toEqual([
-      'packages/core/runjs-workspace/src/client-v2/__tests__/**/*.{test,spec}.{ts,tsx}',
+      'packages/core/runjs/src/workspace/client-v2/__tests__/**/*.{test,spec}.{ts,tsx}',
     ]);
   });
 });

@@ -34,7 +34,7 @@ import {
   VscError,
   buildRunJSSourceRepositoryIdentity,
   canonicalizeRunJSCompileFiles,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 
 const project: JsTemplateProject = {
   id: 'jtp_existing',
@@ -706,7 +706,7 @@ describe('detach to inline integration', () => {
       {
         label: 'a non-public SDK type',
         content:
-          'import type { MissingContext } from "@nocobase/js-template-sdk/client";\n' +
+          'import type { MissingContext } from "@nocobase/runjs/js-template/client";\n' +
           'ctx.render(null as unknown as MissingContext);\n',
         diagnosticCode: 'import_not_allowed',
       },
@@ -1229,7 +1229,7 @@ describe('detach to inline integration', () => {
         {
           path: pageEntry.entryPath,
           content: [
-            'import { defineSettings } from "@nocobase/js-template-sdk/client";',
+            'import { defineSettings } from "@nocobase/runjs/js-template/client";',
             'import type { Settings } from "js-template:settings/client/js-page/page";',
             "import { used } from '../../../shared/used';",
             'const authoringSettings = defineSettings({ enabled: true });',
@@ -1300,7 +1300,7 @@ describe('detach to inline integration', () => {
       );
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/shared/unused.ts');
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/client/js-pages/sibling/index.tsx');
-      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('@nocobase/js-template-sdk/client');
+      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('@nocobase/runjs/js-template/client');
       expect(JSON.stringify(prepareEntry.mock.calls)).toContain('js-template:settings/client/js-page/page');
       expect(prepareEntry).toHaveBeenCalledOnce();
       expect(compileEntry).not.toHaveBeenCalled();
@@ -1328,7 +1328,7 @@ describe('detach to inline integration', () => {
         expect.any(Object),
       );
       const pushedFiles = ensureAndPush.mock.calls[0][0].files as VscFileChange[];
-      expect(JSON.stringify(pushedFiles)).not.toContain('@nocobase/js-template-sdk/');
+      expect(JSON.stringify(pushedFiles)).not.toContain('@nocobase/runjs/js-template/');
       expect(JSON.stringify(pushedFiles)).not.toContain('js-template:settings/');
       const canonicalFiles = pushedFiles.filter((file) => file.operation === 'upsert');
       const committed = await pullCommit({ repoId: result.runJSRepoId, commitId: result.commitId });

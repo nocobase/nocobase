@@ -24,7 +24,7 @@ describe('JS Template to Inline workspace conversion', () => {
         {
           path: 'src/client/js-pages/orders/index.tsx',
           content: [
-            'import { type JSPageContext, defineSettings } from "@nocobase/js-template-sdk/client";',
+            'import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";',
             'import type { Settings } from "js-template:settings/client/js-page/orders";',
             'import { title } from "./title";',
             'const settings = defineSettings({ title });',
@@ -58,7 +58,7 @@ describe('JS Template to Inline workspace conversion', () => {
     ]);
     const entry = result.files.find((file) => file.path === result.entryPath)?.content || '';
     expect(entry).toContain('from "./title"');
-    expect(entry).toContain('from "@nocobase/js-template-sdk/client"');
+    expect(entry).toContain('from "@nocobase/runjs/js-template/client"');
     expect(entry).toContain('from "js-template:settings/client/js-page/orders"');
     expect(entry).not.toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
   });

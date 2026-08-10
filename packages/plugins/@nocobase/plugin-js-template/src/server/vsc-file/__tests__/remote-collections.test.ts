@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs/workspace/server';
 import { UniqueConstraintError } from 'sequelize';
 
 describe('vsc-file remote collections', () => {

@@ -23,7 +23,7 @@ Put each reusable JS Template in its own directory:
 
 Every template root must include \`entry.json\` with \`schemaVersion\` and a stable \`key\`. Template settings are available through \`ctx.settings\`; use \`ctx.t()\` for runtime-visible strings.
 
-Use \`@nocobase/js-template-sdk/client\` and \`@nocobase/js-template-sdk/shared\` for authoring types. Modules may import other files inside their template directory or shared modules from \`src/shared/\`.
+Use \`@nocobase/runjs/js-template/client\` and \`@nocobase/runjs/js-template/shared\` for authoring types. Modules may import other files inside their template directory or shared modules from \`src/shared/\`.
 `;
 
 export const JS_TEMPLATE_TSCONFIG_CONTENT =

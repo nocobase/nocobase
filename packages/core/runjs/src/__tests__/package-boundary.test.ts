@@ -11,36 +11,11 @@ import fs from 'fs';
 import path from 'path';
 import ts from 'typescript';
 
-const forbiddenImports = [
-  '@nocobase/database',
-  '@nocobase/server',
-  '@nocobase/client',
-  '@nocobase/client-v2',
-  'react',
-  'koa',
-];
-
 describe('@nocobase/runjs package boundary', () => {
   it('exposes the server declarations to legacy TypeScript module resolution', () => {
     const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
 
     expect(packageJson.typesVersions?.['*']?.server).toEqual(['./lib/server.d.ts']);
-  });
-
-  it('does not import application, plugin, database, UI, or Koa runtimes', () => {
-    const sourceRoot = path.resolve(__dirname, '..');
-    const sourceFiles = collectSourceFiles(sourceRoot).filter(
-      (file) => !file.includes(`${path.sep}__tests__${path.sep}`),
-    );
-    const violations = sourceFiles.flatMap((file) => {
-      const source = fs.readFileSync(file, 'utf8');
-      const importedSpecifiers = collectRuntimeImportSpecifiers(source, file);
-      return forbiddenImports
-        .filter((specifier) => importedSpecifiers.has(specifier))
-        .map((specifier) => `${path.relative(sourceRoot, file)} -> ${specifier}`);
-    });
-
-    expect(violations).toEqual([]);
   });
 
   it('keeps the portable compiler boundary free of Node and native compiler imports', () => {
@@ -59,6 +34,7 @@ describe('@nocobase/runjs package boundary', () => {
       expect(importedSpecifiers.has(nodeBuiltin)).toBe(false);
     }
     expect(rootSource).not.toMatch(/(?:from|import\()\s*['"](?:node:)?(?:crypto|fs|path)['"]/u);
+    expect(rootSource).not.toMatch(/(?:from|import\()\s*['"].*\/workspace\/(?:client|client-v2|server)['"]/u);
   });
 
   it('never lets a browser-facing entrypoint transitively reach crypto or the server module', () => {
@@ -215,14 +191,4 @@ function isValueExportDeclaration(node: ts.ExportDeclaration): boolean {
     return true; // `export * from './x'` / `export * as ns from './x'` re-export runtime values
   }
   return clause.elements.some((element) => !element.isTypeOnly);
-}
-
-function collectSourceFiles(directory: string): string[] {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return collectSourceFiles(entryPath);
-    }
-    return /\.tsx?$/u.test(entry.name) ? [entryPath] : [];
-  });
 }

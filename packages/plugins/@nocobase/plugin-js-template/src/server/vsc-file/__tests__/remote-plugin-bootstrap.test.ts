@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import type { Application } from '@nocobase/server';
 import { createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';

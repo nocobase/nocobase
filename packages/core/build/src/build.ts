@@ -19,7 +19,7 @@ import {
   CORE_APP,
   CORE_CLIENT,
   CORE_CLIENT_V2,
-  CORE_RUNJS_WORKSPACE,
+  CORE_RUNJS,
   ESM_PACKAGES,
   getCjsPackages,
   getPluginPackages,
@@ -112,11 +112,11 @@ export async function build(pkgs: string[]) {
         profile,
       });
     }
-    // runjs-workspace declarations import client-v2 authoring types, so build them after client-v2 declarations exist.
-    const runJSWorkspaceCore = packages.find((item) => item.location === CORE_RUNJS_WORKSPACE);
-    if (runJSWorkspaceCore) {
-      await buildSinglePackage(runJSWorkspaceCore, 'lib', buildCjs, {
-        stageName: 'core runjs-workspace',
+    // The consolidated RunJS Workspace imports client host interfaces, so build it after both client declarations exist.
+    const runJSCore = packages.find((item) => item.location === CORE_RUNJS);
+    if (runJSCore) {
+      await buildSinglePackage(runJSCore, 'lib', buildCjs, {
+        stageName: 'core runjs',
         profile,
       });
     }

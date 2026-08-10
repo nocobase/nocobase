@@ -12,7 +12,7 @@ import {
   type RunJSLegacySource,
   type RunJSSourceAdapter,
   type RunJSSourceLocator,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 import PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 

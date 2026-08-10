@@ -48,8 +48,7 @@
     "Developer tools"
   ],
   "dependencies": {
-    "@nocobase/js-template-sdk": "3.0.0-alpha.7",
-    "@nocobase/runjs-workspace": "3.0.0-alpha.7",
+    "@nocobase/runjs": "3.0.0-alpha.7",
     "jszip": "^3.10.1",
     "typescript": "5.1.3"
   },
@@ -71,7 +70,6 @@
     "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/plugin-environment-variables": "2.x",
     "@nocobase/resourcer": "2.x",
-    "@nocobase/runjs": "3.0.0-alpha.7",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x",

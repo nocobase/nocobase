@@ -18,8 +18,9 @@ import {
   JS_TEMPLATE_SETTINGS_SCHEMA_TYPES,
   JS_TEMPLATE_X_COMPONENT_WHITELIST,
   jsTemplateV1Schema,
-} from '@nocobase/js-template-sdk/schema';
-import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
+} from '@nocobase/runjs/js-template/schema';
+import { JS_TEMPLATE_SDK_CLIENT_IMPORT, JS_TEMPLATE_SDK_SHARED_IMPORT } from '@nocobase/runjs/js-template/typegen';
+import sdkPackageJson from '@nocobase/runjs/package.json';
 import type { Database } from '@nocobase/database';
 import {
   RUNJS_SETTINGS_CONDITION_LIMITS,
@@ -70,8 +71,10 @@ describe('entry descriptor schema', () => {
     expect(capabilities.conditions.logic).toEqual(RUNJS_SETTINGS_CONDITION_LOGICS);
     expect(capabilities.conditions.limits).toEqual(RUNJS_SETTINGS_CONDITION_LIMITS);
     expect(capabilities.sdk).toEqual({
-      packageName: '@nocobase/js-template-sdk',
+      packageName: '@nocobase/runjs',
       version: sdkPackageJson.version,
+      clientImport: JS_TEMPLATE_SDK_CLIENT_IMPORT,
+      sharedImport: JS_TEMPLATE_SDK_SHARED_IMPORT,
       templateSchemaUri: JS_TEMPLATE_SCHEMA_URI,
       templateSchemaSha256: jsTemplateV1SchemaSha256,
     });

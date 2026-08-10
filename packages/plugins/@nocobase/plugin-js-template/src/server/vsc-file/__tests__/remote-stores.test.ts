@@ -8,7 +8,7 @@
  */
 
 import { Database, createMockDatabase } from '@nocobase/database';
-import { importRunJSWorkspaceCollections } from '@nocobase/runjs-workspace/server';
+import { importRunJSWorkspaceCollections } from '@nocobase/runjs/workspace/server';
 
 import type { VscFileRemoteRecord, VscRemoteNormalizedConfig } from '../../../shared/vsc-file/remote-sync-types';
 import { ConflictStore } from '../remotes/ConflictStore';

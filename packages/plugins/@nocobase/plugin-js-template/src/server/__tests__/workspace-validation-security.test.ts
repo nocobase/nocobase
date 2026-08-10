@@ -70,7 +70,7 @@ describe('path', () => {
   });
 
   it('allows canonical SDK types and helpers through a shared helper in a JS Field template', () => {
-    const sdkPackageName = '@nocobase/js-template-sdk';
+    const sdkPackageName = '@nocobase/runjs/js-template';
     const result = new JsTemplateValidator().validateWorkspace({
       files: [
         {
@@ -467,7 +467,7 @@ describe('module import', () => {
         {
           path: 'src/client/js-fields/phone-link/index.tsx',
           content:
-            'import {} from "@nocobase/js-template-sdk/client";\nexport default function PhoneLink() { return null; }\n',
+            'import {} from "@nocobase/runjs/js-template/client";\nexport default function PhoneLink() { return null; }\n',
         },
         {
           path: 'src/client/js-fields/phone-link/entry.json',
@@ -492,10 +492,10 @@ describe('module import', () => {
         {
           path: 'src/client/js-pages/orders/index.tsx',
           content: [
-            'import type * as SDK from "@nocobase/js-template-sdk/client";',
+            'import type * as SDK from "@nocobase/runjs/js-template/client";',
             'import type * as Template from "js-template:settings/client/js-page/orders";',
             'type Page = SDK.JSPageContext<Template.Settings>;',
-            'type ImportedPage = import("@nocobase/js-template-sdk/client").JSPageContext<Template.Settings>;',
+            'type ImportedPage = import("@nocobase/runjs/js-template/client").JSPageContext<Template.Settings>;',
             'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
             'ctx.render(<div />);',
           ].join('\n'),
@@ -514,37 +514,37 @@ describe('module import', () => {
   it.each([
     {
       label: 'SDK default import',
-      source: 'import SDK from "@nocobase/js-template-sdk/client";',
+      source: 'import SDK from "@nocobase/runjs/js-template/client";',
       code: 'import_not_allowed',
     },
     {
       label: 'SDK side-effect import',
-      source: 'import "@nocobase/js-template-sdk/client";',
+      source: 'import "@nocobase/runjs/js-template/client";',
       code: 'import_not_allowed',
     },
     {
       label: 'SDK runtime namespace',
-      source: 'import * as SDK from "@nocobase/js-template-sdk/client";',
+      source: 'import * as SDK from "@nocobase/runjs/js-template/client";',
       code: 'import_not_allowed',
     },
     {
       label: 'unknown SDK type',
-      source: 'import type { MissingContext } from "@nocobase/js-template-sdk/client";',
+      source: 'import type { MissingContext } from "@nocobase/runjs/js-template/client";',
       code: 'import_not_allowed',
     },
     {
       label: 'client host type from shared SDK',
-      source: 'import type { JSPageContext } from "@nocobase/js-template-sdk/shared";',
+      source: 'import type { JSPageContext } from "@nocobase/runjs/js-template/shared";',
       code: 'import_not_allowed',
     },
     {
       label: 'unknown SDK import type',
-      source: 'type Missing = import("@nocobase/js-template-sdk/client").MissingContext;',
+      source: 'type Missing = import("@nocobase/runjs/js-template/client").MissingContext;',
       code: 'import_not_allowed',
     },
     {
       label: 'unknown SDK namespace type',
-      source: 'import type * as SDK from "@nocobase/js-template-sdk/client";\ntype Missing = SDK.MissingContext;',
+      source: 'import type * as SDK from "@nocobase/runjs/js-template/client";\ntype Missing = SDK.MissingContext;',
       code: 'import_not_allowed',
       line: 2,
     },

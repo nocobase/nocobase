@@ -8,7 +8,7 @@
  */
 
 import type { VscRemoteSnapshotFile } from '../../shared/vsc-file/remote-sync-types';
-import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 

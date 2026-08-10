@@ -131,6 +131,18 @@ function buildVitestNodeArgs(argv, nodeVersion = process.versions.node) {
   return cliArgs;
 }
 
+function inferTestEnvironment(testPath) {
+  const segments = String(testPath || '')
+    .split(path.sep)
+    .join('/')
+    .split('/')
+    .filter(Boolean);
+
+  return segments.some((segment) => segment === 'client' || segment === 'client-v2' || segment === 'flow-engine')
+    ? 'client-side'
+    : 'server-side';
+}
+
 /**
  *
  * @param {String} name
@@ -179,12 +191,7 @@ function addTestCommand(name, cli) {
 
       const first = paths?.[0];
       if (!process.env.TEST_ENV && first) {
-        const key = first.split(path.sep).join('/');
-        if (key.includes('/client/') || key.includes('/client-v2/') || key.includes('/flow-engine/')) {
-          process.env.TEST_ENV = 'client-side';
-        } else {
-          process.env.TEST_ENV = 'server-side';
-        }
+        process.env.TEST_ENV = inferTestEnvironment(first);
       }
 
       if (process.env.TEST_ENV === 'server-side' && opts.singleThread !== 'false') {
@@ -234,4 +241,5 @@ module.exports._test = {
   resolveWorkspaceTestDelegation,
   requiresNoNodeSnapshot,
   buildVitestNodeArgs,
+  inferTestEnvironment,
 };

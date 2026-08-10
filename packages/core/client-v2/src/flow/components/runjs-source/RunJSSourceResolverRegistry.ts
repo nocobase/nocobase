@@ -8,49 +8,28 @@
  */
 
 import type { RunJSSourceResolver } from './types';
-import { INLINE_RUNJS_SOURCE_MODE, RunJSSourceResolverError } from './types';
+import { getRunJSRegistryHost, requireRunJSRegistryHost } from './RunJSRegistryHost';
 
-function normalizeSourceMode(sourceMode: unknown): string {
-  return typeof sourceMode === 'string' ? sourceMode.trim() : '';
+export interface RunJSSourceResolverRegistryHost {
+  registerResolver(resolver: RunJSSourceResolver): () => void;
+  getResolver(sourceMode: unknown): RunJSSourceResolver | null;
+  getResolvers(): RunJSSourceResolver[];
+  clear(): void;
 }
 
-export class RunJSSourceResolverRegistryManager {
-  private readonly resolvers = new Map<string, RunJSSourceResolver>();
+export type RunJSSourceResolverRegistryManager = RunJSSourceResolverRegistryHost;
 
-  registerResolver(resolver: RunJSSourceResolver): () => void {
-    const sourceMode = normalizeSourceMode(resolver?.sourceMode);
-    if (!sourceMode || sourceMode === INLINE_RUNJS_SOURCE_MODE || typeof resolver?.resolve !== 'function') {
-      throw new RunJSSourceResolverError('RunJS source resolver requires a non-inline sourceMode and resolve()', {
-        code: 'RUNJS_SOURCE_RESOLVER_REQUIRED',
-        sourceMode,
-      });
-    }
-
-    const normalizedResolver = {
-      ...resolver,
-      sourceMode,
-    };
-    this.resolvers.set(sourceMode, normalizedResolver);
-
-    return () => {
-      if (this.resolvers.get(sourceMode) === normalizedResolver) {
-        this.resolvers.delete(sourceMode);
-      }
-    };
-  }
-
-  getResolver(sourceMode: unknown): RunJSSourceResolver | null {
-    const normalizedSourceMode = normalizeSourceMode(sourceMode);
-    return normalizedSourceMode ? this.resolvers.get(normalizedSourceMode) || null : null;
-  }
-
-  getResolvers(): RunJSSourceResolver[] {
-    return Array.from(this.resolvers.values());
-  }
-
+export const RunJSSourceResolverRegistry: RunJSSourceResolverRegistryHost = {
+  registerResolver(resolver) {
+    return requireRunJSRegistryHost().sourceResolvers.registerResolver(resolver);
+  },
+  getResolver(sourceMode) {
+    return getRunJSRegistryHost()?.sourceResolvers.getResolver(sourceMode) || null;
+  },
+  getResolvers() {
+    return getRunJSRegistryHost()?.sourceResolvers.getResolvers() || [];
+  },
   clear() {
-    this.resolvers.clear();
-  }
-}
-
-export const RunJSSourceResolverRegistry = new RunJSSourceResolverRegistryManager();
+    getRunJSRegistryHost()?.sourceResolvers.clear();
+  },
+};

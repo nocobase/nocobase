@@ -21,7 +21,7 @@ import {
   type RunJSSourceLocator,
   type RunJSSourcePermissionResult,
   type RunJSSurfaceStyle,
-} from '@nocobase/server';
+} from '@nocobase/runjs/workspace/server';
 
 import FlowModelRepository from '../repository';
 

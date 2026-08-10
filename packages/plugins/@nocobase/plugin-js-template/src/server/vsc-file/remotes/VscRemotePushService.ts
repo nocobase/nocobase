@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 
-import { VscError } from '@nocobase/runjs-workspace/shared';
+import { VscError } from '@nocobase/runjs/workspace/shared';
 import type {
   RemoteSyncErrorCode,
   VscFileRemoteRecord,
@@ -17,12 +17,12 @@ import type {
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../shared/vsc-file/remote-sync-types';
-import type { VscRepositoryRecord } from '@nocobase/runjs-workspace/shared';
-import type { VscPermissionRequestMetadata } from '@nocobase/runjs-workspace/server';
-import { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
-import { CommitService } from '@nocobase/runjs-workspace/server';
-import { RepositoryService } from '@nocobase/runjs-workspace/server';
-import { TreeService } from '@nocobase/runjs-workspace/server';
+import type { VscRepositoryRecord } from '@nocobase/runjs/workspace/shared';
+import type { VscPermissionRequestMetadata } from '@nocobase/runjs/workspace/server';
+import { VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
+import { CommitService } from '@nocobase/runjs/workspace/server';
+import { RepositoryService } from '@nocobase/runjs/workspace/server';
+import { TreeService } from '@nocobase/runjs/workspace/server';
 import { ConflictStore } from './ConflictStore';
 import { ExternalCommitMapStore } from './ExternalCommitMapStore';
 import { RemoteSyncError, type RemoteSyncAdapter, type RemoteSyncPublishResult } from './RemoteSyncAdapter';

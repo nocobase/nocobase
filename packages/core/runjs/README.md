@@ -1,6 +1,6 @@
 # @nocobase/runjs
 
-`@nocobase/runjs` contains the shared RunJS data contracts, virtual-workspace compiler, settings helpers, and server hashing utilities.
+`@nocobase/runjs` contains the shared RunJS data contracts, virtual-workspace compiler, settings helpers, JS Template authoring contracts, multi-file Workspace integrations, and server utilities.
 
 ## Public entries
 
@@ -11,10 +11,40 @@
 | `@nocobase/runjs/compiler/build-identity` | Compiler build identity without loading the compiler |
 | `@nocobase/runjs/compiler/loader` | Server-only lazy compiler loading that works from source and built packages |
 | `@nocobase/runjs/compiler/portable` | Portable path, import-resolution, built-in module, and diagnostic contracts |
+| `@nocobase/runjs/js-template/client` | JS Template client context types and settings helpers |
+| `@nocobase/runjs/js-template/schema` | Canonical `entry.json` schema and condition contracts |
+| `@nocobase/runjs/js-template/schema/server` | Server-only schema file path, content, and digest |
+| `@nocobase/runjs/js-template/shared` | Runtime-neutral JS Template settings contracts |
+| `@nocobase/runjs/js-template/typegen` | Pure `entry.json.settings` type generation |
 | `@nocobase/runjs/settings` | Settings defaults, conditions, pruning, and Entry selection normalization |
 | `@nocobase/runjs/server` | SHA-256 helpers for files, runtime code, and immutable artifacts |
+| `@nocobase/runjs/workspace/client` | Legacy client Workspace integration |
+| `@nocobase/runjs/workspace/client-v2` | Client-v2 Studio, runtime, and authoring integration |
+| `@nocobase/runjs/workspace/server` | Workspace persistence, compilation, permissions, and services |
+| `@nocobase/runjs/workspace/shared` | Runtime-neutral Workspace contracts |
+| `@nocobase/runjs/workspace/swagger` | Workspace API schemas |
 
 The root entry stays dependency-light. Import compiler, settings, or server behavior from its explicit subpath.
+
+## JS Template authoring
+
+The `js-template` entries are the canonical source for JS Template authoring types, schema contracts, and settings type generation. Schema URIs, generated paths, and `js-template:settings/*` imports remain protocol identifiers; package imports use `@nocobase/runjs/js-template/*`.
+
+For example, a JS Page template can type its runtime context with:
+
+```ts
+import type { JSPageContext, RunJSContext } from '@nocobase/runjs/js-template/client';
+import type { Settings } from 'js-template:settings/client/js-page/hello-page';
+
+const pageContext: RunJSContext & JSPageContext<Settings> = ctx;
+await pageContext.page.refresh();
+```
+
+The generated settings import is authoring-only and is not stored with runtime artifacts.
+
+## Multi-file Workspace
+
+The `workspace` entries provide the RunJS Studio clients, shared authoring contracts, server persistence and compilation services, and Swagger schemas. The Flow Engine plugin owns the application lifecycle and installs the appropriate Workspace client and server integrations.
 
 ## Virtual-workspace compiler
 
@@ -48,6 +78,8 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 - Root and portable entries do not import client packages
 - Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
+- JS Template consumers import only `@nocobase/runjs/js-template/*`
+- Workspace consumers import only the lane-specific `@nocobase/runjs/workspace/*` entry
 - `compiler/build-identity` remains safe for startup paths that must not initialize the compiler
 - `compiler/loader` is server-only and resolves the compiler adjacent to its source or built module
 - Runtime values come from the host context; compile-time support never grants a capability

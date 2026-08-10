@@ -11,7 +11,7 @@ import {
   JS_TEMPLATE_KEY_PATTERN as JS_TEMPLATE_KEY_PATTERN_SOURCE,
   JS_TEMPLATE_SCHEMA_URI,
   JS_TEMPLATE_SCHEMA_VERSION,
-} from '@nocobase/js-template-sdk/schema';
+} from '@nocobase/runjs/js-template/schema';
 
 export const JS_TEMPLATE_COLLECTIONS = {
   projects: 'jsTemplateProjects',

@@ -8,7 +8,7 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
-import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/server';
+import type { RunJSSourceAdapterContext, RunJSSourceLocator } from '@nocobase/runjs/workspace/server';
 
 import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import FlowModelRepository from '../repository';

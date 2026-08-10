@@ -18,23 +18,19 @@ import {
 import React from 'react';
 import {
   getCanonicalRunJSSettings,
+  getSchemaTitle,
   getJsTemplateId,
   getJsTemplateSettingStepKey,
-  isSettingsFieldVisible,
-  normalizeJsTemplateSelection,
-  normalizeJsTemplateSettings,
-  setJsTemplateTopLevelSetting,
-  type RunJSSettingsCondition,
-} from '@nocobase/runjs/settings';
-
-import {
-  getSchemaTitle,
   getSettingsSchemaProperties,
   getSettingsSchemaRequired,
+  isSettingsFieldVisible,
   normalizeSchemaType,
+  normalizeJsTemplateSelection,
+  normalizeJsTemplateSettings,
   readRunJSRuntimeError,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
+  setJsTemplateTopLevelSetting,
   shouldHideRunJSSourceMenu,
   validateRunJSSettings,
   validateRunJSSettingValue,
@@ -554,7 +550,7 @@ export function createJsTemplateSettingStep<TModel extends FlowModel>(options: {
         : {
             hideInSettings: (ctx) => {
               try {
-                return !isSettingsFieldVisible(visibilityCondition as RunJSSettingsCondition, {
+                return !isSettingsFieldVisible(visibilityCondition, {
                   defaults: options.descriptorDefaults,
                   settings: options.savedRootValue,
                 });

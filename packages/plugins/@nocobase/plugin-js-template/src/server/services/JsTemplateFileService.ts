@@ -15,8 +15,8 @@ import type {
   VscPermissionAction,
   PreparedPush,
   VscRefName,
-} from '@nocobase/runjs-workspace/server';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import type { VscRemoteSnapshot } from '../../shared/vsc-file/remote-sync-types';
 import { computeRemoteSnapshotContentHash } from '../vsc-file/remotes/snapshot';
 import { randomUUID } from 'crypto';

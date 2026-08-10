@@ -14,7 +14,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import { RemoteSyncAdapterRegistry, RemoteSyncError, RemoteSyncRuntimeService } from '../vsc-file/remotes';
 import { vi } from 'vitest';
 

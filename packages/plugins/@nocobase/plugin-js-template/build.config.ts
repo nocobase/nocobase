@@ -12,7 +12,7 @@ import { spawn } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
 
-const sourceDependencies = ['@nocobase/js-template-sdk', '@nocobase/runjs', '@nocobase/runjs-workspace'] as const;
+const sourceDependencies = ['@nocobase/runjs'] as const;
 const repositoryRoot = path.resolve(__dirname, '../../../..');
 const requiredJavaScriptArtifacts = [
   'dist/client/index.js',

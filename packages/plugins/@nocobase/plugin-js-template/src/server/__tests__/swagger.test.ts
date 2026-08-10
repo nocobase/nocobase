@@ -8,7 +8,7 @@
  */
 
 import swaggerDocument from '../../swagger';
-import { runJSSourceActionNames } from '@nocobase/runjs-workspace/server';
+import { runJSSourceActionNames } from '@nocobase/runjs/workspace/server';
 import { jsTemplateActionNames } from '../resources/jsTemplates';
 import { jsTemplateFileActionNames } from '../resources/jsTemplateFiles';
 import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';

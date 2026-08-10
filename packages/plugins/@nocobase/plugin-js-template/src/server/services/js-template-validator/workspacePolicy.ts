@@ -16,7 +16,7 @@ import {
   type JsTemplateKind,
 } from '../../../constants';
 import type { JsTemplateDiagnostic, JsTemplateValidationLimits } from '../../../shared/types';
-import { createRunJSWorkspaceDiagnostic, type RunJSWorkspaceDiagnostic } from '@nocobase/runjs-workspace/server';
+import { createRunJSWorkspaceDiagnostic, type RunJSWorkspaceDiagnostic } from '@nocobase/runjs/workspace/server';
 import type { TemplateBucket, JsTemplateSourceFileInput, NormalizedSourceFile } from './types';
 
 export interface TemplateFileRule {

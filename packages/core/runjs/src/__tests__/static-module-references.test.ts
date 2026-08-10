@@ -17,7 +17,7 @@ describe('static module references', () => {
       `import value from './runtime';`,
       `export type { Shape } from '../types';`,
       `type Row = import('../../../shared/types').Row;`,
-      `type Sdk = import('@nocobase/js-template-sdk/client').JsTemplate;`,
+      `type Sdk = import('@nocobase/runjs/js-template/client').JsTemplate;`,
       `void import('./dynamic-runtime');`,
     ].join('\n');
     const sourceFile = ts.createSourceFile('src/client/index.ts', source, ts.ScriptTarget.Latest, true);
@@ -56,7 +56,7 @@ describe('static module references', () => {
       },
       {
         kind: 'import-type',
-        specifier: '@nocobase/js-template-sdk/client',
+        specifier: '@nocobase/runjs/js-template/client',
         typeOnly: true,
         line: 4,
         column: 19,
@@ -66,7 +66,7 @@ describe('static module references', () => {
       `'./runtime'`,
       `'../types'`,
       `'../../../shared/types'`,
-      `'@nocobase/js-template-sdk/client'`,
+      `'@nocobase/runjs/js-template/client'`,
     ]);
   });
 

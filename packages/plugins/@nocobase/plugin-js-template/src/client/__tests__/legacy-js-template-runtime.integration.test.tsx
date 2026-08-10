@@ -16,8 +16,13 @@ import {
   type LegacyRunJSEditorProviderRenderProps,
 } from '@nocobase/client';
 import React from 'react';
-import { installRunJSWorkspaceLegacyClient, legacyRunJSStudioProvider } from '@nocobase/runjs-workspace/client';
-import { runJSStudioProvider } from '@nocobase/runjs-workspace/client-v2';
+import { installRunJSWorkspaceLegacyClient, legacyRunJSStudioProvider } from '@nocobase/runjs/workspace/client';
+import {
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+  runJSStudioProvider,
+} from '@nocobase/runjs/workspace/client-v2';
 import {
   JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
@@ -25,9 +30,6 @@ import {
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
   PluginFlowEngine,
-  RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
-  RunJSSourceResolverRegistry,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
@@ -51,7 +53,7 @@ function createLegacyApplication() {
 }
 
 async function loadLegacyPlugins(app: Application) {
-  installRunJSWorkspaceLegacyClient(app.apiClient);
+  installRunJSWorkspaceLegacyClient(app);
   const jsTemplate = new PluginJsTemplateClient({ name: 'js-template', packageName: NAMESPACE }, app);
 
   await jsTemplate.afterAdd();
@@ -99,7 +101,7 @@ describe('JS Template legacy admin-shell integration', () => {
     expect(RunJSEditorRegistry.getProviders()).toContainEqual(runJSStudioProvider);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('js-template-runjs-value');
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs-workspace/legacy-runjs-studio',
+      '@nocobase/runjs/workspace/legacy-runjs-studio',
     ]);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
@@ -120,7 +122,7 @@ describe('JS Template legacy admin-shell integration', () => {
       RunJSEditorRegistry.getProviders().filter((provider) => provider.key === 'js-template-runjs-value'),
     ).toHaveLength(1);
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs-workspace/legacy-runjs-studio',
+      '@nocobase/runjs/workspace/legacy-runjs-studio',
     ]);
   });
 
@@ -172,7 +174,7 @@ describe('JS Template legacy admin-shell integration', () => {
     const jsTemplate = await loadLegacyPlugins(app);
     const studioProvider = LegacyRunJSEditorRegistry.getProvider(stepProps);
 
-    expect(studioProvider?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
+    expect(studioProvider?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
     const studio = render(
       <ApplicationContext.Provider value={app}>{studioProvider?.renderEditor(stepProps)}</ApplicationContext.Provider>,
@@ -182,7 +184,7 @@ describe('JS Template legacy admin-shell integration', () => {
 
     jsTemplate.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(0);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
@@ -193,19 +195,19 @@ describe('JS Template legacy admin-shell integration', () => {
     await jsTemplate.load();
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       'workflow-inline',
-      '@nocobase/runjs-workspace/legacy-runjs-studio',
+      '@nocobase/runjs/workspace/legacy-runjs-studio',
     ]);
     expect(
       RunJSEditorRegistry.getProviders().filter(
-        (provider) => provider.key === '@nocobase/runjs-workspace/runjs-studio',
+        (provider) => provider.key === '@nocobase/runjs/workspace/runjs-studio',
       ),
     ).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
 
     jsTemplate.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs-workspace/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
   });
 });

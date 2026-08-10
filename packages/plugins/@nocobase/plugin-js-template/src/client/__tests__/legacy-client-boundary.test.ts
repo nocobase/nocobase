@@ -10,7 +10,12 @@
 import fs from 'fs';
 import path from 'path';
 import type React from 'react';
-import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
+import {
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+  runJSStudioToolbarRegistry,
+} from '@nocobase/runjs/workspace/client-v2';
 
 import {
   JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
@@ -23,9 +28,6 @@ import {
   JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
-  RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
-  RunJSSourceResolverRegistry,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,

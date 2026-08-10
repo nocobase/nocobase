@@ -15,7 +15,7 @@ import {
   CommitDiffModal,
   RestoreVersionModal,
   SaveVersionModal,
-} from '@nocobase/runjs-workspace/client-v2';
+} from '@nocobase/runjs/workspace/client-v2';
 
 export interface WorkspaceOverlaysProps {
   closeConfirmProps: React.ComponentProps<typeof CloseConfirmModal>;

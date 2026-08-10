@@ -10,7 +10,7 @@
 import ts from 'typescript';
 
 import type { JsTemplateDiagnostic } from '../../../shared/types';
-import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
+import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs/workspace/server';
 import { isJsTemplateAuthoringModuleSpecifier } from '../conversion/jsTemplateAuthoringImports';
 import {
   getImportEqualsSpecifier,

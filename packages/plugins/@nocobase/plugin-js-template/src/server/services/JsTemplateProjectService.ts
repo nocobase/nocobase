@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import { uid } from '@nocobase/utils';
 import { randomUUID } from 'crypto';
 

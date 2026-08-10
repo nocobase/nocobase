@@ -8,13 +8,13 @@
  */
 
 import { stableSerialize, type RunJSRuntimeArtifact, type RunJSSurfaceStyle } from '@nocobase/runjs';
-import { isClientSettingsTypegenDescriptorPath } from '@nocobase/js-template-sdk/typegen';
+import { isClientSettingsTypegenDescriptorPath } from '@nocobase/runjs/js-template/typegen';
 import {
   RUNJS_COMPILER_BUILD_IDENTITY,
   type RunJSCompilerBuildIdentity,
 } from '@nocobase/runjs/compiler/build-identity';
 import { buildRunJSArtifactHash, buildRunJSRuntimeCodeHash, sha256Hex } from '@nocobase/runjs/server';
-import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
+import sdkPackageJson from '@nocobase/runjs/package.json';
 import { posix as pathPosix } from 'path';
 
 import {

@@ -17,7 +17,7 @@ import {
   JS_TEMPLATE_SOURCE_MODE,
   type JsTemplateKind,
 } from '../constants';
-import type { RunJSSourceLocator, VscCommitRecord } from '@nocobase/runjs-workspace/shared';
+import type { RunJSSourceLocator, VscCommitRecord } from '@nocobase/runjs/workspace/shared';
 import type {
   VscGitRemoteConfig,
   VscGitRemoteConfigDraft,
@@ -381,6 +381,8 @@ export interface JsTemplateCapabilities {
   sdk: {
     packageName: string;
     version: string;
+    clientImport: string;
+    sharedImport: string;
     templateSchemaUri: string;
     templateSchemaSha256: string;
   };

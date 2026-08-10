@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { installRunJSWorkspaceLegacyClient } from '@nocobase/runjs-workspace/client';
+import { installRunJSWorkspaceLegacyClient } from '@nocobase/runjs/workspace/client';
 import _ from 'lodash';
 
 export class PluginFlowEngineClient extends Plugin {
@@ -22,7 +22,7 @@ export class PluginFlowEngineClient extends Plugin {
 
   async load() {
     this.disposeRunJSWorkspaceClient();
-    this.runJSWorkspaceDisposer = installRunJSWorkspaceLegacyClient(this.app.apiClient);
+    this.runJSWorkspaceDisposer = installRunJSWorkspaceLegacyClient(this.app);
   }
 
   dispose() {

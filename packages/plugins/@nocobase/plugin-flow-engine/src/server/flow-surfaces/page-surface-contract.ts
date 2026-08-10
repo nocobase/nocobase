@@ -8,7 +8,7 @@
  */
 
 import type { Transaction } from '@nocobase/database';
-import type { RunJSSourceAdapterContext } from '@nocobase/server';
+import type { RunJSSourceAdapterContext } from '@nocobase/runjs/workspace/server';
 import { FlowSurfaceBadRequestError } from './errors';
 
 export const JS_PAGE_MODEL_USE = 'JSPageModel';

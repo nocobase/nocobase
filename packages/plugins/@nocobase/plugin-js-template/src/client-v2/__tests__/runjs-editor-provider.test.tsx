@@ -9,11 +9,8 @@
 
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import {
-  ApplicationContext,
-  RunJSSourceResolverRegistry,
-  type RunJSEditorProviderRenderProps,
-} from '@nocobase/client-v2';
+import { ApplicationContext, type RunJSEditorProviderRenderProps } from '@nocobase/client-v2';
+import { RunJSSourceResolverRegistry } from '@nocobase/runjs/workspace/client-v2';
 import { FlowContext, FlowContextProvider, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { describe, expect, it, vi } from 'vitest';
 

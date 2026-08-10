@@ -27,7 +27,7 @@ type PackageManifest = {
 
 const repositoryRoot = path.resolve(__dirname, '../../../../..');
 const pluginPath = 'packages/plugins/@nocobase/plugin-js-template';
-const sdkPath = 'packages/core/js-template-sdk';
+const runJSPath = 'packages/core/runjs';
 
 function readText(relativePath: string) {
   return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
@@ -49,27 +49,44 @@ function isPackaged(file: string, packagedFiles: Set<string>) {
 }
 
 describe('JS Template release boundary', () => {
-  it('publishes one canonical plugin and one canonical SDK on the release version', () => {
+  it('publishes one canonical plugin and one canonical RunJS package on the release version', () => {
     const releaseVersion = (JSON.parse(readText('lerna.json')) as { version: string }).version;
     const plugin = readPackage(pluginPath);
-    const sdk = readPackage(sdkPath);
+    const runJS = readPackage(runJSPath);
     const workspacePackageNames = new Set(getPackagesSync(repositoryRoot).map((pkg) => pkg.name));
 
     expect(plugin).toMatchObject({
       name: '@nocobase/plugin-js-template',
       version: releaseVersion,
-      dependencies: {
-        '@nocobase/js-template-sdk': releaseVersion,
-        '@nocobase/runjs-workspace': releaseVersion,
-      },
-      peerDependencies: { '@nocobase/runjs': releaseVersion },
+      dependencies: { '@nocobase/runjs': releaseVersion },
     });
     expect(plugin.dependencies).not.toHaveProperty('@nocobase/plugin-js-template');
-    expect(sdk).toMatchObject({ name: '@nocobase/js-template-sdk', version: releaseVersion, files: ['lib'] });
+    expect(runJS).toMatchObject({ name: '@nocobase/runjs', version: releaseVersion });
+    expect(runJS.exports).toHaveProperty('./js-template/client');
+    expect(runJS.exports).toHaveProperty('./workspace/server');
     expect(workspacePackageNames).toContain('@nocobase/plugin-js-template');
-    expect(workspacePackageNames).toContain('@nocobase/js-template-sdk');
+    expect(workspacePackageNames).toContain('@nocobase/runjs');
     expect([...workspacePackageNames].filter((name) => name === plugin.name)).toEqual([plugin.name]);
-    expect([...workspacePackageNames].filter((name) => name === sdk.name)).toEqual([sdk.name]);
+    expect([...workspacePackageNames].filter((name) => name === runJS.name)).toEqual([runJS.name]);
+  });
+
+  it('keeps the consolidated package after framework hosts in the build graph', () => {
+    const clientV2 = readPackage('packages/core/client-v2');
+    const server = readPackage('packages/core/server');
+    const preset = readPackage('packages/presets/nocobase');
+    const runJS = readPackage(runJSPath);
+    const buildSource = readText('packages/core/build/src/build.ts');
+    const buildConstants = readText('packages/core/build/src/constant.ts');
+
+    expect(clientV2.dependencies).not.toHaveProperty('@nocobase/runjs');
+    expect(server.dependencies).not.toHaveProperty('@nocobase/runjs');
+    expect(preset.dependencies).not.toHaveProperty('@nocobase/runjs');
+    expect(runJS.peerDependencies).toMatchObject({
+      '@nocobase/client-v2': '2.x',
+      '@nocobase/server': '2.x',
+    });
+    expect(buildSource).toContain('const runJSCore = packages.find((item) => item.location === CORE_RUNJS)');
+    expect(buildConstants).toContain("CORE_RUNJS = path.join(PACKAGES_PATH, 'core/runjs')");
   });
 
   it('declares every public plugin entry within the packaged release boundary', () => {
@@ -95,9 +112,12 @@ describe('JS Template release boundary', () => {
     ).toBe(path.join(repositoryRoot, `storage/tar/@nocobase/plugin-js-template-${releaseVersion}.tgz`));
   });
 
-  it('externalizes only the canonical SDK', () => {
+  it('externalizes the canonical RunJS package once', () => {
     const buildPluginSource = readText('packages/core/build/src/buildPlugin.ts');
+    const externalStart = buildPluginSource.indexOf('const external = [');
+    const externalEnd = buildPluginSource.indexOf('];', externalStart);
+    const externalSource = buildPluginSource.slice(externalStart, externalEnd);
 
-    expect(buildPluginSource.match(/'@nocobase\/js-template-sdk'/g)).toHaveLength(1);
+    expect(externalSource.match(/'@nocobase\/runjs'/g)).toHaveLength(1);
   });
 });

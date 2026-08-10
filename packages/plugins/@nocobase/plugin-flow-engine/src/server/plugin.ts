@@ -20,7 +20,7 @@ import {
   type RunJSWorkspaceServerModule,
   type VscPermissionHook,
   type VscPermissionHookRegistry,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { registerFlowSurfacesResource } from './flow-surfaces';
 import {
   registerFlowSurfaceRunJSWorkspaceBootstrapPort,

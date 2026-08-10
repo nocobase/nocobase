@@ -9,7 +9,7 @@
 
 import type { Database, Model, Transaction } from '@nocobase/database';
 
-import { VscError } from '@nocobase/runjs-workspace/shared';
+import { VscError } from '@nocobase/runjs/workspace/shared';
 import type {
   RemoteSyncErrorCode,
   VscFileRemoteRecord,

@@ -9,7 +9,7 @@
 
 import type { FlowSurfaceErrorItemInput } from '../errors';
 import { prepareRunJSRuntimeArtifactForInspection } from '@nocobase/runjs/compiler/portable';
-import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
+import { runJSSourceCodeInspectorRegistry } from '@nocobase/runjs/workspace/server';
 import type { RunJsAuthoringInspectionInput } from './types';
 import type { RunJsAuthoringContext, RunJsSourceBudget } from './internal-types';
 import {

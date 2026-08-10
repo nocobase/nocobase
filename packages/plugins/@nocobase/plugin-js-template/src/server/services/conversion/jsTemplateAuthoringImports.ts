@@ -20,7 +20,7 @@ import {
   type JsTemplateSdkAuthoringModuleContract,
   type JsTemplateSettingsAuthoringContract,
   type JsTemplateSettingsAuthoringContractLookup,
-} from '@nocobase/js-template-sdk/typegen';
+} from '@nocobase/runjs/js-template/typegen';
 import { posix as pathPosix } from 'path';
 import ts from 'typescript';
 

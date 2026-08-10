@@ -78,7 +78,7 @@ describe('@nocobase/runjs compiler paths', () => {
           path: 'src/pages/index.ts',
           content: [
             `type Missing = import('../missing/types').Missing;`,
-            `type Sdk = import('@nocobase/js-template-sdk/client').JsTemplate;`,
+            `type Sdk = import('@nocobase/runjs/js-template/client').JsTemplate;`,
             `const dynamic = import('../dynamic/runtime');`,
             `return [null as unknown as Missing, null as unknown as Sdk, dynamic];`,
           ].join('\n'),

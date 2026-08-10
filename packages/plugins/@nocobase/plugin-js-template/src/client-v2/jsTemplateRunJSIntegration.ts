@@ -18,10 +18,12 @@ import {
   JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
   JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
+} from '@nocobase/client-v2';
+import {
   RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
-} from '@nocobase/client-v2';
-import { runJSStudioToolbarRegistry } from '@nocobase/runjs-workspace/client-v2';
+  runJSStudioToolbarRegistry,
+} from '@nocobase/runjs/workspace/client-v2';
 import type React from 'react';
 
 import type { ApiClientLike } from './api/jsTemplatesRequests';

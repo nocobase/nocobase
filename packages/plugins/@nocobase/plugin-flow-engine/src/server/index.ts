@@ -17,7 +17,7 @@ export type {
   RunJSSourceAuthoringInspector,
   VscPermissionHook,
   VscPermissionHookRegistry,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 export {
   bootstrapFlowSurfaceRunJSWorkspace,
   buildFlowSurfaceRunJSLocator,

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import runJSWorkspaceSwagger from '@nocobase/runjs-workspace/swagger';
+import runJSWorkspaceSwagger from '@nocobase/runjs/workspace/swagger';
 
 import flowSurfacesSwagger from './flow-surfaces';
 

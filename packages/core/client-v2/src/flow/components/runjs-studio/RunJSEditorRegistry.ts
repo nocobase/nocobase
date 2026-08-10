@@ -8,34 +8,22 @@
  */
 
 import type { RunJSEditorProvider } from './types';
+import { getRunJSRegistryHost, requireRunJSRegistryHost } from '../runjs-source/RunJSRegistryHost';
 
-class RunJSEditorProviderRegistry {
-  private readonly providers = new Map<string, RunJSEditorProvider>();
-
-  registerProvider(provider: RunJSEditorProvider): () => void {
-    this.providers.set(provider.key, provider);
-
-    return () => {
-      if (this.providers.get(provider.key) === provider) {
-        this.providers.delete(provider.key);
-      }
-    };
-  }
-
-  getProviders(): RunJSEditorProvider[] {
-    return Array.from(this.providers.values())
-      .map((provider, registrationIndex) => ({ provider, registrationIndex }))
-      .sort(
-        (left, right) =>
-          (right.provider.priority ?? 0) - (left.provider.priority ?? 0) ||
-          right.registrationIndex - left.registrationIndex,
-      )
-      .map(({ provider }) => provider);
-  }
-
-  clear() {
-    this.providers.clear();
-  }
+export interface RunJSEditorRegistryHost {
+  registerProvider(provider: RunJSEditorProvider): () => void;
+  getProviders(): RunJSEditorProvider[];
+  clear(): void;
 }
 
-export const RunJSEditorRegistry = new RunJSEditorProviderRegistry();
+export const RunJSEditorRegistry: RunJSEditorRegistryHost = {
+  registerProvider(provider) {
+    return requireRunJSRegistryHost().editors.registerProvider(provider);
+  },
+  getProviders() {
+    return getRunJSRegistryHost()?.editors.getProviders() || [];
+  },
+  clear() {
+    getRunJSRegistryHost()?.editors.clear();
+  },
+};

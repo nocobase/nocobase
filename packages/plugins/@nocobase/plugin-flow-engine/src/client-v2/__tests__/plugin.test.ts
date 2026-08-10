@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { RunJSEditorRegistry, RunJSSettingsDescriptorProviderRegistry } from '@nocobase/client-v2';
+import { RunJSEditorRegistry, RunJSSettingsDescriptorProviderRegistry } from '@nocobase/runjs/workspace/client-v2';
 
 import PluginFlowEngineClientV2 from '..';
 
@@ -40,9 +40,9 @@ function createPlugin(): PluginFlowEngineClientV2 {
 
 function expectRegistrationKeys(): void {
   expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-    '@nocobase/runjs-workspace/runjs-studio',
+    '@nocobase/runjs/workspace/runjs-studio',
   ]);
   expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toEqual([
-    '@nocobase/runjs-workspace/inline-settings-descriptor',
+    '@nocobase/runjs/workspace/inline-settings-descriptor',
   ]);
 }

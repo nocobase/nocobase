@@ -11,7 +11,7 @@ import {
   RUNJS_EXTERNALIZATION_DESTINATION_TYPES,
   RUNJS_EXTERNALIZATION_ENTRY_KINDS,
   type RunJSExternalizationCapabilityContribution,
-} from '@nocobase/runjs-workspace/shared';
+} from '@nocobase/runjs/workspace/shared';
 
 export const jsTemplateExternalizationCapabilities: RunJSExternalizationCapabilityContribution = {
   id: 'js-template',

@@ -10,7 +10,7 @@
 import type { Application } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
-import { getOrCreateRunJSWorkspaceServerModule } from '@nocobase/runjs-workspace/server';
+import { getOrCreateRunJSWorkspaceServerModule } from '@nocobase/runjs/workspace/server';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

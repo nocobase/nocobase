@@ -8,8 +8,8 @@
  */
 
 import type { Context } from '@nocobase/actions';
-import { runJSSourceAuditActionNames, VscFileService, vscFileAuditActionNames } from '@nocobase/runjs-workspace/server';
-import { VscError, getRunJSSourceOwnerId, type RunJSSourceLocator } from '@nocobase/runjs-workspace/shared';
+import { runJSSourceAuditActionNames, VscFileService, vscFileAuditActionNames } from '@nocobase/runjs/workspace/server';
+import { VscError, getRunJSSourceOwnerId, type RunJSSourceLocator } from '@nocobase/runjs/workspace/shared';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import PluginJsTemplateServer from '../../plugin';

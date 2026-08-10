@@ -9,6 +9,8 @@
 
 export * from './RunJSSourceResolverRegistry';
 export * from './RunJSSettingsDescriptorProviderRegistry';
+export * from './RunJSRegistryHost';
+export * from './RunJSRuntimeHost';
 export * from './resolveRuntimeRunJS';
 export * from './runJSRuntime';
 export * from './runJSRuntimeError';

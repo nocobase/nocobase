@@ -11,7 +11,7 @@ import { posix as pathPosix } from 'path';
 
 import type { SaveAsJsTemplateWorkspaceFile } from '../../../shared/types';
 import { JsTemplateError } from '../../../shared/errors';
-import type { VscFileChange } from '@nocobase/runjs-workspace/server';
+import type { VscFileChange } from '@nocobase/runjs/workspace/server';
 import {
   buildRelativeSourceCandidatePaths,
   collectRelativeModuleReferences,

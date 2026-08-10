@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { CommitService, TreeService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import { vi } from 'vitest';
 
 import { ExternalCommitMapStore } from '../remotes/ExternalCommitMapStore';

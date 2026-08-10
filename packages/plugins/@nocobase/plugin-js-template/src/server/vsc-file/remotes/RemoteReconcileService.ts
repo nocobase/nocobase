@@ -16,8 +16,8 @@ import type {
   VscRemoteSnapshot,
   VscRemoteSyncPlan,
 } from '../../../shared/vsc-file/remote-sync-types';
-import { CommitService } from '@nocobase/runjs-workspace/server';
-import { TreeService } from '@nocobase/runjs-workspace/server';
+import { CommitService } from '@nocobase/runjs/workspace/server';
+import { TreeService } from '@nocobase/runjs/workspace/server';
 import { ConflictStore } from './ConflictStore';
 import { ExternalCommitMapStore } from './ExternalCommitMapStore';
 import { RemoteSyncError, type RemoteSyncAdapter, type RemoteSyncPublishResult } from './RemoteSyncAdapter';

@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { jsTemplateV1SchemaFileContent, jsTemplateV1SchemaSha256 } from '@nocobase/js-template-sdk/schema/server';
+export { jsTemplateV1SchemaFileContent, jsTemplateV1SchemaSha256 } from '@nocobase/runjs/js-template/schema/server';

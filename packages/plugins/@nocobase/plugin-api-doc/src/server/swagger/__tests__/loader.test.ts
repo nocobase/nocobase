@@ -56,8 +56,8 @@ describe('loadSwagger', () => {
     await import('tsconfig-paths/register');
     expect(
       require
-        .resolve('@nocobase/js-template-sdk/schema')
-        .endsWith(join('packages', 'core', 'js-template-sdk', 'src', 'schema', 'index.ts')),
+        .resolve('@nocobase/runjs/js-template/schema')
+        .endsWith(join('packages', 'core', 'runjs', 'src', 'js-template', 'schema', 'index.ts')),
     ).toBe(true);
     const packageRoot = createFixture({
       'src/swagger/index.ts': `export default { paths: { '/source': {} } };`,

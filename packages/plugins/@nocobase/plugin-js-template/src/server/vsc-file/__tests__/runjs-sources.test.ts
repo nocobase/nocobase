@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { runJSSourceActionNames, VscFileService } from '@nocobase/runjs-workspace/server';
+import { runJSSourceActionNames, VscFileService } from '@nocobase/runjs/workspace/server';
 import {
   maxFileSize,
   runJSManifestPath,
   VscError,
   type RunJSRuntimeArtifact,
   type RunJSSourceAdapterContext,
-} from '@nocobase/runjs-workspace/shared';
+} from '@nocobase/runjs/workspace/shared';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 

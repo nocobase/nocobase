@@ -8,7 +8,10 @@
  */
 
 import type { RunJSWorkspaceTypeScriptContextResolver } from '@nocobase/client-v2';
-import { createActiveTemplateContextType, generateInlineClientSettingsTypes } from '@nocobase/js-template-sdk/typegen';
+import {
+  createActiveTemplateContextType,
+  generateInlineClientSettingsTypes,
+} from '@nocobase/runjs/js-template/typegen';
 
 import type { JsTemplateKind } from '../../constants';
 

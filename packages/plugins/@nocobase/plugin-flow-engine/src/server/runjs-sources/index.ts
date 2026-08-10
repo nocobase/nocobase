@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { RunJSSourceAdapter } from '@nocobase/server';
+import type { RunJSSourceAdapter } from '@nocobase/runjs/workspace/server';
 
 import { createFlowModelRunJSSourceAdapters } from './flow-model-adapters';
 

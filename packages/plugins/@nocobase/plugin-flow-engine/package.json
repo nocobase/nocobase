@@ -14,7 +14,7 @@
     "koa-static": "^5.0.0"
   },
   "dependencies": {
-    "@nocobase/runjs-workspace": "3.0.0-alpha.7",
+    "@nocobase/runjs": "3.0.0-alpha.7",
     "acorn": "^8.10.0",
     "acorn-jsx": "^5.3.2",
     "acorn-walk": "8.3.4",

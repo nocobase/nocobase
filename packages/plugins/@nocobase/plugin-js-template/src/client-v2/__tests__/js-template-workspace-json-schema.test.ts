@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SCHEMA_URI, jsTemplateV1Schema } from '@nocobase/js-template-sdk/schema';
+import { JS_TEMPLATE_SCHEMA_URI, jsTemplateV1Schema } from '@nocobase/runjs/js-template/schema';
 import { describe, expect, it } from 'vitest';
 
 import {

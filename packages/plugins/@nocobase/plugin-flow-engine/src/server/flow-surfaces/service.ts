@@ -8,7 +8,13 @@
  */
 
 import { createHash } from 'crypto';
-import type { BelongsToManyRepository, HasManyRepository, Model, TargetKey, Transaction } from '@nocobase/database';
+import {
+  Transaction,
+  type BelongsToManyRepository,
+  type HasManyRepository,
+  type Model,
+  type TargetKey,
+} from '@nocobase/database';
 import type { Plugin } from '@nocobase/server';
 import { transformSQL, uid } from '@nocobase/utils';
 import _ from 'lodash';

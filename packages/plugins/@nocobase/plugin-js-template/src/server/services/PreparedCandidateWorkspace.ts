@@ -12,7 +12,7 @@ import type {
   CanonicalCandidateChange,
   CanonicalCandidateFile,
   CanonicalCandidateSnapshot,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCommitRecord, JsTemplateProject, JsTemplateStoredTree } from '../../shared/types';

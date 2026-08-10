@@ -28,9 +28,22 @@ describe('@nocobase/runjs package exports', () => {
         './compiler/loader',
         './compiler/portable',
         './compiler/static-module-references',
+        './js-template',
+        './js-template/client',
+        './js-template/schema',
+        './js-template/schema/entry-v1.schema.json',
+        './js-template/schema/server',
+        './js-template/shared',
+        './js-template/typegen',
         './package.json',
         './server',
         './settings',
+        './workspace',
+        './workspace/client',
+        './workspace/client-v2',
+        './workspace/server',
+        './workspace/shared',
+        './workspace/swagger',
       ].sort(),
     );
   });
@@ -51,6 +64,41 @@ describe('@nocobase/runjs package exports', () => {
       types: './lib/compiler/static-module-references.d.ts',
       runtime: './lib/compiler/static-module-references.js',
     },
+    {
+      subpath: 'js-template/client',
+      types: './lib/js-template/client/index.d.ts',
+      runtime: './lib/js-template/client/index.js',
+    },
+    {
+      subpath: 'js-template/schema',
+      types: './lib/js-template/schema/index.d.ts',
+      runtime: './lib/js-template/schema/index.js',
+    },
+    {
+      subpath: 'js-template/typegen',
+      types: './lib/js-template/typegen/index.d.ts',
+      runtime: './lib/js-template/typegen/index.js',
+    },
+    {
+      subpath: 'workspace/client',
+      types: './lib/workspace/client/index.d.ts',
+      runtime: './lib/workspace/client/index.js',
+    },
+    {
+      subpath: 'workspace/client-v2',
+      types: './lib/workspace/client-v2/index.d.ts',
+      runtime: './lib/workspace/client-v2/index.js',
+    },
+    {
+      subpath: 'workspace/server',
+      types: './lib/workspace/server/index.d.ts',
+      runtime: './lib/workspace/server/index.js',
+    },
+    {
+      subpath: 'workspace/shared',
+      types: './lib/workspace/shared/index.d.ts',
+      runtime: './lib/workspace/shared/index.js',
+    },
   ])('maps $subpath consistently across package manifests', ({ subpath, types, runtime }) => {
     expect(packageJson.exports[`./${subpath}`]).toEqual({
       types,
@@ -58,5 +106,11 @@ describe('@nocobase/runjs package exports', () => {
       require: runtime,
     });
     expect(packageJson.typesVersions?.['*']?.[subpath]).toEqual([types]);
+  });
+
+  it('publishes the JS Template schema from the canonical package', () => {
+    expect(packageJson.exports['./js-template/schema/entry-v1.schema.json']).toBe(
+      './lib/js-template/schema/entry-v1.schema.json',
+    );
   });
 });

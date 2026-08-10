@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import { VscFileService, VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import { MockServer, createMockServer } from '@nocobase/test';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SCHEMA_VERSION } from '../../constants';

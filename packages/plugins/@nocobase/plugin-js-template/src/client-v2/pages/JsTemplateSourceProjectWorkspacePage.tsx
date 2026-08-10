@@ -11,7 +11,7 @@ import {
   createActiveTemplateContextType,
   generateClientSettingsTypes,
   type JsTemplateSettingsTypegenResult,
-} from '@nocobase/js-template-sdk/typegen';
+} from '@nocobase/runjs/js-template/typegen';
 import {
   type CodeAuthoringDiagnostic,
   type EmbeddedRunJSEditorSaveResult,
@@ -28,7 +28,7 @@ import {
   type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
   useRunJSWorkspaceT,
-} from '@nocobase/runjs-workspace/client-v2';
+} from '@nocobase/runjs/workspace/client-v2';
 import { Alert, Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -64,7 +64,7 @@ import {
   normalizeWorkspacePath,
   type JsTemplateWorkspaceScope,
 } from '../workspace/jsTemplateWorkspaceAccess';
-import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '@nocobase/runjs-workspace/client-v2';
+import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '@nocobase/runjs/workspace/client-v2';
 import {
   buildJsTemplateWorkspaceArchiveFileName,
   createJsTemplateWorkspaceArchive,

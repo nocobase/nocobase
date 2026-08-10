@@ -25,7 +25,7 @@ import {
   type VscRepositoryRecord,
   type VscServiceContext,
   VscFileService,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { createHash, randomUUID } from 'crypto';
 
 import type {

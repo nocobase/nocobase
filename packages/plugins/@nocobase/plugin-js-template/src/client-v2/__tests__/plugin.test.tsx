@@ -24,13 +24,16 @@ import {
   JSPageSourceModeField,
   PluginFlowEngine,
   RunJSEditorField,
-  RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
-  RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '@nocobase/runjs-workspace/client-v2';
+import {
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
+  runJSStudioToolbarRegistry,
+  type RunJSStudioToolbarContext,
+} from '@nocobase/runjs/workspace/client-v2';
 import PluginFlowEngineClientV2 from '@nocobase/plugin-flow-engine/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
@@ -148,10 +151,10 @@ describe('PluginJsTemplateClientV2', () => {
     expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD]).toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeNull();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs-workspace/inline-settings-descriptor',
+      '@nocobase/runjs/workspace/inline-settings-descriptor',
     ]);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs-workspace/runjs-studio',
+      '@nocobase/runjs/workspace/runjs-studio',
     ]);
     expect(getToolbarContributionKeys()).not.toContain(JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY);
     expectJsTemplateRegistrations(0);

@@ -7,32 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  formatRunJSSettingsDotPath,
-  normalizeRunJSSettingsSchemaType,
-  validateRunJSSettings as validateSharedRunJSSettings,
-  validateRunJSSettingsValue as validateSharedRunJSSettingsValue,
-  type RunJSSettingsValidationIssue as SharedRunJSSettingsValidationIssue,
-} from '@nocobase/runjs/settings';
-
+import { getRunJSRuntimeHost } from './RunJSRuntimeHost';
+import type {
+  RunJSSettingsValidationIssue,
+  RunJSSettingsValidationMode,
+  RunJSSettingsValidationResult,
+} from './RunJSRuntimeHost';
 import type { RunJSSourceSettingsDescriptor } from './types';
 
 export type JsonSchemaLike = Record<string, unknown>;
 
-export type RunJSSettingsValidationMode = 'binding' | 'runtime';
-
-export type RunJSSettingsValidationIssue = {
-  code: 'required' | 'type' | 'enum' | 'constraint' | 'unknown';
-  path: string;
-};
-
-export type RunJSSettingsValidationResult = {
-  errors: RunJSSettingsValidationIssue[];
-  missingRequiredPaths: string[];
-};
+export type { RunJSSettingsValidationIssue, RunJSSettingsValidationMode, RunJSSettingsValidationResult };
 
 export function normalizeSchemaType(schema: JsonSchemaLike): string | undefined {
-  return normalizeRunJSSettingsSchemaType(schema);
+  return getRunJSRuntimeHost().normalizeSchemaType(schema);
 }
 
 export function getSettingsSchemaProperties(schema: unknown): Record<string, JsonSchemaLike> {
@@ -73,17 +61,7 @@ export function validateRunJSSettingValue(options: {
   mode: RunJSSettingsValidationMode;
   path?: string;
 }): RunJSSettingsValidationResult {
-  return toClientValidationResult(
-    validateSharedRunJSSettingsValue({
-      schema: options.schema,
-      value: options.value,
-      required: options.required,
-      mode: options.mode,
-      objectIssueOrder: 'client',
-      scalarIssueMode: 'first',
-      path: options.path ? [options.path] : [],
-    }),
-  );
+  return getRunJSRuntimeHost().validateSettingValue(options);
 }
 
 export function validateRunJSSettings(options: {
@@ -91,31 +69,7 @@ export function validateRunJSSettings(options: {
   settings: unknown;
   mode: RunJSSettingsValidationMode;
 }): RunJSSettingsValidationResult {
-  return toClientValidationResult(
-    validateSharedRunJSSettings({ ...options, objectIssueOrder: 'client', scalarIssueMode: 'first' }),
-  );
-}
-
-function toClientValidationResult(
-  result: ReturnType<typeof validateSharedRunJSSettingsValue>,
-): RunJSSettingsValidationResult {
-  return {
-    errors: result.issues.map((issue) => ({
-      code: toClientIssueCode(issue),
-      path: formatRunJSSettingsDotPath(issue.path),
-    })),
-    missingRequiredPaths: result.missingRequiredPaths.map(formatRunJSSettingsDotPath),
-  };
-}
-
-function toClientIssueCode(issue: SharedRunJSSettingsValidationIssue): RunJSSettingsValidationIssue['code'] {
-  if (issue.code === 'unknownProperty') {
-    return 'unknown';
-  }
-  if (issue.code === 'required' || issue.code === 'type' || issue.code === 'enum') {
-    return issue.code;
-  }
-  return 'constraint';
+  return getRunJSRuntimeHost().validateSettings(options);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

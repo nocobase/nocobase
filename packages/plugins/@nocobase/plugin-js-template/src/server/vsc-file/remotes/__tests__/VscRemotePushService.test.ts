@@ -14,7 +14,7 @@ import {
   TreeService,
   VscFileService,
   VscPermissionHookRegistry,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { vi } from 'vitest';
 
 import type {

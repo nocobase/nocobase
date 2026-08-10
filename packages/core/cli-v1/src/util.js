@@ -344,13 +344,6 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
     }
-    if (packageJsonName === '@nocobase/js-template-sdk') {
-      paths[`${packageJsonName}/schema`] = [`${relativePath}/src/schema`];
-      paths[`${packageJsonName}/schema/server`] = [`${relativePath}/src/schema/server`];
-      paths[`${packageJsonName}/schema/entry-v1.schema.json`] = [`${relativePath}/src/schema/entry-v1.schema.json`];
-      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
-      paths[`${packageJsonName}/typegen`] = [`${relativePath}/src/typegen`];
-    }
     if (packageJsonName === '@nocobase/runjs') {
       paths[`${packageJsonName}/compiler`] = [`${relativePath}/src/compiler`];
       paths[`${packageJsonName}/compiler/build-identity`] = [`${relativePath}/src/compiler/build-identity`];
@@ -359,12 +352,23 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       paths[`${packageJsonName}/compiler/static-module-references`] = [
         `${relativePath}/src/compiler/static-module-references`,
       ];
+      paths[`${packageJsonName}/js-template`] = [`${relativePath}/src/js-template`];
+      paths[`${packageJsonName}/js-template/client`] = [`${relativePath}/src/js-template/client`];
+      paths[`${packageJsonName}/js-template/schema`] = [`${relativePath}/src/js-template/schema`];
+      paths[`${packageJsonName}/js-template/schema/server`] = [`${relativePath}/src/js-template/schema/server`];
+      paths[`${packageJsonName}/js-template/schema/entry-v1.schema.json`] = [
+        `${relativePath}/src/js-template/schema/entry-v1.schema.json`,
+      ];
+      paths[`${packageJsonName}/js-template/shared`] = [`${relativePath}/src/js-template/shared`];
+      paths[`${packageJsonName}/js-template/typegen`] = [`${relativePath}/src/js-template/typegen`];
       paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
       paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
-    }
-    if (packageJsonName === '@nocobase/runjs-workspace') {
-      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
-      paths[`${packageJsonName}/shared`] = [`${relativePath}/src/shared`];
+      paths[`${packageJsonName}/workspace`] = [`${relativePath}/src/workspace`];
+      paths[`${packageJsonName}/workspace/client`] = [`${relativePath}/src/workspace/client`];
+      paths[`${packageJsonName}/workspace/client-v2`] = [`${relativePath}/src/workspace/client-v2`];
+      paths[`${packageJsonName}/workspace/server`] = [`${relativePath}/src/workspace/server`];
+      paths[`${packageJsonName}/workspace/shared`] = [`${relativePath}/src/workspace/shared`];
+      paths[`${packageJsonName}/workspace/swagger`] = [`${relativePath}/src/workspace/swagger`];
     }
   });
 

@@ -13,7 +13,7 @@ import {
   importRunJSWorkspaceCollections,
   TreeService,
   VscFileService,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { vi } from 'vitest';
 
 import type { VscFileRemoteRecord, VscRemoteSnapshot } from '../../../../shared/vsc-file/remote-sync-types';

@@ -108,7 +108,6 @@
     "@nocobase/plugin-workflow-sql": "3.0.0-alpha.7",
     "@nocobase/plugin-workflow-variable": "3.0.0-alpha.7",
     "@nocobase/portal-template-default": "^3.0.3",
-    "@nocobase/runjs-workspace": "3.0.0-alpha.7",
     "@nocobase/server": "3.0.0-alpha.7",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"

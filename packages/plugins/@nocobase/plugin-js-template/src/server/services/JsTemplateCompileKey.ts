@@ -9,7 +9,7 @@
 
 import { normalizePath, stableSerialize } from '@nocobase/runjs';
 import { sha256Hex } from '@nocobase/runjs/server';
-import { isClientSettingsTypegenDescriptorPath } from '@nocobase/js-template-sdk/typegen';
+import { isClientSettingsTypegenDescriptorPath } from '@nocobase/runjs/js-template/typegen';
 import { posix as pathPosix } from 'path';
 
 import { JS_TEMPLATE_ARTIFACT_CONTRACT, type JsTemplateKind } from '../../constants';

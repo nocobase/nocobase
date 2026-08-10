@@ -8,16 +8,17 @@
  */
 
 import type { Database, Model, Transaction } from '@nocobase/database';
-import { buildJsTemplateSettingsDefinition } from '@nocobase/js-template-sdk/schema';
+import { buildJsTemplateSettingsDefinition } from '@nocobase/runjs/js-template/schema';
 import type {
+  RunJSExternalSourceBinding,
   RunJSLegacySource,
+  RunJSRuntimeWriteResult,
   RunJSSourceAdapter,
   RunJSSourceAdapterContext,
   RunJSSourceAdapterRegistry,
   RunJSSourceLocator,
-} from '@nocobase/runjs-workspace/server';
-import { buildRunJSSourceRepositoryIdentity, isVscError } from '@nocobase/runjs-workspace/server';
-import type { RunJSExternalSourceBinding, RunJSRuntimeWriteResult } from '@nocobase/server';
+} from '@nocobase/runjs/workspace/server';
+import { buildRunJSSourceRepositoryIdentity, isVscError } from '@nocobase/runjs/workspace/server';
 import { randomUUID } from 'crypto';
 import { posix as pathPosix } from 'path';
 import { uid } from '@nocobase/utils';

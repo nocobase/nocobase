@@ -10,6 +10,7 @@
 import type { RunJSValue } from '@nocobase/flow-engine';
 
 import type { RunJSSourceLocator } from '../runjs-studio';
+import { getRunJSRegistryHost, requireRunJSRegistryHost } from './RunJSRegistryHost';
 import type {
   RunJSSourceBinding,
   RunJSSourceContext,
@@ -36,55 +37,28 @@ export interface RunJSSettingsDescriptorProvider {
   ) => RunJSSourceSettingsDescriptor | undefined | Promise<RunJSSourceSettingsDescriptor | undefined>;
 }
 
-export class RunJSSettingsDescriptorProviderRegistryManager {
-  private readonly providers = new Map<string, RunJSSettingsDescriptorProvider>();
-
-  registerProvider(provider: RunJSSettingsDescriptorProvider): () => void {
-    const normalizedProvider = {
-      ...provider,
-      key: provider.key.trim(),
-    };
-    if (!normalizedProvider.key || typeof normalizedProvider.getSettingsDescriptor !== 'function') {
-      throw new TypeError('RunJS settings descriptor provider requires key and getSettingsDescriptor()');
-    }
-    this.providers.set(normalizedProvider.key, normalizedProvider);
-
-    return () => {
-      if (this.providers.get(normalizedProvider.key) === normalizedProvider) {
-        this.providers.delete(normalizedProvider.key);
-      }
-    };
-  }
-
-  getProviders(): RunJSSettingsDescriptorProvider[] {
-    return Array.from(this.providers.values())
-      .map((provider, registrationIndex) => ({ provider, registrationIndex }))
-      .sort(
-        (left, right) =>
-          (right.provider.priority ?? 0) - (left.provider.priority ?? 0) ||
-          right.registrationIndex - left.registrationIndex,
-      )
-      .map(({ provider }) => provider);
-  }
-
-  async getSettingsDescriptor(
+export interface RunJSSettingsDescriptorProviderRegistryHost {
+  registerProvider(provider: RunJSSettingsDescriptorProvider): () => void;
+  getProviders(): RunJSSettingsDescriptorProvider[];
+  getSettingsDescriptor(
     input: RunJSSettingsDescriptorProviderInput,
-  ): Promise<RunJSSourceSettingsDescriptor | undefined> {
-    for (const provider of this.getProviders()) {
-      if (!(provider.canHandle?.(input) ?? true)) {
-        continue;
-      }
-      const descriptor = await provider.getSettingsDescriptor(input);
-      if (descriptor) {
-        return descriptor;
-      }
-    }
-    return undefined;
-  }
-
-  clear(): void {
-    this.providers.clear();
-  }
+  ): Promise<RunJSSourceSettingsDescriptor | undefined>;
+  clear(): void;
 }
 
-export const RunJSSettingsDescriptorProviderRegistry = new RunJSSettingsDescriptorProviderRegistryManager();
+export type RunJSSettingsDescriptorProviderRegistryManager = RunJSSettingsDescriptorProviderRegistryHost;
+
+export const RunJSSettingsDescriptorProviderRegistry: RunJSSettingsDescriptorProviderRegistryHost = {
+  registerProvider(provider) {
+    return requireRunJSRegistryHost().settingsDescriptors.registerProvider(provider);
+  },
+  getProviders() {
+    return getRunJSRegistryHost()?.settingsDescriptors.getProviders() || [];
+  },
+  getSettingsDescriptor(input) {
+    return getRunJSRegistryHost()?.settingsDescriptors.getSettingsDescriptor(input) || Promise.resolve(undefined);
+  },
+  clear() {
+    getRunJSRegistryHost()?.settingsDescriptors.clear();
+  },
+};

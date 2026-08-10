@@ -8,8 +8,14 @@
  */
 
 import { resetRunJSRuntimeElement } from '@nocobase/flow-engine';
-import type { JSPageRuntimeFacade } from '@nocobase/js-template-sdk/client';
 import { readRunJSRuntimeError, type RunJSRuntimeError } from '../../../components/runjs-source';
+
+export interface JSPageRuntimeFacade {
+  readonly uid: string;
+  readonly active: boolean;
+  refresh(): Promise<void>;
+  setDocumentTitle(title: string): void;
+}
 
 export interface JSPageRuntimeState {
   runId: number;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SCHEMA_LOCAL_PATH } from '@nocobase/js-template-sdk/schema';
+import { JS_TEMPLATE_SCHEMA_LOCAL_PATH } from '@nocobase/runjs/js-template/schema';
 import {
   getOrCreateRunJSWorkspaceServerModule,
   type RunJSSourceAdapter,
@@ -17,7 +17,7 @@ import {
   type VscPermissionHook,
   type VscPermissionHookRegistry,
   VscFileService,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import type { RemoteSyncRuntime } from './vsc-file/remotes';
 import { JsTemplateRemoteSyncModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';

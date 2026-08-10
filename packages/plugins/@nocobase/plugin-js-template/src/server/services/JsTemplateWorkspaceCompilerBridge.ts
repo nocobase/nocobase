@@ -18,7 +18,7 @@ import {
   isSettingsTypegenDescriptorPath,
   type JsTemplateSettingsTypegenDiagnostic,
   type JsTemplateSettingsTypegenResult,
-} from '@nocobase/js-template-sdk/typegen';
+} from '@nocobase/runjs/js-template/typegen';
 import { posix as pathPosix } from 'path';
 
 import { JS_TEMPLATE_DESCRIPTOR_FILE, type JsTemplateKind } from '../../constants';

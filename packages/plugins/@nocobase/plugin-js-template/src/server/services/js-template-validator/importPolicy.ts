@@ -12,7 +12,7 @@ import ts from 'typescript';
 
 import { JS_TEMPLATE_DESCRIPTOR_FILE, JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../../constants';
 import type { JsTemplateDiagnostic } from '../../../shared/types';
-import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs-workspace/server';
+import { createRunJSWorkspaceDiagnosticAt as diagnosticAt } from '@nocobase/runjs/workspace/server';
 import {
   analyzeJsTemplateAuthoringImportDeclaration,
   isJsTemplateAuthoringModuleSpecifier,

@@ -34,7 +34,7 @@ describe('Save as JS Template source relocation', () => {
         {
           path: 'src/client/index.tsx',
           content:
-            'import { defineSettings } from "@nocobase/js-template-sdk/client";\n' +
+            'import { defineSettings } from "@nocobase/runjs/js-template/client";\n' +
             'import type { Settings } from "js-template:settings/client/js-page/sales";\n' +
             'const settings = defineSettings({ enabled: true });\n' +
             'ctx.render(<div>{settings.enabled as Settings}</div>);\n',
@@ -73,7 +73,7 @@ describe('Save as JS Template source relocation', () => {
       ]),
     );
     expect(preparation.files.find((file) => file.path === 'src/client/index.tsx')?.content).not.toContain(
-      '@nocobase/js-template-sdk/client',
+      '@nocobase/runjs/js-template/client',
     );
   });
 
@@ -223,12 +223,12 @@ describe('Save as JS Template source relocation', () => {
         {
           path: pageEntryPath,
           content:
-            'import { type JSPageContext, defineSettings } from "@nocobase/js-template-sdk/client";\n' +
-            'import type * as SDK from "@nocobase/js-template-sdk/client";\n' +
+            'import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";\n' +
+            'import type * as SDK from "@nocobase/runjs/js-template/client";\n' +
             'import type { Settings } from "js-template:settings/client/js-page/orders";\n' +
             'import type { Settings as BlockSettings } from "js-template:settings/client/js-block/sales";\n' +
             'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;\n' +
-            'type ImportedContext = import("@nocobase/js-template-sdk/client").JSPageContext<ImportedSettings>;\n' +
+            'type ImportedContext = import("@nocobase/runjs/js-template/client").JSPageContext<ImportedSettings>;\n' +
             'const untouched = "js-template:settings/client/js-page/orders";\n' +
             '// js-template:settings/client/js-page/orders\n' +
             'const settings = defineSettings({ enabled: true });\n' +
@@ -238,15 +238,15 @@ describe('Save as JS Template source relocation', () => {
     });
 
     const code = files[0]?.content || '';
-    expect(code).toContain('import { type JSPageContext, defineSettings } from "@nocobase/js-template-sdk/client";');
-    expect(code).toContain('import type * as SDK from "@nocobase/js-template-sdk/client";');
+    expect(code).toContain('import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";');
+    expect(code).toContain('import type * as SDK from "@nocobase/runjs/js-template/client";');
     expect(code).toContain('import type { Settings } from "js-template:settings/client/js-page/orders";');
     expect(code).toContain(
       'import type { Settings as BlockSettings } from "js-template:settings/client/js-block/sales";',
     );
     expect(code).toContain('type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;');
     expect(code).toContain(
-      'type ImportedContext = import("@nocobase/js-template-sdk/client").JSPageContext<ImportedSettings>;',
+      'type ImportedContext = import("@nocobase/runjs/js-template/client").JSPageContext<ImportedSettings>;',
     );
     expect(code).toContain('const untouched = "js-template:settings/client/js-page/orders";');
     expect(code).toContain('// js-template:settings/client/js-page/orders');

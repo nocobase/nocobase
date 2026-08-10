@@ -9,11 +9,11 @@
 
 import {
   ApplicationContext,
-  RunJSSourceResolverRegistry,
   type RunJSEditorProvider,
   type RunJSEditorProviderRenderProps,
   type RunJSSourceLocator,
 } from '@nocobase/client-v2';
+import { RunJSSourceResolverRegistry } from '@nocobase/runjs/workspace/client-v2';
 import {
   useFlowContext,
   type FlowEngineContext,

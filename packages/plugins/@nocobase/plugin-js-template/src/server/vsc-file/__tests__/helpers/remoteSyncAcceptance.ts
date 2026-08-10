@@ -13,7 +13,7 @@ import {
   importRunJSWorkspaceCollections,
   TreeService,
   VscFileService,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 
 import type {
   VscFileRemoteRecord,

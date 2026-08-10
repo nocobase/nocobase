@@ -13,7 +13,7 @@ import {
   getOrCreateRunJSWorkspaceServerModule,
   RUNJS_EXTERNALIZATION_DESTINATION_TYPES,
   RUNJS_EXTERNALIZATION_ENTRY_KINDS,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { jsTemplateExternalizationCapabilities } from '../externalizationCapabilities';

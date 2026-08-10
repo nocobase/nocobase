@@ -24,7 +24,7 @@ import {
   SaveAsJsTemplateService,
   PersistentSaveAsJsTemplateSnapshotValidator,
 } from '../services/SaveAsJsTemplateService';
-import { buildRunJSSourceRepositoryIdentity, type RunJSSourceAdapterRegistry } from '@nocobase/runjs-workspace/server';
+import { buildRunJSSourceRepositoryIdentity, type RunJSSourceAdapterRegistry } from '@nocobase/runjs/workspace/server';
 
 const locator = {
   kind: 'flowModel.step',

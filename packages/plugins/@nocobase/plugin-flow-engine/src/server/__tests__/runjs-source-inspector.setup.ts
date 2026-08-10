@@ -8,6 +8,6 @@
  */
 
 import { inspectRunJSSourceCode } from '@nocobase/runjs/compiler';
-import { runJSSourceCodeInspectorRegistry } from '@nocobase/server';
+import { runJSSourceCodeInspectorRegistry } from '@nocobase/runjs/workspace/server';
 
 runJSSourceCodeInspectorRegistry.register(inspectRunJSSourceCode);

@@ -67,7 +67,7 @@ vi.mock('@nocobase/client-v2', async () => {
 
 vi.mock('../components/DiagnosticsPanel', () => ({ default: () => null }));
 
-vi.mock('@nocobase/runjs-workspace/client-v2', async (importOriginal) => {
+vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,

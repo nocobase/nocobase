@@ -1220,7 +1220,7 @@ function registerWorkspaceCompilerBridgeTests() {
             {
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
               content:
-                'import { defineSettings } from "@nocobase/js-template-sdk/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
+                'import { defineSettings } from "@nocobase/runjs/js-template/client";\nimport { formatValue } from "../../../shared/format";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{formatValue("Revenue")}</div>);\n',
             },
           ],
         },
@@ -1232,7 +1232,7 @@ function registerWorkspaceCompilerBridgeTests() {
       expect(result.accepted).toBe(true);
       expect(result.diagnostics).toEqual([]);
       expect(result.artifact.code).toContain('Revenue');
-      expect(result.artifact.code).not.toContain('@nocobase/js-template-sdk/client');
+      expect(result.artifact.code).not.toContain('@nocobase/runjs/js-template/client');
     });
 
     it('maps built-in React imports to ctx.libs at runtime', async () => {
@@ -1329,14 +1329,14 @@ function registerWorkspaceCompilerBridgeTests() {
           {
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
             content:
-              'import { type JsTemplateSettingsContext, defineSettings } from "@nocobase/js-template-sdk/client";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: JsTemplateSettingsContext) { return ctxSettings.settings; }\nctx.render(<div>Revenue</div>);\n',
+              'import { type JsTemplateSettingsContext, defineSettings } from "@nocobase/runjs/js-template/client";\nexport const settings = defineSettings({ type: "object", properties: {} });\nexport default function render(ctxSettings: JsTemplateSettingsContext) { return ctxSettings.settings; }\nctx.render(<div>Revenue</div>);\n',
           },
         ],
       });
 
       expect(result.accepted).toBe(true);
       expect(result.diagnostics).toEqual([]);
-      expect(result.artifact.code).not.toContain('@nocobase/js-template-sdk/client');
+      expect(result.artifact.code).not.toContain('@nocobase/runjs/js-template/client');
       expect(result.artifact.code).toContain('function defineSettings');
     });
 
@@ -1352,10 +1352,10 @@ function registerWorkspaceCompilerBridgeTests() {
           {
             path: 'src/client/js-pages/orders/index.tsx',
             content: [
-              'import { type JsTemplateContextRecord as Row, type JSPageRuntimeFacade as PageFacade, defineSettings as define } from "@nocobase/js-template-sdk/client";',
-              'import type * as SDK from "@nocobase/js-template-sdk/client";',
+              'import { type JsTemplateContextRecord as Row, type JSPageRuntimeFacade as PageFacade, defineSettings as define } from "@nocobase/runjs/js-template/client";',
+              'import type * as SDK from "@nocobase/runjs/js-template/client";',
               'import type * as Template from "js-template:settings/client/js-page/orders";',
-              'type ImportedPage = import("@nocobase/js-template-sdk/client").JSPageContext<Template.Settings>;',
+              'type ImportedPage = import("@nocobase/runjs/js-template/client").JSPageContext<Template.Settings>;',
               'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
               'function inspect(row: Row, facade: PageFacade, page: SDK.JSPageContext<Template.Settings>, imported: ImportedPage, settings: ImportedSettings) { facade.setDocumentTitle(String(row.id)); return [page.page.uid, imported.page.active, settings]; }',
               'const settings = define({ title: "Orders" });',
@@ -1372,7 +1372,7 @@ function registerWorkspaceCompilerBridgeTests() {
 
       expect(result.accepted, JSON.stringify(result.diagnostics, null, 2)).toBe(true);
       expect(result.diagnostics).toEqual([]);
-      expect(result.artifact.code).not.toContain('@nocobase/js-template-sdk/');
+      expect(result.artifact.code).not.toContain('@nocobase/runjs/js-template/');
       expect(result.artifact.code).not.toContain('js-template:settings/');
       expect(result.artifact.code).toContain('function define');
     });
@@ -1386,7 +1386,7 @@ function registerWorkspaceCompilerBridgeTests() {
           {
             path: 'src/client/js-blocks/sales-kpi/index.tsx',
             content:
-              'import type { MissingContext } from "@nocobase/js-template-sdk/client";\nctx.render(null as unknown as MissingContext);\n',
+              'import type { MissingContext } from "@nocobase/runjs/js-template/client";\nctx.render(null as unknown as MissingContext);\n',
           },
         ],
       });
@@ -1416,7 +1416,7 @@ function registerWorkspaceCompilerBridgeTests() {
             {
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
               content:
-                'export const settings = defineSettings({ type: "object", properties: {} });\nimport { defineSettings } from "@nocobase/js-template-sdk/client";\nctx.render(<div>Revenue</div>);\n',
+                'export const settings = defineSettings({ type: "object", properties: {} });\nimport { defineSettings } from "@nocobase/runjs/js-template/client";\nctx.render(<div>Revenue</div>);\n',
             },
           ],
         },
@@ -1433,7 +1433,7 @@ function registerWorkspaceCompilerBridgeTests() {
       expect(callIndex).toBeGreaterThanOrEqual(0);
       expect(helperIndex).toBeGreaterThan(callIndex);
       expect(result.artifact.code).not.toContain('var defineSettings');
-      expect(result.artifact.code).not.toContain('@nocobase/js-template-sdk/client');
+      expect(result.artifact.code).not.toContain('@nocobase/runjs/js-template/client');
     });
 
     it('keeps diagnostics on original source lines when rewriting zero-runtime SDK helpers', async () => {
@@ -1449,7 +1449,7 @@ function registerWorkspaceCompilerBridgeTests() {
             {
               path: 'src/client/js-blocks/sales-kpi/index.tsx',
               content:
-                'import { defineSettings } from "@nocobase/js-template-sdk/client";\nimport { missing } from "./missing";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{missing}</div>);\n',
+                'import { defineSettings } from "@nocobase/runjs/js-template/client";\nimport { missing } from "./missing";\nexport const settings = defineSettings({ type: "object", properties: {} });\nctx.render(<div>{missing}</div>);\n',
             },
           ],
         },

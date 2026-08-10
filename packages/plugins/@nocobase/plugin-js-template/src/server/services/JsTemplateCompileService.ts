@@ -61,7 +61,7 @@ import type { JsTemplateServiceContext } from './JsTemplateProjectService';
 import { ApplyCompiledTemplatesService } from './ApplyCompiledTemplatesService';
 import { JsTemplateValidator, hasErrorDiagnostic, sortDiagnostics } from './JsTemplateValidator';
 import { JsTemplateWorkspaceCompilerBridge } from './JsTemplateWorkspaceCompilerBridge';
-import { TreeService } from '@nocobase/runjs-workspace/server';
+import { TreeService } from '@nocobase/runjs/workspace/server';
 
 type UsageRefreshService = {
   refreshUsagesForProject: (projectId: string, ctx?: JsTemplateServiceContext, reason?: string) => Promise<unknown>;

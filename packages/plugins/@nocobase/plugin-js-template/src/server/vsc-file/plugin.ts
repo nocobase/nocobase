@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { VscPermissionHookRegistry } from '@nocobase/runjs-workspace/server';
+import type { VscPermissionHookRegistry } from '@nocobase/runjs/workspace/server';
 import type { Application } from '@nocobase/server';
 
 import { createRemoteSyncAuditActions, createRemoteSyncAuditEmitter } from './remotes/audit';

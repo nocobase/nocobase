@@ -17,14 +17,15 @@ import {
   JS_TEMPLATE_SETTINGS_SCHEMA_KEYWORDS,
   JS_TEMPLATE_SETTINGS_SCHEMA_TYPES,
   JS_TEMPLATE_X_COMPONENT_WHITELIST,
-} from '@nocobase/js-template-sdk/schema';
-import sdkPackageJson from '@nocobase/js-template-sdk/package.json';
+} from '@nocobase/runjs/js-template/schema';
+import { JS_TEMPLATE_SDK_CLIENT_IMPORT, JS_TEMPLATE_SDK_SHARED_IMPORT } from '@nocobase/runjs/js-template/typegen';
+import sdkPackageJson from '@nocobase/runjs/package.json';
 import {
   createRunJSWorkspaceDiagnostic,
   getRunJSWorkspaceDiagnosticDetailsKey as stableDetailsKey,
   RunJSWorkspaceSchemaValidator,
   type RunJSWorkspaceDiagnostic,
-} from '@nocobase/runjs-workspace/server';
+} from '@nocobase/runjs/workspace/server';
 import { posix as pathPosix } from 'path';
 import {
   JS_TEMPLATE_DESCRIPTOR_FILE,
@@ -412,6 +413,8 @@ export function buildJsTemplateCapabilities(limits: JsTemplateValidationLimits):
     sdk: {
       packageName: sdkPackageJson.name,
       version: sdkPackageJson.version,
+      clientImport: JS_TEMPLATE_SDK_CLIENT_IMPORT,
+      sharedImport: JS_TEMPLATE_SDK_SHARED_IMPORT,
       templateSchemaUri: JS_TEMPLATE_SCHEMA_URI,
       templateSchemaSha256: jsTemplateV1SchemaSha256,
     },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { JS_TEMPLATE_SDK_CLIENT_IMPORT } from '@nocobase/js-template-sdk/typegen';
+import { JS_TEMPLATE_SDK_CLIENT_IMPORT } from '@nocobase/runjs/js-template/typegen';
 import { collectStaticModuleReferences } from '@nocobase/runjs/compiler';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
@@ -352,7 +352,7 @@ function findAuthoringModuleReferences(content: string) {
   );
   return collectStaticModuleReferences(sourceFile).filter(
     (reference) =>
-      reference.specifier.startsWith('@nocobase/js-template-sdk/') ||
+      reference.specifier.startsWith('@nocobase/runjs/js-template/') ||
       reference.specifier.startsWith('js-template:settings/'),
   );
 }

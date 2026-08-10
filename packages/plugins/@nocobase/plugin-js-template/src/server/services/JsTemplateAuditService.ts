@@ -8,7 +8,7 @@
  */
 
 import type { Database, Transaction } from '@nocobase/database';
-import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@nocobase/runjs-workspace/server';
+import type { VscPermissionHookInput, VscPermissionRequestMetadata } from '@nocobase/runjs/workspace/server';
 import { createHash, randomUUID } from 'crypto';
 
 import { JS_TEMPLATE_COLLECTIONS, JS_TEMPLATE_OWNER_TYPE } from '../../constants';
