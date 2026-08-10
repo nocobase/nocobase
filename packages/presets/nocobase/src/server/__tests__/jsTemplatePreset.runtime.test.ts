@@ -49,6 +49,81 @@ async function expectInlineJsPageReady(app: MockServer, suffix: string) {
       expect.objectContaining({ path: '.nocobase/runjs-source.json' }),
     ]),
   );
+
+  const openedFiles = openResponse.body.data.files as Array<{ path: string; blobHash: string; content?: string }>;
+  const entryFile = openedFiles.find((file) => file.path === 'src/client/index.tsx');
+  if (!entryFile) {
+    throw new Error('Inline JS Page entry file was not materialized');
+  }
+  const savedCode = `ctx.render('Preset Inline JS Page ${suffix} saved');\n`;
+  const saveResponse = await agent.resource('runJSSources').saveChanges({
+    values: {
+      locator: pageResponse.body.data.runJSLocator,
+      repoId: openResponse.body.data.repository.repoId,
+      baseCommitId: openResponse.body.data.repository.headCommitId,
+      baseOwnerFingerprint: openResponse.body.data.ownerFingerprint,
+      message: `Save preset Inline JS Page ${suffix}`,
+      entryPath: 'src/client/index.tsx',
+      version: 'v2',
+      changes: [
+        {
+          path: 'src/client/index.tsx',
+          operation: 'upsert',
+          expectedBlobHash: entryFile.blobHash,
+          content: savedCode,
+          language: 'tsx',
+        },
+      ],
+    },
+  });
+  expect(saveResponse.status, saveResponse.body?.errors?.[0]?.message).toBe(200);
+  expect(saveResponse.body.data.artifact.diagnostics).toEqual([]);
+
+  const reopenedResponse = await agent.resource('runJSSources').open({
+    values: { locator: pageResponse.body.data.runJSLocator },
+  });
+  expect(reopenedResponse.status).toBe(200);
+  expect(reopenedResponse.body.data.files).toEqual(
+    expect.arrayContaining([expect.objectContaining({ path: 'src/client/index.tsx', content: savedCode })]),
+  );
+}
+
+async function expectAuthoringCapabilities(app: MockServer, externalizationAvailable: boolean) {
+  const response = await (await getRootAgent(app)).resource('runJSSources').capabilities();
+  expect(response.status).toBe(200);
+  const capabilities = (response.body.data || response.body) as {
+    inlineWorkspace: { available: boolean };
+    externalization: {
+      available: boolean;
+      entryKinds: string[];
+      destinationTypes: string[];
+      supportsIdempotency: boolean;
+      supportsDetachToInline: boolean;
+    };
+  };
+  expect(capabilities.inlineWorkspace).toMatchObject({ available: true });
+  expect(capabilities.externalization).toMatchObject({ available: externalizationAvailable });
+  if (externalizationAvailable) {
+    expect(capabilities.externalization.entryKinds).toEqual([
+      'js-block',
+      'js-page',
+      'js-field',
+      'js-action',
+      'js-item',
+    ]);
+    expect(capabilities.externalization.destinationTypes).toEqual(['existing', 'new']);
+    expect(capabilities.externalization).toMatchObject({
+      supportsIdempotency: true,
+      supportsDetachToInline: true,
+    });
+  } else {
+    expect(capabilities.externalization).toMatchObject({
+      entryKinds: [],
+      destinationTypes: [],
+      supportsIdempotency: false,
+      supportsDetachToInline: false,
+    });
+  }
 }
 
 describe('JS Template preset runtime', () => {
@@ -86,16 +161,22 @@ describe('JS Template preset runtime', () => {
     ]) {
       expect(app.db.hasCollection(collectionName)).toBe(true);
     }
+    const initiallyEnabledResponse = await (await getRootAgent(app)).resource('jsTemplateProjects').list();
+    expect(initiallyEnabledResponse.status).toBe(200);
+    await expectAuthoringCapabilities(app, true);
     await expectInlineJsPageReady(app, 'enabled');
 
     await app.pm.disable(JS_TEMPLATE_NAME);
     const disabledResponse = await (await getRootAgent(app)).resource('jsTemplateProjects').list();
     expect(disabledResponse.status).toBe(503);
     expect(disabledResponse.body.errors[0]).toMatchObject({ code: 'JS_TEMPLATE_RUNTIME_UNAVAILABLE', status: 503 });
+    await expectAuthoringCapabilities(app, false);
     await expectInlineJsPageReady(app, 'disabled');
 
     await app.pm.enable(JS_TEMPLATE_NAME);
     const enabledResponse = await (await getRootAgent(app)).resource('jsTemplateProjects').list();
     expect(enabledResponse.status).toBe(200);
+    await expectAuthoringCapabilities(app, true);
+    await expectInlineJsPageReady(app, 're-enabled');
   }, 120000);
 });
