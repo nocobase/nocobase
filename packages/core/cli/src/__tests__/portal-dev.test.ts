@@ -57,19 +57,19 @@ async function preparePortalWorkspace(params: {
   storagePath: string;
   app?: string;
   portal?: string;
-  envContent?: string;
-  envLocalContent?: string;
+  serverDevEnvContent?: string;
+  serverProdEnvContent?: string;
 }): Promise<string> {
   const app = params.app ?? 'main';
   const portal = params.portal ?? 'customer';
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
   await fsp.mkdir(path.join(portalDir, 'src'), { recursive: true });
   await fsp.writeFile(path.join(portalDir, 'package.json'), '{"name":"portal"}\n');
-  if (params.envContent !== undefined) {
-    await fsp.writeFile(path.join(portalDir, '.env'), params.envContent);
+  if (params.serverDevEnvContent !== undefined) {
+    await fsp.writeFile(path.join(portalDir, '.env.server.dev'), params.serverDevEnvContent);
   }
-  if (params.envLocalContent !== undefined) {
-    await fsp.writeFile(path.join(portalDir, '.env.local'), params.envLocalContent);
+  if (params.serverProdEnvContent !== undefined) {
+    await fsp.writeFile(path.join(portalDir, '.env.server.prod'), params.serverProdEnvContent);
   }
   return portalDir;
 }
@@ -92,8 +92,8 @@ test('updates env files and starts portal dev without building or syncing record
   const portalDir = await preparePortalWorkspace({
     storagePath: sourceRoot,
     app: 'crm',
-    envContent: 'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/old/api\n',
-    envLocalContent: 'NOCOBASE_PORTAL_BASE=/old/base/\nLOCAL_ONLY=true\n',
+    serverDevEnvContent: 'CUSTOM_VALUE=1\nNOCOBASE_API_PROXY_TARGET=http://old.example.com/api\n',
+    serverProdEnvContent: 'NOCOBASE_PORTAL_NAME=old\nLOCAL_ONLY=true\n',
   });
   const onStart = vi.fn();
   const runCommand = vi.fn(async () => undefined);
@@ -137,20 +137,22 @@ test('updates env files and starts portal dev without building or syncing record
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['dev'], {
     cwd: portalDir,
     env: expect.objectContaining({
-      NOCOBASE_API_URL: 'https://example.com/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_PORTAL_NAME: 'customer',
+      NOCOBASE_API_PROXY_TARGET: 'https://example.com/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm dev',
   });
   expect(runCommand).not.toHaveBeenCalledWith('pnpm', ['build'], expect.anything());
-  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
-    'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/console/api/__app/crm\nNOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.dev'), 'utf-8')).toBe(
+    'CUSTOM_VALUE=1\n' +
+      'NOCOBASE_API_PROXY_TARGET=https://example.com/console/api/__app/crm\n' +
+      'NOCOBASE_PORTAL_NAME=customer\n',
   );
-  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
-    'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n' +
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.prod'), 'utf-8')).toBe(
+    'NOCOBASE_PORTAL_NAME=customer\n' +
       'LOCAL_ONLY=true\n' +
-      'NOCOBASE_API_URL=https://example.com/console/api/__app/crm\n',
+      'NOCOBASE_API_PROXY_TARGET=https://example.com/console/api/__app/crm\n',
   );
 });
 

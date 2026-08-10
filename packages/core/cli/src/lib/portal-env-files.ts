@@ -9,7 +9,9 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { resolvePortalEnvApiUrl } from './portal-create.js';
+
+export const PORTAL_SERVER_DEV_ENV_FILE = '.env.server.dev';
+export const PORTAL_SERVER_PROD_ENV_FILE = '.env.server.prod';
 
 function upsertEnvContent(content: string, values: Record<string, string>): string {
   const nextValues = { ...values };
@@ -49,16 +51,13 @@ export async function upsertPortalEnvFile(filePath: string, values: Record<strin
 
 export async function updatePortalEnvFiles(params: {
   portalDir: string;
+  portal: string;
   apiBaseUrl: string;
-  portalBase: string;
 }): Promise<void> {
-  const envApiUrl = resolvePortalEnvApiUrl(params.apiBaseUrl);
-  await upsertPortalEnvFile(path.join(params.portalDir, '.env'), {
-    NOCOBASE_API_URL: envApiUrl,
-    NOCOBASE_PORTAL_BASE: params.portalBase,
-  });
-  await upsertPortalEnvFile(path.join(params.portalDir, '.env.local'), {
-    NOCOBASE_API_URL: params.apiBaseUrl,
-    NOCOBASE_PORTAL_BASE: params.portalBase,
-  });
+  const values = {
+    NOCOBASE_PORTAL_NAME: params.portal,
+    NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
+  };
+  await upsertPortalEnvFile(path.join(params.portalDir, PORTAL_SERVER_DEV_ENV_FILE), values);
+  await upsertPortalEnvFile(path.join(params.portalDir, PORTAL_SERVER_PROD_ENV_FILE), values);
 }

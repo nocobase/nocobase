@@ -17,7 +17,6 @@ import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
-  resolvePortalEnvApiUrl,
   resolveSavedPortalSourcePath,
   resolvePortalSourcePath,
   titleFromPortalSlug,
@@ -254,9 +253,8 @@ async function ensurePortalBuildServerCleansDistBin(portalDir: string): Promise<
 
 async function runPortalBuildCommands(params: {
   portalDir: string;
+  portal: string;
   apiBaseUrl: string;
-  envApiUrl: string;
-  portalBase: string;
   runCommand: RunCommand;
 }) {
   const scripts = await readPortalPackageScripts(params.portalDir);
@@ -273,10 +271,7 @@ async function runPortalBuildCommands(params: {
     }
     await runPnpmCommand(params.runCommand, ['build:client'], {
       cwd: params.portalDir,
-      env: buildPortalCommandEnv({
-        NOCOBASE_API_URL: params.apiBaseUrl,
-        NOCOBASE_PORTAL_BASE: params.portalBase,
-      }),
+      env: buildPortalCommandEnv(),
       envMode: 'replace',
       errorName: 'pnpm build:client',
     });
@@ -284,8 +279,8 @@ async function runPortalBuildCommands(params: {
       await runPnpmCommand(params.runCommand, ['build:html'], {
         cwd: params.portalDir,
         env: buildPortalCommandEnv({
-          NOCOBASE_API_URL: params.envApiUrl,
-          NOCOBASE_PORTAL_BASE: params.portalBase,
+          NOCOBASE_PORTAL_NAME: params.portal,
+          NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
         }),
         envMode: 'replace',
         errorName: 'pnpm build:html',
@@ -293,10 +288,7 @@ async function runPortalBuildCommands(params: {
     }
     await runPnpmCommand(params.runCommand, ['build:server'], {
       cwd: params.portalDir,
-      env: buildPortalCommandEnv({
-        NOCOBASE_API_URL: params.apiBaseUrl,
-        NOCOBASE_PORTAL_BASE: params.portalBase,
-      }),
+      env: buildPortalCommandEnv(),
       envMode: 'replace',
       errorName: 'pnpm build:server',
     });
@@ -305,10 +297,7 @@ async function runPortalBuildCommands(params: {
 
   await runPnpmCommand(params.runCommand, ['build'], {
     cwd: params.portalDir,
-    env: buildPortalCommandEnv({
-      NOCOBASE_API_URL: params.apiBaseUrl,
-      NOCOBASE_PORTAL_BASE: params.portalBase,
-    }),
+    env: buildPortalCommandEnv(),
     envMode: 'replace',
     errorName: 'pnpm build',
   });
@@ -316,8 +305,8 @@ async function runPortalBuildCommands(params: {
     await runPnpmCommand(params.runCommand, ['build:html'], {
       cwd: params.portalDir,
       env: buildPortalCommandEnv({
-        NOCOBASE_API_URL: params.envApiUrl,
-        NOCOBASE_PORTAL_BASE: params.portalBase,
+        NOCOBASE_PORTAL_NAME: params.portal,
+        NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
       }),
       envMode: 'replace',
       errorName: 'pnpm build:html',
@@ -424,7 +413,6 @@ async function syncMultiPortalRecord(params: {
 export async function deployPortalWorkspace(options: PortalDeployOptions): Promise<PortalDeployResult> {
   const portal = validatePortalSlug(options.portal);
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
-  const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const deployBase = buildPortalBasePath({ app, appPublicPath, portal });
@@ -451,8 +439,8 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   );
   await updatePortalEnvFiles({
     portalDir,
+    portal,
     apiBaseUrl,
-    portalBase,
   });
   await ensurePortalBuildHtmlReadsEnvOnly(portalDir);
   await ensurePortalBuildServerCleansDistBin(portalDir);
@@ -469,9 +457,8 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   }
   await runPortalBuildCommands({
     portalDir,
+    portal,
     apiBaseUrl,
-    envApiUrl,
-    portalBase,
     runCommand,
   });
 

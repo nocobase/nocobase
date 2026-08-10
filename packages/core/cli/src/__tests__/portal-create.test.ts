@@ -17,7 +17,6 @@ import {
   buildPortalBasePath,
   createPortalWorkspace,
   resolvePortalAppFromApiBaseUrl,
-  resolvePortalEnvApiUrl,
   resolvePortalStoragePath,
   titleFromPortalSlug,
   validatePortalSlug,
@@ -166,13 +165,6 @@ test('resolves app and public path from apiBaseUrl', () => {
   );
 });
 
-test('resolves relative API URLs for Portal env files', () => {
-  expect(resolvePortalEnvApiUrl('http://localhost:13000/console/api/__app/crm')).toBe('/console/api/__app/crm');
-  expect(resolvePortalEnvApiUrl('http://localhost:13000/api')).toBe('/api');
-  expect(resolvePortalEnvApiUrl('https://example.com/console/api')).toBe('/console/api');
-  expect(resolvePortalEnvApiUrl('/api/__app/crm')).toBe('/api/__app/crm');
-});
-
 test('builds Portal base paths for main app and sub apps', () => {
   expect(buildPortalBasePath({ app: 'main', appPublicPath: '/', portal: 'customer' })).toBe('/x/customer/');
   expect(buildPortalBasePath({ app: 'crm', appPublicPath: '/', portal: 'customer' })).toBe('/x/apps/crm/customer/');
@@ -240,15 +232,15 @@ test('creates a portal from a local template', async () => {
   await expect(fsp.access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
   await expect(fsp.access(path.join(storagePath, 'portals', 'portal-manifest.json'))).rejects.toThrow();
 
-  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=/console/api/__app/crm\n' + 'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
-  );
-  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n' +
-      'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
-  );
+  const expectedServerEnv =
+    'NOCOBASE_PORTAL_NAME=customer\n' +
+    'NOCOBASE_API_PROXY_TARGET=http://localhost:13000/console/api/__app/crm\n';
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.dev'), 'utf-8')).toBe(expectedServerEnv);
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.prod'), 'utf-8')).toBe(expectedServerEnv);
+  await expect(fsp.access(path.join(portalDir, '.env'))).rejects.toThrow();
+  await expect(fsp.access(path.join(portalDir, '.env.local'))).rejects.toThrow();
   const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
-  expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
+  expect(buildHtmlScript).toContain('return [".env.server.prod"].map((file) => path.join(rootDir, file));');
   expect(buildHtmlScript).not.toContain('.env.local');
   await expect(fsp.access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
   expect(runCommand).toHaveBeenCalledWith('pnpm', ['install'], {
@@ -319,12 +311,10 @@ test('creates a custom-domain sub-app portal with a root portal base', async () 
     portalBase: '/x/crm/',
   });
 
-  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
-  );
-  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=https://demo6.v11.demo.nocobase.com/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
-  );
+  const expectedServerEnv =
+    'NOCOBASE_PORTAL_NAME=crm\n' + 'NOCOBASE_API_PROXY_TARGET=https://demo6.v11.demo.nocobase.com/api\n';
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.dev'), 'utf-8')).toBe(expectedServerEnv);
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.prod'), 'utf-8')).toBe(expectedServerEnv);
 });
 
 test('creates a portal even when pnpm install fails', async () => {

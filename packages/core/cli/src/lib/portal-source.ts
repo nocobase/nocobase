@@ -776,8 +776,8 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
     await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
     await updatePortalEnvFiles({
       portalDir: sourceContext.portalDir,
+      portal: sourceContext.portal,
       apiBaseUrl: sourceContext.apiBaseUrl,
-      portalBase: sourceContext.portalBase,
     });
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,
@@ -834,8 +834,8 @@ export async function pullPortalSource(options: PortalSourceOptions): Promise<Po
     await ensurePortalBuildHtmlReadsEnvOnly(sourceContext.portalDir);
     await updatePortalEnvFiles({
       portalDir: sourceContext.portalDir,
+      portal: sourceContext.portal,
       apiBaseUrl: sourceContext.apiBaseUrl,
-      portalBase: sourceContext.portalBase,
     });
     const installResult = await installPortalDependencies({
       portalDir: sourceContext.portalDir,

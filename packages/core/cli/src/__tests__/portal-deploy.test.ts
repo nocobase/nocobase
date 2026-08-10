@@ -70,8 +70,8 @@ async function preparePortalWorkspace(params: {
   storagePath: string;
   app?: string;
   portal?: string;
-  envContent?: string;
-  envLocalContent?: string;
+  serverDevEnvContent?: string;
+  serverProdEnvContent?: string;
 }): Promise<string> {
   const portal = params.portal ?? 'customer';
   const portalDir = path.join(params.storagePath, portal);
@@ -106,11 +106,11 @@ async function preparePortalWorkspace(params: {
       '',
     ].join('\n'),
   );
-  if (params.envContent !== undefined) {
-    await fsp.writeFile(path.join(portalDir, '.env'), params.envContent);
+  if (params.serverDevEnvContent !== undefined) {
+    await fsp.writeFile(path.join(portalDir, '.env.server.dev'), params.serverDevEnvContent);
   }
-  if (params.envLocalContent !== undefined) {
-    await fsp.writeFile(path.join(portalDir, '.env.local'), params.envLocalContent);
+  if (params.serverProdEnvContent !== undefined) {
+    await fsp.writeFile(path.join(portalDir, '.env.server.prod'), params.serverProdEnvContent);
   }
   return portalDir;
 }
@@ -169,8 +169,8 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
   const portalDir = await preparePortalWorkspace({
     storagePath,
     app: 'crm',
-    envContent: 'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/old/api\n',
-    envLocalContent: 'NOCOBASE_PORTAL_BASE=/old/base/\nLOCAL_ONLY=true\n',
+    serverDevEnvContent: 'CUSTOM_VALUE=1\nNOCOBASE_API_PROXY_TARGET=http://old.example.com/api\n',
+    serverProdEnvContent: 'NOCOBASE_PORTAL_NAME=old\nLOCAL_ONLY=true\n',
   });
   const runCommand = vi.fn(async (_name: string, args: string[], options?: PortalDeployRunOptions) => {
     const distDir = path.join(String(options?.cwd), 'dist');
@@ -237,28 +237,22 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:client'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'http://localhost:13000/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:client',
   });
   expect(runCommand).toHaveBeenNthCalledWith(4, 'pnpm', ['build:html'], {
     cwd: portalDir,
     env: expect.objectContaining({
-      NOCOBASE_API_URL: '/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_PORTAL_NAME: 'customer',
+      NOCOBASE_API_PROXY_TARGET: 'http://localhost:13000/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
   expect(runCommand).toHaveBeenNthCalledWith(5, 'pnpm', ['build:server'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'http://localhost:13000/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:server',
   });
@@ -276,16 +270,18 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
     }),
   );
   expectPortalRecordFirstOrCreate(apiRequest.mock.calls[1][0]);
-  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
-    'CUSTOM_VALUE=1\nNOCOBASE_API_URL=/console/api/__app/crm\nNOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n',
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.dev'), 'utf-8')).toBe(
+    'CUSTOM_VALUE=1\n' +
+      'NOCOBASE_API_PROXY_TARGET=http://localhost:13000/console/api/__app/crm\n' +
+      'NOCOBASE_PORTAL_NAME=customer\n',
   );
-  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
-    'NOCOBASE_PORTAL_BASE=/console/x/apps/crm/customer/\n' +
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.prod'), 'utf-8')).toBe(
+    'NOCOBASE_PORTAL_NAME=customer\n' +
       'LOCAL_ONLY=true\n' +
-      'NOCOBASE_API_URL=http://localhost:13000/console/api/__app/crm\n',
+      'NOCOBASE_API_PROXY_TARGET=http://localhost:13000/console/api/__app/crm\n',
   );
   const buildHtmlScript = await fsp.readFile(path.join(portalDir, 'scripts', 'build-html.mjs'), 'utf-8');
-  expect(buildHtmlScript).toContain('return [".env"].map((file) => path.join(rootDir, file));');
+  expect(buildHtmlScript).toContain('return [".env.server.prod"].map((file) => path.join(rootDir, file));');
   expect(buildHtmlScript).not.toContain('.env.local');
   await expect(fsp.readFile(path.join(portalDir, 'scripts', 'clean-dist-bin.mjs'), 'utf-8')).resolves.toContain(
     'distBinDir',
@@ -404,28 +400,22 @@ test('deploy can skip dependency installation', async () => {
   });
   expect(runCommand).toHaveBeenNthCalledWith(2, 'pnpm', ['build:client'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'http://localhost:13000/api',
-      NOCOBASE_PORTAL_BASE: '/x/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:client',
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
     cwd: portalDir,
     env: expect.objectContaining({
-      NOCOBASE_API_URL: '/api',
-      NOCOBASE_PORTAL_BASE: '/x/customer/',
+      NOCOBASE_PORTAL_NAME: 'customer',
+      NOCOBASE_API_PROXY_TARGET: 'http://localhost:13000/api',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
   expect(runCommand).toHaveBeenNthCalledWith(4, 'pnpm', ['build:server'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'http://localhost:13000/api',
-      NOCOBASE_PORTAL_BASE: '/x/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:server',
   });
@@ -590,28 +580,22 @@ test('http deploy builds, packs dist, and uploads it', async () => {
   });
   expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:client'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'https://example.com/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:client',
   });
   expect(runCommand).toHaveBeenNthCalledWith(4, 'pnpm', ['build:html'], {
     cwd: portalDir,
     env: expect.objectContaining({
-      NOCOBASE_API_URL: '/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_PORTAL_NAME: 'customer',
+      NOCOBASE_API_PROXY_TARGET: 'https://example.com/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
   expect(runCommand).toHaveBeenNthCalledWith(5, 'pnpm', ['build:server'], {
     cwd: portalDir,
-    env: expect.objectContaining({
-      NOCOBASE_API_URL: 'https://example.com/console/api/__app/crm',
-      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
-    }),
+    env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:server',
   });
@@ -725,18 +709,16 @@ test('http deploy uses root portal base for custom-domain sub-apps', async () =>
   expect(runCommand).toHaveBeenNthCalledWith(4, 'pnpm', ['build:html'], {
     cwd: portalDir,
     env: expect.objectContaining({
-      NOCOBASE_API_URL: '/api',
-      NOCOBASE_PORTAL_BASE: '/x/crm/',
+      NOCOBASE_PORTAL_NAME: 'crm',
+      NOCOBASE_API_PROXY_TARGET: 'https://demo6.v11.demo.nocobase.com/api',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
   });
-  expect(await fsp.readFile(path.join(portalDir, '.env'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
-  );
-  expect(await fsp.readFile(path.join(portalDir, '.env.local'), 'utf-8')).toBe(
-    'NOCOBASE_API_URL=https://demo6.v11.demo.nocobase.com/api\nNOCOBASE_PORTAL_BASE=/x/crm/\n',
-  );
+  const expectedServerEnv =
+    'NOCOBASE_PORTAL_NAME=crm\n' + 'NOCOBASE_API_PROXY_TARGET=https://demo6.v11.demo.nocobase.com/api\n';
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.dev'), 'utf-8')).toBe(expectedServerEnv);
+  expect(await fsp.readFile(path.join(portalDir, '.env.server.prod'), 'utf-8')).toBe(expectedServerEnv);
 });
 
 test('fails after local dist upload when portal record sync fails', async () => {
