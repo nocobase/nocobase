@@ -461,7 +461,10 @@ function JsTemplateSourceProjectWorkspacePage({
     }
 
     const managedEntryRoot = getManagedJsTemplateRoot(path);
-    if (managedEntryRoot) {
+    const managedEntryHasContents =
+      files.some((file) => isPathInsideFolder(file.path, path)) ||
+      folders.some((folder) => folder !== path && isPathInsideFolder(folder, path));
+    if (managedEntryRoot && managedEntryHasContents) {
       const descriptorPath = `${managedEntryRoot.path}/${JS_TEMPLATE_DESCRIPTOR_FILE}`;
       const descriptorFile = files.find((file) => file.path === descriptorPath);
       if (!descriptorFile) {

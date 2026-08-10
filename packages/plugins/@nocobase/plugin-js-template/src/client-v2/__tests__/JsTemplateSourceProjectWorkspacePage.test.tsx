@@ -102,6 +102,7 @@ vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
       defaultCreateParentPath,
       getPathAccess,
       onCreate,
+      onCreateFolder,
       onExportWorkspace,
       onImportWorkspace,
       onOpen,
@@ -112,6 +113,7 @@ vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
       defaultCreateParentPath?: string;
       getPathAccess?: (path: string, pathType: 'file' | 'folder') => { canWrite?: boolean; reason?: string };
       onCreate: (parentPath?: string) => string | undefined;
+      onCreateFolder?: (parentPath?: string) => string | undefined;
       onExportWorkspace?: () => void;
       onImportWorkspace?: () => void;
       onOpen: (path: string) => void;
@@ -131,6 +133,11 @@ vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
         <button onClick={() => onCreate(defaultCreateParentPath || 'src/client')} type="button">
           New default file
         </button>
+        {onCreateFolder ? (
+          <button onClick={() => onCreateFolder('src/client/js-blocks')} type="button">
+            New js-block folder
+          </button>
+        ) : null}
         {folders.map((folder) => {
           const access = getPathAccess?.(folder, 'folder');
           return (
@@ -796,6 +803,26 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       ]),
     );
     expect(mocks.api.saveSource.mock.calls[0][0].expectedHeadCommitId).toBe('commit-1');
+  });
+
+  it('renames a new empty entry directory before its descriptor is created', async () => {
+    const errorSpy = vi.spyOn(message, 'error');
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
+        <JsTemplateSourceProjectWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByTestId('runjs-code-tab');
+    fireEvent.click(screen.getByRole('button', { name: 'New js-block folder' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rename folder src/client/js-blocks/folder', exact: true }));
+
+    expect(errorSpy).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('button', { name: 'Rename folder src/client/js-blocks/folder-renamed', exact: true }),
+    ).toBeInTheDocument();
+    errorSpy.mockRestore();
   });
 
   it.each([
