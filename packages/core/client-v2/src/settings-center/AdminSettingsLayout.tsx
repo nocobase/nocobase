@@ -175,6 +175,10 @@ export const InternalAdminSettingsLayout = () => {
   }
 
   if (!currentVisibleSetting && currentSetting.isAllow === false) {
+    if (!defaultSettingsPath) {
+      return <Navigate replace to="/admin" />;
+    }
+
     return <SettingsEmpty type="route" />;
   }
 
