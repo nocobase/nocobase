@@ -211,7 +211,7 @@ vi.mock('../pages/JsTemplateSourceProjectWorkspacePage', async () => {
   };
 });
 
-function renderListPage(initialEntry = '/admin/settings/js-template') {
+function renderListPage(initialEntry = '/admin/settings/js-templates') {
   const app = createMockClient();
   app.apiMock.onGet('app:getInfo').reply(200, { data: { version: 'test' } });
 
@@ -343,7 +343,7 @@ describe('JsTemplateSourceProjectsPage', () => {
       },
     ]);
 
-    renderListPage('/admin/settings/js-templates/source-projects');
+    renderListPage('/admin/settings/js-templates');
 
     const projectRow = await screen.findByRole('row', { name: /Shared source shared-source/ });
     expect(screen.getAllByRole('row')).toHaveLength(2);
@@ -882,29 +882,6 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('js-block 2')).toBeInTheDocument();
-  });
-
-  it('offers a discoverable Add JS Template entry from the Source Project drawer', async () => {
-    mocks.workspace.dirty = false;
-    mocks.api.listProjects.mockResolvedValueOnce([
-      {
-        id: 'jtp_browser_smoke',
-        name: 'browser-smoke',
-        normalizedName: 'browser-smoke',
-        title: 'Browser smoke',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: 'commit-1',
-        templateCount: 1,
-        templateKinds: { 'js-block': 1 },
-      },
-    ]);
-    renderListPage('/admin/settings/js-templates/source-projects?projectId=jtp_browser_smoke&panel=source');
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Add JS Template' }));
-
-    expect(screen.getByTestId('location-search')).toHaveTextContent('?create=1&destinationProjectId=jtp_browser_smoke');
   });
 
   it('supports multi-select batch enablement changes', async () => {

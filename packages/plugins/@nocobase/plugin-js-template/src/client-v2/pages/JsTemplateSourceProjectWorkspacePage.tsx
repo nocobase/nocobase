@@ -29,9 +29,9 @@ import {
   type RunJSWorkspaceFile,
   useRunJSWorkspaceT,
 } from '@nocobase/runjs/workspace/client-v2';
-import { Alert, Flex, Modal, Space, Typography, message } from 'antd';
+import { Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -72,7 +72,6 @@ import {
   readJsTemplateWorkspaceArchive,
 } from '../workspace/jsTemplateWorkspaceArchive';
 import { resolveJsTemplateWorkspaceJsonSchema } from '../workspace/jsTemplateWorkspaceJsonSchema';
-import { listJsTemplateUsageLocations, type ApiClientLike } from '../api/jsTemplatesRequests';
 import {
   InitialProjectLoadingState,
   MissingProjectState,
@@ -149,9 +148,7 @@ function JsTemplateSourceProjectWorkspacePage({
 }: JsTemplateSourceProjectWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
-  const apiClient = app.apiClient as ApiClientLike | undefined;
   const studioT = useRunJSWorkspaceT();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const projectId = projectIdProp || searchParams.get('projectId') || '';
   const {
@@ -197,7 +194,6 @@ function JsTemplateSourceProjectWorkspacePage({
   const [notice, setNotice] = useState<{ type: 'success' | 'info' | 'warning' | 'error'; message: string } | null>(
     null,
   );
-  const [saveImpactCount, setSaveImpactCount] = useState<number | null>(null);
   const workspaceFullscreen = useFullscreenOverlay();
   const embeddedSaveRequestRef = useRef<{
     resolve: (result: EmbeddedRunJSEditorSaveResult) => void;
@@ -297,35 +293,6 @@ function JsTemplateSourceProjectWorkspacePage({
     loadWorkspace();
   }, [loadWorkspace]);
 
-  useEffect(() => {
-    let active = true;
-    if (!templateScoped || !templateId || !apiClient?.request) {
-      setSaveImpactCount(null);
-      return () => {
-        active = false;
-      };
-    }
-    setSaveImpactCount(null);
-    listJsTemplateUsageLocations(apiClient, {
-      templateId,
-      page: 1,
-      pageSize: 1,
-    })
-      .then((result) => {
-        if (active) {
-          setSaveImpactCount(result.meta.effectiveCount);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setSaveImpactCount(null);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [apiClient, templateId, templateScoped]);
-
   const activeFile = files.find((file) => file.path === activePath);
   const settingsTypegen = useMemo(() => generateClientSettingsTypes({ files }), [files]);
   const activeEntryContext = useMemo(
@@ -345,10 +312,6 @@ function JsTemplateSourceProjectWorkspacePage({
   const hasBlockedDirtyChanges = dirtyChanges.some(
     (change) => !canChangeJsTemplateWorkspacePath(workspaceScope, change.path),
   );
-  const openCatalogAddTemplate = useCallback(() => {
-    const query = new URLSearchParams({ create: '1', destinationProjectId: projectId });
-    navigate(`/admin/settings/js-templates?${query.toString()}`);
-  }, [navigate, projectId]);
   const activeFileReadOnly =
     !canWrite || !activePath || !getJsTemplateWorkspacePathAccess(workspaceScope, activePath, 'file').canWrite;
   const checkSnapshotKey = useMemo(() => buildWorkspacePreviewSnapshot(files, workspaceScope), [files, workspaceScope]);
@@ -1205,12 +1168,9 @@ function JsTemplateSourceProjectWorkspacePage({
   return (
     <Flex vertical gap={16} style={{ height: embedded ? '100%' : undefined, minHeight: 0, padding: embedded ? 0 : 24 }}>
       <WorkspacePageHeader
-        addTemplateDisabled={project?.lifecycleStatus !== 'enabled' || hasUnsavedLocalChanges}
-        addTemplateLabel={t('Add JS Template')}
         disabled={footerActions.disabled}
         embedded={embedded}
         loading={footerActions.loading}
-        onAddTemplate={openCatalogAddTemplate}
         onSave={footerActions.onSave}
         projectId={projectId}
         saveLabel={t('Save')}
@@ -1218,26 +1178,6 @@ function JsTemplateSourceProjectWorkspacePage({
       />
 
       <WorkspaceNotice notice={notice} onClose={() => setNotice(null)} />
-      {project && saveImpactCount !== null ? (
-        <Alert
-          message={
-            project?.lifecycleStatus === 'archived'
-              ? t(
-                  'This JS Template has {{count}} effective usages. Its Source Project is archived and read-only.',
-                ).replace('{{count}}', String(saveImpactCount))
-              : project?.lifecycleStatus === 'disabled'
-                ? t('This JS Template has {{count}} effective usages. Its Source Project is disabled.').replace(
-                    '{{count}}',
-                    String(saveImpactCount),
-                  )
-                : t(
-                    'This JS Template is used in {{count}} locations; after save those locations immediately use the new code.',
-                  ).replace('{{count}}', String(saveImpactCount))
-          }
-          showIcon
-          type="info"
-        />
-      ) : null}
       <WorkspaceLoadingStrip label={t('Loading source')} loading={loading} />
 
       <WorkspaceStudio

@@ -9,7 +9,6 @@
 
 import type {
   JsTemplate,
-  JsTemplateCatalogEntry,
   JsTemplateProject,
   SaveAsJsTemplateInput,
   SaveAsJsTemplateResult,
@@ -17,9 +16,6 @@ import type {
   DetachJsTemplateToInlineResult,
   JsTemplateSelectableTemplateSummary,
   JsTemplateSelectableTemplatesInput,
-  JsTemplateUsageListInput,
-  JsTemplateUsageListResult,
-  DeleteJsTemplateResult,
 } from '../../shared/types';
 import {
   getOrLoadJsTemplateSelectableCatalog,
@@ -61,44 +57,12 @@ export async function getJsTemplate(api: ApiClientLike, templateId: string): Pro
   return unwrapResourceResponse(response);
 }
 
-export async function listJsTemplateCatalog(api: ApiClientLike): Promise<JsTemplateCatalogEntry[]> {
-  const response = await api.request<ResourceResponse<JsTemplateCatalogEntry[]>>({
-    url: 'jsTemplates:listCatalog',
-    method: 'post',
-  });
-  return unwrapResourceResponse(response) || [];
-}
-
 export async function listJsTemplateProjects(api: ApiClientLike): Promise<JsTemplateProject[]> {
   const response = await api.request<ResourceResponse<JsTemplateProject[]>>({
     url: 'jsTemplateProjects:list',
     method: 'post',
   });
   return unwrapResourceResponse(response) || [];
-}
-
-export async function listJsTemplateUsageLocations(
-  api: ApiClientLike,
-  input: JsTemplateUsageListInput,
-): Promise<JsTemplateUsageListResult> {
-  const response = await api.request<ResourceResponse<JsTemplateUsageListResult>>({
-    url: 'jsTemplateUsages:listUsages',
-    method: 'post',
-    data: input,
-  });
-  return unwrapResourceResponse(response);
-}
-
-export async function deleteJsTemplate(api: ApiClientLike, templateId: string): Promise<DeleteJsTemplateResult> {
-  const response = await api.request<ResourceResponse<DeleteJsTemplateResult>>({
-    url: 'jsTemplates:delete',
-    method: 'post',
-    data: { templateId },
-  });
-  const result = unwrapResourceResponse(response);
-  invalidateJsTemplateSettingsDescriptorCache(api, result.project.id);
-  invalidateJsTemplateRuntimeCache(api, result.project.id);
-  return result;
 }
 
 export async function saveAsJsTemplate(

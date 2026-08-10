@@ -10,7 +10,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Modal, message } from 'antd';
 import React from 'react';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 
 import { JsTemplateHookError, type UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
@@ -32,7 +32,6 @@ const mocks = vi.hoisted(() => ({
     diffCommits: vi.fn(),
   },
   apiClient: { request: vi.fn() },
-  listUsageLocations: vi.fn(),
   archive: {
     buildJsTemplateWorkspaceArchiveFileName: vi.fn(() => 'sales-widgets.zip'),
     createJsTemplateWorkspaceArchive: vi.fn(),
@@ -82,14 +81,6 @@ vi.mock('../workspace/jsTemplateWorkspaceArchive', () => ({
   downloadJsTemplateWorkspaceArchive: mocks.archive.downloadJsTemplateWorkspaceArchive,
   readJsTemplateWorkspaceArchive: mocks.archive.readJsTemplateWorkspaceArchive,
 }));
-
-vi.mock('../api/jsTemplatesRequests', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../api/jsTemplatesRequests')>();
-  return {
-    ...actual,
-    listJsTemplateUsageLocations: (...args: unknown[]) => mocks.listUsageLocations(...args),
-  };
-});
 
 vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/runjs/workspace/client-v2')>();
@@ -366,10 +357,6 @@ async function confirmSaveVersion(message: string) {
   fireEvent.click(within(saveDialog).getByRole('button', { name: 'Save' }));
 }
 
-function LocationSearch() {
-  return <span data-testid="location-search">{useLocation().search}</span>;
-}
-
 describe('JsTemplateSourceProjectWorkspacePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -434,28 +421,11 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       files: [],
       summary: { added: 0, modified: 0, deleted: 0, unchanged: 0, renamed: 0 },
     });
-    mocks.listUsageLocations.mockResolvedValue({
-      data: [],
-      meta: { page: 1, pageSize: 1, count: 0, totalPage: 0, effectiveCount: 3, hiddenCount: 0 },
-    });
     mocks.archive.createJsTemplateWorkspaceArchive.mockResolvedValue(
       new Blob(['workspace'], { type: 'application/zip' }),
     );
     mocks.archive.downloadJsTemplateWorkspaceArchive.mockReturnValue(true);
     mocks.archive.readJsTemplateWorkspaceArchive.mockResolvedValue('zip-base64');
-  });
-
-  it('offers a discoverable Add JS Template entry for the current Source Project', async () => {
-    render(
-      <MemoryRouter initialEntries={['/admin/settings/js-template/source/jtp_sales']}>
-        <JsTemplateSourceProjectWorkspacePage projectId="jtp_sales" />
-        <LocationSearch />
-      </MemoryRouter>,
-    );
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Add JS Template' }));
-
-    expect(screen.getByTestId('location-search')).toHaveTextContent('?create=1&destinationProjectId=jtp_sales');
   });
 
   it('saves only dirty source changes without compiling a workspace preview first', async () => {
@@ -768,73 +738,6 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       }),
     );
     confirmSpy.mockRestore();
-  });
-
-  it('shows the non-blocking effective usage impact near a template-scoped save', async () => {
-    const workspaceScope: JsTemplateWorkspaceScope = {
-      mode: 'template',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <JsTemplateSourceProjectWorkspacePage
-          embedded
-          projectId="jtp_sales"
-          templateId="jtt_sales_kpi"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(
-      await screen.findByText(
-        'This JS Template is used in 3 locations; after save those locations immediately use the new code.',
-      ),
-    ).toBeInTheDocument();
-    expect(mocks.listUsageLocations).toHaveBeenCalledWith(mocks.apiClient, {
-      templateId: 'jtt_sales_kpi',
-      page: 1,
-      pageSize: 1,
-    });
-  });
-
-  it('does not imply that an archived template can be saved when showing its usage impact', async () => {
-    mocks.api.getProject.mockResolvedValueOnce({
-      id: 'jtp_sales',
-      name: 'sales-widgets',
-      normalizedName: 'sales-widgets',
-      title: 'Sales widgets',
-      lifecycleStatus: 'archived',
-      healthStatus: 'ready',
-      headCommitId: 'commit-1',
-    });
-    const workspaceScope: JsTemplateWorkspaceScope = {
-      mode: 'template',
-      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
-      kind: 'js-block',
-    };
-
-    render(
-      <MemoryRouter>
-        <JsTemplateSourceProjectWorkspacePage
-          embedded
-          projectId="jtp_sales"
-          templateId="jtt_sales_kpi"
-          workspaceScope={workspaceScope}
-        />
-      </MemoryRouter>,
-    );
-
-    expect(
-      await screen.findByText('This JS Template has 3 effective usages. Its Source Project is archived and read-only.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        'This JS Template is used in 3 locations; after save those locations immediately use the new code.',
-      ),
-    ).not.toBeInTheDocument();
   });
 
   it('renames an entry directory without changing its entry.json key', async () => {

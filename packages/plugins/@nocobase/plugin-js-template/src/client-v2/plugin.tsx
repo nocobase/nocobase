@@ -20,7 +20,6 @@ import { registerJsTemplateRuntimeAuthSession } from './resolvers/JsTemplateRunt
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
 let activeJsTemplateClientV2Instance: PluginJsTemplateClientV2 | null = null;
 
-const loadJsTemplateCatalogPage = () => import('./pages/JsTemplateCatalogPage');
 const loadJsTemplateSourceProjectsPage = () => import('./pages/JsTemplateSourceProjectsPage');
 
 export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Application> {
@@ -45,20 +44,13 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
       title,
       icon: 'CodeOutlined',
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+      showTabs: false,
     });
 
     this.pluginSettingsManager.addPageTabItem({
       menuKey: JS_TEMPLATE_SETTINGS_KEY,
       key: 'index',
-      title: this.t('Templates'),
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      componentLoader: loadJsTemplateCatalogPage,
-    });
-
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: JS_TEMPLATE_SETTINGS_KEY,
-      key: 'source-projects',
-      title: this.t('Source Projects'),
+      title,
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       componentLoader: loadJsTemplateSourceProjectsPage,
     });

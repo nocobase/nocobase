@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { Button, Drawer, Flex, Space } from 'antd';
 import React from 'react';
 
@@ -22,7 +22,6 @@ const SOURCE_DRAWER_WIDTH = 'min(1280px, calc(100vw - 64px))';
 interface JsTemplateSourceDrawerProps {
   footerActions: JsTemplateSourceProjectWorkspaceFooterActions | null;
   onClose: () => void;
-  onAddTemplate: () => void;
   onFooterActionsChange: (actions: JsTemplateSourceProjectWorkspaceFooterActions | null) => void;
   onSaved: () => void | Promise<void>;
   open: boolean;
@@ -33,7 +32,6 @@ interface JsTemplateSourceDrawerProps {
 export function JsTemplateSourceDrawer({
   footerActions,
   onClose,
-  onAddTemplate,
   onFooterActionsChange,
   onSaved,
   open,
@@ -49,15 +47,7 @@ export function JsTemplateSourceDrawer({
       styles={{ body: { overflow: 'hidden', padding: 16 } }}
       footer={
         open ? (
-          <Flex justify="space-between">
-            <Button
-              aria-label={t('Add JS Template')}
-              disabled={project?.lifecycleStatus !== 'enabled' || Boolean(footerActions?.dirty)}
-              icon={<PlusOutlined />}
-              onClick={onAddTemplate}
-            >
-              {t('Add JS Template')}
-            </Button>
+          <Flex justify="flex-end">
             <Space>
               <Button disabled={footerActions?.loading} onClick={footerActions?.onCancel || onClose}>
                 {t('Cancel')}

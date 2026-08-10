@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { PlusOutlined, SaveOutlined } from '@ant-design/icons';
+import { SaveOutlined } from '@ant-design/icons';
 import { Alert, Button, Empty, Flex, Space, Spin, Typography } from 'antd';
 import React from 'react';
 
@@ -49,29 +49,15 @@ export function InitialProjectLoadingState(props: { embedded: boolean; label: st
 }
 
 export function WorkspacePageHeader(props: {
-  addTemplateDisabled: boolean;
-  addTemplateLabel: string;
   disabled: boolean;
   embedded: boolean;
   loading: boolean;
-  onAddTemplate: () => void;
   onSave: () => void;
   projectId: string;
   saveLabel: string;
   title: string;
 }) {
-  const {
-    addTemplateDisabled,
-    addTemplateLabel,
-    disabled,
-    embedded,
-    loading,
-    onAddTemplate,
-    onSave,
-    projectId,
-    saveLabel,
-    title,
-  } = props;
+  const { disabled, embedded, loading, onSave, projectId, saveLabel, title } = props;
   if (embedded) {
     return null;
   }
@@ -85,14 +71,6 @@ export function WorkspacePageHeader(props: {
         <Typography.Text type="secondary">{projectId}</Typography.Text>
       </Space>
       <Space wrap>
-        <Button
-          aria-label={addTemplateLabel}
-          disabled={addTemplateDisabled}
-          icon={<PlusOutlined />}
-          onClick={onAddTemplate}
-        >
-          {addTemplateLabel}
-        </Button>
         <Button disabled={disabled} icon={<SaveOutlined />} loading={loading} onClick={onSave} type="primary">
           {saveLabel}
         </Button>

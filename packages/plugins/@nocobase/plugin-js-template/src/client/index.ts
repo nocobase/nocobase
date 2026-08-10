@@ -14,7 +14,6 @@ import {
   installJsTemplateRunJSIntegrations,
   registerJsTemplateRunJSFlowSettingsComponents,
 } from '../client-v2/jsTemplateRunJSIntegration';
-import JsTemplateCatalogPage from '../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../client-v2/pages/JsTemplateSourceProjectsPage';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
 
@@ -27,10 +26,9 @@ interface JsTemplateClientOptions {
 interface ClientV1SettingsOptions {
   icon?: string;
   title: string;
-  Component?: React.ComponentType;
+  Component: React.ComponentType;
   aclSnippet: string;
   hidden?: boolean;
-  sort?: number;
 }
 
 interface ClientV1SettingsManager {
@@ -105,21 +103,10 @@ export class PluginJsTemplateClient {
     const settingsOptions: ClientV1SettingsOptions = {
       icon: 'CodeOutlined',
       title: translate(this.app, 'JS Templates'),
+      Component: JsTemplateSourceProjectsPage,
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
     };
     this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
-    this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.templates`, {
-      title: translate(this.app, 'Templates'),
-      Component: JsTemplateCatalogPage,
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      sort: 1,
-    });
-    this.app?.pluginSettingsManager?.add(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`, {
-      title: translate(this.app, 'Source Projects'),
-      Component: JsTemplateSourceProjectsPage,
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      sort: 2,
-    });
     activeJsTemplateClientV1Instance = this;
   }
 }

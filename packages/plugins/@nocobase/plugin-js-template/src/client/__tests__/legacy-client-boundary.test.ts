@@ -41,7 +41,6 @@ import {
 } from '../../client-v2/jsTemplateRunJSIntegrationContract';
 import { JS_TEMPLATE_SETTINGS_KEY } from '../../constants';
 import PluginJsTemplateClient from '..';
-import JsTemplateCatalogPage from '../../client-v2/pages/JsTemplateCatalogPage';
 import JsTemplateSourceProjectsPage from '../../client-v2/pages/JsTemplateSourceProjectsPage';
 
 interface LegacySettingsRouteOptions {
@@ -114,26 +113,11 @@ describe('plugin-js-template legacy client boundary', () => {
       expect.objectContaining({
         icon: 'CodeOutlined',
         title: '@nocobase/plugin-js-template:JS Templates',
-        aclSnippet: 'pm.js-template',
-      }),
-    );
-    expect(settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.templates`)).toEqual(
-      expect.objectContaining({
-        title: '@nocobase/plugin-js-template:Templates',
-        Component: JsTemplateCatalogPage,
-        aclSnippet: 'pm.js-template',
-        sort: 1,
-      }),
-    );
-    expect(settingsByKey.get(`${JS_TEMPLATE_SETTINGS_KEY}.source-projects`)).toEqual(
-      expect.objectContaining({
-        title: '@nocobase/plugin-js-template:Source Projects',
         Component: JsTemplateSourceProjectsPage,
         aclSnippet: 'pm.js-template',
-        sort: 2,
       }),
     );
-    expect(add).toHaveBeenCalledTimes(3);
+    expect(add).toHaveBeenCalledTimes(1);
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeTruthy();
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain(

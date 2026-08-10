@@ -13,7 +13,7 @@ import { getDayRangeByParams } from '@nocobase/utils/client';
 import { uid } from '@nocobase/utils/client';
 import { Alert, Button, Card, Form, Space, theme } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { NAMESPACE } from '../../constants';
@@ -141,7 +141,6 @@ function JsTemplateSourceProjectsPageInner() {
   const flowContext = useFlowContext() as FlowContextWithApi;
   const compileT = useT();
   const { token } = theme.useToken();
-  const navigate = useNavigate();
   const filterCollection = useJsTemplateProjectFilterCollection();
   const {
     changeLifecycle: changeLifecycleRequest,
@@ -609,14 +608,6 @@ function JsTemplateSourceProjectsPageInner() {
     await loadProjects();
   }, [loadProjects]);
 
-  const openCatalogAddTemplate = useCallback(() => {
-    if (!selectedProject) {
-      return;
-    }
-    const query = new URLSearchParams({ create: '1', destinationProjectId: selectedProject.id });
-    navigate(`/admin/settings/js-templates?${query.toString()}`);
-  }, [navigate, selectedProject]);
-
   return (
     <Card variant="borderless">
       {createJobsError ? (
@@ -694,7 +685,6 @@ function JsTemplateSourceProjectsPageInner() {
 
       <JsTemplateSourceDrawer
         footerActions={sourceFooterActions}
-        onAddTemplate={openCatalogAddTemplate}
         onClose={closeDetailDrawer}
         onFooterActionsChange={setSourceFooterActions}
         onSaved={handleWorkspaceSaved}
