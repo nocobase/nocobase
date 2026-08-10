@@ -12,6 +12,7 @@ import { Instruction } from '@nocobase/plugin-workflow/client-v2';
 import React from 'react';
 import type { SubModelItem } from '@nocobase/flow-engine';
 
+import { SCRIPT_INSTRUCTION_TYPE } from '../../common/constants';
 import { tExpr } from '../locale';
 import { SCRIPT_DEFAULT_CONFIG, supportsScriptVariableTypes } from './shared';
 
@@ -31,7 +32,7 @@ type WorkflowNodeLike = {
 };
 
 export default class ScriptInstruction extends Instruction {
-  type = 'script';
+  type = SCRIPT_INSTRUCTION_TYPE;
   title = tExpr('JavaScript');
   group = 'extended';
   description = tExpr('Execute a piece of JavaScript in an isolated Node.js environment.');

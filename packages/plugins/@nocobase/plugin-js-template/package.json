@@ -4,7 +4,7 @@
   "displayName.zh-CN": "JS 模板",
   "description": "Organize and reuse multi-file RunJS templates from Source Projects.",
   "description.zh-CN": "组织并复用 JS 模板项目中的多文件 RunJS 模板。",
-  "version": "3.0.0-alpha.7",
+  "version": "3.0.0-alpha.8",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "files": [
@@ -48,7 +48,7 @@
     "Developer tools"
   ],
   "dependencies": {
-    "@nocobase/runjs": "3.0.0-alpha.7",
+    "@nocobase/runjs": "3.0.0-alpha.8",
     "jszip": "^3.10.1",
     "typescript": "5.1.3"
   },

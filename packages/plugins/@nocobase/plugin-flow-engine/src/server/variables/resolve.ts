@@ -67,6 +67,7 @@ export function isLegacyVariableTemplateSafe(template: JSONValue) {
 export async function resolveFlowModelVariablesTemplate(
   ctx: ResourcerContext,
   options: {
+    contractRd?: string | number;
     contextParams?: Record<string, unknown>;
     rd?: string | number;
     template: JSONValue;

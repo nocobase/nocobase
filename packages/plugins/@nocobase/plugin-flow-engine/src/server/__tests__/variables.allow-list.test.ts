@@ -26,6 +26,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
+  findModelNodeSnapshotByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
   findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
@@ -81,6 +82,16 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
+              findModelNodeSnapshotByParentId:
+                options.findModelNodeSnapshotByParentId ||
+                (async (parentUid: string, query?: { subKey?: string }) => {
+                  const child = Object.values(models).find((model) => {
+                    if (!model || typeof model !== 'object' || Array.isArray(model)) return false;
+                    const node = model as { parentId?: unknown; subKey?: unknown };
+                    return node.parentId === parentUid && (!query?.subKey || node.subKey === query.subKey);
+                  });
+                  return child || null;
+                }),
               findModelNodeSnapshotById:
                 options.findModelNodeSnapshotById || (async (uid: string) => models[uid] || null),
             },
@@ -226,6 +237,304 @@ describe('variables:resolve allow-list authorization', () => {
 
     expect(result.allowed).toBe(true);
     expect(result.contextParams).not.toHaveProperty('user');
+  });
+
+  it('uses a related form grid as the assign-rules contract owner', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const form = { ...createFlowModel('form-owner', {}), options: { use: 'EditFormModel' } };
+    const grid = {
+      ...createFlowModel('form-owner-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        props: '{{ ctx.user.unconfigured }}',
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [
+                { value: template },
+                {
+                  value: {
+                    code: "return await ctx.getVar('ctx.user.runJsAuthorized')",
+                    version: 'v2',
+                  },
+                },
+                {
+                  value: {
+                    code: '// {{ ctx.user.password }}\nreturn 1',
+                    version: 'v2',
+                  },
+                },
+                {
+                  value: {
+                    value: [
+                      {
+                        value: {
+                          code: "return await ctx.getVar('ctx.user.nestedBusinessObject')",
+                          version: 'v2',
+                        },
+                      },
+                    ],
+                    payload: {
+                      stepParams: {
+                        jsSettings: {
+                          runJs: {
+                            code: "return await ctx.getVar('ctx.user.nestedRunJsShape')",
+                            version: 'v2',
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('form-owner-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const otherForm = { ...createFlowModel('other-form', {}), options: { use: 'EditFormModel' } };
+    const otherGrid = {
+      ...grid,
+      uid: 'other-form-grid',
+      parentId: otherForm.uid,
+    };
+    const markdownBlock = {
+      ...grid,
+      uid: 'markdown-block',
+      options: { ...grid.options, use: 'MarkdownBlockModel' },
+      parentId: 'block-grid',
+    };
+    const blockGrid = { ...createFlowModel('block-grid', {}), options: { use: 'BlockGridModel' } };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [form, grid, field, otherForm, otherGrid, blockGrid, markdownBlock].map((model) => [model.uid, model]),
+      ),
+    });
+
+    const allowed = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+    const crossForm = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(otherGrid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+    const unconfigured = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.unconfigured }}',
+    });
+    const runJsAuthorized = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.runJsAuthorized }}',
+    });
+    const runJsComment = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.password }}',
+    });
+    const nestedBusinessObject = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.nestedBusinessObject }}',
+    });
+    const nestedRunJsShape = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template: '{{ ctx.user.nestedRunJsShape }}',
+    });
+    const nonFormTree = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(markdownBlock.uid),
+      rd: session.rd(markdownBlock.uid),
+      template,
+    });
+
+    expect(allowed.allowed).toBe(true);
+    expect(crossForm.allowed).toBe(false);
+    expect(unconfigured.allowed).toBe(false);
+    expect(runJsAuthorized.allowed).toBe(true);
+    expect(runJsComment.allowed).toBe(false);
+    expect(nestedBusinessObject.allowed).toBe(false);
+    expect(nestedRunJsShape.allowed).toBe(false);
+    expect(nonFormTree.allowed).toBe(false);
+  });
+
+  it('supports assign rules persisted on the legacy form root', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const form = {
+      ...createFlowModel('legacy-form', {}),
+      options: {
+        use: 'EditFormModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+    };
+    const grid = {
+      ...createFlowModel('legacy-form-grid', {}),
+      options: { use: 'FormGridModel' },
+      parentId: form.uid,
+      subKey: 'grid',
+    };
+    const field = {
+      ...createFlowModel('legacy-form-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: grid.uid,
+      subKey: 'items',
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries([form, grid, field].map((model) => [model.uid, model])),
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(grid.uid),
+      rd: session.rd(field.uid),
+      template,
+    });
+
+    expect(result.allowed).toBe(true);
+  });
+
+  it('follows a related reference form grid to its persisted assign rules', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const hostForm = { ...createFlowModel('reference-host-form', {}), options: { use: 'EditFormModel' } };
+    const referenceGrid = {
+      ...createFlowModel('reference-host-grid', {}),
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              mode: 'reference',
+              targetPath: 'subModels.grid',
+              targetUid: 'reference-target-form',
+              templateUid: 'reference-template',
+            },
+          },
+        },
+      },
+      parentId: hostForm.uid,
+      subKey: 'grid',
+    };
+    const targetForm = { ...createFlowModel('reference-target-form', {}), options: { use: 'FormBlockModel' } };
+    const targetGrid = {
+      ...createFlowModel('reference-target-grid', {}),
+      options: {
+        use: 'FormGridModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+      parentId: targetForm.uid,
+      subKey: 'grid',
+    };
+    const targetField = {
+      ...createFlowModel('reference-target-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: targetGrid.uid,
+      subKey: 'items',
+    };
+    const unrelatedForm = { ...createFlowModel('reference-unrelated-form', {}), options: { use: 'EditFormModel' } };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [hostForm, referenceGrid, targetForm, targetGrid, targetField, unrelatedForm].map((model) => [
+          model.uid,
+          model,
+        ]),
+      ),
+    });
+
+    const fromHost = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(hostForm.uid),
+      template,
+    });
+    const fromTargetField = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(targetField.uid),
+      template,
+    });
+    const fromUnrelatedForm = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(unrelatedForm.uid),
+      template,
+    });
+
+    expect(fromHost.allowed).toBe(true);
+    expect(fromTargetField.allowed).toBe(true);
+    expect(fromUnrelatedForm.allowed).toBe(false);
+  });
+
+  it('falls back to legacy host form rules when a referenced template has none', async () => {
+    const session = createTokenSession();
+    const template = '{{ ctx.user.company.authorizedVersion }}';
+    const hostForm = {
+      ...createFlowModel('legacy-reference-host-form', {}),
+      options: {
+        use: 'EditFormModel',
+        stepParams: { formModelSettings: { assignRules: { value: [{ value: template }] } } },
+      },
+    };
+    const referenceGrid = {
+      ...createFlowModel('legacy-reference-host-grid', {}),
+      options: {
+        use: 'ReferenceFormGridModel',
+        stepParams: {
+          referenceSettings: {
+            useTemplate: {
+              targetPath: 'subModels.grid',
+              targetUid: 'legacy-reference-target-form',
+              templateUid: 'legacy-reference-template',
+            },
+          },
+        },
+      },
+      parentId: hostForm.uid,
+      subKey: 'grid',
+    };
+    const targetForm = {
+      ...createFlowModel('legacy-reference-target-form', {}),
+      options: { use: 'FormBlockModel' },
+    };
+    const targetGrid = {
+      ...createFlowModel('legacy-reference-target-grid', {}),
+      options: { use: 'FormGridModel' },
+      parentId: targetForm.uid,
+      subKey: 'grid',
+    };
+    const targetField = {
+      ...createFlowModel('legacy-reference-target-field', {}),
+      options: { use: 'FormItemModel' },
+      parentId: targetGrid.uid,
+      subKey: 'items',
+    };
+    const ctx = createFakeCtx({
+      token: session.token,
+      models: Object.fromEntries(
+        [hostForm, referenceGrid, targetForm, targetGrid, targetField].map((model) => [model.uid, model]),
+      ),
+    });
+
+    const result = await authorizeVariablesResolve(ctx, {
+      contractRd: session.rd(referenceGrid.uid),
+      rd: session.rd(targetField.uid),
+      template,
+    });
+
+    expect(result.allowed).toBe(true);
   });
 
   it('keeps registered variable contextParams sanitized after later validators mutate them', async () => {

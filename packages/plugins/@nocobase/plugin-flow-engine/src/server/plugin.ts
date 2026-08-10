@@ -113,7 +113,12 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async resolveFlowModelVariablesTemplate(
     ctx: ResourcerContext,
-    options: { contextParams?: Record<string, unknown>; rd?: string | number; template: JSONValue },
+    options: {
+      contractRd?: string | number;
+      contextParams?: Record<string, unknown>;
+      rd?: string | number;
+      template: JSONValue;
+    },
   ) {
     this.ensureRecordSlotResolvers(ctx.app);
     return await resolveFlowModelVariablesTemplate(ctx, options);
@@ -157,7 +162,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         resolve: async (ctx, next) => {
           this.ensureRecordSlotResolvers(ctx.app);
           // 仅保留两种提交方式：
-          // 1) values.batch: [{ id?, template, contextParams }]
+          // 1) values.batch: [{ id?, rd?, contractRd?, template, contextParams }]
           // 2) values.template + values.contextParams
           const raw = ctx.action?.params?.values ?? {};
           const values = typeof raw?.values !== 'undefined' ? raw.values : raw;
@@ -165,6 +170,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           // 批量解析分支
           if (Array.isArray(values?.batch)) {
             const batchItems = values.batch as Array<{
+              contractRd?: string;
               rd?: string;
               id?: string | number;
               template: JSONValue;
@@ -184,6 +190,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
             for (const [index, item] of batchItems.entries()) {
               const template = item?.template ?? {};
               const authorization = await authorizeVariablesResolve(ctx as ResourcerContext, {
+                contractRd: item?.contractRd,
                 contextParams: item?.contextParams || {},
                 rd: item?.rd,
                 template,
@@ -240,6 +247,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
           const authorization = await authorizeVariablesResolve(ctx as ResourcerContext, {
+            contractRd: values?.contractRd,
             contextParams,
             rd: values?.rd,
             template,

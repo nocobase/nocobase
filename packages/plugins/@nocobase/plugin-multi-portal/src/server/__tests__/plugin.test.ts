@@ -385,10 +385,11 @@ describe('plugin-multi-portal server', () => {
       allowNull: false,
     });
     expect(collection.getField('portalName')?.options.unique).toBeUndefined();
+    const portalNameIndexField = collection.model.rawAttributes.portalName.field;
     expect(collection.options.indexes).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          fields: ['routeName'],
+          fields: [portalNameIndexField],
           unique: true,
         }),
       ]),

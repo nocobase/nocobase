@@ -114,7 +114,7 @@ function readPersistedRunJsValue(entries: readonly EnumerableDataEntry[]): Persi
 }
 
 function isPersistedRunJsPath(pathTail: readonly string[]) {
-  return RUNJS_PATH_SUFFIXES.has(pathTail.join('.'));
+  return RUNJS_PATH_SUFFIXES.has(pathTail.slice(-3).join('.'));
 }
 
 function createTraversalContainer(input: object, descriptors: PropertyDescriptorMap): TraversalContainer {
@@ -420,7 +420,10 @@ function extractStaticVariableTemplates(code: string): string[] {
   return Array.from(templates);
 }
 
-export function prepareFlowModelVariableSource(value: unknown): PreparedFlowModelVariableSource {
+export function prepareFlowModelVariableSource(
+  value: unknown,
+  options: Readonly<{ isRunJsValuePath?: (pathTail: readonly string[]) => boolean }> = {},
+): PreparedFlowModelVariableSource {
   try {
     const templates = new Set<string>();
     const seen = new WeakSet<object>();
@@ -461,8 +464,8 @@ export function prepareFlowModelVariableSource(value: unknown): PreparedFlowMode
           return { ok: false };
         }
       }
-      const runJs =
-        !Array.isArray(input) && isPersistedRunJsPath(pathTail) ? readPersistedRunJsValue(entries) : undefined;
+      const runJsPath = options.isRunJsValuePath ? options.isRunJsValuePath(pathTail) : isPersistedRunJsPath(pathTail);
+      const runJs = !Array.isArray(input) && runJsPath ? readPersistedRunJsValue(entries) : undefined;
       const output = createTraversalContainer(input, descriptors);
       defineTraversalValue(parent, key, output);
 
@@ -496,12 +499,13 @@ export function prepareFlowModelVariableSource(value: unknown): PreparedFlowMode
       if (scheduledNodes > MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES) return { ok: false };
       for (let index = entries.length - 1; index >= 0; index -= 1) {
         const [entryKey, entryValue] = entries[index];
+        const nextPath = [...pathTail, entryKey];
         stack.push({
           depth: depth + 1,
           input: entryValue,
           key: entryKey,
           parent: output,
-          pathTail: [...pathTail, entryKey].slice(-3),
+          pathTail: options.isRunJsValuePath ? nextPath : nextPath.slice(-3),
         });
       }
     }
