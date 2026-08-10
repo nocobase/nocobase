@@ -14,7 +14,7 @@ import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { Layout, Menu, Result, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { generatePath, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { ADMIN_SETTINGS_PATH, type PluginSettingsPageType } from '../PluginSettingsManager';
 import { useApp } from '../hooks/useApp';
@@ -68,6 +68,9 @@ export const InternalAdminSettingsLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  const routeParams = Object.fromEntries(
+    Object.entries(params).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  );
   const { token } = theme.useToken();
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
@@ -174,7 +177,21 @@ export const InternalAdminSettingsLayout = () => {
     return <SettingsEmpty type="route" />;
   }
 
-  if (!currentVisibleSetting && currentSetting.isAllow === false) {
+  if (currentSetting.isAllow === false) {
+    const firstVisibleTabPath = currentVisibleTabs
+      .map((tab) => getDefaultSettingsPath([tab]))
+      .filter((path): path is string => typeof path === 'string')
+      .map((path) => {
+        try {
+          return generatePath(path, routeParams);
+        } catch {
+          return null;
+        }
+      })
+      .find((path): path is string => typeof path === 'string');
+    if (firstVisibleTabPath) {
+      return <Navigate replace to={firstVisibleTabPath} />;
+    }
     return <SettingsEmpty type="route" />;
   }
 
