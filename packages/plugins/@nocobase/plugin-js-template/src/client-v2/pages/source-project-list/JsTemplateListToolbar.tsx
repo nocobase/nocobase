@@ -7,26 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { CollectionFilter, type CompiledFilter } from '@nocobase/client-v2';
-import type { Collection } from '@nocobase/flow-engine';
-import { Button, Dropdown, Flex, Space, Typography } from 'antd';
+import { DownOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Flex, Input, Select, Space, Typography } from 'antd';
 import type { MenuProps } from 'antd';
 import React from 'react';
 
-import type { JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
+import type { JsTemplateListTranslate, JsTemplateProjectLifecycleFilter, ToggleLifecycleStatus } from './types';
 
 interface JsTemplateListToolbarProps {
   batchChanging: boolean;
-  compileT: React.ComponentProps<typeof CollectionFilter>['t'];
-  filterCollection: Collection | undefined;
-  filterFieldNames: readonly string[];
   gap: number;
+  keyword: string;
+  lifecycleFilter: JsTemplateProjectLifecycleFilter;
   loading: boolean;
   marginBottom: number;
   onAdd: () => void;
   onBatchChangeLifecycle: (lifecycleStatus: ToggleLifecycleStatus) => void;
-  onFilterChange: (filter: CompiledFilter) => void;
+  onKeywordChange: (keyword: string) => void;
+  onLifecycleFilterChange: (filter: JsTemplateProjectLifecycleFilter) => void;
   onRefresh: () => void;
   selectedCount: number;
   t: JsTemplateListTranslate;
@@ -34,15 +32,15 @@ interface JsTemplateListToolbarProps {
 
 export function JsTemplateListToolbar({
   batchChanging,
-  compileT,
-  filterCollection,
-  filterFieldNames,
   gap,
+  keyword,
+  lifecycleFilter,
   loading,
   marginBottom,
   onAdd,
   onBatchChangeLifecycle,
-  onFilterChange,
+  onKeywordChange,
+  onLifecycleFilterChange,
   onRefresh,
   selectedCount,
   t,
@@ -62,12 +60,28 @@ export function JsTemplateListToolbar({
 
   return (
     <Flex align="center" justify="space-between" gap={gap} style={{ marginBottom }} wrap>
-      <CollectionFilter
-        collection={filterCollection}
-        filterableFieldNames={[...filterFieldNames]}
-        onChange={onFilterChange}
-        t={compileT}
-      />
+      <Space wrap>
+        <Input
+          allowClear
+          aria-label={t('Search Source Projects')}
+          onChange={(event) => onKeywordChange(event.target.value)}
+          placeholder={t('Search Source Projects')}
+          prefix={<SearchOutlined />}
+          style={{ width: 280 }}
+          value={keyword}
+        />
+        <Select<JsTemplateProjectLifecycleFilter>
+          aria-label={t('Lifecycle status')}
+          onChange={onLifecycleFilterChange}
+          options={[
+            { label: t('All'), value: 'all' },
+            { label: t('Enabled'), value: 'enabled' },
+            { label: t('Disabled'), value: 'disabled' },
+          ]}
+          style={{ minWidth: 140 }}
+          value={lifecycleFilter}
+        />
+      </Space>
       <Space wrap>
         {selectedCount ? (
           <Typography.Text type="secondary">

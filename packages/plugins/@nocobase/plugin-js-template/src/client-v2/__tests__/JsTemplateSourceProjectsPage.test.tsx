@@ -8,7 +8,7 @@
  */
 
 import { act, render, screen, waitFor, within } from '@testing-library/react';
-import { createMockClient, type CompiledFilter } from '@nocobase/client-v2';
+import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
@@ -19,11 +19,7 @@ import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
 import type { JsTemplateCreateJobSummary } from '../../shared/types';
 import { JsTemplateSyncHookError, type UseJsTemplateSyncResult } from '../hooks/useJsTemplateSync';
-import JsTemplateSourceProjectsPage, {
-  JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES,
-  jsTemplateProjectFilterCollection,
-  matchesJsTemplateProjectFilter,
-} from '../pages/JsTemplateSourceProjectsPage';
+import JsTemplateSourceProjectsPage, { matchesJsTemplateProjectSearch } from '../pages/JsTemplateSourceProjectsPage';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -111,27 +107,6 @@ vi.mock('../hooks/useJsTemplateCreateJobs', async () => {
   };
 });
 
-vi.mock('../pages/source-project-list/JsTemplateListToolbar', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../pages/source-project-list/JsTemplateListToolbar')>();
-  const React = await import('react');
-  const ActualToolbar = actual.JsTemplateListToolbar;
-
-  return {
-    ...actual,
-    JsTemplateListToolbar: (props: React.ComponentProps<typeof ActualToolbar>) =>
-      React.createElement(
-        React.Fragment,
-        null,
-        React.createElement(ActualToolbar, props),
-        React.createElement(
-          'button',
-          { onClick: () => props.onFilterChange({ name: { $includes: 'sales' } }), type: 'button' },
-          'Apply sales filter',
-        ),
-      ),
-  };
-});
-
 vi.mock('../components/JsTemplateSyncDrawer', async () => {
   const React = await import('react');
 
@@ -146,6 +121,7 @@ vi.mock('../components/JsTemplateSyncDrawer', async () => {
       lifecycleStatus: 'enabled' | 'disabled';
       healthStatus: 'pending' | 'ready' | 'warning' | 'error';
       headCommitId: string | null;
+      templateKinds?: Record<string, number>;
     };
     configurationPanel?: React.ReactNode;
     onClose: () => void;
@@ -169,6 +145,7 @@ vi.mock('../components/JsTemplateSyncDrawer', async () => {
               ...props.project,
               headCommitId: 'head-after-pull',
               templateCount: 3,
+              templateKinds: { 'js-block': 3 },
             }),
           type: 'button',
         },
@@ -366,6 +343,8 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     renderListPage('/admin/settings/js-templates');
 
+    expect(screen.getByRole('heading', { name: 'Source Projects' })).toBeInTheDocument();
+    expect(screen.getByText('A Source Project can contain multiple reusable JS Templates.')).toBeInTheDocument();
     const projectRow = await screen.findByRole('row', { name: /Shared source shared-source/ });
     expect(screen.getAllByRole('row')).toHaveLength(2);
     expect(screen.getByRole('columnheader', { name: 'Source Project' })).toBeInTheDocument();
@@ -596,6 +575,41 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
+  it('preserves the project reload error instead of replacing it with a creation success notice', async () => {
+    const pending = createJobSummary();
+    mocks.createJobs.initialJobs = [pending];
+    mocks.api.listProjects.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('Project refresh failed'));
+    renderListPage();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
+    });
+
+    expect(await screen.findByText('Project refresh failed')).toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
+  });
+
+  it('forgets disappeared job statuses before the same ID returns as terminal history', async () => {
+    const pending = createJobSummary();
+    mocks.createJobs.initialJobs = [pending];
+    renderListPage();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([]);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      mocks.createJobs.update([createJobSummary({ status: 'failed', errorMessage: 'Historical failure' })]);
+    });
+
+    expect(await screen.findByText('Historical failure')).toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation failed: Demo: Historical failure')).not.toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
+  });
+
   it('baselines historical terminal jobs outside the project table and limits terminal status history', async () => {
     const activeJobs = Array.from({ length: 4 }, (_value, index) =>
       createJobSummary({
@@ -789,7 +803,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.getByTestId('location-search')).not.toHaveTextContent('panel=sync');
   });
 
-  it('refreshes list summaries from the server after a sync operation returns an updated project', async () => {
+  it('updates list summaries directly from the complete project returned by a sync operation', async () => {
     const originalProject = {
       id: 'jtp_browser_smoke',
       name: 'browser-smoke',
@@ -802,21 +816,14 @@ describe('JsTemplateSourceProjectsPage', () => {
       templateCount: 1,
       templateKinds: { 'js-block': 1 },
     };
-    mocks.api.listProjects.mockResolvedValueOnce([originalProject]).mockResolvedValueOnce([
-      {
-        ...originalProject,
-        headCommitId: 'head-after-pull',
-        templateCount: 3,
-        templateKinds: { 'js-block': 3 },
-      },
-    ]);
+    mocks.api.listProjects.mockResolvedValueOnce([originalProject]);
     renderListPage();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Sync code' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Mock Pull result' }));
 
-    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('js-block 3')).toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
   });
 
   it('edits the project display name and description in a drawer and refreshes the row immediately', async () => {
@@ -939,19 +946,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.getByText('sales-widgets')).toBeInTheDocument();
   });
 
-  it('provides the requested project filters and evaluates their values', () => {
-    expect(JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES).toEqual([
-      'name',
-      'description',
-      'updatedAt',
-      'createdAt',
-      'enabled',
-    ]);
-    expect(jsTemplateProjectFilterCollection.fields?.map((field) => field.name)).toEqual(
-      JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES,
-    );
-    expect(jsTemplateProjectFilterCollection.hidden).toBe(true);
-
+  it('matches trimmed keywords across name, title, and description with a lifecycle filter', () => {
     const project = {
       id: 'jtp_sales',
       name: 'sales-widgets',
@@ -961,21 +956,53 @@ describe('JsTemplateSourceProjectsPage', () => {
       lifecycleStatus: 'enabled' as const,
       healthStatus: 'ready' as const,
       headCommitId: null,
-      createdAt: '2026-07-08T06:00:00.000Z',
-      updatedAt: '2026-07-09T08:00:00.000Z',
-    };
-    const filter: CompiledFilter = {
-      $and: [
-        { name: { $includes: 'sales' } },
-        { description: { $includes: 'dashboard' } },
-        { updatedAt: { $dateOn: '2026-07-09' } },
-        { createdAt: { $dateBefore: '2026-07-09' } },
-        { enabled: { $isTruly: true } },
-      ],
     };
 
-    expect(matchesJsTemplateProjectFilter(project, filter)).toBe(true);
-    expect(matchesJsTemplateProjectFilter(project, { enabled: { $isFalsy: true } })).toBe(false);
+    expect(matchesJsTemplateProjectSearch(project, ' SALES ', 'all')).toBe(true);
+    expect(matchesJsTemplateProjectSearch(project, 'dashboard', 'enabled')).toBe(true);
+    expect(matchesJsTemplateProjectSearch(project, 'widgets', 'disabled')).toBe(false);
+    expect(matchesJsTemplateProjectSearch(project, 'missing', 'all')).toBe(false);
+  });
+
+  it('filters Source Projects with the All, Enabled, and Disabled lifecycle control', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([
+      {
+        id: 'jtp_enabled',
+        name: 'enabled-project',
+        normalizedName: 'enabled-project',
+        title: 'Enabled project',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+      {
+        id: 'jtp_disabled',
+        name: 'disabled-project',
+        normalizedName: 'disabled-project',
+        title: 'Disabled project',
+        description: null,
+        lifecycleStatus: 'disabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+    ]);
+    renderListPage();
+
+    expect(await screen.findByText('Enabled project')).toBeInTheDocument();
+    expect(screen.getByText('Disabled project')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Lifecycle status' }));
+    await userEvent.click(await screen.findByText('Disabled', { selector: '.ant-select-item-option-content' }));
+
+    await waitFor(() => expect(screen.queryByText('Enabled project')).not.toBeInTheDocument());
+    expect(screen.getByText('Disabled project')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('combobox', { name: 'Lifecycle status' }));
+    await userEvent.click(await screen.findByText('All', { selector: '.ant-select-item-option-content' }));
+
+    expect(await screen.findByText('Enabled project')).toBeInTheDocument();
+    expect(screen.getByText('Disabled project')).toBeInTheDocument();
   });
 
   it('refreshes list summaries after source changes are saved', async () => {
@@ -1101,7 +1128,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     await userEvent.click(screen.getByRole('checkbox', { name: 'Select Ops widgets' }));
     expect(screen.getByText('Selected 2')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Apply sales filter' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Search Source Projects' }), 'sales');
 
     await waitFor(() => expect(screen.queryByText('Ops widgets')).not.toBeInTheDocument());
     expect(screen.queryByText('Selected 2')).not.toBeInTheDocument();

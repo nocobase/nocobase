@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ExtendCollectionsProvider, type CompiledFilter } from '@nocobase/client-v2';
-import { useFlowContext, useFlowEngine, type Collection, type CollectionOptions } from '@nocobase/flow-engine';
-import { getDayRangeByParams } from '@nocobase/utils/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { Alert, Button, Card, Form, Space, theme } from 'antd';
+import { Alert, Button, Card, Form, Space, theme, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -44,6 +42,7 @@ import { JsTemplateSyncDrawerShell } from './source-project-list/JsTemplateSyncD
 import type {
   CreateProjectFormValues,
   EditProjectFormValues,
+  JsTemplateProjectLifecycleFilter,
   ToggleLifecycleStatus,
 } from './source-project-list/types';
 import type { JsTemplateSourceProjectWorkspaceFooterActions } from './JsTemplateSourceProjectWorkspacePage';
@@ -59,89 +58,14 @@ type FlowContextWithApi = {
   api: ApiClientLike;
 };
 
-const JS_TEMPLATE_PROJECT_FILTER_COLLECTION = 'jsTemplateProjectFilters';
-export const JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES = [
-  'name',
-  'description',
-  'updatedAt',
-  'createdAt',
-  'enabled',
-] as const;
-export const jsTemplateProjectFilterCollection: CollectionOptions = {
-  name: JS_TEMPLATE_PROJECT_FILTER_COLLECTION,
-  hidden: true,
-  filterTargetKey: 'id',
-  fields: [
-    {
-      name: 'name',
-      type: 'string',
-      interface: 'input',
-      uiSchema: {
-        type: 'string',
-        title: 'Title',
-        'x-component': 'Input',
-      },
-    },
-    {
-      name: 'description',
-      type: 'text',
-      interface: 'textarea',
-      uiSchema: {
-        type: 'string',
-        title: 'Description',
-        'x-component': 'Input.TextArea',
-      },
-    },
-    {
-      name: 'updatedAt',
-      type: 'datetime',
-      interface: 'datetime',
-      uiSchema: {
-        type: 'datetime',
-        title: 'Updated at',
-        'x-component': 'DatePicker',
-        'x-component-props': { showTime: true },
-      },
-    },
-    {
-      name: 'createdAt',
-      type: 'datetime',
-      interface: 'datetime',
-      uiSchema: {
-        type: 'datetime',
-        title: 'Created at',
-        'x-component': 'DatePicker',
-        'x-component-props': { showTime: true },
-      },
-    },
-    {
-      name: 'enabled',
-      type: 'boolean',
-      interface: 'checkbox',
-      uiSchema: {
-        type: 'boolean',
-        title: 'Enabled',
-        'x-component': 'Checkbox',
-      },
-    },
-  ],
-};
-const jsTemplateProjectFilterCollections = [jsTemplateProjectFilterCollection];
-
 function JsTemplateSourceProjectsPage() {
-  return (
-    <ExtendCollectionsProvider collections={jsTemplateProjectFilterCollections}>
-      <JsTemplateSourceProjectsPageInner />
-    </ExtendCollectionsProvider>
-  );
+  return <JsTemplateSourceProjectsPageInner />;
 }
 
 function JsTemplateSourceProjectsPageInner() {
   const { t } = useTranslation(NAMESPACE);
   const flowContext = useFlowContext() as FlowContextWithApi;
-  const compileT = useT();
   const { token } = theme.useToken();
-  const filterCollection = useJsTemplateProjectFilterCollection();
   const {
     changeLifecycle: changeLifecycleRequest,
     createProject: createProjectRequest,
@@ -175,7 +99,8 @@ function JsTemplateSourceProjectsPageInner() {
   const [createSourceKey, setCreateSourceKey] = useState(0);
   const [syncDrawerVersion, setSyncDrawerVersion] = useState(0);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [filterPayload, setFilterPayload] = useState<CompiledFilter>();
+  const [keyword, setKeyword] = useState('');
+  const [lifecycleFilter, setLifecycleFilter] = useState<JsTemplateProjectLifecycleFilter>('all');
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [sourceFooterActions, setSourceFooterActions] = useState<JsTemplateSourceProjectWorkspaceFooterActions | null>(
     null,
@@ -220,41 +145,47 @@ function JsTemplateSourceProjectsPageInner() {
 
   const handleCreateJobTransitions = useCallback(
     async (jobs: JsTemplateCreateJobSummary[], batch: number) => {
-      const succeededJobs = jobs.filter((job) => job.status === 'succeeded');
-      for (const job of succeededJobs) {
-        if (job.resultProjectId) {
-          invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.resultProjectId);
-          invalidateJsTemplateRuntimeCache(flowContext.api, job.resultProjectId);
+      try {
+        const succeededJobs = jobs.filter((job) => job.status === 'succeeded');
+        for (const job of succeededJobs) {
+          if (job.resultProjectId) {
+            invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.resultProjectId);
+            invalidateJsTemplateRuntimeCache(flowContext.api, job.resultProjectId);
+          }
         }
-      }
 
-      if (succeededJobs.length) {
-        await loadProjects();
-      }
-      if (createJobTransitionBatchRef.current !== batch) {
-        return;
-      }
+        if (succeededJobs.length && !(await loadProjects())) {
+          return;
+        }
+        if (createJobTransitionBatchRef.current !== batch) {
+          return;
+        }
 
-      const latestJob = jobs[0];
-      if (latestJob.status === 'succeeded') {
+        const latestJob = jobs[0];
+        if (latestJob.status === 'succeeded') {
+          setNotice({
+            type: 'success',
+            message: t('Source Project creation succeeded: {{name}}').replace(
+              '{{name}}',
+              latestJob.title || latestJob.name,
+            ),
+          });
+          return;
+        }
+
+        const errorKey = getJsTemplateSyncErrorTranslationKey(latestJob.errorCode, latestJob.errorReasonCode);
         setNotice({
-          type: 'success',
-          message: t('Source Project creation succeeded: {{name}}').replace(
+          type: 'error',
+          message: `${t('Source Project creation failed: {{name}}').replace(
             '{{name}}',
             latestJob.title || latestJob.name,
-          ),
+          )}: ${errorKey ? t(errorKey) : latestJob.errorMessage || t('Source Project creation failed')}`,
         });
-        return;
+      } catch {
+        if (createJobTransitionBatchRef.current === batch) {
+          setNotice({ type: 'error', message: t('Failed to process creation task update') });
+        }
       }
-
-      const errorKey = getJsTemplateSyncErrorTranslationKey(latestJob.errorCode, latestJob.errorReasonCode);
-      setNotice({
-        type: 'error',
-        message: `${t('Source Project creation failed: {{name}}').replace(
-          '{{name}}',
-          latestJob.title || latestJob.name,
-        )}: ${errorKey ? t(errorKey) : latestJob.errorMessage || t('Source Project creation failed')}`,
-      });
     },
     [flowContext.api, loadProjects, t],
   );
@@ -274,16 +205,14 @@ function JsTemplateSourceProjectsPageInner() {
       const previousStatus = previousStatuses.get(job.id);
       return isActiveCreateJobStatus(previousStatus) && isTerminalCreateJobStatus(job.status);
     });
-    for (const job of createJobs) {
-      previousStatuses.set(job.id, job.status);
-    }
+    previousCreateJobStatusesRef.current = new Map(createJobs.map((job) => [job.id, job.status]));
 
     if (!transitionedJobs.length) {
       return;
     }
 
     createJobTransitionBatchRef.current += 1;
-    handleCreateJobTransitions(transitionedJobs, createJobTransitionBatchRef.current).catch(() => undefined);
+    handleCreateJobTransitions(transitionedJobs, createJobTransitionBatchRef.current);
   }, [createJobs, createJobsLoading, handleCreateJobTransitions]);
 
   const dismissTerminalCreateJob = useCallback(
@@ -333,16 +262,21 @@ function JsTemplateSourceProjectsPageInner() {
     [projects, selectedProjectId],
   );
   const filteredProjects = useMemo(
-    () => projects.filter((project) => matchesJsTemplateProjectFilter(project, filterPayload)),
-    [filterPayload, projects],
+    () => projects.filter((project) => matchesJsTemplateProjectSearch(project, keyword, lifecycleFilter)),
+    [keyword, lifecycleFilter, projects],
   );
   const selectedProjects = useMemo(
     () => filteredProjects.filter((project) => selectedRowKeys.includes(project.id)),
     [filteredProjects, selectedRowKeys],
   );
 
-  const handleFilterChange = useCallback((nextFilterPayload: CompiledFilter) => {
-    setFilterPayload(nextFilterPayload);
+  const handleKeywordChange = useCallback((nextKeyword: string) => {
+    setKeyword(nextKeyword);
+    setSelectedRowKeys([]);
+  }, []);
+
+  const handleLifecycleFilterChange = useCallback((nextFilter: JsTemplateProjectLifecycleFilter) => {
+    setLifecycleFilter(nextFilter);
     setSelectedRowKeys([]);
   }, []);
 
@@ -607,13 +541,9 @@ function JsTemplateSourceProjectsPageInner() {
     [editForm, editTarget, t, updateProjectRequest],
   );
 
-  const handleSyncProjectUpdated = useCallback(
-    (updatedProject: JsTemplateProject) => {
-      setProjects((current) => current.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
-      loadProjects();
-    },
-    [loadProjects],
-  );
+  const handleSyncProjectUpdated = useCallback((updatedProject: JsTemplateProject) => {
+    setProjects((current) => current.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
+  }, []);
 
   const handleSyncConfigured = useCallback(
     (_source: JsTemplateSyncSourceSummary) => {
@@ -638,6 +568,15 @@ function JsTemplateSourceProjectsPageInner() {
 
   return (
     <Card variant="borderless">
+      <Space direction="vertical" size={0} style={{ marginBottom: token.margin }}>
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          {t('Source Projects')}
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          {t('A Source Project can contain multiple reusable JS Templates.')}
+        </Typography.Text>
+      </Space>
+
       {createJobsError ? (
         <Alert
           message={t('Failed to load creation jobs')}
@@ -667,15 +606,15 @@ function JsTemplateSourceProjectsPageInner() {
 
       <JsTemplateListToolbar
         batchChanging={Boolean(batchChanging)}
-        compileT={compileT}
-        filterCollection={filterCollection}
-        filterFieldNames={JS_TEMPLATE_PROJECT_FILTER_FIELD_NAMES}
         gap={token.marginSM}
+        keyword={keyword}
+        lifecycleFilter={lifecycleFilter}
         loading={loading}
         marginBottom={token.margin}
         onAdd={openCreateModal}
         onBatchChangeLifecycle={batchChangeLifecycle}
-        onFilterChange={handleFilterChange}
+        onKeywordChange={handleKeywordChange}
+        onLifecycleFilterChange={handleLifecycleFilterChange}
         onRefresh={loadProjects}
         selectedCount={selectedProjects.length}
         t={t}
@@ -827,44 +766,6 @@ function JsTemplateSyncConfigurationPanel({ projectId, onConfigured }: JsTemplat
   );
 }
 
-function useJsTemplateProjectFilterCollection(): Collection | undefined {
-  const engine = useFlowEngine();
-  const ownsFilterCollectionRef = useRef(false);
-
-  const collection = useMemo(() => {
-    const dataSource = engine.context.dataSourceManager?.getDataSource?.('main');
-    const existingCollection = dataSource?.getCollection?.(JS_TEMPLATE_PROJECT_FILTER_COLLECTION);
-
-    if (existingCollection) {
-      return existingCollection;
-    }
-
-    dataSource?.addCollection?.(jsTemplateProjectFilterCollection);
-    const registeredCollection = dataSource?.getCollection?.(JS_TEMPLATE_PROJECT_FILTER_COLLECTION);
-
-    if (registeredCollection) {
-      ownsFilterCollectionRef.current = true;
-    }
-
-    return registeredCollection;
-  }, [engine]);
-
-  useEffect(() => {
-    return () => {
-      if (!ownsFilterCollectionRef.current) {
-        return;
-      }
-
-      engine.context.dataSourceManager
-        ?.getDataSource?.('main')
-        ?.removeCollection?.(JS_TEMPLATE_PROJECT_FILTER_COLLECTION);
-      ownsFilterCollectionRef.current = false;
-    };
-  }, [engine]);
-
-  return collection;
-}
-
 function parseDetailPanel(value: string | null): DetailPanel | null {
   return value === 'source' || value === 'sync' ? value : null;
 }
@@ -877,219 +778,25 @@ function isTerminalCreateJobStatus(status: JsTemplateCreateJobSummary['status'])
   return status === 'succeeded' || status === 'failed';
 }
 
-function getDateTimestamp(value?: string | null): number {
-  if (!value) {
-    return 0;
+export function matchesJsTemplateProjectSearch(
+  project: JsTemplateProject,
+  keyword: string,
+  lifecycleFilter: JsTemplateProjectLifecycleFilter,
+): boolean {
+  if (lifecycleFilter !== 'all' && project.lifecycleStatus !== lifecycleFilter) {
+    return false;
   }
 
-  const timestamp = new Date(value).getTime();
-  return Number.isNaN(timestamp) ? 0 : timestamp;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function normalizeSearchText(value: unknown): string {
-  return String(value ?? '').toLowerCase();
-}
-
-function matchFilterValue(candidates: string[], operator: string, value: unknown): boolean {
-  const expected = normalizeSearchText(value);
-  if (!expected) {
+  const normalizedKeyword = keyword.trim().toLowerCase();
+  if (!normalizedKeyword) {
     return true;
   }
 
-  switch (operator) {
-    case '$eq':
-      return candidates.some((candidate) => candidate === expected);
-    case '$ne':
-      return candidates.every((candidate) => candidate !== expected);
-    case '$notIncludes':
-      return candidates.every((candidate) => !candidate.includes(expected));
-    case '$in':
-      return Array.isArray(value)
-        ? value.map(normalizeSearchText).some((item) => candidates.includes(item))
-        : candidates.includes(expected);
-    case '$notIn':
-      return Array.isArray(value)
-        ? value.map(normalizeSearchText).every((item) => !candidates.includes(item))
-        : !candidates.includes(expected);
-    case '$empty':
-      return candidates.every((candidate) => !candidate);
-    case '$notEmpty':
-      return candidates.some((candidate) => Boolean(candidate));
-    case '$includes':
-    default:
-      return candidates.some((candidate) => candidate.includes(expected));
-  }
-}
-
-function matchFilterField(candidates: string[], value: unknown): boolean {
-  if (!isRecord(value)) {
-    return matchFilterValue(candidates, '$includes', value);
-  }
-
-  const operatorEntries = Object.entries(value).filter(([operator]) => operator.startsWith('$'));
-  if (!operatorEntries.length) {
-    return true;
-  }
-
-  return operatorEntries.every(([operator, operatorValue]) => matchFilterValue(candidates, operator, operatorValue));
-}
-
-function matchBooleanFilter(value: boolean, filterValue: unknown): boolean {
-  if (!isRecord(filterValue)) {
-    return value === Boolean(filterValue);
-  }
-
-  return Object.entries(filterValue).every(([operator, operatorValue]) => {
-    if (operator === '$isTruly') {
-      return value;
-    }
-    if (operator === '$isFalsy') {
-      return !value;
-    }
-    if (operator === '$ne') {
-      return value !== Boolean(operatorValue);
-    }
-    if (operator === '$empty') {
-      return false;
-    }
-    if (operator === '$notEmpty') {
-      return true;
-    }
-    return value === Boolean(operatorValue);
-  });
-}
-
-function matchDateFilter(value: string | null | undefined, filterValue: unknown): boolean {
-  if (!isRecord(filterValue)) {
-    return matchDateOperator(value, '$dateOn', filterValue);
-  }
-
-  return Object.entries(filterValue).every(([operator, operatorValue]) =>
-    matchDateOperator(value, operator, operatorValue),
+  return [project.name, project.title, project.description].some((value) =>
+    String(value || '')
+      .toLowerCase()
+      .includes(normalizedKeyword),
   );
-}
-
-function matchDateOperator(value: string | null | undefined, operator: string, operatorValue: unknown): boolean {
-  if (operator === '$empty') {
-    return !value;
-  }
-  if (operator === '$notEmpty') {
-    return Boolean(value);
-  }
-  if (!value) {
-    return false;
-  }
-
-  const valueTimestamp = getDateTimestamp(value);
-  const range = resolveDateFilterRange(operatorValue);
-  if (!valueTimestamp || !range) {
-    return false;
-  }
-
-  const [startTimestamp, endTimestamp] = range;
-  switch (operator) {
-    case '$dateNotOn':
-      return valueTimestamp < startTimestamp || valueTimestamp > endTimestamp;
-    case '$dateBefore':
-      return valueTimestamp < startTimestamp;
-    case '$dateAfter':
-      return valueTimestamp > endTimestamp;
-    case '$dateNotBefore':
-      return valueTimestamp >= startTimestamp;
-    case '$dateNotAfter':
-      return valueTimestamp <= endTimestamp;
-    case '$dateBetween':
-    case '$dateOn':
-    default:
-      return valueTimestamp >= startTimestamp && valueTimestamp <= endTimestamp;
-  }
-}
-
-function resolveDateFilterRange(value: unknown): [number, number] | null {
-  if (isDateRangeParams(value)) {
-    try {
-      return toTimestampRange(getDayRangeByParams(value));
-    } catch {
-      return null;
-    }
-  }
-  if (Array.isArray(value)) {
-    return toTimestampRange([String(value[0] || ''), String(value[1] || value[0] || '')]);
-  }
-  if (typeof value !== 'string' || !value) {
-    return null;
-  }
-
-  if (/^\d{4}$/.test(value)) {
-    return toTimestampRange([`${value}-01-01 00:00:00`, `${value}-12-31 23:59:59.999`]);
-  }
-  if (/^\d{4}-\d{2}$/.test(value)) {
-    const start = new Date(`${value}-01T00:00:00`);
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + 1, 0);
-    end.setHours(23, 59, 59, 999);
-    return [start.getTime(), end.getTime()];
-  }
-  if (/^\d{4}Q[1-4]$/.test(value)) {
-    const year = Number(value.slice(0, 4));
-    const quarter = Number(value.slice(5));
-    const start = new Date(year, (quarter - 1) * 3, 1);
-    const end = new Date(year, quarter * 3, 0, 23, 59, 59, 999);
-    return [start.getTime(), end.getTime()];
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return toTimestampRange([`${value} 00:00:00`, `${value} 23:59:59.999`]);
-  }
-
-  const timestamp = getDateTimestamp(value);
-  return timestamp ? [timestamp, timestamp] : null;
-}
-
-function isDateRangeParams(value: unknown): value is Parameters<typeof getDayRangeByParams>[0] {
-  return isRecord(value) && typeof value.type === 'string';
-}
-
-function toTimestampRange(values: [string, string]): [number, number] | null {
-  const start = getDateTimestamp(values[0].replace(' ', 'T'));
-  const end = getDateTimestamp(values[1].replace(' ', 'T'));
-  return start && end ? [start, end] : null;
-}
-
-export function matchesJsTemplateProjectFilter(project: JsTemplateProject, filter: CompiledFilter): boolean {
-  if (!isRecord(filter)) {
-    return true;
-  }
-
-  const results: boolean[] = [];
-  if (Array.isArray(filter.$and)) {
-    results.push(filter.$and.every((item) => matchesJsTemplateProjectFilter(project, item as CompiledFilter)));
-  }
-  if (Array.isArray(filter.$or)) {
-    results.push(filter.$or.some((item) => matchesJsTemplateProjectFilter(project, item as CompiledFilter)));
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'name')) {
-    results.push(
-      matchFilterField([normalizeSearchText(project.name), normalizeSearchText(project.title)], filter.name),
-    );
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'description')) {
-    results.push(matchFilterField([normalizeSearchText(project.description)], filter.description));
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'updatedAt')) {
-    results.push(matchDateFilter(project.updatedAt, filter.updatedAt));
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'createdAt')) {
-    results.push(matchDateFilter(project.createdAt, filter.createdAt));
-  }
-  if (Object.prototype.hasOwnProperty.call(filter, 'enabled')) {
-    results.push(matchBooleanFilter(project.lifecycleStatus === 'enabled', filter.enabled));
-  }
-
-  return results.length ? results.every(Boolean) : true;
 }
 
 export function createJsTemplateProjectName(): string {

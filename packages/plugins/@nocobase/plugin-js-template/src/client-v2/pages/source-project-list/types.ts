@@ -26,3 +26,4 @@ export type JsTemplateListRow =
 
 export type JsTemplateListTranslate = (key: string) => string;
 export type ToggleLifecycleStatus = 'enabled' | 'disabled';
+export type JsTemplateProjectLifecycleFilter = 'all' | ToggleLifecycleStatus;
