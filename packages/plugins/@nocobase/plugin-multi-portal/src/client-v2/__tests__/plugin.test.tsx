@@ -1090,7 +1090,7 @@ describe('PluginMultiPortalClientV2', () => {
     expect(
       portalMatches.some((match) => match.route.path === '/portal-desktop' && match.route.authCheck === true),
     ).toBe(true);
-    expect(portalMatches.some((match) => match.route.path === ':name')).toBe(true);
+    expect(portalMatches.some((match) => match.route.path === ':name/*')).toBe(true);
     expect(portalMatches.some((match) => match.route.path === '/admin')).toBe(false);
     expect(disabledMatches.some((match) => match.route.path === '/disabled-portal')).toBe(false);
   });

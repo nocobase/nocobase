@@ -9,9 +9,10 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { navigateToSpy, setViewStackSpy } = vi.hoisted(() => {
+const { navigateToSpy, routerNavigateSpy, setViewStackSpy } = vi.hoisted(() => {
   return {
     navigateToSpy: vi.fn(),
+    routerNavigateSpy: vi.fn(),
     setViewStackSpy: vi.fn(),
   };
 });
@@ -57,16 +58,22 @@ const createEngine = () => {
       },
     },
   });
+  engine.context.defineProperty('router', {
+    value: {
+      navigate: routerNavigateSpy,
+    },
+  });
   return engine;
 };
 
 describe('AdminLayoutRouteCoordinator', () => {
   beforeEach(() => {
     navigateToSpy.mockClear();
+    routerNavigateSpy.mockClear();
     setViewStackSpy.mockClear();
   });
 
-  it('should split deep link to step navigation on first sync', () => {
+  it('should split deep link and preserve the final pathname on first sync', () => {
     const engine = createEngine();
     const coordinator = new AdminLayoutRouteCoordinator(engine);
     const loadSpy = vi.spyOn(engine, 'loadModel');
@@ -83,7 +90,8 @@ describe('AdminLayoutRouteCoordinator', () => {
       pathname: '/admin/page-1/view/popup-1',
     });
 
-    expect(navigateToSpy).toHaveBeenCalledTimes(2);
+    expect(navigateToSpy).toHaveBeenCalledTimes(1);
+    expect(routerNavigateSpy).toHaveBeenCalledWith('/admin/page-1/view/popup-1', undefined);
     expect(loadSpy).not.toHaveBeenCalled();
   });
 

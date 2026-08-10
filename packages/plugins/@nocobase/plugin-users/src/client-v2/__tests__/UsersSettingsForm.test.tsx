@@ -70,9 +70,9 @@ describe('UsersSettingsForm', () => {
     render(<UsersSettingsForm />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Allow edit profile')).not.toBeChecked();
+      expect(screen.getByLabelText('Allow change password')).toBeChecked();
     });
-    expect(screen.getByLabelText('Allow change password')).toBeChecked();
+    expect(screen.getByLabelText('Allow edit profile')).not.toBeChecked();
 
     fireEvent.click(screen.getByLabelText('Allow edit profile'));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
