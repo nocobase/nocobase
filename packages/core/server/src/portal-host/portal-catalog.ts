@@ -56,13 +56,7 @@ export interface PortalCatalogSyncResult {
 }
 
 const DEFAULT_APP_NAME = 'main';
-const SERVER_ENTRYPOINT_CANDIDATES = [
-  'server-dist/server/portal.js',
-  'server-dist/server/app.js',
-  'server/portal.ts',
-  'server/app.ts',
-  'src/index.ts',
-];
+const SERVER_ENTRYPOINT_CANDIDATES = ['dist/server/embedded.js', 'server/embedded.ts'];
 
 export class DirectoryPortalCatalog {
   readonly portalsDir: string;
