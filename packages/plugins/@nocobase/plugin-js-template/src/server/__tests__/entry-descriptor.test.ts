@@ -104,8 +104,11 @@ describe('entry descriptor schema', () => {
       packageName: NAMESPACE,
     });
     await plugin.load();
+    await plugin.load();
 
-    const registered = middlewares.find((item) => item.options?.tag === 'js-template-entry-schema');
+    const registeredRoutes = middlewares.filter((item) => item.options?.tag === 'js-template-entry-schema');
+    expect(registeredRoutes).toHaveLength(1);
+    const registered = registeredRoutes[0];
     expect(registered?.options).toMatchObject({ before: 'auth' });
     const headers: Record<string, string> = {};
     const ctx: RouteContext = {
