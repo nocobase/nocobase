@@ -370,7 +370,7 @@ describe('plugin-js-template template-level Usage visibility', () => {
         {
           id: 'jtp_foreign',
           applicationName: 'support',
-          lifecycleStatus: 'active',
+          lifecycleStatus: 'enabled',
           headCommitId: 'commit_foreign',
         },
       ],

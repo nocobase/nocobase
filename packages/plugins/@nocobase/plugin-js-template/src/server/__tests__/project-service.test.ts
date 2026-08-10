@@ -301,6 +301,18 @@ describe('plugin-js-template project service', () => {
     );
   });
 
+  it('rejects lifecycle values outside the public two-state collection contract', async () => {
+    const project = await service.createProject({ name: 'Lifecycle Validation' });
+
+    await expect(
+      app.db.getRepository('jsTemplateProjects').update({
+        filterByTk: project.id,
+        values: { lifecycleStatus: 'archived' },
+      }),
+    ).rejects.toThrow();
+    await expect(service.getProject(project.id)).resolves.toMatchObject({ lifecycleStatus: 'enabled' });
+  });
+
   it('blocks delete while the shared remote lifecycle gate reports an active job', async () => {
     const project = await service.createProject({ name: 'Lifecycle Busy' }, { requestId: 'req_lifecycle_busy_create' });
     const assertRepositoryIdle = vi.fn(async () => {
@@ -362,6 +374,40 @@ describe('plugin-js-template project service', () => {
     );
 
     expect(disabled.lifecycleStatus).toBe('disabled');
+    await expect(fileService.pull({ projectId: project.id, includeContent: 'all' })).resolves.toMatchObject({
+      project: { id: project.id, lifecycleStatus: 'disabled' },
+      files: expect.arrayContaining([expect.objectContaining({ path: 'README.md', content: '# updated\n' })]),
+    });
+
+    const savedWhileDisabled = await compileService.saveSource(
+      {
+        projectId: project.id,
+        expectedHeadCommitId: disabled.headCommitId,
+        message: 'source write while disabled',
+        files: [
+          {
+            path: 'README.md',
+            content: '# updated while disabled\n',
+          },
+        ],
+      },
+      {
+        requestId: 'req_source_push_disabled',
+      },
+    );
+
+    expect(savedWhileDisabled.project.lifecycleStatus).toBe('disabled');
+    await expect(
+      projectService.changeLifecycle(
+        {
+          projectId: project.id,
+          lifecycleStatus: 'enabled',
+        },
+        {
+          requestId: 'req_source_reenable',
+        },
+      ),
+    ).resolves.toMatchObject({ lifecycleStatus: 'enabled', headCommitId: savedWhileDisabled.commit.id });
   });
 
   it('rejects delete when source usages exist', async () => {

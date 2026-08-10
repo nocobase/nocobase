@@ -239,6 +239,30 @@ describe('jsTemplateSync resource', () => {
     expect(scopedOut.status).toBe(403);
   });
 
+  it('allows configure, Pull, and Push while the Source Project is disabled', async () => {
+    const fixture = createFixture();
+    const disabledRepo = { ...repo, lifecycleStatus: 'disabled' as const };
+    vi.mocked(fixture.projectService.getInternalProject).mockResolvedValue(disabledRepo);
+    vi.mocked(fixture.projectService.getProject).mockResolvedValue(disabledRepo);
+    vi.mocked(fixture.projectService.lockInternalProjectForUpdate).mockResolvedValue(disabledRepo);
+
+    const configured = await runAction(
+      fixture,
+      'configure',
+      { projectId: repo.id, provider: 'git', config: remote.config, authRef: remote.authRef },
+      ['manageSyncSource'],
+    );
+    const pulled = await runAction(fixture, 'pull', executionInput(), ['pullFromSyncSource']);
+    const pushed = await runAction(fixture, 'push', executionInput(), ['pushToSyncSource']);
+
+    expect(configured.status).toBeUndefined();
+    expect(pulled.status).toBeUndefined();
+    expect(pushed.status).toBeUndefined();
+    expect(fixture.runtime.configureRemote).toHaveBeenCalledTimes(1);
+    expect(fixture.pullCoordinator.discover).toHaveBeenCalledTimes(1);
+    expect(fixture.runtime.push).toHaveBeenCalledTimes(1);
+  });
+
   it.each([
     ['get', { projectId: repo.id }, 'manageSyncSource'],
     ['configure', { projectId: repo.id, provider: 'git', config: remote.config, authRef: null }, 'manageSyncSource'],

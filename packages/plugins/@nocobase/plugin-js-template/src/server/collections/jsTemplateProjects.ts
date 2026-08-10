@@ -9,7 +9,7 @@
 
 import { defineCollection } from '@nocobase/database';
 
-import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
+import { JS_TEMPLATE_COLLECTIONS, JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES } from '../../constants';
 
 export default defineCollection({
   name: JS_TEMPLATE_COLLECTIONS.projects,
@@ -93,6 +93,9 @@ export default defineCollection({
       name: 'lifecycleStatus',
       allowNull: false,
       defaultValue: 'enabled',
+      validate: {
+        isIn: [JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES],
+      },
     },
     {
       type: 'string',

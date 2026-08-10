@@ -55,7 +55,7 @@ export function createJsTemplateUsageServiceFixture(
         input.projects ?? [
           {
             id: 'jtp_sales',
-            lifecycleStatus: 'active',
+            lifecycleStatus: 'enabled',
             headCommitId: 'commit_sales',
           },
         ]

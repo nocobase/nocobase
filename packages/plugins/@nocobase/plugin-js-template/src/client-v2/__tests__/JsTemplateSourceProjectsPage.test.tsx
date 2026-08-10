@@ -50,10 +50,30 @@ const mocks = vi.hoisted(() => ({
     dismiss: vi.fn(),
     update: vi.fn(),
   },
+  cache: {
+    invalidateRuntime: vi.fn(),
+    invalidateSettings: vi.fn(),
+  },
   workspace: {
     dirty: true,
   },
 }));
+
+vi.mock('../resolvers/JsTemplateRuntimeCacheRegistry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../resolvers/JsTemplateRuntimeCacheRegistry')>();
+  return {
+    ...actual,
+    invalidateJsTemplateRuntimeCache: mocks.cache.invalidateRuntime,
+  };
+});
+
+vi.mock('../resolvers/JsTemplateSettingsDescriptorCache', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../resolvers/JsTemplateSettingsDescriptorCache')>();
+  return {
+    ...actual,
+    invalidateJsTemplateSettingsDescriptorCache: mocks.cache.invalidateSettings,
+  };
+});
 
 vi.mock('react-i18next', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-i18next')>();
@@ -591,6 +611,23 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
+  it('shows a visible error when creation transition processing throws', async () => {
+    const pending = createJobSummary();
+    mocks.createJobs.initialJobs = [pending];
+    mocks.cache.invalidateSettings.mockImplementationOnce(() => {
+      throw new Error('Cache invalidation failed');
+    });
+    renderListPage();
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
+    });
+
+    expect(await screen.findByText('Failed to process creation task update')).toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
+  });
+
   it('forgets disappeared job statuses before the same ID returns as terminal history', async () => {
     const pending = createJobSummary();
     mocks.createJobs.initialJobs = [pending];
@@ -1087,7 +1124,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_ops', lifecycleStatus: 'disabled' });
   });
 
-  it('clears selection on filter changes and never batches a hidden project', async () => {
+  it('prunes hidden selection, keeps visible selection, and never batches a hidden project', async () => {
     mocks.createJobs.initialJobs = [createJobSummary({ id: 'jtcj_active', title: 'Independent creation' })];
     mocks.api.listProjects.mockResolvedValueOnce([
       {
@@ -1131,12 +1168,11 @@ describe('JsTemplateSourceProjectsPage', () => {
     await userEvent.type(screen.getByRole('textbox', { name: 'Search Source Projects' }), 'sales');
 
     await waitFor(() => expect(screen.queryByText('Ops widgets')).not.toBeInTheDocument());
-    expect(screen.queryByText('Selected 2')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Batch actions/ })).toBeDisabled();
+    expect(screen.getByText('Selected 1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Batch actions/ })).toBeEnabled();
     expect(screen.getByRole('status', { name: 'Creation status' })).toHaveTextContent('Independent creation');
     expect(mocks.api.changeLifecycle).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Sales widgets' }));
     await userEvent.click(screen.getByRole('button', { name: /Batch actions/ }));
     await userEvent.click(await screen.findByText('Disable selected'));
 

@@ -270,14 +270,20 @@ function JsTemplateSourceProjectsPageInner() {
     [filteredProjects, selectedRowKeys],
   );
 
+  useEffect(() => {
+    const filteredProjectIds = new Set<React.Key>(filteredProjects.map((project) => project.id));
+    setSelectedRowKeys((current) => {
+      const visible = current.filter((key) => filteredProjectIds.has(key));
+      return visible.length === current.length ? current : visible;
+    });
+  }, [filteredProjects]);
+
   const handleKeywordChange = useCallback((nextKeyword: string) => {
     setKeyword(nextKeyword);
-    setSelectedRowKeys([]);
   }, []);
 
   const handleLifecycleFilterChange = useCallback((nextFilter: JsTemplateProjectLifecycleFilter) => {
     setLifecycleFilter(nextFilter);
-    setSelectedRowKeys([]);
   }, []);
 
   const handleSelectedRowKeysChange = useCallback(

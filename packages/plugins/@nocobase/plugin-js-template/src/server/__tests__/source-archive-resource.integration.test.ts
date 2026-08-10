@@ -22,7 +22,7 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
   it('parses the ZIP without invoking persistence or compilation services', async () => {
     const getProject = vi.fn(async () => ({
       id: 'jtp_inspect',
-      lifecycleStatus: 'enabled',
+      lifecycleStatus: 'disabled',
     }));
     const getValidator = vi.fn(() => new JsTemplateValidator());
     const projectService = {

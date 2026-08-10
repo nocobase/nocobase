@@ -172,7 +172,7 @@ function pullEnvelope(
   const descriptorContent = `${JSON.stringify(getDescriptorMetadata(fixture), null, 2)}\n`;
   return {
     data: {
-      project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'active', headCommitId },
+      project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'enabled', headCommitId },
       commit: headCommitId ? { id: headCommitId, treeHash: 'tree_base' } : null,
       tree: { hash: 'tree_base', entryCount: 2, byteSize: 120 },
       unchanged: false,
@@ -344,7 +344,7 @@ describe('nb js-template pull/check/save', () => {
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
       body: {
         data: {
-          project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'active', headCommitId: 'commit_canonical' },
+          project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'enabled', headCommitId: 'commit_canonical' },
           commit: { id: 'commit_canonical', treeHash: 'tree_canonical' },
           tree: { hash: 'tree_canonical', entryCount: 2, byteSize: 130 },
           compile: { status: 'success', templates: [] },
@@ -399,7 +399,7 @@ describe('nb js-template pull/check/save', () => {
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
       body: {
         data: {
-          project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'active', headCommitId: 'commit_new' },
+          project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'enabled', headCommitId: 'commit_new' },
           commit: { id: 'commit_new', treeHash: 'tree_new' },
           tree: { hash: 'tree_new', entryCount: 2, byteSize: 130 },
           compile: { status: 'success', templates: [] },
@@ -481,7 +481,7 @@ describe('nb js-template pull/check/save', () => {
           project: {
             id: 'jtp_demo',
             name: 'demo',
-            lifecycleStatus: 'active',
+            lifecycleStatus: 'enabled',
             headCommitId: 'commit_action_new',
           },
           commit: { id: 'commit_action_new', treeHash: 'tree_action_new' },

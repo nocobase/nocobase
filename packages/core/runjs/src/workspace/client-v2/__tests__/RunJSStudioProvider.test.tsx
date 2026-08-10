@@ -1672,6 +1672,12 @@ describe('runJSStudioProvider', () => {
     const editor = await screen.findByLabelText('Edit file content');
 
     fireEvent.change(editor, { target: { value: 'return 2;' } });
+    await waitFor(() => {
+      expect(
+        mocks.request.mock.calls.filter(([request]) => request.url === 'runJSSources:compilePreview'),
+      ).toHaveLength(1);
+    });
+    mocks.request.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     const dialog = await screen.findByRole('dialog');

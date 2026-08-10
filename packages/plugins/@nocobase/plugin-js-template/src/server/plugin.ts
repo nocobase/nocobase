@@ -173,6 +173,8 @@ export class PluginJsTemplateServer extends Plugin {
 
   private domainAvailabilityGuardRegistered = false;
 
+  private entrySchemaHttpRouteRegistered = false;
+
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.requireRunJSWorkspaceServerModule().registerPermissionHook(hook);
   }
@@ -650,8 +652,14 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   private registerEntrySchemaHttpRoute() {
+    if (this.entrySchemaHttpRouteRegistered) {
+      return;
+    }
     const app = this.app as unknown as AppWithPluginEvents;
-    app.use?.(
+    if (!app.use) {
+      return;
+    }
+    app.use(
       async (ctx, next) => {
         if (ctx.method !== 'GET' || ctx.path !== getEntrySchemaPath(app.resourceManager?.options?.prefix)) {
           await next();
@@ -679,6 +687,7 @@ export class PluginJsTemplateServer extends Plugin {
         before: 'auth',
       },
     );
+    this.entrySchemaHttpRouteRegistered = true;
   }
 
   private registerVscPermissionHook() {

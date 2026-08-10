@@ -78,7 +78,7 @@ export interface JsTemplateRecord {
 export interface JsTemplateProjectRecord {
   id: string;
   name: string;
-  lifecycleStatus: string;
+  lifecycleStatus: 'enabled' | 'disabled';
   headCommitId: string | null;
 }
 
