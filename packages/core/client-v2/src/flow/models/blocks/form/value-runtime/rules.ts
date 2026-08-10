@@ -8,7 +8,13 @@
  */
 
 import { isObservable, reaction, toJS } from '@formily/reactive';
-import { FlowContext, FlowModel, isRunJSValue, normalizeRunJSValue } from '@nocobase/flow-engine';
+import {
+  FlowContext,
+  FlowModel,
+  isRunJSValue,
+  normalizeRunJSValue,
+  type ResolveJsonTemplateOptions,
+} from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { dayjs } from '@nocobase/utils/client';
@@ -49,6 +55,7 @@ type RuntimeRule = {
   getValue: () => any;
   getCondition?: () => any;
   getContext: () => any;
+  getContractModelUid?: () => string | undefined;
 };
 
 type ObservableBinding = {
@@ -94,6 +101,7 @@ type RuntimeItemChain = {
 
 export type RuleEngineOptions = {
   getBlockModelUid: () => string;
+  getAssignRulesModelUid: () => string | undefined;
   getActionName: () => string | undefined;
   getBlockContext: () => any;
   getEngine: () => any;
@@ -217,6 +225,7 @@ export class RuleEngine {
         getValue: () => template?.value,
         getCondition: () => template?.condition,
         getContext: () => this.options.getBlockContext(),
+        getContractModelUid: this.options.getAssignRulesModelUid,
       };
 
       this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -554,6 +563,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => this.options.getBlockContext(),
+          getContractModelUid: this.options.getAssignRulesModelUid,
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -922,6 +932,7 @@ export class RuleEngine {
           getValue: () => template?.value,
           getCondition: () => template?.condition,
           getContext: () => model?.context,
+          getContractModelUid: this.options.getAssignRulesModelUid,
         };
 
         this.rules.set(id, { rule, state: { deps: new Set(), depDisposers: [], runSeq: 0, scheduledAtWriteSeq: 0 } });
@@ -1671,7 +1682,7 @@ export class RuleEngine {
       }
     }
 
-    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector, targetNamePath);
+    const evalCtx = this.createRuleEvaluationContext(baseCtx, collector, targetNamePath, rule.getContractModelUid?.());
     return { collector, evalCtx, rawValue, isRunJS };
   }
 
@@ -2010,7 +2021,12 @@ export class RuleEngine {
     return canOverwrite;
   }
 
-  private createRuleEvaluationContext(baseCtx: any, collector: DepCollector, targetNamePath: NamePath | null) {
+  private createRuleEvaluationContext(
+    baseCtx: any,
+    collector: DepCollector,
+    targetNamePath: NamePath | null,
+    contractModelUid?: string,
+  ) {
     const trackingFormValues = this.options.createTrackingFormValues(collector);
     const ctx: any = new FlowContext();
     try {
@@ -2030,12 +2046,19 @@ export class RuleEngine {
     }
 
     const delegatedResolveJsonTemplate =
-      typeof ctx.resolveJsonTemplate === 'function' ? ctx.resolveJsonTemplate.bind(ctx) : undefined;
+      typeof ctx.resolveJsonTemplate === 'function'
+        ? (ctx.resolveJsonTemplate.bind(ctx) as (
+            template: unknown,
+            options?: ResolveJsonTemplateOptions,
+          ) => Promise<unknown>)
+        : undefined;
     ctx.defineMethod('resolveJsonTemplate', async (template: unknown) => {
       const tokenStore = this.createLocalTemplateTokenStore();
       const localResolved = this.resolveLocalFormValuesTemplates(baseCtx, template, collector, tokenStore);
       const nextTemplate = localResolved.matched ? localResolved.value : template;
-      const resolved = delegatedResolveJsonTemplate ? await delegatedResolveJsonTemplate(nextTemplate) : nextTemplate;
+      const resolved = delegatedResolveJsonTemplate
+        ? await delegatedResolveJsonTemplate(nextTemplate, contractModelUid ? { contractModelUid } : undefined)
+        : nextTemplate;
       return this.restoreLocalTemplateTokens(resolved, tokenStore);
     });
 
