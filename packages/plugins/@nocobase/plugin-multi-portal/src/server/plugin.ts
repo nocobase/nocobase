@@ -80,6 +80,7 @@ const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
 const PORTAL_DIST_DIR = 'dist';
 const PORTAL_CLIENT_DIST_DIR = path.join(PORTAL_DIST_DIR, 'client');
+const PORTAL_RAW_INDEX_HTML = 'index.raw.html';
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
 const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
@@ -228,6 +229,7 @@ type MultiPortalDeployContext = ResourcerContext & {
 };
 type ResolvedPortalTemplate = {
   dir: string;
+  includeDist?: boolean;
   cleanup?: () => Promise<void>;
 };
 type NormalizeLegacyPortalClientDistOptions = {
@@ -519,7 +521,7 @@ async function resolveLocalPortalTemplate(templateSource: string): Promise<Resol
 
 function resolveInstalledPortalTemplatePackage(templatePackage: string): ResolvedPortalTemplate | null {
   try {
-    return { dir: path.dirname(require.resolve(`${templatePackage}/package.json`)) };
+    return { dir: path.dirname(require.resolve(`${templatePackage}/package.json`)), includeDist: true };
   } catch {
     return null;
   }
@@ -567,6 +569,7 @@ async function downloadPortalTemplatePackage(
     cleanupExtractRoot = false;
     return {
       dir: extractRoot,
+      includeDist: true,
       cleanup: async () => {
         await fs.promises.rm(packRoot, { recursive: true, force: true });
         await fs.promises.rm(extractRoot, { recursive: true, force: true });
@@ -599,8 +602,17 @@ async function resolvePortalTemplate(templateSource: string, logPath: string): P
   return downloadPortalTemplatePackage(templateSource, logPath);
 }
 
-async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
-  const ignoredSegments = new Set(['.git', 'node_modules', 'dist', '.DS_Store', '.env', '.env.local']);
+async function copyPortalTemplate(
+  sourceDir: string,
+  targetDir: string,
+  options?: {
+    includeDist?: boolean;
+  },
+): Promise<void> {
+  const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store', '.env', '.env.local']);
+  if (!options?.includeDist) {
+    ignoredSegments.add('dist');
+  }
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
@@ -612,6 +624,44 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
   });
 }
 
+async function copyPortalTemplateDist(sourceDir: string, targetDir: string): Promise<boolean> {
+  const sourceDistDir = path.join(sourceDir, PORTAL_DIST_DIR);
+  if (!(await pathExists(path.join(sourceDistDir, PORTAL_RAW_INDEX_HTML)))) {
+    return false;
+  }
+
+  await fs.promises.mkdir(path.dirname(path.join(targetDir, PORTAL_DIST_DIR)), { recursive: true });
+  await fs.promises.cp(sourceDistDir, path.join(targetDir, PORTAL_DIST_DIR), {
+    recursive: true,
+    filter: (source) =>
+      !path
+        .relative(sourceDistDir, source)
+        .split(path.sep)
+        .some((segment) => segment.startsWith('._') || segment === '.DS_Store'),
+  });
+  return true;
+}
+
+async function restorePortalTemplateDist(portalDir: string, logPath: string): Promise<boolean> {
+  if (await pathExists(path.join(portalDir, PORTAL_DIST_DIR, PORTAL_RAW_INDEX_HTML))) {
+    return false;
+  }
+
+  const template = await resolvePortalTemplate(getInitPortalTemplate(), logPath);
+  try {
+    if (!template.includeDist) {
+      return false;
+    }
+    const copied = await copyPortalTemplateDist(template.dir, portalDir);
+    if (copied) {
+      await appendPortalStorageLog(logPath, `Default portal template dist restored from ${template.dir}.`);
+    }
+    return copied;
+  } finally {
+    await template.cleanup?.();
+  }
+}
+
 async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.Dirent[]> {
   const distDir = path.join(portalDir, PORTAL_DIST_DIR);
   const legacyIndexPath = path.join(distDir, 'index.html');
@@ -621,10 +671,14 @@ async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.D
   }
 
   const entries = await fs.promises.readdir(distDir, { withFileTypes: true });
-  return entries.filter((entry) => entry.name !== 'client');
+  return entries.filter((entry) => entry.name !== 'client' && entry.name !== PORTAL_RAW_INDEX_HTML);
 }
 
 async function removeLegacyPortalClientDist(portalDir: string, logPath?: string): Promise<boolean> {
+  if (await pathExists(path.join(portalDir, PORTAL_DIST_DIR, PORTAL_RAW_INDEX_HTML))) {
+    return false;
+  }
+
   const legacyEntries = await getLegacyPortalClientDistEntries(portalDir);
   if (!legacyEntries.length) {
     return false;
@@ -801,6 +855,7 @@ async function buildPortalStorageItem(
       buildEnv.COREPACK_ENABLE_PROJECT_SPEC || ''
     }`,
   );
+  await restorePortalTemplateDist(portalDir, logPath);
   await removeLegacyPortalClientDist(portalDir, logPath);
   await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,
@@ -3351,7 +3406,7 @@ export class PluginMultiPortalServer extends Plugin {
             logPath,
             `Copying default portal template from ${template.dir} to ${portalDir}.`,
           );
-          await copyPortalTemplate(template.dir, portalDir);
+          await copyPortalTemplate(template.dir, portalDir, { includeDist: template.includeDist });
           await appendPortalStorageLog(logPath, `Default portal template copied to ${portalDir}.`);
         }
         if (item.enabled) {

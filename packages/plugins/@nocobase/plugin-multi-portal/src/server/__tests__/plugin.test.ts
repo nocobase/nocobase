@@ -15,6 +15,7 @@ import path from 'path';
 import type { ChildProcess } from 'child_process';
 import * as tar from 'tar';
 import { vi } from 'vitest';
+import NormalizeLegacyPortalDistMigration from '../migrations/20260810120000-normalize-legacy-portal-dist';
 
 const spawnMock = vi.hoisted(() => {
   const fsSync = require('fs') as typeof import('fs');
@@ -49,7 +50,9 @@ const spawnMock = vi.hoisted(() => {
       }
       if (isBuildCommand && options.cwd) {
         if (process.env.TEST_PORTAL_BUILD_FAIL !== 'true') {
-          const writesLegacyDist = process.env.TEST_PORTAL_BUILD_LEGACY_DIST === 'true';
+          const writesLegacyDist =
+            process.env.TEST_PORTAL_BUILD_LEGACY_DIST === 'true' ||
+            fsSync.existsSync(pathSync.join(options.cwd, 'dist', 'index.raw.html'));
           const distDir = writesLegacyDist
             ? pathSync.join(options.cwd, 'dist')
             : pathSync.join(options.cwd, 'dist', 'client');
@@ -1116,6 +1119,8 @@ describe('plugin-multi-portal server', () => {
     await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/main/',
     );
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
@@ -1450,7 +1455,9 @@ describe('plugin-multi-portal server', () => {
     await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-    await expect(access(path.join(portalDir, 'dist', 'client', 'favicon.ico'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'favicon.ico'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
@@ -1798,6 +1805,80 @@ describe('plugin-multi-portal server', () => {
         cwd: portalDir,
       }),
     );
+  });
+
+  it('should migrate legacy portal dist/index.html output into dist/client', async () => {
+    app = await createMockServer({
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const portalDir = path.join(storagePath as string, 'portals', 'main', 'legacy-migration-portal');
+    const distDir = path.join(portalDir, 'dist');
+    await mkdir(path.join(distDir, 'assets'), { recursive: true });
+    await writeFile(path.join(distDir, 'index.html'), '<div id="root"></div>', 'utf-8');
+    await writeFile(path.join(distDir, 'index.raw.html'), '<div id="raw"></div>', 'utf-8');
+    await writeFile(path.join(distDir, 'assets', 'legacy.js'), 'console.log("legacy");\n', 'utf-8');
+
+    const migrationContext = {
+      db: app.db,
+      queryInterface: app.db.sequelize.getQueryInterface(),
+      sequelize: app.db.sequelize,
+      app,
+    };
+    const migration = new NormalizeLegacyPortalDistMigration(migrationContext);
+    await migration.up();
+
+    await expect(readFile(path.join(distDir, 'client', 'index.html'), 'utf-8')).resolves.toBe('<div id="root"></div>');
+    await expect(readFile(path.join(distDir, 'client', 'assets', 'legacy.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(access(path.join(distDir, 'index.html'))).rejects.toThrow();
+    await expect(readFile(path.join(distDir, 'index.raw.html'), 'utf-8')).resolves.toBe('<div id="raw"></div>');
+    await expect(access(path.join(distDir, 'assets', 'legacy.js'))).rejects.toThrow();
+  });
+
+  it('should restore template dist for an existing incomplete AI portal directory', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'incomplete-template-portal');
+    await mkdir(path.join(portalDir, 'src'), { recursive: true });
+    await writeFile(path.join(portalDir, 'package.json'), '{"name":"incomplete-template-portal"}\n', 'utf-8');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'incomplete-template-portal',
+        title: 'Incomplete template portal',
+        portalType: 'ai',
+        portalName: 'incomplete-template-portal',
+        routePath: '/incomplete-template-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/incomplete-template-portal/',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(
+      readFile(path.join(storagePath as string, 'logs', 'portals', appName, 'incomplete-template-portal.log'), 'utf-8'),
+    ).resolves.toContain('Default portal template dist restored from');
   });
 
   it('should log when storage portal HTML build is skipped because dist already exists', async () => {
