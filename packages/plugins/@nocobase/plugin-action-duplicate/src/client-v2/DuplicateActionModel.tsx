@@ -531,8 +531,10 @@ DuplicateActionModel.registerFlow({
           );
           ctx.message.success(ctx.t('Saved successfully'));
         } catch (error) {
-          const errorMessage = error instanceof Error && error.message ? error.message : ctx.t('Save failed');
-          ctx.message.error(errorMessage);
+          if (!(error instanceof Error) || error.name !== 'ResponseError') {
+            const errorMessage = error instanceof Error && error.message ? error.message : ctx.t('Save failed');
+            ctx.message.error(errorMessage);
+          }
           throw error;
         } finally {
           ctx.model.duplicateLoading = false;
