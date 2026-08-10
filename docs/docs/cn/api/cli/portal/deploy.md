@@ -22,6 +22,7 @@ nb portal deploy <portal> [flags]
 | --- | --- | --- |
 | `<portal>` | string | Portal 名称或 slug |
 | `--env`, `-e` | string | CLI env 名称，省略时使用当前 env |
+| `--no-install` | boolean | 构建前跳过 `pnpm install` |
 | `--yes`, `-y` | boolean | 当显式 `--env` 指向的 env 与当前 env 不一致时，跳过交互确认 |
 
 ## 示例
@@ -36,6 +37,12 @@ nb portal deploy customer
 
 ```bash
 nb portal deploy customer --env dev --yes
+```
+
+跳过依赖安装，只重新构建并部署：
+
+```bash
+nb portal deploy customer --no-install
 ```
 
 ## 说明

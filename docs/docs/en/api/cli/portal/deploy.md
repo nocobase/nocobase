@@ -20,6 +20,7 @@ nb portal deploy <portal> [flags]
 | --- | --- | --- |
 | `<portal>` | string | Portal name or slug. |
 | `--env`, `-e` | string | CLI env name. If omitted, the current env is used. |
+| `--no-install` | boolean | Skip `pnpm install` before building. |
 | `--yes`, `-y` | boolean | Skip cross-env confirmation. |
 
 ## Examples
@@ -27,6 +28,7 @@ nb portal deploy <portal> [flags]
 ```bash
 nb portal deploy customer
 nb portal deploy customer --env dev --yes
+nb portal deploy customer --no-install
 ```
 
 ## Notes

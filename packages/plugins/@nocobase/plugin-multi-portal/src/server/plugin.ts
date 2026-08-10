@@ -78,7 +78,8 @@ const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
-const PORTAL_CLIENT_DIST_DIR = path.join('dist', 'client');
+const PORTAL_DIST_DIR = 'dist';
+const PORTAL_CLIENT_DIST_DIR = path.join(PORTAL_DIST_DIR, 'client');
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
 const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
@@ -152,6 +153,9 @@ interface MultiPortalRequestResult {
 type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
+};
+type GrantDefaultAccessOptions = {
+  includeDefaultLayoutMultiPortal?: boolean;
 };
 const MULTI_PORTAL_SEED_TYPES = ['no-code', 'ai'] as const;
 type MultiPortalSeedType = (typeof MULTI_PORTAL_SEED_TYPES)[number];
@@ -754,24 +758,51 @@ function isPortalDeployTarEntry(entry: unknown): entry is PortalDeployTarEntry {
   return Boolean(entry) && typeof entry === 'object';
 }
 
+function normalizePortalDeployTarPath(entryPath: string) {
+  return path.posix.normalize(entryPath.replace(/\\/g, '/'));
+}
+
+function isPortalDeployTarPathSafe(entryPath: string) {
+  const normalizedEntryPath = normalizePortalDeployTarPath(entryPath);
+  return (
+    !path.posix.isAbsolute(normalizedEntryPath) &&
+    !path.win32.isAbsolute(entryPath) &&
+    normalizedEntryPath !== '..' &&
+    !normalizedEntryPath.startsWith('../') &&
+    !normalizedEntryPath.split('/').includes('..')
+  );
+}
+
+function isPortalDeployTarSymlinkTargetSafe(entryPath: string, linkpath: string) {
+  if (path.posix.isAbsolute(linkpath) || path.win32.isAbsolute(linkpath)) {
+    return false;
+  }
+  const normalizedEntryPath = normalizePortalDeployTarPath(entryPath);
+  const normalizedLinkPath = normalizePortalDeployTarPath(linkpath);
+  const entryParentPath = path.posix.dirname(normalizedEntryPath);
+  const resolvedLinkPath = path.posix.normalize(path.posix.join(entryParentPath, normalizedLinkPath));
+  return resolvedLinkPath !== '..' && !resolvedLinkPath.startsWith('../');
+}
+
 function validatePortalDeployTarEntry(entryPath: string, entry: unknown) {
-  const normalizedEntryPath = path.normalize(entryPath);
-  if (
-    path.isAbsolute(entryPath) ||
-    normalizedEntryPath === '..' ||
-    normalizedEntryPath.startsWith(`..${path.sep}`) ||
-    normalizedEntryPath.split(path.sep).includes('..')
-  ) {
+  if (!isPortalDeployTarPathSafe(entryPath)) {
     throw new Error(`Invalid dist archive entry path: ${entryPath}`);
   }
 
   const entryType = isPortalDeployTarEntry(entry) ? entry.type : undefined;
-  if (entryType === 'SymbolicLink' || entryType === 'Link') {
+  if (entryType === 'Link') {
     throw new Error(`Invalid dist archive link entry: ${entryPath}`);
   }
 
   const linkpath = isPortalDeployTarEntry(entry) ? entry.linkpath : undefined;
-  if (linkpath) {
+  if (entryType === 'SymbolicLink') {
+    if (typeof linkpath !== 'string' || !isPortalDeployTarSymlinkTargetSafe(entryPath, linkpath)) {
+      throw new Error(`Invalid dist archive link target: ${entryPath}`);
+    }
+    return true;
+  }
+
+  if (typeof linkpath === 'string') {
     throw new Error(`Invalid dist archive link target: ${entryPath}`);
   }
 
@@ -850,7 +881,7 @@ async function replacePortalDistFromArchive(params: {
   portalName: string;
 }): Promise<string> {
   const portalDir = storagePathJoin('portals', params.appName, params.portalName);
-  const distDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
   const backupDir = path.join(portalDir, `.dist-backup-${Date.now()}-${Math.random().toString().slice(2)}`);
   const tarPath = path.join(os.tmpdir(), `nocobase-portal-dist-${Date.now()}-${Math.random().toString().slice(2)}.tar`);
   const uploadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), PORTAL_DEPLOY_UPLOAD_DIR_PREFIX));
@@ -867,10 +898,10 @@ async function replacePortalDistFromArchive(params: {
       filter: validatePortalDeployTarEntry,
     });
 
-    const indexPath = path.join(uploadDir, 'index.html');
+    const indexPath = path.join(uploadDir, 'client', 'index.html');
     const indexStat = await fs.promises.stat(indexPath).catch(() => null);
     if (!indexStat?.isFile()) {
-      throw new Error('Portal dist archive is invalid: index.html is missing.');
+      throw new Error('Portal dist archive is invalid: client/index.html is missing.');
     }
 
     if (await pathExists(distDir)) {
@@ -1337,6 +1368,17 @@ async function repairFixedLayoutMultiPortalRecords(db: Database) {
 async function seedFreshMultiPortals(db: Database) {
   for (const portal of getFreshMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
+  }
+
+  const portals = await db.getRepository('multiPortals').find({
+    filter: {
+      uid: getFreshMultiPortalRecords().map((portal) => portal.uid),
+    },
+  });
+  for (const portal of portals) {
+    await grantDefaultAccessToNewMultiPortal(db, portal, undefined, {
+      includeDefaultLayoutMultiPortal: true,
+    });
   }
 }
 
@@ -3057,7 +3099,12 @@ async function reconcileCreatedDesktopRoutePermissions(desktopRoute: Model, opti
   await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, scope.portalUid, [desktopRouteId], transaction);
 }
 
-async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
+async function grantDefaultAccessToNewMultiPortal(
+  db: Database,
+  multiPortal: Model,
+  options?: DatabaseHookOptions,
+  grantOptions: GrantDefaultAccessOptions = {},
+) {
   if (multiPortal.get('enabled') !== true) {
     return;
   }
@@ -3065,7 +3112,7 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
   if (typeof multiPortalUid !== 'string' || !multiPortalUid) {
     return;
   }
-  if (isDefaultLayoutMultiPortalUid(multiPortalUid)) {
+  if (!grantOptions.includeDefaultLayoutMultiPortal && isDefaultLayoutMultiPortalUid(multiPortalUid)) {
     return;
   }
   if (!db.getCollection('roles') || !db.getCollection('rolesMultiPortals')) {

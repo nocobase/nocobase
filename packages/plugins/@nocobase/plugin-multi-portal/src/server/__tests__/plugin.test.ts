@@ -9,7 +9,7 @@
 
 import { createMockServer, type MockServer } from '@nocobase/test';
 import { AppSupervisor } from '@nocobase/server';
-import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import type { ChildProcess } from 'child_process';
@@ -194,12 +194,21 @@ function expectPosixMode(actual: number | undefined, expected: number): void {
   expect(actual === undefined ? actual : actual & 0o777).toBe(expected);
 }
 
-async function createPortalDistArchive(rootDir: string, files: Record<string, string>, modes?: Record<string, number>) {
+async function createPortalDistArchive(
+  rootDir: string,
+  files: Record<string, string>,
+  modes?: Record<string, number>,
+  symlinks?: Record<string, string>,
+) {
   const distSourceDir = path.join(rootDir, `dist-source-${Date.now()}-${Math.random().toString().slice(2)}`);
   const archivePath = path.join(rootDir, `dist-${Date.now()}-${Math.random().toString().slice(2)}.tar.gz`);
   for (const [fileName, content] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(distSourceDir, fileName)), { recursive: true });
     await writeFile(path.join(distSourceDir, fileName), content, 'utf-8');
+  }
+  for (const [linkName, target] of Object.entries(symlinks ?? {})) {
+    await mkdir(path.dirname(path.join(distSourceDir, linkName)), { recursive: true });
+    await symlink(target, path.join(distSourceDir, linkName));
   }
   for (const [entryPath, mode] of Object.entries(modes ?? {})) {
     await chmod(path.join(distSourceDir, entryPath), mode);
@@ -210,7 +219,7 @@ async function createPortalDistArchive(rootDir: string, files: Record<string, st
       file: archivePath,
       gzip: true,
     },
-    Object.keys(files),
+    [...Object.keys(files), ...Object.keys(symlinks ?? {})],
   );
   return archivePath;
 }
@@ -1935,13 +1944,17 @@ describe('plugin-multi-portal server', () => {
     const archivePath = await createPortalDistArchive(
       storagePath as string,
       {
-        'index.html': '<div id="root"></div>',
-        'assets/index.js': 'console.log("portal");\n',
+        'client/index.html': '<div id="root"></div>',
+        'client/assets/index.js': 'console.log("portal");\n',
+        'node_modules/pino/bin.js': 'console.log("pino");\n',
+        'server/embedded.js': 'console.log("server");\n',
       },
       {
-        assets: 0o700,
-        'index.html': 0o600,
-        'assets/index.js': 0o600,
+        'client/assets': 0o700,
+        'client/index.html': 0o600,
+        'client/assets/index.js': 0o600,
+        'node_modules/pino/bin.js': 0o600,
+        'server/embedded.js': 0o600,
       },
     );
     const portalDir = path.join(storagePath as string, 'portals', 'main', 'customer');
@@ -1970,7 +1983,7 @@ describe('plugin-multi-portal server', () => {
         app: 'main',
         portal: 'customer',
         basePath: '/console/x/customer/',
-        distPath: path.join('portals', 'main', 'customer', 'dist', 'client'),
+        distPath: path.join('portals', 'main', 'customer', 'dist'),
       }),
     );
     await expect(
@@ -1985,6 +1998,15 @@ describe('plugin-multi-portal server', () => {
         'utf-8',
       ),
     ).resolves.toBe('console.log("portal");\n');
+    await expect(
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'server', 'embedded.js'),
+        'utf-8',
+      ),
+    ).resolves.toBe('console.log("server");\n');
+    await expect(
+      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'node_modules', '.bin')),
+    ).rejects.toThrow();
     expectPosixMode((await stat(path.join(storagePath as string, 'portals'))).mode, 0o755);
     expectPosixMode((await stat(path.join(storagePath as string, 'portals', 'main'))).mode, 0o755);
     expectPosixMode((await stat(portalDir)).mode, 0o755);
@@ -1993,6 +2015,7 @@ describe('plugin-multi-portal server', () => {
     expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets'))).mode, 0o755);
     expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'index.html'))).mode, 0o644);
     expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets', 'index.js'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'server', 'embedded.js'))).mode, 0o644);
     await expect(readdir(portalDir)).resolves.not.toEqual(
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );
@@ -2009,7 +2032,7 @@ describe('plugin-multi-portal server', () => {
     await app.db.sync();
 
     const archivePath = await createPortalDistArchive(storagePath as string, {
-      'index.html': '<div id="root"></div>',
+      'client/index.html': '<div id="root"></div>',
     });
     const response = await app
       .agent()
@@ -2031,7 +2054,7 @@ describe('plugin-multi-portal server', () => {
         app: 'demo6',
         portal: 'crm',
         basePath: '/x/crm/',
-        distPath: path.join('portals', 'demo6', 'crm', 'dist', 'client'),
+        distPath: path.join('portals', 'demo6', 'crm', 'dist'),
       }),
     );
     await expect(
