@@ -114,6 +114,7 @@ describe('variables:resolve filter target key projection', () => {
       expect(find).toHaveBeenCalledTimes(1);
       expect(find).toHaveBeenCalledWith({
         appends: undefined,
+        context: expect.anything(),
         fields: ['id', 'name', 'uuid'],
         filterByTk: ['b', 'a'],
       });
@@ -163,6 +164,7 @@ describe('variables:resolve filter target key projection', () => {
       expect(find).toHaveBeenCalledTimes(1);
       expect(find).toHaveBeenCalledWith({
         appends: undefined,
+        context: expect.anything(),
         fields: ['id', 'name', 'uuid'],
         filterByTk: ['b', 'a'],
       });

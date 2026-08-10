@@ -10,6 +10,7 @@
 /* istanbul ignore file -- @preserve */
 
 import { Database } from '@nocobase/database';
+import type { TargetKey } from '@nocobase/database';
 import { DataSource } from './data-source';
 import {
   CollectionOptions,
@@ -109,7 +110,7 @@ export class SequelizeCollectionManager implements ICollectionManager {
     return [...this.db.collections.values()].filter((collection) => collectionsFilter(collection));
   }
 
-  getRepository<R = IRepository>(name: string, sourceId?: string | number): R {
+  getRepository<R = IRepository>(name: string, sourceId?: TargetKey): R {
     return this.db.getRepository(name, sourceId) as R;
   }
 

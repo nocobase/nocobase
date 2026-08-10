@@ -8,13 +8,20 @@
  */
 
 import type { Collection, RelationRepository, Repository, TargetKey } from '@nocobase/database';
-import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { ICollectionManager, IRepository } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import _ from 'lodash';
 import { adjustSelectsForCollection } from './selects';
 
 type FilterTargetKey = string | string[] | undefined;
-type RecordRepository = Repository | RelationRepository;
+type RecordRepository = IRepository | Repository | RelationRepository;
+
+type RecordCollectionManager = ICollectionManager & {
+  db?: {
+    getCollection?: (name: string) => Collection | undefined;
+    getRepository?: (name: string, sourceId?: TargetKey) => RecordRepository;
+  };
+};
 
 export type RecordParams = {
   associationName?: string;
@@ -207,6 +214,7 @@ export function isRecordParams(value: unknown): value is RecordParams {
 export function resolveRecordTarget(koaCtx: ResourcerContext, params: RecordParams): RecordTarget | undefined {
   const dataSourceKey = params.dataSourceKey || 'main';
   const usesAssociation = !!(params.associationName && typeof params.sourceId !== 'undefined');
+  const associationSourceCollection = usesAssociation ? params.associationName?.split('.')[0] : undefined;
   const context = koaCtx as RequestCacheContext;
   if (!context.state) context.state = {};
   const targets = (context.state.__varResolveRecordTargets ??= new Map());
@@ -219,30 +227,43 @@ export function resolveRecordTarget(koaCtx: ResourcerContext, params: RecordPara
   if (targets.has(requestKey)) return targets.get(requestKey);
 
   const ds = koaCtx.app.dataSourceManager.get(dataSourceKey);
-  const cm = ds.collectionManager as SequelizeCollectionManager;
-  if (!cm?.db) {
-    targets.set(requestKey, undefined);
-    return undefined;
+  const cm = ds.collectionManager as RecordCollectionManager;
+  let repository: RecordRepository | undefined;
+  if (typeof cm.getRepository === 'function') {
+    repository = usesAssociation
+      ? cm.getRepository(params.associationName as string, params.sourceId as TargetKey)
+      : cm.getRepository(params.collection);
+  } else if (typeof cm.db?.getRepository === 'function') {
+    repository = usesAssociation
+      ? cm.db.getRepository(params.associationName as string, params.sourceId as TargetKey)
+      : cm.db.getRepository(params.collection);
   }
-
-  const repository = usesAssociation
-    ? cm.db.getRepository<RelationRepository>(params.associationName, params.sourceId as TargetKey)
-    : cm.db.getRepository<Repository>(params.collection);
   if (!repository) {
     targets.set(requestKey, undefined);
     return undefined;
   }
 
-  const collection =
-    ('targetCollection' in repository && repository.targetCollection) ||
-    repository.collection ||
-    cm.db.getCollection(params.associationName || params.collection);
+  const repositoryMetadata = repository as unknown as {
+    targetCollection?: Collection;
+    collection?: Collection;
+  };
+  let collection = repositoryMetadata.targetCollection || repositoryMetadata.collection;
+  if (!usesAssociation && !collection) {
+    collection =
+      (typeof cm.getCollection === 'function'
+        ? (cm.getCollection(params.collection) as unknown as Collection | undefined)
+        : cm.db?.getCollection?.(params.collection)) || ({ name: params.collection } as unknown as Collection);
+  }
+
   if (!collection) {
     targets.set(requestKey, undefined);
     return undefined;
   }
 
-  if (usesAssociation && collection.name !== params.collection) {
+  if (
+    usesAssociation &&
+    (!collection.name || (collection.name !== params.collection && associationSourceCollection !== params.collection))
+  ) {
     targets.set(requestKey, undefined);
     return undefined;
   }
@@ -381,7 +402,7 @@ export async function fetchRecordWithRequestCache(
     const cached = findRecordRequestCacheValue(cache, query);
     if (cached.hit) return cached.value;
 
-    const value = await fetchRecordOrRecordsJson(query.repository, query);
+    const value = await fetchRecordOrRecordsJson(query.repository, query, koaCtx);
     setRecordRequestCache(cache, query, value);
     return value;
   } catch (error) {
@@ -449,12 +470,10 @@ export function getExtraKeyFieldsForSelect(
           ? options.filterTargetKey
           : [];
 
-    // 仅在模型声明了 rawAttributes 且字段存在时才追加，避免无效字段导致 SQL 报错
-    if (options.rawAttributes) {
-      for (const k of tkKeys) {
-        if (k && Object.prototype.hasOwnProperty.call(options.rawAttributes, k)) {
-          extra.push(k);
-        }
+    // Sequelize 模型仅追加真实字段，避免无效字段导致 SQL 报错；其他 collection 信任其 filterTargetKey 声明。
+    for (const k of tkKeys) {
+      if (k && (!options.rawAttributes || Object.prototype.hasOwnProperty.call(options.rawAttributes, k))) {
+        extra.push(k);
       }
     }
   }
@@ -476,6 +495,24 @@ function toJsonRecord(record: unknown): unknown {
 function toJsonArray(rows: unknown): unknown[] {
   if (!Array.isArray(rows)) return [];
   return rows.map(toJsonRecord);
+}
+
+function createRecordRepositoryContext(
+  context: ResourcerContext,
+  params: Pick<RecordQuery, 'filterByTk' | 'fields' | 'appends'>,
+): ResourcerContext {
+  if (!context.action?.params) return context;
+
+  const repositoryContext = Object.create(context) as ResourcerContext;
+  const repositoryAction = Object.create(context.action);
+  repositoryAction.params = {
+    ...context.action.params,
+    filterByTk: params.filterByTk,
+    fields: params.fields,
+    appends: params.appends,
+  };
+  repositoryContext.action = repositoryAction;
+  return repositoryContext;
 }
 
 /**
@@ -538,25 +575,24 @@ export async function fetchRecordOrRecordsJson(
     pkAttr?: string;
     pkIsValid?: boolean;
   },
+  context: ResourcerContext,
 ): Promise<unknown> {
   const { filterByTk, preferFullRecord, fields, appends } = params;
 
-  if (Array.isArray(filterByTk)) {
-    if (filterByTk.length === 0) return [];
+  if (Array.isArray(filterByTk) && filterByTk.length === 0) return [];
 
-    const rows = await repo.find(
-      preferFullRecord
-        ? { filterByTk: filterByTk as TargetKey }
-        : { filterByTk: filterByTk as TargetKey, fields, appends },
-    );
+  const query = preferFullRecord
+    ? { filterByTk: filterByTk as TargetKey }
+    : { filterByTk: filterByTk as TargetKey, fields, appends };
+  const repositoryContext = createRecordRepositoryContext(context, query);
+  const repositoryOptions = { ...query, context: repositoryContext };
+
+  if (Array.isArray(filterByTk)) {
+    const rows = await repo.find(repositoryOptions);
     const jsonArr = toJsonArray(rows);
     return reorderRecordsByFilterByTk(jsonArr, filterByTk, params);
   }
 
-  const rec = await repo.findOne(
-    preferFullRecord
-      ? { filterByTk: filterByTk as TargetKey }
-      : { filterByTk: filterByTk as TargetKey, fields, appends },
-  );
+  const rec = await repo.findOne(repositoryOptions);
   return rec ? toJsonRecord(rec) : undefined;
 }
