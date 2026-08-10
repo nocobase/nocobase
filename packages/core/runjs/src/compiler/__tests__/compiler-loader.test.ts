@@ -12,8 +12,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const compilerLoaderPath = path.resolve(__dirname, '../compiler/loader.ts');
-const compilerJavaScriptPath = path.resolve(__dirname, '../compiler/index.js');
+const compilerLoaderPath = path.resolve(__dirname, '../loader.ts');
+const compilerJavaScriptPath = path.resolve(__dirname, '../index.js');
 
 describe('loadRunJSCompiler', () => {
   it('loads the TypeScript source entry when the adjacent JavaScript build is absent', () => {

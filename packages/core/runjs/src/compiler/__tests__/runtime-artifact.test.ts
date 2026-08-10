@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { compileRunJSSourceWorkspace } from '../compiler';
+import { compileRunJSSourceWorkspace } from '..';
 import {
   buildRunJSRuntimeRequirePreamble,
   isRunJSRuntimeArtifact,
   prepareRunJSRuntimeArtifactForInspection,
-} from '../compiler/portable';
+} from '../portable';
 
 describe('RunJS runtime artifact contract', () => {
   it('recognizes compiler output through the shared preamble and launcher shape', async () => {

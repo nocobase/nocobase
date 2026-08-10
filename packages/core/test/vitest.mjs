@@ -18,6 +18,7 @@ const RUNJS_CLIENT_PATHS = [
   'packages/core/runjs/src/workspace/client-v2/**/*',
 ];
 const RUNJS_SERVER_PATHS = [
+  'packages/core/runjs/src/compiler/**/*',
   'packages/core/runjs/src/js-template/schema/server/**/*',
   'packages/core/runjs/src/workspace/server/**/*',
   'packages/core/runjs/src/workspace/swagger/**/*',

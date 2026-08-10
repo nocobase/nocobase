@@ -9,11 +9,7 @@
 
 import path from 'path';
 
-import {
-  compileRunJSSourceWorkspace,
-  createRunJSCompilerPaths,
-  inspectRunJSSourceWorkspaceWithDependencies,
-} from '../compiler';
+import { compileRunJSSourceWorkspace, createRunJSCompilerPaths, inspectRunJSSourceWorkspaceWithDependencies } from '..';
 
 describe('@nocobase/runjs compiler paths', () => {
   it.each([

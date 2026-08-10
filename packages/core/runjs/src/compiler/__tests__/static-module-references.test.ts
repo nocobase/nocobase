@@ -9,7 +9,7 @@
 
 import ts from 'typescript';
 
-import { collectStaticModuleReferences } from '../compiler';
+import { collectStaticModuleReferences } from '..';
 
 describe('static module references', () => {
   it('collects declarations and ImportType nodes with their source positions', () => {

@@ -40,7 +40,7 @@ describe('RunJS compiler build identity', () => {
   });
 
   it('does not initialize the full compiler entrypoint', () => {
-    const buildIdentityUrl = pathToFileURL(path.resolve(__dirname, '../compiler/build-identity.ts')).href;
+    const buildIdentityUrl = pathToFileURL(path.resolve(__dirname, '../build-identity.ts')).href;
 
     expect(() =>
       execFileSync(

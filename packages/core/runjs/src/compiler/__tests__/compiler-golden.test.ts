@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { compileRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from '../compiler';
-import { buildRunJSTypeScriptContextDeclaration } from '../typescript-project';
+import { compileRunJSSourceWorkspace, RunJSSourceWorkspaceInspector } from '..';
+import { buildRunJSTypeScriptContextDeclaration } from '../../typescript-project';
 
 type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
 
