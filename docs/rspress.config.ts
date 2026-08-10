@@ -19,6 +19,7 @@ import * as fs from 'node:fs/promises';
 const lang = process.env.DOCS_LANG || 'en';
 const base = process.env.DOCS_BASE || lang === 'en' ? '/' : `/${lang}/`;
 const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
+const docsAiApiUrl = process.env.DOCS_AI_API_URL || '';
 const rspressI18nAliases: Readonly<Record<string, string>> = {
   cn: 'zh',
 };
@@ -95,23 +96,68 @@ const searchI18nSource: Record<string, Record<string, string>> = {
   },
 };
 
+const docsAiI18nSource: Record<string, Record<string, string>> = {
+  docsAiOpen: { en: 'Ask AI', zh: '询问 AI' },
+  docsAiTitle: { en: 'Ask', zh: '询问' },
+  docsAiClose: { en: 'Close documentation assistant', zh: '关闭文档 AI 助手' },
+  docsAiExpand: { en: 'Expand assistant', zh: '展开助手' },
+  docsAiCollapse: { en: 'Collapse assistant', zh: '收起助手' },
+  docsAiQuestionPlaceholder: {
+    en: 'Ask a question...',
+    zh: '询问一个问题...',
+  },
+  docsAiSubmit: { en: 'Ask', zh: '提问' },
+  docsAiQuestionLabel: { en: 'Your question', zh: '你的问题' },
+  docsAiProgress: { en: 'Progress', zh: '处理进度' },
+  docsAiLoading: {
+    en: 'Searching the official documentation…',
+    zh: '正在检索官方文档…',
+  },
+  docsAiSources: { en: 'References', zh: '参考文档' },
+  docsAiAppliesWhen: { en: 'Notes', zh: '补充说明' },
+  docsAiSuggestions: { en: 'Common questions', zh: '常见问题' },
+  docsAiSuggestionOne: {
+    en: 'How do I install and upgrade NocoBase?',
+    zh: '如何安装和升级 NocoBase？',
+  },
+  docsAiSuggestionTwo: {
+    en: 'How do I create collections and pages?',
+    zh: '如何创建数据表和页面？',
+  },
+  docsAiSuggestionThree: {
+    en: 'How do I configure roles and permissions?',
+    zh: '如何配置用户角色与权限？',
+  },
+  docsAiError: {
+    en: 'The AI service is unavailable. Please use documentation search and try again later.',
+    zh: 'AI 服务暂时不可用，请使用文档搜索并稍后重试。',
+  },
+  docsAiRequestId: { en: 'Request ID', zh: '请求编号' },
+  docsAiEmptyQuestion: {
+    en: 'Enter a question first.',
+    zh: '请先输入问题。',
+  },
+};
+
 function withRspressI18nAliases(
   source: Record<string, Record<string, string>>,
 ) {
   return Object.fromEntries(
-    Object.entries({ ...source, ...searchI18nSource }).map(
-      ([key, translations]) => {
-        const nextTranslations = { ...translations };
+    Object.entries({
+      ...source,
+      ...searchI18nSource,
+      ...docsAiI18nSource,
+    }).map(([key, translations]) => {
+      const nextTranslations = { ...translations };
 
-        for (const [alias, original] of Object.entries(rspressI18nAliases)) {
-          if (!nextTranslations[alias] && nextTranslations[original]) {
-            nextTranslations[alias] = nextTranslations[original];
-          }
+      for (const [alias, original] of Object.entries(rspressI18nAliases)) {
+        if (!nextTranslations[alias] && nextTranslations[original]) {
+          nextTranslations[alias] = nextTranslations[original];
         }
+      }
 
-        return [key, nextTranslations];
-      },
-    ),
+      return [key, nextTranslations];
+    }),
   );
 }
 
@@ -262,6 +308,9 @@ export default defineConfig({
     },
     source: {
       tsconfigPath: path.join(__dirname, 'tsconfig.json'),
+      define: {
+        'import.meta.env.DOCS_AI_API_URL': JSON.stringify(docsAiApiUrl),
+      },
     },
     plugins: [pluginSass(), pluginNodePolyfill()],
     resolve: {
