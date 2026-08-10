@@ -1,12 +1,12 @@
 ---
 title: "nb api resource create"
-description: "Справочник по команде nb api resource create: создание записи указанного ресурса NocoBase."
+description: "Справочник по команде nb api resource create: создание одной или нескольких записей указанного ресурса NocoBase."
 keywords: "nb api resource create,NocoBase CLI,создание записи,CRUD"
 ---
 
 # nb api resource create
 
-Создание записи в выбранном ресурсе. Данные записи передаются через `--values` в виде JSON-объекта.
+Создание записей в выбранном ресурсе. Данные передаются через `--values` в виде JSON-объекта; JSON-массив объектов создаёт несколько записей за один запрос.
 
 ## Использование
 
@@ -21,7 +21,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 | `--resource` | string | Имя ресурса, обязательно |
 | `--data-source` | string | Ключ источника данных, по умолчанию `main` |
 | `--source-id` | string | ID исходной записи для ресурсов связи |
-| `--values` | string | Данные новой записи в виде JSON-объекта, обязательно |
+| `--values` | string | Данные новых записей: JSON-объект или JSON-массив объектов для создания нескольких записей, обязательно |
 | `--whitelist` | string[] | Поля из белого списка, разрешённые для записи; можно передавать несколько раз или JSON-массивом |
 | `--blacklist` | string[] | Поля из чёрного списка, запрещённые для записи; можно передавать несколько раз или JSON-массивом |
 
@@ -31,6 +31,7 @@ nb api resource create --resource <resource> --values <json> [flags]
 
 ```bash
 nb api resource create --resource users --values '{"nickname":"Ada"}'
+nb api resource create --resource users --values '[{"nickname":"Ada"},{"nickname":"Grace"}]'
 nb api resource create --resource posts.comments --source-id 1 --values '{"content":"Hello"}'
 ```
 

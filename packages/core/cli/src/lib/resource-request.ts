@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { executeRawApiRequest } from './api-client.js';
 
 export type ResourceAction = 'list' | 'get' | 'create' | 'update' | 'destroy' | 'query';
@@ -15,7 +24,7 @@ export interface ResourceRequestArgs {
   page?: number;
   pageSize?: number;
   paginate?: boolean;
-  values?: Record<string, any>;
+  values?: Record<string, any> | Array<Record<string, any>>;
   whitelist?: string[];
   blacklist?: string[];
   updateAssociationValues?: string[];
