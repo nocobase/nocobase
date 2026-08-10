@@ -240,7 +240,7 @@ export const jsTemplatePaths = {
         },
         403: errorResponse('The current user cannot read Project source.'),
         404: errorResponse('The Project does not exist.'),
-        409: errorResponse('The Project is archived or the source backend is unavailable.'),
+        409: errorResponse('The source backend is unavailable.'),
       },
     },
   },
@@ -280,7 +280,7 @@ export const jsTemplatePaths = {
         },
         403: errorResponse('The current user cannot read Project source.'),
         404: errorResponse('The Project or source file does not exist.'),
-        409: errorResponse('The Project is archived or the source backend is unavailable.'),
+        409: errorResponse('The source backend is unavailable.'),
       },
     },
   },
@@ -333,7 +333,7 @@ export const jsTemplatePaths = {
         403: errorResponse('The current user cannot write Project source.'),
         409: {
           description:
-            'The source Head is stale (JS_TEMPLATE_SOURCE_OUTDATED), the Project is archived, or the source backend rejected the write.',
+            'The source Head is stale (JS_TEMPLATE_SOURCE_OUTDATED) or the source backend rejected the write.',
           content: {
             'application/json': {
               schema: {
@@ -522,7 +522,7 @@ export const jsTemplatePaths = {
         400: errorResponse('templateId is invalid.'),
         403: errorResponse('The current user cannot delete this JS Template.'),
         404: errorResponse('The JS Template or Source Project was not found.'),
-        409: errorResponse('The Template has effective usages, its Source Project is archived, or source changed.'),
+        409: errorResponse('The Template has effective usages or its source changed.'),
         422: errorResponse('The remaining Source Project failed validation or compilation.'),
       },
     },

@@ -332,13 +332,9 @@ function JsTemplateSourceProjectsPageInner() {
     () => projects.find((project) => project.id === selectedProjectId) || null,
     [projects, selectedProjectId],
   );
-  const visibleProjects = useMemo(
-    () => projects.filter((project) => project.lifecycleStatus !== 'archived'),
-    [projects],
-  );
   const filteredProjects = useMemo(
-    () => visibleProjects.filter((project) => matchesJsTemplateProjectFilter(project, filterPayload)),
-    [filterPayload, visibleProjects],
+    () => projects.filter((project) => matchesJsTemplateProjectFilter(project, filterPayload)),
+    [filterPayload, projects],
   );
   const selectedProjects = useMemo(
     () => filteredProjects.filter((project) => selectedRowKeys.includes(project.id)),

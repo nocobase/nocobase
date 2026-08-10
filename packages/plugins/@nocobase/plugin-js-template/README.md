@@ -74,7 +74,6 @@ The Source Projects settings page is the project-management entry. Create a Sour
 | Validation or compile failure | Returns HTTP 422 without changing source, Head, artifacts, Templates, or usages |
 | Stale Head | Returns HTTP 409 without reusing the stale candidate |
 | Empty delta | Returns the VSC `NO_CHANGES` error |
-| Archived project | Returns `JS_TEMPLATE_PROJECT_ARCHIVED` |
 
 The canonical CLI follows the same pull, Check, and delta Save contract:
 
@@ -111,7 +110,7 @@ The ACL actions are independent:
 - `pushToSyncSource` controls Push and Plan visibility
 - `createFromGit` requires project creation, sync management, and Pull permissions
 
-Push and Pull require the exact local Head, remote revision, target version, and plan fingerprint returned by the latest Plan. Configuration changes, archive, disconnect, and delete are blocked while a sync job is active. Push uses an explicit lease and refuses to overwrite a branch that changed after Plan.
+Push and Pull require the exact local Head, remote revision, target version, and plan fingerprint returned by the latest Plan. Configuration changes, disconnect, and delete are blocked while a sync job is active. Push uses an explicit lease and refuses to overwrite a branch that changed after Plan.
 
 Git credentials are optional. Private HTTPS requires a complete `{{ $env.NAME }}` reference to a Secret JSON value containing `kind: "https"`, `username`, and `password`; literal credentials are rejected and only the Secret reference is stored in the remote record. SSH accepts a Secret JSON value containing `kind: "ssh"`, `privateKey`, optional `passphrase`, and required trusted `knownHosts`; when omitted, Git uses the NocoBase process user's SSH configuration, default keys, and SSH Agent. The transport and Secret kind must match, and strict host-key checking cannot be disabled for supplied SSH credentials.
 

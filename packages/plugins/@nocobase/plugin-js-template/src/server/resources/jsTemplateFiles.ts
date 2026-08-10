@@ -30,7 +30,6 @@ export const jsTemplateFileActionNames = [
   'pull',
   'pullCommit',
   'getFile',
-  'readArchivedSource',
   'saveSource',
   'listCommits',
   'diff',
@@ -54,8 +53,6 @@ const resourceActionRunners: Record<JsTemplateFileActionName, ResourceActionRunn
   pullCommit: (services, input, currentUser) =>
     services.fileService.pullCommit(normalizePullCommitInput(input), currentUser),
   getFile: (services, input, currentUser) => services.fileService.getFile(normalizeGetFileInput(input), currentUser),
-  readArchivedSource: (services, input, currentUser) =>
-    services.fileService.readArchivedSource(normalizeGetFileInput(input), currentUser),
   saveSource: (services, input, currentUser) => saveSource(services, input, currentUser),
   listCommits: (services, input, currentUser) =>
     services.fileService.listCommits(normalizeListCommitsInput(input), currentUser),

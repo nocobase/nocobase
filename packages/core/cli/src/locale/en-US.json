@@ -172,7 +172,6 @@
         "base64Unsupported": "Base64 or binary files are not supported by the first local Agent workflow: {{path}}.",
         "pullUtf8Missing": "Pull response did not include UTF-8 content for {{path}}.",
         "pullSelectionMismatch": "The selected project, template, and pull response do not match.",
-        "archivedProject": "Archived Source Projects cannot enter the local Agent workflow.",
         "templateFilesMissing": "The pulled project does not contain the selected template source and descriptor. Repair the project before using the local Agent workflow.",
         "baselineMissing": "The Pull baseline for {{path}} is missing. Pull the workspace again before saving.",
         "baselineHashMismatch": "The Pull baseline for {{path}} does not match the workspace state. Pull the workspace again before reviewing or saving changes.",

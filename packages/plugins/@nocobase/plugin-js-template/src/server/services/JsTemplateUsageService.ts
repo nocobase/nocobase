@@ -908,11 +908,11 @@ export class JsTemplateUsageService {
       };
     }
     const lifecycleStatus = normalizeString(project.get('lifecycleStatus'));
-    if (lifecycleStatus === 'disabled' || lifecycleStatus === 'archived') {
+    if (lifecycleStatus === 'disabled') {
       return {
         ...fallback,
-        resolvedStatus: lifecycleStatus === 'disabled' ? 'project_disabled' : 'project_archived',
-        conflictReason: lifecycleStatus === 'disabled' ? 'project_disabled' : 'project_archived',
+        resolvedStatus: 'project_disabled',
+        conflictReason: 'project_disabled',
       };
     }
     if (!template) {
@@ -1981,7 +1981,6 @@ function normalizeStatus(value: unknown): JsTemplateUsageResolvedStatus {
     'binding_outdated',
     'project_missing',
     'project_disabled',
-    'project_archived',
     'template_missing',
     'owner_missing',
     'settings_invalid',

@@ -143,7 +143,7 @@ vi.mock('../components/JsTemplateSyncDrawer', async () => {
       normalizedName: string;
       title: string;
       description: string | null;
-      lifecycleStatus: 'enabled' | 'disabled' | 'archived';
+      lifecycleStatus: 'enabled' | 'disabled';
       healthStatus: 'pending' | 'ready' | 'warning' | 'error';
       headCommitId: string | null;
     };

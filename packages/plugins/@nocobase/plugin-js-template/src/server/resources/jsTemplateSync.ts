@@ -313,7 +313,6 @@ async function configureSyncSource(
   ctx: JsTemplateServiceContext,
 ): Promise<JsTemplateSyncConfigureResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
-  assertProjectNotArchived(project.lifecycleStatus);
   const provider = requireProvider(input.provider);
   const saved = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
   const authRef = typeof input.authRef === 'undefined' ? saved?.authRef ?? null : requireNullableAuthRef(input.authRef);
@@ -362,7 +361,6 @@ async function testConnection(
   ctx: JsTemplateServiceContext,
 ): Promise<JsTemplateSyncTestConnectionResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
-  assertProjectNotArchived(project.lifecycleStatus);
   const saved = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
   const provider = typeof input.provider === 'undefined' ? saved?.provider : requireProvider(input.provider);
   const config = typeof input.config === 'undefined' ? saved?.config : requireRecord(input.config, 'config');
@@ -419,7 +417,6 @@ async function pullSync(
   ctx: JsTemplateServiceContext,
 ): Promise<JsTemplateSyncOperationResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
-  assertProjectNotArchived(project.lifecycleStatus);
   const remote = await requireSavedRemote(services, project.vscRepoId);
   const execution = normalizeExecutionInput(input);
   return runSyncAudit(services, ctx, project.id, 'syncPull', async () => {
@@ -463,7 +460,6 @@ async function pushSync(
   ctx: JsTemplateServiceContext,
 ): Promise<JsTemplateSyncOperationResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
-  assertProjectNotArchived(project.lifecycleStatus);
   const remote = await requireSavedRemote(services, project.vscRepoId);
   const execution = normalizeExecutionInput(input);
   return runSyncAudit(services, ctx, project.id, 'syncPush', async () => {
@@ -774,12 +770,6 @@ function assertOnlyKeys(input: ResourceActionInput, allowedKeys: readonly string
   const unexpected = Object.keys(input).filter((key) => typeof input[key] !== 'undefined' && !allowed.has(key));
   if (unexpected.length) {
     throw invalidInput(`Unexpected sync input field: ${unexpected.sort()[0]}`);
-  }
-}
-
-function assertProjectNotArchived(status: string): void {
-  if (status === 'archived') {
-    throw new JsTemplateError('JS_TEMPLATE_PROJECT_ARCHIVED', 'Archived JS Template projects cannot synchronize');
   }
 }
 

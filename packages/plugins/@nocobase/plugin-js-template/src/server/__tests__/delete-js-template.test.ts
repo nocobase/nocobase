@@ -171,43 +171,6 @@ describe('template-level JS Template deletion protection', () => {
     expect(response.body.data).toMatchObject({ templateId, project: { id: projectId, lifecycleStatus: 'disabled' } });
     expect(await app.db.getRepository('jsTemplates').findOne({ filterByTk: templateId })).toBeNull();
   });
-
-  it('rejects an archived Source Project without changing its Template Entry', async () => {
-    const projectId = 'jtp_archived_delete';
-    const templateId = 'jtt_archived_delete';
-    await app.db.getRepository('jsTemplateProjects').create({
-      values: {
-        id: projectId,
-        applicationName: app.name,
-        vscRepoId: 'vscr_archived_delete',
-        name: 'archived-delete',
-        normalizedName: 'archived-delete',
-        title: 'Archived delete',
-        lifecycleStatus: 'archived',
-        healthStatus: 'ready',
-        headCommitId: 'vscc_archived_delete',
-      },
-    });
-    await app.db.getRepository('jsTemplates').create({
-      values: {
-        id: templateId,
-        projectId,
-        target: 'client',
-        kind: 'js-block',
-        templateName: 'archived-card',
-        entryPath: 'src/client/js-blocks/archived-card/index.tsx',
-        descriptorPath: 'src/client/js-blocks/archived-card/entry.json',
-        healthStatus: 'ready',
-        diagnostics: [],
-      },
-    });
-
-    const response = await app.agent().post('/jsTemplates:delete').send({ templateId });
-
-    expect(response.status).toBe(409);
-    expect(response.body.errors?.[0]).toMatchObject({ code: 'JS_TEMPLATE_PROJECT_ARCHIVED' });
-    expect(await app.db.getRepository('jsTemplates').findOne({ filterByTk: templateId })).toBeTruthy();
-  });
 });
 
 describe('DeleteJsTemplateService snapshot protection', () => {
@@ -221,18 +184,6 @@ describe('DeleteJsTemplateService snapshot protection', () => {
 
     expect(fixture.assertActionAllowed).toHaveBeenCalledWith({ action: 'delete', ctx: {} });
     expect(fixture.getTemplate).not.toHaveBeenCalled();
-    expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
-  });
-
-  it('rechecks archived Source Project state under the deletion lock', async () => {
-    const fixture = createDeleteServiceFixture({ lockedLifecycleStatus: 'archived' });
-
-    await expect(fixture.service.deleteTemplate({ templateId: fixture.template.id })).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PROJECT_ARCHIVED',
-      status: 409,
-    });
-
-    expect(fixture.findTemplate).not.toHaveBeenCalled();
     expect(fixture.commitPreparedSave).not.toHaveBeenCalled();
   });
 
@@ -270,7 +221,7 @@ describe('DeleteJsTemplateService snapshot protection', () => {
 });
 
 function createDeleteServiceFixture(options: {
-  lockedLifecycleStatus?: 'enabled' | 'disabled' | 'archived';
+  lockedLifecycleStatus?: 'enabled' | 'disabled';
   currentArtifactHash?: string;
   permissionDenied?: boolean;
 }) {

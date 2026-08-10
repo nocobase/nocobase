@@ -172,7 +172,6 @@
         "base64Unsupported": "首版本地 Agent 工作流不支持 Base64 或二进制文件：{{path}}。",
         "pullUtf8Missing": "拉取响应未包含 {{path}} 的 UTF-8 内容。",
         "pullSelectionMismatch": "所选项目、模板与拉取响应不匹配。",
-        "archivedProject": "已归档的 JS 模板项目不能进入本地 Agent 工作流。",
         "templateFilesMissing": "拉取的项目不包含所选模板的源码和描述文件。请修复项目后再使用本地 Agent 工作流。",
         "baselineMissing": "{{path}} 的 Pull 基线缺失。请重新拉取 Workspace 后再保存。",
         "baselineHashMismatch": "{{path}} 的 Pull 基线与 Workspace 状态不匹配。请重新拉取 Workspace 后再检查或保存修改。",

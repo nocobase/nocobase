@@ -244,7 +244,7 @@ describe('plugin-js-template project service', () => {
     );
   });
 
-  it('changes lifecycle without client compare-and-set input and archives the vsc repository', async () => {
+  it('changes lifecycle without client compare-and-set input', async () => {
     const project = await service.createProject({ name: 'Lifecycle Demo' }, { requestId: 'req_lifecycle_create' });
     const refreshUsagesForProject = vi.fn(async () => undefined);
     service.useJsTemplateUsageService({ refreshUsagesForProject } as never);
@@ -280,69 +280,28 @@ describe('plugin-js-template project service', () => {
       },
     );
 
-    const archived = await service.archiveProject(
+    const disabledAgain = await service.changeLifecycle(
       {
         projectId: project.id,
+        lifecycleStatus: 'disabled',
       },
       {
-        requestId: 'req_lifecycle_archive',
-      },
-    );
-    const projectRecord = await app.db.getRepository('jsTemplateProjects').findOne({
-      filterByTk: project.id,
-    });
-    const vscRepoId = projectRecord?.get('vscRepoId') as string;
-    const vscRepo = await app.db.getRepository('vscFileRepositories').findOne({
-      filterByTk: vscRepoId,
-    });
-
-    expect(archived.lifecycleStatus).toBe('archived');
-    expect(vscRepo?.get('status')).toBe('archived');
-    const archivedAgain = await service.archiveProject(
-      {
-        projectId: project.id,
-      },
-      {
-        requestId: 'req_lifecycle_archive_idempotent',
+        requestId: 'req_lifecycle_disable_idempotent',
       },
     );
 
-    expect(archivedAgain.lifecycleStatus).toBe('archived');
-    expect(refreshUsagesForProject).toHaveBeenCalledTimes(4);
+    expect(disabledAgain.lifecycleStatus).toBe('disabled');
+    expect(refreshUsagesForProject).toHaveBeenCalledTimes(3);
     expect(refreshUsagesForProject.mock.calls).toEqual(
-      Array.from({ length: 4 }, () => [
+      Array.from({ length: 3 }, () => [
         project.id,
         expect.objectContaining({ transaction: expect.anything() }),
         'project_lifecycle_change',
       ]),
     );
-    await expect(
-      service.changeLifecycle(
-        {
-          projectId: project.id,
-          lifecycleStatus: 'enabled',
-        },
-        {
-          requestId: 'req_lifecycle_reenable',
-        },
-      ),
-    ).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PROJECT_ARCHIVED',
-      status: 409,
-    });
-    const archivedBlockedLog = await app.db.getRepository('jsTemplateLogs').findOne({
-      filter: {
-        projectId: project.id,
-        action: 'projectLifecycleChange',
-        result: 'blocked',
-        reasonCode: 'project_archived',
-      },
-    });
-
-    expect(archivedBlockedLog).toBeTruthy();
   });
 
-  it('blocks archive and delete while the shared remote lifecycle gate reports an active job', async () => {
+  it('blocks delete while the shared remote lifecycle gate reports an active job', async () => {
     const project = await service.createProject({ name: 'Lifecycle Busy' }, { requestId: 'req_lifecycle_busy_create' });
     const assertRepositoryIdle = vi.fn(async () => {
       throw new RemoteSyncError('BUSY', 'Repository has an active synchronization job', {
@@ -351,15 +310,11 @@ describe('plugin-js-template project service', () => {
     });
     service.useRemoteSyncLifecycleGate({ assertRepositoryIdle });
 
-    await expect(service.archiveProject({ projectId: project.id })).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_SYNC_BUSY',
-      status: 409,
-    });
     await expect(service.deleteProject({ projectId: project.id })).rejects.toMatchObject({
       code: 'JS_TEMPLATE_SYNC_BUSY',
       status: 409,
     });
-    expect(assertRepositoryIdle).toHaveBeenCalledTimes(2);
+    expect(assertRepositoryIdle).toHaveBeenCalledTimes(1);
   });
 
   it('allows lifecycle changes after source writes without a project version precondition', async () => {
@@ -396,16 +351,17 @@ describe('plugin-js-template project service', () => {
       },
     );
 
-    const archived = await projectService.archiveProject(
+    const disabled = await projectService.changeLifecycle(
       {
         projectId: project.id,
+        lifecycleStatus: 'disabled',
       },
       {
-        requestId: 'req_source_archive',
+        requestId: 'req_source_disable',
       },
     );
 
-    expect(archived.lifecycleStatus).toBe('archived');
+    expect(disabled.lifecycleStatus).toBe('disabled');
   });
 
   it('rejects delete when source usages exist', async () => {

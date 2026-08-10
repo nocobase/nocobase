@@ -139,7 +139,6 @@ export class JsTemplateFileService {
   async pull(input: JsTemplatePullInput, ctx: JsTemplateServiceContext = {}): Promise<JsTemplatePullResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectNotArchived(project, 'read source');
       return this.pullInternal(project, input, ctx, transaction, 'readSource');
     });
   }
@@ -151,7 +150,6 @@ export class JsTemplateFileService {
   ): Promise<void> {
     await this.permissionService.assertActionAllowed({ action: 'writeSource', ctx });
     const project = await this.projectService.getInternalProject(projectId, ctx);
-    assertProjectNotArchived(project, 'write source');
     assertExpectedHead(expectedHeadCommitId, project.headCommitId, project.id);
   }
 
@@ -161,7 +159,6 @@ export class JsTemplateFileService {
   ): Promise<JsTemplatePullResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectNotArchived(project, 'read source');
       return this.pullCommitInternal(project, input, ctx, transaction, 'readSource');
     });
   }
@@ -169,19 +166,7 @@ export class JsTemplateFileService {
   async getFile(input: JsTemplateGetFileInput, ctx: JsTemplateServiceContext = {}): Promise<JsTemplateFileResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectNotArchived(project, 'read source');
       return this.getFileInternal(project, input, ctx, transaction, 'readSource');
-    });
-  }
-
-  async readArchivedSource(
-    input: JsTemplateGetFileInput,
-    ctx: JsTemplateServiceContext = {},
-  ): Promise<JsTemplateFileResult> {
-    return this.withTransaction(ctx.transaction, async (transaction) => {
-      const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectArchived(project, 'read archived source');
-      return this.getFileInternal(project, input, ctx, transaction, 'readArchivedSource');
     });
   }
 
@@ -213,7 +198,6 @@ export class JsTemplateFileService {
       }
       const current = await this.withTransaction(undefined, async (transaction) => {
         const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-        assertProjectNotArchived(project, 'replace source');
         assertExpectedHead(input.expectedHeadCommitId, project.headCommitId, project.id);
         return this.pullInternal(
           project,
@@ -276,7 +260,6 @@ export class JsTemplateFileService {
     const requestId = getRequestId(ctx);
     try {
       const project = await this.projectService.getInternalProject(input.projectId, ctx);
-      assertProjectNotArchived(project, 'write source');
       assertExpectedHead(input.expectedHeadCommitId, project.headCommitId, project.id);
       const vscPreparedPush = await this.runVsc(project.id, () =>
         this.vscFileService.preparePush(
@@ -363,7 +346,6 @@ export class JsTemplateFileService {
       ...ctx,
       transaction,
     });
-    assertProjectNotArchived(project, 'write source');
     assertExpectedHead(prepared.expectedHeadCommitId, project.headCommitId, project.id);
     if (project.vscRepoId !== prepared.project.vscRepoId) {
       throw new JsTemplateError('JS_TEMPLATE_SOURCE_OUTDATED', 'JS Template source repository changed');
@@ -439,7 +421,6 @@ export class JsTemplateFileService {
   ): Promise<JsTemplateCommitRecord[]> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectNotArchived(project, 'read source');
       const commits = await this.runVsc(project.id, () =>
         this.vscFileService.listCommits(
           {
@@ -469,7 +450,6 @@ export class JsTemplateFileService {
   ): Promise<VscCommitDiffResult> {
     return this.withTransaction(ctx.transaction, async (transaction) => {
       const project = await this.projectService.getInternalProject(input.projectId, { ...ctx, transaction });
-      assertProjectNotArchived(project, 'read source');
       return this.runVsc(project.id, () =>
         this.vscFileService.diff(
           {
@@ -638,19 +618,6 @@ export class JsTemplateFileService {
   }
 }
 
-function assertProjectNotArchived(project: JsTemplateProjectInternalRecord, actionLabel: string) {
-  if (project.lifecycleStatus !== 'archived') {
-    return;
-  }
-
-  throw new JsTemplateError('JS_TEMPLATE_PROJECT_ARCHIVED', `Archived JS Template projects cannot ${actionLabel}`, {
-    details: {
-      projectId: project.id,
-      lifecycleStatus: project.lifecycleStatus,
-    },
-  });
-}
-
 function assertExpectedHead(
   expectedHeadCommitId: string | null,
   currentHeadCommitId: string | null,
@@ -668,23 +635,6 @@ function assertExpectedHead(
         projectId,
         expectedHeadCommitId,
         currentHeadCommitId,
-      },
-    },
-  );
-}
-
-function assertProjectArchived(project: JsTemplateProjectInternalRecord, actionLabel: string) {
-  if (project.lifecycleStatus === 'archived') {
-    return;
-  }
-
-  throw new JsTemplateError(
-    'JS_TEMPLATE_PROJECT_NOT_ARCHIVED',
-    `Only archived JS Template projects can ${actionLabel}`,
-    {
-      details: {
-        projectId: project.id,
-        lifecycleStatus: project.lifecycleStatus,
       },
     },
   );

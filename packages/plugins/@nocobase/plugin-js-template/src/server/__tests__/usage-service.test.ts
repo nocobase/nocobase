@@ -138,12 +138,6 @@ describe('plugin-js-template usage service', () => {
         expected: 'project_disabled',
       },
       {
-        name: 'project archived',
-        project: createProjectRecord({ id: 'jtp_pages', lifecycleStatus: 'archived' }),
-        template: createJsPageTemplateRecord(),
-        expected: 'project_archived',
-      },
-      {
         name: 'template missing',
         project: createProjectRecord({ id: 'jtp_pages' }),
         template: createJsPageTemplateRecord({ healthStatus: 'missing' }),
@@ -215,10 +209,6 @@ describe('plugin-js-template usage service', () => {
     await repositories.jsTemplateProjects.records[0].update({ lifecycleStatus: 'disabled' });
     await service.refreshUsagesForProject('jtp_pages');
     expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus')).toBe('project_disabled');
-
-    await repositories.jsTemplateProjects.records[0].update({ lifecycleStatus: 'archived' });
-    await service.refreshUsagesForProject('jtp_pages');
-    expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus')).toBe('project_archived');
 
     delete flowModelTrees.flow_js_page;
     await service.markFlowModelUsagesOwnerMissingForNodeTree({

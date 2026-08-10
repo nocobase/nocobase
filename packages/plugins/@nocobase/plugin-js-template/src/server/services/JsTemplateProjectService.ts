@@ -384,90 +384,10 @@ export class JsTemplateProjectService {
   ): Promise<JsTemplateProject> {
     assertLifecycleStatus(input.lifecycleStatus, 'lifecycleStatus');
     const requestId = getRequestId(ctx);
+    return this.withTransaction(ctx.transaction, async (transaction) => {
+      const current = await this.lockInternalProjectForUpdate(input.projectId, { ...ctx, transaction });
 
-    try {
-      return await this.withTransaction(ctx.transaction, async (transaction) => {
-        const current = await this.lockInternalProjectForUpdate(input.projectId, { ...ctx, transaction });
-
-        if (input.lifecycleStatus === 'archived') {
-          await this.assertRemoteSyncIdle(current.vscRepoId, transaction);
-        }
-
-        if (current.lifecycleStatus === 'archived' && input.lifecycleStatus !== 'archived') {
-          throw new JsTemplateError(
-            'JS_TEMPLATE_PROJECT_ARCHIVED',
-            'Archived JS Template projects cannot be re-enabled',
-            {
-              details: {
-                projectId: input.projectId,
-                currentLifecycleStatus: current.lifecycleStatus,
-                requestedLifecycleStatus: input.lifecycleStatus,
-              },
-            },
-          );
-        }
-
-        if (current.lifecycleStatus === input.lifecycleStatus) {
-          await this.auditService.recordLifecycleEvent({
-            projectId: input.projectId,
-            action: 'projectLifecycleChange',
-            result: 'success',
-            requestId,
-            actorUserId: ctx.actorUserId,
-            fromStatus: current.lifecycleStatus,
-            toStatus: current.lifecycleStatus,
-            message: 'JS Template lifecycle status already matches the requested status',
-            details: {
-              unchanged: true,
-            },
-            transaction,
-          });
-
-          return stripInternalProject(current);
-        }
-
-        const projectModel = this.db.getModel<Model<JsTemplateProjectInternalRecord>>(JS_TEMPLATE_COLLECTIONS.projects);
-        await projectModel.update(
-          {
-            lifecycleStatus: input.lifecycleStatus,
-          },
-          {
-            where: {
-              id: input.projectId,
-            },
-            transaction,
-          },
-        );
-
-        if (input.lifecycleStatus === 'archived') {
-          await this.runVsc(current.id, () =>
-            this.vscFileService.archiveRepository(
-              {
-                repoId: current.vscRepoId,
-              },
-              this.createVscContext({
-                ctx,
-                transaction,
-                requestId,
-                projectId: current.id,
-                aclAction: 'archive',
-                reason: 'archive js-template source repository',
-                allowedActions: ['archiveRepository'],
-              }),
-            ),
-          );
-        }
-
-        const next = await this.getInternalProject(input.projectId, { ...ctx, transaction });
-        await this.usageService?.refreshUsagesForProject(
-          input.projectId,
-          {
-            ...ctx,
-            transaction,
-            requestId,
-          },
-          'project_lifecycle_change',
-        );
+      if (current.lifecycleStatus === input.lifecycleStatus) {
         await this.auditService.recordLifecycleEvent({
           projectId: input.projectId,
           action: 'projectLifecycleChange',
@@ -475,43 +395,54 @@ export class JsTemplateProjectService {
           requestId,
           actorUserId: ctx.actorUserId,
           fromStatus: current.lifecycleStatus,
-          toStatus: next.lifecycleStatus,
-          message: 'JS Template lifecycle status changed',
+          toStatus: current.lifecycleStatus,
+          message: 'JS Template lifecycle status already matches the requested status',
+          details: {
+            unchanged: true,
+          },
           transaction,
         });
 
-        return stripInternalProject(next);
-      });
-    } catch (error) {
-      if (error instanceof JsTemplateError && error.code === 'JS_TEMPLATE_PROJECT_ARCHIVED') {
-        const current = await this.getInternalProject(input.projectId, ctx);
-        await this.recordLifecycleBlocked({
-          projectId: input.projectId,
-          requestId,
-          ctx,
-          fromStatus: current.lifecycleStatus,
-          toStatus: input.lifecycleStatus,
-          reasonCode: 'project_archived',
-          message: 'Archived JS Template projects cannot be re-enabled',
-          details: error.details,
-          transaction: ctx.transaction,
-        });
+        return stripInternalProject(current);
       }
-      throw error;
-    }
-  }
 
-  async archiveProject(
-    input: Omit<JsTemplateChangeLifecycleInput, 'lifecycleStatus'>,
-    ctx: JsTemplateServiceContext = {},
-  ): Promise<JsTemplateProject> {
-    return this.changeLifecycle(
-      {
-        ...input,
-        lifecycleStatus: 'archived',
-      },
-      ctx,
-    );
+      const projectModel = this.db.getModel<Model<JsTemplateProjectInternalRecord>>(JS_TEMPLATE_COLLECTIONS.projects);
+      await projectModel.update(
+        {
+          lifecycleStatus: input.lifecycleStatus,
+        },
+        {
+          where: {
+            id: input.projectId,
+          },
+          transaction,
+        },
+      );
+
+      const next = await this.getInternalProject(input.projectId, { ...ctx, transaction });
+      await this.usageService?.refreshUsagesForProject(
+        input.projectId,
+        {
+          ...ctx,
+          transaction,
+          requestId,
+        },
+        'project_lifecycle_change',
+      );
+      await this.auditService.recordLifecycleEvent({
+        projectId: input.projectId,
+        action: 'projectLifecycleChange',
+        result: 'success',
+        requestId,
+        actorUserId: ctx.actorUserId,
+        fromStatus: current.lifecycleStatus,
+        toStatus: next.lifecycleStatus,
+        message: 'JS Template lifecycle status changed',
+        transaction,
+      });
+
+      return stripInternalProject(next);
+    });
   }
 
   async deleteProject(
@@ -740,37 +671,11 @@ export class JsTemplateProjectService {
       actorUserId: ctx.actorUserId,
       fromStatus: lifecycleStatus,
       reasonCode: 'usages_exist',
-      message: 'JS Template project delete rejected because usages exist; archive instead',
+      message: 'JS Template project delete rejected because usages exist',
       details: {
         usageCount,
       },
       transaction,
-    });
-  }
-
-  private async recordLifecycleBlocked(input: {
-    projectId: string;
-    requestId: string;
-    ctx: JsTemplateServiceContext;
-    fromStatus: string | null;
-    toStatus: string | null;
-    reasonCode: string;
-    message: string;
-    details?: Record<string, unknown>;
-    transaction?: Transaction;
-  }): Promise<void> {
-    await this.auditService.recordLifecycleEvent({
-      projectId: input.projectId,
-      action: 'projectLifecycleChange',
-      result: 'blocked',
-      requestId: input.requestId,
-      actorUserId: input.ctx.actorUserId,
-      fromStatus: input.fromStatus,
-      toStatus: input.toStatus,
-      reasonCode: input.reasonCode,
-      message: input.message,
-      details: input.details,
-      transaction: input.transaction,
     });
   }
 

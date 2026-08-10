@@ -271,7 +271,7 @@ export const jsTemplateSchemas = {
       description: nullableString,
       lifecycleStatus: {
         type: 'string',
-        enum: ['enabled', 'disabled', 'archived'],
+        enum: ['enabled', 'disabled'],
       },
       healthStatus: {
         type: 'string',

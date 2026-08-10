@@ -960,7 +960,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     });
   });
 
-  it('rejects no-change saves and blocks archived repositories', async () => {
+  it('rejects no-change saves and accepts a write against the current repository Head', async () => {
     const repo = await projectService.createProject({ name: 'No Change Save', initialFiles: baselineSalesKpiFiles() });
     const first = await saveCurrentSource({
       projectId: repo.id,
@@ -990,19 +990,6 @@ describe('plugin-js-template saveSource runtime compile', () => {
       ],
     });
     expect(updated.commit.parentCommitId).toBe(first.commit.id);
-
-    await projectService.archiveProject({
-      projectId: repo.id,
-    });
-    await expect(
-      saveCurrentSource({
-        projectId: repo.id,
-        message: 'blocked save',
-        files: [],
-      }),
-    ).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PROJECT_ARCHIVED',
-    });
   });
 
   it('rejects a save when compilation fails and keeps the previous source and runtime', async () => {

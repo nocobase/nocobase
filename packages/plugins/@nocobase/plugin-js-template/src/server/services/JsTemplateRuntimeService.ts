@@ -296,9 +296,9 @@ export class JsTemplateRuntimeService {
     }
 
     const projectLifecycleStatus = String(project.get('lifecycleStatus') || '');
-    if (projectLifecycleStatus === 'disabled' || projectLifecycleStatus === 'archived') {
+    if (projectLifecycleStatus === 'disabled') {
       throw runtimeUnavailableError(`JS Template project lifecycle status is "${projectLifecycleStatus}"`, {
-        reasonCode: projectLifecycleStatus === 'disabled' ? 'project_disabled' : 'project_archived',
+        reasonCode: 'project_disabled',
         projectId: template.projectId,
         templateId: template.id,
         projectLifecycleStatus,

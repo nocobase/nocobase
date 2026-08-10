@@ -606,13 +606,6 @@ function assertDestinationProjectEnabled(project: SaveAsJsTemplateResult['projec
   if (project.lifecycleStatus === 'enabled') {
     return;
   }
-  if (project.lifecycleStatus === 'archived') {
-    throw new JsTemplateError(
-      'JS_TEMPLATE_PROJECT_ARCHIVED',
-      'Archived JS Template projects cannot receive a saved Template Entry',
-      { details: { projectId: project.id, lifecycleStatus: project.lifecycleStatus } },
-    );
-  }
   throw new JsTemplateError(
     'JS_TEMPLATE_PROJECT_DISABLED',
     'Disabled JS Template projects cannot receive a saved Template Entry',

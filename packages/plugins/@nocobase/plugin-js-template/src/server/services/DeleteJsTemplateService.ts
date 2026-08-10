@@ -13,7 +13,7 @@ import { randomUUID } from 'crypto';
 
 import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
 import { JsTemplateError } from '../../shared/errors';
-import type { DeleteJsTemplateInput, DeleteJsTemplateResult, JsTemplate, JsTemplateProject } from '../../shared/types';
+import type { DeleteJsTemplateInput, DeleteJsTemplateResult, JsTemplate } from '../../shared/types';
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import type { JsTemplatePreparedSave } from './JsTemplateCompileService';
 import { JsTemplateCompileService } from './JsTemplateCompileService';
@@ -66,8 +66,7 @@ export class DeleteJsTemplateService {
   }
 
   private async prepareDelete(template: JsTemplate, ctx: JsTemplateServiceContext): Promise<PreparedDeleteJsTemplate> {
-    const project = await this.projectService.getProject(template.projectId, ctx);
-    assertTemplateDeletionAllowed(project);
+    await this.projectService.getProject(template.projectId, ctx);
     await this.assertNoEffectiveUsages(template, ctx);
 
     const source = await this.fileService.pull(
@@ -115,8 +114,7 @@ export class DeleteJsTemplateService {
     ctx: JsTemplateServiceContext,
     transaction: Transaction,
   ): Promise<DeleteJsTemplateResult> {
-    const lockedProject = await this.projectService.lockInternalProjectForUpdate(prepared.template.projectId, ctx);
-    assertTemplateDeletionAllowed(lockedProject);
+    await this.projectService.lockInternalProjectForUpdate(prepared.template.projectId, ctx);
     const currentRecord = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
       filterByTk: prepared.template.id,
       transaction,
@@ -256,15 +254,6 @@ function assertSameTemplateSnapshot(expected: JsTemplate, current: JsTemplate, e
       details: { projectId: expected.projectId, templateId: expected.id },
     });
   }
-}
-
-function assertTemplateDeletionAllowed(project: Pick<JsTemplateProject, 'id' | 'lifecycleStatus'>): void {
-  if (project.lifecycleStatus !== 'archived') {
-    return;
-  }
-  throw new JsTemplateError('JS_TEMPLATE_PROJECT_ARCHIVED', 'Archived Source Projects are read-only', {
-    details: { projectId: project.id, lifecycleStatus: project.lifecycleStatus },
-  });
 }
 
 function usageExistsError(templateId: string, usageCount: number): JsTemplateError {

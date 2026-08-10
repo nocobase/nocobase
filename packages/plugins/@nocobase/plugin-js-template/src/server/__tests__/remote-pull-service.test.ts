@@ -160,17 +160,6 @@ describe('JsTemplateRemotePullService', () => {
     });
   });
 
-  it('rejects archived projects before remote network work', async () => {
-    const setup = await createMappedProject('Archived Pull');
-    await projectService.archiveProject({ projectId: setup.project.id });
-    adapter.advanceRemote(updatedFiles('Must not fetch'));
-    const fetch = vi.spyOn(adapter, 'fetchSnapshot');
-    const input = await createPullInput(setup.project.id, setup.remote.id, setup.project.headCommitId);
-
-    await expect(remotePullService.pull(input)).rejects.toMatchObject({ code: 'JS_TEMPLATE_PROJECT_ARCHIVED' });
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
   it('rejects a cross-repository remote before its credential or adapter can be used', async () => {
     const first = await createMappedProject('First Project');
     const second = await projectService.createProject({ name: 'Second Project', initialFiles: baselineFiles() });

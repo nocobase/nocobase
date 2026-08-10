@@ -53,13 +53,11 @@ export const JS_TEMPLATE_DESCRIPTOR_MAX_BYTES = 128 * 1024;
 export const JS_TEMPLATE_ACL_ACTIONS = [
   'list',
   'readSource',
-  'readArchivedSource',
   'readUsages',
   'writeSource',
   'create',
   'changeLifecycle',
   'delete',
-  'archive',
   'compilePreview',
   'updateUsages',
   'manageSyncSource',
@@ -67,7 +65,7 @@ export const JS_TEMPLATE_ACL_ACTIONS = [
   'pushToSyncSource',
 ] as const;
 
-export const JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES = ['enabled', 'disabled', 'archived'] as const;
+export const JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES = ['enabled', 'disabled'] as const;
 export const JS_TEMPLATE_PROJECT_HEALTH_STATUSES = ['pending', 'ready'] as const;
 export const JS_TEMPLATE_HEALTH_STATUSES = ['ready', 'missing'] as const;
 export const JS_TEMPLATE_USAGE_RESOLVED_STATUSES = [
@@ -75,7 +73,6 @@ export const JS_TEMPLATE_USAGE_RESOLVED_STATUSES = [
   'binding_outdated',
   'project_missing',
   'project_disabled',
-  'project_archived',
   'template_missing',
   'owner_missing',
   'settings_invalid',

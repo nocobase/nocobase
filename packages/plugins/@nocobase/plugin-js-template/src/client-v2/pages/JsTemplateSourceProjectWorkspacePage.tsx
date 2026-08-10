@@ -247,20 +247,6 @@ function JsTemplateSourceProjectWorkspacePage({
       try {
         const nextProject = await getProject(projectId);
         setProject(nextProject);
-        if (nextProject.lifecycleStatus === 'archived') {
-          setBaseFiles([]);
-          setFiles([]);
-          setFolders([]);
-          setActivePath(undefined);
-          setOpenPaths([]);
-          setBaseCommitSeq(undefined);
-          setBaseHeadCommitId(null);
-          setHistoryItems([]);
-          setHistoryNextBeforeSeq(null);
-          setNotice({ type: 'warning', message: t('Archived Source Projects are read-only') });
-          return;
-        }
-
         const pullResult = await pull({ projectId, includeContent: 'all' });
         const pulledFiles = normalizeWorkspaceFiles(pullResult.files || []);
         const nextFiles = pulledFiles;
@@ -308,7 +294,7 @@ function JsTemplateSourceProjectWorkspacePage({
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   hasUnsavedLocalChangesRef.current = hasUnsavedLocalChanges;
-  const canWrite = Boolean(project && project.lifecycleStatus !== 'archived');
+  const canWrite = Boolean(project);
   const hasBlockedDirtyChanges = dirtyChanges.some(
     (change) => !canChangeJsTemplateWorkspacePath(workspaceScope, change.path),
   );

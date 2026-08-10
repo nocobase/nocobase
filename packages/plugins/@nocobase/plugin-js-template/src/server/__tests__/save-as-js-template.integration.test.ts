@@ -1008,10 +1008,8 @@ describe('SaveAsJsTemplateService', () => {
     expect(operationModel.getValues()).toMatchObject({ status: 'completed' });
   });
 
-  it.each([
-    ['disabled', 'JS_TEMPLATE_PROJECT_DISABLED'],
-    ['archived', 'JS_TEMPLATE_PROJECT_ARCHIVED'],
-  ] as const)('rejects a %s destination before writing JS Page state', async (lifecycleStatus, code) => {
+  it('rejects a disabled destination before writing JS Page state', async () => {
+    const lifecycleStatus = 'disabled';
     const saveSource = vi.fn();
     const writeExternalBinding = vi.fn();
     const syncUsages = vi.fn();
@@ -1039,7 +1037,7 @@ describe('SaveAsJsTemplateService', () => {
         },
         { adapterContext: {} },
       ),
-    ).rejects.toMatchObject({ code });
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_PROJECT_DISABLED' });
     expect(saveSource).not.toHaveBeenCalled();
     expect(writeExternalBinding).not.toHaveBeenCalled();
     expect(syncUsages).not.toHaveBeenCalled();

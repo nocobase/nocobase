@@ -862,13 +862,6 @@ export async function materializePulledWorkspace(options: {
       }),
     );
   }
-  if (options.pull.project.lifecycleStatus === 'archived') {
-    throw new JsTemplateCliError(
-      translateCli('commands.jsTemplate.errors.archivedProject', undefined, {
-        fallback: 'Archived Source Projects cannot enter the local Agent workflow.',
-      }),
-    );
-  }
   const files = validatePulledFiles(options.pull.files || []);
   const pulledPaths = new Set(files.map((file) => file.path));
   if (!pulledPaths.has(options.template.entryPath) || !pulledPaths.has(options.template.descriptorPath)) {

@@ -226,11 +226,6 @@ describe('JsTemplateRuntimeService', () => {
         reasonCode: 'project_disabled',
       },
       {
-        name: 'archived project',
-        projectLifecycleStatus: 'archived',
-        reasonCode: 'project_archived',
-      },
-      {
         name: 'missing template',
         templateHealthStatus: 'missing',
         reasonCode: 'template_missing',

@@ -38,7 +38,6 @@ export const jsTemplateProjectActionNames = [
   'get',
   'updateMetadata',
   'changeLifecycle',
-  'archive',
   'delete',
   'inspectSourceArchive',
 ] as const;
@@ -72,13 +71,6 @@ const resourceActionRunners: Record<JsTemplateProjectActionName, ResourceActionR
       {
         projectId: requireProjectId(input),
         lifecycleStatus: requireLifecycleStatus(input),
-      },
-      currentUser,
-    ),
-  archive: (services, input, currentUser) =>
-    services.projectService.archiveProject(
-      {
-        projectId: requireProjectId(input),
       },
       currentUser,
     ),
@@ -186,19 +178,7 @@ async function inspectSourceArchive(
   input: ResourceActionInput,
   currentUser: JsTemplateServiceContext,
 ): Promise<JsTemplateInspectSourceArchiveResult> {
-  const project = await services.projectService.getProject(requireProjectId(input), currentUser);
-  if (project.lifecycleStatus === 'archived') {
-    throw new JsTemplateError(
-      'JS_TEMPLATE_PROJECT_ARCHIVED',
-      'Archived JS Template projects cannot import source archives',
-      {
-        details: {
-          projectId: project.id,
-          lifecycleStatus: project.lifecycleStatus,
-        },
-      },
-    );
-  }
+  await services.projectService.getProject(requireProjectId(input), currentUser);
 
   const files = await parseJsTemplateSourceArchive(
     requireString(input, 'zipBase64'),

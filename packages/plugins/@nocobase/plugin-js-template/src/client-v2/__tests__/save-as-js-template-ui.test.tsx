@@ -128,7 +128,6 @@ describe('SaveAsJsTemplate', () => {
         data: [
           { ...createProjectSummary('enabled'), id: 'jtp_enabled', name: 'enabled-project' },
           { ...createProjectSummary('disabled'), id: 'jtp_disabled', name: 'disabled-project' },
-          { ...createProjectSummary('archived'), id: 'jtp_archived', name: 'archived-project' },
         ],
       },
     }));
@@ -141,7 +140,6 @@ describe('SaveAsJsTemplate', () => {
     fireEvent.mouseDown(await screen.findByRole('combobox'));
     expect(await screen.findByText('enabled-project')).toBeTruthy();
     expect(screen.queryByText('disabled-project')).toBeNull();
-    expect(screen.queryByText('archived-project')).toBeNull();
   });
 
   it('cancels without submitting a Save as JS Template request', async () => {
@@ -434,7 +432,7 @@ function createContext(
   };
 }
 
-function createProjectSummary(lifecycleStatus: 'enabled' | 'disabled' | 'archived') {
+function createProjectSummary(lifecycleStatus: 'enabled' | 'disabled') {
   return {
     id: `jtp_${lifecycleStatus}`,
     name: `${lifecycleStatus}-project`,

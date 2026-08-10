@@ -152,49 +152,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     });
     expect(getValidator).not.toHaveBeenCalled();
   });
-
-  it('rejects archived projects before parsing the ZIP', async () => {
-    const getValidator = vi.fn(() => new JsTemplateValidator());
-    const projectService = {
-      getProject: vi.fn(async () => ({
-        id: 'jtp_archived',
-        lifecycleStatus: 'archived',
-      })),
-      getValidator,
-    } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource(
-      {} as Database,
-      projectService,
-      {} as JsTemplateCompileService,
-      {} as never,
-      {} as never,
-      'test',
-      {} as never,
-    );
-    const ctx = createActionContext({
-      projectId: 'jtp_archived',
-      zipBase64: 'not-base64',
-    });
-
-    await resource.actions?.inspectSourceArchive?.(
-      ctx,
-      vi.fn(async () => {}),
-    );
-
-    expect((ctx as { status?: number }).status).toBe(409);
-    expect((ctx as { body?: unknown }).body).toMatchObject({
-      errors: [
-        expect.objectContaining({
-          code: 'JS_TEMPLATE_PROJECT_ARCHIVED',
-          details: {
-            projectId: 'jtp_archived',
-            lifecycleStatus: 'archived',
-          },
-        }),
-      ],
-    });
-    expect(getValidator).not.toHaveBeenCalled();
-  });
 });
 
 function createActionContext(values: Record<string, unknown>): Context {

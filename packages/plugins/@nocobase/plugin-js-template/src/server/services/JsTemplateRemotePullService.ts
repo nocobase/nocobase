@@ -102,7 +102,6 @@ export class JsTemplateRemotePullService {
   ): Promise<JsTemplateRemotePullResult> {
     await this.permissionService.assertActionAllowed({ action: 'pullFromSyncSource', ctx });
     const initialProject = await this.projectService.getInternalProject(input.projectId, ctx);
-    assertProjectWritable(initialProject);
     const requestId = ctx.requestId || `remote-pull:${input.remoteId}`;
     let discovery: RemotePullDiscoveryResult;
     try {
@@ -170,7 +169,6 @@ export class JsTemplateRemotePullService {
           lockOwner: (transaction) =>
             this.projectService.lockInternalProjectForUpdate(input.projectId, { ...ctx, transaction }),
           applyOwnerSnapshot: async (transaction, remote, project) => {
-            assertProjectWritable(project);
             assertRemoteOwnsRepository(remote, project.vscRepoId);
             assertExpectedHead(input.expectedLocalCommitId, project.headCommitId);
             if (!prepared.source.changed) {
@@ -251,13 +249,6 @@ interface RemotePullOwnerApplyResult {
   compile: JsTemplateSaveSourceResult['compile'];
 }
 
-function assertProjectWritable(project: { id: string; lifecycleStatus: string }): void {
-  if (project.lifecycleStatus !== 'archived') {
-    return;
-  }
-  throw new JsTemplateError('JS_TEMPLATE_PROJECT_ARCHIVED', 'Archived JS Template projects cannot pull');
-}
-
 function assertRemoteOwnsRepository(remote: VscFileRemoteRecord, vscRepoId: string): void {
   if (remote.repoId === vscRepoId) {
     return;
@@ -285,9 +276,6 @@ function toRemoteFailureCode(error: unknown): RemoteSyncErrorCode {
     return error.code;
   }
   if (isJsTemplateError(error)) {
-    if (error.code === 'JS_TEMPLATE_PROJECT_ARCHIVED') {
-      return 'REPO_ARCHIVED';
-    }
     if (error.code === 'JS_TEMPLATE_SOURCE_OUTDATED') {
       return 'LOCAL_OUTDATED';
     }
