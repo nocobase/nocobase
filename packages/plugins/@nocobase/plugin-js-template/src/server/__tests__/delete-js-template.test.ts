@@ -120,8 +120,9 @@ describe('template-level JS Template deletion protection', () => {
       'src/client/js-actions/mark-won/entry.json',
     );
 
-    const catalog = await app.agent().post('/jsTemplates:listCatalog');
-    expect(catalog.body.data.filter((template: { projectId: string }) => template.projectId === projectId)).toEqual([
+    const remainingTemplates = await app.agent().post('/jsTemplates:list').send({ projectId });
+    expect(remainingTemplates.status).toBe(200);
+    expect(remainingTemplates.body.data).toEqual([
       expect.objectContaining({ id: String(remaining.get('id')), templateName: 'mark-won' }),
     ]);
     expect(

@@ -7,117 +7,113 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { getPackagesSync } from '@lerna/project';
-import fs from 'fs-extra';
-import path from 'path';
-import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { beforeAll, describe, expect, it } from 'vitest';
 
-import { getPluginTarballPath } from '../tarPlugin';
-
-type PackageExport = string | { types?: string; import?: string; require?: string };
-type PackageManifest = {
-  name?: string;
-  version?: string;
-  private?: boolean;
-  files?: string[];
-  exports?: Record<string, PackageExport>;
-  dependencies?: Record<string, string>;
-  peerDependencies?: Record<string, string>;
+type PackedPackageReport = {
+  name: string;
+  version: string;
+  tarball: string;
+  fileCount: number;
+  files: string[];
+  exportTargets: string[];
 };
 
-const repositoryRoot = path.resolve(__dirname, '../../../../..');
-const pluginPath = 'packages/plugins/@nocobase/plugin-js-template';
-const runJSPath = 'packages/core/runjs';
+type BoundaryReport = {
+  packages: {
+    runjs: PackedPackageReport;
+    plugin: PackedPackageReport;
+  };
+  requiredEntries: Array<{ specifier: string; resolvedPath: string; exportCount: number }>;
+  typescript: { importedEntries: string[]; resolutionModes: string[]; passed: boolean };
+  browserRoot: { blockedModules: string[]; inputs: string[]; prohibitedInputs: string[] };
+  installations: {
+    runjs: Array<{ path: string; version: string }>;
+    lezerCommon: Array<{ path: string; version: string }>;
+  };
+  codeMirror: { mixedParserPassed: boolean; resolvedLezerRoots: string[] };
+};
 
-function readText(relativePath: string) {
-  return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
-}
+type ReleaseManifest = { version: string };
 
-function readPackage(relativePath: string) {
-  return JSON.parse(readText(path.join(relativePath, 'package.json'))) as PackageManifest;
-}
-
-function getExportedFiles(pkg: PackageManifest) {
-  return Object.values(pkg.exports || {})
-    .flatMap((value) => (typeof value === 'string' ? [value] : [value.types, value.import, value.require]))
-    .filter((value): value is string => Boolean(value))
-    .map((value) => value.replace(/^\.\//, ''));
-}
-
-function isPackaged(file: string, packagedFiles: Set<string>) {
-  return [...packagedFiles].some((packagedFile) => file === packagedFile || file.startsWith(`${packagedFile}/`));
-}
+const checkoutRoot = path.resolve(__dirname, '../../../../..');
+const artifactRoot = path.resolve(process.env.NOCOBASE_PACKAGE_BOUNDARY_ROOT || checkoutRoot);
+const verifierPath = path.join(checkoutRoot, 'packages/core/runjs/scripts/verify-package-boundary.mjs');
+const requiredEntries = [
+  '@nocobase/runjs',
+  '@nocobase/runjs/compiler',
+  '@nocobase/runjs/js-template/client',
+  '@nocobase/runjs/workspace/client-v2',
+  '@nocobase/runjs/workspace/server',
+];
 
 describe('JS Template release boundary', () => {
-  it('publishes one canonical plugin and one canonical RunJS package on the release version', () => {
-    const releaseVersion = (JSON.parse(readText('lerna.json')) as { version: string }).version;
-    const plugin = readPackage(pluginPath);
-    const runJS = readPackage(runJSPath);
-    const workspacePackageNames = new Set(getPackagesSync(repositoryRoot).map((pkg) => pkg.name));
+  let report: BoundaryReport;
 
-    expect(plugin).toMatchObject({
+  beforeAll(() => {
+    const output = execFileSync(process.execPath, [verifierPath, '--json', '--repository-root', artifactRoot], {
+      cwd: checkoutRoot,
+      encoding: 'utf8',
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    report = JSON.parse(output) as BoundaryReport;
+  }, 240_000);
+
+  it('packs the canonical packages on the repository release version', () => {
+    const releaseManifest = JSON.parse(
+      fs.readFileSync(path.join(artifactRoot, 'lerna.json'), 'utf8'),
+    ) as ReleaseManifest;
+    const releaseVersion = releaseManifest.version;
+
+    expect(report.packages.runjs).toMatchObject({
+      name: '@nocobase/runjs',
+      version: releaseVersion,
+      tarball: expect.stringMatching(/\.tgz$/u),
+    });
+    expect(report.packages.plugin).toMatchObject({
       name: '@nocobase/plugin-js-template',
       version: releaseVersion,
-      dependencies: { '@nocobase/runjs': releaseVersion },
+      tarball: expect.stringMatching(/\.tgz$/u),
     });
-    expect(plugin.dependencies).not.toHaveProperty('@nocobase/plugin-js-template');
-    expect(runJS).toMatchObject({ name: '@nocobase/runjs', version: releaseVersion });
-    expect(runJS.exports).toHaveProperty('./js-template/client');
-    expect(runJS.exports).toHaveProperty('./workspace/server');
-    expect(workspacePackageNames).toContain('@nocobase/plugin-js-template');
-    expect(workspacePackageNames).toContain('@nocobase/runjs');
-    expect([...workspacePackageNames].filter((name) => name === plugin.name)).toEqual([plugin.name]);
-    expect([...workspacePackageNames].filter((name) => name === runJS.name)).toEqual([runJS.name]);
   });
 
-  it('keeps the consolidated package after framework hosts in the build graph', () => {
-    const clientV2 = readPackage('packages/core/client-v2');
-    const server = readPackage('packages/core/server');
-    const preset = readPackage('packages/presets/nocobase');
-    const runJS = readPackage(runJSPath);
-    const buildSource = readText('packages/core/build/src/build.ts');
-    const buildConstants = readText('packages/core/build/src/constant.ts');
+  it.each(['runjs', 'plugin'] as const)(
+    'contains every %s public export target in the actual pack file list',
+    (key) => {
+      const packageReport = report.packages[key];
 
-    expect(clientV2.dependencies).not.toHaveProperty('@nocobase/runjs');
-    expect(server.dependencies).not.toHaveProperty('@nocobase/runjs');
-    expect(preset.dependencies).not.toHaveProperty('@nocobase/runjs');
-    expect(runJS.peerDependencies).toMatchObject({
-      '@nocobase/client-v2': '2.x',
-      '@nocobase/server': '2.x',
-    });
-    expect(buildSource).toContain('const runJSCore = packages.find((item) => item.location === CORE_RUNJS)');
-    expect(buildConstants).toContain("CORE_RUNJS = path.join(PACKAGES_PATH, 'core/runjs')");
-  });
+      expect(packageReport.exportTargets.length).toBeGreaterThan(0);
+      expect(packageReport.fileCount).toBe(packageReport.files.length);
+      expect(packageReport.files).toEqual(expect.arrayContaining(packageReport.exportTargets));
+    },
+  );
 
-  it('declares every public plugin entry within the packaged release boundary', () => {
-    const plugin = readPackage(pluginPath);
-    const packagedFiles = new Set(plugin.files || []);
-    const exportedFiles = getExportedFiles(plugin).filter((file) => file !== 'package.json');
-    const packageRoot = path.join(repositoryRoot, pluginPath);
-
-    expect(exportedFiles).not.toHaveLength(0);
-    for (const file of exportedFiles) {
-      expect(isPackaged(file, packagedFiles)).toBe(true);
-      const relativeTarget = path.relative(packageRoot, path.resolve(packageRoot, file));
-      expect(path.isAbsolute(relativeTarget)).toBe(false);
-      expect(relativeTarget === '..' || relativeTarget.startsWith(`..${path.sep}`)).toBe(false);
-    }
-
-    const releaseVersion = (JSON.parse(readText('lerna.json')) as { version: string }).version;
-    if (!plugin.name || !plugin.version) {
-      throw new Error('The JS Template plugin package identity is incomplete');
-    }
+  it('imports the required runtime and declaration entries from the installed tarballs', () => {
+    expect(report.requiredEntries.map((entry) => entry.specifier)).toEqual(requiredEntries);
+    expect(report.requiredEntries.every((entry) => entry.exportCount > 0)).toBe(true);
     expect(
-      getPluginTarballPath({ name: plugin.name, version: plugin.version }, path.join(repositoryRoot, 'storage/tar')),
-    ).toBe(path.join(repositoryRoot, `storage/tar/@nocobase/plugin-js-template-${releaseVersion}.tgz`));
+      report.requiredEntries.every((entry) => entry.resolvedPath.startsWith('node_modules/@nocobase/runjs/')),
+    ).toBe(true);
+    expect(report.typescript).toEqual({
+      importedEntries: requiredEntries,
+      resolutionModes: ['NodeNext', 'Node'],
+      passed: true,
+    });
   });
 
-  it('externalizes the canonical RunJS package once', () => {
-    const buildPluginSource = readText('packages/core/build/src/buildPlugin.ts');
-    const externalStart = buildPluginSource.indexOf('const external = [');
-    const externalEnd = buildPluginSource.indexOf('];', externalStart);
-    const externalSource = buildPluginSource.slice(externalStart, externalEnd);
+  it('bundles the browser root without server or Node-only modules', () => {
+    expect(report.browserRoot.blockedModules).toEqual([]);
+    expect(report.browserRoot.prohibitedInputs).toEqual([]);
+    expect(report.browserRoot.inputs.some((input) => /@nocobase\/runjs\/lib\/index\.js$/u.test(input))).toBe(true);
+  });
 
-    expect(externalSource.match(/'@nocobase\/runjs'/g)).toHaveLength(1);
+  it('uses one installed RunJS package and compatible CodeMirror parser identities', () => {
+    expect(report.installations.runjs).toHaveLength(1);
+    expect(report.installations.runjs[0]).toMatchObject({ version: report.packages.runjs.version });
+    expect(report.installations.lezerCommon.length).toBeGreaterThan(0);
+    expect(report.codeMirror).toMatchObject({ mixedParserPassed: true });
+    expect(report.codeMirror.resolvedLezerRoots).toHaveLength(1);
   });
 });

@@ -111,6 +111,27 @@ vi.mock('../hooks/useJsTemplateCreateJobs', async () => {
   };
 });
 
+vi.mock('../pages/source-project-list/JsTemplateListToolbar', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../pages/source-project-list/JsTemplateListToolbar')>();
+  const React = await import('react');
+  const ActualToolbar = actual.JsTemplateListToolbar;
+
+  return {
+    ...actual,
+    JsTemplateListToolbar: (props: React.ComponentProps<typeof ActualToolbar>) =>
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(ActualToolbar, props),
+        React.createElement(
+          'button',
+          { onClick: () => props.onFilterChange({ name: { $includes: 'sales' } }), type: 'button' },
+          'Apply sales filter',
+        ),
+      ),
+  };
+});
+
 vi.mock('../components/JsTemplateSyncDrawer', async () => {
   const React = await import('react');
 
@@ -370,13 +391,11 @@ describe('JsTemplateSourceProjectsPage', () => {
       }),
     );
     expect(mocks.api.createProject.mock.calls[0][0]).not.toHaveProperty('zipBase64');
-    const creationRow = await screen.findByRole('row', { name: /Browser smoke/ });
-    expect(within(creationRow).getByText('Creation pending')).toBeInTheDocument();
-    expect(within(creationRow).getByRole('checkbox', { name: 'Creation task Browser smoke' })).toBeDisabled();
-    const creationCells = within(creationRow).getAllByRole('cell');
-    expect(creationCells[3]).toBeEmptyDOMElement();
-    expect(creationCells[4]).toBeEmptyDOMElement();
-    expect(creationCells[5]).toBeEmptyDOMElement();
+    const creationStatus = await screen.findByRole('status', { name: 'Creation status' });
+    expect(within(creationStatus).getByText('Browser smoke')).toBeInTheDocument();
+    expect(within(creationStatus).getByText('Creation pending')).toBeInTheDocument();
+    expect(within(screen.getByRole('table')).getByText('No Source Projects yet')).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'Creation task Browser smoke' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Create Source Project' })).not.toBeInTheDocument();
     expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
   });
@@ -577,6 +596,106 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
+  it('baselines historical terminal jobs outside the project table and limits terminal status history', async () => {
+    const activeJobs = Array.from({ length: 4 }, (_value, index) =>
+      createJobSummary({
+        id: `jtcj_active_${index + 1}`,
+        name: `active-${index + 1}`,
+        title: `Active ${index + 1}`,
+        status: index % 2 ? 'running' : 'pending',
+      }),
+    );
+    const historicalJobs = Array.from({ length: 20 }, (_value, index) =>
+      createJobSummary({
+        id: `jtcj_history_${index + 1}`,
+        name: `history-${index + 1}`,
+        title: `Historical ${index + 1}`,
+        status: index % 2 ? 'failed' : 'succeeded',
+        errorMessage: index % 2 ? `Historical failure ${index + 1}` : null,
+      }),
+    );
+    mocks.createJobs.initialJobs = [...activeJobs, ...historicalJobs];
+    mocks.api.listProjects.mockResolvedValueOnce([
+      {
+        id: 'jtp_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+      {
+        id: 'jtp_ops',
+        name: 'ops-widgets',
+        normalizedName: 'ops-widgets',
+        title: 'Ops widgets',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+    ]);
+
+    renderListPage();
+
+    const projectTable = screen.getByRole('table');
+    expect(await within(projectTable).findByText('Sales widgets')).toBeInTheDocument();
+    expect(within(projectTable).getByText('Ops widgets')).toBeInTheDocument();
+    expect(within(projectTable).getAllByRole('row')).toHaveLength(3);
+    expect(within(projectTable).queryByText('Creation succeeded')).not.toBeInTheDocument();
+
+    const creationStatus = screen.getByRole('status', { name: 'Creation status' });
+    for (const activeJob of activeJobs) {
+      expect(within(creationStatus).getByText(activeJob.title || activeJob.name)).toBeInTheDocument();
+    }
+    expect(within(creationStatus).getByText('Historical 1')).toBeInTheDocument();
+    expect(within(creationStatus).getByText('Historical 2')).toBeInTheDocument();
+    expect(within(creationStatus).getByText('Historical 3')).toBeInTheDocument();
+    expect(within(creationStatus).queryByText('Historical 4')).not.toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Historical 1')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Source Project creation failed: Historical/)).not.toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies the newest terminal transition and refreshes once when the same batch includes a success', async () => {
+    const newestFailed = createJobSummary({
+      id: 'jtcj_newest',
+      name: 'newest',
+      title: 'Newest failed',
+      status: 'pending',
+    });
+    const olderSucceeded = createJobSummary({
+      id: 'jtcj_older',
+      name: 'older',
+      title: 'Older succeeded',
+      status: 'running',
+    });
+    mocks.createJobs.initialJobs = [newestFailed, olderSucceeded];
+    renderListPage();
+    expect(await screen.findByText('Newest failed')).toBeInTheDocument();
+
+    const terminalJobs = [
+      { ...newestFailed, status: 'failed' as const, errorMessage: 'Newest safe failure' },
+      { ...olderSucceeded, status: 'succeeded' as const, resultProjectId: olderSucceeded.targetProjectId },
+    ];
+    await act(async () => {
+      mocks.createJobs.update(terminalJobs);
+    });
+
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByText('Source Project creation failed: Newest failed: Newest safe failure'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update(terminalJobs);
+    });
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps an initially failed creation until the user explicitly removes it', async () => {
     const failed = createJobSummary({
       status: 'failed',
@@ -587,8 +706,12 @@ describe('JsTemplateSourceProjectsPage', () => {
     renderListPage();
 
     expect(await screen.findByText('Safe failure')).toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation failed: Demo: Safe failure')).not.toBeInTheDocument();
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
     expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove creation task Demo' }));
+    const dismissButton = screen.getByRole('button', { name: 'Remove creation task Demo' });
+    dismissButton.focus();
+    await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
     expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
   });
@@ -935,6 +1058,67 @@ describe('JsTemplateSourceProjectsPage', () => {
     await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(2));
     expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_sales', lifecycleStatus: 'disabled' });
     expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_ops', lifecycleStatus: 'disabled' });
+  });
+
+  it('clears selection on filter changes and never batches a hidden project', async () => {
+    mocks.createJobs.initialJobs = [createJobSummary({ id: 'jtcj_active', title: 'Independent creation' })];
+    mocks.api.listProjects.mockResolvedValueOnce([
+      {
+        id: 'jtp_sales',
+        name: 'sales-widgets',
+        normalizedName: 'sales-widgets',
+        title: 'Sales widgets',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+      {
+        id: 'jtp_ops',
+        name: 'ops-widgets',
+        normalizedName: 'ops-widgets',
+        title: 'Ops widgets',
+        description: null,
+        lifecycleStatus: 'enabled',
+        healthStatus: 'ready',
+        headCommitId: null,
+      },
+    ]);
+    mocks.api.changeLifecycle.mockImplementation(async ({ projectId, lifecycleStatus }) => ({
+      id: projectId,
+      name: projectId,
+      normalizedName: projectId,
+      title: projectId,
+      description: null,
+      lifecycleStatus,
+      healthStatus: 'ready',
+      headCommitId: null,
+    }));
+
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Select Sales widgets' }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Ops widgets' }));
+    expect(screen.getByText('Selected 2')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Apply sales filter' }));
+
+    await waitFor(() => expect(screen.queryByText('Ops widgets')).not.toBeInTheDocument());
+    expect(screen.queryByText('Selected 2')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Batch actions/ })).toBeDisabled();
+    expect(screen.getByRole('status', { name: 'Creation status' })).toHaveTextContent('Independent creation');
+    expect(mocks.api.changeLifecycle).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Sales widgets' }));
+    await userEvent.click(screen.getByRole('button', { name: /Batch actions/ }));
+    await userEvent.click(await screen.findByText('Disable selected'));
+
+    await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1));
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_sales', lifecycleStatus: 'disabled' });
+    expect(mocks.api.changeLifecycle).not.toHaveBeenCalledWith({
+      projectId: 'jtp_ops',
+      lifecycleStatus: 'disabled',
+    });
   });
 
   it('changes enablement from the row switch', async () => {

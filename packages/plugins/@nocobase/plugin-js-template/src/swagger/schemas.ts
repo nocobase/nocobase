@@ -211,43 +211,6 @@ export const jsTemplateSchemas = {
       'Required optimistic-concurrency value from the workspace pull. Pass null only when the repository has no Head commit.',
     example: '93e5ce98-6ec0-4dc8-9fb8-035da1a83f18',
   },
-  JsTemplateCatalogAddTemplateRequest: {
-    type: 'object',
-    required: ['destination', 'expectedHeadCommitId', 'kind', 'templateName', 'title'],
-    properties: {
-      destination: {
-        type: 'object',
-        required: ['type', 'projectId'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['existing'],
-          },
-          projectId: {
-            type: 'string',
-            minLength: 1,
-          },
-        },
-        additionalProperties: false,
-      },
-      expectedHeadCommitId: {
-        $ref: '#/components/schemas/JsTemplateExpectedHeadCommitId',
-      },
-      kind: {
-        $ref: '#/components/schemas/JsTemplateKind',
-      },
-      templateName: {
-        type: 'string',
-        pattern: '^[a-z][a-z0-9-]*$',
-      },
-      title: {
-        type: 'string',
-        minLength: 1,
-      },
-      description: nullableString,
-    },
-    additionalProperties: false,
-  },
   JsTemplateSourceOutdatedErrorResponse: {
     type: 'object',
     required: ['errors'],
@@ -409,63 +372,6 @@ export const jsTemplateSchemas = {
         items: {
           $ref: '#/components/schemas/JsTemplateDiagnostic',
         },
-      },
-      createdAt: nullableDateTime,
-      updatedAt: nullableDateTime,
-    },
-  },
-  JsTemplateCatalogEntry: {
-    type: 'object',
-    required: [
-      'id',
-      'projectId',
-      'projectName',
-      'projectTitle',
-      'projectLifecycleStatus',
-      'kind',
-      'templateName',
-      'title',
-      'description',
-      'healthStatus',
-      'status',
-      'usageCount',
-    ],
-    properties: {
-      id: {
-        type: 'string',
-        description: 'Stable JS Template id.',
-      },
-      projectId: {
-        type: 'string',
-        description: 'Source Project id.',
-      },
-      projectName: {
-        type: 'string',
-      },
-      projectTitle: nullableString,
-      projectLifecycleStatus: {
-        type: 'string',
-        enum: ['enabled', 'disabled', 'archived'],
-      },
-      kind: {
-        $ref: '#/components/schemas/JsTemplateKind',
-      },
-      templateName: {
-        type: 'string',
-      },
-      title: nullableString,
-      description: nullableString,
-      healthStatus: {
-        type: 'string',
-        enum: ['ready', 'missing'],
-      },
-      status: {
-        type: 'string',
-        enum: ['ready', 'missing', 'disabled', 'archived'],
-      },
-      usageCount: {
-        type: 'integer',
-        minimum: 0,
       },
       createdAt: nullableDateTime,
       updatedAt: nullableDateTime,
@@ -1215,18 +1121,6 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/JsTemplate',
-      },
-    },
-  },
-  JsTemplateCatalogEntryListEnvelope: {
-    type: 'object',
-    required: ['data'],
-    properties: {
-      data: {
-        type: 'array',
-        items: {
-          $ref: '#/components/schemas/JsTemplateCatalogEntry',
-        },
       },
     },
   },

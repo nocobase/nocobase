@@ -452,6 +452,7 @@
   "renamed": "重命名",
   "unchanged": "未变更",
   "Creating": "创建中",
+  "Creation status": "创建状态",
   "Creation pending": "等待创建",
   "Creation running": "创建中",
   "Creation succeeded": "创建成功",

@@ -38,7 +38,6 @@ import {
 
 export const jsTemplateActionNames = [
   'list',
-  'listCatalog',
   'get',
   'listSelectable',
   'compilePreview',
@@ -66,7 +65,6 @@ interface JsTemplateActionServices {
 
 const resourceActionRunners: Record<JsTemplateActionName, ResourceActionRunner> = {
   list: (services, input, currentUser) => services.templateService.listTemplates(requireProjectId(input), currentUser),
-  listCatalog: (services, _input, currentUser) => services.templateService.listCatalog(currentUser),
   get: (services, input, currentUser) => services.templateService.getTemplate(requireTemplateId(input), currentUser),
   listSelectable: (services, input, currentUser) =>
     services.runtimeService.listSelectableTemplates(

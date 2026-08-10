@@ -95,6 +95,42 @@ describe('useJsTemplateCreateJobs', () => {
     expect(mocks.api.request).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps newest-first terminal results and stops polling after every active job finishes', async () => {
+    vi.useFakeTimers();
+    const newest = createJob({ id: 'jtcj_newest', title: 'Newest', status: 'pending' });
+    const older = createJob({ id: 'jtcj_older', title: 'Older', status: 'running' });
+    mocks.api.request.mockResolvedValueOnce({ data: { data: { jobs: [newest, older] } } }).mockResolvedValueOnce({
+      data: {
+        data: {
+          jobs: [
+            { ...newest, status: 'failed', errorMessage: 'Safe failure' },
+            { ...older, status: 'succeeded', resultProjectId: older.targetProjectId },
+          ],
+        },
+      },
+    });
+    const { result } = renderHook(() => useJsTemplateCreateJobs());
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(result.current.jobs.map((job) => job.id)).toEqual(['jtcj_newest', 'jtcj_older']);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500);
+    });
+    expect(result.current.jobs).toEqual([
+      expect.objectContaining({ id: 'jtcj_newest', status: 'failed' }),
+      expect.objectContaining({ id: 'jtcj_older', status: 'succeeded' }),
+    ]);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(7500);
+    });
+    expect(mocks.api.request).toHaveBeenCalledTimes(2);
+  });
+
   it('observes another hook dismissal only after an explicit refresh', async () => {
     let visibleJobs = [createJob({ status: 'failed', errorMessage: 'Safe failure' })];
     mocks.api.request.mockImplementation((options: { url: string }) => {

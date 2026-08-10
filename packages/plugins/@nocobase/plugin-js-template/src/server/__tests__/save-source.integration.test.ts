@@ -132,6 +132,112 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(runtimeArtifact.code).toContain('Sales KPI');
   });
 
+  it('adds a sibling Template through Head CAS without replacing shared source, project metadata, or history', async () => {
+    const repo = await projectService.createProject({
+      name: 'Shared Source Save',
+      title: 'Shared source project',
+      description: 'Metadata must remain unchanged',
+      initialFiles: [
+        ...validSalesKpiFiles(),
+        {
+          path: 'src/shared/format.ts',
+          content: 'export const format = (value: string) => `shared:${value}`;\n',
+          language: 'typescript',
+        },
+        {
+          path: 'README.md',
+          content: '# Shared source metadata\n',
+          language: 'markdown',
+        },
+      ],
+    });
+    const before = await projectService.getProject(repo.id);
+    const commitCountBefore = await app.db.getRepository('vscFileCommits').count();
+
+    const result = await runtimeCompileService.saveSource({
+      projectId: repo.id,
+      expectedHeadCommitId: before.headCommitId,
+      message: 'add sibling Template',
+      files: [
+        {
+          path: 'src/client/js-blocks/refresh-data/index.tsx',
+          content: 'ctx.render(<div>Refresh data</div>);\n',
+          language: 'typescript',
+        },
+        {
+          path: 'src/client/js-blocks/refresh-data/entry.json',
+          content: JSON.stringify({
+            schemaVersion: 1,
+            key: 'refresh-data',
+            title: 'Refresh data',
+            description: 'Second sibling Template',
+          }),
+          language: 'json',
+        },
+      ],
+    });
+
+    const after = await projectService.getProject(repo.id);
+    const pull = await fileService.pull({ projectId: repo.id, includeContent: 'all' });
+    const files = new Map((pull.files || []).map((file) => [file.path, file.content]));
+
+    expect(result.commit.parentCommitId).toBe(before.headCommitId);
+    expect(after).toMatchObject({
+      id: repo.id,
+      name: 'Shared Source Save',
+      title: 'Shared source project',
+      description: 'Metadata must remain unchanged',
+      headCommitId: result.commit.id,
+    });
+    expect(result.project).toMatchObject({
+      id: repo.id,
+      templateCount: 2,
+    });
+    expect(result.compile.templates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ templateName: 'sales-kpi', status: 'success' }),
+        expect.objectContaining({ templateName: 'refresh-data', status: 'success' }),
+      ]),
+    );
+    expect(files.get('src/client/js-blocks/sales-kpi/entry.json')).toContain('sales-kpi');
+    expect(files.get('src/client/js-blocks/refresh-data/entry.json')).toContain('Second sibling Template');
+    expect(files.get('src/shared/format.ts')).toContain('shared:${value}');
+    expect(files.get('README.md')).toBe('# Shared source metadata\n');
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBefore + 1);
+
+    await expect(
+      runtimeCompileService.saveSource({
+        projectId: repo.id,
+        expectedHeadCommitId: before.headCommitId,
+        message: 'reject stale sibling Template',
+        files: [
+          {
+            path: 'src/client/js-blocks/stale-entry/index.tsx',
+            content: 'ctx.render(<div>Stale</div>);\n',
+            language: 'typescript',
+          },
+          {
+            path: 'src/client/js-blocks/stale-entry/entry.json',
+            content: JSON.stringify({ schemaVersion: 1, key: 'stale-entry' }),
+            language: 'json',
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_SOURCE_OUTDATED',
+      status: 409,
+      details: {
+        expectedHeadCommitId: before.headCommitId,
+        currentHeadCommitId: result.commit.id,
+      },
+    });
+    await expect(projectService.getProject(repo.id)).resolves.toMatchObject({
+      headCommitId: result.commit.id,
+    });
+    await expect(app.db.getRepository('jsTemplates').count({ filter: { projectId: repo.id } })).resolves.toBe(2);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCountBefore + 1);
+  });
+
   it('only recompiles the Entry whose local source changed', async () => {
     const repo = await projectService.createProject({
       name: 'Incremental Entry Save',

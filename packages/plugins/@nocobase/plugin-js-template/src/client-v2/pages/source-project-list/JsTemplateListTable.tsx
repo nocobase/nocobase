@@ -8,76 +8,68 @@
  */
 
 import { DEFAULT_PAGE_SIZE, Table } from '@nocobase/client-v2';
-import { Button, Empty, Space, Spin, Switch, Tag, Typography } from 'antd';
+import { Button, Empty, Space, Switch, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
 
 import { JS_TEMPLATE_SUPPORTED_KINDS } from '../../../constants';
 import type { JsTemplateProjectLifecycleStatus, JsTemplateProject } from '../../../shared/types';
-import { getJsTemplateSyncErrorTranslationKey } from '../../hooks/useJsTemplateSync';
-import type { JsTemplateListRow, JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
+import type { JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
 
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 
 interface JsTemplateListTableProps {
   changingProjectIds: Set<string>;
-  dismissingCreateJobIds: Set<string>;
   loading: boolean;
   onChangeLifecycle: (project: JsTemplateProject, lifecycleStatus: ToggleLifecycleStatus) => void;
   onEditProject: (project: JsTemplateProject) => void;
-  onDismissCreateJob: (jobId: string) => void;
   onRemoveProject: (project: JsTemplateProject) => void;
   onSelectProject: (projectId: string, panel: 'source' | 'sync') => void;
   onSelectedRowKeysChange: (selectedRowKeys: React.Key[]) => void;
+  projects: JsTemplateProject[];
   removingProjectIds: Set<string>;
-  rows: JsTemplateListRow[];
   selectedRowKeys: React.Key[];
   t: JsTemplateListTranslate;
 }
 
 export function JsTemplateListTable({
   changingProjectIds,
-  dismissingCreateJobIds,
   loading,
   onChangeLifecycle,
   onEditProject,
-  onDismissCreateJob,
   onRemoveProject,
   onSelectProject,
   onSelectedRowKeysChange,
+  projects,
   removingProjectIds,
-  rows,
   selectedRowKeys,
   t,
 }: JsTemplateListTableProps) {
-  const columns = useMemo<ColumnsType<JsTemplateListRow>>(
+  const columns = useMemo<ColumnsType<JsTemplateProject>>(
     () => [
       {
         title: t('Source Project'),
         dataIndex: 'name',
         sorter: (left, right) =>
-          compareText(getListRowTitle(left), getListRowTitle(right)) ||
-          compareText(getListRowName(left), getListRowName(right)),
+          compareText(left.title || left.name, right.title || right.name) || compareText(left.name, right.name),
         width: 220,
-        render: (_value, row) => (
+        render: (_value, project) => (
           <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
             <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
-              {getListRowTitle(row)}
+              {project.title || project.name}
             </Typography.Text>
-            {row.rowType === 'project' ? (
-              <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
-                {row.project.name}
-              </Typography.Text>
-            ) : null}
+            <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
+              {project.name}
+            </Typography.Text>
           </Space>
         ),
       },
       {
         title: t('Description'),
         dataIndex: 'description',
-        sorter: (left, right) => compareText(getListRowDescription(left), getListRowDescription(right)),
-        render: (_value, row) => {
-          const description = getListRowDescription(row);
+        sorter: (left, right) => compareText(left.description, right.description),
+        render: (_value, project) => {
+          const description = project.description;
           return (
             <Typography.Text ellipsis={{ tooltip: description || '-' }} style={{ maxWidth: 320 }} type="secondary">
               {description || '-'}
@@ -88,13 +80,9 @@ export function JsTemplateListTable({
       {
         title: t('Templates'),
         key: 'templates',
-        sorter: (left, right) => getListRowTemplateCount(left) - getListRowTemplateCount(right),
+        sorter: (left, right) => getProjectTemplateCount(left) - getProjectTemplateCount(right),
         width: 250,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          const project = row.project;
+        render: (_value, project) => {
           const kinds = JS_TEMPLATE_SUPPORTED_KINDS.filter((kind) => Boolean(project.templateKinds?.[kind]));
           return kinds.length ? (
             <Space size={[4, 4]} wrap>
@@ -112,162 +100,110 @@ export function JsTemplateListTable({
       {
         title: t('Updated at'),
         dataIndex: 'updatedAt',
-        sorter: (left, right) =>
-          getDateTimestamp(getListRowUpdatedAt(left)) - getDateTimestamp(getListRowUpdatedAt(right)),
+        sorter: (left, right) => getDateTimestamp(left.updatedAt) - getDateTimestamp(right.updatedAt),
         width: 180,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          return (
-            <Space direction="vertical" size={0}>
-              <Typography.Text>{formatDate(row.project.updatedAt)}</Typography.Text>
-              <Typography.Text type="secondary">
-                {t('Created at')}: {formatDate(row.project.createdAt)}
-              </Typography.Text>
-            </Space>
-          );
-        },
+        render: (_value, project) => (
+          <Space direction="vertical" size={0}>
+            <Typography.Text>{formatDate(project.updatedAt)}</Typography.Text>
+            <Typography.Text type="secondary">
+              {t('Created at')}: {formatDate(project.createdAt)}
+            </Typography.Text>
+          </Space>
+        ),
       },
       {
         title: t('Enabled'),
         dataIndex: 'lifecycleStatus',
         align: 'center',
         sorter: (left, right) =>
-          Number(left.rowType === 'project' && left.project.lifecycleStatus === 'enabled') -
-          Number(right.rowType === 'project' && right.project.lifecycleStatus === 'enabled'),
+          Number(left.lifecycleStatus === 'enabled') - Number(right.lifecycleStatus === 'enabled'),
         width: 100,
-        render: (_value: JsTemplateProjectLifecycleStatus, row) => {
-          if (row.rowType === 'creation-job') {
-            return null;
-          }
-          const project = row.project;
-          return (
-            <span onClick={(event) => event.stopPropagation()}>
-              <Switch
-                aria-label={`${t('Enabled')} ${project.title || project.name}`}
-                checked={project.lifecycleStatus === 'enabled'}
-                loading={changingProjectIds.has(project.id)}
-                onChange={(checked) => {
-                  onChangeLifecycle(project, checked ? 'enabled' : 'disabled');
-                }}
-                size="small"
-              />
-            </span>
-          );
-        },
+        render: (_value: JsTemplateProjectLifecycleStatus, project) => (
+          <span onClick={(event) => event.stopPropagation()}>
+            <Switch
+              aria-label={`${t('Enabled')} ${project.title || project.name}`}
+              checked={project.lifecycleStatus === 'enabled'}
+              loading={changingProjectIds.has(project.id)}
+              onChange={(checked) => {
+                onChangeLifecycle(project, checked ? 'enabled' : 'disabled');
+              }}
+              size="small"
+            />
+          </span>
+        ),
       },
       {
         title: t('Actions'),
         key: 'actions',
         width: 350,
-        render: (_value, row) => {
-          if (row.rowType === 'creation-job') {
-            const job = row.job;
-            const terminal = job.status === 'succeeded' || job.status === 'failed';
-            return (
-              <Space aria-live="polite" role="status" size="small" wrap>
-                {terminal ? null : <Spin size="small" />}
-                <Tag color={job.status === 'failed' ? 'error' : job.status === 'succeeded' ? 'success' : 'processing'}>
-                  {creationStatusLabel(job.status, t)}
-                </Tag>
-                {job.status === 'failed' ? (
-                  <Typography.Text type="danger">{creationFailureMessage(job, t)}</Typography.Text>
-                ) : null}
-                {terminal ? (
-                  <Button
-                    aria-label={`${t('Remove creation task')} ${job.title || job.name}`}
-                    loading={dismissingCreateJobIds.has(job.id)}
-                    onClick={() => onDismissCreateJob(job.id)}
-                    size="small"
-                    style={TABLE_ACTION_BUTTON_STYLE}
-                    type="link"
-                  >
-                    {t('Remove')}
-                  </Button>
-                ) : null}
-              </Space>
-            );
-          }
-          const project = row.project;
-          return (
-            <Space size="small" onClick={(event) => event.stopPropagation()}>
-              <Button
-                aria-label={t('Edit code')}
-                onClick={() => onSelectProject(project.id, 'source')}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Edit code')}
-              </Button>
-              <Button
-                aria-label={t('Sync code')}
-                onClick={() => onSelectProject(project.id, 'sync')}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Sync code')}
-              </Button>
-              <Button
-                aria-label={`${t('Edit details')} ${project.title || project.name}`}
-                onClick={() => onEditProject(project)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Edit details')}
-              </Button>
-              <Button
-                aria-label={t('Remove')}
-                danger
-                loading={removingProjectIds.has(project.id)}
-                onClick={() => onRemoveProject(project)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Remove')}
-              </Button>
-            </Space>
-          );
-        },
+        render: (_value, project) => (
+          <Space size="small" onClick={(event) => event.stopPropagation()}>
+            <Button
+              aria-label={t('Edit code')}
+              onClick={() => onSelectProject(project.id, 'source')}
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Edit code')}
+            </Button>
+            <Button
+              aria-label={t('Sync code')}
+              onClick={() => onSelectProject(project.id, 'sync')}
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Sync code')}
+            </Button>
+            <Button
+              aria-label={`${t('Edit details')} ${project.title || project.name}`}
+              onClick={() => onEditProject(project)}
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Edit details')}
+            </Button>
+            <Button
+              aria-label={t('Remove')}
+              danger
+              loading={removingProjectIds.has(project.id)}
+              onClick={() => onRemoveProject(project)}
+              size="small"
+              style={TABLE_ACTION_BUTTON_STYLE}
+              type="link"
+            >
+              {t('Remove')}
+            </Button>
+          </Space>
+        ),
       },
     ],
-    [
-      changingProjectIds,
-      dismissingCreateJobIds,
-      onChangeLifecycle,
-      onDismissCreateJob,
-      onEditProject,
-      onRemoveProject,
-      onSelectProject,
-      removingProjectIds,
-      t,
-    ],
+    [changingProjectIds, onChangeLifecycle, onEditProject, onRemoveProject, onSelectProject, removingProjectIds, t],
   );
 
   return (
-    <Table<JsTemplateListRow>
+    <Table<JsTemplateProject>
       columns={columns}
-      dataSource={rows}
+      dataSource={projects}
       loading={loading}
       locale={{
         emptyText: <Empty description={t('No Source Projects yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
       }}
       pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
-      rowKey={(row) => (row.rowType === 'project' ? row.project.id : `create-job:${row.job.id}`)}
+      rowKey="id"
       rowSelection={{
         selectedRowKeys,
         onChange: (keys) => onSelectedRowKeysChange(keys),
-        getCheckboxProps: (row) => ({
-          disabled: row.rowType === 'creation-job',
-          'aria-label':
-            row.rowType === 'creation-job'
-              ? `${t('Creation task')} ${row.job.title || row.job.name}`
-              : `${t('Select')} ${row.project.title || row.project.name}`,
-        }),
+        getCheckboxProps: (project) => {
+          const label = `${t('Select')} ${project.title || project.name}`;
+          const checkboxProps: React.AriaAttributes & { title: string } = {
+            'aria-label': label,
+            title: label,
+          };
+          return checkboxProps;
+        },
       }}
       scroll={{ x: 1250 }}
       showIndex={false}
@@ -294,51 +230,6 @@ function getProjectTemplateCount(project: JsTemplateProject): number {
   }
 
   return JS_TEMPLATE_SUPPORTED_KINDS.reduce((total, kind) => total + (project.templateKinds?.[kind] || 0), 0);
-}
-
-function getListRowTitle(row: JsTemplateListRow): string {
-  const record = row.rowType === 'project' ? row.project : row.job;
-  return record.title || record.name;
-}
-
-function getListRowName(row: JsTemplateListRow): string {
-  return row.rowType === 'project' ? row.project.name : row.job.name;
-}
-
-function getListRowDescription(row: JsTemplateListRow): string | null | undefined {
-  return row.rowType === 'project' ? row.project.description : row.job.description;
-}
-
-function getListRowTemplateCount(row: JsTemplateListRow): number {
-  return row.rowType === 'project' ? getProjectTemplateCount(row.project) : 0;
-}
-
-function creationStatusLabel(
-  status: Extract<JsTemplateListRow, { rowType: 'creation-job' }>['job']['status'],
-  t: JsTemplateListTranslate,
-): string {
-  switch (status) {
-    case 'pending':
-      return t('Creation pending');
-    case 'running':
-      return t('Creation running');
-    case 'succeeded':
-      return t('Creation succeeded');
-    case 'failed':
-      return t('Creation failed');
-  }
-}
-
-function creationFailureMessage(
-  job: Extract<JsTemplateListRow, { rowType: 'creation-job' }>['job'],
-  t: JsTemplateListTranslate,
-): string {
-  const errorKey = getJsTemplateSyncErrorTranslationKey(job.errorCode, job.errorReasonCode);
-  return errorKey ? t(errorKey) : job.errorMessage || t('JS Template creation failed');
-}
-
-function getListRowUpdatedAt(row: JsTemplateListRow): string | null | undefined {
-  return row.rowType === 'project' ? row.project.updatedAt : row.job.updatedAt;
 }
 
 function getDateTimestamp(value?: string | null): number {

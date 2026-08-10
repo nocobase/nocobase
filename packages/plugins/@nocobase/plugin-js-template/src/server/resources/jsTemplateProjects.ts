@@ -13,8 +13,6 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 import { uid } from '@nocobase/utils';
 
 import { JS_TEMPLATE_PROJECT_LIFECYCLE_STATUSES } from '../../constants';
-import { JS_TEMPLATE_SUPPORTED_KINDS, type JsTemplateKind } from '../../constants';
-import type { JsTemplateCatalogAddTemplateInput } from '../../shared/catalogAuthoring';
 import { JsTemplateError } from '../../shared/errors';
 import type {
   JsTemplateCreateJobAcceptedResult,
@@ -29,7 +27,6 @@ import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner
 import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
-import { JsTemplateCatalogAuthoringService } from '../services/JsTemplateCatalogAuthoringService';
 import { JS_TEMPLATE_VALIDATION_LIMITS } from '../services/JsTemplateValidator';
 import { isStrictUtf8Text, parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 import { toJsTemplateSourceError } from '../services/errorContract';
@@ -37,7 +34,6 @@ import { createTypedResourceAction, getServiceContext, toRecord, type ResourceAc
 
 export const jsTemplateProjectActionNames = [
   'create',
-  'addTemplate',
   'list',
   'get',
   'updateMetadata',
@@ -59,7 +55,6 @@ interface JsTemplateProjectActionServices {
   db: Database;
   projectService: JsTemplateProjectService;
   runtimeCompileService: JsTemplateCompileService;
-  catalogAuthoringService: JsTemplateCatalogAuthoringService;
   createJobStore: JsTemplateCreateJobStore;
   createJobRunner: JsTemplateCreateJobRunner;
   applicationName: string;
@@ -68,8 +63,6 @@ interface JsTemplateProjectActionServices {
 
 const resourceActionRunners: Record<JsTemplateProjectActionName, ResourceActionRunner> = {
   create: (services, input, currentUser) => enqueueProjectCreation(services, input, currentUser),
-  addTemplate: (services, input, currentUser) =>
-    services.catalogAuthoringService.addTemplate(normalizeAddTemplateInput(input), currentUser),
   list: (services, _input, currentUser) => services.projectService.listProjects(currentUser),
   get: (services, input, currentUser) => services.projectService.getProject(requireProjectId(input), currentUser),
   updateMetadata: (services, input, currentUser) =>
@@ -103,7 +96,6 @@ export function createJsTemplateProjectsResource(
   db: Database,
   projectService: JsTemplateProjectService,
   runtimeCompileService: JsTemplateCompileService,
-  catalogAuthoringService: JsTemplateCatalogAuthoringService,
   createJobStore: JsTemplateCreateJobStore,
   createJobRunner: JsTemplateCreateJobRunner,
   applicationName: string,
@@ -113,7 +105,6 @@ export function createJsTemplateProjectsResource(
     db,
     projectService,
     runtimeCompileService,
-    catalogAuthoringService,
     createJobStore,
     createJobRunner,
     applicationName,
@@ -129,49 +120,6 @@ export function createJsTemplateProjectsResource(
       ]),
     ) as Record<JsTemplateProjectActionName, HandlerType>,
   };
-}
-
-function normalizeAddTemplateInput(input: ResourceActionInput): JsTemplateCatalogAddTemplateInput {
-  assertOnlyAddTemplateKeys(input);
-  const destination = requireRecord(input.destination, 'destination');
-  if (destination.type !== 'existing' || Object.keys(destination).some((key) => !['type', 'projectId'].includes(key))) {
-    throw invalidInput('destination must identify one existing Source Project');
-  }
-  return {
-    destination: {
-      type: 'existing',
-      projectId: requireString(destination, 'projectId', 'destination.projectId'),
-    },
-    expectedHeadCommitId: requireNullableString(input, 'expectedHeadCommitId'),
-    kind: requireJsTemplateKind(input),
-    templateName: requireString(input, 'templateName'),
-    title: requireString(input, 'title'),
-    description: optionalNullableString(input, 'description'),
-  };
-}
-
-function assertOnlyAddTemplateKeys(input: ResourceActionInput): void {
-  const allowed = new Set([
-    'resourceName',
-    'actionName',
-    'destination',
-    'expectedHeadCommitId',
-    'kind',
-    'templateName',
-    'title',
-    'description',
-  ]);
-  if (Object.keys(input).some((key) => typeof input[key] !== 'undefined' && !allowed.has(key))) {
-    throw invalidInput('Request contains unsupported fields');
-  }
-}
-
-function requireJsTemplateKind(input: ResourceActionInput): JsTemplateKind {
-  const value = requireString(input, 'kind');
-  if (!(JS_TEMPLATE_SUPPORTED_KINDS as readonly string[]).includes(value)) {
-    throw invalidInput('kind is invalid');
-  }
-  return value as JsTemplateKind;
 }
 
 function createJsTemplateProjectAction(
@@ -404,16 +352,6 @@ function optionalNullableString(input: ResourceActionInput, key: string, label =
   }
 
   return optionalString(input, key, label);
-}
-
-function requireNullableString(input: ResourceActionInput, key: string, label = key): string | null {
-  if (!Object.hasOwn(input, key)) {
-    throw invalidInput(`${label} is required`);
-  }
-  if (input[key] === null) {
-    return null;
-  }
-  return requireString(input, key, label);
 }
 
 function optionalNumber(input: ResourceActionInput, key: string, label = key): number | undefined {

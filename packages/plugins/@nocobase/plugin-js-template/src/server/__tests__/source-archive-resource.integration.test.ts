@@ -40,7 +40,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       runtimeCompileService,
       {} as never,
       {} as never,
-      {} as never,
       'test',
       {} as never,
     );
@@ -99,7 +98,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       {} as JsTemplateCompileService,
       {} as never,
       {} as never,
-      {} as never,
       'test',
       {} as never,
     );
@@ -135,7 +133,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       {} as JsTemplateCompileService,
       {} as never,
       {} as never,
-      {} as never,
       'test',
       {} as never,
     );
@@ -169,7 +166,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       {} as Database,
       projectService,
       {} as JsTemplateCompileService,
-      {} as never,
       {} as never,
       {} as never,
       'test',

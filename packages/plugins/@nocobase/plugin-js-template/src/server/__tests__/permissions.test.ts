@@ -78,7 +78,12 @@ describe('plugin-js-template permission service', () => {
     expect(managementSnippet?.actions).not.toContain('jsTemplate:updateMeta');
     expect(managementSnippet?.actions).not.toContain('jsTemplate:viewLogs');
     expect(managementSnippet?.actions).not.toContain('jsTemplate:sync');
-    expect(managementSnippet?.actions).toContain('jsTemplates:listCatalog');
+    expect(managementSnippet?.actions).not.toContain('jsTemplates:listCatalog');
+    expect(managementSnippet?.actions).not.toContain('jsTemplateProjects:addTemplate');
+    expect(managementSnippet?.actions).toContain('jsTemplates:listSelectable');
+    expect(managementSnippet?.actions).toContain('jsTemplates:delete');
+    expect(managementSnippet?.actions).toContain('jsTemplateUsages:listUsages');
+    expect(managementSnippet?.actions).toContain('jsTemplateUsages:rebuildUsages');
     expect(managementSnippet?.actions).toContain('jsTemplateFiles:saveSource');
     expect(managementSnippet?.actions).toContain('jsTemplateCapabilities:get');
   });

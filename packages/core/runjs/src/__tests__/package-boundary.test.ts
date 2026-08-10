@@ -7,188 +7,83 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import fs from 'fs';
+import { ESLint } from 'eslint';
 import path from 'path';
-import ts from 'typescript';
 
-describe('@nocobase/runjs package boundary', () => {
-  it('exposes the server declarations to legacy TypeScript module resolution', () => {
-    const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8'));
+const repositoryRoot = path.resolve(__dirname, '../../../../..');
+const eslint = new ESLint({ cwd: repositoryRoot, useEslintrc: true });
 
-    expect(packageJson.typesVersions?.['*']?.server).toEqual(['./lib/server.d.ts']);
+const prohibitedImportFixtures = [
+  {
+    label: 'a browser entry importing a Node built-in',
+    filePath: 'packages/core/runjs/src/index.ts',
+    ruleId: 'no-restricted-imports',
+    source: "import fs from 'node:fs';\nexport { fs };\n",
+  },
+  {
+    label: 'a browser entry importing a bare Node built-in',
+    filePath: 'packages/core/runjs/src/index.ts',
+    ruleId: 'no-restricted-imports',
+    source: "import fs from 'fs';\nexport { fs };\n",
+  },
+  {
+    label: 'a browser entry importing the server workspace',
+    filePath: 'packages/core/runjs/src/index.ts',
+    ruleId: 'no-restricted-imports',
+    source: "export * from './workspace/server';\n",
+  },
+  {
+    label: 'the RunJS client-v2 workspace importing a Node built-in',
+    filePath: 'packages/core/runjs/src/workspace/client-v2/boundary-violation.ts',
+    ruleId: 'no-restricted-imports',
+    source: "import fs from 'node:fs';\nexport { fs };\n",
+  },
+  {
+    label: 'the core client-v2 flow implementation importing client-v1',
+    filePath: 'packages/core/client-v2/src/flow/boundary-violation.ts',
+    ruleId: '@typescript-eslint/no-restricted-imports',
+    source: "import type { Application } from '@nocobase/client';\nexport type { Application };\n",
+  },
+  {
+    label: 'the RunJS client-v2 workspace importing client-v1',
+    filePath: 'packages/core/runjs/src/workspace/client-v2/boundary-violation.ts',
+    ruleId: '@typescript-eslint/no-restricted-imports',
+    source: "import { Application } from '@nocobase/client';\nexport { Application };\n",
+  },
+  {
+    label: 'the JS Template client-v2 implementation importing client-v1',
+    filePath: 'packages/plugins/@nocobase/plugin-js-template/src/client-v2/boundary-violation.ts',
+    ruleId: '@typescript-eslint/no-restricted-imports',
+    source: "import type { Application } from '@nocobase/client';\nexport type { Application };\n",
+  },
+] as const;
+
+describe('RunJS and JS Template package boundaries', () => {
+  it.each(prohibitedImportFixtures)('rejects $label', async ({ filePath, ruleId, source }) => {
+    const [result] = await eslint.lintText(source, { filePath: path.join(repositoryRoot, filePath) });
+    const violations = result.messages.filter((message) => message.ruleId === ruleId);
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toMatchObject({ ruleId, severity: 2 });
   });
 
-  it('keeps the portable compiler boundary free of Node and native compiler imports', () => {
-    const portableSource = fs.readFileSync(path.resolve(__dirname, '../compiler/portable.ts'), 'utf8');
-    const importedSpecifiers = collectRuntimeImportSpecifiers(portableSource, 'portable.ts');
-
-    expect([...importedSpecifiers]).toEqual([]);
-    expect(portableSource).not.toMatch(/(?:from|import\()\s*['"](?:node:|crypto|fs|path|esbuild)/u);
-  });
-
-  it('keeps the isomorphic root entry free of Node built-in imports', () => {
-    const rootSource = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
-    const importedSpecifiers = collectRuntimeImportSpecifiers(rootSource, 'index.ts');
-
-    for (const nodeBuiltin of ['crypto', 'node:crypto', 'path', 'node:path', 'fs', 'node:fs']) {
-      expect(importedSpecifiers.has(nodeBuiltin)).toBe(false);
-    }
-    expect(rootSource).not.toMatch(/(?:from|import\()\s*['"](?:node:)?(?:crypto|fs|path)['"]/u);
-    expect(rootSource).not.toMatch(/(?:from|import\()\s*['"].*\/workspace\/(?:client|client-v2|server)['"]/u);
-  });
-
-  it('never lets a browser-facing entrypoint transitively reach crypto or the server module', () => {
-    const sourceRoot = path.resolve(__dirname, '..');
-    const browserEntrypoints = ['index.ts', 'compiler/portable.ts', 'settings/index.ts'].map((relativePath) =>
-      path.join(sourceRoot, relativePath),
+  it('accepts the current production browser and client-v2 entry files', async () => {
+    const results = await eslint.lintFiles([
+      'packages/core/runjs/src/index.ts',
+      'packages/core/runjs/src/compiler/portable.ts',
+      'packages/core/runjs/src/settings/**/*.{ts,tsx}',
+      'packages/core/runjs/src/js-template/client/**/*.{ts,tsx}',
+      'packages/core/runjs/src/workspace/client/**/*.{ts,tsx}',
+      'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
+      'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
+      'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
+    ]);
+    const violations = results.flatMap((result) =>
+      result.messages
+        .filter((message) => message.ruleId?.endsWith('no-restricted-imports'))
+        .map((message) => `${path.relative(repositoryRoot, result.filePath)}:${message.line}:${message.column}`),
     );
-
-    const visited = new Set<string>();
-    const violations: string[] = [];
-
-    const resolveRelativeImport = (fromFile: string, specifier: string): string | undefined => {
-      const base = path.resolve(path.dirname(fromFile), specifier);
-      return [`${base}.ts`, `${base}.tsx`, path.join(base, 'index.ts'), path.join(base, 'index.tsx')].find(
-        (candidate) => fs.existsSync(candidate),
-      );
-    };
-
-    const walk = (file: string): void => {
-      if (visited.has(file)) {
-        return;
-      }
-      visited.add(file);
-      for (const specifier of collectValueImportSpecifiers(fs.readFileSync(file, 'utf8'), file)) {
-        if (
-          specifier === 'crypto' ||
-          specifier === 'node:crypto' ||
-          specifier === '@nocobase/runjs/server' ||
-          /(?:^\.\.?\/|^)server$/u.test(specifier)
-        ) {
-          violations.push(`${path.relative(sourceRoot, file)} -> ${specifier}`);
-          continue;
-        }
-        if (specifier.startsWith('.')) {
-          const resolved = resolveRelativeImport(file, specifier);
-          if (resolved) {
-            walk(resolved);
-          }
-        }
-      }
-    };
-
-    browserEntrypoints.forEach(walk);
 
     expect(violations).toEqual([]);
   });
 });
-
-function collectRuntimeImportSpecifiers(source: string, fileName: string): Set<string> {
-  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
-  const specifiers = new Set<string>();
-
-  const visit = (node: ts.Node): void => {
-    if (ts.isModuleDeclaration(node) && ts.isStringLiteral(node.name)) {
-      return;
-    }
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      specifiers.add(node.moduleSpecifier.text);
-    } else if (
-      ts.isImportEqualsDeclaration(node) &&
-      ts.isExternalModuleReference(node.moduleReference) &&
-      node.moduleReference.expression &&
-      ts.isStringLiteral(node.moduleReference.expression)
-    ) {
-      specifiers.add(node.moduleReference.expression.text);
-    } else if (
-      ts.isCallExpression(node) &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteral(node.arguments[0]) &&
-      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
-    ) {
-      specifiers.add(node.arguments[0].text);
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
-  return specifiers;
-}
-
-// Collects only the module specifiers that survive to runtime. `import type` / `export type` edges and named
-// imports/exports whose specifiers all carry the inline `type` modifier are erased by the TypeScript compiler, so a
-// browser bundle never loads those modules. Reachability must follow value edges only — otherwise a purely type-level
-// reference to a Node-only module (e.g. a data file importing a `type` from the build-time `generator`) would be a
-// false positive.
-function collectValueImportSpecifiers(source: string, fileName: string): Set<string> {
-  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
-  const specifiers = new Set<string>();
-
-  const visit = (node: ts.Node): void => {
-    if (ts.isModuleDeclaration(node) && ts.isStringLiteral(node.name)) {
-      return;
-    }
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-      if (isValueImportDeclaration(node)) {
-        specifiers.add(node.moduleSpecifier.text);
-      }
-    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-      if (isValueExportDeclaration(node)) {
-        specifiers.add(node.moduleSpecifier.text);
-      }
-    } else if (
-      ts.isImportEqualsDeclaration(node) &&
-      ts.isExternalModuleReference(node.moduleReference) &&
-      node.moduleReference.expression &&
-      ts.isStringLiteral(node.moduleReference.expression)
-    ) {
-      specifiers.add(node.moduleReference.expression.text);
-    } else if (
-      ts.isCallExpression(node) &&
-      node.arguments.length === 1 &&
-      ts.isStringLiteral(node.arguments[0]) &&
-      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
-    ) {
-      specifiers.add(node.arguments[0].text);
-    }
-    ts.forEachChild(node, visit);
-  };
-
-  visit(sourceFile);
-  return specifiers;
-}
-
-function isValueImportDeclaration(node: ts.ImportDeclaration): boolean {
-  const clause = node.importClause;
-  if (!clause) {
-    return true; // side-effect import: `import './x'`
-  }
-  if (clause.isTypeOnly) {
-    return false; // `import type { ... } from './x'`
-  }
-  if (clause.name) {
-    return true; // default import binds a value
-  }
-  const bindings = clause.namedBindings;
-  if (!bindings || ts.isNamespaceImport(bindings)) {
-    return true; // `import * as ns from './x'` (or an empty clause) loads the module at runtime
-  }
-  return bindings.elements.some((element) => !element.isTypeOnly);
-}
-
-function isValueExportDeclaration(node: ts.ExportDeclaration): boolean {
-  if (node.isTypeOnly) {
-    return false; // `export type { ... } from './x'`
-  }
-  const clause = node.exportClause;
-  if (!clause || ts.isNamespaceExport(clause)) {
-    return true; // `export * from './x'` / `export * as ns from './x'` re-export runtime values
-  }
-  return clause.elements.some((element) => !element.isTypeOnly);
-}

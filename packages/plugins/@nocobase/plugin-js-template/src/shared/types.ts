@@ -293,25 +293,6 @@ export interface JsTemplate {
   updatedAt?: string | null;
 }
 
-export type JsTemplateCatalogStatus = JsTemplateHealthStatus | Exclude<JsTemplateProjectLifecycleStatus, 'enabled'>;
-
-export interface JsTemplateCatalogEntry {
-  id: string;
-  projectId: string;
-  projectName: string;
-  projectTitle: string | null;
-  projectLifecycleStatus: JsTemplateProjectLifecycleStatus;
-  kind: JsTemplateKind;
-  templateName: string;
-  title: string | null;
-  description: string | null;
-  healthStatus: JsTemplateHealthStatus;
-  status: JsTemplateCatalogStatus;
-  usageCount: number;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-}
-
 export type JsTemplateSaveSourceInput = Omit<JsTemplatePushInput, 'allowEmptyCommit'>;
 
 export type JsTemplateCompileTemplateStatus = 'success' | 'failed' | 'skipped';

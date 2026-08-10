@@ -35,6 +35,7 @@ import { useT } from '../locale';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
+import { JsTemplateCreationStatus } from './source-project-list/JsTemplateCreationStatus';
 import { JsTemplateListTable } from './source-project-list/JsTemplateListTable';
 import { JsTemplateListToolbar } from './source-project-list/JsTemplateListToolbar';
 import { JsTemplateProjectOverlays } from './source-project-list/JsTemplateProjectOverlays';
@@ -43,7 +44,6 @@ import { JsTemplateSyncDrawerShell } from './source-project-list/JsTemplateSyncD
 import type {
   CreateProjectFormValues,
   EditProjectFormValues,
-  JsTemplateListRow,
   ToggleLifecycleStatus,
 } from './source-project-list/types';
 import type { JsTemplateSourceProjectWorkspaceFooterActions } from './JsTemplateSourceProjectWorkspacePage';
@@ -152,6 +152,7 @@ function JsTemplateSourceProjectsPageInner() {
   const { createFromGit: createFromGitRequest } = useJsTemplateSync();
   const {
     jobs: createJobs,
+    loading: createJobsLoading,
     error: createJobsError,
     addAcceptedJob,
     dismiss: dismissCreateJob,
@@ -179,7 +180,8 @@ function JsTemplateSourceProjectsPageInner() {
   const [sourceFooterActions, setSourceFooterActions] = useState<JsTemplateSourceProjectWorkspaceFooterActions | null>(
     null,
   );
-  const handledTerminalCreateJobIds = useRef(new Set<string>());
+  const previousCreateJobStatusesRef = useRef<Map<string, JsTemplateCreateJobSummary['status']> | null>(null);
+  const createJobTransitionBatchRef = useRef(0);
   const [dismissingCreateJobIds, setDismissingCreateJobIds] = useState<Set<string>>(() => new Set());
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
@@ -216,51 +218,73 @@ function JsTemplateSourceProjectsPageInner() {
     loadProjects();
   }, [loadProjects]);
 
-  const handleSucceededJobs = useCallback(
-    async (jobs: JsTemplateCreateJobSummary[]) => {
-      for (const job of jobs) {
+  const handleCreateJobTransitions = useCallback(
+    async (jobs: JsTemplateCreateJobSummary[], batch: number) => {
+      const succeededJobs = jobs.filter((job) => job.status === 'succeeded');
+      for (const job of succeededJobs) {
         if (job.resultProjectId) {
           invalidateJsTemplateSettingsDescriptorCache(flowContext.api, job.resultProjectId);
           invalidateJsTemplateRuntimeCache(flowContext.api, job.resultProjectId);
         }
       }
-      const refreshed = await loadProjects();
-      if (refreshed) {
-        const job = jobs[jobs.length - 1];
+
+      if (succeededJobs.length) {
+        await loadProjects();
+      }
+      if (createJobTransitionBatchRef.current !== batch) {
+        return;
+      }
+
+      const latestJob = jobs[0];
+      if (latestJob.status === 'succeeded') {
         setNotice({
           type: 'success',
-          message: t('Source Project creation succeeded: {{name}}').replace('{{name}}', job.title || job.name),
+          message: t('Source Project creation succeeded: {{name}}').replace(
+            '{{name}}',
+            latestJob.title || latestJob.name,
+          ),
         });
+        return;
       }
+
+      const errorKey = getJsTemplateSyncErrorTranslationKey(latestJob.errorCode, latestJob.errorReasonCode);
+      setNotice({
+        type: 'error',
+        message: `${t('Source Project creation failed: {{name}}').replace(
+          '{{name}}',
+          latestJob.title || latestJob.name,
+        )}: ${errorKey ? t(errorKey) : latestJob.errorMessage || t('Source Project creation failed')}`,
+      });
     },
     [flowContext.api, loadProjects, t],
   );
 
   useEffect(() => {
-    const terminal = createJobs.filter(
-      (job) =>
-        (job.status === 'succeeded' || job.status === 'failed') && !handledTerminalCreateJobIds.current.has(job.id),
-    );
-    for (const job of terminal) {
-      handledTerminalCreateJobIds.current.add(job.id);
+    if (createJobsLoading) {
+      return;
     }
-    const succeeded = terminal.filter((job) => job.status === 'succeeded');
-    const lastFailed = terminal.findLast((job) => job.status === 'failed') || null;
 
-    if (succeeded.length) {
-      handleSucceededJobs(succeeded).catch(() => undefined);
+    const previousStatuses = previousCreateJobStatusesRef.current;
+    if (!previousStatuses) {
+      previousCreateJobStatusesRef.current = new Map(createJobs.map((job) => [job.id, job.status]));
+      return;
     }
-    if (lastFailed) {
-      const errorKey = getJsTemplateSyncErrorTranslationKey(lastFailed.errorCode, lastFailed.errorReasonCode);
-      setNotice({
-        type: 'error',
-        message: `${t('Source Project creation failed: {{name}}').replace(
-          '{{name}}',
-          lastFailed.title || lastFailed.name,
-        )}: ${errorKey ? t(errorKey) : lastFailed.errorMessage || t('Source Project creation failed')}`,
-      });
+
+    const transitionedJobs = createJobs.filter((job) => {
+      const previousStatus = previousStatuses.get(job.id);
+      return isActiveCreateJobStatus(previousStatus) && isTerminalCreateJobStatus(job.status);
+    });
+    for (const job of createJobs) {
+      previousStatuses.set(job.id, job.status);
     }
-  }, [createJobs, handleSucceededJobs, t]);
+
+    if (!transitionedJobs.length) {
+      return;
+    }
+
+    createJobTransitionBatchRef.current += 1;
+    handleCreateJobTransitions(transitionedJobs, createJobTransitionBatchRef.current).catch(() => undefined);
+  }, [createJobs, createJobsLoading, handleCreateJobTransitions]);
 
   const dismissTerminalCreateJob = useCallback(
     async (jobId: string) => {
@@ -316,16 +340,22 @@ function JsTemplateSourceProjectsPageInner() {
     () => visibleProjects.filter((project) => matchesJsTemplateProjectFilter(project, filterPayload)),
     [filterPayload, visibleProjects],
   );
-  const tableRows = useMemo<JsTemplateListRow[]>(
-    () => [
-      ...createJobs.map((job): JsTemplateListRow => ({ rowType: 'creation-job', job })),
-      ...filteredProjects.map((project): JsTemplateListRow => ({ rowType: 'project', project })),
-    ],
-    [createJobs, filteredProjects],
-  );
   const selectedProjects = useMemo(
-    () => visibleProjects.filter((project) => selectedRowKeys.includes(project.id)),
-    [selectedRowKeys, visibleProjects],
+    () => filteredProjects.filter((project) => selectedRowKeys.includes(project.id)),
+    [filteredProjects, selectedRowKeys],
+  );
+
+  const handleFilterChange = useCallback((nextFilterPayload: CompiledFilter) => {
+    setFilterPayload(nextFilterPayload);
+    setSelectedRowKeys([]);
+  }, []);
+
+  const handleSelectedRowKeysChange = useCallback(
+    (nextSelectedRowKeys: React.Key[]) => {
+      const filteredProjectIds = new Set<React.Key>(filteredProjects.map((project) => project.id));
+      setSelectedRowKeys(nextSelectedRowKeys.filter((key) => filteredProjectIds.has(key)));
+    },
+    [filteredProjects],
   );
 
   const closeCreateModal = useCallback(() => {
@@ -441,7 +471,9 @@ function JsTemplateSourceProjectsPageInner() {
 
   const batchChangeLifecycle = useCallback(
     async (lifecycleStatus: ToggleLifecycleStatus) => {
-      if (!selectedProjects.length) {
+      const selectedProjectIds = new Set(selectedRowKeys);
+      const batchProjects = filteredProjects.filter((project) => selectedProjectIds.has(project.id));
+      if (!batchProjects.length) {
         return;
       }
 
@@ -449,7 +481,7 @@ function JsTemplateSourceProjectsPageInner() {
       setNotice(null);
       try {
         const results = await Promise.allSettled(
-          selectedProjects.map((project) => changeLifecycleRequest({ projectId: project.id, lifecycleStatus })),
+          batchProjects.map((project) => changeLifecycleRequest({ projectId: project.id, lifecycleStatus })),
         );
         const updatedProjects = results
           .filter((result): result is PromiseFulfilledResult<JsTemplateProject> => result.status === 'fulfilled')
@@ -473,7 +505,7 @@ function JsTemplateSourceProjectsPageInner() {
         setBatchChanging(null);
       }
     },
-    [changeLifecycleRequest, selectedProjects, t],
+    [changeLifecycleRequest, filteredProjects, selectedRowKeys, t],
   );
 
   const changeProjectLifecycle = useCallback(
@@ -629,6 +661,14 @@ function JsTemplateSourceProjectsPageInner() {
         />
       ) : null}
 
+      <JsTemplateCreationStatus
+        dismissingJobIds={dismissingCreateJobIds}
+        jobs={createJobs}
+        marginBottom={token.margin}
+        onDismiss={dismissTerminalCreateJob}
+        t={t}
+      />
+
       <JsTemplateListToolbar
         batchChanging={Boolean(batchChanging)}
         compileT={compileT}
@@ -639,9 +679,9 @@ function JsTemplateSourceProjectsPageInner() {
         marginBottom={token.margin}
         onAdd={openCreateModal}
         onBatchChangeLifecycle={batchChangeLifecycle}
-        onFilterChange={setFilterPayload}
+        onFilterChange={handleFilterChange}
         onRefresh={loadProjects}
-        selectedCount={selectedRowKeys.length}
+        selectedCount={selectedProjects.length}
         t={t}
       />
 
@@ -650,13 +690,11 @@ function JsTemplateSourceProjectsPageInner() {
         loading={loading}
         onChangeLifecycle={changeProjectLifecycle}
         onEditProject={openEditDrawer}
-        onDismissCreateJob={dismissTerminalCreateJob}
         onRemoveProject={setRemoveTarget}
         onSelectProject={(projectId, panel) => selectProject(projectId, { panel })}
-        onSelectedRowKeysChange={setSelectedRowKeys}
+        onSelectedRowKeysChange={handleSelectedRowKeysChange}
+        projects={filteredProjects}
         removingProjectIds={removingProjectIds}
-        dismissingCreateJobIds={dismissingCreateJobIds}
-        rows={tableRows}
         selectedRowKeys={selectedRowKeys}
         t={t}
       />
@@ -833,6 +871,14 @@ function useJsTemplateProjectFilterCollection(): Collection | undefined {
 
 function parseDetailPanel(value: string | null): DetailPanel | null {
   return value === 'source' || value === 'sync' ? value : null;
+}
+
+function isActiveCreateJobStatus(status: JsTemplateCreateJobSummary['status'] | undefined): boolean {
+  return status === 'pending' || status === 'running';
+}
+
+function isTerminalCreateJobStatus(status: JsTemplateCreateJobSummary['status']): boolean {
+  return status === 'succeeded' || status === 'failed';
 }
 
 function getDateTimestamp(value?: string | null): number {

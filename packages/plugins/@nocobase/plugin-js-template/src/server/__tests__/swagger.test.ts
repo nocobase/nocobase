@@ -15,16 +15,8 @@ import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';
 import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 
 const publicActions = {
-  jsTemplateProjects: ['list', 'get', 'addTemplate'],
-  jsTemplates: [
-    'listCatalog',
-    'get',
-    'listSelectable',
-    'compileWorkspacePreview',
-    'saveAsJsTemplate',
-    'detachToInline',
-    'delete',
-  ],
+  jsTemplateProjects: ['list', 'get'],
+  jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline', 'delete'],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
   runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
@@ -61,6 +53,14 @@ describe('js-template swagger', () => {
     expect(Object.keys(swaggerDocument.components.schemas)).not.toEqual(
       expect.arrayContaining([expect.stringMatching(/^RawVscFile/u)]),
     );
+  });
+
+  it('does not expose the retired catalog authoring APIs or schemas', () => {
+    expect(swaggerDocument.paths).not.toHaveProperty('/jsTemplates:listCatalog');
+    expect(swaggerDocument.paths).not.toHaveProperty('/jsTemplateProjects:addTemplate');
+    expect(swaggerDocument.components.schemas).not.toHaveProperty('JsTemplateCatalogEntry');
+    expect(swaggerDocument.components.schemas).not.toHaveProperty('JsTemplateCatalogEntryListEnvelope');
+    expect(swaggerDocument.components.schemas).not.toHaveProperty('JsTemplateCatalogAddTemplateRequest');
   });
 
   it('documents JS Template resources directly with canonical tags and terminology', () => {
@@ -220,44 +220,5 @@ describe('js-template swagger', () => {
     expect(schemas.JsTemplateUsageListEnvelope.properties.data).toEqual({
       $ref: '#/components/schemas/JsTemplateUsageListResult',
     });
-  });
-
-  it('documents the entry-centric catalog projection', () => {
-    const schemas = swaggerDocument.components.schemas;
-    const listCatalog = swaggerDocument.paths['/jsTemplates:listCatalog'].post;
-
-    expect(listCatalog.responses[200].content['application/json'].schema).toEqual({
-      $ref: '#/components/schemas/JsTemplateCatalogEntryListEnvelope',
-    });
-    expect(schemas.JsTemplateCatalogEntry.required).toEqual(
-      expect.arrayContaining(['id', 'projectId', 'templateName', 'kind', 'status', 'usageCount']),
-    );
-    expect(schemas.JsTemplateCatalogEntryListEnvelope.properties.data.items).toEqual({
-      $ref: '#/components/schemas/JsTemplateCatalogEntry',
-    });
-  });
-
-  it('documents the Head-CAS action for adding a Template to an existing Source Project', () => {
-    const addTemplate = swaggerDocument.paths['/jsTemplateProjects:addTemplate'].post;
-    const requestSchema = addTemplate.requestBody.content['application/json'].schema;
-
-    expect(requestSchema).toEqual({
-      $ref: '#/components/schemas/JsTemplateCatalogAddTemplateRequest',
-    });
-    expect(swaggerDocument.components.schemas.JsTemplateCatalogAddTemplateRequest).toMatchObject({
-      required: ['destination', 'expectedHeadCommitId', 'kind', 'templateName', 'title'],
-      additionalProperties: false,
-    });
-    expect(swaggerDocument.components.schemas.JsTemplateCatalogAddTemplateRequest.properties.destination).toMatchObject(
-      {
-        required: ['type', 'projectId'],
-        additionalProperties: false,
-      },
-    );
-    expect(addTemplate.responses[200].content['application/json'].schema).toEqual({
-      $ref: '#/components/schemas/JsTemplateSaveSourceEnvelope',
-    });
-    expect(addTemplate.responses).toHaveProperty('409');
-    expect(addTemplate.responses).toHaveProperty('422');
   });
 });
