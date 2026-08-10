@@ -8,6 +8,7 @@
  */
 
 import { FlowEngine, FlowModel, type FlowSettingsContext, type StepDefinition } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
@@ -248,6 +249,8 @@ function createSurfaceModel(spec: SurfaceSpec, runJs: Record<string, unknown> = 
 function getStepByTitle(steps: Record<string, StepDefinition> | undefined, title: string) {
   return Object.values(steps || {}).find((step) => step.title === title);
 }
+
+setupRunJSTestHosts();
 
 describe('RunJS FlowModel surfaces', () => {
   beforeEach(() => {

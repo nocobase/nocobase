@@ -9,6 +9,7 @@
 
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { DATA_SOURCE_DIRTY_EVENT, FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RunJSSettingsDescriptorProviderRegistry } from '../../../../components/runjs-source';
@@ -55,6 +56,8 @@ function createModel(engine: FlowEngine, stepParams?: Record<string, Record<stri
 function renderModel(engine: FlowEngine, model: FlowModel) {
   return render(<FlowEngineProvider engine={engine}>{model.render()}</FlowEngineProvider>);
 }
+
+setupRunJSTestHosts();
 
 describe('JSPageModel', () => {
   afterEach(() => {

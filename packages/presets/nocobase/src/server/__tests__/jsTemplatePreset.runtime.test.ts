@@ -12,6 +12,7 @@ import { PresetNocoBase } from '../index';
 
 const JS_TEMPLATE_NAME = 'js-template';
 const JS_TEMPLATE_PACKAGE = '@nocobase/plugin-js-template';
+const DEFAULT_ADMIN_PORTAL_UID = '__default_admin__';
 
 async function getRootAgent(app: MockServer) {
   const rootUser = await app.db.getRepository('users').findOne({ filter: { 'roles.name': 'root' } });
@@ -27,10 +28,11 @@ async function expectInlineJsPageReady(app: MockServer, suffix: string) {
       idempotencyKey: `preset-inline-js-page-${suffix}`,
       title: `Preset Inline JS Page ${suffix}`,
       icon: 'CodeOutlined',
+      portalUid: DEFAULT_ADMIN_PORTAL_UID,
     },
   });
 
-  expect(pageResponse.status).toBe(200);
+  expect(pageResponse.status, pageResponse.body?.errors?.[0]?.message).toBe(200);
   expect(pageResponse.body.data).toMatchObject({
     pageType: 'js-page',
     workspaceStatus: 'ready',

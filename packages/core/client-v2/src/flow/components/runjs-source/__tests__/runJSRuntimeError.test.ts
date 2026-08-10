@@ -8,7 +8,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { readRunJSRuntimeError } from '../runJSRuntimeError';
+
+setupRunJSTestHosts();
 
 describe('readRunJSRuntimeError', () => {
   it('reads a normal Error', () => {

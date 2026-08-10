@@ -11,6 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer, type FlowSettingsContext } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry, type RunJSSourceSettingsDescriptor } from '../../../components/runjs-source';
 import { JSItemModel } from '../JSItemModel';
@@ -80,6 +81,8 @@ function renderModel(engine: FlowEngine, model: JSItemModel) {
     </FlowEngineProvider>,
   );
 }
+
+setupRunJSTestHosts();
 
 describe('JSItemModel JS Template source', () => {
   afterEach(() => {

@@ -8,6 +8,7 @@
  */
 
 import { FlowExitAllException, FlowExitException, type FlowSettingsContext } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
@@ -19,6 +20,8 @@ import {
   JS_ACTION_SETTINGS_DESCRIPTOR,
   JS_ACTION_SOURCE_BINDING,
 } from './jsActionJsTemplateTestUtils';
+
+setupRunJSTestHosts();
 
 describe('JSActionModel JS Template source', () => {
   afterEach(() => {

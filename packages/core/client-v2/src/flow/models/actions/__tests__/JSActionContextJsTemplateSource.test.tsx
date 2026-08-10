@@ -8,6 +8,7 @@
  */
 
 import type { FlowModel } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
@@ -113,6 +114,8 @@ ctx.message.success(ctx.settings.successMessage + ':' + values.status);
     expectedMessage: 'Filter read:pending',
   },
 ];
+
+setupRunJSTestHosts();
 
 describe('JS Action context JS Template source', () => {
   afterEach(() => {

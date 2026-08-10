@@ -8,6 +8,7 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   RunJSSettingsDescriptorProviderRegistry,
@@ -22,6 +23,8 @@ const SOURCE_BINDING = {
   templateId: 'jtt_sales',
   kind: 'js-page',
 };
+
+setupRunJSTestHosts();
 
 describe('JSPageModel source authoring', () => {
   afterEach(() => {

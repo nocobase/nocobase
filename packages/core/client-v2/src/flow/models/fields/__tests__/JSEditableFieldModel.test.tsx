@@ -9,10 +9,13 @@
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet } from 'lodash';
 import { JSEditableFieldModel } from '../JSEditableFieldModel';
+
+setupRunJSTestHosts();
 
 function createField(props?: Record<string, any>, code = '') {
   const engine = new FlowEngine();

@@ -12,6 +12,7 @@ import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../co
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -30,6 +31,8 @@ vi.mock('react-i18next', async () => {
     }),
   };
 });
+
+setupRunJSTestHosts();
 
 // Consolidated from runjs-source-resolver-source-mode-roundtrip.cases.tsx.
 function registerSourceModeRoundTripTests() {

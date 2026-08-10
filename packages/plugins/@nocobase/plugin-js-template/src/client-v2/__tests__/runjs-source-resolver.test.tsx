@@ -18,6 +18,7 @@ import { JSBlockModel } from '@nocobase/client-v2';
 import { RunJSSourceResolverRegistry } from '@nocobase/runjs/workspace/client-v2';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { render as nbRender, screen as nbScreen, waitFor as nbWaitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import React from 'react';
@@ -37,6 +38,8 @@ vi.mock('react-i18next', async () => {
     }),
   };
 });
+
+setupRunJSTestHosts();
 
 // Consolidated from runjs-source-resolver-immutable-cache.cases.ts.
 function registerImmutableCacheTests() {

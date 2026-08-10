@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import {
   createViewScopedEngine,
   FlowContextProvider,
@@ -64,6 +65,8 @@ function createFlowModelHarness(options: string | FlowModelHarnessOptions = 'fm_
     },
   };
 }
+
+setupRunJSTestHosts();
 
 describe('RunJSEditorField FlowModel integration', () => {
   afterEach(() => {

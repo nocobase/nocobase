@@ -11,6 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import { JSColumnModel } from '../../blocks/table/JSColumnModel';
@@ -66,6 +67,8 @@ function createColumnModel() {
 
   return { engine, model };
 }
+
+setupRunJSTestHosts();
 
 describe('JSColumnModel JS Template source', () => {
   afterEach(() => {

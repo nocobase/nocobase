@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { render, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import type { MetaTreeNode, RunJSValue } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -39,6 +40,8 @@ vi.mock('@nocobase/flow-engine', async () => {
 
 import { FieldAssignValueInput } from '../FieldAssignValueInput';
 import { RunJSSourceResolverRegistry } from '../runjs-source';
+
+setupRunJSTestHosts();
 
 describe('FieldAssignValueInput RunJS menu', () => {
   afterEach(() => {

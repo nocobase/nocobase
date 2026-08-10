@@ -1,11 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { configure } from '@testing-library/react';
-import { registerRunJSRegistryHost, registerRunJSRuntimeHost } from '@nocobase/client-v2';
 import dotenv from 'dotenv';
 import { vi } from 'vitest';
-
-import { runJSRegistryHost } from '../../runjs/src/workspace/client-v2/runJSRegistryHost';
-import { runJSRuntimeHost } from '../../runjs/src/workspace/client-v2/runJSRuntimeHost';
 
 /**
  * 解决 TypeError: URL.createObjectURL is not a function
@@ -16,8 +12,6 @@ import path from 'path';
 
 configure({ asyncUtilTimeout: 30000 });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
-registerRunJSRegistryHost(runJSRegistryHost);
-registerRunJSRuntimeHost(runJSRuntimeHost);
 
 // 解决 TypeError: window.matchMedia is not a function
 // 参见： https://github.com/vitest-dev/vitest/issues/821#issuecomment-1046954558

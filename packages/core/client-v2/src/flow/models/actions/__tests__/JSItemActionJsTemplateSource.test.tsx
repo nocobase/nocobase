@@ -11,6 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { RunJSSourceResolverRegistry } from '../../../components/runjs-source';
 import { JSItemActionModel } from '../JSItemActionModel';
@@ -59,6 +60,8 @@ function createJSItemAction(stepParams: Record<string, unknown>) {
   });
   return { engine, model, message };
 }
+
+setupRunJSTestHosts();
 
 describe('JSItemActionModel JS Template source', () => {
   afterEach(() => {

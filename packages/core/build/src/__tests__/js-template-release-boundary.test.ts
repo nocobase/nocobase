@@ -40,7 +40,11 @@ type ReleaseManifest = { version: string };
 
 const checkoutRoot = path.resolve(__dirname, '../../../../..');
 const artifactRoot = path.resolve(process.env.NOCOBASE_PACKAGE_BOUNDARY_ROOT || checkoutRoot);
-const verifierPath = path.join(checkoutRoot, 'packages/core/runjs/scripts/verify-package-boundary.mjs');
+const verifierPath = path.join(artifactRoot, 'packages/core/runjs/scripts/verify-package-boundary.mjs');
+const requiredBuildArtifacts = [
+  path.join(artifactRoot, 'packages/core/runjs/lib/index.js'),
+  path.join(artifactRoot, 'packages/plugins/@nocobase/plugin-js-template/dist/server/index.js'),
+];
 const requiredEntries = [
   '@nocobase/runjs',
   '@nocobase/runjs/compiler',
@@ -53,13 +57,29 @@ describe('JS Template release boundary', () => {
   let report: BoundaryReport;
 
   beforeAll(() => {
+    if (requiredBuildArtifacts.some((artifactPath) => !fs.existsSync(artifactPath))) {
+      const buildCommand =
+        process.platform === 'win32'
+          ? {
+              file: process.env.ComSpec || 'cmd.exe',
+              args: ['/d', '/s', '/c', 'yarn.cmd build @nocobase/runjs @nocobase/plugin-js-template'],
+            }
+          : { file: 'yarn', args: ['build', '@nocobase/runjs', '@nocobase/plugin-js-template'] };
+      execFileSync(buildCommand.file, buildCommand.args, {
+        cwd: artifactRoot,
+        stdio: 'inherit',
+        timeout: 540_000,
+      });
+    }
+
     const output = execFileSync(process.execPath, [verifierPath, '--json', '--repository-root', artifactRoot], {
-      cwd: checkoutRoot,
+      cwd: artifactRoot,
       encoding: 'utf8',
       maxBuffer: 20 * 1024 * 1024,
+      timeout: 540_000,
     });
     report = JSON.parse(output) as BoundaryReport;
-  }, 240_000);
+  }, 600_000);
 
   it('packs the canonical packages on the repository release version', () => {
     const releaseManifest = JSON.parse(

@@ -17,10 +17,13 @@ import {
   setupRunJSContexts,
   type IFlowModelRepository,
 } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowPage } from '../FlowPage';
 import { DEFAULT_JS_PAGE_CODE, JSPageModel } from '../models/base/PageModel';
+
+setupRunJSTestHosts();
 
 function clone<T>(value: T): T {
   return value == null ? value : (JSON.parse(JSON.stringify(value)) as T);

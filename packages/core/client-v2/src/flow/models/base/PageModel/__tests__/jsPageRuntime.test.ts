@@ -7,8 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { JSPageRuntimeController, type JSPageRuntimeRunContext } from '../jsPageRuntime';
+
+setupRunJSTestHosts();
 
 type TestRunJSRootEntry = {
   root?: { unmount?: () => void };

@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RunJSEditorField, RunJSEditorRegistry } from '../runjs-studio';
@@ -33,6 +34,8 @@ vi.mock('../code-editor', () => ({
     />
   ),
 }));
+
+setupRunJSTestHosts();
 
 describe('RunJSEditorRegistry', () => {
   afterEach(() => {

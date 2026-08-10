@@ -9,6 +9,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import {
   resolveRunJSSourceBinding,
   resolveRuntimeRunJS,
@@ -24,6 +25,8 @@ const JS_TEMPLATE_SOURCE_BINDING = {
   templateId: 'jtt_sales_kpi',
   kind: 'js-block',
 };
+
+setupRunJSTestHosts();
 
 describe('resolveRuntimeRunJS', () => {
   afterEach(() => {

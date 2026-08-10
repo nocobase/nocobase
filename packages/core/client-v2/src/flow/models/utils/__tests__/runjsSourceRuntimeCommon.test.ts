@@ -12,6 +12,7 @@ import { FormItem } from '@formily/antd-v5';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { render, screen } from '@testing-library/react';
 import type { FlowModel } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import React from 'react';
 
 import { RunJSSettingsDescriptorProviderRegistry, RunJSSourceResolverRegistry } from '../../../components/runjs-source';
@@ -51,6 +52,8 @@ function createDataSourceContext() {
     },
   } as never;
 }
+
+setupRunJSTestHosts();
 
 describe('runjsSourceRuntimeCommon', () => {
   beforeEach(() => {

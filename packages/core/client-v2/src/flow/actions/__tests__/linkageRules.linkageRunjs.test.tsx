@@ -16,6 +16,7 @@ import {
   FlowSettingsContextProvider,
   type RunJSValue,
 } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +31,8 @@ vi.mock('../../components/RunJSValueEditor', () => ({
 }));
 
 import { linkageRunjs } from '../linkageRules';
+
+setupRunJSTestHosts();
 
 type LinkageRunJSComponentProps = {
   value?: unknown;

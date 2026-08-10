@@ -11,6 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import {
   FlowEngine,
   FlowEngineProvider,
@@ -90,6 +91,8 @@ function renderJSBlock(stepParams: Record<string, unknown>) {
 
   return model;
 }
+
+setupRunJSTestHosts();
 
 describe('JSBlockModel JS Template source', () => {
   afterEach(() => {
@@ -855,7 +858,7 @@ describe('JSBlockModel JS Template source', () => {
       version: 'v2',
     });
     expect(await screen.findByTestId('resolved-js-block')).toHaveTextContent('resolved');
-    expect(screen.queryByTestId('js-block-runtime-loading')).toBeNull();
+    await waitFor(() => expect(screen.queryByTestId('js-block-runtime-loading')).toBeNull());
   });
 
   it('renders resolver failures in the current block shell', async () => {

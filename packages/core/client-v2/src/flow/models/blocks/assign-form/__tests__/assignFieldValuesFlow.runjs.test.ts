@@ -9,8 +9,11 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { FlowContext } from '@nocobase/flow-engine';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 
 import { resolveAssignFieldValues } from '../assignFieldValuesFlow';
+
+setupRunJSTestHosts();
 
 describe('assignFieldValuesFlow RunJS values', () => {
   it('shows an error and aborts assignment when RunJS fails', async () => {
