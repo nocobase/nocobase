@@ -51,6 +51,26 @@ function parseObjectFlag(value: string | undefined, flagName: string) {
   return parsed;
 }
 
+function parseValuesFlag(value: string | undefined, flagName: string) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const parsed = parseJson<Record<string, any> | Array<Record<string, any>>>(value, flagName);
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error(`--${flagName} must be a JSON object, or a JSON array of objects to create multiple records`);
+  }
+
+  if (Array.isArray(parsed)) {
+    const invalidIndex = parsed.findIndex((item) => !item || Array.isArray(item) || typeof item !== 'object');
+    if (invalidIndex !== -1) {
+      throw new Error(`--${flagName} array items must all be JSON objects, but item ${invalidIndex} is not`);
+    }
+  }
+
+  return parsed;
+}
+
 function parseJsonArrayFlag(value: string | undefined, flagName: string) {
   if (value === undefined) {
     return undefined;
@@ -214,7 +234,8 @@ export const createFlags = {
   ...resourceBaseFlags,
   ...resourceAssociationFlags,
   values: Flags.string({
-    description: 'Record values used by create as a JSON object.',
+    description:
+      'Record values used by create as a JSON object, or a JSON array of objects to create multiple records in one request.',
     required: true,
   }),
   whitelist: Flags.string({
@@ -336,7 +357,7 @@ export function buildGetArgs(flags: Record<string, any>): ResourceRequestArgs {
 export function buildCreateArgs(flags: Record<string, any>): ResourceRequestArgs {
   return {
     ...pickSharedArgs(flags),
-    values: parseObjectFlag(flags.values, 'values'),
+    values: parseValuesFlag(flags.values, 'values'),
     whitelist: parseStringArrayFlags(flags.whitelist, 'whitelist'),
     blacklist: parseStringArrayFlags(flags.blacklist, 'blacklist'),
   };
