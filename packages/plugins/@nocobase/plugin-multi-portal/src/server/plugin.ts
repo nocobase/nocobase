@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppSupervisor, Plugin, appendToBuiltInPlugins } from '@nocobase/server';
+import { AppSupervisor, Plugin, PortalHostSupervisor, appendToBuiltInPlugins } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import {
   Op,
@@ -229,6 +229,9 @@ type MultiPortalDeployContext = ResourcerContext & {
 type ResolvedPortalTemplate = {
   dir: string;
   cleanup?: () => Promise<void>;
+};
+type NormalizeLegacyPortalClientDistOptions = {
+  overwriteClient?: boolean;
 };
 
 function getRecordField(record: unknown, field: string) {
@@ -609,6 +612,70 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
   });
 }
 
+async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.Dirent[]> {
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  const legacyIndexPath = path.join(distDir, 'index.html');
+
+  if (!(await pathExists(legacyIndexPath))) {
+    return [];
+  }
+
+  const entries = await fs.promises.readdir(distDir, { withFileTypes: true });
+  return entries.filter((entry) => entry.name !== 'client');
+}
+
+async function removeLegacyPortalClientDist(portalDir: string, logPath?: string): Promise<boolean> {
+  const legacyEntries = await getLegacyPortalClientDistEntries(portalDir);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  await Promise.all(
+    legacyEntries.map((entry) => fs.promises.rm(path.join(distDir, entry.name), { recursive: true, force: true })),
+  );
+
+  if (logPath) {
+    await appendPortalStorageLog(logPath, 'Removed stale legacy portal dist/index.html output.');
+  }
+
+  return true;
+}
+
+async function normalizeLegacyPortalClientDist(
+  portalDir: string,
+  logPath?: string,
+  options?: NormalizeLegacyPortalClientDistOptions,
+): Promise<boolean> {
+  const clientDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
+  const clientIndexPath = path.join(clientDir, 'index.html');
+
+  if (!options?.overwriteClient && (await pathExists(clientIndexPath))) {
+    return false;
+  }
+
+  const legacyEntries = await getLegacyPortalClientDistEntries(portalDir);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  await fs.promises.mkdir(clientDir, { recursive: true });
+
+  for (const entry of legacyEntries) {
+    const sourcePath = path.join(distDir, entry.name);
+    const targetPath = path.join(clientDir, entry.name);
+    await fs.promises.rm(targetPath, { recursive: true, force: true });
+    await movePortalDeployDir(sourcePath, targetPath);
+  }
+
+  if (logPath) {
+    await appendPortalStorageLog(logPath, 'Moved legacy portal dist/index.html output into dist/client/.');
+  }
+
+  return true;
+}
+
 function sanitizePortalStorageNodeOptions(value: unknown) {
   return trimString(value)
     .split(/\s+/)
@@ -734,11 +801,13 @@ async function buildPortalStorageItem(
       buildEnv.COREPACK_ENABLE_PROJECT_SPEC || ''
     }`,
   );
+  await removeLegacyPortalClientDist(portalDir, logPath);
   await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,
     env: buildEnv,
     logPath,
   });
+  await normalizeLegacyPortalClientDist(portalDir, logPath, { overwriteClient: true });
   await appendPortalStorageLog(logPath, `Portal build completed for ${item.appName}/${item.portalName}.`);
 }
 
@@ -3327,7 +3396,8 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     if (item.enabled) {
-      const hasPortalIndex = await pathExists(portalIndex);
+      const normalizedLegacyDist = await normalizeLegacyPortalClientDist(portalDir, logPath);
+      const hasPortalIndex = normalizedLegacyDist || (await pathExists(portalIndex));
       if (options.forceBuild || !hasPortalIndex) {
         this.logPortalBuildHtml(
           item,
@@ -3412,6 +3482,35 @@ export class PluginMultiPortalServer extends Plugin {
     await next();
   }
 
+  private async restartPortalHostAfterDeploy(appName: string, portalName: string) {
+    const supervisor = PortalHostSupervisor.getInstance();
+    const info = supervisor.getInfo();
+    if (info.driver === 'external' || info.driver === 'disabled') {
+      this.app.logger?.info?.(`Portal host restart skipped after deploy for ${appName}/${portalName}`, {
+        appName,
+        portalName,
+        driver: info.driver,
+        status: info.status,
+      });
+      return;
+    }
+
+    try {
+      await supervisor.restart(`multiPortals:deploy updated ${appName}/${portalName}`);
+      this.app.logger?.info?.(`Portal host restarted after deploy for ${appName}/${portalName}`, {
+        appName,
+        portalName,
+        driver: info.driver,
+      });
+    } catch (error) {
+      this.app.logger?.warn?.('failed to restart portal host after multi-portal deploy', {
+        appName,
+        portalName,
+        error,
+      });
+    }
+  }
+
   private async deployPortalDist(ctx: ResourcerContext, next: () => Promise<void>) {
     const deployCtx = ctx as MultiPortalDeployContext;
     const appName = this.getCurrentStorageAppName();
@@ -3439,6 +3538,7 @@ export class PluginMultiPortalServer extends Plugin {
         appName,
         portalName,
       });
+      await this.restartPortalHostAfterDeploy(appName, portalName);
       ctx.body = {
         status: 'ok',
         app: appName,

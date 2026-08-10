@@ -8,7 +8,7 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
-import { AppSupervisor } from '@nocobase/server';
+import { AppSupervisor, PortalHostSupervisor } from '@nocobase/server';
 import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
@@ -49,9 +49,16 @@ const spawnMock = vi.hoisted(() => {
       }
       if (isBuildCommand && options.cwd) {
         if (process.env.TEST_PORTAL_BUILD_FAIL !== 'true') {
-          const distDir = pathSync.join(options.cwd, 'dist', 'client');
+          const writesLegacyDist = process.env.TEST_PORTAL_BUILD_LEGACY_DIST === 'true';
+          const distDir = writesLegacyDist
+            ? pathSync.join(options.cwd, 'dist')
+            : pathSync.join(options.cwd, 'dist', 'client');
           fsSync.mkdirSync(distDir, { recursive: true });
           fsSync.writeFileSync(pathSync.join(distDir, 'index.html'), options.env?.NOCOBASE_PORTAL_BASE || '');
+          if (writesLegacyDist) {
+            fsSync.mkdirSync(pathSync.join(distDir, 'assets'), { recursive: true });
+            fsSync.writeFileSync(pathSync.join(distDir, 'assets', 'legacy.js'), 'console.log("legacy");\n');
+          }
         }
       }
       subprocess.emit('close', isBuildCommand && process.env.TEST_PORTAL_BUILD_FAIL === 'true' ? 1 : 0, null);
@@ -71,6 +78,8 @@ const execFileMock = vi.hoisted(() => {
     return { on: () => undefined } as unknown as ChildProcess;
   });
 });
+const portalHostGetInfoMock = vi.hoisted(() => vi.fn());
+const portalHostRestartMock = vi.hoisted(() => vi.fn());
 
 vi.mock('child_process', () => ({
   execFile: execFileMock,
@@ -288,6 +297,18 @@ describe('plugin-multi-portal server', () => {
   beforeEach(async () => {
     execFileMock.mockClear();
     spawnMock.mockClear();
+    portalHostGetInfoMock.mockReset();
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'disabled',
+      status: 'disabled',
+    });
+    portalHostRestartMock.mockReset();
+    portalHostRestartMock.mockResolvedValue(new URL('http://127.0.0.1:13010/'));
+    vi.spyOn(PortalHostSupervisor, 'getInstance').mockReturnValue({
+      getInfo: portalHostGetInfoMock,
+      restart: portalHostRestartMock,
+    } as unknown as PortalHostSupervisor);
     storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-multi-portal-'));
     process.env.STORAGE_PATH = storagePath;
   });
@@ -349,6 +370,8 @@ describe('plugin-multi-portal server', () => {
     }
     delete process.env.TEST_PORTAL_TEMPLATE_TARBALL;
     delete process.env.TEST_PORTAL_BUILD_FAIL;
+    delete process.env.TEST_PORTAL_BUILD_LEGACY_DIST;
+    vi.restoreAllMocks();
   });
 
   it('should load with UI Layout without adding core dependencies', async () => {
@@ -1729,6 +1752,54 @@ describe('plugin-multi-portal server', () => {
     );
   });
 
+  it('should normalize legacy dist/index.html output when creating an AI portal', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    process.env.TEST_PORTAL_BUILD_LEGACY_DIST = 'true';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'legacy-dist-portal');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'legacy-dist-portal',
+        title: 'Legacy dist portal',
+        portalType: 'ai',
+        portalName: 'legacy-dist-portal',
+        routePath: '/legacy-dist-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/legacy-dist-portal/',
+    );
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'assets', 'legacy.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+      }),
+    );
+  });
+
   it('should log when storage portal HTML build is skipped because dist already exists', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
@@ -2020,6 +2091,85 @@ describe('plugin-multi-portal server', () => {
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
+    expect(portalHostRestartMock).not.toHaveBeenCalled();
+  });
+
+  it('should restart managed portal host after a successful portal dist deploy', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'node',
+      status: 'ready',
+      targetUrl: 'http://127.0.0.1:13010/',
+    });
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'client/index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'managed-customer',
+          basePath: '/console/x/managed-customer/',
+        },
+        file: archivePath,
+      });
+
+    expect(response.status).toBe(200);
+    expect(portalHostRestartMock).toHaveBeenCalledTimes(1);
+    expect(portalHostRestartMock).toHaveBeenCalledWith('multiPortals:deploy updated main/managed-customer');
+  });
+
+  it('should keep portal dist deploy successful when portal host restart fails', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'node',
+      status: 'ready',
+      targetUrl: 'http://127.0.0.1:13010/',
+    });
+    const restartError = new Error('restart failed');
+    portalHostRestartMock.mockRejectedValue(restartError);
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+    const loggerWarnSpy = vi.spyOn(app.logger, 'warn');
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'client/index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'restart-failure-customer',
+          basePath: '/console/x/restart-failure-customer/',
+        },
+        file: archivePath,
+      });
+
+    expect(response.status).toBe(200);
+    expect(portalHostRestartMock).toHaveBeenCalledWith('multiPortals:deploy updated main/restart-failure-customer');
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      'failed to restart portal host after multi-portal deploy',
+      expect.objectContaining({
+        appName: 'main',
+        error: restartError,
+        portalName: 'restart-failure-customer',
+      }),
+    );
   });
 
   it('should deploy uploaded portal dist into the current sub-app storage for custom-domain requests', async () => {
