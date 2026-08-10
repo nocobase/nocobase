@@ -1,8 +1,7 @@
 ---
-title: "Ikhtisar Data Source"
-description: "Data source merepresentasikan tipe penyimpanan data (database, API, dan lainnya), merupakan kontainer Collection dan Repository, mendukung database utama dan data source eksternal."
-keywords: "data source,DataSource,tipe data source,kontainer Collection,NocoBase"
+title: "Ikhtisar Sumber Data"
+description: "Sumber data merepresentasikan jenis penyimpanan data (database, API, dan lain-lain), merupakan wadah untuk Collection dan Repository, serta mendukung database utama dan sumber data eksternal."
+keywords: "sumber data,DataSource,jenis sumber data,wadah Collection,NocoBase"
 ---
 
-# Ikhtisar Data Source
-
+# Ikhtisar Sumber Data

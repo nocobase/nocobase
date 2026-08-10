@@ -67,6 +67,102 @@ const replaceModelStepParams = (model: any, flowKey: string, stepKey: string, pa
   model.emitter?.emit?.('onStepParamsChanged');
 };
 
+const getModelStepParams = (model: any, flowKey: string, stepKey: string) => {
+  const stepParams = model?.stepParams?.[flowKey]?.[stepKey];
+  if (stepParams) {
+    return stepParams;
+  }
+
+  try {
+    return model?.getStepParams?.(flowKey, stepKey) || {};
+  } catch {
+    return {};
+  }
+};
+
+const isKanbanPopupTemplateCopyMode = (params?: Record<string, any>) => {
+  return params?.popupTemplateContext === true;
+};
+
+const hasKanbanPopupTemplateState = (params?: Record<string, any>) => {
+  if (!params || typeof params !== 'object') {
+    return false;
+  }
+
+  return !!normalizeKanbanPopupTemplateUid(params.popupTemplateUid) || params.popupTemplateContext === true;
+};
+
+const POPUP_TEMPLATE_SETTING_KEYS = [
+  'uid',
+  'dataSourceKey',
+  'collectionName',
+  'associationName',
+  'filterByTk',
+  'sourceId',
+  'popupTemplateUid',
+  'popupTemplateMode',
+  'popupTemplateContext',
+  'popupTemplateHasFilterByTk',
+  'popupTemplateHasSourceId',
+];
+
+const mergeKanbanCardPopupTemplateSettings = (
+  baseSettings: Record<string, any>,
+  popupSettings?: Record<string, any>,
+) => {
+  if (!hasKanbanPopupTemplateState(popupSettings)) {
+    return baseSettings;
+  }
+
+  const nextSettings = { ...baseSettings };
+  POPUP_TEMPLATE_SETTING_KEYS.forEach((key) => {
+    if (Object.prototype.hasOwnProperty.call(popupSettings, key)) {
+      nextSettings[key] = popupSettings[key];
+    }
+  });
+
+  if (popupSettings?.popupTemplateContext === true) {
+    delete nextSettings.popupTemplateUid;
+    delete nextSettings.popupTemplateHasFilterByTk;
+    delete nextSettings.popupTemplateHasSourceId;
+  } else if (popupSettings?.popupTemplateUid) {
+    delete nextSettings.popupTemplateContext;
+  }
+
+  return nextSettings;
+};
+
+const getKanbanCardPopupActionSettings = (model: any, action?: any) => {
+  const parentModel = getKanbanCardPersistentParentModel(model);
+  return getModelStepParams(action || parentModel?.subModels?.cardViewAction, 'popupSettings', 'openView');
+};
+
+const ensureKanbanCardPopupAction = async (model: any) => {
+  const parentModel = getKanbanCardPersistentParentModel(model);
+  if (typeof parentModel?.ensureCardViewAction === 'function') {
+    return await parentModel.ensureCardViewAction();
+  }
+
+  return parentModel?.subModels?.cardViewAction;
+};
+
+const buildKanbanCardPopupSettingsFromAction = (model: any, baseSettings: Record<string, any>, action?: any) => {
+  const actionParams = getKanbanCardPopupActionSettings(model, action);
+  if (Object.keys(actionParams).length === 0) {
+    return baseSettings;
+  }
+
+  const popupSettings = {
+    ...baseSettings,
+    ...actionParams,
+    uid: actionParams.uid || baseSettings.uid,
+    collectionName: actionParams.collectionName || baseSettings.collectionName,
+    dataSourceKey: actionParams.dataSourceKey || baseSettings.dataSourceKey,
+  };
+
+  return mergeKanbanCardPopupTemplateSettings(popupSettings, actionParams);
+};
+
 const applyKanbanCardPopupSettings = async (
   model: any,
   params: Record<string, any>,
@@ -82,7 +178,10 @@ const applyKanbanCardPopupSettings = async (
     getKanbanCardPopupProp(model, 'popupTargetUid', 'cardPopupTargetUid'),
   );
   const resolvedPopupTargetUid =
-    !nextPopupTemplateUid && currentPopupTemplateUid && nextPopupTargetUid === currentPopupTargetUid
+    !nextPopupTemplateUid &&
+    !isKanbanPopupTemplateCopyMode(params) &&
+    currentPopupTemplateUid &&
+    nextPopupTargetUid === currentPopupTargetUid
       ? undefined
       : nextPopupTargetUid;
   const normalizedParams = {
@@ -256,22 +355,33 @@ KanbanCardItemModel.registerFlow({
       use: 'openView',
       async defaultParams(ctx) {
         const commonParams = await resolveKanbanOpenViewDefaultParams(ctx as any);
-        return {
-          ...commonParams,
-          mode: normalizeKanbanCardOpenMode(getKanbanCardPopupProp(ctx.model, 'openMode', 'cardOpenMode')),
-          size: normalizeKanbanPopupSize(getKanbanCardPopupProp(ctx.model, 'popupSize', 'cardPopupSize')),
-          popupTemplateUid: normalizeKanbanPopupTemplateUid(
-            getKanbanCardPopupProp(ctx.model, 'popupTemplateUid', 'cardPopupTemplateUid'),
-          ),
-          pageModelClass: getKanbanCardPopupProp(ctx.model, 'pageModelClass', 'cardPopupPageModelClass'),
-          uid: normalizeKanbanPopupTargetUid(getKanbanCardPopupProp(ctx.model, 'popupTargetUid', 'cardPopupTargetUid')),
-        };
+        const action = await ensureKanbanCardPopupAction(ctx.model);
+        return buildKanbanCardPopupSettingsFromAction(
+          ctx.model,
+          {
+            ...commonParams,
+            mode: normalizeKanbanCardOpenMode(getKanbanCardPopupProp(ctx.model, 'openMode', 'cardOpenMode')),
+            size: normalizeKanbanPopupSize(getKanbanCardPopupProp(ctx.model, 'popupSize', 'cardPopupSize')),
+            popupTemplateUid: normalizeKanbanPopupTemplateUid(
+              getKanbanCardPopupProp(ctx.model, 'popupTemplateUid', 'cardPopupTemplateUid'),
+            ),
+            pageModelClass: getKanbanCardPopupProp(ctx.model, 'pageModelClass', 'cardPopupPageModelClass'),
+            uid: normalizeKanbanPopupTargetUid(
+              getKanbanCardPopupProp(ctx.model, 'popupTargetUid', 'cardPopupTargetUid'),
+            ),
+          },
+          action,
+        );
       },
       async handler(ctx, params) {
         await applyKanbanCardPopupSettings(ctx.model, params, { persist: false });
       },
       async beforeParamsSave(ctx, params, previousParams) {
-        await ctx.model?.getAction?.('openView')?.beforeParamsSave?.(ctx, params, previousParams);
+        const action = await ensureKanbanCardPopupAction(ctx.model);
+        const storedParams = getKanbanCardPopupActionSettings(ctx.model, action);
+        await ctx.model
+          ?.getAction?.('openView')
+          ?.beforeParamsSave?.(ctx, params, Object.keys(storedParams).length > 0 ? storedParams : previousParams);
         await applyKanbanCardPopupSettings(ctx.model, params, { persist: true });
       },
     },

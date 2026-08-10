@@ -20,6 +20,7 @@ import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useUploadFiles } from './hooks/useUploadFiles';
+import { normalizeAIFileUploadAttachment } from './utils';
 import _ from 'lodash';
 
 const useSendMessage = () => {
@@ -123,12 +124,16 @@ export const Sender: React.FC = () => {
       return;
     }
     e.preventDefault();
+    if (!uploadProps.validateFiles([file])) {
+      return;
+    }
 
     const uid = Date.now().toString();
     const rawFile = file;
     const uploadFile = {
       uid,
       name: rawFile.name,
+      filename: rawFile.name,
       status: 'uploading',
       originFileObj: rawFile,
       percent: 0,
@@ -168,10 +173,7 @@ export const Sender: React.FC = () => {
                     response,
                   };
                 }
-                return {
-                  ...fileData,
-                  status: 'done',
-                };
+                return normalizeAIFileUploadAttachment(fileData, 'done');
               }
               return item;
             }),

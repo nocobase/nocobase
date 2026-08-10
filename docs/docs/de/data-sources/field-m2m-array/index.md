@@ -1,18 +1,19 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
+title: "Viele-zu-viele (Array)"
+description: "Verwendet ein Array-Feld, um mehrere eindeutige Schlüssel der Zieltabelle zu speichern und eine Viele-zu-viele-Beziehung herzustellen, z. B. eine Viele-zu-viele-Beziehung zwischen Artikeln und Tags, ohne Zwischentabelle."
+keywords: "Viele-zu-viele-Array,M2M Array,Array-Beziehung,BelongsToMany,NocoBase"
 ---
-
-# Viele-zu-Viele (Array)
+# Viele-zu-viele (Array)
 
 ## Einführung
 
-Diese Funktion ermöglicht es Ihnen, Array-Felder in einer Daten-Sammlung zu verwenden, um mehrere eindeutige Schlüssel aus der Ziel-Sammlung zu speichern und so eine Viele-zu-Viele-Beziehung zwischen den beiden Sammlungen herzustellen. Betrachten Sie zum Beispiel die Entitäten Artikel und Tags. Ein Artikel kann mit mehreren Tags verknüpft sein, wobei die Artikel-Sammlung die IDs der entsprechenden Datensätze aus der Tags-Sammlung in einem Array-Feld speichert.
+Unterstützt die Verwendung eines Array-Feldes in einer Datentabelle zum Speichern mehrerer eindeutiger Schlüssel der Zieltabelle, um eine Viele-zu-viele-Beziehung mit der Zieltabelle herzustellen. Beispiel: Es gibt die beiden Entitäten Artikel und Tag. Ein Artikel kann mit mehreren Tags verknüpft werden. In der Artikeltabelle werden die IDs der entsprechenden Datensätze in der Tag-Tabelle in einem Array-Feld gespeichert.
 
 :::warning{title=Hinweis}
 
-- Verwenden Sie, wann immer möglich, eine Verknüpfungs-Sammlung, um eine standardmäßige [Viele-zu-Viele](../data-modeling/collection-fields/associations/m2m/index.md)-Beziehung herzustellen, anstatt sich auf diese Methode zu verlassen.
-- Derzeit unterstützt nur PostgreSQL das Filtern von Daten der Quell-Sammlung anhand von Feldern der Ziel-Sammlung für Viele-zu-Viele-Beziehungen, die mit Array-Feldern hergestellt wurden. Im obigen Szenario können Sie beispielsweise Artikel anhand anderer Felder in der Tags-Sammlung, wie dem Titel, filtern.
-
+- Verwenden Sie nach Möglichkeit eine Zwischentabelle, um eine standardmäßige [Viele-zu-viele](../data-modeling/collection-fields/associations/m2m/index.md)-Beziehung herzustellen, und vermeiden Sie diesen Beziehungstyp.
+- Bei Viele-zu-viele-Beziehungen, die mit Array-Feldern erstellt wurden, wird derzeit nur mit PostgreSQL das Filtern von Daten der Quelltabelle anhand von Feldern der Zieltabelle unterstützt. Beispiel: Im oben genannten Beispiel können Sie andere Felder der Tag-Tabelle, etwa den Titel, zum Filtern der Artikel verwenden.
   :::
 
 ### Feldkonfiguration
@@ -23,17 +24,17 @@ Diese Funktion ermöglicht es Ihnen, Array-Felder in einer Daten-Sammlung zu ver
 
 ### Source collection
 
-Die Quell-Sammlung, in der sich das aktuelle Feld befindet.
+Quelltabelle, also die Tabelle, in der sich das aktuelle Feld befindet.
 
 ### Target collection
 
-Die Ziel-Sammlung, mit der die Beziehung hergestellt wird.
+Zieltabelle, mit der die Verknüpfung hergestellt wird.
 
 ### Foreign key
 
-Das Array-Feld in der Quell-Sammlung, das den Target key aus der Ziel-Sammlung speichert.
+Array-Feld, in dem in der Quelltabelle das Feld für den Target key der Zieltabelle gespeichert wird.
 
-Die entsprechenden Beziehungen für Array-Feldtypen sind wie folgt:
+Zuordnung der Array-Feldtypen:
 
 | NocoBase | PostgreSQL | MySQL  | SQLite |
 | -------- | ---------- | ------ | ------ |
@@ -41,4 +42,4 @@ Die entsprechenden Beziehungen für Array-Feldtypen sind wie folgt:
 
 ### Target key
 
-Das Feld in der Ziel-Sammlung, das den Werten entspricht, die im Array-Feld der Quell-Sammlung gespeichert sind. Dieses Feld muss eindeutig sein.
+Das Feld, das den im Array-Feld der Quelltabelle gespeicherten Werten entspricht, und eindeutig sein muss.

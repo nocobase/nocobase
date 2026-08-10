@@ -1,18 +1,18 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
-title: "Graph Collection Manager"
-description: "Công cụ quản lý Collection trực quan giống ER diagram, hỗ trợ Database chính, hiển thị thực thể và quan hệ trực quan, trích xuất data model từ yêu cầu nghiệp vụ."
-keywords: "ER diagram,Visual Collection,Data modeling,Entity relationship diagram,Graph Collection,NocoBase"
+title: "Quản lý bảng dữ liệu trực quan"
+description: "Công cụ quản lý bảng dữ liệu trực quan tương tự sơ đồ ER, hỗ trợ cơ sở dữ liệu chính, hiển thị trực quan các thực thể và mối quan hệ, đồng thời trích xuất mô hình dữ liệu từ yêu cầu nghiệp vụ."
+keywords: "Sơ đồ ER,bảng dữ liệu trực quan,mô hình hóa dữ liệu,sơ đồ quan hệ thực thể,Graph Collection,NocoBase"
 ---
-# Graph Collection Manager
+# Quản lý bảng dữ liệu trực quan
 
 ## Giới thiệu
 
-Công cụ tương tự ER diagram, hiện chỉ hỗ trợ Database chính.
+Công cụ tương tự sơ đồ ER, hiện chỉ hỗ trợ cơ sở dữ liệu chính.
 
 ## Cài đặt
 
-Plugin tích hợp sẵn, cần kích hoạt trước khi sử dụng.
+Plugin được tích hợp sẵn, cần kích hoạt trước khi sử dụng.
 
 ![20240322221627](https://static-docs.nocobase.com/20240322221627.png)
 

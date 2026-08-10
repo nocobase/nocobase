@@ -37,7 +37,17 @@
   },
   {
     "type": "custom-link",
+    "label": "多工作区",
+    "link": "/multi-app/multi-portal/"
+  },
+  {
+    "type": "custom-link",
     "label": "多空间",
     "link": "/multi-app/multi-space/"
+  },
+  {
+    "type": "custom-link",
+    "label": "多应用 vs 多工作区 vs 多空间",
+    "link": "/multi-app/multi-app-vs-multi-portal-vs-multi-space"
   }
 ]

@@ -373,6 +373,49 @@ describe('resourcer', () => {
     );
     expect(context.arr).toStrictEqual([7, 1, 2, 3, 4, 5, 6, 8]);
   });
+  it('sorts middleware after parseVariables and before default', async () => {
+    const resourcer = new Resourcer();
+    resourcer.use(
+      async (ctx, next) => {
+        ctx.arr.push('parseVariables');
+        await next();
+      },
+      { group: 'parseVariables' },
+    );
+    resourcer.use(async (ctx, next) => {
+      ctx.arr.push('default');
+      await next();
+    });
+    resourcer.use(
+      async (ctx, next) => {
+        ctx.arr.push('requestInterceptor');
+        await next();
+      },
+      {
+        after: 'parseVariables',
+        before: 'default',
+      },
+    );
+    resourcer.define({
+      name: 'test',
+      actions: {
+        async list(ctx) {
+          ctx.arr.push('action');
+        },
+      },
+    });
+    const context = {
+      arr: [],
+    };
+    await resourcer.execute(
+      {
+        resource: 'test',
+        action: 'list',
+      },
+      context,
+    );
+    expect(context.arr).toStrictEqual(['parseVariables', 'requestInterceptor', 'default', 'action']);
+  });
   it('middlewares#only', async () => {
     const resourcer = new Resourcer();
     resourcer.define({

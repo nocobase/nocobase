@@ -1,157 +1,157 @@
 ---
 title: 'NocoBase externo'
-description: 'Conecte outra aplicação NocoBase como fonte de dados externa e conheça a configuração, os recursos disponíveis e as limitações de workflows.'
-keywords: 'NocoBase externo,fonte de dados NocoBase,gerenciador de fontes de dados,workflow,NocoBase'
+description: 'Conecte outro aplicativo NocoBase ao aplicativo atual como fonte de dados externa e conheça as configurações, os recursos disponíveis e as limitações de uso em fluxos de trabalho.'
+keywords: 'NocoBase externo,Fonte de dados NocoBase,Gerenciamento de fontes de dados,Fluxo de trabalho,NocoBase'
 ---
 
-# NocoBase externo
+#  NocoBase externo
 
-## Introdução
+##  Introdução
 
-A fonte de dados NocoBase externa conecta outra aplicação NocoBase à aplicação atual, preservando metadados da aplicação remota, incluindo coleções, interfaces de campos, títulos e campos de associação.
+Uma fonte de dados NocoBase externa pode conectar outro aplicativo NocoBase ao aplicativo atual, mantendo os metadados configurados no aplicativo remoto, como tabelas de dados, interfaces de campos, títulos e campos de relacionamento.
 
-Em comparação com uma fonte de dados de banco de dados externa, normalmente não é necessário reconfigurar interfaces de campos nem criar manualmente campos de associação. Além de visualizar, criar, editar e excluir registros, ela também oferece suporte a upload e pré-visualização de arquivos, importação e exportação, consultas de gráficos e alguns cenários de workflow.
+Em comparação com uma fonte de dados de banco de dados externo, ao conectar um NocoBase externo normalmente não é necessário reconfigurar as interfaces de campos nem criar manualmente campos de relacionamento. Além de consultar, criar, editar e excluir registros, também são compatíveis o upload e a visualização de arquivos, a importação e exportação, as consultas de gráficos e alguns cenários de fluxo de trabalho.
 
-## Adicionar Fonte de Dados
+##  Adicionar fonte de dados
 
-Depois de ativar o plugin, adicione uma fonte de dados NocoBase externa no Gerenciador de fontes de dados e preencha as informações de acesso da aplicação remota.
+Após ativar o plugin, adicione uma fonte de dados NocoBase externa em 「Gerenciamento de fontes de dados」 e preencha as informações de acesso do aplicativo remoto.
 
-| Opção | Descrição |
-| --- | --- |
-| URL da API | A URL completa da API da aplicação NocoBase remota, por exemplo `https://example.com/api` |
-| Origin | A origem pública da aplicação NocoBase remota, por exemplo `https://example.com`. Ela é usada principalmente para tratar URLs de pré-visualização de arquivos locais na aplicação remota |
-| API key | A credencial usada pela aplicação atual para acessar a aplicação NocoBase remota |
-| Cabeçalhos da requisição | Cabeçalhos adicionais enviados para a aplicação remota, como informações de espaço |
-| Timeout | Tempo limite das requisições para acessar a aplicação remota |
+| Item de configuração | Descrição                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| Endereço da API      | Endereço completo da API do aplicativo NocoBase remoto, por exemplo `https://example.com/api`       |
+| Origin                | Origem de acesso do aplicativo NocoBase remoto, por exemplo `https://example.com`, usada principalmente para processar os endereços de visualização de arquivos locais do aplicativo remoto |
+| Chave de API          | Credencial usada pelo aplicativo atual para acessar o NocoBase remoto                                 |
+| Cabeçalhos da solicitação | Cabeçalhos adicionais que precisam ser enviados ao aplicativo remoto, como informações de espaço |
+| Tempo limite          | Tempo limite das solicitações ao aplicativo remoto                                                  |
 
-Depois que a fonte de dados é habilitada, o sistema carrega as coleções da aplicação remota.
+Depois de ativar a fonte de dados, o sistema carregará as tabelas de dados do aplicativo remoto.
 
 ![](https://static-docs.nocobase.com/202606101149185.png)
 
-## Permissões
+##  Permissões
 
-Uma fonte de dados NocoBase externa é afetada pelas permissões da aplicação atual e da aplicação remota.
+Uma fonte de dados NocoBase externa está sujeita às permissões do aplicativo atual e do aplicativo remoto.
 
-- Na aplicação atual, você pode configurar permissões de acesso para diferentes coleções e campos, como em outras fontes de dados externas.
-- Na aplicação remota, os dados são lidos e operados de acordo com as permissões da API key configurada.
+-  O aplicativo atual pode configurar permissões de acesso diferentes para tabelas e campos, assim como em outras fontes de dados externas;
+-  o aplicativo remoto lê e manipula os dados correspondentes de acordo com as permissões da chave de API configurada.
 
-Fontes de dados NocoBase externas não retornam metadados de permissão usados para controlar com precisão a visibilidade de botões no frontend. Portanto, alguns botões podem não ser ocultados automaticamente por permissão da mesma forma que na fonte de dados principal. Independentemente de um botão estar visível, as operações enviadas ainda passam pela verificação de permissões no servidor da aplicação atual, e operações não autorizadas são rejeitadas.
+A fonte de dados NocoBase externa não retorna os metadados de permissões usados para controlar detalhadamente no frontend o estado de exibição dos botões. Por isso, alguns botões podem não ser ocultados automaticamente conforme as permissões, como ocorre na fonte de dados principal. Independentemente de o botão estar visível, a operação de envio ainda passará pela verificação de permissões no servidor do aplicativo atual, e as operações não autorizadas serão rejeitadas.
 
 :::warning{title=Observação}
-Prepare uma API key dedicada para a fonte de dados NocoBase externa e conceda apenas as permissões necessárias de coleções e operações. Se um usuário tiver permissão na aplicação atual, mas a operação falhar, verifique as permissões da API key remota.
+Recomenda-se preparar uma chave de API exclusiva para a fonte de dados NocoBase externa e conceder apenas as permissões necessárias de tabelas e operações. Se o aplicativo atual tiver permissão, mas a operação falhar, verifique as permissões da chave de API remota.
 :::
 
-## Usar Coleções
+##  Usar tabelas de dados
 
-Depois que as coleções forem carregadas com sucesso, selecione esta fonte de dados na configuração de páginas, blocos, gráficos ou workflows para usar coleções da aplicação remota.
+Depois que as tabelas de dados forem carregadas com sucesso, selecione essa fonte de dados na configuração da página, na configuração de blocos, nos gráficos ou nos fluxos de trabalho para usar as tabelas de dados do aplicativo remoto.
 
-Quando a estrutura de coleções mudar na aplicação remota, recarregue as coleções na aplicação atual.
+Quando a estrutura das tabelas de dados do aplicativo remoto for alterada, será necessário recarregá-las no aplicativo atual.
 
-## Recursos
+##  Recursos
 
-Fontes de dados NocoBase externas são usadas principalmente para utilizar coleções e dados de uma aplicação remota na aplicação atual. A estrutura das coleções, a configuração de campos e os dados reais continuam sendo mantidos pela aplicação remota.
+A fonte de dados NocoBase externa é usada principalmente para utilizar, no aplicativo atual, as tabelas de dados e os dados do aplicativo remoto. A estrutura das tabelas, a configuração dos campos e os dados reais continuam sendo mantidos pelo aplicativo remoto.
 
-### Coleções e Campos
+###  Tabelas de dados e campos
 
-A aplicação atual carrega metadados da aplicação remota, incluindo coleções, interfaces de campos, títulos e campos de associação. Em comparação com uma fonte de dados de banco de dados externa, normalmente você não precisa reconfigurar interfaces de campos nem criar manualmente campos de associação na aplicação atual.
+O aplicativo atual carregará os metadados do aplicativo remoto, como tabelas de dados, interfaces de campos, títulos e campos de relacionamento. Em comparação com uma fonte de dados de banco de dados externo, normalmente não é necessário reconfigurar as interfaces de campos nem criar manualmente campos de relacionamento no aplicativo atual.
 
-A aplicação atual não oferece suporte à configuração direta de campos de uma fonte de dados NocoBase externa. Para adicionar campos, ajustar tipos de campos ou modificar campos de associação, faça as alterações na aplicação remota e depois recarregue as coleções na aplicação atual.
+O aplicativo atual não permite configurar diretamente os campos da fonte de dados NocoBase externa. Para adicionar campos, ajustar tipos de campo ou modificar campos de relacionamento, faça isso no aplicativo remoto e depois volte ao aplicativo atual para recarregar as tabelas de dados.
 
-### Registros e Dados Associados
+###  Registros e dados relacionados
 
-Fontes de dados NocoBase externas permitem visualizar, criar, editar e excluir registros em blocos de página, além de visualizar e manter dados associados. As operações são iniciadas pela aplicação atual e enviadas para a aplicação remota por meio da API key configurada.
+A fonte de dados NocoBase externa permite consultar, criar, editar e excluir registros nos blocos da página, além de consultar e manter dados relacionados. As operações são iniciadas pelo aplicativo atual, que solicita os dados ao aplicativo remoto usando a chave de API configurada.
 
-### Arquivos e Anexos
+###  Arquivos e anexos
 
-Os arquivos são enviados para o armazenamento usado pela aplicação remota. A aplicação atual inicia as requisições de upload, pré-visualização e download, mas os arquivos em si não são armazenados na aplicação atual.
+Os arquivos serão enviados para o armazenamento usado pelo aplicativo remoto. O aplicativo atual é responsável por iniciar as solicitações de upload, visualização e download; os próprios arquivos não são armazenados no aplicativo atual.
 
-Origin é usado principalmente para tratar URLs de pré-visualização de arquivos armazenados localmente pela aplicação remota. Se a aplicação remota retornar um caminho relativo, a aplicação atual usa Origin para completar a URL de acesso ao arquivo. Origin deve ser o endereço público de acesso da aplicação NocoBase remota, por exemplo:
+O Origin é usado principalmente para processar os endereços de visualização dos arquivos armazenados localmente no aplicativo remoto. Se o endereço retornado pelo aplicativo remoto for um caminho relativo, o aplicativo atual usará o Origin para completar o endereço de acesso ao arquivo. O Origin deve ser preenchido com o endereço público de acesso do aplicativo NocoBase remoto, por exemplo:
 
 ```text
 https://example.com
 ```
 
-Não use a URL da API como Origin.
+Não preencha o endereço da API como Origin.
 
-### Importação e Exportação
+###  Importação e exportação
 
-As operações de importação e exportação leem ou escrevem na fonte de dados por meio de arquivos externos e são encaminhadas para execução na aplicação remota. A aplicação atual processa as operações do usuário, encaminha as requisições e retorna os resultados de download. A leitura e escrita reais dos dados são concluídas pela aplicação remota.
+A importação e a exportação são operações de leitura e gravação de dados por meio de arquivos externos e serão encaminhadas ao aplicativo remoto para execução. O aplicativo atual é responsável por receber a operação do usuário, encaminhar a solicitação e retornar o resultado do download; a leitura e a gravação dos dados são realizadas pelo aplicativo remoto.
 
-- Importar registros: a aplicação atual recebe o arquivo de importação enviado e o encaminha para a aplicação remota executar a importação.
-- Exportar registros: a aplicação atual encaminha a requisição para a aplicação remota exportar registros. No modo síncrono, o arquivo de registros retornado pela aplicação remota é transmitido de volta ao navegador para download. No modo assíncrono, uma tarefa assíncrona local é criada, a exportação de registros é iniciada na aplicação remota, o progresso é sincronizado com a tarefa local e o arquivo resultante é transmitido da aplicação remota no momento do download.
-- Exportar anexos: a aplicação atual encaminha a requisição para a aplicação remota exportar anexos. No modo síncrono, o pacote de anexos retornado pela aplicação remota é transmitido de volta ao navegador para download. No modo assíncrono, uma tarefa assíncrona local é criada, a exportação de anexos é iniciada na aplicação remota, o progresso é sincronizado com a tarefa local e o pacote de anexos é transmitido da aplicação remota no momento do download.
+-  Importar registros: o aplicativo atual recebe o arquivo de importação enviado e o encaminha ao aplicativo remoto para executar a importação;
+-  Exportar registros: o aplicativo atual encaminha a solicitação para que o aplicativo remoto exporte os registros. No modo síncrono, o fluxo do arquivo de registros retornado pelo aplicativo remoto é enviado ao navegador para download; no modo assíncrono, uma tarefa assíncrona local é criada, a exportação dos registros é iniciada no aplicativo remoto e o progresso é sincronizado. Ao baixar o resultado, o arquivo de registros é obtido do aplicativo remoto por streaming.
+-  Exportar anexos: o aplicativo atual encaminha a solicitação para que o aplicativo remoto exporte os anexos. No modo síncrono, o pacote de anexos retornado pelo aplicativo remoto é enviado ao navegador para download; no modo assíncrono, uma tarefa assíncrona local é criada, a exportação dos anexos é iniciada no aplicativo remoto e o progresso é sincronizado. Ao baixar o resultado, o pacote de anexos é obtido do aplicativo remoto por streaming.
 
-### Impressão por Modelo
+###  Impressão de modelos
 
-A Impressão por Modelo pode usar registros de uma fonte de dados NocoBase externa. Os modelos de impressão e a configuração da ação de impressão são armazenados na aplicação atual. Ao imprimir, a aplicação atual lê registros remotos e dados associados, e gera o arquivo de impressão na aplicação atual.
+A impressão de modelos pode usar registros da fonte de dados NocoBase externa. Os modelos de impressão e as configurações das ações de impressão são armazenados no aplicativo atual. Durante a impressão, o aplicativo atual lê os registros e os dados relacionados do aplicativo remoto e gera o arquivo de impressão no aplicativo atual.
 
-### Gráficos
+###  Gráficos
 
-#### Painel de Consulta
+####  Painel de consultas
 
-Fontes de dados NocoBase externas podem ser usadas no painel de consulta de gráficos. A aplicação atual processa os parâmetros de consulta de acordo com as permissões locais configuradas para gráfico, fonte de dados, coleção e campos, e então solicita os resultados à aplicação remota.
+A fonte de dados NocoBase externa pode ser usada em painéis de consultas de gráficos. O aplicativo atual processará os parâmetros da consulta de acordo com as permissões configuradas localmente para gráficos, fontes de dados, tabelas de dados e campos e, em seguida, solicitará os resultados ao aplicativo remoto.
 
-A API key remota também precisa ter acesso aos dados correspondentes; caso contrário, a consulta falhará.
+A chave de API remota também precisa ter permissão de acesso aos dados correspondentes; caso contrário, a consulta falhará.
 
-#### Painel SQL
+####  Painel SQL
 
-O painel SQL é o modo de consulta SQL dos gráficos e é usado apenas para consultas. A aplicação atual salva a configuração SQL e inicia a chamada, enquanto o SQL é encaminhado para execução na aplicação remota.
+O painel SQL é um modo de consulta SQL dos gráficos e serve apenas para consultas. O aplicativo atual armazena a configuração SQL e inicia a chamada; a instrução SQL é encaminhada ao aplicativo remoto para execução.
 
-Ao usar o painel SQL, o usuário local precisa ter permissões de configuração de UI na aplicação atual, e a API key remota também precisa ter permissões de configuração de UI na aplicação remota. O SQL não é decomposto por permissões de coleção e campo como no painel de consulta. Conceda permissões de configuração de UI a usuários locais e à API key correspondente com cuidado.
+Ao usar o painel SQL, o usuário local precisa ter permissão de configuração da interface do usuário no aplicativo atual, e a chave de API remota também precisa ter essa permissão no aplicativo remoto. Ao contrário do painel de consultas, o SQL não divide os parâmetros da consulta de acordo com as permissões de tabelas e campos. Conceda com cautela as permissões de configuração da interface do usuário aos usuários locais e à chave de API correspondente.
 
-### Workflows
+###  Fluxos de trabalho
 
-Fontes de dados NocoBase externas podem envolver workflows na aplicação atual e na aplicação remota. A aplicação atual responde a eventos em páginas locais, botões e cadeias de requisições API. Depois que a aplicação remota recebe requisições encaminhadas, ela as processa de acordo com sua própria configuração de workflow.
+Uma fonte de dados NocoBase externa pode envolver dois conjuntos de fluxos de trabalho: o do aplicativo atual e o do aplicativo remoto. O aplicativo atual responde aos eventos na cadeia de solicitações de páginas locais, botões e APIs; depois que o aplicativo remoto recebe uma solicitação encaminhada, ele a processa de acordo com sua própria configuração de fluxo de trabalho.
 
-A aplicação atual não escuta eventos de criação, atualização ou exclusão que ocorrem dentro de coleções remotas. Eventos de coleções remotas são acionados apenas na aplicação remota.
+É importante observar que o aplicativo atual não monitora os eventos de criação, atualização ou exclusão ocorridos internamente nas tabelas de dados remotas. Os eventos das tabelas de dados remotas só serão acionados no aplicativo remoto.
 
-#### Gatilhos
+####  Gatilhos
 
-A tabela a seguir descreve como os gatilhos afetados por fontes de dados NocoBase externas se comportam na aplicação atual e na aplicação remota quando o workflow correspondente está habilitado.
+A tabela a seguir descreve, quando o fluxo de trabalho correspondente está ativado, como os gatilhos afetados pela fonte de dados NocoBase externa são acionados no aplicativo atual e no aplicativo remoto.
 
-| Gatilho | Aplicação atual | Aplicação remota | Descrição |
-| --- | --- | --- | --- |
-| Evento antes da ação | Acionado | Acionado apenas no modo global | Na aplicação atual, o modo global é acionado, e o modo local segue os vínculos de botões da aplicação atual. Depois que a aplicação remota recebe a requisição encaminhada, apenas o modo global é acionado |
-| Evento depois da ação | Acionado | Acionado apenas no modo global | Na aplicação atual, o modo global é acionado, e o modo local segue os vínculos de botões da aplicação atual. Depois que a aplicação remota recebe a requisição encaminhada, apenas o modo global é acionado |
-| Evento de ação personalizada | Acionado | Não acionado | Um botão "Acionar workflow" vinculado na aplicação atual aciona o workflow local. Requisições CRUD encaminhadas não acionam eventos de ação personalizada remotos |
-| Evento de coleção | Não acionado | Acionado | Os dados reais mudam na aplicação remota. A aplicação atual não aciona eventos locais de coleção, enquanto a aplicação remota aciona seus próprios eventos de coleção |
-| Gatilho agendado por campo de data | Não acionado | Acionado | A aplicação atual não aciona com base em campos de coleções remotas. A aplicação remota aciona de acordo com sua própria configuração de campos de data |
+| Gatilho | Aplicativo atual | Aplicativo remoto | Descrição |
+| ------- | ---------------- | ----------------- | --------- |
+| Evento antes da solicitação | Acionado | Acionado apenas no modo global | No aplicativo atual, é acionado no modo global; no modo local, é acionado conforme o botão ao qual está vinculado no aplicativo atual. Depois que o aplicativo remoto recebe a solicitação encaminhada, é acionado apenas no modo global |
+| Evento depois da solicitação | Acionado | Acionado apenas no modo global | No aplicativo atual, é acionado no modo global; no modo local, é acionado conforme o botão ao qual está vinculado no aplicativo atual. Depois que o aplicativo remoto recebe a solicitação encaminhada, é acionado apenas no modo global |
+| Evento de ação personalizada | Acionado | Não acionado | O botão 「Acionar fluxo de trabalho」 vinculado no aplicativo atual acionará o fluxo local; as solicitações CRUD encaminhadas não acionarão eventos de ação personalizada no aplicativo remoto |
+| Evento da tabela de dados | Não acionado | Acionado | Os dados reais são alterados remotamente, portanto o aplicativo atual não aciona eventos locais da tabela de dados; o aplicativo remoto aciona seus próprios eventos da tabela de dados |
+| Gatilho programado por campo de data | Não acionado | Acionado | O aplicativo atual não aciona gatilhos com base nos campos das tabelas de dados remotas; o aplicativo remoto aciona-os de acordo com a configuração de seus próprios campos de data |
 
-Gatilhos que não dependem de fontes de dados são acionados na aplicação atual e na aplicação remota de acordo com suas próprias configurações.
+Os gatilhos que não dependem de fontes de dados são acionados no aplicativo atual e no aplicativo remoto de acordo com as respectivas configurações.
 
-Para orquestrar workflows que operam dados NocoBase externos na aplicação atual, use eventos antes da ação, eventos depois da ação ou eventos de ação personalizada. Workflows existentes na aplicação remota são executados de forma independente na aplicação remota.
+Para orquestrar no aplicativo atual um fluxo que opere dados do NocoBase externo, recomenda-se usar eventos antes da solicitação, depois da solicitação ou de ação personalizada. Os fluxos de trabalho já existentes no aplicativo remoto são executados de forma independente pelo aplicativo remoto.
 
-#### Nós
+####  Nós
 
-A tabela a seguir lista apenas nós relacionados a fontes de dados. Nós gerais, como condição, cálculo, loop e processamento JSON, não dependem do tipo de fonte de dados e podem ser usados normalmente.
+A tabela a seguir lista apenas os nós relacionados a fontes de dados. Nós comuns, como condição, cálculo, loop e processamento de JSON, não dependem do tipo de fonte de dados e podem ser usados como em um fluxo de trabalho comum.
 
 | Nó | Disponível | Descrição |
-| --- | --- | --- |
-| Consultar registros | Disponível | Consulta registros na aplicação remota |
-| Criar registro | Disponível | Cria registros na aplicação remota |
-| Atualizar registro | Disponível | Atualiza registros na aplicação remota |
-| Excluir registro | Disponível | Exclui registros na aplicação remota |
-| Nó SQL | Não disponível | O nó SQL de workflow oferece suporte apenas a fontes de dados de banco de dados |
-| Nó de agregação | Não disponível | O nó de agregação oferece suporte apenas a fontes de dados de banco de dados |
+| --- | ---------- | --------- |
+| Consultar registros | Disponível | Consultar registros no aplicativo remoto |
+| Criar registros | Disponível | Criar registros no aplicativo remoto |
+| Atualizar registros | Disponível | Atualizar registros no aplicativo remoto |
+| Excluir registros | Disponível | Excluir registros no aplicativo remoto |
+| Nó SQL | Indisponível | O nó SQL de fluxo de trabalho é compatível apenas com fontes de dados de banco de dados |
+| Nó de agregação | Indisponível | O nó de agregação é compatível apenas com fontes de dados de banco de dados |
 
-## FAQ
+##  Perguntas frequentes
 
-### As Coleções Não Aparecem
+###  A tabela de dados não aparece
 
-Verifique se a fonte de dados está habilitada e se a URL da API e a API key estão corretas. A aplicação remota também deve permitir que essa API key acesse as coleções correspondentes.
+Verifique se a fonte de dados está ativada e se o endereço da API e a chave de API estão corretos. O aplicativo remoto também precisa permitir que essa chave de API acesse a tabela de dados correspondente.
 
-### Os Arquivos São Enviados, Mas Não Podem Ser Pré-visualizados
+###  O upload do arquivo foi concluído, mas não é possível visualizá-lo
 
-Se a aplicação atual ou a aplicação remota usar armazenamento local de arquivos, verifique se Origin é o endereço público de acesso da aplicação correspondente. Origin não deve ser a URL da API.
+Se o aplicativo atual ou o aplicativo remoto usar armazenamento local de arquivos, verifique se o Origin foi preenchido com o endereço público de acesso do aplicativo correspondente. O Origin não deve ser preenchido com o endereço da API.
 
-### A Aplicação Atual Tem Permissão, Mas a Operação Falha
+###  O aplicativo atual tem permissão, mas a operação falha
 
-Verifique as permissões da API key na aplicação remota. Fontes de dados NocoBase externas são afetadas pelas permissões da aplicação atual e da aplicação remota.
+Verifique as permissões da chave de API do aplicativo remoto. A fonte de dados NocoBase externa está sujeita simultaneamente às permissões do aplicativo atual e às do aplicativo remoto.
 
-### As Coleções Não Podem Ser Usadas Após um Erro do Serviço Remoto
+###  A tabela de dados não pode ser usada após uma falha no serviço remoto
 
-Se a aplicação remota retornar 502, reiniciar ou ficar temporariamente indisponível, a aplicação atual pode falhar temporariamente ao ler metadados de coleções remotas. Depois que o serviço remoto se recuperar, a aplicação atual recarrega automaticamente os metadados na próxima vez que as coleções dessa fonte de dados forem acessadas.
+Se o aplicativo remoto apresentar um erro 502, for reiniciado ou ficar temporariamente indisponível, o aplicativo atual poderá não conseguir ler temporariamente os metadados das tabelas de dados remotas. Depois que o serviço remoto for restaurado, o aplicativo atual recarregará automaticamente os metadados na próxima vez que a tabela de dados dessa fonte for acessada.
 
-### Por Que os Campos Não Podem Ser Configurados na Aplicação Atual
+###  Por que não é possível configurar campos no aplicativo atual
 
-Fontes de dados NocoBase externas usam a estrutura de coleções e a configuração de campos da aplicação remota. Ajuste os campos na aplicação remota e depois recarregue as coleções na aplicação atual.
+A fonte de dados NocoBase externa usa a estrutura das tabelas de dados e a configuração de campos do aplicativo remoto. Ajuste os campos no aplicativo remoto e depois volte ao aplicativo atual para recarregar as tabelas de dados.

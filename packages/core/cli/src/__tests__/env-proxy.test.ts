@@ -445,6 +445,12 @@ test('syncEnvProxyNginxSnippets copies nginx snippets into the provider snippets
       'uploads-location.conf',
     ]),
   );
+  expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
+    'location ~* \\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+  );
+  expect(await readFile(path.join(outputDir, 'uploads-location.conf'), 'utf8')).toContain(
+    'add_header Content-Security-Policy "sandbox" always;',
+  );
 });
 
 test('replaceManagedNginxConfigBlock preserves user-edited content outside the managed block', async () => {
@@ -476,6 +482,11 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain(':80 {');
   expect(result.content).toContain('encode zstd gzip');
   expect(result.content).toContain('handle_path /dist/*');
+  expect(result.content).toContain(
+    '@activeUploadedContent path_regexp activeUploadedContent (?i)\\.(?:htm|html|pdf|svg|svgz|xht|xhtml|xml|xsl|xslt)$',
+  );
+  expect(result.content).toContain('header @activeUploadedContent Content-Disposition attachment');
+  expect(result.content).toContain('header Content-Security-Policy sandbox');
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');

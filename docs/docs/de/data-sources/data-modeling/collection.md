@@ -1,17 +1,38 @@
-# Sammlungsübersicht
+---
+title: "Datentabelle"
+description: "Erfahren Sie mehr über die Funktion von NocoBase-Datentabellen, die verschiedenen Tabellenstrukturtypen, die Unterschiede zwischen der Hauptdatenbank und externen Datentabellen sowie die Auswahl zwischen regulären Tabellen, Vererbungstabellen, Baumtabellen, Dateitabellen, SQL-Tabellen und Datenbankansichten."
+keywords: "Datentabelle,Collection,reguläre Tabelle,Vererbungstabelle,Baumtabelle,Dateitabelle,SQL-Tabelle,Datenbankansicht,NocoBase"
+---
 
-NocoBase bietet eine einzigartige DSL (Domain-Specific Language) zur Beschreibung von Datenstrukturen, die als *Sammlung* bezeichnet wird. Diese vereinheitlicht Datenstrukturen aus verschiedenen Quellen und schafft so eine zuverlässige Grundlage für Datenmanagement, -analyse und -anwendungen.
+# Datentabelle
 
-![20240512161522](https://static-docs.nocobase.com/20240512161522.png)
+## Einführung
 
-Um verschiedene Datenmodelle bequem nutzen zu können, unterstützt NocoBase die Erstellung folgender Sammlungsarten:
+In NocoBase ist **Collection (Datentabelle)** ein Datenmodell zur Beschreibung einer bestimmten Art von Geschäftsdaten. Es handelt sich nicht einfach um den Namen einer Datenbanktabelle, sondern um die einheitliche Beschreibung einer Datenkategorie durch NocoBase.
 
-- [Standard-Sammlung](/data-sources/data-source-main/general-collection): Enthält integrierte, häufig verwendete Systemfelder.
-- [Vererbungs-Sammlung](/data-sources/data-source-main/inheritance-collection): Sie können eine übergeordnete Sammlung erstellen und davon eine untergeordnete Sammlung ableiten. Die untergeordnete Sammlung erbt die Struktur der übergeordneten Sammlung und kann zusätzlich eigene Spalten definieren.
-- [Baum-Sammlung](/data-sources/collection-tree): Eine Sammlung mit Baumstruktur, die derzeit nur das Adjazenzlisten-Design unterstützt.
-- [Kalender-Sammlung](/data-sources/calendar/calendar-collection): Dient zur Erstellung von Sammlungen für kalenderbezogene Ereignisse.
-- [Datei-Sammlung](/data-sources/file-manager/file-collection): Dient zur Verwaltung von Dateispeicher.
-- : Wird für dynamische Ausdrucksszenarien in Workflows verwendet.
-- [SQL-Sammlung](/data-sources/collection-sql): Ist keine tatsächliche Datenbank-Sammlung, sondern stellt SQL-Abfragen schnell und strukturiert dar.
-- [Ansichts-Sammlung](/data-sources/collection-view): Verbindet sich mit bestehenden Datenbankansichten.
-- [Externe Sammlung](/data-sources/collection-fdw): Ermöglicht dem Datenbanksystem den direkten Zugriff und die Abfrage von Daten in externen Datenquellen, basierend auf der FDW-Technologie.
+Eine Collection definiert in der Regel drei Dinge:
+
+| Definition | Beschreibung |
+| --- | --- |
+| Wo die Daten gespeichert werden | Die Daten können aus einer Tabelle der Hauptdatenbank, einer externen Datenbanktabelle, den Ergebnissen einer SQL-Abfrage, einer Datenbankansicht, einer REST-API-Ressource oder einer externen NocoBase-Anwendung stammen. |
+| Welche Felder vorhanden sind | Felder beschreiben, welche Informationen jeder Datensatz enthält, zum Beispiel Kundenname, Mobiltelefonnummer, Bestellbetrag, Erstellungszeitpunkt und Verantwortlicher. |
+| Wie sie von NocoBase verwendet wird | Seitenblöcke, Berechtigungen, Workflows, APIs und Beziehungsfelder arbeiten auf Grundlage von Collections. |
+
+Sie können sich eine Collection als „Datenstruktur eines Geschäftsobjekts“ vorstellen. Beispielsweise können „Kunden“, „Bestellungen“, „Verträge“ und „Aufgaben“ jeweils eine Collection sein.
+
+Nach dem Erstellen oder Einbinden einer Datentabelle müssen in der Regel noch drei weitere Schritte durchgeführt werden:
+
+- Felder konfigurieren, damit die Datentabelle die für das Geschäft erforderlichen Informationen speichern kann
+- Auf einer Seite [einen Block hinzufügen](../../interface-builder/blocks/index.md#添加区块), damit Benutzer Daten anzeigen, eingeben und bearbeiten können
+- Berechtigungen, Workflows und APIs konfigurieren, damit auf die Daten entsprechend den Geschäftsregeln zugegriffen werden kann und sie entsprechend weitergeleitet werden
+
+## Tabellenstrukturtypen
+
+- **Reguläre Tabelle** — Geeignet zum Speichern gewöhnlicher Geschäftsdaten wie Kunden, Bestellungen, Verträge, Arbeitsaufträge, Erstattungsanträge, Projekte und Aufgaben
+- **Baumtabelle** — Geeignet zum Speichern hierarchischer Daten wie Organisationsstrukturen, Produktkategorien, geografischen Hierarchien, Abteilungsverzeichnissen und Wissensbasisverzeichnissen
+- **Kalendertabelle** — Geeignet zum Speichern von Daten mit Zeiträumen wie Konferenzraumreservierungen, Projektzeitplänen, Kursplänen, Dienstplänen und Veranstaltungskalendern
+- **Kommentartabelle** — Geeignet zum Speichern von Diskussionen zu Geschäftsdaten, wie Aufgabenkommentaren, Artikelkommentaren, Genehmigungsanmerkungen und Kundenfeedback; erstellen Sie in einer Geschäftstabelle (reguläre Tabelle, Baumtabelle oder Kalendertabelle) ein [Beziehungsfeld](./collection-fields/associations/index.md) zur Verknüpfung mit der Kommentartabelle und erstellen Sie auf der Popup-Seite der Geschäftstabelle einen [Kommentarblock](../../plugins/@nocobase/plugin-comments/index.md), um die Geschäftsdaten zu kommentieren
+- **Dateitabelle** — Geeignet zum Speichern von Dateimetadaten wie Vertragsanhängen, Rechnungsdateien, Produktbildern und Mitarbeiterausweisen. Die Dateien selbst werden von der Dateispeicher-Engine gespeichert; erstellen Sie in einer Geschäftstabelle (reguläre Tabelle, Baumtabelle oder Kalendertabelle) ein [Beziehungsfeld](./collection-fields/associations/index.md) zur Verknüpfung mit der Dateitabelle und konfigurieren Sie beim Erstellen eines Blocks in der Geschäftstabelle das Hochladen von Dateien über das Beziehungsfeld. Die Dateimetadaten werden automatisch in der Dateitabelle gespeichert
+- **Datenbankansicht** — Eine bereits in der Datenbank vorhandene View, zum Beispiel eine Ansicht für Finanzberichte, eine gefilterte Kundenansicht oder eine aggregierte Ansicht nach der systemübergreifenden Synchronisierung
+- **SQL-Tabelle** — Geeignet, um die Ergebnisse von SQL-Abfragen, etwa Verkaufssummen, Bestandswarnungen, tabellenübergreifende Statistikberichte und Operations-Dashboards, als Datentabelle zu verwenden
+- **Vererbungstabelle** — Geeignet, wenn mehrere Arten von Geschäftsobjekten eine Gruppe gemeinsamer Felder verwenden, während jede Art zusätzlich eigene spezifische Felder besitzt, zum Beispiel wenn eine übergeordnete Asset-Tabelle die Asset-Typen Computer, Fahrzeuge und Büromöbel ableitet

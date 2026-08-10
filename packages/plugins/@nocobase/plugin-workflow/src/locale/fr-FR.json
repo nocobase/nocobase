@@ -251,6 +251,7 @@
   "Will be executed in the background as a queued task.": "Will be executed in the background as a queued task.",
   "Workflow": "Workflow",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "Le workflow n’a pas été déclenché, car la requête actuelle ne répond pas aux exigences du déclencheur.",
   "Workflow of execution is not existed": "Workflow of execution is not existed",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Workflow todos",

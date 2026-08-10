@@ -63,6 +63,8 @@ Lista blanca de destinos permitidos para solicitudes HTTP salientes iniciadas po
 
 Cuando esta variable no está configurada, NocoBase sigue permitiendo solicitudes `http` / `https` para mantener la compatibilidad con despliegues existentes. Sin embargo, si el destino es una dirección loopback, privada, link-local o metadata, o si un dominio resuelve a una de esas direcciones, el servidor escribe un warning en los logs. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
 
+Cuando esta variable está configurada, la solicitud inicial y cada destino de redirección deben coincidir con una entrada de la lista blanca. Si una redirección apunta a un host que no coincide, NocoBase se detiene antes de enviar la solicitud redirigida.
+
 Entradas admitidas:
 
 - Dirección IPv4 exacta, como `192.168.1.10`

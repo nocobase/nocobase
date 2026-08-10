@@ -112,6 +112,7 @@ describe('FlowRoute', () => {
         }),
       );
     });
+    expect(engine.context.deviceType).toBe('computer');
 
     rerender(
       <FlowEngineProvider engine={engine}>
@@ -420,14 +421,14 @@ describe('FlowRoute', () => {
     });
   });
 
-  it('should show 404 when current route is a legacy page in v2 runtime', async () => {
+  it('should explain how to open a legacy page outside the v2 runtime', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: {
         ...originalLocation,
-        pathname: '/v2/admin/test-page/tab/tab-1',
+        pathname: '/nocobase/v2/apps/jhb20/admin/test-page/tab/tab-1',
         search: '?from=direct',
         hash: '#dialog',
         replace,
@@ -446,9 +447,9 @@ describe('FlowRoute', () => {
       });
       engine.context.defineProperty('app', {
         value: {
-          getPublicPath: () => '/v2/',
+          getPublicPath: () => '/nocobase/v2/',
           router: {
-            getBasename: () => '/v2',
+            getBasename: () => '/nocobase/v2',
           },
         },
       });
@@ -464,15 +465,25 @@ describe('FlowRoute', () => {
 
       render(
         <FlowEngineProvider engine={engine}>
-          <MemoryRouter initialEntries={['/flow/test-page']}>
+          <MemoryRouter initialEntries={['/nocobase/v2/apps/jhb20/admin/test-page/tab/tab-1?from=direct#dialog']}>
             <Routes>
-              <Route path="/flow/:name" element={<FlowRoute />} />
+              <Route path="/nocobase/v2/apps/jhb20/admin/:name/*" element={<FlowRoute />} />
             </Routes>
           </MemoryRouter>
         </FlowEngineProvider>,
       );
 
-      expect(await screen.findByText('404')).toBeInTheDocument();
+      expect(await screen.findByText('This page is not supported in the /v2/ branch')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'The /v2/ branch only supports new pages. This page is a legacy page. Please open it from the original entry.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('404')).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open from the original entry' })).toHaveAttribute(
+        'href',
+        '/nocobase/apps/jhb20/admin/test-page/tab/tab-1?from=direct#dialog',
+      );
       expect(replace).not.toHaveBeenCalled();
       expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
       expect(adminLayoutModel.updateRoutePage).not.toHaveBeenCalled();
@@ -543,6 +554,113 @@ describe('FlowRoute', () => {
         value: originalLocation,
       });
     }
+  });
+
+  it('should render 404 for missing FlowModel in notFound mode without routeRepository', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/embed/missing-page']}>
+          <Routes>
+            <Route path="/embed/:name" element={<FlowRoute legacyPageBehavior="notFound" />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByText('404')).toBeInTheDocument();
+    expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
+  });
+
+  it('should bridge by default when routeRepository does not exist', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/missing-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('missing-page', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
+  });
+
+  it('should bridge existing FlowModel in notFound mode without routeRepository', async () => {
+    const engine = new FlowEngine();
+    engine.createModel({ uid: 'test-page', use: 'FlowModel' });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/embed/test-page']}>
+          <Routes>
+            <Route path="/embed/:name" element={<FlowRoute legacyPageBehavior="notFound" />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('test-page', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 
   it('should bridge existing FlowModel when behavior is notFound and routeRepository has no route', async () => {
@@ -817,7 +935,7 @@ describe('FlowRoute', () => {
     }
   });
 
-  it('should not redirect when route does not exist', async () => {
+  it('should render 404 when route and FlowModel do not exist', async () => {
     const originalLocation = window.location;
     const replace = vi.fn();
     Object.defineProperty(window, 'location', {
@@ -866,9 +984,8 @@ describe('FlowRoute', () => {
         </FlowEngineProvider>,
       );
 
-      await waitFor(() => {
-        expect(adminLayoutModel.registerRoutePage).toHaveBeenCalled();
-      });
+      expect(await screen.findByText('404')).toBeInTheDocument();
+      expect(adminLayoutModel.registerRoutePage).not.toHaveBeenCalled();
       expect(replace).not.toHaveBeenCalled();
     } finally {
       Object.defineProperty(window, 'location', {
@@ -876,6 +993,51 @@ describe('FlowRoute', () => {
         value: originalLocation,
       });
     }
+  });
+
+  it('should bridge existing FlowModel when route metadata does not exist', async () => {
+    const engine = new FlowEngine();
+    engine.createModel({ uid: 'test-page', use: 'FlowModel' });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
+        isAccessibleLoaded: () => true,
+        ensureAccessibleLoaded: vi.fn().mockResolvedValue([]),
+        getRouteBySchemaUid: vi.fn(() => undefined),
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        getPublicPath: () => '/v2/',
+        router: {
+          getBasename: () => '/v2',
+        },
+      },
+    });
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({ uid: 'admin-layout-model', use: 'FlowModel' }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/flow/test-page']}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('test-page', expect.any(Object));
+    });
+    expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 
   it('should keep sub app page inside spa when basename does not include /v2/', async () => {

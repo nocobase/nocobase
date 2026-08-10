@@ -1,50 +1,56 @@
-# Relación de Muchos a Muchos
+---
+title: "Muchos a muchos"
+description: "Campo de relación muchos a muchos (M2M), asociación muchos a muchos entre entidades de dos tablas, que normalmente requiere una tabla intermedia, como en el caso de estudiantes y cursos."
+keywords: "Muchos a muchos,M2M,BelongsToMany,tabla intermedia,campo de relación,NocoBase"
+---
 
-En un sistema de inscripción a cursos, tenemos dos entidades principales: estudiantes y cursos. Un estudiante puede inscribirse en múltiples cursos, y un curso puede tener a varios estudiantes inscritos. Esto es lo que conocemos como una relación de muchos a muchos. En una base de datos relacional, para representar esta relación entre estudiantes y cursos, normalmente utilizamos una **colección** intermedia, como una colección de inscripciones. Esta colección se encarga de registrar qué cursos ha elegido cada estudiante y qué estudiantes se han inscrito en cada curso. Este diseño nos permite representar de manera efectiva la relación de muchos a muchos entre estudiantes y cursos.
+# Muchos a muchos
 
-A continuación, le mostramos el diagrama ER:
+En un sistema de selección de cursos, existen dos entidades: estudiantes y cursos. Un estudiante puede inscribirse en varios cursos y un curso puede tener varios estudiantes inscritos, lo que constituye una relación muchos a muchos. En una base de datos relacional, para representar la relación muchos a muchos entre estudiantes y cursos, normalmente se utiliza una tabla intermedia, como una tabla de inscripciones. Esta tabla puede registrar qué cursos ha elegido cada estudiante y qué estudiantes están inscritos en cada curso. Este diseño permite representar eficazmente la relación muchos a muchos entre estudiantes y cursos.
+
+La relación ER es la siguiente
 
 ![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
 
-Y la configuración de los campos:
+Configuración de campos
 
 ![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
 
-## Descripción de los Parámetros
+## Descripción de los parámetros
 
-### Colección de Origen (Source collection)
+### Source collection
 
-Esta es la **colección** de origen, es decir, la **colección** donde se encuentra el campo actual.
+Tabla de origen, es decir, la tabla donde se encuentra el campo actual.
 
-### Colección de Destino (Target collection)
+### Target collection
 
-Se refiere a la **colección** de destino, con la que se establecerá la asociación.
+Tabla de destino, es decir, la tabla con la que se establece la relación.
 
-### Colección Intermedia (Through collection)
+### Through collection
 
-Esta es la **colección** intermedia que utilizamos cuando existe una relación de muchos a muchos entre dos entidades. Esta **colección** intermedia contiene dos claves foráneas que sirven para mantener la asociación entre ambas entidades.
+Tabla intermedia. Cuando existe una relación muchos a muchos entre dos entidades, es necesario utilizar una tabla intermedia para almacenarla. La tabla intermedia tiene dos claves foráneas que se utilizan para conservar la relación entre las dos entidades.
 
-### Clave de Origen (Source key)
+### Source key
 
-Es el campo de la **colección** de origen al que hace referencia la clave foránea. Es fundamental que este campo sea único.
+Campo al que hace referencia la restricción de clave foránea; debe ser único.
 
-### Clave Foránea 1 (Foreign key 1)
+### Foreign key 1
 
-Este es el campo de la **colección** intermedia que se utiliza para establecer la asociación con la **colección** de origen.
+Campo de la tabla intermedia que se utiliza para establecer la relación con la tabla de origen.
 
-### Clave Foránea 2 (Foreign key 2)
+### Foreign key 2
 
-Similarmente, este es el campo de la **colección** intermedia que se usa para establecer la asociación con la **colección** de destino.
+Campo de la tabla intermedia que se utiliza para establecer la relación con la tabla de destino.
 
-### Clave de Destino (Target key)
+### Target key
 
-Es el campo de la **colección** de destino al que hace referencia la clave foránea. Al igual que la clave de origen, debe ser único.
+Campo al que hace referencia la restricción de clave foránea; debe ser único.
 
 ### ON DELETE
 
-`ON DELETE` define las reglas que se aplican a las referencias de clave foránea en las **colecciones** hijas relacionadas cuando se eliminan registros de la **colección** padre. Es una opción que se utiliza al definir una restricción de clave foránea. Las opciones más comunes para `ON DELETE` son:
+ON DELETE se refiere a la regla de operación que se aplica a las referencias de claves foráneas de la tabla hija relacionada cuando se elimina un registro de la tabla padre. Es una opción que se utiliza al definir restricciones de clave foránea. Entre las opciones comunes de ON DELETE se incluyen:
 
-- **CASCADE**: Cuando se elimina un registro de la **colección** padre, todos los registros relacionados en la **colección** hija se eliminan automáticamente.
-- **SET NULL**: Cuando se elimina un registro de la **colección** padre, los valores de la clave foránea en los registros relacionados de la **colección** hija se establecen en `NULL`.
-- **RESTRICT**: Esta es la opción predeterminada. Impide la eliminación de un registro de la **colección** padre si existen registros relacionados en la **colección** hija.
-- **NO ACTION**: Es similar a `RESTRICT`. Impide la eliminación de un registro de la **colección** padre si existen registros relacionados en la **colección** hija.
+- CASCADE: al eliminar un registro de la tabla padre, se eliminan automáticamente todos los registros relacionados de la tabla hija.
+- SET NULL: al eliminar un registro de la tabla padre, el valor de la clave foránea relacionada en la tabla hija se establece en NULL.
+- RESTRICT: opción predeterminada. Si existen registros relacionados en la tabla hija al intentar eliminar un registro de la tabla padre, se rechaza la eliminación del registro de la tabla padre.
+- NO ACTION: similar a RESTRICT; si existen registros relacionados en la tabla hija, se rechaza la eliminación del registro de la tabla padre.

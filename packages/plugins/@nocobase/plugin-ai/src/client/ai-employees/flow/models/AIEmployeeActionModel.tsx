@@ -16,13 +16,17 @@ import {
   PopupSubTableFormActionGroupModel,
   RecordActionGroupModel,
 } from '@nocobase/client';
-import { FlowModelContext, escapeT } from '@nocobase/flow-engine';
+import { FlowModelContext, escapeT, tExpr } from '@nocobase/flow-engine';
 import { isHide } from '../../built-in/utils';
 import { AIEmployee } from '../../types';
 import { AIEmployeeListItem } from '../../AIEmployeeListItem';
 import { AIEmployeeShortcutModel } from './AIEmployeeShortcutModel';
 
 export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
+  get supportedActionLinkageStates() {
+    return ['visible', 'hidden'] as const;
+  }
+
   constructor(options: any) {
     super(options);
     this.props = {
@@ -33,7 +37,22 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
       },
     };
   }
+
+  protected renderHiddenInConfig(): React.ReactNode {
+    return <div style={{ display: 'inline-flex', opacity: 0.3 }}>{super.render()}</div>;
+  }
 }
+
+AIEmployeeButtonModel.registerFlow({
+  key: 'buttonSettings',
+  title: tExpr('Button settings'),
+  sort: -999,
+  steps: {
+    linkageRules: {
+      use: 'actionLinkageRules',
+    },
+  },
+});
 
 export class AIEmployeeActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;

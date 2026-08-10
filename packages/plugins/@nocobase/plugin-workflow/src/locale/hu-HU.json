@@ -251,6 +251,7 @@
   "Will be executed in the background as a queued task.": "A háttérben sorba állított feladatként kerül végrehajtásra.",
   "Workflow": "Munkafolyamat",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Munkafolyamat végrehajtva, az eredmény állapota: <1>{{statusText}}</1><2>Végrehajtás megtekintése</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "A munkafolyamat nem indult el, mert az aktuális kérés nem felelt meg az indítási feltételeknek.",
   "Workflow is not exists": "Workflow is not exists",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Munkafolyamat teendők",

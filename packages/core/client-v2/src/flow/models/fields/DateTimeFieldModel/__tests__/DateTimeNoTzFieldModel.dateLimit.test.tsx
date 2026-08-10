@@ -17,6 +17,8 @@ import { DateTimeNoTzPicker } from '../DateTimeNoTzFieldModel';
 let capturedDatePickerProps: any;
 let currentForm: any;
 const mockResolveJsonTemplate = vi.fn();
+const mockRunjs = vi.fn();
+const mockLoggerWarn = vi.fn();
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/flow-engine')>();
@@ -32,6 +34,10 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
     }),
     useFlowContext: () => ({
       resolveJsonTemplate: mockResolveJsonTemplate,
+      runjs: mockRunjs,
+      logger: {
+        warn: mockLoggerWarn,
+      },
     }),
   };
 });
@@ -64,6 +70,9 @@ describe('DateTimeNoTzPicker date range limit', () => {
     currentForm = undefined;
     capturedDatePickerProps = undefined;
     mockResolveJsonTemplate.mockReset();
+    mockRunjs.mockReset();
+    mockLoggerWarn.mockReset();
+    mockRunjs.mockResolvedValue({ success: true, value: undefined });
     mockResolveJsonTemplate.mockImplementation(async (params) => ({
       ...params,
       _maxDate: currentForm?.getFieldValue?.('b'),
@@ -238,5 +247,145 @@ describe('DateTimeNoTzPicker date range limit', () => {
     expect(timeConfig?.disabledHours?.()).toEqual([]);
     expect(timeConfig?.disabledMinutes?.(12)).toEqual([]);
     expect(timeConfig?.disabledSeconds?.(12, 34)).toEqual([]);
+  });
+
+  it('evaluates RunJS before applying minDate', async () => {
+    const code = 'return new Date("2026-05-10T08:09:10.000Z").toISOString();';
+    mockRunjs.mockResolvedValue({ success: true, value: '2026-05-10T08:09:10.000Z' });
+    mockResolveJsonTemplate.mockImplementation(async (params) => params);
+
+    render(<TestWrapper picker="date" showTime _minDate={{ code, version: 'v2' }} onChange={vi.fn()} value={null} />);
+
+    await waitFor(() => {
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-09 00:00:00'))).toBe(true);
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-10 00:00:00'))).toBe(false);
+    });
+
+    expect(mockRunjs.mock.calls[0]?.[0]).toBe(code);
+    expect(mockRunjs.mock.calls[0]?.[2]).toEqual({ version: 'v2' });
+    expect(mockResolveJsonTemplate).toHaveBeenCalledWith({
+      _minDate: '2026-05-10T08:09:10.000Z',
+      _maxDate: undefined,
+    });
+  });
+
+  it('supports a RunJS minDate together with a variable maxDate', async () => {
+    mockRunjs.mockResolvedValue({ success: true, value: '2026-05-10 08:00:00' });
+    mockResolveJsonTemplate.mockImplementation(async (params) => ({
+      ...params,
+      _maxDate: '2026-05-12 18:30:40',
+    }));
+
+    render(
+      <TestWrapper
+        picker="date"
+        showTime
+        _minDate={{ code: 'return "2026-05-10 08:00:00";', version: 'v2' }}
+        _maxDate={'{{ $nForm.max }}'}
+        onChange={vi.fn()}
+        value={null}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-09 00:00:00'))).toBe(true);
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-13 00:00:00'))).toBe(true);
+    });
+
+    expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-11 00:00:00'))).toBe(false);
+  });
+
+  it('clears stale restrictions when RunJS execution fails', async () => {
+    mockResolveJsonTemplate.mockImplementation(async (params) => params);
+    mockRunjs.mockImplementation(async (code) => {
+      if (code === 'throw new Error("failed");') {
+        return { success: false, error: new Error('failed') };
+      }
+      return { success: true, value: '2026-05-10 08:00:00' };
+    });
+
+    const view = render(
+      <TestWrapper
+        picker="date"
+        showTime
+        _minDate={{ code: 'return "2026-05-10 08:00:00";', version: 'v2' }}
+        onChange={vi.fn()}
+        value={null}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-09 00:00:00'))).toBe(true);
+    });
+
+    view.rerender(
+      <TestWrapper
+        picker="date"
+        showTime
+        _minDate={{ code: 'throw new Error("failed");', version: 'v2' }}
+        onChange={vi.fn()}
+        value={null}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockLoggerWarn).toHaveBeenCalled();
+      expect(capturedDatePickerProps?.minDate).toBeNull();
+      expect(capturedDatePickerProps?.disabledDate).toBeNull();
+      expect(capturedDatePickerProps?.disabledTime).toBeNull();
+    });
+  });
+
+  it('keeps the latest RunJS result when an earlier execution finishes later', async () => {
+    const slowResolvers: Array<(result: { success: boolean; value: string }) => void> = [];
+    mockResolveJsonTemplate.mockImplementation(async (params) => params);
+    mockRunjs.mockImplementation((code) => {
+      if (code === 'return "slow";') {
+        return new Promise((resolve) => {
+          slowResolvers.push(resolve);
+        });
+      }
+      return Promise.resolve({ success: true, value: '2026-06-01 00:00:00' });
+    });
+
+    const view = render(
+      <TestWrapper
+        picker="date"
+        showTime
+        _minDate={{ code: 'return "slow";', version: 'v2' }}
+        onChange={vi.fn()}
+        value={null}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(slowResolvers.length).toBeGreaterThan(0);
+    });
+
+    view.rerender(
+      <TestWrapper
+        picker="date"
+        showTime
+        _minDate={{ code: 'return "fast";', version: 'v2' }}
+        onChange={vi.fn()}
+        value={null}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-05-31 00:00:00'))).toBe(true);
+      expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-07-01 00:00:00'))).toBe(false);
+    });
+
+    slowResolvers.forEach((resolve) => resolve({ success: true, value: '2026-12-01 00:00:00' }));
+
+    await waitFor(() => {
+      expect(mockResolveJsonTemplate).toHaveBeenCalledWith({
+        _minDate: '2026-12-01 00:00:00',
+        _maxDate: undefined,
+      });
+    });
+
+    expect(capturedDatePickerProps?.disabledDate?.(dayjs('2026-07-01 00:00:00'))).toBe(false);
   });
 });

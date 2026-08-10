@@ -255,6 +255,8 @@
   "UID": "UID",
   "Up": "Up",
   "Upload files": "Upload files",
+  "You can upload up to {{count}} attachments.": "You can upload up to {{count}} attachments.",
+  "The total size of attachments cannot exceed {{size}}.": "The total size of attachments cannot exceed {{size}}.",
   "Use skill": "Use skill",
   "Use skills": "Use skills",
   "Use workflow as a tool": "Use workflow as a tool",
@@ -461,5 +463,7 @@
   "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.": "When enabled, URL and headers can use current user variables and NocoBase request variables. Stdio transport is not supported.",
   "Connection test failed": "Connection test failed",
   "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?": "The MCP server uses current user variables and the connection test failed. Do you want to save it anyway?",
+  "Invalid attachment": "Invalid attachment",
+  "Attachment not found": "Attachment not found",
   "Save anyway": "Save anyway"
 }

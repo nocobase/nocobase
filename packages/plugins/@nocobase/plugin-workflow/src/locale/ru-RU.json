@@ -251,6 +251,7 @@
   "Will be executed in the background as a queued task.": "Будет выполнен в фоновом режиме как задача в очереди.",
   "Workflow": "Рабочий процесс",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Рабочий процесс выполнен, статус результата: <1>{{statusText}}</1><2>Посмотреть выполнение</2>",
+  "Workflow was not triggered because the current request did not meet the trigger requirements.": "Рабочий процесс не был запущен, так как текущий запрос не соответствует требованиям триггера.",
   "Workflow of execution is not existed": "Workflow of execution is not existed",
   "Workflow tasks": "Workflow tasks",
   "Workflow todos": "Задачи рабочего процесса",

@@ -367,7 +367,7 @@ SERVER_REQUEST_WHITELIST=api.example.com,*.trusted.com,10.0.0.0/8,127.0.0.1
 
 **Sin configurar**: Todas las solicitudes salientes `http` / `https` siguen permitidas para conservar el comportamiento existente. Sin embargo, si el destino es una dirección loopback, privada, link-local o metadata, o si un dominio resuelve a una de esas direcciones, el servidor escribe un warning en los logs.
 
-**Configurado**: Solo se permiten solicitudes cuyo host coincida con una entrada de la lista blanca; las solicitudes que no coincidan generarán un error. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
+**Configurado**: La solicitud inicial y cada destino de redirección deben coincidir con la lista blanca. Si no coinciden, NocoBase genera un error antes de enviar la siguiente solicitud. Versiones futuras pueden endurecer gradualmente el comportamiento predeterminado. Si tu despliegue necesita acceder a servicios internos, configura una lista blanca explícita con antelación.
 
 Formatos admitidos:
 

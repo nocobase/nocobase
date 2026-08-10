@@ -55,6 +55,7 @@ import {
 } from './workflow/nodes/employee';
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
+import { appendAIFileAttachmentSource } from './attachments';
 
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
@@ -217,6 +218,20 @@ export class PluginAIServer extends Plugin {
         await next();
       },
       { before: 'createMiddleware' },
+    );
+
+    this.app.resourceManager.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.action.params.values);
+        }
+        await next();
+        if (resourceName === 'aiFiles' && actionName === 'create') {
+          appendAIFileAttachmentSource(ctx.body);
+        }
+      },
+      { after: 'createMiddleware' },
     );
 
     Object.entries(aiEmployeeActions).forEach(([name, action]) => {

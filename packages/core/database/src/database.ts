@@ -1046,7 +1046,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       async onDump(dumper, collection: Collection) {
         try {
-          const viewDef = await collection.db.queryInterface.viewDef(collection.getTableNameWithSchemaAsString());
+          const viewDef = await collection.db.queryInterface.viewDef({
+            viewName: collection.model.tableName,
+            schema: collection.db.inDialect('postgres') ? collection.collectionSchema() : undefined,
+          });
 
           dumper.writeSQLContent(`view-${collection.name}`, {
             sql: [

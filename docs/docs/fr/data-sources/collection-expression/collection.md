@@ -1,23 +1,29 @@
-# Collection d'expressions
+---
+title: "Table des expressions"
+description: "La table des expressions est utilisée pour les calculs d’expressions dynamiques dans les workflows. Elle stocke les règles de calcul et les formules, prend en charge les champs de différents modèles de données comme variables et peut être associée aux données métier."
+keywords: "table des expressions, expressions dynamiques, expressions de workflow, règles de calcul, formules, NocoBase"
+---
 
-## Créer une collection modèle "Expression"
+# Table des expressions
 
-Avant d'utiliser des nœuds d'opération d'expression dynamique dans un flux de travail, vous devez d'abord créer une collection modèle "Expression" à l'aide de l'outil de gestion des collections. Cette collection servira de référentiel pour différentes expressions :
+## Créer une table modèle « expression »
 
-![Créer une collection modèle d'expressions](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
+Avant d’utiliser le nœud de calcul d’expressions dynamiques dans un workflow, vous devez d’abord créer une table modèle « expression » dans l’outil de gestion des tables de données afin d’y stocker différentes expressions :
 
-## Saisir les données d'expression
+![Créer une table modèle d’expressions](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
 
-Ensuite, créez un bloc tableau pour ajouter plusieurs entrées de formule à cette collection modèle. Chaque ligne de données dans la collection modèle "Expression" peut être considérée comme une règle de calcul conçue pour un modèle de données spécifique au sein de la collection. Vous pouvez utiliser les valeurs de champ des modèles de données de différentes collections comme variables, en élaborant des expressions uniques comme règles de calcul. Bien sûr, vous pouvez également utiliser différents moteurs de calcul.
+## Saisir les données des expressions
 
-![Saisir les données d'expression](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+Créez ensuite un bloc de tableau dans cette table modèle afin d’y ajouter plusieurs formules. Chaque ligne de la table modèle « expression » peut être comprise comme une règle de calcul pour un modèle de données de table spécifique. Les valeurs des champs de différents modèles de données de tables peuvent être utilisées comme variables dans chaque formule, ce qui permet de définir différentes expressions comme règles de calcul. Vous pouvez également utiliser différents moteurs de calcul.
 
-:::info{title=Conseil}
-Une fois les formules établies, vous devez les lier aux données métier. Associer directement chaque ligne de données métier à une ligne de données de formule peut être fastidieux. C'est pourquoi nous utilisons généralement une collection de métadonnées, similaire à une collection de classification, pour créer une relation plusieurs-à-un (ou un-à-un) avec la collection de formules. Ensuite, les données métier sont associées aux métadonnées classifiées via une relation plusieurs-à-un. Cette approche vous permet de simplement spécifier les métadonnées classifiées pertinentes lors de la création des données métier, facilitant ainsi la localisation et l'utilisation des données de formule correspondantes via le chemin d'association établi.
+![Saisir les données des expressions](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+
+:::info{title=Remarque}
+Après avoir créé les formules, vous devez encore associer les données métier aux formules. Comme il serait fastidieux d’associer directement chaque ligne de données métier à une ligne de données de formule, on utilise généralement une table de métadonnées similaire à une table de catégories, associée à la table des formules selon une relation plusieurs-à-un (ou un-à-un), puis on associe les données métier aux métadonnées de catégorie selon une relation plusieurs-à-un. Ainsi, lors de la création de données métier, il suffit de spécifier les métadonnées de catégorie correspondantes pour pouvoir retrouver et utiliser ultérieurement les données de formule correspondantes via ce chemin d’association.
 :::
 
-## Charger les données pertinentes dans le flux de travail
+## Charger les données correspondantes dans le workflow
 
-À titre d'exemple, créez un flux de travail déclenché par un événement de collection. Lorsque vous créez une commande, le déclencheur doit précharger les données de produit associées à la commande, ainsi que les données d'expression liées à ces produits :
+Prenons comme exemple un événement de table de données : créez un workflow qui se déclenche lors de la création d’une commande et qui doit précharger les données des produits associés à la commande ainsi que les données des expressions associées aux produits :
 
-![Événement de collection_Configuration du déclencheur](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)
+![Configuration du déclencheur d’événement de table de données](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

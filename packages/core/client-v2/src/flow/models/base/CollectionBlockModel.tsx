@@ -82,6 +82,15 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     const engine = this.context.engine as FlowEngine;
     const currentVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
 
+    if (resource instanceof MultiRecordResource && this.getDataLoadingMode() === 'manual' && !this.hasActiveFilters()) {
+      resource.setData([]);
+      resource.setMeta({ count: 0, hasNext: false });
+      resource.setPage(1);
+      resource.loading = false;
+      this.lastSeenDirtyVersion = currentVersion;
+      return;
+    }
+
     if (forceRefresh) {
       if (this.dirtyRefreshing) return;
       this.dirtyRefreshing = true;
@@ -569,9 +578,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     }
     if (fieldPath.includes('.')) {
       // 关系数据
+      const collection = this.collection;
+      if (!collection) {
+        return;
+      }
       const [field1, field2] = fieldPath.split('.');
       const associationField = this.context.dataSourceManager.getCollectionField(
-        `${this.collection.dataSourceKey}.${this.collection.name}.${field1}`,
+        `${collection.dataSourceKey}.${collection.name}.${field1}`,
       ) as CollectionField;
       if (!associationField) {
         return;
@@ -583,7 +596,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       }
 
       const collectionField = this.context.dataSourceManager.getCollectionField(
-        `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,
+        `${collection.dataSourceKey}.${targetCollectionName}.${field2}`,
       ) as CollectionField;
 
       if (collectionField && collectionField.isAssociationField()) {

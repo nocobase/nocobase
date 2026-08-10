@@ -94,6 +94,10 @@ export class FormBlockModel<
 > extends CollectionBlockModel<T> {
   formValueRuntime?: FormValueRuntime;
 
+  serialize() {
+    return { ...super.serialize(), variableContractType: { type: 'form', use: this.use } };
+  }
+
   private userModifiedTopLevelFields = new Set<string>();
 
   get form() {

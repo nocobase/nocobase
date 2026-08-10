@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { FlowContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowView } from '../views/FlowView';
-import { buildPopupRuntime, createPopupMeta } from '../views/createViewMeta';
+import { buildPopupRuntime, createPopupMeta, registerPopupVariable } from '../views/createViewMeta';
 
 describe('createPopupMeta - popup variables', () => {
   function makeCtx() {
@@ -167,6 +167,7 @@ describe('createPopupMeta - popup variables', () => {
   it('buildPopupRuntime anchors current popup even when the navigation stack already has a child popup', async () => {
     const { engine, ctx } = makeCtx();
     const parentView = makeNestedPopupView('parent-popup-uid', 13);
+    parentView.inputArgs.parentItem = { value: { id: 13, phone: '9999' } };
     mockNestedPopupModels(engine);
 
     const popup = await buildPopupRuntime(ctx, parentView);
@@ -179,6 +180,7 @@ describe('createPopupMeta - popup variables', () => {
       filterByTk: 13,
       sourceId: 13,
     });
+    expect(popup?.sourceRecord).toEqual({ id: 13, phone: '9999' });
   });
 
   it('buildVariablesParams(record) keeps the parent view record when a child popup is open', async () => {
@@ -313,5 +315,86 @@ describe('createPopupMeta - popup variables', () => {
     const meta = (await createPopupMeta(ctx, anchorView)())!;
     const props = typeof meta.properties === 'function' ? await (meta.properties as any)() : meta.properties || {};
     expect(props.record).toBeUndefined();
+  });
+
+  it('uses the current parent item value for popup sourceRecord fields', async () => {
+    const { ctx } = makeCtx();
+    const parentItemResolver = vi.fn(() => false);
+    const anchorView: FlowView = {
+      type: 'dialog',
+      inputArgs: {
+        openerUids: ['opener-uid-1'],
+        viewUid: 'popup-uid',
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+        associationName: 'users.roles',
+        sourceId: 1,
+        parentItem: { value: { id: 1, phone: '9999' } },
+        parentItemResolver,
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+    } as any;
+
+    registerPopupVariable(ctx, anchorView);
+
+    await expect(ctx.popup).resolves.toMatchObject({
+      sourceRecord: { id: 1, phone: '9999' },
+    });
+    expect(ctx.getPropertyOptions('popup')?.resolveOnServer?.('sourceRecord.phone')).toBe(false);
+    expect(parentItemResolver).toHaveBeenCalledWith('value.phone');
+  });
+
+  it('resolves a popup sourceRecord field from the current parent item without a server request', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context;
+    const anchorView: FlowView = {
+      type: 'dialog',
+      inputArgs: {
+        openerUids: ['opener-uid-1'],
+        viewUid: 'popup-uid',
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+        associationName: 'users.roles',
+        sourceId: 1,
+        parentItem: { value: { id: 1, phone: '9999' } },
+        parentItemResolver: () => false,
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+    } as any;
+
+    registerPopupVariable(ctx, anchorView);
+
+    await expect(ctx.resolveJsonTemplate('{{ ctx.popup.sourceRecord.phone }}')).resolves.toBe('9999');
+  });
+
+  it('keeps server resolution for popup sourceRecord association subpaths', async () => {
+    const { ctx } = makeCtx();
+    const anchorView: FlowView = {
+      type: 'dialog',
+      inputArgs: {
+        openerUids: ['opener-uid-1'],
+        viewUid: 'popup-uid',
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+        associationName: 'users.roles',
+        sourceId: 1,
+        parentItem: { value: { id: 1, departmentId: 2 } },
+        parentItemResolver: (path: string) => path === 'value.department.title',
+      },
+      Header: null,
+      Footer: null,
+      close: () => void 0,
+      update: () => void 0,
+    } as any;
+
+    registerPopupVariable(ctx, anchorView);
+
+    expect(ctx.getPropertyOptions('popup')?.resolveOnServer?.('sourceRecord.department.title')).toBe(true);
   });
 });

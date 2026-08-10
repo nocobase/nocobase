@@ -26,7 +26,7 @@ features:
         link: /ai/install-nocobase-app
       - title: チュートリアル
         details: ゼロから始めて、チュートリアルに沿って実際のプロジェクトを構築します。
-        link: /tutorials/v2/
+        link: /tutorials/
   - title: AI
     details: AI 駆動の新しい入門方法 — 自然言語で構築、使用、開発を行います。
     items:

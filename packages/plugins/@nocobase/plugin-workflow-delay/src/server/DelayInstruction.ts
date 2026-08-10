@@ -21,6 +21,7 @@ type ValueOf<T> = T[keyof T];
 interface DelayConfig {
   endStatus: ValueOf<typeof JOB_STATUS>;
   duration: number;
+  unit: number;
 }
 
 const UNITS = [1_000, 60_000, 3_600_000, 86_400_000, 604_800_000];
@@ -29,6 +30,7 @@ export default class extends Instruction {
   timers: Map<string, NodeJS.Timeout> = new Map();
 
   configSchema = Joi.object({
+    duration: Joi.number().min(1),
     endStatus: Joi.number().valid(JOB_STATUS.RESOLVED, JOB_STATUS.FAILED),
     unit: Joi.number().valid(...UNITS),
   });
@@ -100,7 +102,7 @@ export default class extends Instruction {
       job.execution = await job.getExecution();
     }
     if (job.execution.status === EXECUTION_STATUS.STARTED) {
-      this.workflow.resume(job);
+      await this.workflow.resume(job).catch(() => {});
     }
     const idStr = job.id.toString();
     if (this.timers.get(idStr)) {

@@ -45,6 +45,34 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
+type FilterStateTarget = {
+  setFilterActive?: (filterId: string, active: boolean) => void;
+  hasActiveFilters?: () => boolean;
+  removeFilterSource?: (filterId: string) => void;
+  getDataLoadingMode?: () => 'auto' | 'manual';
+};
+
+type PreparedFilterBlock = {
+  markInitialTargetRefreshHandled?: (targetId: string) => void;
+};
+
+type ReferenceFilterConfig = {
+  filterId?: string;
+  targetId?: string;
+};
+
+type ReferenceFilterManager = {
+  getFilterConfigs?: () => ReferenceFilterConfig[];
+  prepareFiltersForTarget?: (targetId: string) => Promise<Set<PreparedFilterBlock>>;
+  bindToTarget?: (targetId: string) => void;
+};
+
+type ReferenceFilterModel = {
+  context?: {
+    blockModel?: PreparedFilterBlock;
+  };
+};
+
 function isNonEmptyValue(value: unknown): boolean {
   return value !== undefined && value !== null && String(value).trim() !== '';
 }
@@ -233,6 +261,83 @@ export class ReferenceBlockModel extends BlockModel {
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
 
+  private _getFilterStateTarget(): FilterStateTarget | undefined {
+    return this._targetModel as FilterStateTarget | undefined;
+  }
+
+  private _getReferenceFilterManager(): ReferenceFilterManager | undefined {
+    return this.context?.filterManager as ReferenceFilterManager | undefined;
+  }
+
+  private _markShellInitialFilterRefreshHandled() {
+    const filterConfigs = this._getReferenceFilterManager()?.getFilterConfigs?.();
+    if (!Array.isArray(filterConfigs)) {
+      return;
+    }
+
+    const filterIds = new Set(
+      filterConfigs
+        .filter((config) => config.targetId === this.uid && typeof config.filterId === 'string' && config.filterId)
+        .map((config) => config.filterId as string),
+    );
+
+    filterIds.forEach((filterId) => {
+      try {
+        const filterModel = this.flowEngine?.getModel?.(filterId) as ReferenceFilterModel | undefined;
+        filterModel?.context?.blockModel?.markInitialTargetRefreshHandled?.(this.uid);
+      } catch (_) {
+        // ignore
+      }
+    });
+  }
+
+  private _createTargetFilterManager(target: FlowModel): ReferenceFilterManager | undefined {
+    const filterManager = this._getReferenceFilterManager();
+    if (!filterManager) {
+      return undefined;
+    }
+
+    const getTargetIdForFilterManager = (targetId: string) => (targetId === target.uid ? this.uid : targetId);
+    return new Proxy(filterManager, {
+      get: (source, prop) => {
+        if (prop === 'prepareFiltersForTarget') {
+          if (typeof source.prepareFiltersForTarget !== 'function') {
+            return undefined;
+          }
+          return (targetId: string) => source.prepareFiltersForTarget?.(getTargetIdForFilterManager(targetId));
+        }
+        if (prop === 'bindToTarget') {
+          if (typeof source.bindToTarget !== 'function') {
+            return undefined;
+          }
+          return (targetId: string) => source.bindToTarget?.(getTargetIdForFilterManager(targetId));
+        }
+
+        const value = Reflect.get(source, prop, source);
+        return typeof value === 'function' ? value.bind(source) : value;
+      },
+    });
+  }
+
+  setFilterActive(filterId: string, active: boolean) {
+    super.setFilterActive(filterId, active);
+    const target = this._getFilterStateTarget();
+    target?.setFilterActive?.(filterId, active);
+  }
+
+  hasActiveFilters(): boolean {
+    return super.hasActiveFilters() || this._getFilterStateTarget()?.hasActiveFilters?.() === true;
+  }
+
+  removeFilterSource(filterId: string) {
+    super.removeFilterSource(filterId);
+    this._getFilterStateTarget()?.removeFilterSource?.(filterId);
+  }
+
+  getDataLoadingMode(): 'auto' | 'manual' {
+    return this._getFilterStateTarget()?.getDataLoadingMode?.() || super.getDataLoadingMode();
+  }
+
   private _restoreTemplateFallbackPatch(target?: FlowModel) {
     if (!target) return;
     const original = (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] as
@@ -417,6 +522,10 @@ export class ReferenceBlockModel extends BlockModel {
 
     const bridge = new FlowContext();
     bridge.defineProperty('engine', { value: engine });
+    bridge.defineProperty('filterManager', {
+      cache: false,
+      get: () => this._createTargetFilterManager(target),
+    });
     bridge.addDelegate(this.context as any);
     target.context.addDelegate(bridge);
     targetContext[TARGET_CONTEXT_BRIDGE_MARKER] = true;
@@ -435,6 +544,19 @@ export class ReferenceBlockModel extends BlockModel {
       parent: this,
       subKey: 'target',
       model: target,
+    });
+  }
+
+  private async _bindReferenceFiltersToResolvedTarget() {
+    const filterManager = this._getReferenceFilterManager();
+    if (!filterManager?.prepareFiltersForTarget && !filterManager?.bindToTarget) {
+      return;
+    }
+
+    const preparedFilterBlocks = await filterManager.prepareFiltersForTarget?.(this.uid);
+    filterManager.bindToTarget?.(this.uid);
+    preparedFilterBlocks?.forEach((filterBlock) => {
+      filterBlock?.markInitialTargetRefreshHandled?.(this.uid);
     });
   }
 
@@ -500,6 +622,7 @@ export class ReferenceBlockModel extends BlockModel {
         },
       });
     });
+    this._markShellInitialFilterRefreshHandled();
   }
 
   // 让 `ctx.model.setProps/getProps` 在引用区块场景下也作用到目标模型
@@ -585,6 +708,7 @@ export class ReferenceBlockModel extends BlockModel {
 
   public async onDispatchEventStart(eventName: string): Promise<void> {
     if (eventName !== 'beforeRender') return;
+    this._markShellInitialFilterRefreshHandled();
     const stepParams = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
     const targetUid = (stepParams?.targetUid || '').trim() || undefined;
     if (!targetUid) {
@@ -674,6 +798,7 @@ export class ReferenceBlockModel extends BlockModel {
     // 关键：让 ctx.model.props.xxx 的写法在引用区块中也能作用到目标区块
     // - beforeRender 的 flows 会在 onDispatchEventStart 之后执行，因此这里同步可以保证事件流拿到的是目标 props
     this.props = target.props;
+    await this._bindReferenceFiltersToResolvedTarget();
   }
 
   async destroy(): Promise<boolean> {

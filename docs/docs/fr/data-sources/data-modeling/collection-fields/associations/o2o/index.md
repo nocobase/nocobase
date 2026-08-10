@@ -1,26 +1,32 @@
+---
+title: "Un-à-un"
+description: "Champ de relation un-à-un (O2O), où deux entités de table correspondent une à une, utilisé pour stocker séparément différents aspects d’une entité."
+keywords: "Un-à-un,O2O,HasOne,BelongsTo,Champ de relation,NocoBase"
+---
+
 # Un-à-un
 
-Dans une relation entre des employés et des profils personnels, chaque employé ne peut avoir qu'un seul enregistrement de profil personnel, et chaque enregistrement de profil personnel ne peut correspondre qu'à un seul employé. On parle alors d'une relation un-à-un entre l'employé et le profil personnel.
+La relation entre les employés et leurs profils personnels : chaque employé ne peut avoir qu’un seul profil personnel, et chaque profil personnel ne peut correspondre qu’à un seul employé. Dans ce cas, les employés et les profils personnels sont liés par une relation un-à-un.
 
-La clé étrangère dans une relation un-à-un peut être placée soit dans la collection source, soit dans la collection cible. Si elle représente une relation de type « a un », la clé étrangère est plus appropriée dans la collection cible. Si elle représente une relation de type « appartient à », alors la clé étrangère est mieux placée dans la collection source.
+Pour une relation un-à-un, la clé étrangère peut être placée dans la table source ou dans la table cible. Si elle représente « possède un », il est plus approprié de placer la clé étrangère dans la table cible ; si elle représente une « appartenance », il est plus approprié de la placer dans la table source.
 
-Par exemple, dans le cas mentionné ci-dessus, où un employé n'a qu'un seul profil personnel et que ce profil personnel appartient à l'employé, il est approprié de placer la clé étrangère dans la collection de profils personnels.
+Dans l’exemple ci-dessus, un employé ne possède qu’un seul profil personnel, et le profil personnel appartient à l’employé. Il est donc préférable de placer cette clé étrangère dans la table des profils personnels.
 
-## Un-à-un (A un)
+## Un-à-un (possède un)
 
-Cela indique qu'un employé a un enregistrement de profil personnel.
+Indique qu’un employé possède un profil personnel
 
 Relation ER
 
-![alt text](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
+![texte alternatif](https://static-docs.nocobase.com/4359e128936bbd7c9ff51bcff1d646dd.png)
 
 Configuration du champ
 
-![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
+![texte alternatif](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
-## Un-à-un (Appartient à)
+## Un-à-un (appartenance)
 
-Cela indique qu'un profil personnel appartient à un employé spécifique.
+Indique qu’un profil personnel appartient à un employé
 
 Relation ER
 
@@ -28,35 +34,35 @@ Relation ER
 
 Configuration du champ
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
+![texte alternatif](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## Description des paramètres
 
 ### Source collection
 
-La collection source, c'est-à-dire la collection où se trouve le champ actuel.
+Table source, c’est-à-dire la table dans laquelle se trouve le champ actuel.
 
 ### Target collection
 
-La collection cible, la collection avec laquelle la relation est établie.
+Table cible, avec laquelle la relation est établie.
 
 ### Foreign key
 
-Utilisée pour établir une relation entre deux collections. Dans une relation un-à-un, la clé étrangère peut être placée soit dans la collection source, soit dans la collection cible. Si elle représente une relation de type « a un », la clé étrangère est plus appropriée dans la collection cible. Si elle représente une relation de type « appartient à », alors la clé étrangère est mieux placée dans la collection source.
+Utilisée pour établir la relation entre les deux tables. Pour une relation un-à-un, la clé étrangère peut être placée dans la table source ou dans la table cible. Si elle représente « possède un », il est plus approprié de placer la clé étrangère dans la table cible ; si elle représente une « appartenance », il est plus approprié de la placer dans la table source.
 
-### Source key <- Foreign key (Clé étrangère dans la collection cible)
+### Source key <- Foreign key (clé étrangère dans la table cible)
 
-Le champ référencé par la contrainte de clé étrangère doit être unique. Lorsque la clé étrangère est placée dans la collection cible, cela indique une relation de type « a un ».
+Champ référencé par la contrainte de clé étrangère, qui doit être unique. Lorsque la clé étrangère se trouve dans la table cible, elle représente « possède un ».
 
-### Target key <- Foreign key (Clé étrangère dans la collection source)
+### Target key <- Foreign key (clé étrangère dans la table source)
 
-Le champ référencé par la contrainte de clé étrangère doit être unique. Lorsque la clé étrangère est placée dans la collection source, cela indique une relation de type « appartient à ».
+Champ référencé par la contrainte de clé étrangère, qui doit être unique. Lorsque la clé étrangère se trouve dans la table source, elle représente une « appartenance ».
 
 ### ON DELETE
 
-ON DELETE fait référence aux règles d'action pour la référence de clé étrangère dans la collection enfant associée lors de la suppression d'enregistrements de la collection parente. C'est une option définie lors de l'établissement d'une contrainte de clé étrangère. Les options ON DELETE courantes incluent :
+ON DELETE désigne la règle d’opération appliquée aux références de clé étrangère dans la table enfant lors de la suppression d’un enregistrement dans la table parente. Il s’agit d’une option utilisée lors de la définition d’une contrainte de clé étrangère. Les options ON DELETE courantes incluent :
 
-- CASCADE : Lorsque vous supprimez un enregistrement dans la collection parente, tous les enregistrements associés dans la collection enfant sont automatiquement supprimés.
-- SET NULL : Lorsque vous supprimez un enregistrement dans la collection parente, la valeur de la clé étrangère dans la collection enfant associée est définie sur NULL.
-- RESTRICT : L'option par défaut. La suppression d'un enregistrement de la collection parente est refusée s'il existe des enregistrements associés dans la collection enfant.
-- NO ACTION : Similaire à RESTRICT. La suppression d'un enregistrement de la collection parente est refusée s'il existe des enregistrements associés dans la collection enfant.
+- CASCADE : lors de la suppression d’un enregistrement dans la table parente, tous les enregistrements associés de la table enfant sont automatiquement supprimés.
+- SET NULL : lors de la suppression d’un enregistrement dans la table parente, la valeur de clé étrangère associée dans la table enfant est définie sur NULL.
+- RESTRICT : option par défaut ; si des enregistrements associés existent dans la table enfant lors d’une tentative de suppression d’un enregistrement de la table parente, la suppression de l’enregistrement parent est refusée.
+- NO ACTION : similaire à RESTRICT ; si des enregistrements associés existent dans la table enfant, la suppression de l’enregistrement parent est refusée.

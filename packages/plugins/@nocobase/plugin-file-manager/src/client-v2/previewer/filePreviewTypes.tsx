@@ -127,8 +127,16 @@ const FALLBACK_ICON_MAP: Record<string, string> = {
   default: '/file-placeholder/unknown-200-200.png',
 };
 
-const ACTIVE_CONTENT_MIMETYPES = new Set(['application/pdf', 'application/xhtml+xml', 'image/svg+xml', 'text/html']);
-const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'pdf', 'svg', 'svgz', 'xhtml']);
+const ACTIVE_CONTENT_MIMETYPES = new Set([
+  'application/pdf',
+  'application/xhtml+xml',
+  'application/xml',
+  'application/xslt+xml',
+  'image/svg+xml',
+  'text/html',
+  'text/xml',
+]);
+const ACTIVE_CONTENT_EXTENSIONS = new Set(['htm', 'html', 'pdf', 'svg', 'svgz', 'xht', 'xhtml', 'xml', 'xsl', 'xslt']);
 
 const stripQueryAndHash = (url: string) => url.split('?')[0].split('#')[0];
 

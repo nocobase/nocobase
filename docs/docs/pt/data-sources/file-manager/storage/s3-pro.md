@@ -1,74 +1,77 @@
 ---
-pkg: "@nocobase/plugin-file-storage-s3-pro"
+title: "Armazenamento de arquivos: S3 (Pro)"
+description: "Mecanismo de armazenamento S3 Pro, armazenamento empresarial compatível com o protocolo S3, com suporte a Endpoint personalizado e configurações avançadas."
+keywords: "S3 Pro, armazenamento de objetos, armazenamento em nuvem, compatível com S3, NocoBase"
 ---
 
+# Armazenamento de arquivos: S3 (Pro)
 
-pkg: "@nocobase/plugin-file-storage-s3-pro"
----
-
-# Armazenamento de Arquivos: S3 (Pro)
+<PluginInfo commercial="true" name="file-storage-s3-pro"></PluginInfo>
 
 ## Introdução
 
-Com base no plugin de gerenciamento de arquivos, esta versão adiciona suporte para tipos de armazenamento de arquivos compatíveis com o protocolo S3. Qualquer serviço de armazenamento de objetos que suporte o protocolo S3 pode ser facilmente integrado, como Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO, Cloudflare R2, etc., aumentando a compatibilidade e a flexibilidade dos serviços de armazenamento.
+Com base no plug-in de gerenciamento de arquivos, foi adicionado suporte a tipos de armazenamento de arquivos compatíveis com o protocolo S3. Qualquer serviço de armazenamento de objetos compatível com o protocolo S3 pode ser facilmente integrado, como Amazon S3, Alibaba Cloud OSS, Tencent Cloud COS, MinIO e Cloudflare R2, melhorando ainda mais a compatibilidade e a flexibilidade dos serviços de armazenamento.
 
-## Recursos
+## Principais recursos
 
-1. **Upload pelo Cliente:** Os arquivos são enviados diretamente para o serviço de armazenamento, sem passar pelo servidor NocoBase, proporcionando uma experiência de upload mais eficiente e rápida.
+1. Upload pelo cliente: o processo de upload de arquivos não precisa passar pelo servidor NocoBase, conectando-se diretamente ao serviço de armazenamento de arquivos para proporcionar uma experiência de upload mais eficiente e rápida.
 
-2. **Acesso Privado:** Todas as URLs de arquivo são endereços de autorização temporária assinados, garantindo acesso seguro e com tempo limitado aos arquivos.
+2. Acesso privado: ao acessar os arquivos, todas as URLs são endereços temporários autorizados e assinados, garantindo a segurança e a validade do acesso aos arquivos.
 
-## Casos de Uso
 
-1. **Gerenciamento de Tabelas de Arquivos:** Gerencie e armazene centralmente todos os arquivos enviados, suportando vários tipos de arquivo e métodos de armazenamento, para facilitar a classificação e recuperação de arquivos.
+## Cenários de uso
 
-2. **Armazenamento de Campos de Anexo:** Armazene anexos enviados via formulários ou registros e associe-os a entradas de dados específicas.
+1. **Gerenciamento da tabela de arquivos**: gerencie e armazene centralmente todos os arquivos enviados, com suporte a vários tipos de arquivo e métodos de armazenamento, facilitando a classificação e a pesquisa de arquivos.
 
-## Configuração do Plugin
+2. **Armazenamento no campo de anexo**: usado para armazenar anexos enviados em formulários ou registros, com suporte à associação a registros de dados específicos.
 
-1. Habilite o plugin `plugin-file-storage-s3-pro`.
 
-2. Vá para "Setting -> FileManager" para acessar as configurações de gerenciamento de arquivos.
+## Configuração do plug-in
 
-3. Clique no botão "Add new" e selecione "S3 Pro".
+1. Ative o plug-in plugin-file-storage-s3-pro
+
+2. Clique em "Setting-> FileManager" para acessar as configurações de gerenciamento de arquivos
+
+3. Clique no botão "Add new" e selecione "S3 Pro"
 
 ![](https://static-docs.nocobase.com/20250102160704938.png)
 
-4. Na janela pop-up, você verá um formulário detalhado para preencher. Consulte a documentação a seguir para obter os parâmetros relevantes para o seu serviço de arquivo e insira-os corretamente no formulário.
+4. Após a abertura do painel flutuante, você verá que há muitos campos a serem preenchidos. Consulte a documentação a seguir para obter as informações dos parâmetros correspondentes ao serviço de arquivos e preencha o formulário corretamente.
 
 ![](https://static-docs.nocobase.com/20250413190828536.png)
 
-## Configuração do Provedor de Serviço
+
+## Configuração dos provedores de serviço
 
 ### Amazon S3
 
-#### Criação de Bucket
+#### Criar um Bucket
 
-1. Acesse [Amazon S3 Console](https://ap-southeast-1.console.aws.amazon.com/s3/home).
+1. Abra https://ap-southeast-1.console.aws.amazon.com/s3/home para acessar o console do S3
 
-2. Clique no botão "Create bucket" no lado direito.
+2. Clique no botão "Create bucket" à direita
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969452.png)
 
-3. Preencha o `Bucket Name` (Nome do Bucket), deixe os outros campos como padrão, role até o final da página e clique no botão **"Create"** para concluir o processo.
+2. Preencha o Bucket Name (nome do bucket). Os demais campos podem permanecer com as configurações padrão. Role até a parte inferior da página e clique no botão **"**Create**"** para concluir a criação.
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969622.png)
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969811.png)
 
-#### Configuração de CORS
+#### Configuração do CORS
 
-1. Na lista de buckets, encontre e clique no bucket recém-criado para acessar seus detalhes.
+1. Entre na lista de buckets, localize e clique no Bucket recém-criado para acessar sua página de detalhes
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355969980.png)
 
-2. Vá para a aba "Permission" (Permissão) e role para baixo até a seção de configuração de CORS.
+2. Clique na guia "Permission" e role para baixo até encontrar a seção de configuração do CORS
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970155.png)
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970303.png)
 
-3. Insira a seguinte configuração (personalize conforme necessário) e salve.
+3. Insira a configuração a seguir (você pode personalizá-la conforme necessário) e salve
 
 ```json
 [
@@ -93,213 +96,220 @@ Com base no plugin de gerenciamento de arquivos, esta versão adiciona suporte p
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970494.png)
 
-#### Obtenção de AccessKey e SecretAccessKey
+#### Obter AccessKey e SecretAccessKey
 
-1. Clique no botão "Security credentials" (Credenciais de segurança) no canto superior direito.
+1. Clique no botão "Security credentials" no canto superior direito da página
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970651.png)
 
-2. Role para baixo até a seção "Access Keys" (Chaves de Acesso) e clique em "Create Access Key" (Criar Chave de Acesso).
+2. Role para baixo, localize a seção "Access Keys" e clique no botão "Create Access Key".
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970832.png)
 
-3. Concorde com os termos (o uso de IAM é recomendado para ambientes de produção).
+3. Clique em Concordar (esta demonstração usa a conta principal; em ambientes de produção, recomenda-se usar o IAM).
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355970996.png)
 
-4. Salve o Access Key e o Secret Access Key exibidos.
+4. Salve o Access key e o Secret access key exibidos na página
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971168.png)
 
-#### Obtenção e Configuração de Parâmetros
+#### Obtenção e configuração dos parâmetros
 
-1. Use o `AccessKey ID` e o `AccessKey Secret` obtidos.
+1. O AccessKey ID e o AccessKey Secret são os valores correspondentes obtidos na operação anterior. Preencha-os corretamente
 
-2. Acesse o painel de propriedades do bucket para encontrar o `Bucket Name` (Nome do Bucket) e a `Region` (Região).
+2. Entre no painel de propriedades da página de detalhes do bucket, onde você poderá obter as informações do nome do Bucket e da Region (região).
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971345.png)
 
-#### Acesso Público (Opcional)
+#### Acesso público (opcional)
 
-Esta é uma configuração opcional. Configure-a quando precisar tornar os arquivos enviados completamente públicos.
+Esta configuração não é obrigatória; use-a quando precisar tornar os arquivos enviados totalmente públicos
 
-1. No painel de Permissões, role até "Object Ownership" (Propriedade do Objeto), clique em "Edit" (Editar) e habilite ACLs.
+1. Entre no painel Permissions, role para baixo até Object Ownership, clique em editar e ative ACLs
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971508.png)
 
-2. Role até "Block public access" (Bloquear acesso público), clique em "Edit" (Editar) e defina para permitir o controle de ACL.
+2. Role até Block public access, clique em editar e defina como permitir o controle por ACLs
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355971668.png)
 
-3. Marque "Public access" (Acesso público) no NocoBase.
+3. No NocoBase, marque Public access
 
-#### Configuração de Miniaturas (Opcional)
 
-Esta configuração é opcional e deve ser usada quando você precisar otimizar o tamanho ou o efeito da pré-visualização da imagem. **Atenção: esta implantação pode gerar custos adicionais. Para mais detalhes, consulte os termos e preços da AWS.**
+#### Configuração de miniaturas (opcional)
+
+Esta configuração é opcional e deve ser usada quando for necessário otimizar o tamanho ou o efeito da visualização de imagens. **Observe que esse método de implantação pode gerar custos adicionais; consulte os termos relevantes da AWS para obter informações específicas sobre os custos.**
 
 1. Acesse [Dynamic Image Transformation for Amazon CloudFront](https://aws.amazon.com/solutions/implementations/dynamic-image-transformation-for-amazon-cloudfront/?nc1=h_ls).
 
-2. Clique no botão `Launch in the AWS Console` (Iniciar no Console da AWS) na parte inferior da página para iniciar a implantação.
+2. Clique no botão `Launch in the AWS Console` na parte inferior da página para iniciar a implantação da solução.
+   ![](https://static-docs.nocobase.com/20250221164214117.png)
 
-![](https://static-docs.nocobase.com/20250221164214117.png)
+3. Conclua a configuração seguindo as instruções. Preste atenção especial às opções a seguir:
+   1. Ao criar a pilha, você precisará especificar o nome de um bucket do Amazon S3 que contenha as imagens de origem. Informe o nome do bucket criado anteriormente.
+   2. Se você optar por implantar a UI de demonstração, poderá testar os recursos de processamento de imagens por meio dessa interface após a conclusão da implantação. No console do AWS CloudFormation, selecione sua pilha, acesse a guia “Saídas”, localize o valor correspondente à chave DemoUrl e clique no link para abrir a interface de demonstração.
+   3. Esta solução usa a biblioteca `sharp` Node.js para processar imagens com eficiência. Você pode baixar o código-fonte do repositório do GitHub e personalizá-lo conforme necessário.
 
-3. Siga as instruções para concluir a configuração. As seguintes opções exigem atenção especial:
-   1. Ao criar a pilha, você precisa especificar o nome do bucket do Amazon S3 que contém as imagens de origem. Por favor, insira o nome do bucket que você criou anteriormente.
-   2. Se você optou por implantar a UI de demonstração, após a implantação, você pode usar a UI para testar a funcionalidade de processamento de imagem. No console do AWS CloudFormation, selecione sua pilha, vá para a aba "Outputs" (Saídas), encontre o valor correspondente à chave `DemoUrl` e clique no link para abrir a interface de demonstração.
-   3. Esta solução usa a biblioteca `sharp` do Node.js para processamento eficiente de imagens. Você pode baixar o código-fonte do repositório do GitHub e personalizá-lo conforme necessário.
+   ![](https://static-docs.nocobase.com/20250221164315472.png)
+   ![](https://static-docs.nocobase.com/20250221164404755.png)
 
-![](https://static-docs.nocobase.com/20250221164315472.png)
+4. Após concluir a configuração, aguarde até que o status da implantação mude para `CREATE_COMPLETE`.
 
-![](https://static-docs.nocobase.com/20250221164404755.png)
+5. Na configuração do NocoBase, observe os seguintes pontos:
+   1. `Thumbnail rule`: preencha os parâmetros relacionados ao processamento de imagens, como `?width=100`. Consulte a [documentação da AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html) para obter mais informações.
+   2. `Access endpoint`: preencha com o valor de Outputs -> ApiEndpoint após a implantação.
+   3. `Full access URL style`: marque **Ignore** (como o nome do bucket já foi preenchido durante a configuração, ele não será necessário no acesso).
 
-4. Assim que a configuração estiver concluída, aguarde o status da implantação mudar para `CREATE_COMPLETE`.
+   ![](https://static-docs.nocobase.com/20250414152135514.png)
 
-5. Na configuração do NocoBase, observe o seguinte:
-   1. `Thumbnail rule`: Preencha os parâmetros de processamento de imagem, como `?width=100`. Para detalhes, consulte a [documentação da AWS](https://docs.aws.amazon.com/solutions/latest/serverless-image-handler/use-supported-query-param-edits.html).
-   2. `Access endpoint`: Insira o valor de Outputs -> ApiEndpoint após a implantação.
-   3. `Full access URL style`: Selecione **Ignore** (já que o nome do bucket já foi preenchido na configuração, ele não é necessário para o acesso).
-
-![](https://static-docs.nocobase.com/20250414152135514.png)
-
-#### Exemplo de Configuração
+#### Exemplo de configuração
 
 ![](https://static-docs.nocobase.com/20250414152344959.png)
 
+
 ### Alibaba Cloud OSS
 
-#### Criação de Bucket
+#### Criar um Bucket
 
-1. Abra o [Console OSS](https://oss.console.aliyun.com/overview).
+1. Abra o console do OSS em https://oss.console.aliyun.com/overview
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972149.png)
 
-2. Selecione "Buckets" no menu esquerdo e clique em "Create Bucket" (Criar Bucket).
+2. Clique em "Buckets" no menu à esquerda e, em seguida, clique no botão "Create Bucket" para começar a criar o bucket
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972413.png)
 
-3. Preencha os detalhes do bucket e clique em "Create" (Criar).
+3. Preencha as informações relacionadas ao bucket e, por fim, clique no botão Create
 
-   - `Bucket Name`: Escolha com base nas suas necessidades de negócio.
-   - `Region`: Selecione a região mais próxima para seus usuários.
-   - Outras configurações podem permanecer padrão ou ser personalizadas conforme necessário.
+    1. O Bucket Name deve ser adequado ao seu negócio; o nome fica a seu critério
+
+    2. Escolha, em Region, a região mais próxima dos seus usuários
+
+    3. Os demais campos podem permanecer com os valores padrão ou ser configurados conforme necessário
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355972730.png)
 
-#### Configuração de CORS
 
-1. Vá para a página de detalhes do bucket que você acabou de criar.
+#### Configuração do CORS
+
+1. Acesse a página de detalhes do bucket criado na etapa anterior
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973018.png)
 
-2. Clique em "Content Security -> CORS" (Segurança de Conteúdo -> CORS) no menu central.
+2. Clique em "Content Security -> CORS" no menu central
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973319.png)
 
-3. Clique no botão "Create Rule" (Criar Regra), preencha os campos, role para baixo e clique em "OK". Você pode consultar a captura de tela abaixo ou configurar definições mais detalhadas.
+3. Clique no botão "Create Rule", preencha as informações relevantes, role para baixo e clique em "OK". Consulte a captura de tela abaixo ou faça uma configuração mais detalhada
 
 ![](https://static-docs.nocobase.com/20250219171042784.png)
 
-#### Obtenção de AccessKey e SecretAccessKey
+#### Obter AccessKey e SecretAccessKey
 
-1. Clique em "AccessKey" abaixo do avatar da sua conta no canto superior direito.
+1. Clique em "AccessKey" abaixo do avatar no canto superior direito
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355973884.png)
 
-2. Para fins de demonstração, criaremos um AccessKey usando a conta principal. Em um ambiente de produção, é recomendado usar o RAM para criar o AccessKey. Para instruções, consulte a [documentação do Alibaba Cloud](https://www.alibabacloud.com/help/en/ram/user-guide/create-an-accesskey-pair).
+2. Para facilitar a demonstração, a criação do AccessKey usa a conta principal. Em cenários de uso em produção, recomenda-se usar o RAM para criá-lo. Consulte https://help.aliyun.com/zh/ram/user-guide/create-an-accesskey-pair-1?spm=5176.28366559.0.0.1b5c3c2fUI9Ql8#section-rjh-18m-7kp
 
-3. Clique no botão "Create AccessKey" (Criar Chave de Acesso).
+3. Clique no botão "Create AccessKey"
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974171.png)
 
-4. Conclua a verificação da conta.
+4. Faça a verificação da conta
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974509.png)
 
-5. Salve o Access Key e o Secret Access Key exibidos.
+5. Salve o Access key e o Secret access key exibidos na página
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355974781.png)
 
-#### Obtenção e Configuração de Parâmetros
 
-1. Use o `AccessKey ID` e o `AccessKey Secret` obtidos na etapa anterior.
+#### Obtenção e configuração dos parâmetros
 
-2. Vá para a página de detalhes do bucket para obter o nome do `Bucket`.
+1. O AccessKey ID e o AccessKey Secret são os valores obtidos na operação anterior
+
+2. Entre na página de detalhes do bucket para obter o Bucket
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975063.png)
 
-3. Role para baixo para obter a `Region` (Região) (o sufixo ".aliyuncs.com" não é necessário).
+3. Role para baixo para obter a Region (o ".aliyuncs.com" no final não é necessário)
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975437.png)
 
-4. Obtenha o endereço do endpoint e adicione o prefixo `https://` ao inseri-lo no NocoBase.
+4. Obtenha o endereço do endpoint; ao preenchê-lo no NocoBase, adicione o prefixo https://
 
 ![](https://static-docs.nocobase.com/file-storage-s3-pro-1735355975715.png)
 
-#### Configuração de Miniaturas (Opcional)
+#### Configuração de miniaturas (opcional)
 
-Esta configuração é opcional e deve ser usada apenas quando for necessário otimizar o tamanho ou o efeito da pré-visualização da imagem.
+Esta configuração é opcional e deve ser usada apenas quando for necessário otimizar o tamanho ou o efeito da visualização de imagens.
 
-1. Preencha os parâmetros relevantes para `Thumbnail rule`. Para configurações de parâmetros específicos, consulte a documentação do Alibaba Cloud sobre [Processamento de Imagens](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1).
+1. Preencha os parâmetros relacionados a `Thumbnail rule`. Consulte [Parâmetros de processamento de imagens](https://help.aliyun.com/zh/oss/user-guide/img-parameters/?spm=a2c4g.11186623.help-menu-31815.d_4_14_1_1.170243033CdbSm&scm=20140722.H_144582._.OR_help-T_cn~zh-V_1) para obter detalhes sobre a configuração dos parâmetros.
 
-2. Mantenha as configurações de `Full upload URL style` e `Full access URL style` iguais.
+2. `Full upload URL style` e `Full access URL style` podem ser mantidos iguais.
 
-#### Exemplo de Configuração
+#### Exemplo de configuração
 
 ![](https://static-docs.nocobase.com/20250414152525600.png)
 
+
 ### MinIO
 
-#### Criação de Bucket
+#### Criar um Bucket
 
-1. Clique no menu **Buckets** à esquerda -> Clique em **Create Bucket** (Criar Bucket) para abrir a página de criação.
-2. Insira o nome do Bucket e clique no botão **Save** (Salvar).
+1. Clique no menu Buckets à esquerda -> clique em Create Bucket para acessar a página de criação
+2. Preencha o nome do Bucket e clique no botão de salvar
+#### Obter AccessKey e SecretAccessKey
 
-#### Obtenção de AccessKey e SecretAccessKey
-
-1. Vá para **Access Keys** (Chaves de Acesso) -> Clique no botão **Create access key** (Criar chave de acesso) para abrir a página de criação.
+1. Acesse Access Keys -> clique no botão Create access key para acessar a página de criação
 
 ![](https://static-docs.nocobase.com/20250106111922957.png)
 
-2. Clique no botão **Save** (Salvar).
+2. Clique no botão de salvar
 
 ![](https://static-docs.nocobase.com/20250106111850639.png)
 
-3. Salve o **Access Key** e o **Secret Key** da janela pop-up para configuração futura.
+1. Salve o Access Key e o Secret Key exibidos na janela pop-up para usar na configuração posterior
 
 ![](https://static-docs.nocobase.com/20250106112831483.png)
 
-#### Configuração de Parâmetros
+#### Configuração dos parâmetros
 
-1. Vá para a página **File manager** (Gerenciador de arquivos) no NocoBase.
+1. Acesse a página NocoBase -> File manager
 
-2. Clique no botão **Add new** (Adicionar novo) e selecione **S3 Pro**.
+2. Clique no botão Add new e selecione S3 Pro
 
-3. Preencha o formulário:
-   - **AccessKey ID** e **AccessKey Secret**: Use os valores salvos na etapa anterior.
-   - **Region**: O MinIO implantado privadamente não possui o conceito de região; você pode configurá-lo como `"auto"`.
-   - **Endpoint**: Insira o nome de domínio ou endereço IP do seu serviço implantado.
-   - Defina **Full access URL style** (Estilo de URL de acesso completo) como **Path-Style**.
+3. Preencha o formulário
+   - O **AccessKey ID** e o **AccessKey Secret** são os textos salvos na etapa anterior
+   - **Region**: o MinIO implantado de forma privada não possui o conceito de Region; você pode configurá-lo como "auto"
+   - **Endpoint**: informe o domínio ou endereço IP do serviço implantado
+   - Defina Full access URL style como Path-Style
 
-#### Exemplo de Configuração
+#### Exemplo de configuração
 
 ![](https://static-docs.nocobase.com/20250414152700671.png)
 
+
 ### Tencent COS
 
-Consulte as configurações dos serviços de arquivo acima. A lógica é semelhante.
+Você pode consultar o serviço de arquivos acima para fazer a configuração; a lógica é semelhante
 
-#### Exemplo de Configuração
+#### Exemplo de configuração
 
 ![](https://static-docs.nocobase.com/20250414153252872.png)
 
+
 ### Cloudflare R2
 
-Consulte as configurações dos serviços de arquivo acima. A lógica é semelhante.
+Você pode consultar o serviço de arquivos acima para fazer a configuração; a lógica é semelhante
 
-#### Exemplo de Configuração
+#### Exemplo de configuração
 
 ![](https://static-docs.nocobase.com/20250414154500264.png)
 
-## Guia do Usuário
 
-Consulte a [documentação do plugin de gerenciamento de arquivos](/data-sources/file-manager).
+## Uso pelo usuário
+
+Consulte o uso do plug-in file-manager em https://docs.nocobase.com/data-sources/file-manager/.

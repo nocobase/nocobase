@@ -1,37 +1,37 @@
 ---
-title: "Aliyun OSS"
-description: "Konfigurasi storage engine Aliyun OSS: Bucket, Endpoint, AccessKey, mendukung akses publik dan internal."
-keywords: "Aliyun OSS,Aliyun Object Storage,OSS storage,cloud storage,NocoBase"
+title: "OSS Alibaba Cloud"
+description: "Konfigurasi mesin penyimpanan OSS Alibaba Cloud: Bucket, Endpoint, AccessKey, mendukung akses publik dan internal."
+keywords: "OSS Alibaba Cloud, penyimpanan objek Alibaba Cloud, penyimpanan OSS, penyimpanan cloud, NocoBase"
 ---
 
-# Aliyun OSS
+# OSS Alibaba Cloud
 
-Storage engine berbasis Aliyun OSS, sebelum digunakan perlu menyiapkan akun dan izin terkait.
+Mesin penyimpanan berbasis OSS Alibaba Cloud. Sebelum digunakan, siapkan akun dan izin yang diperlukan.
 
-## Parameter Konfigurasi
+## Parameter konfigurasi
 
-![Contoh konfigurasi storage engine Aliyun OSS](https://static-docs.nocobase.com/20240712220011.png)
+![Contoh konfigurasi mesin penyimpanan OSS Alibaba Cloud](https://static-docs.nocobase.com/20240712220011.png)
 
-:::info{title=Tips}
-Hanya menjelaskan parameter khusus storage engine Aliyun OSS, untuk parameter umum harap lihat [Parameter Umum Engine](./index.md#parameter-umum-engine).
+:::info{title=Catatan}
+Hanya parameter khusus mesin penyimpanan OSS Alibaba Cloud yang dijelaskan di sini. Untuk parameter umum, lihat [Parameter umum mesin](./index.md#引擎通用参数).
 :::
 
-### Region
+### Wilayah
 
-Isi region penyimpanan OSS, contoh: `oss-cn-hangzhou`.
+Masukkan wilayah penyimpanan OSS, misalnya: `oss-cn-hangzhou`.
 
-:::info{title=Tips}
-Anda dapat melihat informasi region storage space di [Aliyun OSS Console](https://oss.console.aliyun.com/), dan hanya perlu mengambil bagian prefix region (tanpa domain lengkap).
+:::info{title=Catatan}
+Informasi wilayah ruang penyimpanan dapat dilihat di [Konsol OSS Alibaba Cloud](https://oss.console.aliyun.com/). Anda hanya perlu mengambil bagian awalan wilayahnya (tidak perlu nama domain lengkap).
 :::
 
-### AccessKey ID
+### ID AccessKey
 
-Isi ID access key Aliyun.
+Masukkan ID kunci akses resmi Alibaba Cloud.
 
-### AccessKey Secret
+### Secret AccessKey
 
-Isi Secret access key Aliyun.
+Masukkan Secret kunci akses resmi Alibaba Cloud.
 
 ### Bucket
 
-Isi nama Bucket penyimpanan OSS.
+Masukkan nama bucket penyimpanan OSS.

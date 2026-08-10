@@ -1,9 +1,12 @@
 ---
-pkg: "@nocobase/plugin-field-china-region"
+title: "Divisiones administrativas de China"
+description: "Campo de divisiones administrativas de China, compatible con la selección vinculada de provincia, ciudad y distrito, adecuado para escenarios como direcciones y lugares de origen."
+keywords: "divisiones administrativas de China, provincia-ciudad-distrito, campo de divisiones administrativas, selección de tres niveles, NocoBase"
 ---
 
+# Divisiones administrativas de China
 
-# Regiones administrativas de China
+<PluginInfo name="field-china-region"></PluginInfo>
 
 ## Introducción
 
@@ -11,6 +14,6 @@ pkg: "@nocobase/plugin-field-china-region"
 
 ![20240512180305](https://static-docs.nocobase.com/20240512180305.png)
 
-## Ejemplos
+## E​​jemplo
 
-Pendiente de añadir.
+Pendiente de completar

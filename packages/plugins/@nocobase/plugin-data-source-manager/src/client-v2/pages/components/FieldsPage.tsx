@@ -1503,7 +1503,7 @@ export default function FieldsPage(props: FieldsPageProps) {
 
           return (
             <Select
-              allowClear
+              allowClear={false}
               value={value || undefined}
               style={{ width: '100%' }}
               popupMatchSelectWidth={false}

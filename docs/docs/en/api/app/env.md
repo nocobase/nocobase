@@ -57,6 +57,8 @@ Whitelist for outbound HTTP requests initiated by the server. It applies to serv
 
 When this variable is not configured, NocoBase still allows `http` / `https` requests to keep existing deployments compatible. However, if the target is a loopback, private, link-local, or metadata address, or if a domain resolves to one of these addresses, the server logs a warning. Future versions may gradually tighten the default behavior. If your deployment needs to access internal services, configure an explicit whitelist in advance.
 
+When this variable is configured, the initial request and every redirect destination must match a whitelist entry. If a redirect points to a non-matching host, NocoBase stops before sending the redirected request.
+
 Supported entries include:
 
 - Exact IPv4 address, such as `192.168.1.10`

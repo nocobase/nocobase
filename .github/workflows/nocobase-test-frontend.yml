@@ -63,7 +63,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
-    timeout-minutes: 60
+    timeout-minutes: 30
 
   frontend-test:
     needs: install-deps
@@ -91,4 +91,4 @@ jobs:
       - run: yarn test:client --shard=${{ matrix.shard }}/4 --silent
         env:
           LOGGER_LEVEL: error
-    timeout-minutes: 60
+    timeout-minutes: 30

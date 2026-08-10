@@ -150,7 +150,7 @@ export const BlockItemCard = React.forwardRef(
   ) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
-    const { title: blockTitle, description, children, className, heightMode, ...rest } = props;
+    const { title: blockTitle, description, children, className, heightMode, style, ...rest } = props;
     const cardRef = useRef<HTMLDivElement | null>(null);
     const setCardRef = useCallback(
       (node: HTMLDivElement | null) => {
@@ -185,7 +185,7 @@ export const BlockItemCard = React.forwardRef(
       <Card
         ref={setCardRef as any}
         title={title}
-        style={{ display: 'flex', flexDirection: 'column', height: height }}
+        style={{ display: 'flex', flexDirection: 'column', ...style, height: height ?? style?.height }}
         styles={{
           body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
           header: {

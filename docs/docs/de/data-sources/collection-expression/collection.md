@@ -1,23 +1,29 @@
-# Expressions-Sammlung
+---
+title: "Ausdruckstabelle"
+description: "Die Ausdruckstabelle dient zur Berechnung dynamischer Ausdrücke in Workflows. Sie speichert Berechnungsregeln und Formeln, unterstützt Felder aus verschiedenen Datenmodellen als Variablen und kann mit Geschäftsdaten verknüpft verwendet werden."
+keywords: "Ausdruckstabelle,dynamische Ausdrücke,Workflow-Ausdrücke,Berechnungsregeln,Formeln,NocoBase"
+---
 
-## Erstellen einer Expressions-Vorlagen-Sammlung
+# Ausdruckstabelle
 
-Bevor Sie dynamische Expressions-Operationsknoten innerhalb eines Workflows verwenden können, müssen Sie zuerst eine Expressions-Sammlung als Vorlage im Sammlungs-Verwaltungstool erstellen. Diese Sammlung dient als Speicherort für verschiedene Ausdrücke:
+## Eine „Ausdruck“-Vorlagentabelle erstellen
 
-![Creating an Expression Collection](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
+Bevor Sie den Knoten für die Berechnung dynamischer Ausdrücke in einem Workflow verwenden, müssen Sie zunächst im Datenbankverwaltungstool eine „Ausdruck“-Vorlagentabelle erstellen, in der verschiedene Ausdrücke gespeichert werden:
 
-## Expressions-Daten eingeben
+![Ausdruck-Vorlagentabelle erstellen](https://static-docs.nocobase.com/33afe3369a1ea7943f12a04d9d4443ce.png)
 
-Danach können Sie einen Tabellenblock einrichten und mehrere Formel-Einträge in die Vorlagen-Sammlung eingeben. Jede Zeile in der Expressions-Vorlagen-Sammlung kann als Berechnungsregel für ein spezifisches Datenmodell innerhalb der Sammlung verstanden werden. Sie können Felder aus den Datenmodellen verschiedener Sammlungen als Variablen nutzen, um einzigartige Ausdrücke als Berechnungsregeln zu erstellen. Selbstverständlich können Sie auch verschiedene Berechnungs-Engines verwenden.
+## Ausdrucksdaten eingeben
 
-![Entering Expression Data](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+Erstellen Sie anschließend einen Tabellenblock für diese Vorlagentabelle und fügen Sie einige Formeldaten hinzu. Jede Datenzeile in der „Ausdruck“-Vorlagentabelle kann als eine Berechnungsregel für ein bestimmtes Tabellendatenmodell verstanden werden. Für jede Formeldatenzeile können Feldwerte aus den Datenmodellen verschiedener Datentabellen als Variablen verwendet und unterschiedliche Ausdrücke als Berechnungsregeln formuliert werden. Selbstverständlich können auch unterschiedliche Berechnungs-Engines verwendet werden.
 
-:::info{title=Tipp}
-Nachdem die Formeln erstellt wurden, müssen sie mit den Geschäftsdaten verknüpft werden. Jede Zeile der Geschäftsdaten direkt mit den Formel-Daten zu verknüpfen, kann mühsam sein. Daher ist es üblich, eine Metadaten-Sammlung – ähnlich einer Klassifizierungs-Sammlung – zu verwenden, um eine Viele-zu-Eins- (oder Eins-zu-Eins-) Beziehung zur Formel-Sammlung herzustellen. Anschließend werden die Geschäftsdaten in einer Viele-zu-Eins-Beziehung mit den klassifizierten Metadaten verknüpft. Dieser Ansatz ermöglicht es Ihnen, beim Erstellen von Geschäftsdaten einfach die relevanten klassifizierten Metadaten anzugeben, wodurch die entsprechenden Formel-Daten über den etablierten Verknüpfungspfad leicht gefunden und genutzt werden können.
+![Ausdrucksdaten eingeben](https://static-docs.nocobase.com/761047f8daabacccbc6a924a73564093.png)
+
+:::info{title=Hinweis}
+Nach dem Erstellen der Formeln müssen die Geschäftsdaten noch mit den Formeln verknüpft werden. Da es umständlich wäre, jede Zeile mit Geschäftsdaten direkt mit einer Formeldatenzeile zu verknüpfen, verwenden wir normalerweise eine Metadatentabelle mit Kategorien und verknüpfen diese mit der Formeltabelle in einer Viele-zu-eins-Beziehung (oder Eins-zu-eins-Beziehung). Anschließend werden die Geschäftsdaten in einer Viele-zu-eins-Beziehung mit den Kategorie-Metadaten verknüpft. Beim Erstellen von Geschäftsdaten muss dann nur noch ein bestimmter Kategorie-Metadatensatz angegeben werden, woraufhin die entsprechenden Formeldaten bei der späteren Verwendung über diesen Verknüpfungspfad gefunden und verwendet werden können.
 :::
 
-## Relevante Daten in den Workflow laden
+## Die entsprechenden Daten im Workflow laden
 
-Erstellen Sie beispielsweise einen Workflow, der durch ein Sammlungs-Ereignis ausgelöst wird. Wenn ein Auftrag erstellt wird, sollte der Trigger die zugehörigen Produkt-Daten sowie die produktbezogenen Expressions-Daten vorladen:
+Erstellen Sie am Beispiel eines Datensatzereignisses einen Workflow, der beim Erstellen einer Bestellung ausgelöst wird und die mit der Bestellung verknüpften Produktdaten sowie die zugehörigen Ausdrucksdaten vorladen muss:
 
-![Collection Event_Trigger Configuration](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)
+![Triggerkonfiguration für Datensatzereignis](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

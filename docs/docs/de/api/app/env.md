@@ -63,6 +63,8 @@ Whitelist der erlaubten Ziele für ausgehende HTTP-Anfragen, die vom Server init
 
 Wenn diese Variable nicht konfiguriert ist, erlaubt NocoBase aus Kompatibilitätsgründen weiterhin `http` / `https`-Anfragen. Wenn das Ziel jedoch eine Loopback-, private, link-local- oder Metadata-Adresse ist oder eine Domain auf eine solche Adresse auflöst, schreibt der Server eine Warnung ins Log. Zukünftige Versionen können das Standardverhalten schrittweise verschärfen. Wenn deine Bereitstellung interne Dienste erreichen muss, konfiguriere vorab eine explizite Whitelist.
 
+Wenn diese Variable konfiguriert ist, müssen die ursprüngliche Anfrage und jedes Weiterleitungsziel einem Whitelist-Eintrag entsprechen. Zeigt eine Weiterleitung auf einen nicht übereinstimmenden Host, stoppt NocoBase vor dem Senden der weitergeleiteten Anfrage.
+
 Unterstützte Einträge:
 
 - Exakte IPv4-Adresse, z. B. `192.168.1.10`

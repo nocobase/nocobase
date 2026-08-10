@@ -1,38 +1,41 @@
 ---
-pkg: "@nocobase/plugin-file-manager"
+title: "Gestionnaire de fichiers"
+description: "Tables de fichiers, champs de pièces jointes et moteurs de stockage de fichiers, avec prise en charge du stockage local, d’Alibaba Cloud OSS, d’Amazon S3 et de Tencent Cloud COS, ainsi que de la gestion des métadonnées et de l’envoi des fichiers."
+keywords: "gestionnaire de fichiers,table de fichiers,champ de pièces jointes,moteur de stockage,OSS,S3,COS,NocoBase"
 ---
-
 
 # Gestionnaire de fichiers
 
-## Introduction
+<PluginInfo name="file-manager"></PluginInfo>
 
-Le plugin Gestionnaire de fichiers offre une collection de fichiers, un champ de type pièce jointe et des moteurs de stockage de fichiers pour gérer efficacement vos fichiers. Les fichiers sont des enregistrements au sein d'un type de collection spécial, appelé collection de fichiers, qui stocke les métadonnées des fichiers et peut être gérée via le Gestionnaire de fichiers. Les champs de type pièce jointe sont des champs d'association spécifiques liés à la collection de fichiers. Le plugin prend en charge plusieurs méthodes de stockage, notamment le stockage local, Alibaba Cloud OSS, Amazon S3 et Tencent Cloud COS.
+## Présentation
 
-## Manuel d'utilisation
+Le plugin Gestionnaire de fichiers fournit des tables de fichiers, des champs de pièces jointes ainsi que des moteurs de stockage de fichiers afin de gérer efficacement les fichiers. Un fichier est un enregistrement de table de données doté d’une structure spécifique. La table de données dotée de cette structure particulière est appelée table de fichiers. Elle sert à stocker les métadonnées des fichiers et peut être gérée via le Gestionnaire de fichiers. Un champ de pièces jointes est un champ de relation spécifique associé à une table de fichiers. Les fichiers prennent en charge plusieurs modes de stockage. Les moteurs de stockage de fichiers actuellement pris en charge comprennent le stockage local, Alibaba Cloud OSS, Amazon S3 et Tencent Cloud COS.
 
-### Collection de fichiers
+## Manuel d’utilisation
 
-Une collection `attachments` est intégrée par défaut pour stocker tous les fichiers associés aux champs de type pièce jointe. De plus, vous pouvez créer de nouvelles collections de fichiers pour stocker des fichiers spécifiques.
+### Table de fichiers
 
-[En savoir plus dans la documentation sur les collections de fichiers](/data-sources/file-manager/file-collection)
+La table attachments est intégrée et sert à stocker les fichiers associés à tous les champs de pièces jointes. Il est également possible de créer de nouvelles tables de fichiers pour stocker des fichiers spécifiques.
 
-### Champ de type pièce jointe
+[Pour plus d’informations, consultez la documentation de présentation des tables de fichiers](/data-sources/file-manager/file-collection)
 
-Les champs de type pièce jointe sont des champs d'association spécifiques liés à la collection de fichiers, que vous pouvez créer via le type de champ « Pièce jointe » ou configurer via un champ « Relation ».
+### Champ de pièces jointes
 
-[En savoir plus dans la documentation sur les champs de type pièce jointe](/data-sources/file-manager/field-attachment)
+Un champ de pièces jointes est un champ de relation spécifique associé à une table de fichiers. Il peut être créé via un « champ de type pièce jointe » ou configuré via un « champ de relation ».
+
+[Pour plus d’informations, consultez la documentation de présentation des champs de pièces jointes](/data-sources/file-manager/field-attachment)
 
 ### Moteur de stockage de fichiers
 
-Le moteur de stockage de fichiers est utilisé pour enregistrer les fichiers sur des services spécifiques, y compris le stockage local (enregistrement sur le disque dur du serveur), le stockage cloud, etc.
+Les moteurs de stockage de fichiers servent à enregistrer les fichiers dans un service spécifique, notamment le stockage local (enregistrement sur le disque dur du serveur) et le stockage cloud.
 
-[En savoir plus dans la documentation sur les moteurs de stockage de fichiers](./storage/index.md)
+[Pour plus d’informations, consultez la présentation des moteurs de stockage de fichiers](./storage/index.md)
 
 ### API HTTP
 
-Les téléchargements de fichiers peuvent être gérés via l'API HTTP, consultez l'[API HTTP](./http-api.md).
+L’envoi de fichiers peut être effectué via l’API HTTP. Consultez [API HTTP](./http-api.md).
 
-## Développement
+## D développement d’extensions
 
 *

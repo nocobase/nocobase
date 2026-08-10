@@ -289,6 +289,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Automated Company Background Research",
+        "link": "/ai-employees/scenarios/company-background-research"
+      },
+      {
+        "type": "custom-link",
         "label": "Viz: CRM Scenario Configuration",
         "link": "/ai-employees/scenarios/viz-crm"
       },

@@ -63,6 +63,8 @@ Whitelist mục tiêu cho các yêu cầu HTTP gửi ra ngoài do server khởi 
 
 Khi biến này chưa được cấu hình, NocoBase vẫn cho phép yêu cầu `http` / `https` để giữ tương thích với các deployment hiện có. Tuy nhiên, nếu mục tiêu là địa chỉ loopback, private, link-local, metadata, hoặc domain resolve đến các địa chỉ này, server sẽ ghi warning vào log. Các phiên bản sau có thể dần siết chặt hành vi mặc định. Nếu deployment của bạn cần truy cập dịch vụ nội bộ, hãy cấu hình whitelist rõ ràng từ trước.
 
+Khi biến này được cấu hình, yêu cầu ban đầu và mọi đích redirect phải khớp với một mục trong whitelist. Nếu redirect trỏ đến host không khớp, NocoBase sẽ dừng trước khi gửi yêu cầu đã redirect.
+
 Các mục được hỗ trợ:
 
 - Địa chỉ IPv4 chính xác, như `192.168.1.10`
