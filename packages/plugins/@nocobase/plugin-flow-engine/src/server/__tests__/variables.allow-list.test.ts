@@ -26,7 +26,7 @@ type FakeCtxOptions = {
   allowConfigure?: boolean;
   currentRole?: string;
   fieldKinds?: Record<string, 'association' | 'field'>;
-  findModelByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
+  findModelNodeSnapshotByParentId?: (parentUid: string, options?: { subKey?: string }) => Promise<unknown>;
   findModelNodeSnapshotById?: (uid: string) => Promise<unknown>;
   findRoles?: () => Promise<unknown[]>;
   models?: Record<string, unknown>;
@@ -82,8 +82,8 @@ function createFakeCtx(options: FakeCtxOptions = {}) {
         if (name === 'flowModels') {
           return {
             repository: {
-              findModelByParentId:
-                options.findModelByParentId ||
+              findModelNodeSnapshotByParentId:
+                options.findModelNodeSnapshotByParentId ||
                 (async (parentUid: string, query?: { subKey?: string }) => {
                   const child = Object.values(models).find((model) => {
                     if (!model || typeof model !== 'object' || Array.isArray(model)) return false;

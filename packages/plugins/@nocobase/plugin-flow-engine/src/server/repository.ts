@@ -1818,7 +1818,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     };
   }
 
-  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions & { subKey?: string }) {
+  private async findModelUidByParentId(parentUid: string, options?: Transactionable & { subKey?: string }) {
     const r = this.database.getRepository('flowModelTreePath');
     const treePaths = await r.model.findAll({
       where: {
@@ -1840,10 +1840,22 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       transaction: options?.transaction,
     });
     if (treePath?.['descendant']) {
-      // if parentUid is a leaf node, return the first child
-      return this.findModelById(treePath['descendant'], options);
+      return treePath['descendant'] as string;
     }
     return null;
+  }
+
+  async findModelNodeSnapshotByParentId(
+    parentUid: string,
+    options?: Transactionable & { subKey?: string },
+  ): Promise<FlowModelNodeSnapshot | null> {
+    const uid = await this.findModelUidByParentId(parentUid, options);
+    return uid ? this.findModelNodeSnapshotById(uid, options) : null;
+  }
+
+  async findModelByParentId(parentUid: string, options?: GetJsonSchemaOptions & { subKey?: string }) {
+    const uid = await this.findModelUidByParentId(parentUid, options);
+    return uid ? this.findModelById(uid, options) : null;
   }
 
   @transaction()
