@@ -1553,13 +1553,14 @@ async function canAccessMultiPortal(ctx: ResourcerContext, multiPortalUid: strin
     return false;
   }
 
-  const count = await ctx.db.getRepository('rolesMultiPortals').count({
+  const access = await ctx.db.getRepository('rolesMultiPortals').findOne({
+    fields: ['id'],
     filter: {
       roleName: currentRoles,
       multiPortalUid,
     },
   });
-  return count > 0;
+  return access !== null;
 }
 
 function throwPortalAccessGateError(ctx: ResourcerContext, status: number, code: string, message: string): never {

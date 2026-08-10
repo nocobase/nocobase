@@ -195,6 +195,29 @@ describe('Portal access gate for roles:check', () => {
     });
   });
 
+  it('checks granted Portal access with an existence query', async () => {
+    const repository = app.db.getRepository('rolesMultiPortals');
+    const findOneSpy = vi.spyOn(repository, 'findOne');
+    const countSpy = vi.spyOn(repository, 'count');
+
+    try {
+      const response = await allowedAgent.get('/roles:check').set('X-Portal', 'portal-access-gate');
+
+      expect(response.status).toBe(200);
+      expect(findOneSpy).toHaveBeenCalledWith({
+        fields: ['id'],
+        filter: {
+          roleName: ['portal-gate-allowed'],
+          multiPortalUid: 'portal-access-gate',
+        },
+      });
+      expect(countSpy).not.toHaveBeenCalled();
+    } finally {
+      findOneSpy.mockRestore();
+      countSpy.mockRestore();
+    }
+  });
+
   it('applies the same access gate to AI Portals', async () => {
     const [allowedResponse, deniedResponse] = await Promise.all([
       allowedAgent.get('/roles:check').set('X-Portal', 'portal-access-ai'),
