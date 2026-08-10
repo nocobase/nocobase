@@ -27,8 +27,8 @@ import {
   JS_TEMPLATE_X_COMPONENT_WHITELIST,
   jsTemplateV1Schema,
   jsTemplateV1SchemaJson,
-} from '../schema';
-import { jsTemplateV1SchemaFileContent, jsTemplateV1SchemaSha256 } from '../schema/server';
+} from '../..';
+import { jsTemplateV1SchemaFileContent, jsTemplateV1SchemaSha256 } from '../../server';
 
 describe('@nocobase/runjs/js-template entry.json schema', () => {
   const ajv = new Ajv({ allErrors: true, jsonPointers: true });
@@ -37,7 +37,7 @@ describe('@nocobase/runjs/js-template entry.json schema', () => {
   it('passes JSON Schema meta-validation and validates the canonical example', () => {
     expect(ajv.validateSchema(jsTemplateV1Schema)).toBe(true);
     expect(validate(jsTemplateV1Schema.examples[0])).toBe(true);
-    const canonicalFile = fs.readFileSync(path.resolve(__dirname, '../schema/entry-v1.schema.json'), 'utf8');
+    const canonicalFile = fs.readFileSync(path.resolve(__dirname, '../../entry-v1.schema.json'), 'utf8');
     expect(jsTemplateV1SchemaFileContent).toBe(canonicalFile);
     expect(jsTemplateV1SchemaSha256).toMatch(/^[a-f0-9]{64}$/u);
   });
