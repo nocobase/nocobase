@@ -89,9 +89,9 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 Run server tests sequentially:
 
 ```bash
-yarn test packages/core/runjs/src/__tests__/compiler-golden.test.ts --run --reporter=verbose
-yarn test packages/core/runjs/src/__tests__/compiler-paths.test.ts --run --reporter=verbose
-yarn test packages/core/runjs/src/__tests__/package-boundary.test.ts --run --reporter=verbose
+yarn test packages/core/runjs/src/compiler/__tests__/compiler-golden.test.ts --run --reporter=verbose
+yarn test packages/core/runjs/src/compiler/__tests__/compiler-paths.test.ts --run --reporter=verbose
+yarn test packages/core/runjs/src/workspace/server/__tests__/client-import-boundaries.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/__tests__/package-exports.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/__tests__/settings-condition.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/settings/__tests__/settings.test.ts --run --reporter=verbose

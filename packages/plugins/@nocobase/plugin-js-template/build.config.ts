@@ -8,12 +8,9 @@
  */
 
 import { defineConfig } from '@nocobase/build';
-import { spawn } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
 
-const sourceDependencies = ['@nocobase/runjs'] as const;
-const repositoryRoot = path.resolve(__dirname, '../../../..');
 const requiredJavaScriptArtifacts = [
   'dist/client/index.js',
   'dist/client-v2/index.js',
@@ -27,11 +24,6 @@ const requiredDeclarationArtifacts = [
 ] as const;
 
 export default defineConfig({
-  beforeBuild: async (log) => {
-    const buildDeclarations = !process.argv.includes('--no-dts') && !process.argv.includes('--only-tar');
-    log(`building source dependencies: ${sourceDependencies.join(', ')}`);
-    await buildSourceDependencies(buildDeclarations);
-  },
   afterBuild: (log) => {
     assertBuildArtifacts(requiredJavaScriptArtifacts);
     log(`verified build artifacts: ${requiredJavaScriptArtifacts.join(', ')}`);
@@ -52,29 +44,5 @@ function assertBuildArtifacts(relativePaths: readonly string[]): void {
   );
   if (missingArtifacts.length) {
     throw new Error(`Missing JS Template build artifacts: ${missingArtifacts.join(', ')}`);
-  }
-}
-
-async function buildSourceDependencies(buildDeclarations: boolean): Promise<void> {
-  for (const packageName of sourceDependencies) {
-    await new Promise<void>((resolve, reject) => {
-      const buildArgs = ['build', packageName];
-      if (!buildDeclarations) {
-        buildArgs.push('--no-dts');
-      }
-      const child = spawn('yarn', buildArgs, {
-        cwd: repositoryRoot,
-        shell: process.platform === 'win32',
-        stdio: 'inherit',
-      });
-      child.once('error', reject);
-      child.once('exit', (code, signal) => {
-        if (code === 0) {
-          resolve();
-          return;
-        }
-        reject(new Error(`Failed to build ${packageName} (${signal || `exit code ${code}`})`));
-      });
-    });
   }
 }

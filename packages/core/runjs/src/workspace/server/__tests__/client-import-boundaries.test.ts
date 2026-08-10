@@ -10,7 +10,7 @@
 import { ESLint } from 'eslint';
 import path from 'path';
 
-const repositoryRoot = path.resolve(__dirname, '../../../../..');
+const repositoryRoot = path.resolve(__dirname, '../../../../../../..');
 const eslint = new ESLint({ cwd: repositoryRoot, useEslintrc: true });
 
 const prohibitedImportFixtures = [

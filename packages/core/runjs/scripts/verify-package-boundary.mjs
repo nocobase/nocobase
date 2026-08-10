@@ -23,6 +23,13 @@ const requiredRunJSEntries = [
   '@nocobase/runjs/workspace/client-v2',
   '@nocobase/runjs/workspace/server',
 ];
+const requiredPluginEntries = [
+  '@nocobase/plugin-js-template',
+  '@nocobase/plugin-js-template/client',
+  '@nocobase/plugin-js-template/client-v2',
+  '@nocobase/plugin-js-template/server',
+];
+const requiredEntries = [...requiredRunJSEntries, ...requiredPluginEntries];
 const codeMirrorPackages = [
   '@codemirror/lang-html',
   '@codemirror/lang-javascript',
@@ -71,7 +78,7 @@ async function main() {
       },
       requiredEntries: runtimeReport.requiredEntries,
       typescript: {
-        importedEntries: requiredRunJSEntries,
+        importedEntries: requiredEntries,
         resolutionModes: typeResolutionModes,
         passed: true,
       },
@@ -207,7 +214,7 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
   const consumerRoot = path.join(temporaryRoot, 'consumer');
   const stubRoot = path.join(temporaryRoot, 'stubs');
   fs.mkdirSync(consumerRoot, { recursive: true });
-  createPeerStubs(stubRoot);
+  const peerStubs = createPeerStubs(stubRoot);
 
   const dependencies = {
     '@nocobase/client-v2': fileDependency(consumerRoot, path.join(stubRoot, 'client-v2')),
@@ -218,6 +225,9 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
     react: '18.2.0',
     'react-dom': '18.2.0',
   };
+  for (const [packageName, packageRoot] of Object.entries(peerStubs)) {
+    dependencies[packageName] = fileDependency(consumerRoot, packageRoot);
+  }
   for (const [packageName, version] of Object.entries(resolvedVersions)) {
     dependencies[packageName] = version;
   }
@@ -233,46 +243,105 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
 }
 
 function createPeerStubs(stubRoot) {
-  createStubPackage(
-    path.join(stubRoot, 'client-v2'),
+  const peerStubs = {};
+  const addStub = (directoryName, packageName, source = createGenericPeerStubSource()) => {
+    const packageRoot = path.join(stubRoot, directoryName);
+    createStubPackage(packageRoot, packageName, source);
+    peerStubs[packageName] = packageRoot;
+  };
+
+  addStub(
+    'client-v2',
     '@nocobase/client-v2',
     [
-      'const noop = () => undefined;',
-      'module.exports = {',
+      createGenericPeerStubSource(),
+      'Object.assign(module.exports, {',
       '  CodeEditor: noop,',
       '  diagnoseRunJS: async () => ({ diagnostics: [] }),',
       '  registerRunJSRegistryHost: noop,',
       '  registerRunJSRuntimeHost: noop,',
       '  useApp: () => ({}),',
       '  useFullscreenOverlay: () => ({}),',
-      '};',
+      '});',
     ].join('\n'),
   );
-  createStubPackage(
-    path.join(stubRoot, 'database'),
+  addStub(
+    'database',
     '@nocobase/database',
     [
+      createGenericPeerStubSource(),
       'class UniqueConstraintError extends Error {}',
       'const defineCollection = (options) => options;',
-      'module.exports = { UniqueConstraintError, defineCollection };',
+      'Object.assign(module.exports, { UniqueConstraintError, defineCollection });',
     ].join('\n'),
   );
-  createStubPackage(
-    path.join(stubRoot, 'flow-engine'),
+  addStub(
+    'flow-engine',
     '@nocobase/flow-engine',
     [
+      createGenericPeerStubSource(),
       'class FlowContext {}',
-      'const noop = () => undefined;',
-      'module.exports = {',
+      'Object.assign(module.exports, {',
       '  FlowContext,',
       '  normalizeRunJSValue: (value) => value,',
       '  subscribeRunJSRenderDiagnostics: () => noop,',
       '  tExpr: (key) => key,',
       '  useFlowContext: () => ({}),',
       '  useFlowEngine: () => undefined,',
-      '};',
+      '});',
     ].join('\n'),
   );
+  for (const [directoryName, packageName] of [
+    ['acl', '@nocobase/acl'],
+    ['actions', '@nocobase/actions'],
+    ['client', '@nocobase/client'],
+    ['plugin-environment-variables', '@nocobase/plugin-environment-variables'],
+    ['plugin-flow-engine', '@nocobase/plugin-flow-engine'],
+    ['resourcer', '@nocobase/resourcer'],
+    ['server', '@nocobase/server'],
+    ['test', '@nocobase/test'],
+    ['utils', '@nocobase/utils'],
+    ['formily-react', '@formily/react'],
+    ['react-i18next', 'react-i18next'],
+    ['react-router-dom', 'react-router-dom'],
+  ]) {
+    addStub(directoryName, packageName);
+  }
+
+  const utilsRoot = peerStubs['@nocobase/utils'];
+  fs.writeFileSync(path.join(utilsRoot, 'client.cjs'), createGenericPeerStubSource() + '\n');
+  const utilsManifest = readJson(path.join(utilsRoot, 'package.json'));
+  utilsManifest.exports = {
+    '.': {
+      types: './index.d.ts',
+      import: './index.cjs',
+      require: './index.cjs',
+    },
+    './client': {
+      types: './index.d.ts',
+      import: './client.cjs',
+      require: './client.cjs',
+    },
+  };
+  writeJson(path.join(utilsRoot, 'package.json'), utilsManifest);
+
+  return peerStubs;
+}
+
+function createGenericPeerStubSource() {
+  return [
+    'const noop = () => undefined;',
+    'const stubTarget = function NocoBasePeerStub() { return stub; };',
+    'const stub = new Proxy(stubTarget, {',
+    '  get(target, property) {',
+    "    if (property === 'then') return undefined;",
+    '    return Reflect.has(target, property) ? Reflect.get(target, property) : stub;',
+    '  },',
+    '  apply() { return stub; },',
+    '  construct() { return stub; },',
+    '});',
+    'module.exports = stub;',
+  ].join('\n');
 }
 
 function createStubPackage(packageRoot, name, source) {
@@ -289,8 +358,17 @@ function createStubPackage(packageRoot, name, source) {
 
 async function runConsumerRuntimeSmoke(consumerRoot) {
   const runtimeSmokePath = path.join(consumerRoot, 'runtime-smoke.mjs');
-  fs.writeFileSync(runtimeSmokePath, createRuntimeSmokeSource(requiredRunJSEntries));
-  const runtimeModule = await import(pathToFileURL(runtimeSmokePath).href);
+  fs.writeFileSync(runtimeSmokePath, createRuntimeSmokeSource(requiredEntries));
+  let runtimeModule;
+  try {
+    runtimeModule = await import(pathToFileURL(runtimeSmokePath).href);
+  } catch (error) {
+    throw new Error(
+      'Packed consumer runtime import failed: ' +
+        (error instanceof Error ? error.stack || error.message : String(error)),
+      { cause: error },
+    );
+  }
   if (!runtimeModule.default) {
     throw new Error('The runtime consumer smoke did not return a report');
   }
@@ -311,16 +389,30 @@ function createRuntimeSmokeSource(requiredEntries) {
     '',
     'const consumerRoot = path.dirname(fileURLToPath(import.meta.url));',
     "const consumerRequire = createRequire(path.join(consumerRoot, 'package.json'));",
+    'globalThis.self ??= globalThis;',
+    'globalThis.window ??= globalThis;',
+    "globalThis.navigator ??= { userAgent: 'node.js' };",
+    "const currentScript = { tagName: 'SCRIPT', src: new URL('./runtime-smoke.mjs', import.meta.url).href };",
+    'globalThis.document ??= {',
+    '  currentScript,',
+    '  getElementsByTagName: () => [currentScript],',
+    '};',
     'const requiredSpecifiers = ' + JSON.stringify(requiredEntries) + ';',
     'const requiredEntries = [];',
     'for (const specifier of requiredSpecifiers) {',
     '  const resolvedPath = consumerRequire.resolve(specifier);',
+    "  const normalizedResolvedPath = path.relative(consumerRoot, resolvedPath).replaceAll(path.sep, '/');",
+    "  const packageName = specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0];",
+    "  const expectedPrefix = 'node_modules/' + packageName + '/';",
+    '  if (!normalizedResolvedPath.startsWith(expectedPrefix)) {',
+    '    throw new Error(specifier + " resolved outside the packed consumer: " + normalizedResolvedPath);',
+    '  }',
     '  const namespace = await import(specifier);',
     '  const exportCount = Object.keys(namespace).length;',
     '  if (!exportCount) throw new Error(specifier + " did not expose a runtime module");',
     '  requiredEntries.push({',
     '    specifier,',
-    "    resolvedPath: path.relative(consumerRoot, resolvedPath).replaceAll(path.sep, '/'),",
+    '    resolvedPath: normalizedResolvedPath,',
     '    exportCount,',
     '  });',
     '}',
@@ -462,11 +554,11 @@ function createRuntimeSmokeSource(requiredEntries) {
 function runConsumerTypeSmoke(consumerRoot) {
   fs.writeFileSync(
     path.join(consumerRoot, 'types-smoke.ts'),
-    requiredRunJSEntries
+    requiredEntries
       .map((specifier, index) => 'import * as entry' + index + ' from ' + JSON.stringify(specifier) + ';')
       .concat(
         'export const importedEntries = [' +
-          requiredRunJSEntries.map((_specifier, index) => 'entry' + index).join(', ') +
+          requiredEntries.map((_specifier, index) => 'entry' + index).join(', ') +
           '] as const;',
         '',
       )
