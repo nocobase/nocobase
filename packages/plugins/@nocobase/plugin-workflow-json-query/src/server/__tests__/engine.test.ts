@@ -223,5 +223,37 @@ describe('json-query > engines', () => {
       expect(j1.status).toBe(JOB_STATUS.RESOLVED);
       expect(j1.result).toEqual('life');
     });
+
+    it('stores parser error message and details', async () => {
+      await workflow.createNode({
+        type: 'json-query',
+        config: {
+          engine: 'jsonata',
+          source: '{{$context.data}}',
+          expression: '(',
+        },
+      });
+
+      await CategoryRepo.create({
+        values: {
+          title: 'c1',
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ERROR);
+      expect(job.result).toBeNull();
+      expect(JSON.parse(job.log)).toMatchObject({
+        code: 'S0203',
+        position: 1,
+        token: '(end)',
+        value: ')',
+        message: 'Expected ")" before end of expression',
+      });
+    });
   });
 });

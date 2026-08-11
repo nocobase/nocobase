@@ -34,6 +34,36 @@ interface Config {
   }[];
 }
 
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+  return String(error);
+}
+
+function getErrorLog(error: unknown): string {
+  const message = getErrorMessage(error);
+  if (typeof error !== 'object' || error === null) {
+    return message;
+  }
+
+  const details =
+    error instanceof Error
+      ? {
+          ...error,
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+        }
+      : error;
+
+  try {
+    return JSON.stringify(details, null, 2) || message;
+  } catch {
+    return message;
+  }
+}
+
 function mapModel(data, model) {
   const result = {};
   model.forEach(({ path, alias }) => {
@@ -78,9 +108,10 @@ export default class extends Instruction {
         result,
         status: JOB_STATUS.RESOLVED,
       };
-    } catch (e) {
+    } catch (error: unknown) {
       return {
-        result: e.toString(),
+        result: null,
+        log: getErrorLog(error),
         status: JOB_STATUS.ERROR,
       };
     }
