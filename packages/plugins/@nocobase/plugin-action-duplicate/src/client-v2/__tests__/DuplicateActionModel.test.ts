@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowEngine, ResourceError } from '@nocobase/flow-engine';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DuplicateActionModel } from '../DuplicateActionModel';
 
@@ -202,6 +202,73 @@ describe('DuplicateActionModel', () => {
     expect(ctx.model.duplicateLoading).toBe(false);
     expect(ctx.model.rerender).toHaveBeenCalledTimes(2);
   });
+
+  it.each([
+    { failureStage: 'template fetch', shouldFailFetch: true },
+    { failureStage: 'record creation', shouldFailFetch: false },
+  ])(
+    'keeps only the API error notification and resets loading when $failureStage fails',
+    async ({ shouldFailFetch }) => {
+      const flow: any = createModel({ duplicateFields: ['title'] }).getFlow('duplicateSettings');
+      const step: any = flow.getStep('duplicate');
+      const handler = step.serialize().handler;
+      const error = new ResourceError({
+        response: {
+          data: {
+            errors: [{ message: 'Duplicate failed' }],
+          },
+        },
+      });
+      const runAction = shouldFailFetch
+        ? vi.fn().mockRejectedValue(error)
+        : vi.fn(async () => ({ data: { title: 'Copy' } }));
+      const create = shouldFailFetch ? vi.fn(async () => undefined) : vi.fn().mockRejectedValue(error);
+      const resource = {
+        setDataSourceKey: vi.fn(),
+        setResourceName: vi.fn(),
+        runAction,
+      };
+      const ctx = {
+        model: {
+          props: {
+            duplicateFields: ['title'],
+          },
+          duplicateLoading: false,
+          rerender: vi.fn(),
+        },
+        blockModel: {
+          collection: {
+            filterTargetKey: 'id',
+            dataSourceKey: 'main',
+            name: 'posts',
+          },
+          resource: {
+            create,
+          },
+        },
+        record: {
+          id: 100,
+          __collection: 'posts',
+        },
+        collection: {
+          fields: new Map([['title', { name: 'title' }]]),
+        },
+        createResource: vi.fn(() => resource),
+        message: {
+          error: vi.fn(),
+          success: vi.fn(),
+        },
+        t: (key: string) => key,
+      };
+
+      await expect(handler(ctx, {})).rejects.toThrow('Duplicate failed');
+
+      expect(ctx.message.error).not.toHaveBeenCalled();
+      expect(ctx.message.success).not.toHaveBeenCalled();
+      expect(ctx.model.duplicateLoading).toBe(false);
+      expect(ctx.model.rerender).toHaveBeenCalledTimes(2);
+    },
+  );
 
   it('delegates openView when popupTemplateUid is provided', async () => {
     const model = createModel({ duplicateFields: ['title'] });
