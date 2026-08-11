@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-portal-capability",
-  "version": "3.0.0-alpha.6",
+  "version": "3.0.0-alpha.7",
   "main": "dist/server/index.js",
   "displayName": "Portal capability",
   "displayName.zh-CN": "Portal 能力接口",
