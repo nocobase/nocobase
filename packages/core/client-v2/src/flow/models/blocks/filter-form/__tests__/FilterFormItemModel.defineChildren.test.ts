@@ -9,11 +9,12 @@
 
 import { describe, expect, it } from 'vitest';
 import '../../../../index';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FilterableItemModel, FlowEngine } from '@nocobase/flow-engine';
 import { CollectionBlockModel } from '../../../base';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
 import { NumberFieldModel } from '../../../fields/NumberFieldModel';
 import { FilterFormRecordSelectFieldModel } from '../fields/FilterFormRecordSelectFieldModel';
+import { FilterFormFieldModel } from '../fields/FilterFormFieldModel';
 import { FilterFormItemModel } from '../FilterFormItemModel';
 
 class DummyResource {
@@ -31,6 +32,20 @@ class DummyCollectionBlockModel extends CollectionBlockModel {
     return new DummyResource() as any;
   }
 }
+
+class TestCascaderFilterFieldModel extends FilterFormFieldModel {}
+
+FilterableItemModel.bindModelToInterface('TestCascaderFilterFieldModel', ['testChinaRegion'], {
+  isDefault: true,
+  defaultProps: {
+    fieldNames: {
+      label: 'name',
+      value: 'code',
+    },
+    labelInValue: true,
+    multiple: false,
+  },
+});
 
 describe('FilterFormItemModel defineChildren association fields', () => {
   it('hides default operator setting for association filter fields', () => {
@@ -318,6 +333,103 @@ describe('FilterFormItemModel defineChildren association fields', () => {
     });
     expect(filterItem.collectionField?.filterable?.operators).toBe('string');
     expect(filterItem.subModels.field).toBeInstanceOf(InputFieldModel);
+  });
+
+  it('uses explicit filterable binding for association fields that provide a filter model', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel: FilterFormItemModel as any,
+      DummyCollectionBlockModel,
+      InputFieldModel,
+      TestCascaderFilterFieldModel,
+      FilterFormRecordSelectFieldModel,
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds?.addCollection({
+      name: 'departments',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+    ds?.addCollection({
+      name: 'chinaRegions',
+      fields: [
+        { name: 'code', type: 'string', interface: 'input', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+    ds?.addCollection({
+      name: 'students',
+      filterTargetKey: 'id',
+      fields: [
+        {
+          name: 'department',
+          title: 'Department',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'departments',
+          filterable: { operators: [] },
+        },
+        {
+          name: 'birthPlace',
+          title: 'Birth place',
+          type: 'belongsToMany',
+          interface: 'testChinaRegion',
+          target: 'chinaRegions',
+          targetKey: 'code',
+          filterable: { operators: [] },
+        },
+      ],
+    });
+
+    const model = engine.createModel<DummyCollectionBlockModel>({
+      uid: 'students-direct-region-block',
+      use: 'DummyCollectionBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'students',
+          },
+        },
+      },
+    });
+
+    const children = (await FilterFormItemModel.defineChildren({
+      blockGridModel: {
+        filterSubModels: (_key: string, predicate: (item: any) => boolean) => [model].filter(predicate),
+      },
+      t: (value: string) => value,
+    } as any)) as any[];
+    const groups = await children[0].children();
+    const fieldsGroup = groups.find((group: any) => group.key === 'fields');
+    const departmentItem = fieldsGroup?.children?.find((item: any) => item.key === 'department');
+    const birthPlaceItem = fieldsGroup?.children?.find((item: any) => item.key === 'birthPlace');
+
+    const departmentCreateOptions = await departmentItem.createModelOptions();
+    const birthPlaceCreateOptions = await birthPlaceItem.createModelOptions();
+
+    expect(departmentCreateOptions.subModels.field.use).toBe('FilterFormRecordSelectFieldModel');
+    expect(birthPlaceCreateOptions.subModels.field.use).toBe('TestCascaderFilterFieldModel');
+    expect(birthPlaceCreateOptions.subModels.field.props).toMatchObject({
+      fieldNames: {
+        label: 'name',
+        value: 'code',
+      },
+      labelInValue: true,
+      multiple: false,
+    });
+
+    const filterItem = engine.createModel({
+      uid: 'filter-item-birth-place-direct',
+      ...birthPlaceCreateOptions,
+    } as any) as unknown as FilterFormItemModel;
+
+    expect(filterItem.fieldPath).toBe('birthPlace');
+    expect(filterItem.subModels.field).toBeInstanceOf(TestCascaderFilterFieldModel);
   });
 
   it('provides fallback field metadata for sql fields without collection context', async () => {
