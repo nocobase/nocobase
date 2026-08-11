@@ -59,11 +59,37 @@ export class FilterFormGridModel extends GridModel {
 
   readonly loading = observable.ref(false);
 
-  private getAssociationFilterTargetKey(field: any) {
-    const filterTargetKey = field?.targetCollection?.filterTargetKey;
+  private isRecordSelectFilterField(subModel: FilterFormItemModel) {
+    const fieldModel = subModel.subModels?.field;
+    if (!fieldModel) {
+      return true;
+    }
 
-    if (Array.isArray(filterTargetKey)) {
-      return filterTargetKey[0] || 'id';
+    const RecordSelectModel = this.flowEngine.getModelClass('FilterFormRecordSelectFieldModel');
+    if (!RecordSelectModel) {
+      return fieldModel.constructor?.name === 'FilterFormRecordSelectFieldModel';
+    }
+
+    return fieldModel instanceof RecordSelectModel;
+  }
+
+  private getAssociationFilterTargetKey(field: any, subModel: FilterFormItemModel) {
+    const normalizeKey = (key: any) => {
+      if (Array.isArray(key)) {
+        return key[0];
+      }
+      return key;
+    };
+
+    const filterTargetKey = normalizeKey(field?.targetCollection?.filterTargetKey);
+    const fieldTargetKey = normalizeKey(field?.targetKey);
+
+    if (filterTargetKey && filterTargetKey !== 'id') {
+      return filterTargetKey;
+    }
+
+    if (!this.isRecordSelectFilterField(subModel) && fieldTargetKey) {
+      return fieldTargetKey;
     }
 
     return filterTargetKey || 'id';
@@ -370,7 +396,7 @@ export class FilterFormGridModel extends GridModel {
           if (field?.target) {
             return {
               targetId: model.uid,
-              filterPaths: [`${fieldPath}.${this.getAssociationFilterTargetKey(field)}`],
+              filterPaths: [`${fieldPath}.${this.getAssociationFilterTargetKey(field, subModel)}`],
             };
           }
         }
