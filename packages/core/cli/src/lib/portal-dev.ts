@@ -13,13 +13,14 @@ import { executeApiRequest } from './api-client.js';
 import { translateCli } from './cli-locale.js';
 import {
   buildPortalBasePath,
+  resolveApiBaseUrlPathname,
   resolvePortalAppContext,
   resolveSavedPortalSourcePath,
   resolvePortalSourcePath,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
-import { buildPortalCommandEnv } from './portal-command-env.js';
+import { buildPortalCommandEnv, buildPortalTemplateCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { run, runPnpmCommand, type RunCommand } from './run-npm.js';
 
@@ -127,10 +128,14 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
   const runCommand = options.runCommand ?? run;
   await runPnpmCommand(runCommand, ['dev'], {
     cwd: portalDir,
-    env: buildPortalCommandEnv({
-      NOCOBASE_PORTAL_NAME: portal,
-      NOCOBASE_API_PROXY_TARGET: apiBaseUrl,
-    }),
+    env: buildPortalCommandEnv(
+      buildPortalTemplateCommandEnv({
+        portal,
+        portalBase,
+        apiBaseUrl,
+        apiUrl: resolveApiBaseUrlPathname(apiBaseUrl),
+      }),
+    ),
     envMode: 'replace',
     errorName: 'pnpm dev',
   });

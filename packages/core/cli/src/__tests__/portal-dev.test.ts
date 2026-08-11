@@ -139,6 +139,8 @@ test('updates env files and starts portal dev without building or syncing record
     env: expect.objectContaining({
       NOCOBASE_PORTAL_NAME: 'customer',
       NOCOBASE_API_PROXY_TARGET: 'https://example.com/console/api/__app/crm',
+      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_API_URL: '/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm dev',

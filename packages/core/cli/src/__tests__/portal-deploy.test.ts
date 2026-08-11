@@ -246,6 +246,8 @@ test('updates env files, builds, uploads dist, and syncs the portal record local
     env: expect.objectContaining({
       NOCOBASE_PORTAL_NAME: 'customer',
       NOCOBASE_API_PROXY_TARGET: 'http://localhost:13000/console/api/__app/crm',
+      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_API_URL: '/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
@@ -409,6 +411,8 @@ test('deploy can skip dependency installation', async () => {
     env: expect.objectContaining({
       NOCOBASE_PORTAL_NAME: 'customer',
       NOCOBASE_API_PROXY_TARGET: 'http://localhost:13000/api',
+      NOCOBASE_PORTAL_BASE: '/x/customer/',
+      NOCOBASE_API_URL: '/api',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
@@ -418,6 +422,81 @@ test('deploy can skip dependency installation', async () => {
     env: expect.any(Object),
     envMode: 'replace',
     errorName: 'pnpm build:server',
+  });
+});
+
+test('deploy normalizes legacy dist/index.html into dist/client before upload', async () => {
+  const storagePath = await makeTempDir('nocobase-cli-portal-deploy-storage-');
+  const portalDir = await preparePortalWorkspace({ storagePath });
+  await fsp.writeFile(
+    path.join(portalDir, 'package.json'),
+    `${JSON.stringify(
+      {
+        name: 'legacy-portal',
+        scripts: {
+          build: 'build legacy client',
+          'build:html': 'build html',
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  const runCommand = vi.fn(async (_name: string, args: string[], options?: PortalDeployRunOptions) => {
+    if (args[0] === 'build') {
+      await fsp.mkdir(path.join(String(options?.cwd), 'dist', 'assets'), { recursive: true });
+      await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'index.html'), '<div id="legacy"></div>');
+      await fsp.writeFile(path.join(String(options?.cwd), 'dist', 'assets', 'index.js'), 'console.log("legacy");\n');
+    }
+  });
+  const apiRequest = vi.fn(async (options: RequestOptions) => {
+    if (options.operation.pathTemplate === '/multiPortals:firstOrCreate') {
+      return { ok: true, status: 200, data: { data: { uid: 'customer' } } };
+    }
+
+    const extractDir = await makeTempDir('nocobase-cli-portal-deploy-legacy-dist-');
+    await tar.extract({
+      cwd: extractDir,
+      file: String(options.flags.file),
+    });
+    await expect(fsp.readFile(path.join(extractDir, 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '<div id="legacy"></div>',
+    );
+    await expect(fsp.readFile(path.join(extractDir, 'client', 'assets', 'index.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(fsp.access(path.join(extractDir, 'index.html'))).rejects.toThrow();
+    return { ok: true, status: 200, data: { data: { status: 'ok', distPath: 'portals/main/customer/dist' } } };
+  });
+
+  await expect(
+    deployPortalWorkspace({
+      portal: 'customer',
+      env: createEnv({ kind: 'local', storagePath }),
+      runCommand,
+      apiRequest,
+    }),
+  ).resolves.toMatchObject({
+    app: 'main',
+    portal: 'customer',
+    uploaded: true,
+    recordSynced: true,
+  });
+
+  await expect(fsp.readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+    '<div id="legacy"></div>',
+  );
+  await expect(fsp.access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+  expect(runCommand).toHaveBeenNthCalledWith(3, 'pnpm', ['build:html'], {
+    cwd: portalDir,
+    env: expect.objectContaining({
+      NOCOBASE_PORTAL_NAME: 'customer',
+      NOCOBASE_API_PROXY_TARGET: 'http://localhost:13000/api',
+      NOCOBASE_PORTAL_BASE: '/x/customer/',
+      NOCOBASE_API_URL: '/api',
+    }),
+    envMode: 'replace',
+    errorName: 'pnpm build:html',
   });
 });
 
@@ -589,6 +668,8 @@ test('http deploy builds, packs dist, and uploads it', async () => {
     env: expect.objectContaining({
       NOCOBASE_PORTAL_NAME: 'customer',
       NOCOBASE_API_PROXY_TARGET: 'https://example.com/console/api/__app/crm',
+      NOCOBASE_PORTAL_BASE: '/console/x/apps/crm/customer/',
+      NOCOBASE_API_URL: '/console/api/__app/crm',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',
@@ -711,6 +792,8 @@ test('http deploy uses root portal base for custom-domain sub-apps', async () =>
     env: expect.objectContaining({
       NOCOBASE_PORTAL_NAME: 'crm',
       NOCOBASE_API_PROXY_TARGET: 'https://demo6.v11.demo.nocobase.com/api',
+      NOCOBASE_PORTAL_BASE: '/x/crm/',
+      NOCOBASE_API_URL: '/api',
     }),
     envMode: 'replace',
     errorName: 'pnpm build:html',

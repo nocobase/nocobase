@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, cp, mkdir, mkdtemp, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
@@ -17,13 +17,14 @@ import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import {
   buildPortalBasePath,
   resolvePortalAppContext,
+  resolveApiBaseUrlPathname,
   resolveSavedPortalSourcePath,
   resolvePortalSourcePath,
   titleFromPortalSlug,
   validatePortalSlug,
   type PortalCreateEnvLike,
 } from './portal-create.js';
-import { buildPortalCommandEnv } from './portal-command-env.js';
+import { buildPortalCommandEnv, buildPortalTemplateCommandEnv } from './portal-command-env.js';
 import { updatePortalEnvFiles } from './portal-env-files.js';
 import { resolvePnpmInstallCommand, run, runPnpmCommand, runPnpmInstallCommand, type RunCommand } from './run-npm.js';
 
@@ -61,6 +62,7 @@ type PortalDeployUploadResult = {
 
 const PORTAL_DIST_DIR = 'dist';
 const PORTAL_CLIENT_DIST_DIR = path.join(PORTAL_DIST_DIR, 'client');
+const PORTAL_RAW_INDEX_HTML = 'index.raw.html';
 
 const portalDeployText = (key: string, values?: Record<string, unknown>, fallback?: string) =>
   translateCli(`commands.portalDeploy.${key}`, values, { fallback });
@@ -156,6 +158,47 @@ async function pathExists(target: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function movePortalDistEntry(sourcePath: string, targetPath: string): Promise<void> {
+  try {
+    await rename(sourcePath, targetPath);
+  } catch (error) {
+    const code =
+      error && typeof error === 'object' && 'code' in error ? String((error as { code?: unknown }).code) : '';
+    if (code !== 'EXDEV') {
+      throw error;
+    }
+    await cp(sourcePath, targetPath, { recursive: true });
+    await rm(sourcePath, { recursive: true, force: true });
+  }
+}
+
+async function normalizeLegacyPortalClientDist(portalDir: string): Promise<boolean> {
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  const legacyIndexPath = path.join(distDir, 'index.html');
+  const clientDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
+  const clientIndexPath = path.join(clientDir, 'index.html');
+
+  if ((await pathExists(clientIndexPath)) || !(await pathExists(legacyIndexPath))) {
+    return false;
+  }
+
+  const entries = await readdir(distDir, { withFileTypes: true });
+  const legacyEntries = entries.filter((entry) => entry.name !== 'client' && entry.name !== PORTAL_RAW_INDEX_HTML);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  await mkdir(clientDir, { recursive: true });
+  for (const entry of legacyEntries) {
+    const sourcePath = path.join(distDir, entry.name);
+    const targetPath = path.join(clientDir, entry.name);
+    await rm(targetPath, { recursive: true, force: true });
+    await movePortalDistEntry(sourcePath, targetPath);
+  }
+
+  return true;
 }
 
 async function chmodPortalDistTree(targetDir: string): Promise<void> {
@@ -254,11 +297,18 @@ async function ensurePortalBuildServerCleansDistBin(portalDir: string): Promise<
 async function runPortalBuildCommands(params: {
   portalDir: string;
   portal: string;
+  portalBase: string;
   apiBaseUrl: string;
   runCommand: RunCommand;
 }) {
   const scripts = await readPortalPackageScripts(params.portalDir);
   const hasScript = (name: string) => hasPortalPackageScript(scripts, name);
+  const templateEnv = buildPortalTemplateCommandEnv({
+    portal: params.portal,
+    portalBase: params.portalBase,
+    apiBaseUrl: params.apiBaseUrl,
+    apiUrl: resolveApiBaseUrlPathname(params.apiBaseUrl),
+  });
 
   if (hasScript('build:client') && hasScript('build:server')) {
     if (hasScript('clean:dist')) {
@@ -278,10 +328,7 @@ async function runPortalBuildCommands(params: {
     if (hasScript('build:html')) {
       await runPnpmCommand(params.runCommand, ['build:html'], {
         cwd: params.portalDir,
-        env: buildPortalCommandEnv({
-          NOCOBASE_PORTAL_NAME: params.portal,
-          NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
-        }),
+        env: buildPortalCommandEnv(templateEnv),
         envMode: 'replace',
         errorName: 'pnpm build:html',
       });
@@ -304,10 +351,7 @@ async function runPortalBuildCommands(params: {
   if (Object.keys(scripts).length === 0 || hasScript('build:html')) {
     await runPnpmCommand(params.runCommand, ['build:html'], {
       cwd: params.portalDir,
-      env: buildPortalCommandEnv({
-        NOCOBASE_PORTAL_NAME: params.portal,
-        NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
-      }),
+      env: buildPortalCommandEnv(templateEnv),
       envMode: 'replace',
       errorName: 'pnpm build:html',
     });
@@ -458,9 +502,11 @@ export async function deployPortalWorkspace(options: PortalDeployOptions): Promi
   await runPortalBuildCommands({
     portalDir,
     portal,
+    portalBase,
     apiBaseUrl,
     runCommand,
   });
+  await normalizeLegacyPortalClientDist(portalDir);
 
   await assertFileExists(
     path.join(clientDistDir, 'index.html'),

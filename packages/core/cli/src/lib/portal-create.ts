@@ -152,7 +152,7 @@ function normalizeUrlPathname(pathname: string): string {
   return normalized === '/' ? normalized : normalized.replace(/\/+$/, '');
 }
 
-function resolveApiBaseUrlPathname(apiBaseUrl: string): string {
+export function resolveApiBaseUrlPathname(apiBaseUrl: string): string {
   const normalizedApiBaseUrl = trimValue(apiBaseUrl);
   try {
     return normalizeUrlPathname(new URL(normalizedApiBaseUrl).pathname);

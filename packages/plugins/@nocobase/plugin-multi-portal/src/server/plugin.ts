@@ -663,7 +663,10 @@ async function restorePortalTemplateDist(portalDir: string, logPath: string): Pr
 }
 
 async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.Dirent[]> {
-  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  return getLegacyPortalClientDistRootEntries(path.join(portalDir, PORTAL_DIST_DIR));
+}
+
+async function getLegacyPortalClientDistRootEntries(distDir: string): Promise<fs.Dirent[]> {
   const legacyIndexPath = path.join(distDir, 'index.html');
 
   if (!(await pathExists(legacyIndexPath))) {
@@ -672,6 +675,31 @@ async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.D
 
   const entries = await fs.promises.readdir(distDir, { withFileTypes: true });
   return entries.filter((entry) => entry.name !== 'client' && entry.name !== PORTAL_RAW_INDEX_HTML);
+}
+
+async function normalizeLegacyPortalClientDistRoot(distDir: string): Promise<boolean> {
+  const clientDir = path.join(distDir, 'client');
+  const clientIndexPath = path.join(clientDir, 'index.html');
+
+  if (await pathExists(clientIndexPath)) {
+    return false;
+  }
+
+  const legacyEntries = await getLegacyPortalClientDistRootEntries(distDir);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  await fs.promises.mkdir(clientDir, { recursive: true });
+
+  for (const entry of legacyEntries) {
+    const sourcePath = path.join(distDir, entry.name);
+    const targetPath = path.join(clientDir, entry.name);
+    await fs.promises.rm(targetPath, { recursive: true, force: true });
+    await movePortalDeployDir(sourcePath, targetPath);
+  }
+
+  return true;
 }
 
 async function removeLegacyPortalClientDist(portalDir: string, logPath?: string): Promise<boolean> {
@@ -837,8 +865,11 @@ async function buildPortalStorageItem(
 ): Promise<void> {
   const logPath = getPortalStorageLogPath(item);
   const buildAppName = hasRequestAppHeader(options) ? item.appName : MAIN_APP_NAME;
+  const apiUrl = getPortalStorageApiUrl(buildAppName);
   const buildEnv = getPortalStorageCommandEnv({
-    NOCOBASE_API_URL: getPortalStorageApiUrl(buildAppName),
+    NOCOBASE_PORTAL_NAME: item.portalName,
+    NOCOBASE_API_PROXY_TARGET: apiUrl,
+    NOCOBASE_API_URL: apiUrl,
     NOCOBASE_PORTAL_BASE: getPortalDeployBasePath(buildAppName, item.portalName),
     SKIP_YARN_COREPACK_CHECK: '1',
     COREPACK_ENABLE_STRICT: '0',
@@ -847,7 +878,9 @@ async function buildPortalStorageItem(
   await appendPortalStorageLog(logPath, `Building portal ${item.appName}/${item.portalName}.`);
   await appendPortalStorageLog(
     logPath,
-    `Build environment: NOCOBASE_API_URL=${buildEnv.NOCOBASE_API_URL || ''} NOCOBASE_PORTAL_BASE=${
+    `Build environment: NOCOBASE_PORTAL_NAME=${buildEnv.NOCOBASE_PORTAL_NAME || ''} NOCOBASE_API_PROXY_TARGET=${
+      buildEnv.NOCOBASE_API_PROXY_TARGET || ''
+    } NOCOBASE_API_URL=${buildEnv.NOCOBASE_API_URL || ''} NOCOBASE_PORTAL_BASE=${
       buildEnv.NOCOBASE_PORTAL_BASE || ''
     } APP_PUBLIC_PATH=${buildEnv.APP_PUBLIC_PATH || ''} SKIP_YARN_COREPACK_CHECK=${
       buildEnv.SKIP_YARN_COREPACK_CHECK || ''
@@ -1021,6 +1054,7 @@ async function replacePortalDistFromArchive(params: {
       strict: true,
       filter: validatePortalDeployTarEntry,
     });
+    await normalizeLegacyPortalClientDistRoot(uploadDir);
 
     const indexPath = path.join(uploadDir, 'client', 'index.html');
     const indexStat = await fs.promises.stat(indexPath).catch(() => null);

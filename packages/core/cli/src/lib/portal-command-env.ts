@@ -31,3 +31,17 @@ export function buildPortalCommandEnv(env: Record<string, string> = {}): Record<
   }
   return { ...out, ...env };
 }
+
+export function buildPortalTemplateCommandEnv(params: {
+  portal: string;
+  portalBase: string;
+  apiBaseUrl: string;
+  apiUrl: string;
+}): Record<string, string> {
+  return {
+    NOCOBASE_PORTAL_NAME: params.portal,
+    NOCOBASE_API_PROXY_TARGET: params.apiBaseUrl,
+    NOCOBASE_PORTAL_BASE: params.portalBase,
+    NOCOBASE_API_URL: params.apiUrl,
+  };
+}

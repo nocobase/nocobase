@@ -1471,6 +1471,8 @@ describe('plugin-multi-portal server', () => {
         cwd: portalDir,
         env: expect.objectContaining({
           NODE_OPTIONS: '--max_old_space_size=4096',
+          NOCOBASE_PORTAL_NAME: 'storageTemplatePortal',
+          NOCOBASE_API_PROXY_TARGET: '/console/api',
           NOCOBASE_API_URL: '/console/api',
           NOCOBASE_PORTAL_BASE: '/console/x/storageTemplatePortal/',
         }),
@@ -1636,6 +1638,8 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         cwd: portalDir,
         env: expect.objectContaining({
+          NOCOBASE_PORTAL_NAME: 'test',
+          NOCOBASE_API_PROXY_TARGET: '/nocobase/api',
           NOCOBASE_API_URL: '/nocobase/api',
           NOCOBASE_PORTAL_BASE: '/nocobase/x/test/',
         }),
@@ -1683,6 +1687,8 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         cwd: portalDir,
         env: expect.objectContaining({
+          NOCOBASE_PORTAL_NAME: 'crm',
+          NOCOBASE_API_PROXY_TARGET: '/nocobase/api/__app/a_q7xx6p75d0e',
           NOCOBASE_API_URL: '/nocobase/api/__app/a_q7xx6p75d0e',
           NOCOBASE_PORTAL_BASE: '/nocobase/x/apps/a_q7xx6p75d0e/crm/',
         }),
@@ -2173,6 +2179,41 @@ describe('plugin-multi-portal server', () => {
     );
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
     expect(portalHostRestartMock).not.toHaveBeenCalled();
+  });
+
+  it('should deploy uploaded legacy portal dist into dist/client storage', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'index.html': '<div id="legacy"></div>',
+      'assets/index.js': 'console.log("legacy");\n',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'legacy-customer',
+          basePath: '/console/x/legacy-customer/',
+        },
+        file: archivePath,
+      });
+    const portalDir = path.join(storagePath as string, 'portals', 'main', 'legacy-customer');
+
+    expect(response.status).toBe(200);
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '<div id="legacy"></div>',
+    );
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'assets', 'index.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
   });
 
   it('should restart managed portal host after a successful portal dist deploy', async () => {
