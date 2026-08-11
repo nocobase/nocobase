@@ -140,7 +140,7 @@ describe('ExportFieldsCascader', () => {
     expect(activeSignal?.aborted).toBe(true);
   });
 
-  it('keeps relation field values intact when sorting export fields', async () => {
+  it('sorts safely after changing a lazy-loaded relation field', async () => {
     const originalPointerEvent = globalThis.PointerEvent;
     class TestPointerEvent extends MouseEvent {
       readonly isPrimary: boolean;
@@ -154,21 +154,27 @@ describe('ExportFieldsCascader', () => {
     }
     globalThis.PointerEvent = TestPointerEvent as unknown as typeof PointerEvent;
 
+    const rootOptions: SearchOption[] = [
+      { name: 'id', title: 'ID', isLeaf: true },
+      { name: 'orgid', title: 'orgid', isLeaf: true },
+      { name: 'nickname', title: 'Nickname', isLeaf: true },
+      {
+        name: 'org_m2o',
+        title: 'org_m2o',
+        isLeaf: false,
+      },
+      { name: 'username', title: 'Username', isLeaf: true },
+    ];
     const optionsCache = {
-      getRootOptions: () => [
-        { name: 'id', title: 'ID', isLeaf: true },
-        { name: 'orgid', title: 'orgid', isLeaf: true },
-        { name: 'nickname', title: 'Nickname', isLeaf: true },
-        {
-          name: 'org_m2o',
-          title: 'org_m2o',
-          isLeaf: false,
-          children: [{ name: 'company_name', title: 'Company name', isLeaf: true }],
-        },
-        { name: 'username', title: 'Username', isLeaf: true },
-      ],
+      getRootOptions: () => rootOptions,
       loadChildren: vi.fn(() => []),
-      preloadPath: vi.fn(() => false),
+      preloadPath: vi.fn(() => {
+        rootOptions[3].children = [
+          { name: 'company_name', title: 'Company name', isLeaf: true },
+          { name: 'address', title: 'Address', isLeaf: true },
+        ];
+        return true;
+      }),
       searchOptionsAsync: vi.fn(() => Promise.resolve([])),
     };
     const form = createForm({
@@ -235,6 +241,7 @@ describe('ExportFieldsCascader', () => {
       );
       const rows = Array.from(container.querySelectorAll<HTMLElement>('.ant-formily-array-items-item'));
       const handles = container.querySelectorAll<HTMLElement>('.ant-formily-array-base-sort-handle');
+      const comboboxes = container.querySelectorAll<HTMLElement>('[role="combobox"]');
 
       rows.forEach((row, index) => {
         const top = index * 64;
@@ -251,6 +258,15 @@ describe('ExportFieldsCascader', () => {
         });
       });
 
+      await act(async () => {
+        fireEvent.mouseDown(comboboxes[3]);
+      });
+      await waitFor(() => expect(optionsCache.preloadPath).toHaveBeenCalledWith(['org_m2o', 'company_name']));
+
+      await act(async () => {
+        form.setValuesIn('exportSettings.3.dataIndex', ['org_m2o', 'address']);
+      });
+
       fireEvent.pointerDown(handles[3], { button: 0, buttons: 1, clientX: 12, clientY: 200, pointerId: 1 });
       await act(async () => Promise.resolve());
       fireEvent.pointerMove(document, { button: 0, buttons: 1, clientX: 12, clientY: 290, pointerId: 1 });
@@ -263,7 +279,7 @@ describe('ExportFieldsCascader', () => {
           ['orgid'],
           ['nickname'],
           ['username'],
-          ['org_m2o', 'company_name'],
+          ['org_m2o', 'address'],
         ]);
       });
     } finally {
