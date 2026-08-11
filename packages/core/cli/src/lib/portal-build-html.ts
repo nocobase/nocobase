@@ -13,7 +13,7 @@ import path from 'node:path';
 const BUILD_HTML_SCRIPT_PATH = path.join('scripts', 'build-html.mjs');
 const BUILD_HTML_ENV_FILES_PATTERN =
   /return\s+\[\s*["']\.env["']\s*,\s*["']\.env\.local["']\s*,\s*`\.env\.\$\{mode\}`\s*,\s*`\.env\.\$\{mode\}\.local`\s*\]\.map\(\s*\(?file\)?\s*=>\s*path\.join\(rootDir,\s*file\)\s*\);/m;
-const BUILD_HTML_ENV_ONLY_REPLACEMENT = 'return [".env"].map((file) => path.join(rootDir, file));';
+const BUILD_HTML_ENV_ONLY_REPLACEMENT = 'return [".env.server.prod"].map((file) => path.join(rootDir, file));';
 
 export async function ensurePortalBuildHtmlReadsEnvOnly(portalDir: string): Promise<void> {
   const scriptPath = path.join(portalDir, BUILD_HTML_SCRIPT_PATH);

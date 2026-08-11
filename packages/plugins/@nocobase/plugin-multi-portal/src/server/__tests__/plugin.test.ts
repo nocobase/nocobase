@@ -8,13 +8,14 @@
  */
 
 import { createMockServer, type MockServer } from '@nocobase/test';
-import { AppSupervisor } from '@nocobase/server';
-import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'fs/promises';
+import { AppSupervisor, PortalHostSupervisor } from '@nocobase/server';
+import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import type { ChildProcess } from 'child_process';
 import * as tar from 'tar';
 import { vi } from 'vitest';
+import NormalizeLegacyPortalDistMigration from '../migrations/20260810120000-normalize-legacy-portal-dist';
 
 const spawnMock = vi.hoisted(() => {
   const fsSync = require('fs') as typeof import('fs');
@@ -49,9 +50,18 @@ const spawnMock = vi.hoisted(() => {
       }
       if (isBuildCommand && options.cwd) {
         if (process.env.TEST_PORTAL_BUILD_FAIL !== 'true') {
-          const distDir = pathSync.join(options.cwd, 'dist');
+          const writesLegacyDist =
+            process.env.TEST_PORTAL_BUILD_LEGACY_DIST === 'true' ||
+            fsSync.existsSync(pathSync.join(options.cwd, 'dist', 'index.raw.html'));
+          const distDir = writesLegacyDist
+            ? pathSync.join(options.cwd, 'dist')
+            : pathSync.join(options.cwd, 'dist', 'client');
           fsSync.mkdirSync(distDir, { recursive: true });
           fsSync.writeFileSync(pathSync.join(distDir, 'index.html'), options.env?.NOCOBASE_PORTAL_BASE || '');
+          if (writesLegacyDist) {
+            fsSync.mkdirSync(pathSync.join(distDir, 'assets'), { recursive: true });
+            fsSync.writeFileSync(pathSync.join(distDir, 'assets', 'legacy.js'), 'console.log("legacy");\n');
+          }
         }
       }
       subprocess.emit('close', isBuildCommand && process.env.TEST_PORTAL_BUILD_FAIL === 'true' ? 1 : 0, null);
@@ -71,6 +81,8 @@ const execFileMock = vi.hoisted(() => {
     return { on: () => undefined } as unknown as ChildProcess;
   });
 });
+const portalHostGetInfoMock = vi.hoisted(() => vi.fn());
+const portalHostRestartMock = vi.hoisted(() => vi.fn());
 
 vi.mock('child_process', () => ({
   execFile: execFileMock,
@@ -194,12 +206,21 @@ function expectPosixMode(actual: number | undefined, expected: number): void {
   expect(actual === undefined ? actual : actual & 0o777).toBe(expected);
 }
 
-async function createPortalDistArchive(rootDir: string, files: Record<string, string>, modes?: Record<string, number>) {
+async function createPortalDistArchive(
+  rootDir: string,
+  files: Record<string, string>,
+  modes?: Record<string, number>,
+  symlinks?: Record<string, string>,
+) {
   const distSourceDir = path.join(rootDir, `dist-source-${Date.now()}-${Math.random().toString().slice(2)}`);
   const archivePath = path.join(rootDir, `dist-${Date.now()}-${Math.random().toString().slice(2)}.tar.gz`);
   for (const [fileName, content] of Object.entries(files)) {
     await mkdir(path.dirname(path.join(distSourceDir, fileName)), { recursive: true });
     await writeFile(path.join(distSourceDir, fileName), content, 'utf-8');
+  }
+  for (const [linkName, target] of Object.entries(symlinks ?? {})) {
+    await mkdir(path.dirname(path.join(distSourceDir, linkName)), { recursive: true });
+    await symlink(target, path.join(distSourceDir, linkName));
   }
   for (const [entryPath, mode] of Object.entries(modes ?? {})) {
     await chmod(path.join(distSourceDir, entryPath), mode);
@@ -210,7 +231,7 @@ async function createPortalDistArchive(rootDir: string, files: Record<string, st
       file: archivePath,
       gzip: true,
     },
-    Object.keys(files),
+    [...Object.keys(files), ...Object.keys(symlinks ?? {})],
   );
   return archivePath;
 }
@@ -279,6 +300,18 @@ describe('plugin-multi-portal server', () => {
   beforeEach(async () => {
     execFileMock.mockClear();
     spawnMock.mockClear();
+    portalHostGetInfoMock.mockReset();
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'disabled',
+      status: 'disabled',
+    });
+    portalHostRestartMock.mockReset();
+    portalHostRestartMock.mockResolvedValue(new URL('http://127.0.0.1:13010/'));
+    vi.spyOn(PortalHostSupervisor, 'getInstance').mockReturnValue({
+      getInfo: portalHostGetInfoMock,
+      restart: portalHostRestartMock,
+    } as unknown as PortalHostSupervisor);
     storagePath = await mkdtemp(path.join(os.tmpdir(), 'nocobase-multi-portal-'));
     process.env.STORAGE_PATH = storagePath;
   });
@@ -340,6 +373,8 @@ describe('plugin-multi-portal server', () => {
     }
     delete process.env.TEST_PORTAL_TEMPLATE_TARBALL;
     delete process.env.TEST_PORTAL_BUILD_FAIL;
+    delete process.env.TEST_PORTAL_BUILD_LEGACY_DIST;
+    vi.restoreAllMocks();
   });
 
   it('should load with UI Layout without adding core dependencies', async () => {
@@ -1081,8 +1116,12 @@ describe('plugin-multi-portal server', () => {
 
     expect(defaultPortal?.get('portalType')).toBe('ai');
     expect(defaultPortal?.get('portalName')).toBe('main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/console/x/main/');
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/main/',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
@@ -1102,6 +1141,8 @@ describe('plugin-multi-portal server', () => {
       '.env.local': 'LOCAL_ONLY=true\nNOCOBASE_PORTAL_BASE=/old/base/\n',
       '.git/config': '[core]\n',
       'node_modules/stale/index.js': 'module.exports = null;\n',
+      'dist/client/stale.js': 'console.log("stale client");\n',
+      'dist/server/portal.js': 'module.exports = {};\n',
       '.DS_Store': '',
       '._shadow': '',
     });
@@ -1112,13 +1153,15 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(portalDir, 'src', 'index.tsx'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.git'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'stale.js'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'server'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.DS_Store'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '._shadow'))).rejects.toThrow();
     expect(spawnMock).toHaveBeenCalledTimes(1);
@@ -1143,7 +1186,7 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     expect(spawnMock).toHaveBeenNthCalledWith(
       1,
       'npm',
@@ -1152,8 +1195,7 @@ describe('plugin-multi-portal server', () => {
         cwd: expect.any(String),
       }),
     );
-    expect(spawnMock).toHaveBeenNthCalledWith(
-      2,
+    expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
       expect.objectContaining({
@@ -1175,7 +1217,7 @@ describe('plugin-multi-portal server', () => {
 
     const portalDir = path.join(storagePath as string, 'portals', app.name || 'main', 'main');
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
-    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'index.html'))).rejects.toThrow();
     await expect(
       waitForFileContent(
         path.join(storagePath as string, 'logs', 'portals', app.name || 'main', 'main.log'),
@@ -1410,14 +1452,16 @@ describe('plugin-multi-portal server', () => {
 
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'storageTemplatePortal');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(portalDir, 'package.json'))).resolves.toBeUndefined();
     await expect(access(path.join(portalDir, 'node_modules'))).rejects.toThrow();
-    await expect(access(path.join(portalDir, 'dist', 'favicon.ico'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'client', 'favicon.ico'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env'))).rejects.toThrow();
     await expect(access(path.join(portalDir, '.env.local'))).rejects.toThrow();
     await expect(access(path.join(portalDir, 'portal.config.json'))).rejects.toThrow();
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
@@ -1483,7 +1527,7 @@ describe('plugin-multi-portal server', () => {
       },
     });
     const gitPortalDir = path.join(storagePath as string, 'portals', appName, 'storageGitPortal');
-    await waitForPath(path.join(gitPortalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(gitPortalDir, 'dist', 'client', 'index.html'));
     await expect(access(path.join(gitPortalDir, 'portal.config.json'))).rejects.toThrow();
 
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
@@ -1496,7 +1540,7 @@ describe('plugin-multi-portal server', () => {
     });
     const disabledDistStat = await stat(path.join(portalDir, 'dist'));
     expect(disabledDistStat.isDirectory()).toBe(true);
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/storageTemplatePortal/',
     );
   });
@@ -1516,7 +1560,7 @@ describe('plugin-multi-portal server', () => {
     const rootAgent = await app.agent().login(rootUser);
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'api-toggle-storage-portal');
-    const portalIndex = path.join(portalDir, 'dist', 'index.html');
+    const portalIndex = path.join(portalDir, 'dist', 'client', 'index.html');
 
     const createResponse = await rootAgent.resource('multiPortals').create({
       values: {
@@ -1582,8 +1626,10 @@ describe('plugin-multi-portal server', () => {
     });
 
     const portalDir = path.join(storagePath as string, 'portals', 'a_q7xx6p75d0e', 'test');
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe('/nocobase/x/test/');
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/nocobase/x/test/',
+    );
     expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
@@ -1627,8 +1673,8 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(response.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/nocobase/x/apps/a_q7xx6p75d0e/crm/',
     );
     expect(spawnMock).toHaveBeenCalledWith(
@@ -1660,8 +1706,8 @@ describe('plugin-multi-portal server', () => {
     const rootAgent = await app.agent().login(rootUser);
     const appName = app.name || 'main';
     const portalDir = path.join(storagePath as string, 'portals', appName, 'api-storage-template-portal');
-    await mkdir(path.join(portalDir, 'dist'), { recursive: true });
-    await writeFile(path.join(portalDir, 'dist', 'index.html'), 'stale portal dist', 'utf-8');
+    await mkdir(path.join(portalDir, 'dist', 'client'), { recursive: true });
+    await writeFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'stale portal dist', 'utf-8');
 
     const response = await rootAgent.resource('multiPortals').create({
       values: {
@@ -1677,8 +1723,8 @@ describe('plugin-multi-portal server', () => {
     });
 
     expect(response.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
-    await expect(readFile(path.join(portalDir, 'dist', 'index.html'), 'utf-8')).resolves.toBe(
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
       '/console/x/api-storage-template-portal/',
     );
     expect(loggerInfoSpy).toHaveBeenCalledWith(
@@ -1713,6 +1759,128 @@ describe('plugin-multi-portal server', () => {
     );
   });
 
+  it('should normalize legacy dist/index.html output when creating an AI portal', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    process.env.TEST_PORTAL_BUILD_LEGACY_DIST = 'true';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'legacy-dist-portal');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'legacy-dist-portal',
+        title: 'Legacy dist portal',
+        portalType: 'ai',
+        portalName: 'legacy-dist-portal',
+        routePath: '/legacy-dist-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/legacy-dist-portal/',
+    );
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'assets', 'legacy.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    expect(spawnMock).toHaveBeenCalledWith(
+      'yarn',
+      ['build:html'],
+      expect.objectContaining({
+        cwd: portalDir,
+      }),
+    );
+  });
+
+  it('should migrate legacy portal dist/index.html output into dist/client', async () => {
+    app = await createMockServer({
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const portalDir = path.join(storagePath as string, 'portals', 'main', 'legacy-migration-portal');
+    const distDir = path.join(portalDir, 'dist');
+    await mkdir(path.join(distDir, 'assets'), { recursive: true });
+    await writeFile(path.join(distDir, 'index.html'), '<div id="root"></div>', 'utf-8');
+    await writeFile(path.join(distDir, 'index.raw.html'), '<div id="raw"></div>', 'utf-8');
+    await writeFile(path.join(distDir, 'assets', 'legacy.js'), 'console.log("legacy");\n', 'utf-8');
+
+    const migrationContext = {
+      db: app.db,
+      queryInterface: app.db.sequelize.getQueryInterface(),
+      sequelize: app.db.sequelize,
+      app,
+    };
+    const migration = new NormalizeLegacyPortalDistMigration(migrationContext);
+    await migration.up();
+
+    await expect(readFile(path.join(distDir, 'client', 'index.html'), 'utf-8')).resolves.toBe('<div id="root"></div>');
+    await expect(readFile(path.join(distDir, 'client', 'assets', 'legacy.js'), 'utf-8')).resolves.toBe(
+      'console.log("legacy");\n',
+    );
+    await expect(access(path.join(distDir, 'index.html'))).rejects.toThrow();
+    await expect(readFile(path.join(distDir, 'index.raw.html'), 'utf-8')).resolves.toBe('<div id="raw"></div>');
+    await expect(access(path.join(distDir, 'assets', 'legacy.js'))).rejects.toThrow();
+  });
+
+  it('should restore template dist for an existing incomplete AI portal directory', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    process.env.API_BASE_PATH = '/api';
+    app = await createMultiPortalAclMockServer();
+    await app.db.sync();
+    spawnMock.mockClear();
+
+    const rootUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const rootAgent = await app.agent().login(rootUser);
+    const appName = app.name || 'main';
+    const portalDir = path.join(storagePath as string, 'portals', appName, 'incomplete-template-portal');
+    await mkdir(path.join(portalDir, 'src'), { recursive: true });
+    await writeFile(path.join(portalDir, 'package.json'), '{"name":"incomplete-template-portal"}\n', 'utf-8');
+
+    const response = await rootAgent.resource('multiPortals').create({
+      values: {
+        uid: 'incomplete-template-portal',
+        title: 'Incomplete template portal',
+        portalType: 'ai',
+        portalName: 'incomplete-template-portal',
+        routePath: '/incomplete-template-portal',
+        authCheck: true,
+        enabled: true,
+        uiLayoutUid: DEFAULT_ADMIN_UI_LAYOUT.uid,
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
+    await expect(readFile(path.join(portalDir, 'dist', 'client', 'index.html'), 'utf-8')).resolves.toBe(
+      '/console/x/incomplete-template-portal/',
+    );
+    await expect(access(path.join(portalDir, 'dist', 'index.raw.html'))).resolves.toBeUndefined();
+    await expect(access(path.join(portalDir, 'dist', 'index.html'))).rejects.toThrow();
+    await expect(
+      readFile(path.join(storagePath as string, 'logs', 'portals', appName, 'incomplete-template-portal.log'), 'utf-8'),
+    ).resolves.toContain('Default portal template dist restored from');
+  });
+
   it('should log when storage portal HTML build is skipped because dist already exists', async () => {
     process.env.APP_PUBLIC_PATH = '/console/';
     process.env.API_BASE_PATH = '/api';
@@ -1743,7 +1911,7 @@ describe('plugin-multi-portal server', () => {
       },
     });
     expect(createResponse.status).toBe(200);
-    await waitForPath(path.join(portalDir, 'dist', 'index.html'));
+    await waitForPath(path.join(portalDir, 'dist', 'client', 'index.html'));
 
     spawnMock.mockClear();
     loggerInfoSpy.mockClear();
@@ -1761,7 +1929,7 @@ describe('plugin-multi-portal server', () => {
       expect.objectContaining({
         appName,
         portalName: 'skip-existing-dist-portal',
-        reason: 'dist/index.html already exists',
+        reason: 'dist/client/index.html already exists',
       }),
     );
   });
@@ -1928,13 +2096,17 @@ describe('plugin-multi-portal server', () => {
     const archivePath = await createPortalDistArchive(
       storagePath as string,
       {
-        'index.html': '<div id="root"></div>',
-        'assets/index.js': 'console.log("portal");\n',
+        'client/index.html': '<div id="root"></div>',
+        'client/assets/index.js': 'console.log("portal");\n',
+        'node_modules/pino/bin.js': 'console.log("pino");\n',
+        'server/embedded.js': 'console.log("server");\n',
       },
       {
-        assets: 0o700,
-        'index.html': 0o600,
-        'assets/index.js': 0o600,
+        'client/assets': 0o700,
+        'client/index.html': 0o600,
+        'client/assets/index.js': 0o600,
+        'node_modules/pino/bin.js': 0o600,
+        'server/embedded.js': 0o600,
       },
     );
     const portalDir = path.join(storagePath as string, 'portals', 'main', 'customer');
@@ -1967,22 +2139,118 @@ describe('plugin-multi-portal server', () => {
       }),
     );
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'index.html'), 'utf-8'),
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'index.html'),
+        'utf-8',
+      ),
     ).resolves.toBe('<div id="root"></div>');
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'assets', 'index.js'), 'utf-8'),
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'assets', 'index.js'),
+        'utf-8',
+      ),
     ).resolves.toBe('console.log("portal");\n');
+    await expect(
+      readFile(
+        path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'server', 'embedded.js'),
+        'utf-8',
+      ),
+    ).resolves.toBe('console.log("server");\n');
+    await expect(
+      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'node_modules', '.bin')),
+    ).rejects.toThrow();
     expectPosixMode((await stat(path.join(storagePath as string, 'portals'))).mode, 0o755);
     expectPosixMode((await stat(path.join(storagePath as string, 'portals', 'main'))).mode, 0o755);
     expectPosixMode((await stat(portalDir)).mode, 0o755);
     expectPosixMode((await stat(path.join(portalDir, 'dist'))).mode, 0o755);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets'))).mode, 0o755);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'index.html'))).mode, 0o644);
-    expectPosixMode((await stat(path.join(portalDir, 'dist', 'assets', 'index.js'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets'))).mode, 0o755);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'index.html'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'client', 'assets', 'index.js'))).mode, 0o644);
+    expectPosixMode((await stat(path.join(portalDir, 'dist', 'server', 'embedded.js'))).mode, 0o644);
     await expect(readdir(portalDir)).resolves.not.toEqual(
       expect.arrayContaining(['.dist-upload-stale', '.dist-backup-stale']),
     );
     await expect(access(path.join(storagePath as string, 'portals', 'portal-manifest.json'))).rejects.toThrow();
+    expect(portalHostRestartMock).not.toHaveBeenCalled();
+  });
+
+  it('should restart managed portal host after a successful portal dist deploy', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'node',
+      status: 'ready',
+      targetUrl: 'http://127.0.0.1:13010/',
+    });
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'client/index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'managed-customer',
+          basePath: '/console/x/managed-customer/',
+        },
+        file: archivePath,
+      });
+
+    expect(response.status).toBe(200);
+    expect(portalHostRestartMock).toHaveBeenCalledTimes(1);
+    expect(portalHostRestartMock).toHaveBeenCalledWith('multiPortals:deploy updated main/managed-customer');
+  });
+
+  it('should keep portal dist deploy successful when portal host restart fails', async () => {
+    process.env.APP_PUBLIC_PATH = '/console/';
+    portalHostGetInfoMock.mockReturnValue({
+      activeLeases: 0,
+      driver: 'node',
+      status: 'ready',
+      targetUrl: 'http://127.0.0.1:13010/',
+    });
+    const restartError = new Error('restart failed');
+    portalHostRestartMock.mockRejectedValue(restartError);
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['ui-layout', 'multi-portal'],
+    });
+    await app.db.sync();
+    const loggerWarnSpy = vi.spyOn(app.logger, 'warn');
+
+    const archivePath = await createPortalDistArchive(storagePath as string, {
+      'client/index.html': '<div id="root"></div>',
+    });
+    const response = await app
+      .agent()
+      .resource('multiPortals')
+      .deploy({
+        values: {
+          app: 'main',
+          portal: 'restart-failure-customer',
+          basePath: '/console/x/restart-failure-customer/',
+        },
+        file: archivePath,
+      });
+
+    expect(response.status).toBe(200);
+    expect(portalHostRestartMock).toHaveBeenCalledWith('multiPortals:deploy updated main/restart-failure-customer');
+    expect(loggerWarnSpy).toHaveBeenCalledWith(
+      'failed to restart portal host after multi-portal deploy',
+      expect.objectContaining({
+        appName: 'main',
+        error: restartError,
+        portalName: 'restart-failure-customer',
+      }),
+    );
   });
 
   it('should deploy uploaded portal dist into the current sub-app storage for custom-domain requests', async () => {
@@ -1995,7 +2263,7 @@ describe('plugin-multi-portal server', () => {
     await app.db.sync();
 
     const archivePath = await createPortalDistArchive(storagePath as string, {
-      'index.html': '<div id="root"></div>',
+      'client/index.html': '<div id="root"></div>',
     });
     const response = await app
       .agent()
@@ -2021,10 +2289,10 @@ describe('plugin-multi-portal server', () => {
       }),
     );
     await expect(
-      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'index.html'), 'utf-8'),
+      readFile(path.join(storagePath as string, 'portals', 'demo6', 'crm', 'dist', 'client', 'index.html'), 'utf-8'),
     ).resolves.toBe('<div id="root"></div>');
     await expect(
-      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'index.html')),
+      access(path.join(storagePath as string, 'portals', 'main', 'crm', 'dist', 'client', 'index.html')),
     ).rejects.toThrow();
   });
 
@@ -2053,7 +2321,7 @@ describe('plugin-multi-portal server', () => {
 
     expect(response.status).toBe(400);
     await expect(
-      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'index.html')),
+      access(path.join(storagePath as string, 'portals', 'main', 'customer', 'dist', 'client', 'index.html')),
     ).rejects.toThrow();
   });
 

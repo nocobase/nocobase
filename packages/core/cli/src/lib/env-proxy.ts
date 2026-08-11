@@ -768,6 +768,43 @@ function extractRuntimePublicPath(html: string): string {
   return resolveAppPublicPath(match?.[1] ?? match?.[2] ?? DEFAULT_APP_PUBLIC_PATH);
 }
 
+function extractAssetPublicPathname(value: string): string {
+  try {
+    return new URL(value).pathname;
+  } catch {
+    return value;
+  }
+}
+
+function isVersionedDistAssetPublicPath(value: string): boolean {
+  const pathname = extractAssetPublicPathname(value);
+  return /(?:^|\/)dist\/[^/]+\/(?:v\/|settings\/)?$/.test(pathname);
+}
+
+function extractHtmlAssetPublicPath(html: string, fallbackPublicPath: string): string {
+  const assetAttributePattern =
+    /(?:src|href)=["']([^"']*(?:browser-checker\.js(?:\?[^"']*)?|global\.css|assets\/[^"']+))["']/gi;
+  const markers = ['browser-checker.js', 'global.css', 'assets/'];
+  let match: RegExpExecArray | null;
+
+  while ((match = assetAttributePattern.exec(html))) {
+    const assetPath = match[1];
+    const markerIndex = markers
+      .map((marker) => assetPath.indexOf(marker))
+      .filter((index) => index >= 0)
+      .sort((left, right) => left - right)[0];
+
+    if (markerIndex > 0) {
+      const candidate = ensureTrailingSlash(assetPath.slice(0, markerIndex));
+      if (isVersionedDistAssetPublicPath(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return fallbackPublicPath;
+}
+
 function rewriteHtmlAssetPublicPath(html: string, currentPublicPath: string, nextPublicPath: string): string {
   const currentPrefix = ensureTrailingSlash(currentPublicPath);
   const nextPrefix = ensureTrailingSlash(nextPublicPath);
@@ -876,9 +913,12 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
         ]
       : []),
     '',
+    buildNginxPortalHostProxyLocationBlock(context),
+    '',
     buildNginxPortalLocationBlock(context),
     '',
     `    location = ${apiBasePathNoTrailingSlash} {`,
+    '        absolute_redirect off;',
     `        return 308 ${context.apiBasePath}$is_args$args;`,
     '    }',
     '',
@@ -894,6 +934,7 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     ...(appPublicPathRedirectBlock ? ['', appPublicPathRedirectBlock] : []),
     '',
     `    location = ${v2PublicPathNoTrailingSlash} {`,
+    '        absolute_redirect off;',
     `        return 302 ${context.v2PublicPath}$is_args$args;`,
     '    }',
     '',
@@ -930,6 +971,31 @@ function buildPortalRootPublicPath(appPublicPath: string): string {
     : `${trimTrailingSlash(appPublicPath)}/${PORTAL_CLIENT_PREFIX}/`;
 }
 
+function buildPortalHostPathPattern(appPublicPath: string, portalHostPath: string): string {
+  const appPublicPathNoTrailingSlash = trimTrailingSlash(appPublicPath);
+  const pathPrefix = appPublicPathNoTrailingSlash === '' ? '/' : `${appPublicPathNoTrailingSlash}/`;
+  return `^${escapeRegExp(pathPrefix)}(?<portal_host_path>${portalHostPath}(?:/.*)?)$`;
+}
+
+function buildNginxPortalHostProxyLocationBlock(context: EnvProxyNginxRenderContext): string {
+  const portalHostPathPattern = buildPortalHostPathPattern(context.appPublicPath, 'portals');
+  const appPortalHostPathPattern = buildPortalHostPathPattern(context.appPublicPath, 'apps/[A-Za-z0-9_-]+/portals');
+
+  return [
+    `    location ~ ${portalHostPathPattern} {`,
+    '        rewrite ^ /$portal_host_path break;',
+    `        proxy_pass ${context.backendUrl};`,
+    `        include ${context.snippetsDir}/proxy-location.conf;`,
+    '    }',
+    '',
+    `    location ~ ${appPortalHostPathPattern} {`,
+    '        rewrite ^ /$portal_host_path break;',
+    `        proxy_pass ${context.backendUrl};`,
+    `        include ${context.snippetsDir}/proxy-location.conf;`,
+    '    }',
+  ].join('\n');
+}
+
 function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): string {
   const portalBasePath = trimTrailingSlash(buildPortalRootPublicPath(context.appPublicPath));
   const portalBasePathPattern = escapeRegExp(portalBasePath);
@@ -962,13 +1028,13 @@ function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): str
     `        root ${context.storageDir};`,
     '',
     '        if ($portal_path = "") {',
-    '            rewrite ^ /portals/$subapp/$portal/dist/index.html break;',
+    '            rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;',
     '        }',
     '',
     '        try_files',
-    '            /portals/$subapp/$portal/dist/$portal_path',
-    '            /portals/$subapp/$portal/dist/$portal_path/',
-    '            /portals/$subapp/$portal/dist/index.html',
+    '            /portals/$subapp/$portal/dist/client/$portal_path',
+    '            /portals/$subapp/$portal/dist/client/$portal_path/',
+    '            /portals/$subapp/$portal/dist/client/index.html',
     '            =404;',
     '    }',
     '',
@@ -985,13 +1051,13 @@ function buildNginxPortalLocationBlock(context: EnvProxyNginxRenderContext): str
     `        root ${context.storageDir};`,
     '',
     '        if ($portal_path = "") {',
-    '            rewrite ^ /portals/main/$portal/dist/index.html break;',
+    '            rewrite ^ /portals/main/$portal/dist/client/index.html break;',
     '        }',
     '',
     '        try_files',
-    '            /portals/main/$portal/dist/$portal_path',
-    '            /portals/main/$portal/dist/$portal_path/',
-    '            /portals/main/$portal/dist/index.html',
+    '            /portals/main/$portal/dist/client/$portal_path',
+    '            /portals/main/$portal/dist/client/$portal_path/',
+    '            /portals/main/$portal/dist/client/index.html',
     '            =404;',
     '    }',
     '',
@@ -1259,6 +1325,9 @@ async function buildNginxBundleFromSource(
   const settingsRuntimeScript = buildRuntimeConfigScriptTag(buildNginxRuntimeConfig(context, 'settings'));
   const sourceV1PublicPath = extractRuntimePublicPath(sourceIndexV1Content);
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
+  const sourceV1AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath);
+  const sourceV2AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath);
+  const sourceSettingsAssetPublicPath = extractHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/');
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
   const indexSettingsAssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/settings/`;
@@ -1306,15 +1375,19 @@ async function buildNginxBundleFromSource(
       snippetsDir: await mapProxyPathFromCliRoot(resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope }), options),
     }),
     indexV1Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath, indexV1AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1AssetPublicPath, indexV1AssetPublicPath),
       v1RuntimeScript,
     ),
     indexV2Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath, indexV2AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2AssetPublicPath, indexV2AssetPublicPath),
       v2RuntimeScript,
     ),
     indexSettingsContent: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/', indexSettingsAssetPublicPath),
+      rewriteHtmlAssetPublicPath(
+        sourceIndexSettingsContent,
+        sourceSettingsAssetPublicPath,
+        indexSettingsAssetPublicPath,
+      ),
       settingsRuntimeScript,
     ),
   };
@@ -1356,6 +1429,9 @@ async function buildCaddyBundleFromSource(
   const settingsRuntimeScript = buildRuntimeConfigScriptTag(buildCaddyRuntimeConfig(context, 'settings'));
   const sourceV1PublicPath = extractRuntimePublicPath(sourceIndexV1Content);
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
+  const sourceV1AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath);
+  const sourceV2AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath);
+  const sourceSettingsAssetPublicPath = extractHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/');
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
   const indexSettingsAssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/settings/`;
@@ -1399,15 +1475,19 @@ async function buildCaddyBundleFromSource(
     appConfigContent,
     mainConfigContent: await buildEnvProxyMainConfig({ provider: 'caddy', scope: options?.scope }),
     indexV1Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath, indexV1AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1AssetPublicPath, indexV1AssetPublicPath),
       v1RuntimeScript,
     ),
     indexV2Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath, indexV2AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2AssetPublicPath, indexV2AssetPublicPath),
       v2RuntimeScript,
     ),
     indexSettingsContent: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/', indexSettingsAssetPublicPath),
+      rewriteHtmlAssetPublicPath(
+        sourceIndexSettingsContent,
+        sourceSettingsAssetPublicPath,
+        indexSettingsAssetPublicPath,
+      ),
       settingsRuntimeScript,
     ),
   };
@@ -1573,6 +1653,23 @@ function buildNginxProxyPassBlock(
   return directives.join('\n        ');
 }
 
+function buildNginxPortalHostProxyTemplateBlock(context: EnvProxyTemplateContext): string {
+  const proxyPassBlock = buildNginxProxyPassBlock(context.proxyHost, context.apiPort, { allowUpgrade: true });
+  const portalHostPathPattern = buildPortalHostPathPattern(context.appPublicPath, 'portals');
+  const appPortalHostPathPattern = buildPortalHostPathPattern(context.appPublicPath, 'apps/[A-Za-z0-9_-]+/portals');
+
+  return `    location ~ ${portalHostPathPattern} {
+        rewrite ^ /$portal_host_path break;
+        ${proxyPassBlock}
+    }
+
+    location ~ ${appPortalHostPathPattern} {
+        rewrite ^ /$portal_host_path break;
+        ${proxyPassBlock}
+    }
+`;
+}
+
 function buildNginxOtherLocation(appPublicPath: string, v2PublicPath: string, modernClientPrefix: string) {
   if (appPublicPath === DEFAULT_APP_PUBLIC_PATH) {
     return '';
@@ -1585,6 +1682,7 @@ function buildNginxOtherLocation(appPublicPath: string, v2PublicPath: string, mo
     }
 
     location = /${modernClientPrefix} {
+        absolute_redirect off;
         return 302 ${v2PublicPath}$is_args$args;
     }
 
@@ -1646,7 +1744,10 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
         ${proxyPassBlock}
     }${context.otherLocation}
 
+${buildNginxPortalHostProxyTemplateBlock(context)}
+
     location = ${apiBasePathNoTrailingSlash} {
+        absolute_redirect off;
         return 308 ${context.apiBasePath}$is_args$args;
     }
 
@@ -1704,6 +1805,31 @@ function buildCaddyContextCommentLines(
     `# uploadsDir=${context.uploadsPath}`,
     `# distRootDir=${context.distClientRoot}`,
     `# publicDir=${publicDir}`,
+  ];
+}
+
+function buildCaddyPortalHostPathPattern(appPublicPath: string, portalHostPath: string): string {
+  const appPublicPathNoTrailingSlash = trimTrailingSlash(appPublicPath);
+  const pathPrefix = appPublicPathNoTrailingSlash === '' ? '/' : `${appPublicPathNoTrailingSlash}/`;
+  return `^${escapeRegExp(pathPrefix)}(${portalHostPath}(?:/.*)?)$`;
+}
+
+function buildCaddyPortalHostProxyBlock(context: EnvProxyTemplateContext): string[] {
+  const portalHostPathPattern = buildCaddyPortalHostPathPattern(context.appPublicPath, 'portals');
+  const appPortalHostPathPattern = buildCaddyPortalHostPathPattern(context.appPublicPath, 'apps/[^/]+/portals');
+
+  return [
+    `    @portalHost path_regexp portalHost ${portalHostPathPattern}`,
+    '    handle @portalHost {',
+    '        rewrite * /{re.portalHost.1}',
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
+    '',
+    `    @appPortalHost path_regexp appPortalHost ${appPortalHostPathPattern}`,
+    '    handle @appPortalHost {',
+    '        rewrite * /{re.appPortalHost.1}',
+    `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
+    '    }',
   ];
 }
 
@@ -1806,6 +1932,8 @@ function renderCaddyAppTemplate(siteAddress: string, context: EnvProxyTemplateCo
           `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,
           '    }',
         ]),
+    '',
+    ...buildCaddyPortalHostProxyBlock(context),
     '',
     `    handle ${apiPathMatcher} {`,
     `        reverse_proxy ${context.proxyHost}:${context.apiPort}`,

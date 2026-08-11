@@ -13,6 +13,7 @@ import net from 'net';
 import path from 'path';
 import xpipe from 'xpipe';
 import { AppSupervisor } from '../app-supervisor';
+import { PortalHostSupervisor } from '../portal-host/supervisor';
 import { writeJSON } from './ipc-socket-client';
 
 export class IPCSocketServer {
@@ -58,6 +59,7 @@ export class IPCSocketServer {
               writeJSON(c, {
                 reqId,
                 type: result === false ? 'not_found' : 'success',
+                payload: result,
               });
             })
             .catch((err) => {
@@ -102,6 +104,73 @@ export class IPCSocketServer {
       return status;
     }
     // console.log(`cli received message ${type}`);
+
+    if (type === 'portalHost:status') {
+      return PortalHostSupervisor.getInstance().getInfo();
+    }
+
+    if (type === 'portalHost:start') {
+      const supervisor = PortalHostSupervisor.getInstance();
+      const info = supervisor.getInfo();
+      if (info.driver === 'external' || info.driver === 'disabled') {
+        return {
+          started: false,
+          message:
+            info.driver === 'external'
+              ? 'Portal host is external and cannot be started by NocoBase.'
+              : 'Portal host is disabled.',
+          info,
+        };
+      }
+
+      await supervisor.ensureStarted();
+      return {
+        started: true,
+        info: supervisor.getInfo(),
+      };
+    }
+
+    if (type === 'portalHost:restart') {
+      const supervisor = PortalHostSupervisor.getInstance();
+      const info = supervisor.getInfo();
+      if (info.driver === 'external' || info.driver === 'disabled') {
+        return {
+          restarted: false,
+          message:
+            info.driver === 'external'
+              ? 'Portal host is external and cannot be restarted by NocoBase.'
+              : 'Portal host is disabled.',
+          info,
+        };
+      }
+
+      await supervisor.restart('IPC portal-host restart');
+      return {
+        restarted: true,
+        info: supervisor.getInfo(),
+      };
+    }
+
+    if (type === 'portalHost:stop') {
+      const supervisor = PortalHostSupervisor.getInstance();
+      const info = supervisor.getInfo();
+      if (info.driver === 'external' || info.driver === 'disabled') {
+        return {
+          stopped: false,
+          message:
+            info.driver === 'external'
+              ? 'Portal host is external and cannot be stopped by NocoBase.'
+              : 'Portal host is disabled.',
+          info,
+        };
+      }
+
+      await supervisor.stop('IPC portal-host stop');
+      return {
+        stopped: true,
+        info: supervisor.getInfo(),
+      };
+    }
 
     if (type === 'passCliArgv') {
       const argv = payload.argv;

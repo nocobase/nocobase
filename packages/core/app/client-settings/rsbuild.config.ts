@@ -15,6 +15,7 @@ import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
+import { createPortalDevProxyOptions } from '../portalDevProxy';
 import { generateSettingsPluginImports } from './generatePluginImports';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -203,32 +204,38 @@ export default defineConfig(({ command }) => {
       publicDir: {
         name: path.resolve(__dirname, '../client-v2/public'),
       },
-      proxy: {
-        [apiBasePath]: {
+      proxy: [
+        createPortalDevProxyOptions(appPublicPath, proxyTargetUrl),
+        {
+          context: apiBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
           xfwd: true,
         },
-        [localStorageBasePath]: {
+        {
+          context: localStorageBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [fileBasePath]: {
+        {
+          context: fileBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [staticBasePath]: {
+        {
+          context: staticBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
         },
-        [wsBasePath]: {
+        {
+          context: wsBasePath,
           target: proxyTargetUrl,
           changeOrigin: true,
           ws: true,
           xfwd: true,
         },
-      },
+      ],
       historyApiFallback: {
         disableDotRule: true,
         index: `${settingsPublicPath}index.html`,

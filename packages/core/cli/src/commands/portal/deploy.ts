@@ -26,6 +26,7 @@ export default class PortalDeploy extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %> customer',
     '<%= config.bin %> <%= command.id %> customer --env dev --yes',
+    '<%= config.bin %> <%= command.id %> customer --no-install',
   ];
 
   static override args = {
@@ -44,6 +45,11 @@ export default class PortalDeploy extends Command {
       char: 'y',
       description: 'Confirm using --env when it targets a different env than the current env',
       default: false,
+    }),
+    install: Flags.boolean({
+      description: 'Run pnpm install before building the portal',
+      default: true,
+      allowNo: true,
     }),
   };
 
@@ -79,6 +85,7 @@ export default class PortalDeploy extends Command {
       env,
       envName,
       cliVersion: String(this.config.pjson.version ?? '').trim(),
+      installDependencies: flags.install,
     });
 
     printSuccess(

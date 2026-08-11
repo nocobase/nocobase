@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppSupervisor, Plugin, appendToBuiltInPlugins } from '@nocobase/server';
+import { AppSupervisor, Plugin, PortalHostSupervisor, appendToBuiltInPlugins } from '@nocobase/server';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import {
   Op,
@@ -78,6 +78,9 @@ const DEFAULT_INIT_PORTAL_TEMPLATE = '@nocobase/portal-template-default';
 const PORTAL_CLIENT_PREFIX = 'x';
 const PORTAL_DEPLOY_UPLOAD_LIMIT = 200 * 1024 * 1024;
 const PORTAL_DEPLOY_UPLOAD_DIR_PREFIX = 'nocobase-portal-dist-upload-';
+const PORTAL_DIST_DIR = 'dist';
+const PORTAL_CLIENT_DIST_DIR = path.join(PORTAL_DIST_DIR, 'client');
+const PORTAL_RAW_INDEX_HTML = 'index.raw.html';
 const PORTAL_PUBLIC_DIR_MODE = 0o755;
 const PORTAL_PUBLIC_FILE_MODE = 0o644;
 const PORTAL_TEMPLATE_NPM_PACK_TIMEOUT_MS = 30_000;
@@ -152,6 +155,9 @@ type DatabaseHookOptions = {
   transaction?: Transaction;
   context?: ResourcerContext;
 };
+type GrantDefaultAccessOptions = {
+  includeDefaultLayoutMultiPortal?: boolean;
+};
 const MULTI_PORTAL_SEED_TYPES = ['no-code', 'ai'] as const;
 type MultiPortalSeedType = (typeof MULTI_PORTAL_SEED_TYPES)[number];
 const MULTI_PORTAL_SEED_TYPE_SET = new Set<string>(MULTI_PORTAL_SEED_TYPES);
@@ -223,7 +229,11 @@ type MultiPortalDeployContext = ResourcerContext & {
 };
 type ResolvedPortalTemplate = {
   dir: string;
+  includeDist?: boolean;
   cleanup?: () => Promise<void>;
+};
+type NormalizeLegacyPortalClientDistOptions = {
+  overwriteClient?: boolean;
 };
 
 function getRecordField(record: unknown, field: string) {
@@ -511,7 +521,7 @@ async function resolveLocalPortalTemplate(templateSource: string): Promise<Resol
 
 function resolveInstalledPortalTemplatePackage(templatePackage: string): ResolvedPortalTemplate | null {
   try {
-    return { dir: path.dirname(require.resolve(`${templatePackage}/package.json`)) };
+    return { dir: path.dirname(require.resolve(`${templatePackage}/package.json`)), includeDist: true };
   } catch {
     return null;
   }
@@ -559,6 +569,7 @@ async function downloadPortalTemplatePackage(
     cleanupExtractRoot = false;
     return {
       dir: extractRoot,
+      includeDist: true,
       cleanup: async () => {
         await fs.promises.rm(packRoot, { recursive: true, force: true });
         await fs.promises.rm(extractRoot, { recursive: true, force: true });
@@ -591,8 +602,17 @@ async function resolvePortalTemplate(templateSource: string, logPath: string): P
   return downloadPortalTemplatePackage(templateSource, logPath);
 }
 
-async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise<void> {
+async function copyPortalTemplate(
+  sourceDir: string,
+  targetDir: string,
+  options?: {
+    includeDist?: boolean;
+  },
+): Promise<void> {
   const ignoredSegments = new Set(['.git', 'node_modules', '.DS_Store', '.env', '.env.local']);
+  if (!options?.includeDist) {
+    ignoredSegments.add('dist');
+  }
   await fs.promises.mkdir(path.dirname(targetDir), { recursive: true });
   await fs.promises.cp(sourceDir, targetDir, {
     recursive: true,
@@ -602,6 +622,112 @@ async function copyPortalTemplate(sourceDir: string, targetDir: string): Promise
         .split(path.sep)
         .some((segment) => segment.startsWith('._') || ignoredSegments.has(segment)),
   });
+}
+
+async function copyPortalTemplateDist(sourceDir: string, targetDir: string): Promise<boolean> {
+  const sourceDistDir = path.join(sourceDir, PORTAL_DIST_DIR);
+  if (!(await pathExists(path.join(sourceDistDir, PORTAL_RAW_INDEX_HTML)))) {
+    return false;
+  }
+
+  await fs.promises.mkdir(path.dirname(path.join(targetDir, PORTAL_DIST_DIR)), { recursive: true });
+  await fs.promises.cp(sourceDistDir, path.join(targetDir, PORTAL_DIST_DIR), {
+    recursive: true,
+    filter: (source) =>
+      !path
+        .relative(sourceDistDir, source)
+        .split(path.sep)
+        .some((segment) => segment.startsWith('._') || segment === '.DS_Store'),
+  });
+  return true;
+}
+
+async function restorePortalTemplateDist(portalDir: string, logPath: string): Promise<boolean> {
+  if (await pathExists(path.join(portalDir, PORTAL_DIST_DIR, PORTAL_RAW_INDEX_HTML))) {
+    return false;
+  }
+
+  const template = await resolvePortalTemplate(getInitPortalTemplate(), logPath);
+  try {
+    if (!template.includeDist) {
+      return false;
+    }
+    const copied = await copyPortalTemplateDist(template.dir, portalDir);
+    if (copied) {
+      await appendPortalStorageLog(logPath, `Default portal template dist restored from ${template.dir}.`);
+    }
+    return copied;
+  } finally {
+    await template.cleanup?.();
+  }
+}
+
+async function getLegacyPortalClientDistEntries(portalDir: string): Promise<fs.Dirent[]> {
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  const legacyIndexPath = path.join(distDir, 'index.html');
+
+  if (!(await pathExists(legacyIndexPath))) {
+    return [];
+  }
+
+  const entries = await fs.promises.readdir(distDir, { withFileTypes: true });
+  return entries.filter((entry) => entry.name !== 'client' && entry.name !== PORTAL_RAW_INDEX_HTML);
+}
+
+async function removeLegacyPortalClientDist(portalDir: string, logPath?: string): Promise<boolean> {
+  if (await pathExists(path.join(portalDir, PORTAL_DIST_DIR, PORTAL_RAW_INDEX_HTML))) {
+    return false;
+  }
+
+  const legacyEntries = await getLegacyPortalClientDistEntries(portalDir);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  await Promise.all(
+    legacyEntries.map((entry) => fs.promises.rm(path.join(distDir, entry.name), { recursive: true, force: true })),
+  );
+
+  if (logPath) {
+    await appendPortalStorageLog(logPath, 'Removed stale legacy portal dist/index.html output.');
+  }
+
+  return true;
+}
+
+async function normalizeLegacyPortalClientDist(
+  portalDir: string,
+  logPath?: string,
+  options?: NormalizeLegacyPortalClientDistOptions,
+): Promise<boolean> {
+  const clientDir = path.join(portalDir, PORTAL_CLIENT_DIST_DIR);
+  const clientIndexPath = path.join(clientDir, 'index.html');
+
+  if (!options?.overwriteClient && (await pathExists(clientIndexPath))) {
+    return false;
+  }
+
+  const legacyEntries = await getLegacyPortalClientDistEntries(portalDir);
+  if (!legacyEntries.length) {
+    return false;
+  }
+
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
+  await fs.promises.mkdir(clientDir, { recursive: true });
+
+  for (const entry of legacyEntries) {
+    const sourcePath = path.join(distDir, entry.name);
+    const targetPath = path.join(clientDir, entry.name);
+    await fs.promises.rm(targetPath, { recursive: true, force: true });
+    await movePortalDeployDir(sourcePath, targetPath);
+  }
+
+  if (logPath) {
+    await appendPortalStorageLog(logPath, 'Moved legacy portal dist/index.html output into dist/client/.');
+  }
+
+  return true;
 }
 
 function sanitizePortalStorageNodeOptions(value: unknown) {
@@ -729,11 +855,14 @@ async function buildPortalStorageItem(
       buildEnv.COREPACK_ENABLE_PROJECT_SPEC || ''
     }`,
   );
+  await restorePortalTemplateDist(portalDir, logPath);
+  await removeLegacyPortalClientDist(portalDir, logPath);
   await runPortalStorageCommandOnce('yarn', ['build:html'], {
     cwd: portalDir,
     env: buildEnv,
     logPath,
   });
+  await normalizeLegacyPortalClientDist(portalDir, logPath, { overwriteClient: true });
   await appendPortalStorageLog(logPath, `Portal build completed for ${item.appName}/${item.portalName}.`);
 }
 
@@ -753,24 +882,51 @@ function isPortalDeployTarEntry(entry: unknown): entry is PortalDeployTarEntry {
   return Boolean(entry) && typeof entry === 'object';
 }
 
+function normalizePortalDeployTarPath(entryPath: string) {
+  return path.posix.normalize(entryPath.replace(/\\/g, '/'));
+}
+
+function isPortalDeployTarPathSafe(entryPath: string) {
+  const normalizedEntryPath = normalizePortalDeployTarPath(entryPath);
+  return (
+    !path.posix.isAbsolute(normalizedEntryPath) &&
+    !path.win32.isAbsolute(entryPath) &&
+    normalizedEntryPath !== '..' &&
+    !normalizedEntryPath.startsWith('../') &&
+    !normalizedEntryPath.split('/').includes('..')
+  );
+}
+
+function isPortalDeployTarSymlinkTargetSafe(entryPath: string, linkpath: string) {
+  if (path.posix.isAbsolute(linkpath) || path.win32.isAbsolute(linkpath)) {
+    return false;
+  }
+  const normalizedEntryPath = normalizePortalDeployTarPath(entryPath);
+  const normalizedLinkPath = normalizePortalDeployTarPath(linkpath);
+  const entryParentPath = path.posix.dirname(normalizedEntryPath);
+  const resolvedLinkPath = path.posix.normalize(path.posix.join(entryParentPath, normalizedLinkPath));
+  return resolvedLinkPath !== '..' && !resolvedLinkPath.startsWith('../');
+}
+
 function validatePortalDeployTarEntry(entryPath: string, entry: unknown) {
-  const normalizedEntryPath = path.normalize(entryPath);
-  if (
-    path.isAbsolute(entryPath) ||
-    normalizedEntryPath === '..' ||
-    normalizedEntryPath.startsWith(`..${path.sep}`) ||
-    normalizedEntryPath.split(path.sep).includes('..')
-  ) {
+  if (!isPortalDeployTarPathSafe(entryPath)) {
     throw new Error(`Invalid dist archive entry path: ${entryPath}`);
   }
 
   const entryType = isPortalDeployTarEntry(entry) ? entry.type : undefined;
-  if (entryType === 'SymbolicLink' || entryType === 'Link') {
+  if (entryType === 'Link') {
     throw new Error(`Invalid dist archive link entry: ${entryPath}`);
   }
 
   const linkpath = isPortalDeployTarEntry(entry) ? entry.linkpath : undefined;
-  if (linkpath) {
+  if (entryType === 'SymbolicLink') {
+    if (typeof linkpath !== 'string' || !isPortalDeployTarSymlinkTargetSafe(entryPath, linkpath)) {
+      throw new Error(`Invalid dist archive link target: ${entryPath}`);
+    }
+    return true;
+  }
+
+  if (typeof linkpath === 'string') {
     throw new Error(`Invalid dist archive link target: ${entryPath}`);
   }
 
@@ -835,9 +991,11 @@ async function chmodPortalDistTree(targetDir: string): Promise<void> {
 async function ensurePortalDistPublicReadable(portalDir: string, distDir: string): Promise<void> {
   const appDir = path.dirname(portalDir);
   const portalsDir = path.dirname(appDir);
+  const distParentDir = path.dirname(distDir);
   await fs.promises.chmod(portalsDir, PORTAL_PUBLIC_DIR_MODE);
   await fs.promises.chmod(appDir, PORTAL_PUBLIC_DIR_MODE);
   await fs.promises.chmod(portalDir, PORTAL_PUBLIC_DIR_MODE);
+  await fs.promises.chmod(distParentDir, PORTAL_PUBLIC_DIR_MODE);
   await chmodPortalDistTree(distDir);
 }
 
@@ -847,7 +1005,7 @@ async function replacePortalDistFromArchive(params: {
   portalName: string;
 }): Promise<string> {
   const portalDir = storagePathJoin('portals', params.appName, params.portalName);
-  const distDir = path.join(portalDir, 'dist');
+  const distDir = path.join(portalDir, PORTAL_DIST_DIR);
   const backupDir = path.join(portalDir, `.dist-backup-${Date.now()}-${Math.random().toString().slice(2)}`);
   const tarPath = path.join(os.tmpdir(), `nocobase-portal-dist-${Date.now()}-${Math.random().toString().slice(2)}.tar`);
   const uploadDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), PORTAL_DEPLOY_UPLOAD_DIR_PREFIX));
@@ -864,16 +1022,17 @@ async function replacePortalDistFromArchive(params: {
       filter: validatePortalDeployTarEntry,
     });
 
-    const indexPath = path.join(uploadDir, 'index.html');
+    const indexPath = path.join(uploadDir, 'client', 'index.html');
     const indexStat = await fs.promises.stat(indexPath).catch(() => null);
     if (!indexStat?.isFile()) {
-      throw new Error('Portal dist archive is invalid: index.html is missing.');
+      throw new Error('Portal dist archive is invalid: client/index.html is missing.');
     }
 
     if (await pathExists(distDir)) {
       await fs.promises.rename(distDir, backupDir);
       hasBackup = true;
     }
+    await fs.promises.mkdir(path.dirname(distDir), { recursive: true });
     await movePortalDeployDir(uploadDir, distDir);
     await ensurePortalDistPublicReadable(portalDir, distDir);
     if (hasBackup) {
@@ -1333,6 +1492,17 @@ async function repairFixedLayoutMultiPortalRecords(db: Database) {
 async function seedFreshMultiPortals(db: Database) {
   for (const portal of getFreshMultiPortalRecords()) {
     await createDefaultMultiPortalBestEffort(db, portal);
+  }
+
+  const portals = await db.getRepository('multiPortals').find({
+    filter: {
+      uid: getFreshMultiPortalRecords().map((portal) => portal.uid),
+    },
+  });
+  for (const portal of portals) {
+    await grantDefaultAccessToNewMultiPortal(db, portal, undefined, {
+      includeDefaultLayoutMultiPortal: true,
+    });
   }
 }
 
@@ -3054,7 +3224,12 @@ async function reconcileCreatedDesktopRoutePermissions(desktopRoute: Model, opti
   await grantDefaultRouteAccessToNewMultiPortalRoutes(ctx, scope.portalUid, [desktopRouteId], transaction);
 }
 
-async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Model, options?: DatabaseHookOptions) {
+async function grantDefaultAccessToNewMultiPortal(
+  db: Database,
+  multiPortal: Model,
+  options?: DatabaseHookOptions,
+  grantOptions: GrantDefaultAccessOptions = {},
+) {
   if (multiPortal.get('enabled') !== true) {
     return;
   }
@@ -3062,7 +3237,7 @@ async function grantDefaultAccessToNewMultiPortal(db: Database, multiPortal: Mod
   if (typeof multiPortalUid !== 'string' || !multiPortalUid) {
     return;
   }
-  if (isDefaultLayoutMultiPortalUid(multiPortalUid)) {
+  if (!grantOptions.includeDefaultLayoutMultiPortal && isDefaultLayoutMultiPortalUid(multiPortalUid)) {
     return;
   }
   if (!db.getCollection('roles') || !db.getCollection('rolesMultiPortals')) {
@@ -3193,7 +3368,7 @@ export class PluginMultiPortalServer extends Plugin {
   }
 
   private async removePortalStorageIndexHtml(item: Pick<MultiPortalStorageItem, 'appName' | 'portalName'>) {
-    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'index.html'), {
+    await fs.promises.rm(storagePathJoin('portals', item.appName, item.portalName, 'dist', 'client', 'index.html'), {
       force: true,
     });
   }
@@ -3232,7 +3407,7 @@ export class PluginMultiPortalServer extends Plugin {
             logPath,
             `Copying default portal template from ${template.dir} to ${portalDir}.`,
           );
-          await copyPortalTemplate(template.dir, portalDir);
+          await copyPortalTemplate(template.dir, portalDir, { includeDist: template.includeDist });
           await appendPortalStorageLog(logPath, `Default portal template copied to ${portalDir}.`);
         }
         if (item.enabled) {
@@ -3267,7 +3442,7 @@ export class PluginMultiPortalServer extends Plugin {
     } = {},
   ) {
     const portalDir = storagePathJoin('portals', item.appName, item.portalName);
-    const portalIndex = path.join(portalDir, 'dist', 'index.html');
+    const portalIndex = path.join(portalDir, PORTAL_CLIENT_DIST_DIR, 'index.html');
     const logPath = getPortalStorageLogPath(item);
 
     if (!(await pathExists(portalDir))) {
@@ -3277,17 +3452,18 @@ export class PluginMultiPortalServer extends Plugin {
     }
 
     if (item.enabled) {
-      const hasPortalIndex = await pathExists(portalIndex);
+      const normalizedLegacyDist = await normalizeLegacyPortalClientDist(portalDir, logPath);
+      const hasPortalIndex = normalizedLegacyDist || (await pathExists(portalIndex));
       if (options.forceBuild || !hasPortalIndex) {
         this.logPortalBuildHtml(
           item,
           'requested',
-          options.forceBuild ? 'forceBuild is enabled' : 'dist/index.html does not exist',
+          options.forceBuild ? 'forceBuild is enabled' : 'dist/client/index.html does not exist',
         );
         await buildPortalStorageItem(portalDir, item, options);
         this.logPortalBuildHtml(item, 'completed', 'yarn build:html finished successfully');
       } else {
-        this.logPortalBuildHtml(item, 'skipped', 'dist/index.html already exists');
+        this.logPortalBuildHtml(item, 'skipped', 'dist/client/index.html already exists');
       }
       return;
     }
@@ -3362,6 +3538,35 @@ export class PluginMultiPortalServer extends Plugin {
     await next();
   }
 
+  private async restartPortalHostAfterDeploy(appName: string, portalName: string) {
+    const supervisor = PortalHostSupervisor.getInstance();
+    const info = supervisor.getInfo();
+    if (info.driver === 'external' || info.driver === 'disabled') {
+      this.app.logger?.info?.(`Portal host restart skipped after deploy for ${appName}/${portalName}`, {
+        appName,
+        portalName,
+        driver: info.driver,
+        status: info.status,
+      });
+      return;
+    }
+
+    try {
+      await supervisor.restart(`multiPortals:deploy updated ${appName}/${portalName}`);
+      this.app.logger?.info?.(`Portal host restarted after deploy for ${appName}/${portalName}`, {
+        appName,
+        portalName,
+        driver: info.driver,
+      });
+    } catch (error) {
+      this.app.logger?.warn?.('failed to restart portal host after multi-portal deploy', {
+        appName,
+        portalName,
+        error,
+      });
+    }
+  }
+
   private async deployPortalDist(ctx: ResourcerContext, next: () => Promise<void>) {
     const deployCtx = ctx as MultiPortalDeployContext;
     const appName = this.getCurrentStorageAppName();
@@ -3389,6 +3594,7 @@ export class PluginMultiPortalServer extends Plugin {
         appName,
         portalName,
       });
+      await this.restartPortalHostAfterDeploy(appName, portalName);
       ctx.body = {
         status: 'ok',
         app: appName,

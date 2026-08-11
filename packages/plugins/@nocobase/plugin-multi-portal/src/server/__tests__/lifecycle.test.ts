@@ -90,8 +90,12 @@ describe('Multi Portal seed lifecycle', () => {
 
       const usesLayoutPermissions = isDefaultLayoutMultiPortalUid(portalUid);
       if (usesLayoutPermissions) {
-        expect(accessCount).toBe(0);
-        expect(routePolicyCount).toBe(0);
+        expect(accessCount).toBeGreaterThan(0);
+        if (portal.get('portalType') === 'no-code') {
+          expect(routePolicyCount).toBeGreaterThan(0);
+        } else {
+          expect(routePolicyCount).toBe(0);
+        }
         continue;
       }
 

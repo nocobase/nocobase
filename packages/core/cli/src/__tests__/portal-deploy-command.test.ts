@@ -108,7 +108,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
     argv: [],
     parse: vi.fn(async () => ({
       args: { portal: 'cba' },
-      flags: {},
+      flags: { install: true },
     })),
     config: {
       pjson: {
@@ -132,6 +132,7 @@ test('portal deploy resolves the current env name before deploying', async () =>
         env,
         envName: 'remote1',
         cliVersion: '1.2.3',
+        installDependencies: true,
       },
     ],
   ]);
@@ -157,4 +158,77 @@ test('portal deploy resolves the current env name before deploying', async () =>
       ].join('\n'),
     ],
   ]);
+});
+
+test('portal deploy forwards --no-install to the deploy workflow', async () => {
+  const { default: PortalDeploy } = await import('../commands/portal/deploy.js');
+  const env = {
+    name: 'remote1',
+    kind: 'http',
+    apiBaseUrl: 'http://localhost:56187/api',
+    storagePath: '/Users/chen/test6/remote1/source/storage',
+    config: {
+      apiBaseUrl: 'http://localhost:56187/api',
+    },
+  };
+  mocks.getCurrentEnvName.mockResolvedValue('remote1');
+  mocks.getEnv.mockResolvedValue(env);
+  mocks.deployPortalWorkspace.mockResolvedValue({
+    app: 'main',
+    portal: 'cba',
+    portalDir: '/Users/chen/test6/cba',
+    portalBase: '/x/cba/',
+    distDir: '/Users/chen/test6/cba/dist',
+    serverDistPath: 'portals/main/cba/dist',
+    mode: 'http',
+    uploaded: true,
+    recordSynced: true,
+  });
+  mocks.listPortalWorkspaces.mockResolvedValue({
+    app: 'main',
+    mode: 'http',
+    storagePath: '/Users/chen/test6/remote1/source/storage',
+    items: [
+      {
+        uid: 'cba',
+        portalName: 'cba',
+        routePath: '/cba',
+        portalType: 'ai',
+        enabled: true,
+        sourceStorage: 'nocobase',
+        portalUrl: 'http://localhost:56187/x/cba/',
+        portalDir: '/Users/chen/test6/cba',
+        deployDir: '/Users/chen/test6/remote1/source/storage/portals/main/cba',
+      },
+    ],
+  });
+
+  const command = Object.assign(Object.create(PortalDeploy.prototype), {
+    argv: ['--no-install'],
+    parse: vi.fn(async () => ({
+      args: { portal: 'cba' },
+      flags: { install: false },
+    })),
+    config: {
+      pjson: {
+        version: '1.2.3',
+      },
+    },
+    error: (message: string) => {
+      throw new Error(message);
+    },
+    log: vi.fn(),
+  });
+
+  await PortalDeploy.prototype.run.call(command);
+
+  expect(mocks.deployPortalWorkspace.mock.calls[0][0]).toEqual(
+    expect.objectContaining({
+      portal: 'cba',
+      env,
+      envName: 'remote1',
+      cliVersion: '1.2.3',
+      installDependencies: false,
+    }),
+  );
 });

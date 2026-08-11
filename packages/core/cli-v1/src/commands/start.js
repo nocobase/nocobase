@@ -8,7 +8,7 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { run, postCheck, downloadPro, promptForTs, checkDBDialect } = require('../util');
+const { run, postCheck, downloadPro, promptForTs, checkDBDialect, storagePathJoin } = require('../util');
 const { existsSync, rmSync } = require('fs');
 const { resolve, isAbsolute } = require('path');
 const chalk = require('chalk');
@@ -60,6 +60,7 @@ module.exports = (cli) => {
       }
 
       if (process.env.NO_WATCH_PLUGINS === true || process.env.NO_WATCH_PLUGINS === 'true') {
+        let isReady = false;
         const restart = _.debounce(async () => {
           console.log('restarting...');
           await run('yarn', ['nocobase', 'pm2-restart']);
@@ -68,7 +69,7 @@ module.exports = (cli) => {
         const watcher = chokidar.watch(`${resolvePluginStoragePath()}/**/*`, {
           cwd: process.cwd(),
           ignoreInitial: true,
-          ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+          ignored: /(^|[/\\])\../, // 忽略隐藏文件
           persistent: true,
           depth: 1, // 只监听第一层目录
         });
@@ -89,6 +90,9 @@ module.exports = (cli) => {
 
       if (opts.port) {
         process.env.APP_PORT = opts.port;
+      }
+      if (!process.env.PORTALS_DIR) {
+        process.env.PORTALS_DIR = storagePathJoin('portals');
       }
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();

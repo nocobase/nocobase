@@ -192,15 +192,33 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
   expect(bundle.appConfigContent).toContain('location = /console/api {');
+  expect(bundle.appConfigContent).toContain(`location = /console/api {
+        absolute_redirect off;
+        return 308 /console/api/$is_args$args;
+    }`);
   expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
   expect(bundle.appConfigContent).toContain('location ^~ /console/files/ {');
   expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
   expect(bundle.appConfigContent.indexOf('location ^~ /console/files/ {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location /console/ {'),
   );
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/console/(?<portal_host_path>portals(?:/.*)?)$ {',
+  );
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/console/(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {',
+  );
+  expect(bundle.appConfigContent).toContain('rewrite ^ /$portal_host_path break;');
+  expect(bundle.appConfigContent.indexOf('location ~ ^/console/(?<portal_host_path>portals')).toBeLessThan(
+    bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {'),
+  );
   expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
+  expect(bundle.appConfigContent).toContain(`location = /console/admin {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/apps/ {');
   expect(bundle.appConfigContent).toContain(`location = /console/x {
         absolute_redirect off;
@@ -224,16 +242,16 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   );
   expect(bundle.appConfigContent).toContain('root /workspace/app/storage;');
   expect(bundle.appConfigContent).toContain('if ($portal_path = "") {');
-  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/$subapp/$portal/dist/index.html break;');
-  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path');
-  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/client/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/$subapp/$portal/dist/client/$portal_path/');
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/ {');
   expect(bundle.appConfigContent).not.toContain('error_page 404 =302 /console/admin/;');
   expect(bundle.appConfigContent).toContain('return 308 /console/x/$portal/$is_args$args;');
   expect(bundle.appConfigContent).toContain('if ($uri !~ ^/console/x/(?<portal>[A-Za-z0-9_-]+)/(?<portal_path>.*)$) {');
-  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/index.html break;');
-  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path');
-  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/$portal_path/');
+  expect(bundle.appConfigContent).toContain('rewrite ^ /portals/main/$portal/dist/client/index.html break;');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/client/$portal_path');
+  expect(bundle.appConfigContent).toContain('/portals/main/$portal/dist/client/$portal_path/');
   expect(bundle.appConfigContent.indexOf('location ^~ /console/x/apps/ {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location = /console/api {'),
   );
@@ -302,6 +320,10 @@ test('buildEnvProxyNginxBundle omits the root redirect block for root-mounted ap
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).not.toContain('location ^~ / {');
   expect(bundle.appConfigContent).toContain('location ^~ /x/apps/ {');
+  expect(bundle.appConfigContent).toContain('location ~ ^/(?<portal_host_path>portals(?:/.*)?)$ {');
+  expect(bundle.appConfigContent).toContain(
+    'location ~ ^/(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {',
+  );
   expect(bundle.appConfigContent).toContain('location = /x {');
   expect(bundle.appConfigContent).toContain('location = /x/ {');
   expect(bundle.appConfigContent).toContain('return 302 /v/$is_args$args;');
@@ -484,7 +506,7 @@ test('writeNginxProxyBundle overwrites non-managed app.conf when force is enable
   expect(content).toContain('# BEGIN NocoBase managed config');
   expect(content).toContain('listen 8080;');
   expect(content).toContain('location ^~ /x/ {');
-  expect(content).toContain('/portals/main/$portal/dist/index.html');
+  expect(content).toContain('/portals/main/$portal/dist/client/index.html');
   expect(await readFile(bundle.indexSettingsPath, 'utf8')).toBe(bundle.indexSettingsContent);
 });
 
@@ -613,6 +635,51 @@ test('buildEnvProxyNginxBundle avoids duplicating a dist prefix already present 
   expect(bundle.indexV2Content).not.toContain('/dist/2.1.0-beta.44/v/dist/2.1.0-beta.44/v/');
 });
 
+test('buildEnvProxyNginxBundle replaces stale dist prefixes from previously extracted index HTML', async () => {
+  const root = await createTempRoot('nocobase-cli-env-proxy-nginx-stale-dist-');
+  process.env.NB_CLI_ROOT = root;
+  const runtime = await createLocalRuntime(root, {
+    appPublicPath: '/',
+    sourceV1PublicPath: '/',
+    sourceV2PublicPath: '/v/',
+  });
+  const versionRoot = path.join(runtime.env.storagePath, 'dist-client', '2.1.0-beta.44');
+  const v1IndexPath = path.join(versionRoot, 'index.html');
+  const v2IndexPath = path.join(versionRoot, 'v', 'index.html');
+  const oldDistPrefix = '/dist/2.1.0-beta.43/';
+  const v1Html = await readFile(v1IndexPath, 'utf8');
+  const v2Html = await readFile(v2IndexPath, 'utf8');
+
+  await writeFile(
+    v1IndexPath,
+    v1Html
+      .replace('<html><head>', `<html><head><link rel="stylesheet" href="${oldDistPrefix}global.css">`)
+      .replace(`window['__webpack_public_path__'] = '/';`, `window['__webpack_public_path__'] = '${oldDistPrefix}';`)
+      .replace(`src="/browser-checker.js?v=1"`, `src="${oldDistPrefix}browser-checker.js?v=1"`)
+      .replace(`src="/assets/runtime.js"`, `src="${oldDistPrefix}assets/runtime.js"`)
+      .replace(`href="/assets/index.css"`, `href="${oldDistPrefix}assets/index.css"`),
+  );
+  await writeFile(
+    v2IndexPath,
+    v2Html
+      .replace(`src="/v/browser-checker.js?v=1"`, `src="${oldDistPrefix}v/browser-checker.js?v=1"`)
+      .replace(`src="/v/assets/runtime.js"`, `src="${oldDistPrefix}v/assets/runtime.js"`)
+      .replace(`href="/v/assets/index.css"`, `href="${oldDistPrefix}v/assets/index.css"`),
+  );
+
+  const bundle = await buildEnvProxyNginxBundle(runtime);
+
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/browser-checker.js?v=1"');
+  expect(bundle.indexV1Content).toContain('href="/dist/2.1.0-beta.44/global.css"');
+  expect(bundle.indexV1Content).toContain('src="/dist/2.1.0-beta.44/assets/runtime.js"');
+  expect(bundle.indexV1Content).toContain('href="/dist/2.1.0-beta.44/assets/index.css"');
+  expect(bundle.indexV1Content).not.toContain('/dist/2.1.0-beta.44/dist/2.1.0-beta.43/');
+  expect(bundle.indexV2Content).toContain('src="/dist/2.1.0-beta.44/v/browser-checker.js?v=1"');
+  expect(bundle.indexV2Content).toContain('src="/dist/2.1.0-beta.44/v/assets/runtime.js"');
+  expect(bundle.indexV2Content).toContain('href="/dist/2.1.0-beta.44/v/assets/index.css"');
+  expect(bundle.indexV2Content).not.toContain('/dist/2.1.0-beta.44/v/dist/2.1.0-beta.43/v/');
+});
+
 test('syncEnvProxyNginxSnippets copies nginx snippets into the provider snippets directory', async () => {
   const root = await createTempRoot('nocobase-cli-env-proxy-nginx-snippets-');
   process.env.NB_CLI_ROOT = root;
@@ -678,6 +745,8 @@ test('buildEnvProxyConfig renders a full Caddy app config when provider is caddy
   expect(result.content).toContain('try_files {path} /index-v1.html');
   expect(result.content).toContain('file_server');
   expect(result.content).toContain('reverse_proxy 127.0.0.1:13000');
+  expect(result.content).toContain('@portalHost path_regexp portalHost ^/(portals(?:/.*)?)$');
+  expect(result.content).toContain('rewrite * /{re.portalHost.1}');
   expect(result.content).toContain('handle /x {');
   expect(result.content).toContain('handle /x/* {');
 });
@@ -695,6 +764,8 @@ test('buildEnvProxyConfig renders explicit Caddy redirects when app public path 
   expect(result.content).toContain('redir * /nocobase{uri} 302');
   expect(result.content).toContain('handle /nocobase/files/* {');
   expect(result.content).toContain('handle /files/* {');
+  expect(result.content).toContain('@portalHost path_regexp portalHost ^/nocobase/(portals(?:/.*)?)$');
+  expect(result.content).toContain('@appPortalHost path_regexp appPortalHost ^/nocobase/(apps/[^/]+/portals(?:/.*)?)$');
   expect(result.content.indexOf('handle /nocobase/files/* {')).toBeLessThan(
     result.content.indexOf('handle_path /nocobase/* {'),
   );
@@ -725,6 +796,14 @@ test('buildEnvProxyCaddyBundle renders app.caddy and index HTML files', async ()
   expect(bundle.appConfigContent).not.toContain('route {');
   expect(bundle.appConfigContent).toContain('handle /console/files/* {');
   expect(bundle.appConfigContent).toContain('handle /files/* {');
+  expect(bundle.appConfigContent).toContain('@portalHost path_regexp portalHost ^/console/(portals(?:/.*)?)$');
+  expect(bundle.appConfigContent).toContain(
+    '@appPortalHost path_regexp appPortalHost ^/console/(apps/[^/]+/portals(?:/.*)?)$',
+  );
+  expect(bundle.appConfigContent).toContain('rewrite * /{re.portalHost.1}');
+  expect(bundle.appConfigContent.indexOf('@portalHost path_regexp portalHost ^/console/')).toBeLessThan(
+    bundle.appConfigContent.indexOf('handle /console/x {'),
+  );
   expect(bundle.appConfigContent).toContain('handle /console/x {');
   expect(bundle.appConfigContent).toContain('handle /console/x/* {');
   expect(bundle.appConfigContent).toContain('handle_path /console/admin/* {');

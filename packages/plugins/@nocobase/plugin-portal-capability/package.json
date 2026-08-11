@@ -1,0 +1,24 @@
+{
+  "name": "@nocobase/plugin-portal-capability",
+  "version": "3.0.0-alpha.7",
+  "main": "dist/server/index.js",
+  "displayName": "Portal capability",
+  "displayName.zh-CN": "Portal 能力接口",
+  "description": "Provides controlled NocoBase server capabilities for Portal Server.",
+  "description.zh-CN": "为 Portal Server 提供受控的 NocoBase Server 能力接口。",
+  "nocobase": {
+    "supportedVersions": [
+      "1.x",
+      "2.x"
+    ],
+    "editionLevel": 0
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/acl": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "license": "Apache-2.0"
+}

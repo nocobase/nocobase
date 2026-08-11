@@ -111,8 +111,8 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
 
   await updatePortalEnvFiles({
     portalDir,
+    portal,
     apiBaseUrl,
-    portalBase,
   });
 
   const result: PortalDevResult = {
@@ -128,8 +128,8 @@ export async function devPortalWorkspace(options: PortalDevOptions): Promise<Por
   await runPnpmCommand(runCommand, ['dev'], {
     cwd: portalDir,
     env: buildPortalCommandEnv({
-      NOCOBASE_API_URL: apiBaseUrl,
-      NOCOBASE_PORTAL_BASE: portalBase,
+      NOCOBASE_PORTAL_NAME: portal,
+      NOCOBASE_API_PROXY_TARGET: apiBaseUrl,
     }),
     envMode: 'replace',
     errorName: 'pnpm dev',

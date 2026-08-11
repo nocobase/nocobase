@@ -99,6 +99,7 @@ server {
     }
 
     location = {{v2PublicPathNoTrailingSlash}} {
+        absolute_redirect off;
         return 302 {{v2PublicPath}}$is_args$args;
     }
 
@@ -213,6 +214,44 @@ server {
     }
 
 
+    location ~ ^{{publicPath}}(?<portal_host_path>portals(?:/.*)?)$ {
+        rewrite ^ /$portal_host_path break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
+    location ~ ^{{publicPath}}(?<portal_host_path>apps/[A-Za-z0-9_-]+/portals(?:/.*)?)$ {
+        rewrite ^ /$portal_host_path break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
 
     location = {{publicPath}}{{portalClientPrefix}} {
         absolute_redirect off;
@@ -242,13 +281,13 @@ server {
         root {{cwd}}/storage;
 
         if ($portal_path = "") {
-            rewrite ^ /portals/$subapp/$portal/dist/index.html break;
+            rewrite ^ /portals/$subapp/$portal/dist/client/index.html break;
         }
 
         try_files
-            /portals/$subapp/$portal/dist/$portal_path
-            /portals/$subapp/$portal/dist/$portal_path/
-            /portals/$subapp/$portal/dist/index.html
+            /portals/$subapp/$portal/dist/client/$portal_path
+            /portals/$subapp/$portal/dist/client/$portal_path/
+            /portals/$subapp/$portal/dist/client/index.html
             =404;
     }
 
@@ -266,13 +305,13 @@ server {
         root {{cwd}}/storage;
 
         if ($portal_path = "") {
-            rewrite ^ /portals/main/$portal/dist/index.html break;
+            rewrite ^ /portals/main/$portal/dist/client/index.html break;
         }
 
         try_files
-            /portals/main/$portal/dist/$portal_path
-            /portals/main/$portal/dist/$portal_path/
-            /portals/main/$portal/dist/index.html
+            /portals/main/$portal/dist/client/$portal_path
+            /portals/main/$portal/dist/client/$portal_path/
+            /portals/main/$portal/dist/client/index.html
             =404;
     }
 

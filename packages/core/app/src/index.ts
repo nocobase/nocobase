@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Gateway, runPluginStaticImports } from '@nocobase/server';
+import { Gateway, registerPortalGatewayProxy, runPluginStaticImports } from '@nocobase/server';
 import { getConfig } from './config';
 
 async function initializeGateway() {
   await runPluginStaticImports();
   const config = await getConfig();
+  registerPortalGatewayProxy();
   await Gateway.getInstance().run({
     mainAppOptions: config,
   });

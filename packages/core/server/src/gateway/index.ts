@@ -95,6 +95,15 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+function resolveBareApiBasePathRedirect(pathname = '/') {
+  const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  if (apiBasePath === '/' || pathname !== apiBasePath) {
+    return null;
+  }
+
+  return `${apiBasePath}/`;
+}
+
 function getFilesPathPrefixes(appPublicPath = '/') {
   const normalizedPublicPath = normalizeBasePath(appPublicPath);
   const canonicalPrefix = `${normalizedPublicPath === '/' ? '' : normalizedPublicPath}/files/`;
@@ -104,6 +113,23 @@ function getFilesPathPrefixes(appPublicPath = '/') {
 function getFileAccessRestPath(pathname: string, appPublicPath = '/') {
   const prefix = getFilesPathPrefixes(appPublicPath).find((prefix) => pathname.startsWith(prefix));
   return prefix ? pathname.slice(prefix.length) : null;
+}
+
+function isPortalWebSocketPath(
+  pathname = '/',
+  publicPath = process.env.PORTAL_PUBLIC_PATH ??
+    `${resolvePublicPath(process.env.APP_PUBLIC_PATH || '/').replace(/\/$/, '')}/portals`,
+) {
+  const normalizedPublicPath = normalizeBasePath(publicPath);
+  const portalPrefix = normalizedPublicPath === '/' ? '/portals' : normalizedPublicPath;
+  const escapedPortalPrefix = portalPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  return (
+    new RegExp(`^${escapedPortalPrefix}/[^/]+/ws$`).test(pathname) ||
+    /^\/portals\/[^/]+\/ws$/.test(pathname) ||
+    new RegExp(`^${escapedPortalPrefix.replace(/\/portals$/, '')}/apps/[^/]+/portals/[^/]+/ws$`).test(pathname) ||
+    /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname)
+  );
 }
 
 /** Align with cli-v1 `generateGatewayPath()` / `process.env.SOCKET_PATH` after initEnv. */
@@ -545,17 +571,7 @@ export class Gateway extends EventEmitter {
   }
 
   private getPortalDistRoot(portalMatch: PortalMatch) {
-    const scopedRoot = storagePathJoin('portals', portalMatch.appName, portalMatch.portalName, 'dist');
-    if (portalMatch.appName !== DEFAULT_PORTAL_APP_NAME) {
-      return scopedRoot;
-    }
-
-    const legacyRoot = storagePathJoin('portals', portalMatch.portalName, 'dist');
-    if (!fs.existsSync(resolve(scopedRoot, 'index.html')) && fs.existsSync(resolve(legacyRoot, 'index.html'))) {
-      return legacyRoot;
-    }
-
-    return scopedRoot;
+    return storagePathJoin('portals', portalMatch.appName, portalMatch.portalName, 'dist', 'client');
   }
 
   private isV2Request(pathname: string) {
@@ -717,6 +733,14 @@ export class Gateway extends EventEmitter {
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
+      return;
+    }
+
+    const apiBasePathRedirect = resolveBareApiBasePathRedirect(pathname);
+    if (apiBasePathRedirect) {
+      res.statusCode = 308;
+      res.setHeader('Location', `${apiBasePathRedirect}${search || ''}`);
+      res.end();
       return;
     }
 
@@ -1200,7 +1224,7 @@ export class Gateway extends EventEmitter {
       }
       const { pathname } = parse(request.url);
 
-      if (pathname === process.env.WS_PATH) {
+      if (pathname === process.env.WS_PATH || isPortalWebSocketPath(pathname)) {
         this.wsServer.wss.handleUpgrade(request, socket, head, (ws) => {
           this.wsServer.wss.emit('connection', ws, request);
         });
@@ -1236,17 +1260,20 @@ export class Gateway extends EventEmitter {
     this.wsServer?.close();
   }
 
-  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
-    [];
+  private static requestHandlers: ((
+    req: IncomingRequest,
+    res: ServerResponse,
+    app: Application,
+  ) => boolean | void | Promise<boolean | void>)[] = [];
 
   static registerRequestHandler(
-    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.requestHandlers.push(handler);
   }
 
   static unregisterRequestHandler(
-    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
   }
@@ -1256,16 +1283,26 @@ export class Gateway extends EventEmitter {
     socket: Duplex,
     head: Buffer,
     app: Application,
-  ) => boolean | void)[] = [];
+  ) => boolean | void | Promise<boolean | void>)[] = [];
 
   static registerWsHandler(
-    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+    wsServer: (
+      req: IncomingMessage,
+      socket: Duplex,
+      head: Buffer,
+      app: Application,
+    ) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.wsServers.push(wsServer);
   }
 
   static unregisterWsHandler(
-    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+    wsServer: (
+      req: IncomingMessage,
+      socket: Duplex,
+      head: Buffer,
+      app: Application,
+    ) => boolean | void | Promise<boolean | void>,
   ) {
     Gateway.wsServers = Gateway.wsServers.filter((ws) => ws !== wsServer);
   }

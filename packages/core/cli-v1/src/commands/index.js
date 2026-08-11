@@ -29,6 +29,7 @@ module.exports = (cli) => {
   require('./clean')(cli);
   require('./doc')(cli);
   require('./pm2')(cli);
+  require('./portal-host')(cli);
   require('./test')(cli);
   require('./test-coverage')(cli);
   require('./benchmark')(cli);

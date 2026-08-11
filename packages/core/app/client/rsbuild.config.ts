@@ -17,6 +17,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
 import { generatePlugins, getRsbuildBrowserAlias } from '@nocobase/devtools/rsbuildConfig';
 import { isClientDevProxyPath, rewriteClientDevProxyRootPath } from '../clientDevProxy';
+import { createPortalDevProxyOptions } from '../portalDevProxy';
 import { createSettingsDevProxyOptions } from '../settingsDevProxy';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -218,6 +219,7 @@ export default defineConfig(({ command }) => {
       },
       proxy: [
         createSettingsDevProxyOptions(resolvedAppPublicPath, settingsPort),
+        createPortalDevProxyOptions(resolvedAppPublicPath, proxyTargetUrl),
         {
           context: apiBasePath,
           target: proxyTargetUrl,

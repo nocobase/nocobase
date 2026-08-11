@@ -51,8 +51,8 @@ async function preparePortalWorkspace(params: { storagePath: string; app?: strin
   const app = params.app ?? 'main';
   const portal = params.portal ?? 'customer';
   const portalDir = path.join(params.storagePath, 'portals', app, portal);
-  await fsp.mkdir(path.join(portalDir, 'dist'), { recursive: true });
-  await fsp.writeFile(path.join(portalDir, 'dist', 'index.html'), '<div id="root"></div>');
+  await fsp.mkdir(path.join(portalDir, 'dist', 'client'), { recursive: true });
+  await fsp.writeFile(path.join(portalDir, 'dist', 'client', 'index.html'), '<div id="root"></div>');
   return portalDir;
 }
 

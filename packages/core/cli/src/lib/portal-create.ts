@@ -23,6 +23,7 @@ import { resolveEnvRelativePath } from './cli-home.js';
 import { translateCli } from './cli-locale.js';
 import { ensurePortalBuildHtmlReadsEnvOnly } from './portal-build-html.js';
 import { buildPortalCommandEnv } from './portal-command-env.js';
+import { PORTAL_SERVER_DEV_ENV_FILE, PORTAL_SERVER_PROD_ENV_FILE } from './portal-env-files.js';
 import { canReplacePortalDirectory } from './portal-path-safety.js';
 import {
   buildPortalConfig,
@@ -160,10 +161,6 @@ function resolveApiBaseUrlPathname(apiBaseUrl: string): string {
     const withLeadingSlash = pathname?.startsWith('/') ? pathname : `/${pathname || 'api'}`;
     return normalizeUrlPathname(withLeadingSlash);
   }
-}
-
-export function resolvePortalEnvApiUrl(apiBaseUrl: string): string {
-  return resolveApiBaseUrlPathname(apiBaseUrl);
 }
 
 function decodeAppSegment(value: string): string {
@@ -634,7 +631,6 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
     gitPath: options.gitPath,
   });
   const apiBaseUrl = trimValue(options.env.apiBaseUrl);
-  const envApiUrl = resolvePortalEnvApiUrl(apiBaseUrl);
   const { app, appPublicPath, portalBaseApp } = await resolvePortalAppContext(options);
   const portalBase = buildPortalBasePath({ app: portalBaseApp ?? app, appPublicPath, portal });
   const portalDir = resolvePortalSourcePath(portal, options.sourcePath);
@@ -672,16 +668,14 @@ export async function createPortalWorkspace(options: PortalCreateOptions): Promi
   try {
     await copyTemplate(template.dir, tempDir);
     await ensurePortalBuildHtmlReadsEnvOnly(tempDir);
+    const serverEnvContent =
+      [`NOCOBASE_PORTAL_NAME=${portal}`, `NOCOBASE_API_PROXY_TARGET=${apiBaseUrl}`].join('\n') + '\n';
     await writeFile(
-      path.join(tempDir, '.env'),
-      [`NOCOBASE_API_URL=${envApiUrl}`, `NOCOBASE_PORTAL_BASE=${portalBase}`].join('\n') + '\n',
+      path.join(tempDir, PORTAL_SERVER_DEV_ENV_FILE),
+      serverEnvContent,
       'utf-8',
     );
-    await writeFile(
-      path.join(tempDir, '.env.local'),
-      [`NOCOBASE_API_URL=${apiBaseUrl}`, `NOCOBASE_PORTAL_BASE=${portalBase}`].join('\n') + '\n',
-      'utf-8',
-    );
+    await writeFile(path.join(tempDir, PORTAL_SERVER_PROD_ENV_FILE), serverEnvContent, 'utf-8');
 
     if (targetExists) {
       await rm(portalDir, { recursive: true, force: true });

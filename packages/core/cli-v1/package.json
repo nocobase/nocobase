@@ -23,7 +23,8 @@
     "pm2": "^6.0.5",
     "portfinder": "^1.0.28",
     "tar": "^7.4.3",
-    "tree-kill": "^1.2.2"
+    "tree-kill": "^1.2.2",
+    "xpipe": "^1.0.5"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.1"
