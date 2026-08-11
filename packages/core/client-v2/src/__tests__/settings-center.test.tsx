@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACLRolesCheckProvider, createMockClient, Plugin } from '@nocobase/client-v2';
+import {
+  ACLRolesCheckProvider,
+  createMockClient,
+  NocoBaseDesktopRouteType,
+  type NocoBaseDesktopRoute,
+  Plugin,
+} from '@nocobase/client-v2';
 import { act, render, screen, waitFor, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { message } from 'antd';
@@ -47,9 +53,15 @@ const mockAdminRuntime = (
     snippets?: string[];
     pmList?: any[];
     systemSettings?: Record<string, any>;
+    desktopRoutes?: NocoBaseDesktopRoute[];
   } = {},
 ) => {
-  const { snippets = ['pm', 'pm.system-settings.system-settings'], pmList = [], systemSettings = {} } = options;
+  const {
+    snippets = ['pm', 'pm.system-settings.system-settings'],
+    pmList = [],
+    systemSettings = {},
+    desktopRoutes = [],
+  } = options;
 
   app.dataSourceManager.getCollection = ((name: string, collectionName: string) => {
     if (name === 'main' && collectionName === 'attachments') {
@@ -93,7 +105,7 @@ const mockAdminRuntime = (
     },
   });
   app.apiMock.onGet('/desktopRoutes:listAccessible').reply(200, {
-    data: [],
+    data: desktopRoutes,
   });
   app.apiMock.onGet('systemSettings:get').reply(200, {
     data: {
@@ -244,6 +256,39 @@ describe('settings center', () => {
     expect(await screen.findByText('Demo plugin')).toBeInTheDocument();
   });
 
+  it('should redirect to the first accessible page when the role cannot access settings', async () => {
+    const app = createMockClient({
+      plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
+      router: { type: 'memory', initialEntries: ['/admin/settings/system-settings'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['!pm', '!pm.system-settings.system-settings'],
+      desktopRoutes: [
+        {
+          id: 1,
+          schemaUid: 'first-accessible-page',
+          title: 'First accessible page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+        {
+          id: 2,
+          schemaUid: 'second-accessible-page',
+          title: 'Second accessible page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      ],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check', '/desktopRoutes:listAccessible']);
+
+    await waitFor(() => {
+      expect(app.router.state.location.pathname).toBe('/admin/first-accessible-page');
+    });
+    expect(app.router.state.historyAction).toBe('REPLACE');
+    expect(screen.queryByText('Current settings page is unavailable')).not.toBeInTheDocument();
+  });
+
   it('should hide plugin-manager menu item when pm snippet is missing', async () => {
     const app = createMockClient({
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
@@ -265,12 +310,23 @@ describe('settings center', () => {
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin],
       router: { type: 'memory', initialEntries: ['/admin/settings/unknown'] },
     });
-    mockAdminRuntime(app);
+    mockAdminRuntime(app, {
+      snippets: ['!pm', '!pm.system-settings.system-settings'],
+      desktopRoutes: [
+        {
+          id: 1,
+          schemaUid: 'first-accessible-page',
+          title: 'First accessible page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      ],
+    });
 
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
     expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/admin/settings/unknown');
   });
 
   it('should allow direct access to hidden page without showing menu entry', async () => {
@@ -291,13 +347,23 @@ describe('settings center', () => {
       plugins: [NocoBaseBuildInPlugin, TestAclPlugin, HiddenSettingsPlugin],
       router: { type: 'memory', initialEntries: ['/admin/settings/hidden-demo'] },
     });
-    mockAdminRuntime(app);
+    mockAdminRuntime(app, {
+      desktopRoutes: [
+        {
+          id: 1,
+          schemaUid: 'first-accessible-page',
+          title: 'First accessible page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      ],
+    });
 
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
     expect(await screen.findByText('Hidden settings page')).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Hidden demo' })).not.toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/admin/settings/hidden-demo');
   });
 
   it('should show route empty state when direct access page has no permission', async () => {
@@ -320,6 +386,14 @@ describe('settings center', () => {
     });
     mockAdminRuntime(app, {
       snippets: ['pm', 'pm.system-settings.system-settings', '!pm.secure-demo.index'],
+      desktopRoutes: [
+        {
+          id: 1,
+          schemaUid: 'first-accessible-page',
+          title: 'First accessible page',
+          type: NocoBaseDesktopRouteType.flowPage,
+        },
+      ],
     });
 
     await renderApp(app);
@@ -327,6 +401,7 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/admin/settings/secure-demo');
   });
 
   it('should redirect a denied settings tab to the first accessible tab', async () => {

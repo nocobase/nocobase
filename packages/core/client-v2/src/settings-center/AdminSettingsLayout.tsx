@@ -192,6 +192,10 @@ export const InternalAdminSettingsLayout = () => {
     if (firstVisibleTabPath) {
       return <Navigate replace to={firstVisibleTabPath} />;
     }
+    if (!defaultSettingsPath) {
+      return <Navigate replace to="/admin" />;
+    }
+
     return <SettingsEmpty type="route" />;
   }
 
