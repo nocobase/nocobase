@@ -474,7 +474,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
             if (index.fields) {
               index.fields = index.fields.map((field) => {
                 if (field.name) {
-                  return { name: snakeCase(field.name), ...field };
+                  return { ...field, name: snakeCase(field.name) };
                 }
                 return snakeCase(field);
               });
