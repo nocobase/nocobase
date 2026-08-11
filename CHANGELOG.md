@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.39](https://github.com/nocobase/nocobase/compare/v2.1.38...v2.1.39) - 2026-08-11
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed an issue where ctx.form.submit could not correctly submit form data. ([#10063](https://github.com/nocobase/nocobase/pull/10063)) by @gchust
+
+- **[database]** Fixed prefix indexes on camel-case fields when underscored database naming is enabled ([#10329](https://github.com/nocobase/nocobase/pull/10329)) by @2013xile
+
+- **[Action: Duplicate record]** Improve direct duplication failure feedback in v2 without duplicate API error messages. ([#10327](https://github.com/nocobase/nocobase/pull/10327)) by @katherinehhh
+
+- **[Record history]** Improved record history write performance for collections with large snapshot tables by @2013xile
+
+- **[Workflow: Approval]** Fix the issue where removed one-to-many relation records cannot be selected again in approval forms by @zhangzhonghe
+
 ## [v2.1.38](https://github.com/nocobase/nocobase/compare/v2.1.37...v2.1.38) - 2026-08-10
 
 ### 🚀 Improvements

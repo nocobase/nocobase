@@ -8,9 +8,10 @@
  */
 
 import { ACLRolesCheckProvider, Plugin } from '@nocobase/client-v2';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { message } from 'antd';
+import { vi } from 'vitest';
 import { AdminSettingsLayoutModel as ClientV2AdminSettingsLayoutModel } from '../settings-center';
 import { AdminSettingsLayoutModel as ClientV1AdminSettingsLayoutModel } from '../../../client/src/pm/AdminSettingsLayoutModel';
 import zhCN from '../../../client/src/locale/zh-CN.json';
@@ -346,41 +347,64 @@ describe('settings center', () => {
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
   });
 
-  it('should deny a protected child page when a sibling remains visible', async () => {
-    class MixedAccessSettingsPlugin extends Plugin {
+  it('should redirect a denied settings tab to the first accessible tab', async () => {
+    const renderDeniedTab = vi.fn(() => <div>Denied tab content</div>);
+
+    class ProtectedSettingsTabsPlugin extends Plugin {
       async load() {
-        this.pluginSettingsManager.addMenuItem({ key: 'mixed-access', title: 'Mixed access' });
+        this.pluginSettingsManager.addMenuItem({ key: 'protected-tabs', title: 'Protected tabs' });
         this.pluginSettingsManager.addPageTabItem({
-          menuKey: 'mixed-access',
-          key: 'index',
-          title: 'Allowed settings',
-          Component: () => <div>Allowed settings page</div>,
+          menuKey: 'protected-tabs',
+          key: 'a-second',
+          title: 'Second accessible tab',
+          aclSnippet: 'pm.protected-tabs.second',
+          sort: 20,
+          Component: () => <div>Second accessible tab content</div>,
         });
         this.pluginSettingsManager.addPageTabItem({
-          menuKey: 'mixed-access',
-          key: 'restricted',
-          title: 'Restricted settings',
-          aclSnippet: 'pm.mixed-access.restricted',
-          Component: () => <div>Restricted settings page</div>,
+          menuKey: 'protected-tabs',
+          key: 'z-first',
+          title: 'First accessible tab',
+          aclSnippet: 'pm.protected-tabs.first',
+          sort: 10,
+          Component: () => <div>First accessible tab content</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'protected-tabs',
+          key: 'denied',
+          title: 'Denied tab',
+          aclSnippet: 'pm.protected-tabs.denied',
+          sort: 30,
+          Component: renderDeniedTab,
         });
       }
     }
 
     const app = createMockSettingsClient({
-      plugins: [SettingsBuildInPlugin, TestAclPlugin, MixedAccessSettingsPlugin],
-      router: { type: 'memory', initialEntries: ['/settings/mixed-access/restricted'] },
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, ProtectedSettingsTabsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/protected-tabs/denied'] },
     });
     mockAdminRuntime(app, {
-      snippets: ['pm', 'pm.system-settings.system-settings', '!pm.mixed-access.restricted'],
+      snippets: ['pm', '!pm.protected-tabs.denied'],
     });
 
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
-    expect(
-      await screen.findByRole('heading', { name: 'Your current role cannot access Settings' }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Restricted settings page')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/settings/protected-tabs/z-first');
+    });
+    expect(app.router.router.state.historyAction).toBe('REPLACE');
+    expect(await screen.findByText('First accessible tab content')).toBeInTheDocument();
+    expect(screen.queryByText('Denied tab content')).not.toBeInTheDocument();
+    expect(renderDeniedTab).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await app.router.router.navigate('/settings/protected-tabs/a-second');
+    });
+
+    expect(await screen.findByText('Second accessible tab content')).toBeInTheDocument();
+    expect(app.router.router.state.location.pathname).toBe('/settings/protected-tabs/a-second');
   });
 
   it.each(['/settings/fallback-access', '/settings/fallback-access/'])(
@@ -423,6 +447,134 @@ describe('settings center', () => {
       expect(screen.queryByText('Restricted index settings page')).not.toBeInTheDocument();
     },
   );
+
+  it('should skip an accessible dynamic tab when its route params cannot be resolved', async () => {
+    class DynamicSettingsTabsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'dynamic-tabs', title: 'Dynamic tabs' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'dynamic-tabs',
+          key: ':name',
+          title: 'Dynamic tab',
+          aclSnippet: 'pm.dynamic-tabs.dynamic',
+          sort: 1,
+          Component: () => <div>Dynamic tab content</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'dynamic-tabs',
+          key: 'fallback',
+          title: 'Static fallback tab',
+          aclSnippet: 'pm.dynamic-tabs.fallback',
+          sort: 2,
+          Component: () => <div>Static fallback tab content</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'dynamic-tabs',
+          key: 'denied',
+          title: 'Denied tab',
+          aclSnippet: 'pm.dynamic-tabs.denied',
+          sort: 3,
+          Component: () => <div>Denied dynamic tab content</div>,
+        });
+      }
+    }
+
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, DynamicSettingsTabsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/dynamic-tabs/denied'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', '!pm.dynamic-tabs.denied'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/settings/dynamic-tabs/fallback');
+    });
+    expect(await screen.findByText('Static fallback tab content')).toBeInTheDocument();
+  });
+
+  it('should preserve resolved route params when redirecting between dynamic tabs', async () => {
+    class DynamicSiblingTabsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'dynamic-siblings', title: 'Dynamic sibling tabs' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'dynamic-siblings',
+          key: ':name/channels',
+          title: 'Dynamic channels tab',
+          aclSnippet: 'pm.dynamic-siblings.channels',
+          sort: 1,
+          Component: () => <div>Dynamic channels tab content</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'dynamic-siblings',
+          key: ':name/logs',
+          title: 'Dynamic logs tab',
+          aclSnippet: 'pm.dynamic-siblings.logs',
+          sort: 2,
+          Component: () => <div>Dynamic logs tab content</div>,
+        });
+      }
+    }
+
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, DynamicSiblingTabsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/dynamic-siblings/email:primary/logs'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', '!pm.dynamic-siblings.logs'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/settings/dynamic-siblings/email:primary/channels');
+    });
+    expect(await screen.findByText('Dynamic channels tab content')).toBeInTheDocument();
+  });
+
+  it('should resolve hyphenated route param names when redirecting between dynamic tabs', async () => {
+    class HyphenatedParamTabsPlugin extends Plugin {
+      async load() {
+        this.pluginSettingsManager.addMenuItem({ key: 'hyphenated-params', title: 'Hyphenated param tabs' });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'hyphenated-params',
+          key: ':data-source/channels',
+          title: 'Hyphenated channels tab',
+          aclSnippet: 'pm.hyphenated-params.channels',
+          sort: 1,
+          Component: () => <div>Hyphenated channels tab content</div>,
+        });
+        this.pluginSettingsManager.addPageTabItem({
+          menuKey: 'hyphenated-params',
+          key: ':data-source/logs',
+          title: 'Hyphenated logs tab',
+          aclSnippet: 'pm.hyphenated-params.logs',
+          sort: 2,
+          Component: () => <div>Hyphenated logs tab content</div>,
+        });
+      }
+    }
+
+    const app = createMockSettingsClient({
+      plugins: [SettingsBuildInPlugin, TestAclPlugin, HyphenatedParamTabsPlugin],
+      router: { type: 'memory', initialEntries: ['/settings/hyphenated-params/email/logs'] },
+    });
+    mockAdminRuntime(app, {
+      snippets: ['pm', '!pm.hyphenated-params.logs'],
+    });
+
+    await renderApp(app);
+    await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+    await waitFor(() => {
+      expect(app.router.router.state.location.pathname).toBe('/settings/hyphenated-params/email/channels');
+    });
+    expect(await screen.findByText('Hyphenated channels tab content')).toBeInTheDocument();
+  });
 
   it('should keep menu visible when menu acl is denied but child page is visible', async () => {
     class MenuAclPlugin extends Plugin {
