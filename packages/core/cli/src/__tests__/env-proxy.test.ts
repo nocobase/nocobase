@@ -192,6 +192,10 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent).toContain('location / {');
   expect(bundle.appConfigContent).toContain('return 302 /console$uri$is_args$args;');
   expect(bundle.appConfigContent).toContain('location = /console/api {');
+  expect(bundle.appConfigContent).toContain(`location = /console/api {
+        absolute_redirect off;
+        return 308 /console/api/$is_args$args;
+    }`);
   expect(bundle.appConfigContent).toContain('return 308 /console/api/$is_args$args;');
   expect(bundle.appConfigContent).toContain('location ^~ /console/files/ {');
   expect(bundle.appConfigContent).toContain('location ^~ /files/ {');
@@ -211,6 +215,10 @@ test('buildEnvProxyNginxBundle renders app.conf and index HTML with CDN-prefixed
   expect(bundle.appConfigContent.indexOf('location = /console/api {')).toBeLessThan(
     bundle.appConfigContent.indexOf('location ^~ /console/api/ {'),
   );
+  expect(bundle.appConfigContent).toContain(`location = /console/admin {
+        absolute_redirect off;
+        return 302 /console/admin/$is_args$args;
+    }`);
   expect(bundle.appConfigContent).toContain('location ^~ /console/x/apps/ {');
   expect(bundle.appConfigContent).toContain(`location = /console/x {
         absolute_redirect off;

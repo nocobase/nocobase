@@ -99,6 +99,7 @@ server {
     }
 
     location = {{v2PublicPathNoTrailingSlash}} {
+        absolute_redirect off;
         return 302 {{v2PublicPath}}$is_args$args;
     }
 

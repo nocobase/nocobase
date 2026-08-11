@@ -918,6 +918,7 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     buildNginxPortalLocationBlock(context),
     '',
     `    location = ${apiBasePathNoTrailingSlash} {`,
+    '        absolute_redirect off;',
     `        return 308 ${context.apiBasePath}$is_args$args;`,
     '    }',
     '',
@@ -933,6 +934,7 @@ function buildNginxManagedConfigBlock(context: EnvProxyNginxRenderContext): stri
     ...(appPublicPathRedirectBlock ? ['', appPublicPathRedirectBlock] : []),
     '',
     `    location = ${v2PublicPathNoTrailingSlash} {`,
+    '        absolute_redirect off;',
     `        return 302 ${context.v2PublicPath}$is_args$args;`,
     '    }',
     '',
@@ -1680,6 +1682,7 @@ function buildNginxOtherLocation(appPublicPath: string, v2PublicPath: string, mo
     }
 
     location = /${modernClientPrefix} {
+        absolute_redirect off;
         return 302 ${v2PublicPath}$is_args$args;
     }
 
@@ -1744,6 +1747,7 @@ function renderNginxLocationTemplate(context: EnvProxyTemplateContext): string {
 ${buildNginxPortalHostProxyTemplateBlock(context)}
 
     location = ${apiBasePathNoTrailingSlash} {
+        absolute_redirect off;
         return 308 ${context.apiBasePath}$is_args$args;
     }
 
