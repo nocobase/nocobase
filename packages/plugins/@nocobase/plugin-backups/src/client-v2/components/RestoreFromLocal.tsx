@@ -14,8 +14,8 @@ import { App, Button, Form, Input, Modal, Upload } from 'antd';
 import React, { useState } from 'react';
 import { useBackupAppInfo } from '../hooks/useBackupAppInfo';
 import { useCheckBackupMessage } from '../hooks/useCheckBackupMessage';
-import { useRestoreTask } from '../hooks/useRestoreTask';
 import { useT } from '../locale';
+import { useRestoreLoading } from './RestoreLoadingProvider';
 
 type RestoreTaskBody = {
   task?: string;
@@ -38,7 +38,7 @@ export const RestoreFromLocal = () => {
   const [file, setFile] = useState<File | null>(null);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const submittingRef = React.useRef(false);
-  const restoreTaskId = useRestoreTask();
+  const { restoring, startRestoring } = useRestoreLoading();
   const { showCheckBackupMessage } = useCheckBackupMessage();
   const {
     database: { schema: currentDbSchema, dialect },
@@ -86,7 +86,10 @@ export const RestoreFromLocal = () => {
         data: formData,
         skipNotify: true,
       });
-      restoreTaskId.current = response.data?.data?.task ?? null;
+      const taskId = response.data?.data?.task ?? null;
+      if (taskId) {
+        startRestoring(taskId);
+      }
       showCheckBackupMessage();
       setIsModalVisible(false);
       resetFields();
@@ -124,7 +127,7 @@ export const RestoreFromLocal = () => {
 
   return (
     <>
-      <Button icon={<UploadOutlined />} onClick={showModal}>
+      <Button icon={<UploadOutlined />} disabled={restoring} onClick={showModal}>
         {t('Restore backup from local')}
       </Button>
       <Modal

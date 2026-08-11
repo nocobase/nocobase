@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import { RestoreLoadingProvider } from './components/RestoreLoadingProvider';
 import { BACKUP_RESTORE_RUNTIME_KEY, BackupRestoreRuntime, NAMESPACE } from './constants';
 
 type BackupRuntimeApp = Application & {
@@ -20,6 +21,8 @@ type BackupRuntimeApp = Application & {
 export class PluginBackupsClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
     const title = this.t('Backup manager') as unknown as string;
+
+    this.app.use(RestoreLoadingProvider);
 
     this.flowEngine.context.defineProperty(BACKUP_RESTORE_RUNTIME_KEY, {
       value: this.createBackupRestoreRuntime(),

@@ -44,6 +44,7 @@
   "Restore": "Restore",
   "Restore backup from local": "Restore from local backup file",
   "Restore failed": "Restore failed",
+  "Restoring backup": "Restoring backup",
   "Restore password": "Restore password",
   "Run automatic backup on the cron schedule": "Run automatic backup on the cron schedule",
   "Settings": "Settings",
