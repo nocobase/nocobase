@@ -58,6 +58,8 @@ type LoadProjectsOptions = {
   reportFailure?: boolean;
 };
 
+type ProjectsUpdater = (projects: JsTemplateProject[]) => JsTemplateProject[];
+
 type DetailPanel = 'source' | 'sync';
 type SyncConfigurationRequest = 'test' | 'configure';
 type FlowContextWithApi = {
@@ -112,14 +114,39 @@ function JsTemplateSourceProjectsPageInner() {
     null,
   );
   const loadProjectsRequestSequenceRef = useRef(0);
+  const projectsStateRevisionRef = useRef(0);
+  const lifecyclePendingProjectIdsRef = useRef<Set<string>>(new Set());
   const previousCreateJobStatusesRef = useRef<Map<string, JsTemplateCreateJobSummary['status']> | null>(null);
   const createJobTransitionBatchRef = useRef(0);
   const [dismissingCreateJobIds, setDismissingCreateJobIds] = useState<Set<string>>(() => new Set());
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
-  const detailDrawerOpen = activePanel === 'source' && Boolean(selectedProjectId);
   const syncDrawerOpen = activePanel === 'sync' && Boolean(selectedProjectId);
+
+  const updateProjects = useCallback((updater: ProjectsUpdater) => {
+    projectsStateRevisionRef.current += 1;
+    setProjects(updater);
+  }, []);
+
+  const beginLifecycleChanges = useCallback((projectIds: string[]): boolean => {
+    if (projectIds.some((projectId) => lifecyclePendingProjectIdsRef.current.has(projectId))) {
+      return false;
+    }
+
+    const next = new Set(lifecyclePendingProjectIdsRef.current);
+    projectIds.forEach((projectId) => next.add(projectId));
+    lifecyclePendingProjectIdsRef.current = next;
+    setChangingProjectIds(next);
+    return true;
+  }, []);
+
+  const finishLifecycleChanges = useCallback((projectIds: string[]) => {
+    const next = new Set(lifecyclePendingProjectIdsRef.current);
+    projectIds.forEach((projectId) => next.delete(projectId));
+    lifecyclePendingProjectIdsRef.current = next;
+    setChangingProjectIds(next);
+  }, []);
 
   const resetCreateForm = useCallback(() => {
     form.resetFields();
@@ -131,18 +158,25 @@ function JsTemplateSourceProjectsPageInner() {
   const loadProjects = useCallback(
     async (options: LoadProjectsOptions = {}): Promise<LoadProjectsResult> => {
       const requestSequence = loadProjectsRequestSequenceRef.current + 1;
+      const stateRevision = projectsStateRevisionRef.current;
       loadProjectsRequestSequenceRef.current = requestSequence;
       setLoading(true);
       setNotice(null);
       try {
         const nextProjects = await listProjects();
-        if (loadProjectsRequestSequenceRef.current !== requestSequence) {
+        if (
+          loadProjectsRequestSequenceRef.current !== requestSequence ||
+          projectsStateRevisionRef.current !== stateRevision
+        ) {
           return { status: 'stale' };
         }
         setProjects(nextProjects);
         return { status: 'applied' };
       } catch (error) {
-        if (loadProjectsRequestSequenceRef.current !== requestSequence) {
+        if (
+          loadProjectsRequestSequenceRef.current !== requestSequence ||
+          projectsStateRevisionRef.current !== stateRevision
+        ) {
           return { status: 'stale' };
         }
         const message = error instanceof Error ? error.message : t('Failed to load Source Projects');
@@ -310,6 +344,7 @@ function JsTemplateSourceProjectsPageInner() {
     () => projects.find((project) => project.id === selectedProjectId) || null,
     [projects, selectedProjectId],
   );
+  const detailDrawerOpen = activePanel === 'source' && Boolean(selectedProject);
   const filteredProjects = useMemo(
     () => projects.filter((project) => matchesJsTemplateProjectSearch(project, keyword, lifecycleFilter)),
     [keyword, lifecycleFilter, projects],
@@ -462,6 +497,11 @@ function JsTemplateSourceProjectsPageInner() {
         return;
       }
 
+      const batchProjectIds = batchProjects.map((project) => project.id);
+      if (!beginLifecycleChanges(batchProjectIds)) {
+        return;
+      }
+
       setBatchChanging(lifecycleStatus);
       setNotice(null);
       try {
@@ -474,7 +514,7 @@ function JsTemplateSourceProjectsPageInner() {
 
         if (updatedProjects.length) {
           const updatedProjectById = new Map(updatedProjects.map((project) => [project.id, project]));
-          setProjects((current) => current.map((project) => updatedProjectById.get(project.id) || project));
+          updateProjects((current) => current.map((project) => updatedProjectById.get(project.id) || project));
         }
 
         const failedCount = results.length - updatedProjects.length;
@@ -487,10 +527,19 @@ function JsTemplateSourceProjectsPageInner() {
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to change lifecycle') });
       } finally {
+        finishLifecycleChanges(batchProjectIds);
         setBatchChanging(null);
       }
     },
-    [changeLifecycleRequest, filteredProjects, selectedRowKeys, t],
+    [
+      beginLifecycleChanges,
+      changeLifecycleRequest,
+      filteredProjects,
+      finishLifecycleChanges,
+      selectedRowKeys,
+      t,
+      updateProjects,
+    ],
   );
 
   const changeProjectLifecycle = useCallback(
@@ -499,23 +548,22 @@ function JsTemplateSourceProjectsPageInner() {
         return;
       }
 
-      setChangingProjectIds((current) => new Set(current).add(project.id));
+      if (!beginLifecycleChanges([project.id])) {
+        return;
+      }
+
       setNotice(null);
       try {
         const updatedProject = await changeLifecycleRequest({ projectId: project.id, lifecycleStatus });
-        setProjects((current) => current.map((item) => (item.id === updatedProject.id ? updatedProject : item)));
+        updateProjects((current) => current.map((item) => (item.id === updatedProject.id ? updatedProject : item)));
         setNotice({ type: 'success', message: t('Source Projects updated') });
       } catch (error) {
         setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to change lifecycle') });
       } finally {
-        setChangingProjectIds((current) => {
-          const next = new Set(current);
-          next.delete(project.id);
-          return next;
-        });
+        finishLifecycleChanges([project.id]);
       }
     },
-    [changeLifecycleRequest, t],
+    [beginLifecycleChanges, changeLifecycleRequest, finishLifecycleChanges, t, updateProjects],
   );
 
   const removeProject = useCallback(
@@ -525,7 +573,7 @@ function JsTemplateSourceProjectsPageInner() {
       try {
         await deleteProjectRequest(project.id);
 
-        setProjects((current) => current.filter((item) => item.id !== project.id));
+        updateProjects((current) => current.filter((item) => item.id !== project.id));
         setSelectedRowKeys((current) => current.filter((key) => key !== project.id));
         if (selectedProjectId === project.id) {
           setSelectedProjectId(null);
@@ -550,7 +598,7 @@ function JsTemplateSourceProjectsPageInner() {
         });
       }
     },
-    [deleteProjectRequest, searchParams, selectedProjectId, setSearchParams, t],
+    [deleteProjectRequest, searchParams, selectedProjectId, setSearchParams, t, updateProjects],
   );
 
   const confirmRemoveProject = useCallback(async () => {
@@ -578,7 +626,7 @@ function JsTemplateSourceProjectsPageInner() {
           title: values.title.trim(),
           description: values.description?.trim() || null,
         });
-        setProjects((current) =>
+        updateProjects((current) =>
           current.map((project) => (project.id === updatedProject.id ? { ...project, ...updatedProject } : project)),
         );
         setEditTarget(null);
@@ -593,12 +641,17 @@ function JsTemplateSourceProjectsPageInner() {
         setEditing(false);
       }
     },
-    [editForm, editTarget, t, updateProjectRequest],
+    [editForm, editTarget, t, updateProjectRequest, updateProjects],
   );
 
-  const handleSyncProjectUpdated = useCallback((updatedProject: JsTemplateProject) => {
-    setProjects((current) => current.map((project) => (project.id === updatedProject.id ? updatedProject : project)));
-  }, []);
+  const handleSyncProjectUpdated = useCallback(
+    (updatedProject: JsTemplateProject) => {
+      updateProjects((current) =>
+        current.map((project) => (project.id === updatedProject.id ? updatedProject : project)),
+      );
+    },
+    [updateProjects],
+  );
 
   const handleSyncConfigured = useCallback(
     (_source: JsTemplateSyncSourceSummary) => {
@@ -660,7 +713,7 @@ function JsTemplateSourceProjectsPageInner() {
       />
 
       <JsTemplateListToolbar
-        batchChanging={Boolean(batchChanging)}
+        batchChanging={Boolean(batchChanging) || selectedProjects.some((project) => changingProjectIds.has(project.id))}
         gap={token.marginSM}
         keyword={keyword}
         lifecycleFilter={lifecycleFilter}

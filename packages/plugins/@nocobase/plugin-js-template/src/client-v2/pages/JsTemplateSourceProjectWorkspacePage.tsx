@@ -200,6 +200,7 @@ function JsTemplateSourceProjectWorkspacePage({
     reject: (error: unknown) => void;
   } | null>(null);
   const embeddedSavePromiseRef = useRef<Promise<EmbeddedRunJSEditorSaveResult> | null>(null);
+  const workspaceRequestSeqRef = useRef(0);
   const historyRequestSeqRef = useRef(0);
   const commitDiffRequestSeqRef = useRef(0);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -232,6 +233,8 @@ function JsTemplateSourceProjectWorkspacePage({
         return;
       }
 
+      const workspaceRequestSeq = workspaceRequestSeqRef.current + 1;
+      workspaceRequestSeqRef.current = workspaceRequestSeq;
       const historyRequestSeq = historyRequestSeqRef.current + 1;
       historyRequestSeqRef.current = historyRequestSeq;
       commitDiffRequestSeqRef.current += 1;
@@ -246,12 +249,21 @@ function JsTemplateSourceProjectWorkspacePage({
       }
       try {
         const nextProject = await getProject(projectId);
+        if (workspaceRequestSeqRef.current !== workspaceRequestSeq) {
+          return;
+        }
         setProject(nextProject);
         const pullResult = await pull({ projectId, includeContent: 'all' });
+        if (workspaceRequestSeqRef.current !== workspaceRequestSeq) {
+          return;
+        }
         const pulledFiles = normalizeWorkspaceFiles(pullResult.files || []);
         const nextFiles = pulledFiles;
         const nextActivePath = resolveActivePath(nextFiles, initialPath);
         const commits = await listCommits({ projectId, limit: HISTORY_PAGE_SIZE }).catch(() => []);
+        if (workspaceRequestSeqRef.current !== workspaceRequestSeq) {
+          return;
+        }
         const nextBaseCommitId = pullResult.commit?.id || null;
         setBaseHeadCommitId(nextBaseCommitId);
         setBaseCommitSeq(commits.find((commit) => commit.id === nextBaseCommitId)?.seq);
@@ -266,10 +278,14 @@ function JsTemplateSourceProjectWorkspacePage({
         }
         setDiagnostics([]);
       } catch (error) {
-        setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
+        if (workspaceRequestSeqRef.current === workspaceRequestSeq) {
+          setNotice({ type: 'error', message: error instanceof Error ? error.message : t('Failed to load source') });
+        }
       } finally {
-        setLoading(false);
-        setInitializedProjectId(projectId);
+        if (workspaceRequestSeqRef.current === workspaceRequestSeq) {
+          setLoading(false);
+          setInitializedProjectId(projectId);
+        }
       }
     },
     [getProject, initialPath, listCommits, pull, projectId, setFiles, t],

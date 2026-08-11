@@ -20,7 +20,7 @@ vi.mock('mermaid', () => ({
   default: mermaidMocks,
 }));
 
-describe('client-v2 Markdown Mermaid rendering', () => {
+describe('client-v2 Markdown rendering', () => {
   beforeEach(() => {
     parseMarkdown.cache.clear();
     mermaidMocks.initialize.mockClear();
@@ -47,6 +47,17 @@ describe('client-v2 Markdown Mermaid rendering', () => {
     expect(image?.style.maxWidth).toBe('320px');
     expect(image?.style.maxHeight).toBe('180px');
     expect(container.querySelector('pre.mermaid')).toBeNull();
+  });
+
+  it('preserves regular Markdown rendering while removing embedded iframes', async () => {
+    const html = await parseMarkdown('# Heading\n\n**Bold text**\n\n<iframe src="https://example.com"></iframe>');
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    expect(container.querySelector('h1')?.textContent).toBe('Heading');
+    expect(container.querySelector('strong')?.textContent).toBe('Bold text');
+    expect(container.querySelector('iframe')).toBeNull();
+    expect(mermaidMocks.render).not.toHaveBeenCalled();
   });
 
   it('renders a safe error notice when Mermaid rejects the diagram', async () => {

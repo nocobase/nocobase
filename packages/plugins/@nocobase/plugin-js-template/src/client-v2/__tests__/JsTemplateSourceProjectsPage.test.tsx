@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createMockClient } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import userEvent from '@testing-library/user-event';
@@ -660,6 +660,92 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
   });
 
+  it('does not restore an old lifecycle value when a list started before the mutation resolves late', async () => {
+    const initialProject = createProjectSummary({ lifecycleStatus: 'enabled' });
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects.mockResolvedValueOnce([initialProject]).mockReturnValueOnce(staleLoad.promise);
+    mocks.api.changeLifecycle.mockResolvedValueOnce({ ...initialProject, lifecycleStatus: 'disabled' });
+    renderListPage();
+
+    const enabledSwitch = await screen.findByRole('switch', { name: 'Enabled Demo' });
+    await userEvent.click(screen.getByRole('button', { name: /Refresh/ }));
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    fireEvent.click(enabledSwitch);
+
+    await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1));
+    expect(enabledSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByText('Source Projects updated')).toBeInTheDocument();
+
+    await act(async () => {
+      staleLoad.resolve([initialProject]);
+      await staleLoad.promise;
+    });
+
+    expect(enabledSwitch).toHaveAttribute('aria-checked', 'false');
+    expect(screen.getByText('Source Projects updated')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+  });
+
+  it('does not resurrect a deleted project when a list started before the deletion resolves late', async () => {
+    const initialProject = createProjectSummary();
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects.mockResolvedValueOnce([initialProject]).mockReturnValueOnce(staleLoad.promise);
+    mocks.api.deleteProject.mockResolvedValueOnce(initialProject);
+    renderListPage();
+
+    await screen.findByText('Demo');
+    await userEvent.click(screen.getByRole('button', { name: /Refresh/ }));
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Demo' }));
+    await userEvent.click(
+      within(await screen.findByRole('dialog', { name: 'Remove this Source Project?' })).getByRole('button', {
+        name: 'Remove',
+      }),
+    );
+
+    await waitFor(() => expect(screen.queryByText('demo')).not.toBeInTheDocument());
+    expect(screen.getByText('Source Project removed')).toBeInTheDocument();
+
+    await act(async () => {
+      staleLoad.resolve([initialProject]);
+      await staleLoad.promise;
+    });
+
+    expect(screen.queryByText('demo')).not.toBeInTheDocument();
+    expect(screen.getByText('Source Project removed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+  });
+
+  it('ignores a load rejection made stale by an edit and preserves the newer notice', async () => {
+    const initialProject = createProjectSummary({ description: 'Before edit' });
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    const updatedProject = { ...initialProject, title: 'Edited Demo', description: 'After edit' };
+    mocks.api.listProjects.mockResolvedValueOnce([initialProject]).mockReturnValueOnce(staleLoad.promise);
+    mocks.api.updateProject.mockResolvedValueOnce(updatedProject);
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Demo' }));
+    await userEvent.click(screen.getByRole('button', { name: /Refresh/ }));
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    const drawer = screen.getByRole('dialog', { name: 'Edit Source Project' });
+    const titleInput = within(drawer).getByLabelText('Title');
+    await userEvent.clear(titleInput);
+    await userEvent.type(titleInput, 'Edited Demo');
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Edited Demo')).toBeInTheDocument();
+    expect(screen.getByText('Source Project updated')).toBeInTheDocument();
+
+    await act(async () => {
+      staleLoad.reject(new Error('Old edit load failed'));
+      await staleLoad.promise.catch(() => undefined);
+    });
+
+    expect(screen.queryByText('Old edit load failed')).not.toBeInTheDocument();
+    expect(screen.getByText('Source Project updated')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+  });
+
   it('does not show a transition notice when its project reload becomes stale', async () => {
     const pending = createJobSummary();
     const transitionLoad = createDeferred<JsTemplateProject[]>();
@@ -1017,6 +1103,32 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
   });
 
+  it('opens a valid Source Project deep link only after its project has loaded', async () => {
+    const initialLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects.mockReturnValueOnce(initialLoad.promise);
+    renderListPage('/admin/settings/js-template?projectId=jtp_demo&panel=source');
+
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
+
+    await act(async () => {
+      initialLoad.resolve([createProjectSummary()]);
+      await initialLoad.promise;
+    });
+
+    expect(await screen.findByText('Mock source workspace')).toBeInTheDocument();
+  });
+
+  it('does not open an empty Source drawer for a missing deep-linked project', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([]);
+    renderListPage('/admin/settings/js-template?projectId=jtp_missing&panel=source');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading'));
+    expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_missing');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('panel=source');
+  });
+
   it('opens Sync code from its row action, preserves unrelated query values, and wires Git configuration', async () => {
     mocks.api.listProjects.mockResolvedValueOnce([
       {
@@ -1083,14 +1195,22 @@ describe('JsTemplateSourceProjectsPage', () => {
       templateCount: 1,
       templateKinds: { 'js-block': 1 },
     };
-    mocks.api.listProjects.mockResolvedValueOnce([originalProject]);
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects.mockResolvedValueOnce([originalProject]).mockReturnValueOnce(staleLoad.promise);
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
+    await userEvent.click(await screen.findByRole('button', { name: /Refresh/ }));
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    fireEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Mock Pull result' }));
 
     expect(await screen.findByText('js-block 3')).toBeInTheDocument();
-    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      staleLoad.resolve([originalProject]);
+      await staleLoad.promise;
+    });
+    expect(screen.getByText('js-block 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
   });
 
   it('edits the project display name and description in a drawer and refreshes the row immediately', async () => {
@@ -1352,6 +1472,57 @@ describe('JsTemplateSourceProjectsPage', () => {
     await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(2));
     expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_sales', lifecycleStatus: 'disabled' });
     expect(mocks.api.changeLifecycle).toHaveBeenCalledWith({ projectId: 'jtp_ops', lifecycleStatus: 'disabled' });
+  });
+
+  it('disables a row lifecycle switch while a batch lifecycle request for that project is pending', async () => {
+    const project = createProjectSummary({ lifecycleStatus: 'enabled' });
+    const lifecycleRequest = createDeferred<JsTemplateProject>();
+    mocks.api.listProjects.mockResolvedValueOnce([project]);
+    mocks.api.changeLifecycle.mockReturnValueOnce(lifecycleRequest.promise);
+    renderListPage();
+
+    const enabledSwitch = await screen.findByRole('switch', { name: 'Enabled Demo' });
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Demo' }));
+    await userEvent.click(screen.getByRole('button', { name: /Batch actions/ }));
+    await userEvent.click(await screen.findByText('Disable selected'));
+
+    await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1));
+    expect(enabledSwitch).toBeDisabled();
+    await userEvent.click(enabledSwitch);
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      lifecycleRequest.resolve({ ...project, lifecycleStatus: 'disabled' });
+      await lifecycleRequest.promise;
+    });
+    await waitFor(() => expect(enabledSwitch).not.toBeDisabled());
+    expect(enabledSwitch).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('does not start a batch lifecycle request over a selected project with a pending row request', async () => {
+    const project = createProjectSummary({ lifecycleStatus: 'disabled' });
+    const lifecycleRequest = createDeferred<JsTemplateProject>();
+    mocks.api.listProjects.mockResolvedValueOnce([project]);
+    mocks.api.changeLifecycle.mockReturnValueOnce(lifecycleRequest.promise);
+    renderListPage();
+
+    const enabledSwitch = await screen.findByRole('switch', { name: 'Enabled Demo' });
+    await userEvent.click(enabledSwitch);
+    await waitFor(() => expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Select Demo' }));
+
+    const batchButton = screen.getByRole('button', { name: /Batch actions/ });
+    expect(batchButton).toHaveClass('ant-btn-loading');
+    fireEvent.click(batchButton);
+    expect(screen.queryByText('Disable selected')).not.toBeInTheDocument();
+    expect(mocks.api.changeLifecycle).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      lifecycleRequest.resolve({ ...project, lifecycleStatus: 'enabled' });
+      await lifecycleRequest.promise;
+    });
+    await waitFor(() => expect(batchButton).not.toHaveClass('ant-btn-loading'));
+    expect(enabledSwitch).toHaveAttribute('aria-checked', 'true');
   });
 
   it('prunes hidden selection, keeps visible selection, and never batches a hidden project', async () => {

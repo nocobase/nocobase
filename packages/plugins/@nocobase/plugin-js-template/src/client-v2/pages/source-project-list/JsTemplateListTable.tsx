@@ -123,6 +123,7 @@ export function JsTemplateListTable({
             <Switch
               aria-label={`${t('Enabled')} ${project.title || project.name}`}
               checked={project.lifecycleStatus === 'enabled'}
+              disabled={changingProjectIds.has(project.id)}
               loading={changingProjectIds.has(project.id)}
               onChange={(checked) => {
                 onChangeLifecycle(project, checked ? 'enabled' : 'disabled');

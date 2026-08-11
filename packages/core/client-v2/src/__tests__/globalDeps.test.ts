@@ -8,6 +8,7 @@
  */
 
 import { defineGlobalDeps } from '../utils/globalDeps';
+import type { RequireJS } from '../utils/requirejs';
 
 vi.mock('../index', () => ({}));
 
@@ -17,7 +18,9 @@ describe('client-v2 defineGlobalDeps', () => {
 
     defineGlobalDeps({
       define,
-    } as any);
+      require: vi.fn(),
+      requirejs: vi.fn(),
+    } as RequireJS);
 
     expect(define).toHaveBeenCalledWith('react', expect.any(Function));
     expect(define).toHaveBeenCalledWith('react-router-dom', expect.any(Function));

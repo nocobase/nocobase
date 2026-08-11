@@ -55,6 +55,14 @@ const DEFAULT_LAYER_CONCURRENCY = 2;
 const DEFAULT_PLUGIN_LAYER_CONCURRENCY = 1;
 const ENABLE_BUILD_PROFILE = process.env.BUILD_PROFILE === 'true';
 
+export function selectRetryPackages<T extends { name: string }>(packages: T[], cachedPackageName: string) {
+  const retryIndex = packages.findIndex((pkg) => pkg.name === cachedPackageName);
+  return {
+    cacheMatched: retryIndex >= 0,
+    packages: retryIndex >= 0 ? packages.slice(retryIndex) : packages,
+  };
+}
+
 export async function build(pkgs: string[]) {
   const profile = ENABLE_BUILD_PROFILE ? createBuildProfileCollector() : null;
   const buildStart = nowMs();
@@ -85,7 +93,16 @@ export async function build(pkgs: string[]) {
     }
     const cachePkg = readFromCache(BUILD_ERROR);
     if (process.argv.includes('--retry') && cachePkg?.pkg) {
-      packages = packages.slice(packages.findIndex((item) => item.name === cachePkg.pkg));
+      const retrySelection = selectRetryPackages(packages, cachePkg.pkg);
+      packages = retrySelection.packages;
+      if (!retrySelection.cacheMatched) {
+        console.warn(
+          chalk.yellow(
+            `[@nocobase/build]: cached retry package '${cachePkg.pkg}' is not in the current package selection; ignoring stale cache`,
+          ),
+        );
+        writeToCache(BUILD_ERROR, {});
+      }
     }
     const cliPackages = packages.find((item) => item.name === '@nocobase/cli');
     if (cliPackages) {

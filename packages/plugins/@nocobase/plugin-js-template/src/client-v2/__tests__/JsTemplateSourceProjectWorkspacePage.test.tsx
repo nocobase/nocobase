@@ -356,6 +356,17 @@ function createSaveResult() {
   };
 }
 
+function createDeferred<T>() {
+  let resolvePromise!: (value: T | PromiseLike<T>) => void;
+  let rejectPromise!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = reject;
+  });
+
+  return { promise, reject: rejectPromise, resolve: resolvePromise };
+}
+
 async function confirmSaveVersion(message: string) {
   const saveDialog = await screen.findByRole('dialog', { name: 'Save version' });
   fireEvent.change(within(saveDialog).getByLabelText('Version message'), {
@@ -433,6 +444,136 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
     );
     mocks.archive.downloadJsTemplateWorkspaceArchive.mockReturnValue(true);
     mocks.archive.readJsTemplateWorkspaceArchive.mockResolvedValue('zip-base64');
+  });
+
+  it('keeps Project B metadata, files, and base head when Project A succeeds late', async () => {
+    const projectA = {
+      id: 'jtp_a',
+      name: 'project-a',
+      normalizedName: 'project-a',
+      title: 'Project A',
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'pending' as const,
+      headCommitId: 'commit-a',
+    };
+    const projectB = {
+      id: 'jtp_b',
+      name: 'project-b',
+      normalizedName: 'project-b',
+      title: 'Project B',
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'pending' as const,
+      headCommitId: 'commit-b',
+    };
+    const projectARequest = createDeferred<typeof projectA>();
+    mocks.api.getProject.mockImplementation((projectId: string) =>
+      projectId === projectA.id ? projectARequest.promise : Promise.resolve(projectB),
+    );
+    mocks.api.pull.mockImplementation(async ({ projectId }: { projectId: string }) => ({
+      project: { id: projectId },
+      commit: { id: projectId === projectA.id ? 'commit-a' : 'commit-b' },
+      tree: { hash: `tree-${projectId}`, entryCount: 1, byteSize: 24 },
+      unchanged: false,
+      files: [
+        {
+          path: `src/client/${projectId}.tsx`,
+          content: `export default '${projectId}';\n`,
+          language: 'typescript',
+        },
+      ],
+    }));
+
+    const view = render(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage projectId={projectA.id} />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(mocks.api.getProject).toHaveBeenCalledWith(projectA.id));
+
+    view.rerender(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage projectId={projectB.id} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Project B')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue("export default 'jtp_b';\n");
+
+    await act(async () => {
+      projectARequest.resolve(projectA);
+      await projectARequest.promise;
+    });
+
+    await waitFor(() => expect(screen.getByText('Project B')).toBeInTheDocument());
+    expect(screen.getByLabelText('Edit file content')).toHaveValue("export default 'jtp_b';\n");
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: "export default 'jtp_b_updated';\n" },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }));
+    await confirmSaveVersion('Update Project B');
+    await waitFor(() => expect(mocks.api.saveSource).toHaveBeenCalledTimes(1));
+    expect(mocks.api.saveSource).toHaveBeenCalledWith(
+      expect.objectContaining({ expectedHeadCommitId: 'commit-b', projectId: projectB.id }),
+    );
+  });
+
+  it('ignores a late Project A load error after Project B succeeds', async () => {
+    const projectARequest = createDeferred<{
+      id: string;
+      name: string;
+      normalizedName: string;
+      title: string;
+      lifecycleStatus: 'enabled';
+      healthStatus: 'pending';
+      headCommitId: string;
+    }>();
+    const projectB = {
+      id: 'jtp_b',
+      name: 'project-b',
+      normalizedName: 'project-b',
+      title: 'Project B',
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'pending' as const,
+      headCommitId: 'commit-b',
+    };
+    mocks.api.getProject.mockImplementation((projectId: string) =>
+      projectId === 'jtp_a' ? projectARequest.promise : Promise.resolve(projectB),
+    );
+    mocks.api.pull.mockResolvedValue({
+      project: { id: projectB.id },
+      commit: { id: 'commit-b' },
+      tree: { hash: 'tree-b', entryCount: 1, byteSize: 24 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/project-b.tsx',
+          content: "export default 'project-b';\n",
+          language: 'typescript',
+        },
+      ],
+    });
+
+    const view = render(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage projectId="jtp_a" />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(mocks.api.getProject).toHaveBeenCalledWith('jtp_a'));
+
+    view.rerender(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage projectId={projectB.id} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Project B')).toBeInTheDocument();
+
+    await act(async () => {
+      projectARequest.reject(new Error('Project A failed'));
+      await expect(projectARequest.promise).rejects.toThrow('Project A failed');
+    });
+
+    await waitFor(() => expect(screen.getByText('Project B')).toBeInTheDocument());
+    expect(screen.getByLabelText('Edit file content')).toHaveValue("export default 'project-b';\n");
+    expect(screen.queryByText('Project A failed')).not.toBeInTheDocument();
   });
 
   it('saves only dirty source changes without compiling a workspace preview first', async () => {

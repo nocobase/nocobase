@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { selectRetryPackages } from '../build';
 import {
   getInternalBuildDependencies,
   getPackages,
@@ -21,6 +22,78 @@ import {
 function packageNode(name: string, dependencies: string[] = []): SelectedBuildPackageNode<string> {
   return { name, dependencies, value: name };
 }
+
+function retryPackage(name: string) {
+  return { name };
+}
+
+describe('retry package selection', () => {
+  it('continues from a cached package that belongs to the current selection', () => {
+    const selection = selectRetryPackages([retryPackage('A'), retryPackage('B'), retryPackage('C')], 'B');
+
+    expect(selection.cacheMatched).toBe(true);
+    expect(selection.packages.map((pkg) => pkg.name)).toEqual(['B', 'C']);
+  });
+
+  it('preserves the complete selection when the cached package is stale', () => {
+    const selection = selectRetryPackages([retryPackage('A'), retryPackage('B')], 'stale-package');
+
+    expect(selection.cacheMatched).toBe(false);
+    expect(selection.packages.map((pkg) => pkg.name)).toEqual(['A', 'B']);
+  });
+
+  it('preserves the complete with-deps closure when a cache from another selection does not match', () => {
+    const dependencyClosure = resolveSelectedBuildPackageDependencies(
+      ['plugin'],
+      [packageNode('plugin', ['runjs']), packageNode('runjs', ['client']), packageNode('client')],
+    ).map(retryPackage);
+    const selection = selectRetryPackages(dependencyClosure, 'previous-selection-package');
+
+    expect(selection.cacheMatched).toBe(false);
+    expect(selection.packages.map((pkg) => pkg.name)).toEqual(['client', 'runjs', 'plugin']);
+  });
+
+  it('warns and clears stale cache before continuing the complete with-deps selection', async () => {
+    const originalArgv = process.argv;
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const runScript = vi.fn().mockRejectedValue(new Error('stop after retry selection'));
+    const writeToCache = vi.fn();
+    const directlySelectedPackages = [retryPackage('plugin')];
+    const dependencyClosure = [
+      { name: '@nocobase/cli', location: '/repository/packages/core/cli' },
+      { name: 'plugin', location: '/repository/packages/plugins/plugin' },
+    ];
+
+    try {
+      process.argv = [...originalArgv, '--retry', '--with-deps'];
+      vi.resetModules();
+      vi.doMock('../utils/getPackages', async () => ({
+        ...(await vi.importActual<typeof import('../utils/getPackages')>('../utils/getPackages')),
+        getPackages: vi.fn((_pkgs: string[], options?: { withDependencies?: boolean }) =>
+          options?.withDependencies ? dependencyClosure : directlySelectedPackages,
+        ),
+      }));
+      vi.doMock('../utils', async () => ({
+        ...(await vi.importActual<typeof import('../utils')>('../utils')),
+        readFromCache: vi.fn(() => ({ pkg: 'stale-package' })),
+        runScript,
+        writeToCache,
+      }));
+      const { build: buildWithStaleCache } = await import('../build');
+
+      await expect(buildWithStaleCache(['plugin'])).rejects.toThrow('stop after retry selection');
+      expect(runScript).toHaveBeenCalledWith(['build'], '/repository/packages/core/cli');
+      expect(writeToCache).toHaveBeenCalledWith('build-error', {});
+      expect(warning).toHaveBeenCalledWith(expect.stringContaining("cached retry package 'stale-package'"));
+    } finally {
+      process.argv = originalArgv;
+      warning.mockRestore();
+      vi.doUnmock('../utils/getPackages');
+      vi.doUnmock('../utils');
+      vi.resetModules();
+    }
+  });
+});
 
 describe('selected build dependency closure', () => {
   it('includes transitive internal dependencies in topological order', () => {
