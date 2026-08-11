@@ -288,13 +288,18 @@ export class PluginJsTemplateServer extends Plugin {
       db,
       this.auditService,
       this.fileService,
+      this.projectService,
       this.permissionService,
       this.workspaceCompilerBridge,
       this.validator,
     );
     this.usageService = new JsTemplateUsageService(db, this.auditService, this.permissionService, this.projectService);
     const apiBasePath = (this.app as unknown as AppWithPluginEvents).resourceManager?.options?.prefix;
-    this.runtimeService = new JsTemplateRuntimeService(db, typeof apiBasePath === 'string' ? { apiBasePath } : {});
+    this.runtimeService = new JsTemplateRuntimeService(
+      db,
+      this.projectService,
+      typeof apiBasePath === 'string' ? { apiBasePath } : {},
+    );
     this.compileWorkerPool = new JsTemplateCompileWorkerPool();
     this.runtimeCompileService = new JsTemplateCompileService(
       db,
@@ -759,7 +764,7 @@ export class PluginJsTemplateServer extends Plugin {
         }
         const remote = await runtime.getRemoteById(job.remoteId);
         const projectRecord = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
-          filter: { vscRepoId: remote.repoId },
+          filter: { vscRepoId: remote.repoId, applicationName: this.projectService.getCurrentApplicationName() },
         });
         if (!projectRecord) {
           continue;

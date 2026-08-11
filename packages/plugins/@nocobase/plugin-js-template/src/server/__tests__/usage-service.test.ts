@@ -21,6 +21,7 @@ import {
   createJsPageNode,
   createJsPageUsageRecord,
   createJsPageSourceBinding,
+  createSourceBinding,
   createUsageRecord,
   createJsTemplateUsageServiceFixture,
   createProjectRecord,
@@ -35,7 +36,7 @@ import type { JsTemplateRuntimeSourceBinding } from '../../shared/types';
 
 describe('plugin-js-template usage service', () => {
   it('maintains an independent JS Page usage through external updates and return to inline', async () => {
-    const { service, repositories, flowModelTrees } = createJsTemplateUsageServiceFixture({
+    const { service, repositories, flowModelTrees, projectService } = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
         flow_js_page: createJsPageNode({
           settings: {
@@ -50,6 +51,7 @@ describe('plugin-js-template usage service', () => {
         createJsPageTemplateRecord({ id: 'jtt_support_page', projectId: 'jtp_support' }),
       ],
     });
+    const lockProject = vi.spyOn(projectService, 'lockInternalProjectForUpdate');
 
     await service.syncFlowModelUsagesForNodeTree({
       rootUid: 'flow_js_page',
@@ -82,9 +84,7 @@ describe('plugin-js-template usage service', () => {
       settingsHash: stableJsonHash({ threshold: 7, region: 'EMEA' }),
       resolvedStatus: 'active',
     });
-    expect(repositories.jsTemplateProjects.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ filterByTk: 'jtp_pages', lock: 'UPDATE' }),
-    );
+    expect(lockProject).toHaveBeenCalledWith('jtp_pages', expect.objectContaining({ transaction: expect.anything() }));
 
     flowModelTrees.flow_js_page = createJsPageNode({
       settings: {
@@ -155,14 +155,6 @@ describe('plugin-js-template usage service', () => {
         template: createJsPageTemplateRecord(),
         settings: { threshold: 99, region: 'EMEA' },
         expected: 'settings_invalid',
-      },
-      {
-        name: 'binding kind mismatch',
-        project: createProjectRecord({ id: 'jtp_pages' }),
-        template: createJsPageTemplateRecord(),
-        sourceBinding: createJsPageSourceBinding({ kind: 'js-block' }),
-        expected: 'binding_outdated',
-        reason: 'kind_mismatch',
       },
     ];
 
@@ -404,7 +396,7 @@ describe('plugin-js-template usage service', () => {
     expect(getUsageOwnerAdapterByUse('FormJSFieldItemModel')).toBeUndefined();
   });
 
-  it('records project_missing and binding_outdated during an explicit usage rebuild', async () => {
+  it('reports project_missing and binding_outdated without writing during an explicit dry-run rebuild', async () => {
     const missingRepoFixture = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
         flow_js_field: createJsFieldNode(),
@@ -413,18 +405,14 @@ describe('plugin-js-template usage service', () => {
       templates: [],
     });
     await expect(
-      missingRepoFixture.service.syncFlowModelUsagesForNodeTree({
-        rootUid: 'flow_js_field',
-        action: 'usageRebuild',
-      }),
+      missingRepoFixture.service.rebuildUsages({ rootUid: 'flow_js_field', dryRun: true }),
     ).resolves.toMatchObject({
       statusCounts: {
         project_missing: 1,
       },
+      items: [expect.objectContaining({ action: 'upsert', resolvedStatus: 'project_missing' })],
     });
-    expect(missingRepoFixture.repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
-      resolvedStatus: 'project_missing',
-    });
+    expect(missingRepoFixture.repositories.jsTemplateUsages.records).toHaveLength(0);
 
     const outdatedFixture = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
@@ -441,19 +429,194 @@ describe('plugin-js-template usage service', () => {
       templates: [],
     });
     await expect(
-      outdatedFixture.service.syncFlowModelUsagesForNodeTree({
-        rootUid: 'flow_js_field',
-        action: 'usageRebuild',
-      }),
+      outdatedFixture.service.rebuildUsages({ rootUid: 'flow_js_field', dryRun: true }),
     ).resolves.toMatchObject({
       statusCounts: {
         binding_outdated: 1,
       },
+      items: [expect.objectContaining({ action: 'upsert', resolvedStatus: 'binding_outdated' })],
     });
-    expect(outdatedFixture.repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
-      resolvedStatus: 'binding_outdated',
-    });
+    expect(outdatedFixture.repositories.jsTemplateUsages.records).toHaveLength(0);
   });
+
+  it('uses a locked ownership read for rootless writes and an unlocked ownership read for dry runs', async () => {
+    const flowModel = {
+      uid: 'flow_js_block',
+      options: createJsBlockNode(),
+    };
+    const writeFixture = createJsTemplateUsageServiceFixture({
+      flowModels: [flowModel],
+      projects: [createProjectRecord()],
+      templates: [createTemplateRecord()],
+    });
+    const writeLock = vi.spyOn(writeFixture.projectService, 'lockInternalProjectForUpdate');
+    const writeRead = vi.spyOn(writeFixture.projectService, 'getInternalProject');
+
+    await writeFixture.service.rebuildUsages();
+
+    expect(writeLock).toHaveBeenCalledWith('jtp_sales', expect.objectContaining({ transaction: expect.anything() }));
+    expect(writeRead).not.toHaveBeenCalled();
+
+    const dryRunFixture = createJsTemplateUsageServiceFixture({
+      flowModels: [flowModel],
+      projects: [createProjectRecord()],
+      templates: [createTemplateRecord()],
+    });
+    const dryRunLock = vi.spyOn(dryRunFixture.projectService, 'lockInternalProjectForUpdate');
+    const dryRunRead = vi.spyOn(dryRunFixture.projectService, 'getInternalProject');
+
+    await dryRunFixture.service.rebuildUsages({ dryRun: true });
+
+    expect(dryRunLock).not.toHaveBeenCalled();
+    expect(dryRunRead).toHaveBeenCalledWith('jtp_sales', expect.objectContaining({ dryRun: true }));
+    expect(dryRunFixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+  });
+
+  it('rejects a mismatched Project and Template while the Project update lock is held', async () => {
+    const fixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_field: createJsFieldNode({
+          sourceBinding: createJsFieldSourceBinding({
+            projectId: 'jtp_fields',
+            templateId: 'jtt_other_field',
+          }),
+        }),
+      },
+      projects: [createProjectRecord({ id: 'jtp_fields' }), createProjectRecord({ id: 'jtp_other' })],
+      templates: [createJsFieldTemplateRecord({ id: 'jtt_other_field', projectId: 'jtp_other' })],
+    });
+    const lockProject = vi.spyOn(fixture.projectService, 'lockInternalProjectForUpdate');
+
+    await expect(
+      fixture.service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_field',
+        action: 'flowSurfaces.updateSettings',
+      }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+    expect(lockProject).toHaveBeenCalledWith('jtp_fields', expect.objectContaining({ transaction: expect.anything() }));
+    expect(fixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+  });
+
+  it('does not create a Usage for a foreign-application binding', async () => {
+    const fixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode({
+          sourceBinding: createSourceBinding({ projectId: 'jtp_foreign', templateId: 'jtt_foreign' }),
+        }),
+      },
+      projects: [createProjectRecord({ id: 'jtp_foreign', applicationName: 'support' })],
+      templates: [createTemplateRecord({ id: 'jtt_foreign', projectId: 'jtp_foreign' })],
+    });
+
+    await expect(
+      fixture.service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_block',
+        action: 'flowModels.save',
+      }),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_BINDING_OUTDATED', status: 409 });
+    expect(fixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+  });
+
+  it('does not reveal a foreign Template Project through dry-run binding diagnostics', async () => {
+    const fixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode({
+          sourceBinding: createSourceBinding({ projectId: 'jtp_sales', templateId: 'jtt_foreign' }),
+        }),
+      },
+      projects: [createProjectRecord(), createProjectRecord({ id: 'jtp_foreign_secret', applicationName: 'support' })],
+      templates: [createTemplateRecord({ id: 'jtt_foreign', projectId: 'jtp_foreign_secret' })],
+    });
+
+    const result = await fixture.service.rebuildUsages({ rootUid: 'flow_js_block', dryRun: true });
+
+    expect(result).toMatchObject({
+      statusCounts: { template_missing: 1 },
+      items: [
+        expect.objectContaining({
+          action: 'upsert',
+          projectId: 'jtp_sales',
+          templateId: 'jtt_foreign',
+          resolvedStatus: 'template_missing',
+        }),
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain('jtp_foreign_secret');
+    expect(fixture.repositories.jsTemplateUsages.records).toHaveLength(0);
+  });
+
+  it('limits owner-hash cleanup to the current application', async () => {
+    const mainUsage = createUsageRecord({ id: 'jtu_main_owner' });
+    const foreignUsage = createUsageRecord({
+      id: 'jtu_foreign_owner',
+      projectId: 'jtp_foreign',
+      templateId: 'jtt_foreign',
+    });
+    const fixture = createJsTemplateUsageServiceFixture({
+      flowModelTrees: {
+        flow_js_block: createJsBlockNode({ sourceMode: 'inline' }),
+      },
+      projects: [createProjectRecord(), createProjectRecord({ id: 'jtp_foreign', applicationName: 'support' })],
+      templates: [createTemplateRecord(), createTemplateRecord({ id: 'jtt_foreign', projectId: 'jtp_foreign' })],
+      usages: [mainUsage, foreignUsage],
+    });
+
+    await expect(
+      fixture.service.syncFlowModelUsagesForNodeTree({
+        rootUid: 'flow_js_block',
+        action: 'jsTemplates.detachToInline',
+      }),
+    ).resolves.toMatchObject({ removed: 1 });
+    expect(fixture.repositories.jsTemplateUsages.records.map((usage) => usage.get('id'))).toEqual([
+      'jtu_foreign_owner',
+    ]);
+  });
+
+  it('keeps foreign usages unchanged during an unscoped rebuild', async () => {
+    const fixture = createJsTemplateUsageServiceFixture({
+      projects: [createProjectRecord(), createProjectRecord({ id: 'jtp_foreign', applicationName: 'support' })],
+      templates: [createTemplateRecord(), createTemplateRecord({ id: 'jtt_foreign', projectId: 'jtp_foreign' })],
+      usages: [
+        createUsageRecord({ id: 'jtu_main_missing_owner', modelUid: 'flow_main_missing' }),
+        createUsageRecord({
+          id: 'jtu_foreign_missing_owner',
+          modelUid: 'flow_foreign_missing',
+          projectId: 'jtp_foreign',
+          templateId: 'jtt_foreign',
+        }),
+      ],
+    });
+
+    await fixture.service.rebuildUsages();
+
+    expect(fixture.repositories.jsTemplateUsages.records.map((usage) => usage.toJSON())).toEqual([
+      expect.objectContaining({ id: 'jtu_main_missing_owner', resolvedStatus: 'owner_missing' }),
+      expect.objectContaining({ id: 'jtu_foreign_missing_owner', resolvedStatus: 'active' }),
+    ]);
+  });
+
+  it.each(['jtp_foreign', 'jtp_missing'])(
+    'does not distinguish a foreign or missing rebuild Project (%s)',
+    async (projectId) => {
+      const fixture = createJsTemplateUsageServiceFixture({
+        projects: [createProjectRecord({ id: 'jtp_foreign', applicationName: 'support' })],
+      });
+
+      await expect(fixture.service.rebuildUsages({ projectId })).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+        status: 404,
+      });
+      await expect(
+        fixture.service.refreshUsages({
+          projectId,
+          plan: { mode: 'project', reason: 'application_boundary_test' },
+        }),
+      ).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+        status: 404,
+      });
+    },
+  );
 
   it('rejects an authoring save when its Project or Template target disappeared', async () => {
     const missingProjectFixture = createJsTemplateUsageServiceFixture({
@@ -624,13 +787,13 @@ describe('plugin-js-template usage service', () => {
       statusCounts: {},
     });
     expect(repositories.jsTemplateUsages.find).not.toHaveBeenCalled();
-    expect(repositories.jsTemplateProjects.findOne).not.toHaveBeenCalled();
+    expect(repositories.jsTemplateProjects.findOne).toHaveBeenCalledTimes(1);
     expect(repositories.jsTemplates.find).not.toHaveBeenCalled();
     expect(repositories.flowModels.findModelById).not.toHaveBeenCalled();
     expect(recordUsageEvent).not.toHaveBeenCalled();
   });
 
-  it('refreshes only target template usages with one project load, one template load, and one owner-root load', async () => {
+  it('refreshes only target template usages with scoped project loads, one template load, and one owner-root load', async () => {
     const secondTemplate = createTemplateRecord({
       id: 'jtt_other',
       templateName: 'other',
@@ -676,7 +839,7 @@ describe('plugin-js-template usage service', () => {
     expect(repositories.jsTemplateUsages.records[1].get('resolvedStatus')).toBe('runtime_missing');
     expect(repositories.jsTemplateUsages.records[2].get('resolvedStatus')).toBe('active');
     expect(repositories.jsTemplateUsages.find).toHaveBeenCalledTimes(1);
-    expect(repositories.jsTemplateProjects.findOne).toHaveBeenCalledTimes(1);
+    expect(repositories.jsTemplateProjects.findOne).toHaveBeenCalledTimes(2);
     expect(repositories.jsTemplates.find).toHaveBeenCalledTimes(1);
     expect(repositories.flowModels.findModelById).toHaveBeenCalledTimes(1);
     expect(recordUsageEvent).not.toHaveBeenCalled();

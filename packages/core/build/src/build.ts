@@ -60,9 +60,29 @@ export async function build(pkgs: string[]) {
   const buildStart = nowMs();
   const isDev = process.argv.includes('--development');
   process.env.NODE_ENV = isDev ? 'development' : 'production';
+  const withDependencies = process.argv.includes('--with-deps');
 
   try {
-    let packages = getPackages(pkgs);
+    const directlySelectedPackages = getPackages(pkgs);
+    let packages = withDependencies ? getPackages(pkgs, { withDependencies: true }) : directlySelectedPackages;
+    if (withDependencies) {
+      const directlySelectedNames = new Set(directlySelectedPackages.map((pkg) => pkg.name));
+      const dependencyNames = packages.filter((pkg) => !directlySelectedNames.has(pkg.name)).map((pkg) => pkg.name);
+      console.log(
+        chalk.cyan(
+          `[@nocobase/build]: internal dependency closure (${dependencyNames.length} packages): ${
+            dependencyNames.join(', ') || 'none'
+          }`,
+        ),
+      );
+      console.log(
+        chalk.cyan(
+          `[@nocobase/build]: requested packages (${directlySelectedPackages.length} packages): ${
+            directlySelectedPackages.map((pkg) => pkg.name).join(', ') || 'none'
+          }`,
+        ),
+      );
+    }
     const cachePkg = readFromCache(BUILD_ERROR);
     if (process.argv.includes('--retry') && cachePkg?.pkg) {
       packages = packages.slice(packages.findIndex((item) => item.name === cachePkg.pkg));
@@ -97,6 +117,7 @@ export async function build(pkgs: string[]) {
       declarationConcurrency: 1,
       stageName: 'core cjs',
       profile,
+      includeDevDependencies: !withDependencies,
     });
     const clientCore = packages.find((item) => item.location === CORE_CLIENT);
     const clientV2Core = packages.find((item) => item.location === CORE_CLIENT_V2);
@@ -126,12 +147,14 @@ export async function build(pkgs: string[]) {
       declarationConcurrency: 1,
       stageName: 'esm cjs',
       profile,
+      includeDevDependencies: !withDependencies,
     });
     await buildPackages(esmPackages, 'es', buildEsm, {
       sourceConcurrency: DEFAULT_LAYER_CONCURRENCY,
       declarationConcurrency: 1,
       stageName: 'esm',
       profile,
+      includeDevDependencies: !withDependencies,
     });
 
     // plugins/*、samples/*
@@ -140,6 +163,7 @@ export async function build(pkgs: string[]) {
       declarationConcurrency: 1,
       stageName: 'plugins',
       profile,
+      includeDevDependencies: !withDependencies,
     });
 
     // presets/*
@@ -148,6 +172,7 @@ export async function build(pkgs: string[]) {
       declarationConcurrency: 1,
       stageName: 'presets',
       profile,
+      includeDevDependencies: !withDependencies,
     });
 
     // core/app
@@ -199,6 +224,7 @@ export async function buildPackages(
     declarationConcurrency?: number;
     stageName?: string;
     profile?: BuildProfileCollector | null;
+    includeDevDependencies?: boolean;
   } = {},
 ) {
   const {
@@ -206,8 +232,9 @@ export async function buildPackages(
     declarationConcurrency = 1,
     stageName = 'packages',
     profile = null,
+    includeDevDependencies = true,
   } = options;
-  const layers = groupPackagesByTopoLevel(packages);
+  const layers = groupPackagesByTopoLevel(packages, { includeDevDependencies });
   const shouldRunDeclaration = !process.argv.includes('--no-dts') && !process.argv.includes('--only-tar');
 
   await runProfiledStage(profile, `${stageName} source`, async () => {

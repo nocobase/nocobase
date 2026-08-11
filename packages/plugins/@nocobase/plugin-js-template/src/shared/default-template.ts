@@ -69,14 +69,14 @@ ctx.render(
   },
   {
     path: 'src/client/js-actions/refresh-data/index.ts',
-    content: `const refresh = ctx.resource?.refresh;
-if (!refresh) {
+    content: `const resource = ctx.resource;
+if (!resource || typeof resource.refresh !== 'function') {
   ctx.message.warning(ctx.t('No resource to refresh'));
   return;
+} else {
+  await resource.refresh();
+  ctx.message.success(ctx.t(String(ctx.settings?.successMessage || 'Resource refreshed')));
 }
-
-await refresh?.();
-ctx.message.success(ctx.t(String(ctx.settings?.successMessage || 'Resource refreshed')));
 `,
     language: 'typescript',
   },

@@ -75,6 +75,60 @@ export const jsTemplatePaths = {
       },
     },
   },
+  '/jsTemplateCreateJobs:list': {
+    post: {
+      tags: ['jsTemplateCreateJobs'],
+      summary: "List the current user's Source Project creation jobs",
+      description:
+        'List active creation jobs and the retained terminal job history for the current application and authenticated user.',
+      responses: {
+        200: {
+          description: 'Visible creation jobs.',
+          content: jsonContent('JsTemplateCreateJobListEnvelope'),
+        },
+        403: errorResponse('An authenticated user identity is required.'),
+      },
+    },
+  },
+  '/jsTemplateCreateJobs:dismiss': {
+    post: {
+      tags: ['jsTemplateCreateJobs'],
+      summary: 'Dismiss one terminal Source Project creation job',
+      description:
+        'Delete one succeeded or failed creation job owned by the current user in the current application. Missing and invisible jobs use the same non-enumerating 404 response.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['jobId'],
+              properties: {
+                jobId: {
+                  type: 'string',
+                  minLength: 1,
+                },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+      responses: {
+        200: {
+          description: 'Dismissed creation job identity.',
+          content: jsonContent('JsTemplateCreateJobDismissEnvelope'),
+        },
+        400: errorResponse('jobId or the request payload is invalid.'),
+        403: errorResponse('The current user cannot dismiss this type of creation job.'),
+        404: {
+          description: 'The creation job is missing or is not visible to the current user and application.',
+          content: jsonContent('JsTemplateCreateJobNotFoundErrorResponse'),
+        },
+        409: errorResponse('Only succeeded or failed creation jobs can be dismissed.'),
+      },
+    },
+  },
   '/jsTemplates:get': {
     post: {
       tags: ['jsTemplates'],

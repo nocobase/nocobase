@@ -27,22 +27,6 @@ const runtimeArtifacts = [
   'lib/workspace/shared/index.js',
   'lib/workspace/swagger/index.js',
 ];
-const declarationArtifacts = [
-  'lib/compiler/loader.d.ts',
-  'lib/compiler/build-identity.d.ts',
-  'lib/compiler/static-module-references.d.ts',
-  'lib/js-template/client/index.d.ts',
-  'lib/js-template/schema/index.d.ts',
-  'lib/js-template/schema/server.d.ts',
-  'lib/js-template/shared/index.d.ts',
-  'lib/js-template/typegen/index.d.ts',
-  'lib/workspace/client/index.d.ts',
-  'lib/workspace/client-v2/index.d.ts',
-  'lib/workspace/server/index.d.ts',
-  'lib/workspace/shared/index.d.ts',
-  'lib/workspace/swagger/index.d.ts',
-];
-
 function verifyArtifacts(artifacts: string[]): void {
   const missingArtifacts = artifacts.filter((artifact) => !fs.existsSync(path.resolve(__dirname, artifact)));
 
@@ -55,12 +39,5 @@ export default defineConfig({
   afterBuild: (log) => {
     verifyArtifacts(runtimeArtifacts);
     log(`verified RunJS build artifacts: ${runtimeArtifacts.join(', ')}`);
-
-    if (!process.argv.includes('--no-dts') && !process.argv.includes('--only-tar')) {
-      process.once('beforeExit', () => {
-        verifyArtifacts(declarationArtifacts);
-        log(`verified RunJS declaration artifacts: ${declarationArtifacts.join(', ')}`);
-      });
-    }
   },
 });

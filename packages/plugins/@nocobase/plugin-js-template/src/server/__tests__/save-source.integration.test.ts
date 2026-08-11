@@ -52,7 +52,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     runtimeCompileService = new JsTemplateCompileService(app.db, fileService, templateService, compilerBridge, {
       auditService,
     });
-    runtimeService = new JsTemplateRuntimeService(app.db);
+    runtimeService = new JsTemplateRuntimeService(app.db, projectService);
   });
 
   afterEach(async () => {

@@ -40,7 +40,34 @@ const ENTRY_CASES: Array<{ entryPath: string; kind: JsTemplateKind }> = [
   },
 ];
 
+type AsyncFunctionConstructor = new (...args: string[]) => (...args: unknown[]) => Promise<unknown>;
+
+const asyncFunctionConstructor = Object.getPrototypeOf(async function runDefaultActionArtifactTest() {})
+  .constructor as AsyncFunctionConstructor;
+
+async function executeArtifact(code: string, ctx: unknown): Promise<unknown> {
+  return new asyncFunctionConstructor('ctx', code)(ctx);
+}
+
 describe('plugin-js-template default source template', () => {
+  let refreshActionArtifactCode = '';
+
+  beforeAll(async () => {
+    const entryPath = 'src/client/js-actions/refresh-data/index.ts';
+    const rootPath = entryPath.slice(0, entryPath.lastIndexOf('/'));
+    const result = await new JsTemplateWorkspaceCompilerBridge().compileEntry({
+      projectId: 'jtp_default_action',
+      kind: 'js-action',
+      templateName: 'refresh-data',
+      entryPath,
+      files: createDefaultJsTemplateTemplate().filter((file) => file.path.startsWith(`${rootPath}/`)),
+    });
+
+    expect(result.accepted, JSON.stringify(result.diagnostics, null, 2)).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+    refreshActionArtifactCode = result.artifact.code;
+  });
+
   it('includes a multi-file entry with a relative import', () => {
     const files = createDefaultJsTemplateTemplate();
     const multiFileEntry = ENTRY_CASES.find(({ entryPath }) => {
@@ -82,6 +109,94 @@ describe('plugin-js-template default source template', () => {
       expect(result.diagnostics).toEqual([]);
       expect(result.artifact?.code).toEqual(expect.stringMatching(/[\s\S]*/u));
     }
+  });
+
+  it('executes the compiled refresh-data Action with the Resource receiver', async () => {
+    const success = vi.fn();
+    const warning = vi.fn();
+    const translate = vi.fn((message: string) => `translated:${message}`);
+    let completeRefresh: (() => void) | undefined;
+    const refreshCompletion = new Promise<void>((resolve) => {
+      completeRefresh = resolve;
+    });
+    const resource = {
+      label: 'orders',
+      refreshCount: 0,
+      refreshCompleted: false,
+      refreshedLabel: '',
+      async refresh() {
+        this.refreshCount += 1;
+        this.refreshedLabel = this.label;
+        await refreshCompletion;
+        this.refreshCompleted = true;
+      },
+    };
+
+    const execution = executeArtifact(refreshActionArtifactCode, {
+      message: { success, warning },
+      resource,
+      settings: { successMessage: 'Orders refreshed' },
+      t: translate,
+    });
+
+    expect(resource).toMatchObject({ refreshCount: 1, refreshedLabel: 'orders' });
+    expect(warning).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
+
+    completeRefresh?.();
+    await execution;
+
+    expect(resource.refreshCompleted).toBe(true);
+    expect(success).toHaveBeenCalledTimes(1);
+    expect(success).toHaveBeenCalledWith('translated:Orders refreshed');
+  });
+
+  it.each([
+    { label: 'missing Resource', resource: undefined },
+    { label: 'Resource without refresh', resource: { label: 'orders' } },
+  ])('warns once and returns when $label', async ({ resource }) => {
+    const success = vi.fn();
+    const warning = vi.fn();
+    const translate = vi.fn((message: string) => `translated:${message}`);
+
+    await expect(
+      executeArtifact(refreshActionArtifactCode, {
+        message: { success, warning },
+        resource,
+        settings: { successMessage: 'Orders refreshed' },
+        t: translate,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(warning).toHaveBeenCalledTimes(1);
+    expect(warning).toHaveBeenCalledWith('translated:No resource to refresh');
+    expect(success).not.toHaveBeenCalled();
+  });
+
+  it('does not report success when refresh rejects', async () => {
+    const refreshError = new Error('refresh failed');
+    const success = vi.fn();
+    const warning = vi.fn();
+    const resource = {
+      refreshAttempts: 0,
+      async refresh() {
+        this.refreshAttempts += 1;
+        throw refreshError;
+      },
+    };
+
+    await expect(
+      executeArtifact(refreshActionArtifactCode, {
+        message: { success, warning },
+        resource,
+        settings: {},
+        t: (message: string) => message,
+      }),
+    ).rejects.toBe(refreshError);
+
+    expect(resource.refreshAttempts).toBe(1);
+    expect(warning).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
   });
 
   it('validates and compiles the single-entry starter for all five supported kinds', async () => {

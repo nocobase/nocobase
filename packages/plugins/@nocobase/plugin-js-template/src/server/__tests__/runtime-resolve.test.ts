@@ -11,6 +11,8 @@ import type { Database, Model } from '@nocobase/database';
 import { vi } from 'vitest';
 
 import type { JsTemplateRuntimeSourceBinding } from '../../shared/types';
+import { JsTemplateError } from '../../shared/errors';
+import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateRuntimeService } from '../services/JsTemplateRuntimeService';
 
 describe('JsTemplateRuntimeService', () => {
@@ -37,6 +39,15 @@ describe('JsTemplateRuntimeService', () => {
     expect(templatesRepository.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
         filterByTk: 'jtt_sales_kpi',
+      }),
+    );
+    expect(templatesRepository.findOne).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        filter: {
+          id: 'jtt_sales_kpi',
+          projectId: 'jtp_sales',
+        },
       }),
     );
     expect(result).toMatchObject({
@@ -86,6 +97,53 @@ describe('JsTemplateRuntimeService', () => {
     await expect(service.listSelectableTemplates()).resolves.toEqual([]);
   });
 
+  it('does not list or resolve templates from another application', async () => {
+    const { service, templatesRepository } = createJsTemplateRuntimeService({ projectApplicationName: 'support' });
+
+    await expect(service.listSelectableTemplates()).resolves.toEqual([]);
+    expect(templatesRepository.find).not.toHaveBeenCalled();
+    await expect(
+      service.resolve({ sourceMode: 'js-template', sourceBinding: createSourceBinding(), settings: {} }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_NOT_FOUND',
+      status: 404,
+      details: { reasonCode: 'template_missing', templateId: 'jtt_sales_kpi' },
+    });
+    await expect(
+      service.resolve({
+        sourceMode: 'js-template',
+        sourceBinding: { ...createSourceBinding(), projectId: 'jtp_spoofed', kind: 'js-field' },
+        settings: {},
+      }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_NOT_FOUND',
+      status: 404,
+      details: { reasonCode: 'template_missing', templateId: 'jtt_sales_kpi' },
+    });
+  });
+
+  it('does not parse malformed foreign Template data before applying the application boundary', async () => {
+    const { service, templatesRepository } = createJsTemplateRuntimeService({
+      projectApplicationName: 'support',
+      templateKind: 'foreign-secret-kind',
+    });
+
+    await expect(
+      service.resolve({ sourceMode: 'js-template', sourceBinding: createSourceBinding(), settings: {} }),
+    ).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_NOT_FOUND',
+      status: 404,
+      details: { reasonCode: 'template_missing', templateId: 'jtt_sales_kpi' },
+    });
+    expect(templatesRepository.findOne).toHaveBeenCalledTimes(1);
+    expect(templatesRepository.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filterByTk: 'jtt_sales_kpi',
+        fields: ['id', 'projectId'],
+      }),
+    );
+  });
+
   it.each([
     {
       name: 'returns the schema hash independently from the defaults hash',
@@ -111,7 +169,10 @@ describe('JsTemplateRuntimeService', () => {
 
     await expect(service.listSelectableTemplates()).resolves.toEqual([expect.objectContaining(expected)]);
     expect(templatesRepository.find).toHaveBeenCalledWith(
-      expect.objectContaining({ fields: expect.arrayContaining(['category']) }),
+      expect.objectContaining({
+        fields: expect.arrayContaining(['category']),
+        filter: expect.objectContaining({ projectId: { $in: ['jtp_sales'] } }),
+      }),
     );
   });
 
@@ -177,7 +238,7 @@ describe('JsTemplateRuntimeService', () => {
       expect.objectContaining({
         fields: ['id', 'title'],
         filter: {
-          $and: [{ id: { $in: ['jtp_sales'] } }, { id: 'jtp_sales' }],
+          $and: [{ id: { $in: ['jtp_sales'] }, applicationName: 'main' }, { id: 'jtp_sales' }],
         },
       }),
     );
@@ -216,9 +277,9 @@ describe('JsTemplateRuntimeService', () => {
       {
         name: 'missing project',
         projectExists: false,
-        errorCode: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+        errorCode: 'JS_TEMPLATE_NOT_FOUND',
         status: 404,
-        reasonCode: 'project_missing',
+        reasonCode: 'template_missing',
       },
       {
         name: 'disabled project',
@@ -337,6 +398,8 @@ function createJsTemplateRuntimeService(
     settingsSchemaHash?: string | null;
     settingsDefaultsHash?: string | null;
     category?: string | null;
+    currentApplicationName?: string;
+    projectApplicationName?: string;
   } = {},
 ) {
   const templateRecord = createTemplateRecord(options);
@@ -345,12 +408,21 @@ function createJsTemplateRuntimeService(
       ? null
       : createModel({
           id: 'jtp_sales',
+          applicationName: options.projectApplicationName || 'main',
           lifecycleStatus: options.projectLifecycleStatus || 'enabled',
           headCommitId:
             typeof options.projectHeadCommitId === 'undefined' ? 'vsc_commit_1' : options.projectHeadCommitId,
         });
   const projectsRepository = {
-    find: vi.fn().mockResolvedValue(projectRecord ? [projectRecord] : []),
+    find: vi.fn(async (query: { filter?: { applicationName?: string } } = {}) => {
+      if (
+        !projectRecord ||
+        (query.filter?.applicationName && query.filter.applicationName !== projectRecord.get('applicationName'))
+      ) {
+        return [];
+      }
+      return [projectRecord];
+    }),
     findOne: vi.fn().mockResolvedValue(projectRecord),
   };
   const templatesRepository = {
@@ -360,6 +432,35 @@ function createJsTemplateRuntimeService(
   const usersRepository = {
     findOne: vi.fn(),
   };
+  const currentApplicationName = options.currentApplicationName || 'main';
+  const projectService = {
+    getCurrentApplicationName: () => currentApplicationName,
+    getInternalProject: vi.fn(async (projectId: string) => {
+      if (
+        !projectRecord ||
+        projectRecord.get('id') !== projectId ||
+        projectRecord.get('applicationName') !== currentApplicationName
+      ) {
+        throw new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template project "${projectId}" was not found`);
+      }
+      return {
+        id: projectId,
+        vscRepoId: 'vscr_sales',
+        applicationName: currentApplicationName,
+        creationJobId: null,
+        name: 'sales',
+        normalizedName: 'sales',
+        title: 'Sales',
+        description: null,
+        lifecycleStatus: projectRecord.get('lifecycleStatus'),
+        healthStatus: 'ready',
+        headCommitId: projectRecord.get('headCommitId'),
+        lastCompiledAt: null,
+        createdAt: null,
+        updatedAt: null,
+      };
+    }),
+  } as unknown as JsTemplateProjectService;
   const db = {
     getCollection: vi.fn(() => ({})),
     getFieldByPath: vi.fn((path: string) => (path === 'users.nickname' ? {} : undefined)),
@@ -377,7 +478,8 @@ function createJsTemplateRuntimeService(
     },
   } as unknown as Database;
   return {
-    service: new JsTemplateRuntimeService(db),
+    service: new JsTemplateRuntimeService(db, projectService),
+    projectService,
     projectsRepository,
     templatesRepository,
     usersRepository,

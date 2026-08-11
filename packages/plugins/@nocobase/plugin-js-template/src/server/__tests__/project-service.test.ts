@@ -8,6 +8,7 @@
  */
 
 import { RemoteSyncError } from '../vsc-file';
+import { UniqueConstraintError } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 
@@ -18,7 +19,7 @@ import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateFileService } from '../services/JsTemplateFileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
-import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
+import { isProjectNameConstraintError, JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateService } from '../services/JsTemplateService';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 
@@ -108,7 +109,7 @@ describe('plugin-js-template project service', () => {
   });
 
   it('isolates projects by their persisted application owner', async () => {
-    const mainProject = await service.createProject({ name: 'Main application tools' });
+    const mainProject = await service.createProject({ name: 'Shared application tools' });
     const auditService = new JsTemplateAuditService(app.db);
     const permissionService = new JsTemplatePermissionService(auditService);
     const supportService = new JsTemplateProjectService(
@@ -119,16 +120,85 @@ describe('plugin-js-template project service', () => {
       undefined,
       'support-app',
     );
-    const supportProject = await supportService.createProject({ name: 'Support application tools' });
+    const supportProject = await supportService.createProject({ name: 'shared application tools' });
+    const supportTemplate = await app.db.getRepository('jsTemplates').create({
+      values: {
+        projectId: supportProject.id,
+        target: 'client',
+        kind: 'js-block',
+        templateName: 'foreign-secret',
+        entryPath: 'src/client/js-blocks/foreign-secret/index.tsx',
+        descriptorPath: 'src/client/js-blocks/foreign-secret/entry.json',
+        title: 'Foreign secret title',
+      },
+    });
+    const mainTemplateService = new JsTemplateService(app.db, {} as never, service);
 
     await expect(service.getProject(supportProject.id)).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+      code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+      status: 404,
     });
     await expect(supportService.getProject(mainProject.id)).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+      code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+      status: 404,
+    });
+    await expect(service.getProject('jtp_missing')).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+      status: 404,
+    });
+    await expect(mainTemplateService.listTemplates(supportProject.id)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+      status: 404,
+    });
+    await expect(mainTemplateService.getTemplate(String(supportTemplate.get('id')))).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_NOT_FOUND',
+      status: 404,
     });
     await expect(service.listProjects()).resolves.toEqual([expect.objectContaining({ id: mainProject.id })]);
     await expect(supportService.listProjects()).resolves.toEqual([expect.objectContaining({ id: supportProject.id })]);
+  });
+
+  it('does not map non-name unique constraints to a project-name conflict', async () => {
+    await service.createProjectForCompositeUseCase(
+      { name: 'First creation job project' },
+      {},
+      { creationJobId: 'job_shared_unique' },
+    );
+
+    let caught: unknown;
+    try {
+      await service.createProjectForCompositeUseCase(
+        { name: 'Second creation job project' },
+        {},
+        { creationJobId: 'job_shared_unique' },
+      );
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeTruthy();
+    expect(caught).not.toBeInstanceOf(JsTemplateError);
+  });
+
+  it('recognizes SQLite, PostgreSQL, and MySQL project-name unique error shapes only', () => {
+    const sqliteError = new UniqueConstraintError({
+      fields: ['applicationName', 'normalizedName'] as unknown as Record<string, unknown>,
+    });
+    const postgresParent = Object.assign(new Error('duplicate key'), {
+      constraint: 'jst_project_application_normalized_uq',
+      sql: '',
+    });
+    const postgresError = new UniqueConstraintError({ parent: postgresParent });
+    const mysqlError = new UniqueConstraintError({
+      fields: { jst_project_application_normalized_uq: 'main-same-project' },
+    });
+    const creationJobError = new UniqueConstraintError({
+      fields: { creationJobId: 'job_duplicate' },
+    });
+
+    expect(isProjectNameConstraintError(sqliteError)).toBe(true);
+    expect(isProjectNameConstraintError(postgresError)).toBe(true);
+    expect(isProjectNameConstraintError(mysqlError)).toBe(true);
+    expect(isProjectNameConstraintError(creationJobError)).toBe(false);
   });
 
   it('updates project display metadata without changing its technical identity', async () => {

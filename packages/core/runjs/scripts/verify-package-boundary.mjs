@@ -16,20 +16,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const requiredRunJSEntries = [
-  '@nocobase/runjs',
-  '@nocobase/runjs/compiler',
-  '@nocobase/runjs/js-template/client',
-  '@nocobase/runjs/workspace/client-v2',
-  '@nocobase/runjs/workspace/server',
-];
-const requiredPluginEntries = [
-  '@nocobase/plugin-js-template',
-  '@nocobase/plugin-js-template/client',
-  '@nocobase/plugin-js-template/client-v2',
-  '@nocobase/plugin-js-template/server',
-];
-const requiredEntries = [...requiredRunJSEntries, ...requiredPluginEntries];
 const codeMirrorPackages = [
   '@codemirror/lang-html',
   '@codemirror/lang-javascript',
@@ -45,8 +31,11 @@ async function main() {
   );
   const runJSRoot = path.join(repositoryRoot, 'packages/core/runjs');
   const pluginRoot = path.join(repositoryRoot, 'packages/plugins/@nocobase/plugin-js-template');
+  const clientV2Root = path.join(repositoryRoot, 'packages/core/client-v2');
   const runJSManifest = readJson(path.join(runJSRoot, 'package.json'));
   const pluginManifest = readJson(path.join(pluginRoot, 'package.json'));
+  const clientV2Manifest = readJson(path.join(clientV2Root, 'package.json'));
+  const verifyRealClientTopology = process.platform !== 'win32';
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-runjs-package-boundary-'));
 
   try {
@@ -55,11 +44,35 @@ async function main() {
 
     const runJSPack = packPackage(runJSRoot, packDirectory, runJSManifest);
     const pluginPack = packPackage(pluginRoot, packDirectory, pluginManifest);
+    const clientV2Pack = verifyRealClientTopology
+      ? packPackage(
+          clientV2Root,
+          packDirectory,
+          clientV2Manifest,
+          collectExportTargets(clientV2Manifest.exports?.['.']),
+        )
+      : undefined;
+    const importableEntries = [
+      ...collectImportableExportEntries(runJSManifest),
+      ...collectImportableExportEntries(pluginManifest),
+    ];
+    const requiredEntries = importableEntries.map((entry) => entry.specifier);
     const resolvedVersions = resolveCodeMirrorVersions(repositoryRoot);
+    if (verifyRealClientTopology) {
+      resolvedVersions.jsdom = resolveInstalledPackageVersion(repositoryRoot, 'jsdom');
+    }
     const consumerRoot = createConsumer(
       temporaryRoot,
-      { runJS: runJSPack.tarballPath, plugin: pluginPack.tarballPath },
+      {
+        runJS: runJSPack.tarballPath,
+        plugin: pluginPack.tarballPath,
+        clientV2: clientV2Pack?.tarballPath,
+      },
       resolvedVersions,
+      {
+        repositoryVersion: runJSManifest.version,
+        verifyRealClientTopology,
+      },
     );
 
     runCommand(
@@ -68,14 +81,17 @@ async function main() {
       { cwd: consumerRoot, label: 'install the packed consumer' },
     );
 
-    const runtimeReport = await runConsumerRuntimeSmoke(consumerRoot);
-    const typeResolutionModes = runConsumerTypeSmoke(consumerRoot);
+    const runtimeReport = await runConsumerRuntimeSmoke(consumerRoot, requiredEntries, verifyRealClientTopology);
+    const typeResolutionModes = runConsumerTypeSmoke(consumerRoot, requiredEntries);
 
     const report = {
       packages: {
         runjs: toPackageReport(runJSPack),
         plugin: toPackageReport(pluginPack),
+        ...(clientV2Pack ? { clientV2: toPackageReport(clientV2Pack) } : {}),
       },
+      mode: verifyRealClientTopology ? 'real-client-v2' : 'quick-packed-consumer',
+      importableEntries,
       requiredEntries: runtimeReport.requiredEntries,
       typescript: {
         importedEntries: requiredEntries,
@@ -95,6 +111,8 @@ async function main() {
           'verified package boundary',
           'RunJS pack files: ' + report.packages.runjs.fileCount,
           'JS Template pack files: ' + report.packages.plugin.fileCount,
+          ...(report.packages.clientV2 ? ['client-v2 pack files: ' + report.packages.clientV2.fileCount] : []),
+          'consumer mode: ' + report.mode,
           'consumer imports: ' + report.requiredEntries.length,
           'RunJS installations: ' + report.installations.runjs.length,
           'CodeMirror parser Lezer identities: ' + report.codeMirror.resolvedLezerRoots.length,
@@ -133,8 +151,7 @@ function parseOptions(args) {
   return options;
 }
 
-function packPackage(packageRoot, packDirectory, manifest) {
-  const exportTargets = collectExportTargets(manifest.exports);
+function packPackage(packageRoot, packDirectory, manifest, exportTargets = collectExportTargets(manifest.exports)) {
   if (!exportTargets.length) {
     throw new Error((manifest.name || packageRoot) + ' does not declare package exports');
   }
@@ -194,6 +211,102 @@ function collectExportTargets(exportsField) {
   return [...targets];
 }
 
+function collectImportableExportEntries(manifest) {
+  if (!manifest.name || !manifest.exports) {
+    throw new Error((manifest.name || 'Package') + ' must declare a name and exports');
+  }
+
+  const exportEntries =
+    manifest.exports && typeof manifest.exports === 'object' && !Array.isArray(manifest.exports)
+      ? Object.entries(manifest.exports).some(([subpath]) => subpath.startsWith('.'))
+        ? Object.entries(manifest.exports)
+        : [['.', manifest.exports]]
+      : [['.', manifest.exports]];
+
+  const importableEntries = [];
+  for (const [subpath, exportValue] of exportEntries) {
+    if (subpath.includes('*')) {
+      throw new Error(manifest.name + ' package-boundary verifier cannot enumerate wildcard export ' + subpath);
+    }
+
+    const runtimeTargets = [
+      ...new Set(
+        ['import', 'require', 'default']
+          .flatMap((condition) => collectExportConditionTargets(exportValue, condition))
+          .filter(isJavaScriptExportTarget),
+      ),
+    ];
+    const typeTargets = [
+      ...new Set(collectExportConditionTargets(exportValue, 'types').filter(isDeclarationExportTarget)),
+    ];
+
+    if (!runtimeTargets.length && !typeTargets.length) {
+      continue;
+    }
+    if (!runtimeTargets.length || !typeTargets.length) {
+      throw new Error(
+        manifest.name +
+          ' export ' +
+          subpath +
+          ' must provide both JavaScript and types conditions for consumer verification',
+      );
+    }
+
+    importableEntries.push({
+      packageName: manifest.name,
+      runtimeTargets: runtimeTargets.map(normalizeExportTarget),
+      specifier: subpath === '.' ? manifest.name : manifest.name + subpath.slice(1),
+      subpath,
+      typeTargets: typeTargets.map(normalizeExportTarget),
+    });
+  }
+
+  if (!importableEntries.length) {
+    throw new Error(manifest.name + ' does not expose any JavaScript and types package entries');
+  }
+  return importableEntries;
+}
+
+function collectExportConditionTargets(value, expectedCondition) {
+  if (!value || typeof value !== 'object') {
+    return [];
+  }
+
+  const targets = [];
+  for (const [condition, conditionValue] of Object.entries(value)) {
+    if (condition === expectedCondition) {
+      collectStringTargets(conditionValue, targets);
+      continue;
+    }
+    if (!condition.startsWith('.')) {
+      targets.push(...collectExportConditionTargets(conditionValue, expectedCondition));
+    }
+  }
+  return targets;
+}
+
+function collectStringTargets(value, targets) {
+  if (typeof value === 'string') {
+    targets.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectStringTargets(item, targets));
+    return;
+  }
+  if (value && typeof value === 'object') {
+    Object.values(value).forEach((item) => collectStringTargets(item, targets));
+  }
+}
+
+function isJavaScriptExportTarget(target) {
+  return /\.(?:cjs|js|mjs)$/u.test(target);
+}
+
+function isDeclarationExportTarget(target) {
+  return /\.d\.(?:cts|mts|ts)$/u.test(target);
+}
+
 function assertTargetsExist(packageRoot, targets, packageName, boundary) {
   const missingTargets = targets.filter(
     (target) => !fs.existsSync(path.join(packageRoot, normalizeExportTarget(target))),
@@ -210,14 +323,13 @@ function assertTargetsExist(packageRoot, targets, packageName, boundary) {
   }
 }
 
-function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
+function createConsumer(temporaryRoot, tarballs, resolvedVersions, options) {
   const consumerRoot = path.join(temporaryRoot, 'consumer');
   const stubRoot = path.join(temporaryRoot, 'stubs');
   fs.mkdirSync(consumerRoot, { recursive: true });
-  const peerStubs = createPeerStubs(stubRoot);
+  const peerStubs = createPeerStubs(stubRoot, options);
 
   const dependencies = {
-    '@nocobase/client-v2': fileDependency(consumerRoot, path.join(stubRoot, 'client-v2')),
     '@nocobase/database': fileDependency(consumerRoot, path.join(stubRoot, 'database')),
     '@nocobase/flow-engine': fileDependency(consumerRoot, path.join(stubRoot, 'flow-engine')),
     '@nocobase/plugin-js-template': fileDependency(consumerRoot, tarballs.plugin),
@@ -231,6 +343,10 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
   for (const [packageName, version] of Object.entries(resolvedVersions)) {
     dependencies[packageName] = version;
   }
+  dependencies['@nocobase/client-v2'] = fileDependency(
+    consumerRoot,
+    options.verifyRealClientTopology ? tarballs.clientV2 : path.join(stubRoot, 'client-v2'),
+  );
 
   writeJson(path.join(consumerRoot, 'package.json'), {
     name: 'runjs-package-boundary-consumer',
@@ -242,29 +358,31 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions) {
   return consumerRoot;
 }
 
-function createPeerStubs(stubRoot) {
+function createPeerStubs(stubRoot, options) {
   const peerStubs = {};
   const addStub = (directoryName, packageName, source = createGenericPeerStubSource()) => {
     const packageRoot = path.join(stubRoot, directoryName);
-    createStubPackage(packageRoot, packageName, source);
+    createStubPackage(packageRoot, packageName, source, options.repositoryVersion);
     peerStubs[packageName] = packageRoot;
   };
 
-  addStub(
-    'client-v2',
-    '@nocobase/client-v2',
-    [
-      createGenericPeerStubSource(),
-      'Object.assign(module.exports, {',
-      '  CodeEditor: noop,',
-      '  diagnoseRunJS: async () => ({ diagnostics: [] }),',
-      '  registerRunJSRegistryHost: noop,',
-      '  registerRunJSRuntimeHost: noop,',
-      '  useApp: () => ({}),',
-      '  useFullscreenOverlay: () => ({}),',
-      '});',
-    ].join('\n'),
-  );
+  if (!options.verifyRealClientTopology) {
+    addStub(
+      'client-v2',
+      '@nocobase/client-v2',
+      [
+        createGenericPeerStubSource(),
+        'Object.assign(module.exports, {',
+        '  CodeEditor: noop,',
+        '  diagnoseRunJS: async () => ({ diagnostics: [] }),',
+        '  registerRunJSRegistryHost: noop,',
+        '  registerRunJSRuntimeHost: noop,',
+        '  useApp: () => ({}),',
+        '  useFullscreenOverlay: () => ({}),',
+        '});',
+      ].join('\n'),
+    );
+  }
   addStub(
     'database',
     '@nocobase/database',
@@ -295,12 +413,16 @@ function createPeerStubs(stubRoot) {
     ['acl', '@nocobase/acl'],
     ['actions', '@nocobase/actions'],
     ['client', '@nocobase/client'],
+    ['evaluators', '@nocobase/evaluators'],
     ['plugin-environment-variables', '@nocobase/plugin-environment-variables'],
     ['plugin-flow-engine', '@nocobase/plugin-flow-engine'],
     ['resourcer', '@nocobase/resourcer'],
+    ['sdk', '@nocobase/sdk'],
     ['server', '@nocobase/server'],
+    ['shared', '@nocobase/shared'],
     ['test', '@nocobase/test'],
     ['utils', '@nocobase/utils'],
+    ['formily-antd-v5', '@formily/antd-v5'],
     ['formily-react', '@formily/react'],
     ['react-i18next', 'react-i18next'],
     ['react-router-dom', 'react-router-dom'],
@@ -325,6 +447,31 @@ function createPeerStubs(stubRoot) {
   };
   writeJson(path.join(utilsRoot, 'package.json'), utilsManifest);
 
+  const formilyAntdRoot = peerStubs['@formily/antd-v5'];
+  const formilyAntdManifest = readJson(path.join(formilyAntdRoot, 'package.json'));
+  formilyAntdManifest.version = '1.2.3';
+  writeJson(path.join(formilyAntdRoot, 'package.json'), formilyAntdManifest);
+  const formilyBuiltinsRoot = path.join(formilyAntdRoot, 'esm/__builtins__');
+  fs.mkdirSync(formilyBuiltinsRoot, { recursive: true });
+  fs.writeFileSync(path.join(formilyBuiltinsRoot, 'index.js'), "module.exports = require('../../index.cjs');\n");
+
+  const evaluatorsRoot = peerStubs['@nocobase/evaluators'];
+  fs.writeFileSync(path.join(evaluatorsRoot, 'client.cjs'), createGenericPeerStubSource() + '\n');
+  const evaluatorsManifest = readJson(path.join(evaluatorsRoot, 'package.json'));
+  evaluatorsManifest.exports = {
+    '.': {
+      types: './index.d.ts',
+      import: './index.cjs',
+      require: './index.cjs',
+    },
+    './client': {
+      types: './index.d.ts',
+      import: './client.cjs',
+      require: './client.cjs',
+    },
+  };
+  writeJson(path.join(evaluatorsRoot, 'package.json'), evaluatorsManifest);
+
   return peerStubs;
 }
 
@@ -344,11 +491,11 @@ function createGenericPeerStubSource() {
   ].join('\n');
 }
 
-function createStubPackage(packageRoot, name, source) {
+function createStubPackage(packageRoot, name, source, version) {
   fs.mkdirSync(packageRoot, { recursive: true });
   writeJson(path.join(packageRoot, 'package.json'), {
     name,
-    version: '2.0.0',
+    version,
     main: './index.cjs',
     types: './index.d.ts',
   });
@@ -356,9 +503,9 @@ function createStubPackage(packageRoot, name, source) {
   fs.writeFileSync(path.join(packageRoot, 'index.d.ts'), 'export {};\n');
 }
 
-async function runConsumerRuntimeSmoke(consumerRoot) {
+async function runConsumerRuntimeSmoke(consumerRoot, requiredEntries, verifyRealClientTopology) {
   const runtimeSmokePath = path.join(consumerRoot, 'runtime-smoke.mjs');
-  fs.writeFileSync(runtimeSmokePath, createRuntimeSmokeSource(requiredEntries));
+  fs.writeFileSync(runtimeSmokePath, createRuntimeSmokeSource(requiredEntries, verifyRealClientTopology));
   let runtimeModule;
   try {
     runtimeModule = await import(pathToFileURL(runtimeSmokePath).href);
@@ -375,7 +522,7 @@ async function runConsumerRuntimeSmoke(consumerRoot) {
   return runtimeModule.default;
 }
 
-function createRuntimeSmokeSource(requiredEntries) {
+function createRuntimeSmokeSource(requiredEntries, verifyRealClientTopology) {
   return [
     "import fs from 'node:fs';",
     "import { createRequire, isBuiltin } from 'node:module';",
@@ -389,14 +536,55 @@ function createRuntimeSmokeSource(requiredEntries) {
     '',
     'const consumerRoot = path.dirname(fileURLToPath(import.meta.url));',
     "const consumerRequire = createRequire(path.join(consumerRoot, 'package.json'));",
-    'globalThis.self ??= globalThis;',
-    'globalThis.window ??= globalThis;',
-    "globalThis.navigator ??= { userAgent: 'node.js' };",
-    "const currentScript = { tagName: 'SCRIPT', src: new URL('./runtime-smoke.mjs', import.meta.url).href };",
-    'globalThis.document ??= {',
-    '  currentScript,',
-    '  getElementsByTagName: () => [currentScript],',
-    '};',
+    'const verifyRealClientTopology = ' + JSON.stringify(verifyRealClientTopology) + ';',
+    "const currentScriptUrl = new URL('./runtime-smoke.mjs', import.meta.url).href;",
+    'if (verifyRealClientTopology) {',
+    "  const { JSDOM } = await import('jsdom');",
+    "  const dom = new JSDOM('<!doctype html><html><body></body></html>', { pretendToBeVisual: true, url: 'http://localhost/' });",
+    "  const currentScript = dom.window.document.createElement('script');",
+    '  currentScript.src = currentScriptUrl;',
+    "  Object.defineProperty(dom.window.document, 'currentScript', { configurable: true, value: currentScript });",
+    "  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.window.navigator });",
+    "  consumerRequire.extensions['.css'] ??= (module) => { module.exports = {}; };",
+    '  globalThis.window = dom.window;',
+    '  globalThis.self = dom.window;',
+    '  globalThis.document = dom.window.document;',
+    '  globalThis.localStorage = dom.window.localStorage;',
+    '  globalThis.sessionStorage = dom.window.sessionStorage;',
+    '  globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);',
+    '  for (const globalName of Object.getOwnPropertyNames(dom.window)) {',
+    '    if (globalName in globalThis) continue;',
+    '    Object.defineProperty(globalThis, globalName, Object.getOwnPropertyDescriptor(dom.window, globalName));',
+    '  }',
+    '  dom.window.matchMedia ??= () => ({',
+    '    addEventListener: () => undefined,',
+    '    addListener: () => undefined,',
+    '    dispatchEvent: () => false,',
+    '    matches: false,',
+    '    media: "",',
+    '    onchange: null,',
+    '    removeEventListener: () => undefined,',
+    '    removeListener: () => undefined,',
+    '  });',
+    '  globalThis.matchMedia = dom.window.matchMedia.bind(dom.window);',
+    '  globalThis.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);',
+    '  globalThis.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);',
+    "  for (const packageName of ['classnames', 'dayjs', 'json5', 'lodash', 'react', 'react-dom']) {",
+    '    const cjsModule = consumerRequire(packageName);',
+    "    if ((typeof cjsModule === 'function' || typeof cjsModule === 'object') && cjsModule && !('default' in cjsModule)) {",
+    '      cjsModule.default = cjsModule;',
+    '    }',
+    '  }',
+    '} else {',
+    '  globalThis.self ??= globalThis;',
+    '  globalThis.window ??= globalThis;',
+    "  globalThis.navigator ??= { userAgent: 'node.js' };",
+    "  const currentScript = { tagName: 'SCRIPT', src: currentScriptUrl };",
+    '  globalThis.document ??= {',
+    '    currentScript,',
+    '    getElementsByTagName: () => [currentScript],',
+    '  };',
+    '}',
     'const requiredSpecifiers = ' + JSON.stringify(requiredEntries) + ';',
     'const requiredEntries = [];',
     'for (const specifier of requiredSpecifiers) {',
@@ -480,13 +668,19 @@ function createRuntimeSmokeSource(requiredEntries) {
     "const pluginRunJS = fs.realpathSync(path.dirname(pluginRequire.resolve('@nocobase/runjs/package.json')));",
     'if (rootRunJS !== pluginRunJS) throw new Error("The plugin resolved a second @nocobase/runjs instance");',
     '',
-    'const lezerResolvers = [consumerRequire];',
-    "for (const packageName of ['@codemirror/lang-html', '@codemirror/lang-javascript', '@codemirror/language']) {",
-    '  lezerResolvers.push(createRequire(consumerRequire.resolve(packageName)));',
+    'const lezerResolvers = [{ packageName: "consumer", resolver: consumerRequire }];',
+    'if (verifyRealClientTopology) {',
+    "  lezerResolvers.push({ packageName: '@nocobase/client-v2', resolver: createRequire(consumerRequire.resolve('@nocobase/client-v2/package.json')) });",
+    "  lezerResolvers.push({ packageName: '@nocobase/runjs', resolver: createRequire(consumerRequire.resolve('@nocobase/runjs/package.json')) });",
     '}',
-    'const resolvedLezerRoots = [...new Set(lezerResolvers.map((resolver) =>',
-    "  fs.realpathSync(path.dirname(findPackageJson(resolver.resolve('@lezer/common'), '@lezer/common'))),",
-    '))];',
+    "for (const packageName of ['@codemirror/lang-html', '@codemirror/lang-javascript', '@codemirror/language']) {",
+    '  lezerResolvers.push({ packageName, resolver: createRequire(consumerRequire.resolve(packageName)) });',
+    '}',
+    'const lezerResolverRealpaths = lezerResolvers.map(({ packageName, resolver }) => ({',
+    '  packageName,',
+    "  realpath: fs.realpathSync(path.dirname(findPackageJson(resolver.resolve('@lezer/common'), '@lezer/common'))),",
+    '}));',
+    'const resolvedLezerRoots = [...new Set(lezerResolverRealpaths.map(({ realpath }) => realpath))];',
     'if (resolvedLezerRoots.length !== 1) {',
     '  throw new Error("CodeMirror resolved incompatible @lezer/common instances: " + resolvedLezerRoots.join(", "));',
     '}',
@@ -545,13 +739,20 @@ function createRuntimeSmokeSource(requiredEntries) {
     '  requiredEntries,',
     '  browserRoot: { blockedModules, inputs: bundleInputs, prohibitedInputs },',
     '  installations: { runjs: runJSInstallations, lezerCommon: lezerInstallations },',
-    '  codeMirror: { mixedParserPassed: true, resolvedLezerRoots: resolvedLezerRoots.map((root) => path.relative(consumerRoot, root).replaceAll(path.sep, "/")) },',
+    '  codeMirror: {',
+    '    mixedParserPassed: true,',
+    '    resolvedLezerRoots: resolvedLezerRoots.map((root) => path.relative(consumerRoot, root).replaceAll(path.sep, "/")),',
+    '    resolverRealpaths: lezerResolverRealpaths.map(({ packageName, realpath }) => ({',
+    '      packageName,',
+    '      realpath: path.relative(consumerRoot, realpath).replaceAll(path.sep, "/"),',
+    '    })),',
+    '  },',
     '};',
     '',
   ].join('\n');
 }
 
-function runConsumerTypeSmoke(consumerRoot) {
+function runConsumerTypeSmoke(consumerRoot, requiredEntries) {
   fs.writeFileSync(
     path.join(consumerRoot, 'types-smoke.ts'),
     requiredEntries
@@ -591,15 +792,9 @@ function runConsumerTypeSmoke(consumerRoot) {
 }
 
 function resolveCodeMirrorVersions(repositoryRoot) {
-  const repositoryRequire = createRequire(path.join(repositoryRoot, 'package.json'));
   const versions = {};
   for (const packageName of codeMirrorPackages) {
-    const packageJsonPath = findPackageJson(repositoryRequire.resolve(packageName), packageName);
-    const manifest = readJson(packageJsonPath);
-    if (!manifest.version) {
-      throw new Error(packageName + ' is missing its installed version');
-    }
-    versions[packageName] = manifest.version;
+    versions[packageName] = resolveInstalledPackageVersion(repositoryRoot, packageName);
   }
 
   const clientV2Manifest = readJson(path.join(repositoryRoot, 'packages/core/client-v2/package.json'));
@@ -609,6 +804,16 @@ function resolveCodeMirrorVersions(repositoryRoot) {
     }
   }
   return versions;
+}
+
+function resolveInstalledPackageVersion(repositoryRoot, packageName) {
+  const repositoryRequire = createRequire(path.join(repositoryRoot, 'package.json'));
+  const packageJsonPath = findPackageJson(repositoryRequire.resolve(packageName), packageName);
+  const manifest = readJson(packageJsonPath);
+  if (!manifest.version) {
+    throw new Error(packageName + ' is missing its installed version');
+  }
+  return manifest.version;
 }
 
 function findPackageJson(entryPath, expectedName) {

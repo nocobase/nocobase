@@ -158,7 +158,14 @@ function createSyncAction(
         return deepFreeze(await run(currentServices, input, ctx));
       }
       const projectId = requireProjectId(input);
-      await assertScopedPermission(currentServices.db, ctx, projectId, actionPermissions[actionName]);
+      await currentServices.projectService.getProject(projectId, ctx);
+      await assertScopedPermission(
+        currentServices.db,
+        ctx,
+        projectId,
+        currentServices.projectService.getCurrentApplicationName(),
+        actionPermissions[actionName],
+      );
       return deepFreeze(await run(currentServices, input, ctx));
     },
     transformError: (error) => normalizeSyncError(error),
@@ -517,6 +524,7 @@ async function assertScopedPermission(
   db: Database,
   ctx: JsTemplateServiceContext,
   projectId: string,
+  applicationName: string,
   actions: readonly JsTemplateAclAction[],
 ): Promise<void> {
   if (!ctx.can) {
@@ -524,7 +532,7 @@ async function assertScopedPermission(
   }
   for (const action of actions) {
     const permission = await ctx.can({ resource: 'jsTemplate', action });
-    if (await permissionIncludesProject(db, permission, projectId)) {
+    if (await permissionIncludesProject(db, permission, projectId, applicationName)) {
       return;
     }
   }
@@ -546,7 +554,12 @@ async function assertAllPermissions(
   }
 }
 
-async function permissionIncludesProject(db: Database, permission: unknown, projectId: string): Promise<boolean> {
+async function permissionIncludesProject(
+  db: Database,
+  permission: unknown,
+  projectId: string,
+  applicationName: string,
+): Promise<boolean> {
   if (!permission) {
     return false;
   }
@@ -566,7 +579,7 @@ async function permissionIncludesProject(db: Database, permission: unknown, proj
   }
   const record = await db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
     filter: {
-      $and: [{ id: projectId }, filter],
+      $and: [{ id: projectId, applicationName }, filter],
     },
     fields: ['id'],
   });

@@ -215,6 +215,19 @@ export class JsTemplateService {
       throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
     }
 
+    const projectId = String(record.get('projectId') || '');
+    if (!projectId) {
+      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+    }
+    try {
+      await this.projectService.getProject(projectId, ctx);
+    } catch (error) {
+      if (error instanceof JsTemplateError && error.code === 'JS_TEMPLATE_PROJECT_NOT_FOUND') {
+        throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+      }
+      throw error;
+    }
+
     return templateFromModel(record);
   }
 

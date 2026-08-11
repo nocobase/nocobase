@@ -18,14 +18,9 @@ export default defineCollection({
   timestamps: true,
   indexes: [
     {
-      name: 'jst_project_name_uq',
+      name: 'jst_project_application_normalized_uq',
       unique: true,
-      fields: ['name'],
-    },
-    {
-      name: 'jst_project_normalized_uq',
-      unique: true,
-      fields: ['normalizedName'],
+      fields: ['applicationName', 'normalizedName'],
     },
     {
       name: 'jst_project_vsc_uq',
@@ -67,18 +62,17 @@ export default defineCollection({
     {
       type: 'string',
       name: 'applicationName',
+      allowNull: false,
     },
     {
       type: 'string',
       name: 'name',
       allowNull: false,
-      unique: true,
     },
     {
       type: 'string',
       name: 'normalizedName',
       allowNull: false,
-      unique: true,
     },
     {
       type: 'string',

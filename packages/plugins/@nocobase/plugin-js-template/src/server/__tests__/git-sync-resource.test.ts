@@ -239,6 +239,19 @@ describe('jsTemplateSync resource', () => {
     expect(scopedOut.status).toBe(403);
   });
 
+  it.each(['foreign', 'missing'])('rejects a %s Project before evaluating scoped sync filters', async () => {
+    const fixture = createFixture();
+    vi.mocked(fixture.projectService.getProject).mockRejectedValue(
+      new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template project "${repo.id}" was not found`),
+    );
+
+    const ctx = await runAction(fixture, 'get', { projectId: repo.id }, ['manageSyncSource'], false);
+
+    expect(ctx.status).toBe(404);
+    expect(ctx.body).toMatchObject({ errors: [{ code: 'JS_TEMPLATE_PROJECT_NOT_FOUND' }] });
+    expect(fixture.runtime.getRemote).not.toHaveBeenCalled();
+  });
+
   it('allows configure, Pull, and Push while the Source Project is disabled', async () => {
     const fixture = createFixture();
     const disabledRepo = { ...repo, lifecycleStatus: 'disabled' as const };
@@ -634,6 +647,7 @@ function createFixture(options: { remote?: VscFileRemoteRecord; applyFails?: boo
     recordCreateJobEvent: vi.fn(async () => undefined),
   };
   const projectService = {
+    getCurrentApplicationName: vi.fn(() => 'main'),
     getInternalProject: vi.fn(async () => repo),
     getProject: vi.fn(async () => {
       const { vscRepoId: _vscRepoId, ...publicRepo } = repo;

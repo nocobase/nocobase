@@ -28,7 +28,7 @@ import { compileJsTemplateValidatedTemplate, validateJsTemplateWorkspace } from 
 import { templateFromModel } from './JsTemplateService';
 import { JsTemplateFileService } from './JsTemplateFileService';
 import { JsTemplatePermissionService } from './JsTemplatePermissionService';
-import type { JsTemplateServiceContext } from './JsTemplateProjectService';
+import { JsTemplateProjectService, type JsTemplateServiceContext } from './JsTemplateProjectService';
 import {
   JsTemplateValidationResult,
   JsTemplateValidator,
@@ -62,6 +62,7 @@ export class JsTemplateCompilePreviewService {
     private readonly db: Database,
     private readonly auditService: JsTemplateAuditService,
     private readonly fileService: JsTemplateFileService,
+    private readonly projectService: JsTemplateProjectService,
     private readonly permissionService: JsTemplatePermissionService,
     private readonly compilerBridge: JsTemplateWorkspaceCompilerBridge,
     private readonly validator = new JsTemplateValidator(),
@@ -198,24 +199,14 @@ export class JsTemplateCompilePreviewService {
       throw error;
     }
 
+    const project = await this.projectService.getProject(input.projectId, previewContext);
     if (typeof input.expectedHeadCommitId !== 'undefined') {
-      const project = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
-        filter: { id: input.projectId },
-        fields: ['id', 'headCommitId'],
-        transaction: previewContext.transaction,
-      });
-      if (!project) {
-        throw new JsTemplateError(
-          'JS_TEMPLATE_PROJECT_NOT_FOUND',
-          `JS Template project "${input.projectId}" was not found`,
-        );
-      }
-      if (project.get('headCommitId') !== input.expectedHeadCommitId) {
+      if (project.headCommitId !== input.expectedHeadCommitId) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_OUTDATED', 'JS Template source head is outdated', {
           details: {
             projectId: input.projectId,
             expectedHeadCommitId: input.expectedHeadCommitId,
-            currentHeadCommitId: project.get('headCommitId'),
+            currentHeadCommitId: project.headCommitId,
           },
         });
       }

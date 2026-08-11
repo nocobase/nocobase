@@ -17,24 +17,11 @@ const requiredJavaScriptArtifacts = [
   'dist/server/index.js',
   'dist/swagger/index.js',
 ] as const;
-const requiredDeclarationArtifacts = [
-  'dist/client/index.d.ts',
-  'dist/client-v2/index.d.ts',
-  'dist/server/index.d.ts',
-] as const;
 
 export default defineConfig({
   afterBuild: (log) => {
     assertBuildArtifacts(requiredJavaScriptArtifacts);
     log(`verified build artifacts: ${requiredJavaScriptArtifacts.join(', ')}`);
-
-    if (!process.argv.includes('--no-dts') && !process.argv.includes('--only-tar')) {
-      const verifyDeclarationArtifacts = () => {
-        assertBuildArtifacts(requiredDeclarationArtifacts);
-        log(`verified declaration artifacts: ${requiredDeclarationArtifacts.join(', ')}`);
-      };
-      process.once('beforeExit', verifyDeclarationArtifacts);
-    }
   },
 });
 

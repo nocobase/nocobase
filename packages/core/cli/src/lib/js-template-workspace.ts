@@ -250,6 +250,16 @@ function requireString(value: unknown, label: string): string {
   return value;
 }
 
+function parseJsTemplateLifecycleStatus(value: unknown, label: string): 'enabled' | 'disabled' {
+  const lifecycleStatus = requireString(value, label);
+  if (lifecycleStatus !== 'enabled' && lifecycleStatus !== 'disabled') {
+    throw new JsTemplateCliError(
+      translateCli('commands.jsTemplate.errors.invalidValue', { label }, { fallback: '{{label}} is missing or invalid.' }),
+    );
+  }
+  return lifecycleStatus;
+}
+
 function requireNullableString(value: unknown, label: string): string | null {
   if (value === null) {
     return null;
@@ -433,7 +443,7 @@ export function extractPullResult(value: unknown): JsTemplatePullResult {
       ...(project as unknown as JsTemplateProjectRecord),
       id: requireString(project.id, 'Pull project id'),
       name: requireString(project.name, 'Pull project name'),
-      lifecycleStatus: requireString(project.lifecycleStatus, 'Pull project lifecycleStatus'),
+      lifecycleStatus: parseJsTemplateLifecycleStatus(project.lifecycleStatus, 'Pull project lifecycleStatus'),
       headCommitId: requireNullableString(project.headCommitId, 'Pull project headCommitId'),
     },
     files: record.files as JsTemplatePulledFile[],

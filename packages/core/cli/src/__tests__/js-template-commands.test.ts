@@ -16,6 +16,7 @@ import JsTemplateCheck from '../commands/js-template/check.js';
 import JsTemplatePull from '../commands/js-template/pull.js';
 import JsTemplateSave from '../commands/js-template/save.js';
 import {
+  extractPullResult,
   extractTemplateRecord,
   JS_TEMPLATE_BASELINE_PATH,
   JS_TEMPLATE_EXIT_CODES,
@@ -68,6 +69,14 @@ const JS_TEMPLATE_KIND_FIXTURES: readonly JsTemplateKindFixture[] = [
     tag: 'JS Action',
     source: 'ctx.message.success(ctx.t("Demo action"));\n',
   },
+];
+const VALID_JS_TEMPLATE_LIFECYCLE_STATUSES: Array<'enabled' | 'disabled'> = ['enabled', 'disabled'];
+const INVALID_JS_TEMPLATE_LIFECYCLE_STATUS_CASES: Array<[string, Record<string, unknown>]> = [
+  ['archived', { lifecycleStatus: 'archived' }],
+  ['an arbitrary string', { lifecycleStatus: 'pending' }],
+  ['an empty string', { lifecycleStatus: '' }],
+  ['null', { lifecycleStatus: null }],
+  ['a missing value', {}],
 ];
 
 function getKindFixture(kind: JsTemplateKind): JsTemplateKindFixture {
@@ -200,6 +209,16 @@ function pullEnvelope(
   };
 }
 
+function pullResultWithProjectFields(projectFields: Record<string, unknown>): Record<string, unknown> {
+  return {
+    project: { id: 'jtp_demo', name: 'demo', headCommitId: null, ...projectFields },
+    commit: null,
+    tree: null,
+    unchanged: false,
+    files: [],
+  };
+}
+
 async function createTempWorkspace(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'nocobase-js-template-cli-'));
   temporaryDirectories.push(directory);
@@ -312,6 +331,21 @@ describe('nb js-template pull/check/save', () => {
           descriptorPath: 'src/client/entry.json',
         }).kind,
       ).toBe(kind);
+    },
+  );
+
+  test.each(VALID_JS_TEMPLATE_LIFECYCLE_STATUSES)('accepts the %s project lifecycle status', (lifecycleStatus) => {
+    const result = extractPullResult(pullResultWithProjectFields({ lifecycleStatus }));
+
+    expect(result.project.lifecycleStatus).toBe(lifecycleStatus);
+  });
+
+  test.each(INVALID_JS_TEMPLATE_LIFECYCLE_STATUS_CASES)(
+    'rejects %s as a project lifecycle status',
+    (_label, projectFields) => {
+      expect(() => extractPullResult(pullResultWithProjectFields(projectFields))).toThrow(
+        'Pull project lifecycleStatus is missing or invalid.',
+      );
     },
   );
 

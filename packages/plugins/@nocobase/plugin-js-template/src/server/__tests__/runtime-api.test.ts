@@ -13,16 +13,15 @@ import { vi } from 'vitest';
 
 import type { JsTemplateRuntimeSourceBinding } from '../../shared/types';
 import { createJsTemplateRuntimeResource } from '../resources/jsTemplateRuntime';
+import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateRuntimeService } from '../services/JsTemplateRuntimeService';
 
 const artifactHash = 'a'.repeat(64);
 
 describe('JS Template runtime artifact API', () => {
   it('reads immutable artifacts by hash and rejects missing hashes with 404', async () => {
-    const artifactRepository = {
-      findOne: vi.fn().mockResolvedValueOnce(createModel(createArtifact())).mockResolvedValueOnce(null),
-    };
-    const service = createService(artifactRepository);
+    const artifactRepository = { findOne: vi.fn().mockResolvedValue(createModel(createArtifact())) };
+    const { service } = createService(artifactRepository, [{ projectId: 'jtp_main' }]);
 
     await expect(service.getArtifact(artifactHash)).resolves.toMatchObject({
       artifactHash,
@@ -32,6 +31,37 @@ describe('JS Template runtime artifact API', () => {
       code: 'JS_TEMPLATE_ARTIFACT_NOT_FOUND',
       status: 404,
     });
+    expect(artifactRepository.findOne).toHaveBeenCalledTimes(1);
+  });
+
+  it('requires a current-application Template reference and allows shared hashes', async () => {
+    const artifactRepository = { findOne: vi.fn().mockResolvedValue(createModel(createArtifact())) };
+    const foreignOnly = createService(artifactRepository, [{ projectId: 'jtp_foreign' }]);
+
+    await expect(foreignOnly.service.getArtifact(artifactHash)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_ARTIFACT_NOT_FOUND',
+      status: 404,
+    });
+    expect(artifactRepository.findOne).not.toHaveBeenCalled();
+    expect(foreignOnly.templatesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          artifactHash,
+          projectId: { $in: ['jtp_main'] },
+        },
+      }),
+    );
+
+    const shared = createService(artifactRepository, [{ projectId: 'jtp_foreign' }, { projectId: 'jtp_main' }]);
+    await expect(shared.service.getArtifact(artifactHash)).resolves.toMatchObject({ artifactHash });
+    expect(shared.templatesRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        filter: {
+          artifactHash,
+          projectId: { $in: ['jtp_main'] },
+        },
+      }),
+    );
   });
 
   it('sets immutable cache headers and a strong ETag', async () => {
@@ -63,16 +93,48 @@ describe('JS Template runtime artifact API', () => {
   });
 });
 
-function createService(artifactRepository: { findOne: ReturnType<typeof vi.fn> }): JsTemplateRuntimeService {
+function createService(
+  artifactRepository: { findOne: ReturnType<typeof vi.fn> },
+  references: Array<{ projectId: string }>,
+): {
+  service: JsTemplateRuntimeService;
+  templatesRepository: { find: ReturnType<typeof vi.fn> };
+  projectsRepository: { find: ReturnType<typeof vi.fn> };
+} {
+  const templatesRepository = {
+    find: vi.fn(async (options: { filter?: { artifactHash?: string; projectId?: { $in?: string[] } } } = {}) =>
+      options.filter?.artifactHash === artifactHash
+        ? references
+            .filter((reference) => options.filter?.projectId?.$in?.includes(reference.projectId))
+            .map((reference) => createModel(reference))
+        : [],
+    ),
+  };
+  const projectsRepository = {
+    find: vi.fn().mockResolvedValue([createModel({ id: 'jtp_main' })]),
+  };
   const db = {
     getRepository(name: string) {
       if (name === 'jsTemplateArtifacts') {
         return artifactRepository;
       }
+      if (name === 'jsTemplates') {
+        return templatesRepository;
+      }
+      if (name === 'jsTemplateProjects') {
+        return projectsRepository;
+      }
       throw new Error(`Unexpected repository ${name}`);
     },
   } as unknown as Database;
-  return new JsTemplateRuntimeService(db);
+  const projectService = {
+    getCurrentApplicationName: () => 'main',
+  } as unknown as JsTemplateProjectService;
+  return {
+    service: new JsTemplateRuntimeService(db, projectService),
+    templatesRepository,
+    projectsRepository,
+  };
 }
 
 function createArtifact(): Record<string, unknown> {

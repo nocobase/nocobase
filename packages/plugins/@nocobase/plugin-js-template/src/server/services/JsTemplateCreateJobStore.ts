@@ -105,7 +105,7 @@ export class JsTemplateCreateJobStore {
       });
       return createJobFromModel(record);
     } catch (error) {
-      if (error instanceof UniqueConstraintError) {
+      if (error instanceof UniqueConstraintError && isCreateJobReservationConstraintError(error)) {
         throw createNameConflict(input.name, input.normalizedName);
       }
       throw error;
@@ -544,7 +544,47 @@ function createNameConflict(name: string, normalizedName: string): JsTemplateErr
 }
 
 function jobNotFound(jobId: string): JsTemplateError {
-  return new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template creation job "${jobId}" was not found`);
+  return new JsTemplateError('JS_TEMPLATE_CREATE_JOB_NOT_FOUND', `JS Template creation job "${jobId}" was not found`);
+}
+
+function isCreateJobReservationConstraintError(error: UniqueConstraintError): boolean {
+  const constraintNames = [error, error.parent, error.original].flatMap((value) => [
+    readStringProperty(value, 'constraint'),
+    readStringProperty(value, 'index'),
+  ]);
+  if (constraintNames.includes('jst_create_job_reservation_uq')) {
+    return true;
+  }
+
+  const fields = new Set<string>();
+  if (Array.isArray(error.fields)) {
+    for (const field of error.fields) {
+      if (typeof field === 'string') {
+        fields.add(field);
+      }
+    }
+  } else {
+    for (const field of Object.keys(error.fields || {})) {
+      fields.add(field);
+    }
+  }
+  for (const validationError of error.errors) {
+    if (validationError.path) {
+      fields.add(validationError.path);
+    }
+  }
+  return (
+    (fields.size === 1 && fields.has('jst_create_job_reservation_uq')) ||
+    (fields.size === 2 && fields.has('applicationName') && fields.has('reservationKey'))
+  );
+}
+
+function readStringProperty(value: unknown, property: string): string | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const propertyValue = (value as Record<string, unknown>)[property];
+  return typeof propertyValue === 'string' ? propertyValue : null;
 }
 
 function invalidJobState(message: string): JsTemplateError {

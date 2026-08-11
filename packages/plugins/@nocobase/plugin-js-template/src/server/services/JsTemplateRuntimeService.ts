@@ -29,7 +29,11 @@ import type {
 } from '../../shared/types';
 import { assertJsTemplateKind } from '../../shared/types';
 import { templateFromModel } from './JsTemplateService';
-import type { JsTemplateServiceContext } from './JsTemplateProjectService';
+import type {
+  JsTemplateProjectInternalRecord,
+  JsTemplateProjectService,
+  JsTemplateServiceContext,
+} from './JsTemplateProjectService';
 import { JsTemplateSettingsService } from './JsTemplateSettingsService';
 import { getRuntimeSettingsSource, hasUsableRuntimeArtifact } from './runtimeArtifact';
 
@@ -38,37 +42,27 @@ export interface JsTemplateRuntimeServiceOptions {
 }
 
 export class JsTemplateRuntimeService {
-  private readonly settingsResolver: JsTemplateSettingsService;
-
-  private readonly options: JsTemplateRuntimeServiceOptions;
-
-  constructor(db: Database, options?: JsTemplateRuntimeServiceOptions);
-  constructor(db: Database, settingsResolver?: JsTemplateSettingsService, options?: JsTemplateRuntimeServiceOptions);
   constructor(
     private readonly db: Database,
-    settingsResolverOrOptions?: JsTemplateSettingsService | JsTemplateRuntimeServiceOptions,
-    options: JsTemplateRuntimeServiceOptions = {},
-  ) {
-    if (isJsTemplateSettingsService(settingsResolverOrOptions)) {
-      this.settingsResolver = settingsResolverOrOptions;
-      this.options = options;
-      return;
-    }
-
-    this.settingsResolver = new JsTemplateSettingsService();
-    this.options = settingsResolverOrOptions ?? options;
-  }
+    private readonly projectService: JsTemplateProjectService,
+    private readonly options: JsTemplateRuntimeServiceOptions = {},
+    private readonly settingsResolver = new JsTemplateSettingsService(),
+  ) {}
 
   async listSelectableTemplates(
     input: { projectId?: string; kind?: string } = {},
     ctx: JsTemplateServiceContext = {},
   ): Promise<JsTemplateSelectableTemplateSummary[]> {
+    const projectHeadCommitIds = await this.loadEnabledProjectHeadCommitIds(input.projectId, ctx);
+    const projectIds = [...projectHeadCommitIds.keys()];
+    if (projectIds.length === 0) {
+      return [];
+    }
+
     const filter: Record<string, unknown> = {
       healthStatus: 'ready',
+      projectId: { $in: projectIds },
     };
-    if (input.projectId) {
-      filter.projectId = input.projectId;
-    }
     if (input.kind) {
       const kind = assertSupportedKind(input.kind);
       filter.kind = kind;
@@ -99,11 +93,8 @@ export class JsTemplateRuntimeService {
       transaction: ctx.transaction,
     });
     const runtimeTemplates = records.map((record) => selectableTemplateFromModel(record as Model));
-    const projectIds: string[] = [...new Set<string>(runtimeTemplates.map((template) => template.projectId))];
-    const [projectHeadCommitIds, projectLabels] = await Promise.all([
-      this.loadEnabledProjectHeadCommitIds(projectIds, ctx),
-      this.loadVisibleProjectLabels(projectIds, ctx),
-    ]);
+    const templateProjectIds = [...new Set<string>(runtimeTemplates.map((template) => template.projectId))];
+    const projectLabels = await this.loadVisibleProjectLabels(templateProjectIds, ctx);
     const templates: JsTemplateSelectableTemplateSummary[] = [];
 
     for (const template of runtimeTemplates) {
@@ -124,9 +115,9 @@ export class JsTemplateRuntimeService {
     assertRuntimeResolveInput(input);
 
     const sourceBinding = input.sourceBinding;
-    const template = await this.loadRuntimeTemplate(sourceBinding.templateId, ctx);
+    const { template, project } = await this.loadRuntimeTemplate(sourceBinding.templateId, ctx);
     assertSourceBindingMatches(sourceBinding, template);
-    await this.assertRuntimeStateAllowsTemplate(template, ctx);
+    this.assertRuntimeStateAllowsTemplate(template, project);
     const settingsSource = getRuntimeSettingsSource(template);
     const settings = this.settingsResolver.resolveRuntimeSettings(settingsSource, input.settings);
     if (!template.artifactHash || !template.runtimeCodeHash || !template.runtimeVersion) {
@@ -153,21 +144,33 @@ export class JsTemplateRuntimeService {
     if (typeof artifactHash !== 'string' || !/^[a-f0-9]{64}$/u.test(artifactHash)) {
       throw invalidInput('artifactHash must be a SHA-256 hash');
     }
+    const projectRecords = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).find({
+      filter: { applicationName: this.projectService.getCurrentApplicationName() },
+      fields: ['id'],
+      transaction: ctx.transaction,
+    });
+    const projectIds = projectRecords.map((project) => String(project.get('id') || '')).filter(Boolean);
+    if (projectIds.length === 0) {
+      throw artifactNotFound(artifactHash);
+    }
+    const templateRecords = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).find({
+      filter: {
+        artifactHash,
+        projectId: { $in: projectIds },
+      },
+      fields: ['projectId'],
+      transaction: ctx.transaction,
+    });
+    if (templateRecords.length === 0) {
+      throw artifactNotFound(artifactHash);
+    }
+
     const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.artifacts).findOne({
       filterByTk: artifactHash,
       transaction: ctx.transaction,
     });
     if (!record) {
-      throw new JsTemplateError(
-        'JS_TEMPLATE_ARTIFACT_NOT_FOUND',
-        `JS Template runtime artifact "${artifactHash}" was not found`,
-        {
-          details: {
-            reasonCode: 'artifact_missing',
-            artifactHash,
-          },
-        },
-      );
+      throw artifactNotFound(artifactHash);
     }
 
     return {
@@ -182,30 +185,59 @@ export class JsTemplateRuntimeService {
     };
   }
 
-  private async loadRuntimeTemplate(templateId: string, ctx: JsTemplateServiceContext): Promise<JsTemplate> {
-    const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
+  private async loadRuntimeTemplate(
+    templateId: string,
+    ctx: JsTemplateServiceContext,
+  ): Promise<{ template: JsTemplate; project: JsTemplateProjectInternalRecord }> {
+    const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates);
+    const reference = await repository.findOne({
       filterByTk: templateId,
+      fields: ['id', 'projectId'],
+      transaction: ctx.transaction,
+    });
+    if (!reference) {
+      throw templateNotFound(templateId);
+    }
+
+    const projectId = String(reference.get('projectId') || '');
+    const project = await this.loadRuntimeProject(templateId, projectId, ctx);
+    const record = await repository.findOne({
+      filter: { id: templateId, projectId },
       except: ['runtimeArtifact', 'diagnostics'],
       transaction: ctx.transaction,
     });
     if (!record) {
-      throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`, {
-        details: {
-          reasonCode: 'template_missing',
-          templateId,
-        },
-      });
+      throw templateNotFound(templateId);
     }
 
-    return templateFromModel(record);
+    return { template: templateFromModel(record), project };
+  }
+
+  private async loadRuntimeProject(
+    templateId: string,
+    projectId: string,
+    ctx: JsTemplateServiceContext,
+  ): Promise<JsTemplateProjectInternalRecord> {
+    try {
+      return await this.projectService.getInternalProject(projectId, ctx);
+    } catch (error) {
+      if (isApplicationBoundaryError(error)) {
+        throw templateNotFound(templateId);
+      }
+      throw error;
+    }
   }
 
   private async loadEnabledProjectHeadCommitIds(
-    projectIds: string[],
+    projectId: string | undefined,
     ctx: JsTemplateServiceContext,
   ): Promise<Map<string, string>> {
     const projects = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).find({
-      filter: { id: { $in: projectIds } },
+      filter: {
+        applicationName: this.projectService.getCurrentApplicationName(),
+        lifecycleStatus: 'enabled',
+        ...(projectId ? { id: projectId } : {}),
+      },
       fields: ['id', 'lifecycleStatus', 'headCommitId'],
       transaction: ctx.transaction,
     });
@@ -241,8 +273,19 @@ export class JsTemplateRuntimeService {
     const permissionFilter = await this.parseProjectLabelFilter(params?.filter, ctx);
     const records = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).find({
       filter: permissionFilter
-        ? { $and: [{ id: { $in: projectIds } }, permissionFilter] }
-        : { id: { $in: projectIds } },
+        ? {
+            $and: [
+              {
+                id: { $in: projectIds },
+                applicationName: this.projectService.getCurrentApplicationName(),
+              },
+              permissionFilter,
+            ],
+          }
+        : {
+            id: { $in: projectIds },
+            applicationName: this.projectService.getCurrentApplicationName(),
+          },
       fields: ['id', ...fields],
       transaction: ctx.transaction,
     });
@@ -276,26 +319,8 @@ export class JsTemplateRuntimeService {
     }
   }
 
-  private async assertRuntimeStateAllowsTemplate(template: JsTemplate, ctx: JsTemplateServiceContext): Promise<void> {
-    const project = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
-      filterByTk: template.projectId,
-      transaction: ctx.transaction,
-    });
-    if (!project) {
-      throw new JsTemplateError(
-        'JS_TEMPLATE_PROJECT_NOT_FOUND',
-        `JS Template project "${template.projectId}" was not found`,
-        {
-          details: {
-            reasonCode: 'project_missing',
-            projectId: template.projectId,
-            templateId: template.id,
-          },
-        },
-      );
-    }
-
-    const projectLifecycleStatus = String(project.get('lifecycleStatus') || '');
+  private assertRuntimeStateAllowsTemplate(template: JsTemplate, project: JsTemplateProjectInternalRecord): void {
+    const projectLifecycleStatus = project.lifecycleStatus;
     if (projectLifecycleStatus === 'disabled') {
       throw runtimeUnavailableError(`JS Template project lifecycle status is "${projectLifecycleStatus}"`, {
         reasonCode: 'project_disabled',
@@ -328,7 +353,7 @@ export class JsTemplateRuntimeService {
         templateHealthStatus: template.healthStatus,
       });
     }
-    if (!hasUsableRuntimeArtifact(template, normalizeCommitId(project.get('headCommitId')))) {
+    if (!hasUsableRuntimeArtifact(template, project.headCommitId)) {
       throw runtimeUnavailableError('JS Template has no compiled runtime artifact', {
         reasonCode: 'runtime_missing',
         projectId: template.projectId,
@@ -348,10 +373,20 @@ function normalizeApiBasePath(apiBasePath?: string): string {
   return normalized === '/' ? '' : normalized;
 }
 
-function isJsTemplateSettingsService(
-  value: JsTemplateSettingsService | JsTemplateRuntimeServiceOptions | undefined,
-): value is JsTemplateSettingsService {
-  return typeof (value as JsTemplateSettingsService | undefined)?.resolveRuntimeSettings === 'function';
+function artifactNotFound(artifactHash: string): JsTemplateError {
+  return new JsTemplateError('JS_TEMPLATE_ARTIFACT_NOT_FOUND', 'JS Template runtime artifact was not found', {
+    details: {
+      reasonCode: 'artifact_missing',
+      artifactHash,
+    },
+  });
+}
+
+function isApplicationBoundaryError(error: unknown): boolean {
+  return (
+    error instanceof JsTemplateError &&
+    (error.code === 'JS_TEMPLATE_PROJECT_NOT_FOUND' || error.code === 'JS_TEMPLATE_PERMISSION_DENIED')
+  );
 }
 
 function assertRuntimeResolveInput(input: JsTemplateRuntimeResolveInput): void {
@@ -568,6 +603,15 @@ function stableJsonHash(value: unknown): string {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function templateNotFound(templateId: string): JsTemplateError {
+  return new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`, {
+    details: {
+      reasonCode: 'template_missing',
+      templateId,
+    },
+  });
 }
 
 function invalidInput(message: string): JsTemplateError {

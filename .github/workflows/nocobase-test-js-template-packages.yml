@@ -14,6 +14,13 @@ on:
     paths:
       - 'package.json'
       - '**/yarn.lock'
+      - 'tsconfig.json'
+      - 'tsconfig.paths.json'
+      - 'packages/**/package.json'
+      - 'packages/core/build/**'
+      - 'packages/core/cli-v1/src/commands/build.js'
+      - 'packages/core/client-v2/package.json'
+      - 'packages/core/client-v2/src/flow/components/code-editor/**'
       - 'packages/core/runjs/**'
       - 'packages/plugins/@nocobase/plugin-js-template/**'
       - '.github/workflows/nocobase-test-js-template-packages.yml'
@@ -21,6 +28,13 @@ on:
     paths:
       - 'package.json'
       - '**/yarn.lock'
+      - 'tsconfig.json'
+      - 'tsconfig.paths.json'
+      - 'packages/**/package.json'
+      - 'packages/core/build/**'
+      - 'packages/core/cli-v1/src/commands/build.js'
+      - 'packages/core/client-v2/package.json'
+      - 'packages/core/client-v2/src/flow/components/code-editor/**'
       - 'packages/core/runjs/**'
       - 'packages/plugins/@nocobase/plugin-js-template/**'
       - '.github/workflows/nocobase-test-js-template-packages.yml'
@@ -49,8 +63,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build RunJS and JS Template packages
-        run: yarn build @nocobase/runjs @nocobase/plugin-js-template
+      - name: Build dependency closure, RunJS, and JS Template plugin
+        run: yarn build @nocobase/runjs @nocobase/plugin-js-template --with-deps
 
       - name: Verify packed package boundaries
         run: node packages/core/runjs/scripts/verify-package-boundary.mjs --repository-root "${{ github.workspace }}"

@@ -10,7 +10,13 @@
 import { vi } from 'vitest';
 
 import type { JsTemplateUsageListInput } from '../../shared/types';
-import { createJsPageUsageRecord, createUsageRecord, createJsTemplateUsageServiceFixture } from './usage-test-helpers';
+import {
+  createJsPageTemplateRecord,
+  createJsPageUsageRecord,
+  createJsTemplateUsageServiceFixture,
+  createProjectRecord,
+  createUsageRecord,
+} from './usage-test-helpers';
 
 const salesUsageListInput = {
   templateId: 'jtt_sales_kpi',
@@ -151,7 +157,12 @@ describe('plugin-js-template template-level Usage visibility', () => {
     expect(repositories.jsTemplateUsages.find).toHaveBeenCalledWith(expect.objectContaining({ limit: 10, offset: 20 }));
     expect(repositories.jsTemplateUsages.count).toHaveBeenCalledWith(
       expect.objectContaining({
-        filter: { templateId: 'jtt_sales_kpi', resolvedStatus: { $ne: 'owner_missing' } },
+        filter: {
+          $and: [
+            { projectId: { $in: ['jtp_sales'] } },
+            { templateId: 'jtt_sales_kpi', resolvedStatus: { $ne: 'owner_missing' } },
+          ],
+        },
       }),
     );
     expect(repositories.flowModels.find).toHaveBeenCalledOnce();
@@ -302,6 +313,8 @@ describe('plugin-js-template template-level Usage visibility', () => {
         flowModelTreePaths: [{ ancestor: 'js_page_schema', descendant: 'flow_js_page_visible' }],
         desktopRoutes: [{ id: 'route_js_page', schemaUid: 'js_page_schema', title: 'Sales page' }],
         roles: [{ name: testCase.role, desktopRoutes: testCase.desktopRoutes }],
+        projects: [createProjectRecord({ id: 'jtp_pages' })],
+        templates: [createJsPageTemplateRecord()],
         usages: [createJsPageUsageRecord({ modelUid: 'flow_js_page_visible' })],
       });
       const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
@@ -389,8 +402,8 @@ describe('plugin-js-template template-level Usage visibility', () => {
     );
 
     await expect(service.listUsages(salesUsageListInput, { can })).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PERMISSION_DENIED',
-      status: 403,
+      code: 'JS_TEMPLATE_NOT_FOUND',
+      status: 404,
     });
     expect(repositories.jsTemplateUsages.count).not.toHaveBeenCalled();
     expect(repositories.jsTemplateUsages.find).not.toHaveBeenCalled();

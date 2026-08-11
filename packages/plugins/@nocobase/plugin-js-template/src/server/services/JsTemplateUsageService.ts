@@ -35,7 +35,11 @@ import {
 import { JsTemplateAuditService } from './JsTemplateAuditService';
 import { JsTemplatePermissionService } from './JsTemplatePermissionService';
 import type { JsTemplateCanFunction } from './JsTemplatePermissionService';
-import { JsTemplateProjectService, type JsTemplateServiceContext } from './JsTemplateProjectService';
+import {
+  JsTemplateProjectService,
+  type JsTemplateProjectInternalRecord,
+  type JsTemplateServiceContext,
+} from './JsTemplateProjectService';
 import { templateFromModel } from './JsTemplateService';
 import {
   JS_BLOCK_USAGE_OWNER_ADAPTER,
@@ -99,6 +103,8 @@ interface JsTemplateUsageVisibilityScanMetrics {
 }
 
 const USAGE_VISIBILITY_SCAN_METRICS = Symbol.for('nocobase.js-template.usage-visibility-scan-metrics');
+const APPLICATION_PROJECT_IDS = Symbol('js-template-application-project-ids');
+const LOCKED_APPLICATION_PROJECTS = Symbol('js-template-locked-application-projects');
 
 type JsTemplateUsageVisibilityScanContext = {
   [USAGE_VISIBILITY_SCAN_METRICS]?: JsTemplateUsageVisibilityScanMetrics;
@@ -112,6 +118,8 @@ type JsTemplateUsageServiceContext = JsTemplateServiceContext & {
   dryRun?: boolean;
   dryRunItems?: JsTemplateUsageRebuildItem[];
   skipOwnerLocatorHashes?: Set<string>;
+  [APPLICATION_PROJECT_IDS]?: string[];
+  [LOCKED_APPLICATION_PROJECTS]?: Map<string, JsTemplateProjectInternalRecord>;
 };
 
 type UsagePermissionResult = false | { role?: string; params?: Record<string, unknown> };
@@ -318,6 +326,9 @@ export class JsTemplateUsageService {
       dryRunItems: [],
     };
     const scopeProjectId = normalizeString(input.projectId);
+    if (scopeProjectId) {
+      await this.projectService.getProject(scopeProjectId, rebuildContext);
+    }
     const ownerLocator = normalizeOwnerLocator(input.ownerLocator);
     const rootUid = normalizeString(input.rootUid) || getRebuildRootUid(ownerLocator);
     if (rootUid) {
@@ -543,16 +554,21 @@ export class JsTemplateUsageService {
     };
   }
 
-  async countEffectiveUsages(templateId: string, ctx: JsTemplateServiceContext = {}): Promise<number> {
+  async countEffectiveUsages(templateId: string, ctx: JsTemplateUsageServiceContext = {}): Promise<number> {
     const normalizedTemplateId = normalizeString(templateId);
     if (!normalizedTemplateId) {
       throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'templateId must be a non-empty string');
     }
-    return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).count({
-      filter: {
+    await this.assertTemplateApplicationOwnership(normalizedTemplateId, ctx);
+    const filter = await this.scopeUsageFilter(
+      {
         templateId: normalizedTemplateId,
         resolvedStatus: { $ne: 'owner_missing' },
       },
+      ctx,
+    );
+    return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).count({
+      filter,
       transaction: ctx.transaction,
     });
   }
@@ -572,15 +588,22 @@ export class JsTemplateUsageService {
     if (!projectId) {
       throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
     }
-    await this.projectService.getProject(projectId, ctx);
+    try {
+      await this.projectService.getProject(projectId, ctx);
+    } catch (error) {
+      if (isJsTemplateError(error) && error.code === 'JS_TEMPLATE_PROJECT_NOT_FOUND') {
+        throw new JsTemplateError('JS_TEMPLATE_NOT_FOUND', `JS Template "${templateId}" was not found`);
+      }
+      throw error;
+    }
   }
 
   private async lockAuthoringBindingProjects(
     owners: UsageOwnerSource[],
-    action: UsageSyncAction,
+    _action: UsageSyncAction,
     ctx: JsTemplateUsageServiceContext,
   ): Promise<void> {
-    if (action === 'usageRebuild' || ctx.dryRun) {
+    if (ctx.dryRun) {
       return;
     }
     const projectIds = Array.from(
@@ -591,9 +614,14 @@ export class JsTemplateUsageService {
           .filter(Boolean),
       ),
     ).sort();
+    const lockedProjects = (ctx[LOCKED_APPLICATION_PROJECTS] ||= new Map());
     for (const projectId of projectIds) {
+      if (lockedProjects.has(projectId)) {
+        continue;
+      }
       try {
-        await this.projectService.lockInternalProjectForUpdate(projectId, ctx);
+        const project = await this.projectService.lockInternalProjectForUpdate(projectId, ctx);
+        lockedProjects.set(projectId, project);
       } catch (error) {
         if (
           isJsTemplateError(error) &&
@@ -614,6 +642,7 @@ export class JsTemplateUsageService {
     if (!normalizedProjectId) {
       return emptyUsageRefreshResult('skip', 'project_id_missing');
     }
+    await this.projectService.getProject(normalizedProjectId, ctx);
     const normalizedPlan = normalizeUsageRefreshScope(input.plan);
     if (normalizedPlan.mode === 'skip') {
       return emptyUsageRefreshResult('skip', normalizedPlan.reason);
@@ -632,10 +661,7 @@ export class JsTemplateUsageService {
 
     if (usages.length > 0) {
       const [project, templates] = await Promise.all([
-        this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
-          filterByTk: normalizedProjectId,
-          transaction: ctx.transaction,
-        }),
+        this.projectService.getInternalProject(normalizedProjectId, ctx),
         this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).find({
           filter:
             normalizedPlan.mode === 'templates'
@@ -743,13 +769,13 @@ export class JsTemplateUsageService {
     const scopeProjectId = normalizeString(limitProjectId);
     if (source.sourceMode !== JS_TEMPLATE_SOURCE_MODE) {
       if (action !== 'usageRebuild' && action !== 'jsTemplates.detachToInline') {
-        const existingUsage = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).findOne({
-          filter: {
+        const [existingUsage] = await this.findUsageModels(
+          {
             ownerLocatorHash,
             resolvedStatus: { $ne: 'owner_missing' },
           },
-          transaction: ctx.transaction,
-        });
+          ctx,
+        );
         if (existingUsage) {
           throw new JsTemplateError(
             'JS_TEMPLATE_CONFLICT',
@@ -788,7 +814,7 @@ export class JsTemplateUsageService {
       source.settings,
       ctx,
       adapter.kind,
-      action !== 'usageRebuild' && !ctx.dryRun,
+      !ctx.dryRun,
     );
     if (scopeProjectId && resolution.projectId !== scopeProjectId) {
       const removed = await this.removeUsagesForOwner(ownerLocatorHash, action, requestId, ctx, {
@@ -862,15 +888,32 @@ export class JsTemplateUsageService {
         conflictReason: 'kind_mismatch',
       };
     }
-    const project = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
-      filterByTk: sourceBinding.projectId,
-      transaction: ctx.transaction,
-      ...(ctx.transaction ? { lock: ctx.transaction.LOCK.UPDATE } : {}),
-    });
-    const template = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
-      filterByTk: sourceBinding.templateId,
-      transaction: ctx.transaction,
-    });
+    let project: JsTemplateProjectInternalRecord | null = null;
+    try {
+      if (ctx.dryRun) {
+        project = await this.projectService.getInternalProject(sourceBinding.projectId, ctx);
+      } else {
+        const lockedProjects = (ctx[LOCKED_APPLICATION_PROJECTS] ||= new Map());
+        project = lockedProjects.get(sourceBinding.projectId) || null;
+        if (!project) {
+          project = await this.projectService.lockInternalProjectForUpdate(sourceBinding.projectId, ctx);
+          lockedProjects.set(sourceBinding.projectId, project);
+        }
+      }
+    } catch (error) {
+      if (!isJsTemplateError(error) || error.code !== 'JS_TEMPLATE_PROJECT_NOT_FOUND') {
+        throw error;
+      }
+    }
+    const template = project
+      ? await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.templates).findOne({
+          filter: {
+            id: sourceBinding.templateId,
+            projectId: sourceBinding.projectId,
+          },
+          transaction: ctx.transaction,
+        })
+      : null;
     if (
       rejectOutdatedTarget &&
       (!project ||
@@ -886,7 +929,7 @@ export class JsTemplateUsageService {
   private resolveUsageFromLoadedModels(
     sourceBinding: JsTemplateRuntimeSourceBinding,
     settings: Record<string, unknown>,
-    project: Model | null,
+    project: JsTemplateProjectInternalRecord | null,
     template: Model | null,
   ): {
     projectId: string;
@@ -907,7 +950,7 @@ export class JsTemplateUsageService {
         conflictReason: 'project_missing',
       };
     }
-    const lifecycleStatus = normalizeString(project.get('lifecycleStatus'));
+    const lifecycleStatus = normalizeString(project.lifecycleStatus);
     if (lifecycleStatus === 'disabled') {
       return {
         ...fallback,
@@ -950,7 +993,7 @@ export class JsTemplateUsageService {
     }
 
     const runtimeTemplate = templateFromModel(template);
-    if (!hasUsableRuntimeArtifact(runtimeTemplate, normalizeString(project.get('headCommitId')) || null)) {
+    if (!hasUsableRuntimeArtifact(runtimeTemplate, normalizeString(project.headCommitId) || null)) {
       return {
         ...fallback,
         resolvedStatus: 'runtime_missing',
@@ -989,7 +1032,7 @@ export class JsTemplateUsageService {
 
   private async resolveStoredUsageFromCache(
     usage: JsTemplateUsage,
-    project: Model | null,
+    project: JsTemplateProjectInternalRecord | null,
     templatesById: ReadonlyMap<string, Model>,
     loadOwner: (modelUid: string) => Promise<FlowModelNode | null>,
   ): Promise<{
@@ -1587,8 +1630,9 @@ export class JsTemplateUsageService {
   }
 
   private async findUsageModels(filter: Record<string, unknown>, ctx: JsTemplateUsageServiceContext): Promise<Model[]> {
+    const scopedFilter = await this.scopeUsageFilter(filter, ctx);
     return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).find({
-      filter,
+      filter: scopedFilter,
       sort: ['projectId', 'templateId', 'ownerLocatorHash'],
       transaction: ctx.transaction,
     });
@@ -1600,13 +1644,37 @@ export class JsTemplateUsageService {
     limit: number,
     offset: number,
   ): Promise<Model[]> {
+    const scopedFilter = await this.scopeUsageFilter(filter, ctx);
     return this.db.getRepository(JS_TEMPLATE_COLLECTIONS.usages).find({
-      filter,
+      filter: scopedFilter,
       sort: ['projectId', 'templateId', 'ownerLocatorHash'],
       limit,
       offset,
       transaction: ctx.transaction,
     });
+  }
+
+  private async scopeUsageFilter(
+    filter: Record<string, unknown>,
+    ctx: JsTemplateUsageServiceContext,
+  ): Promise<Record<string, unknown>> {
+    const projectIds = await this.loadCurrentApplicationProjectIds(ctx);
+    return {
+      $and: [{ projectId: { $in: projectIds } }, filter],
+    };
+  }
+
+  private async loadCurrentApplicationProjectIds(ctx: JsTemplateUsageServiceContext): Promise<string[]> {
+    if (ctx[APPLICATION_PROJECT_IDS]) {
+      return ctx[APPLICATION_PROJECT_IDS];
+    }
+    const projects = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).find({
+      filter: { applicationName: this.projectService.getCurrentApplicationName() },
+      fields: ['id'],
+      transaction: ctx.transaction,
+    });
+    ctx[APPLICATION_PROJECT_IDS] = projects.map((project) => normalizeString(project.get('id'))).filter(Boolean);
+    return ctx[APPLICATION_PROJECT_IDS];
   }
 
   private async assertUsageActionAllowed(input: {

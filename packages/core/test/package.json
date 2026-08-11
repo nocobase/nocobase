@@ -51,6 +51,8 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
+    "@nocobase/client-v2": "3.0.0-alpha.8",
+    "@nocobase/runjs": "3.0.0-alpha.8",
     "@nocobase/server": "3.0.0-alpha.8",
     "@nocobase/utils": "3.0.0-alpha.8",
     "@playwright/test": "^1.45.3",

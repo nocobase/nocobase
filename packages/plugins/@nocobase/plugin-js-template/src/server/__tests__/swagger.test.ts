@@ -9,6 +9,8 @@
 
 import swaggerDocument from '../../swagger';
 import { runJSSourceActionNames } from '@nocobase/runjs/workspace/server';
+import { JS_TEMPLATE_ERROR_CODES } from '../../shared/errors';
+import { jsTemplateCreateJobActionNames } from '../resources/jsTemplateCreateJobs';
 import { jsTemplateActionNames } from '../resources/jsTemplates';
 import { jsTemplateFileActionNames } from '../resources/jsTemplateFiles';
 import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';
@@ -16,6 +18,7 @@ import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 
 const publicActions = {
   jsTemplateProjects: ['list', 'get'],
+  jsTemplateCreateJobs: ['list', 'dismiss'],
   jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline', 'delete'],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
@@ -26,6 +29,7 @@ describe('js-template swagger', () => {
   it('exports only the public authoring action allowlist and keeps it aligned with registered resource actions', () => {
     const registeredActions = {
       jsTemplateProjects: jsTemplateProjectActionNames,
+      jsTemplateCreateJobs: jsTemplateCreateJobActionNames,
       jsTemplates: jsTemplateActionNames,
       jsTemplateUsages: jsTemplateUsageActionNames,
       jsTemplateFiles: jsTemplateFileActionNames,
@@ -64,7 +68,13 @@ describe('js-template swagger', () => {
   });
 
   it('documents JS Template resources directly with canonical tags and terminology', () => {
-    for (const resource of ['jsTemplateProjects', 'jsTemplates', 'jsTemplateUsages', 'jsTemplateFiles'] as const) {
+    for (const resource of [
+      'jsTemplateProjects',
+      'jsTemplateCreateJobs',
+      'jsTemplates',
+      'jsTemplateUsages',
+      'jsTemplateFiles',
+    ] as const) {
       const actions = publicActions[resource];
       for (const action of actions) {
         const operation = swaggerDocument.paths[`/${resource}:${action}`].post;
@@ -88,6 +98,7 @@ describe('js-template swagger', () => {
       'JsTemplateSourceBinding',
       'JsTemplateCompileArtifactSummary',
       'JsTemplateDiagnostic',
+      'JsTemplateErrorCode',
       'JsTemplateErrorResponse',
       'RunJSSourceWorkspaceFile',
       'RunJSSourceSettingsDescriptor',
@@ -122,6 +133,7 @@ describe('js-template swagger', () => {
     expect(schemas.JsTemplateErrorResponse.properties.errors.items).toEqual({
       $ref: '#/components/schemas/JsTemplateErrorItem',
     });
+    expect(schemas.JsTemplateErrorCode.enum).toEqual([...JS_TEMPLATE_ERROR_CODES]);
     expect(saveRequest.properties.expectedHeadCommitId).toEqual({
       $ref: '#/components/schemas/JsTemplateExpectedHeadCommitId',
     });
@@ -145,6 +157,41 @@ describe('js-template swagger', () => {
       'js-action',
       'js-item',
     ]);
+  });
+
+  it('documents list and dismiss creation-job contracts without exposing internal execution fields', () => {
+    const schemas = swaggerDocument.components.schemas;
+    const listJobs = swaggerDocument.paths['/jsTemplateCreateJobs:list'].post;
+    const dismissJob = swaggerDocument.paths['/jsTemplateCreateJobs:dismiss'].post;
+
+    expect(listJobs.responses['200'].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/JsTemplateCreateJobListEnvelope',
+    });
+    expect(dismissJob.requestBody.content['application/json'].schema).toMatchObject({
+      required: ['jobId'],
+      additionalProperties: false,
+    });
+    expect(dismissJob.responses['404'].content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/JsTemplateCreateJobNotFoundErrorResponse',
+    });
+    expect(schemas.JsTemplateCreateJobNotFoundErrorResponse.properties.errors.items.properties.code.enum).toEqual([
+      'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+    ]);
+    expect(schemas.JsTemplateCreateJobNotFoundErrorResponse.properties.errors.items.properties.status.enum).toEqual([
+      404,
+    ]);
+    expect(schemas.JsTemplateErrorCode.enum).toContain('JS_TEMPLATE_CREATE_JOB_NOT_FOUND');
+    expect(schemas.JsTemplateCreateJobListEnvelope.properties.data).toEqual({
+      $ref: '#/components/schemas/JsTemplateCreateJobListResult',
+    });
+    expect(schemas.JsTemplateCreateJobDismissEnvelope.properties.data).toEqual({
+      $ref: '#/components/schemas/JsTemplateCreateJobDismissResult',
+    });
+    expect(schemas.JsTemplateCreateJobSummary.properties).not.toHaveProperty('applicationName');
+    expect(schemas.JsTemplateCreateJobSummary.properties).not.toHaveProperty('payload');
+    expect(schemas.JsTemplateCreateJobSummary.properties).not.toHaveProperty('actorUserId');
+    expect(schemas.JsTemplateCreateJobSummary.properties).not.toHaveProperty('requestId');
+    expect(schemas.JsTemplateCreateJobSummary.properties).not.toHaveProperty('claimToken');
   });
 
   it('keeps canonical conversion, deletion, and reusable Template contracts public', () => {

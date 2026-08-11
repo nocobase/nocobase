@@ -204,6 +204,7 @@ async function seedCatalog(app: MockServer) {
       values: {
         ...project,
         vscRepoId: `vsc_${project.id}`,
+        applicationName: 'main',
         normalizedName: project.name,
         lifecycleStatus: 'enabled',
         healthStatus: 'ready',

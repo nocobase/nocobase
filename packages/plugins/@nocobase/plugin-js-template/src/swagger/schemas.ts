@@ -8,6 +8,8 @@
  */
 
 import { JS_TEMPLATE_SUPPORTED_KINDS } from '../constants';
+import { JS_TEMPLATE_ERROR_CODES } from '../shared/errors';
+import { jsTemplateCreateJobStatuses, jsTemplateCreateSourceTypes } from '../shared/types';
 
 const nullableString = {
   type: 'string',
@@ -21,6 +23,10 @@ const nullableDateTime = {
 };
 
 export const jsTemplateSchemas = {
+  JsTemplateErrorCode: {
+    type: 'string',
+    enum: [...JS_TEMPLATE_ERROR_CODES],
+  },
   JsTemplateKind: {
     type: 'string',
     enum: [...JS_TEMPLATE_SUPPORTED_KINDS],
@@ -168,7 +174,7 @@ export const jsTemplateSchemas = {
     required: ['code', 'message', 'status'],
     properties: {
       code: {
-        type: 'string',
+        $ref: '#/components/schemas/JsTemplateErrorCode',
         example: 'JS_TEMPLATE_VALIDATION_FAILED',
       },
       message: {
@@ -203,6 +209,36 @@ export const jsTemplateSchemas = {
         },
       },
     },
+  },
+  JsTemplateCreateJobNotFoundErrorResponse: {
+    type: 'object',
+    required: ['errors'],
+    properties: {
+      errors: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 1,
+        items: {
+          type: 'object',
+          required: ['code', 'message', 'status'],
+          additionalProperties: false,
+          properties: {
+            code: {
+              type: 'string',
+              enum: ['JS_TEMPLATE_CREATE_JOB_NOT_FOUND'],
+            },
+            message: {
+              type: 'string',
+            },
+            status: {
+              type: 'integer',
+              enum: [404],
+            },
+          },
+        },
+      },
+    },
+    additionalProperties: false,
   },
   JsTemplateExpectedHeadCommitId: {
     type: 'string',
@@ -294,6 +330,74 @@ export const jsTemplateSchemas = {
       },
       createdAt: nullableDateTime,
       updatedAt: nullableDateTime,
+    },
+  },
+  JsTemplateCreateJobSummary: {
+    type: 'object',
+    required: [
+      'id',
+      'targetProjectId',
+      'name',
+      'title',
+      'description',
+      'sourceType',
+      'status',
+      'resultProjectId',
+      'errorCode',
+      'errorReasonCode',
+      'errorMessage',
+      'startedAt',
+      'finishedAt',
+      'createdAt',
+      'updatedAt',
+    ],
+    properties: {
+      id: { type: 'string' },
+      targetProjectId: { type: 'string' },
+      name: { type: 'string' },
+      title: nullableString,
+      description: nullableString,
+      sourceType: {
+        type: 'string',
+        enum: [...jsTemplateCreateSourceTypes],
+      },
+      status: {
+        type: 'string',
+        enum: [...jsTemplateCreateJobStatuses],
+      },
+      resultProjectId: nullableString,
+      errorCode: nullableString,
+      errorReasonCode: nullableString,
+      errorMessage: nullableString,
+      startedAt: nullableDateTime,
+      finishedAt: nullableDateTime,
+      createdAt: {
+        type: 'string',
+        format: 'date-time',
+      },
+      updatedAt: {
+        type: 'string',
+        format: 'date-time',
+      },
+    },
+  },
+  JsTemplateCreateJobListResult: {
+    type: 'object',
+    required: ['jobs'],
+    properties: {
+      jobs: {
+        type: 'array',
+        items: {
+          $ref: '#/components/schemas/JsTemplateCreateJobSummary',
+        },
+      },
+    },
+  },
+  JsTemplateCreateJobDismissResult: {
+    type: 'object',
+    required: ['id'],
+    properties: {
+      id: { type: 'string' },
     },
   },
   JsTemplate: {
@@ -1100,6 +1204,24 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/JsTemplateProject',
+      },
+    },
+  },
+  JsTemplateCreateJobListEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/JsTemplateCreateJobListResult',
+      },
+    },
+  },
+  JsTemplateCreateJobDismissEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/JsTemplateCreateJobDismissResult',
       },
     },
   },

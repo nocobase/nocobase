@@ -8,14 +8,16 @@
  */
 
 import type { HandlerType } from '@nocobase/resourcer';
+import type { Database } from '@nocobase/database';
+import { UniqueConstraintError } from '@nocobase/database';
 import { vi } from 'vitest';
 
+import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
 import type { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
-import type { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
-import { toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
+import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 
@@ -185,6 +187,48 @@ describe('JS Template durable creation jobs', () => {
     expect(summary).not.toHaveProperty('claimOwner');
     expect(summary).not.toHaveProperty('leaseExpiresAt');
     expect(summary).not.toHaveProperty('heartbeatAt');
+  });
+
+  it('maps only the application reservation constraint to a project-name conflict', async () => {
+    const create = vi.fn();
+    const store = new JsTemplateCreateJobStore({
+      getRepository: vi.fn(() => ({ create })),
+    } as unknown as Database);
+    const input = {
+      applicationName: 'main',
+      targetProjectId: 'jtp_target',
+      name: 'Demo',
+      normalizedName: 'demo',
+      sourceType: 'starter' as const,
+      payload: { sourceType: 'starter' as const, message: 'Initial source' },
+    };
+
+    create.mockRejectedValueOnce(
+      new UniqueConstraintError({ fields: { jst_create_job_reservation_uq: 'sha256:reservation' } }),
+    );
+    await expect(store.enqueue(input)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PROJECT_CONFLICT',
+      status: 409,
+    });
+
+    create.mockRejectedValueOnce(
+      new UniqueConstraintError({ fields: { applicationName: 'main', reservationKey: 'sha256:reservation' } }),
+    );
+    await expect(store.enqueue(input)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PROJECT_CONFLICT',
+      status: 409,
+    });
+
+    const targetProjectConflict = new UniqueConstraintError({ fields: { targetProjectId: 'jtp_target' } });
+    create.mockRejectedValueOnce(targetProjectConflict);
+    let caught: unknown;
+    try {
+      await store.enqueue(input);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBe(targetProjectConflict);
+    expect(caught).not.toBeInstanceOf(JsTemplateError);
   });
 });
 

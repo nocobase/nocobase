@@ -10,6 +10,7 @@
 import type { HandlerType } from '@nocobase/resourcer';
 import { vi } from 'vitest';
 
+import { JsTemplateError } from '../../shared/errors';
 import { createJsTemplateCreateJobsResource } from '../resources/jsTemplateCreateJobs';
 import type { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
@@ -84,38 +85,61 @@ describe('JS Template create-job permissions', () => {
     },
   );
 
-  it('does not reveal whether another actor owns a requested job', async () => {
-    const store = {
-      getOwn: vi.fn(async () => {
-        throw new Error('lookup should stay scoped');
-      }),
-      dismiss: vi.fn(),
-    } as unknown as JsTemplateCreateJobStore;
-    const resource = createJsTemplateCreateJobsResource({
-      store,
-      permissionService: new JsTemplatePermissionService({} as never),
-      applicationName: 'main',
-      auditService: { recordCreateJobEvent: vi.fn(async () => undefined) } as never,
-    });
-    const ctx = {
-      action: {
-        params: {
-          resourceName: 'jsTemplateCreateJobs',
-          actionName: 'dismiss',
-          values: { jobId: 'jtcj_other_actor' },
+  it.each(['missing', 'pruned', 'owned by another actor', 'owned by another application'])(
+    'returns the same public 404 for a creation job that is %s',
+    async () => {
+      const jobId = 'jtcj_hidden';
+      const store = {
+        getOwn: vi.fn(async () => {
+          throw new JsTemplateError(
+            'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+            `JS Template creation job "${jobId}" was not found`,
+          );
+        }),
+        dismiss: vi.fn(),
+      } as unknown as JsTemplateCreateJobStore;
+      const audit = { recordCreateJobEvent: vi.fn(async () => undefined) };
+      const resource = createJsTemplateCreateJobsResource({
+        store,
+        permissionService: new JsTemplatePermissionService({} as never),
+        applicationName: 'main',
+        auditService: audit as never,
+      });
+      const can = vi.fn(() => ({}));
+      const ctx = {
+        action: {
+          params: {
+            resourceName: 'jsTemplateCreateJobs',
+            actionName: 'dismiss',
+            values: { jobId },
+          },
         },
-      },
-      auth: { user: { id: 7 } },
-      can: vi.fn(() => ({})),
-    };
+        auth: { user: { id: 7 } },
+        can,
+      };
+      const next = vi.fn(async () => undefined);
 
-    await expect(
-      (resource.actions?.dismiss as HandlerType)(
-        ctx as never,
-        vi.fn(async () => undefined),
-      ),
-    ).rejects.toThrow('lookup should stay scoped');
-    expect(store.getOwn).toHaveBeenCalledWith('jtcj_other_actor', 'main', '7');
-    expect(store.dismiss).not.toHaveBeenCalled();
-  });
+      await (resource.actions?.dismiss as HandlerType)(ctx as never, next);
+
+      expect((ctx as { status?: number }).status).toBe(404);
+      expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBe(true);
+      expect((ctx as { body?: unknown }).body).toMatchObject({
+        errors: [
+          {
+            code: 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+            message: `JS Template creation job "${jobId}" was not found`,
+            status: 404,
+          },
+        ],
+      });
+      expect(JSON.stringify((ctx as { body?: unknown }).body)).not.toMatch(
+        /actorUserId|applicationName|targetProjectId|sourceType|payload|errorMessage/u,
+      );
+      expect(store.getOwn).toHaveBeenCalledWith(jobId, 'main', '7');
+      expect(store.dismiss).not.toHaveBeenCalled();
+      expect(can).not.toHaveBeenCalled();
+      expect(audit.recordCreateJobEvent).not.toHaveBeenCalled();
+      expect(next).not.toHaveBeenCalled();
+    },
+  );
 });

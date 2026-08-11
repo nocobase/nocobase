@@ -8,11 +8,13 @@
  */
 
 import { type JsTemplatePulledFile, type JsTemplateProject, type JsTemplateTreeEntryInput } from '../../shared/types';
+import { JsTemplateError } from '../../shared/errors';
 import { createJsTemplatesResource } from '../resources/jsTemplates';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplateCompilePreviewService } from '../services/JsTemplateCompilePreviewService';
 import { JsTemplateFileService } from '../services/JsTemplateFileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 import { type Context } from '@nocobase/actions';
 import { type Database, type Model } from '@nocobase/database';
@@ -170,6 +172,34 @@ function registerCompilePreviewTests() {
         expect(repository.update).not.toHaveBeenCalled();
         expect(repository.destroy).not.toHaveBeenCalled();
       }
+    });
+
+    it.each([
+      {
+        name: 'foreign',
+        project: { ...createProject(), applicationName: 'support', headCommitId: 'foreign_secret_head' },
+      },
+      { name: 'missing', project: null },
+    ])('rejects a $name workspace Project before reading its head or Templates', async ({ project: storedProject }) => {
+      const project = createProject();
+      const { db, templatesRepository, persistenceRepositories } = createDbStub([
+        createTemplateRecord({ id: 'jtt_foreign_secret', title: 'Foreign secret Template' }),
+      ]);
+      persistenceRepositories.jsTemplateProjects.findOne.mockResolvedValue(
+        storedProject ? createModel(storedProject) : null,
+      );
+      const fileService = createFileServiceStub(project, []);
+      const { service } = createPreviewService(db, fileService);
+
+      await expect(
+        service.compileWorkspacePreview({
+          projectId: project.id,
+          expectedHeadCommitId: 'caller_guess',
+          files: validSalesKpiFiles(),
+        }),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_PROJECT_NOT_FOUND', status: 404 });
+      expect(templatesRepository.find).not.toHaveBeenCalled();
+      expect(fileService.pull).not.toHaveBeenCalled();
     });
 
     it('compiles relative imports from unsaved workspace files', async () => {
@@ -885,11 +915,24 @@ function registerCompilePreviewTests() {
     const auditService = new JsTemplateAuditService(db);
     const recordCompileEvent = vi.spyOn(auditService, 'recordCompileEvent').mockResolvedValue(undefined);
     const permissionService = new JsTemplatePermissionService(auditService);
+    const projectService = {
+      getProject: vi.fn(async (projectId: string) => {
+        const record = await db.getRepository('jsTemplateProjects').findOne({ filterByTk: projectId });
+        if (!record || record.get('id') !== projectId || record.get('applicationName') !== 'main') {
+          throw new JsTemplateError(
+            'JS_TEMPLATE_PROJECT_NOT_FOUND',
+            `JS Template project "${projectId}" was not found`,
+          );
+        }
+        return record.toJSON();
+      }),
+    } as unknown as JsTemplateProjectService;
     const bridge = new JsTemplateWorkspaceCompilerBridge();
     const service = new JsTemplateCompilePreviewService(
       db,
       auditService,
       fileService,
+      projectService,
       permissionService,
       bridge,
       undefined,
@@ -917,7 +960,9 @@ function registerCompilePreviewTests() {
         },
       ]),
     );
-    persistenceRepositories.jsTemplateProjects.findOne = vi.fn().mockResolvedValue(createModel(createProject()));
+    persistenceRepositories.jsTemplateProjects.findOne = vi
+      .fn()
+      .mockResolvedValue(createModel({ ...createProject(), applicationName: 'main' }));
     const db = {
       getRepository: (name: string) => {
         if (name === 'jsTemplates') {
@@ -1026,6 +1071,7 @@ function registerCompilePreviewTests() {
   function createModel(values: Record<string, unknown>): Model {
     return {
       get: (key: string) => values[key],
+      toJSON: () => ({ ...values }),
     } as unknown as Model;
   }
 

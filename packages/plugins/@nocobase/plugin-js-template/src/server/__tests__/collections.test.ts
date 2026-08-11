@@ -65,6 +65,7 @@ describe('plugin-js-template collections', () => {
     const project = await app.db.getRepository('jsTemplateProjects').create({
       values: {
         vscRepoId: 'vscr_js_template_project_1',
+        applicationName: 'main',
         name: 'demo',
         normalizedName: 'demo',
       },
@@ -131,14 +132,14 @@ describe('plugin-js-template collections', () => {
       foreignKey: 'templateId',
     });
     expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')).toMatchObject({ unique: true });
-    expect(getFieldOptions(jsTemplateProjects, 'name')).toMatchObject({ unique: true });
-    expect(getFieldOptions(jsTemplateProjects, 'normalizedName')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'applicationName')).toMatchObject({ allowNull: false });
+    expect(getFieldOptions(jsTemplateProjects, 'name')?.unique).not.toBe(true);
+    expect(getFieldOptions(jsTemplateProjects, 'normalizedName')?.unique).not.toBe(true);
     expect(getFieldOptions(jsTemplateProjects, 'creationJobId')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateSourceOperations, 'identityHash')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateCreateJobs, 'targetProjectId')).toMatchObject({ unique: true });
 
-    expectCriticalIndex(jsTemplateProjects, ['name'], true);
-    expectCriticalIndex(jsTemplateProjects, ['normalizedName'], true);
+    expectCriticalIndex(jsTemplateProjects, ['applicationName', 'normalizedName'], true);
     expectCriticalIndex(jsTemplateProjects, ['vscRepoId'], true);
     expectCriticalIndex(jsTemplateProjects, ['applicationName']);
     expectCriticalIndex(jsTemplateProjects, ['creationJobId'], true);
@@ -156,6 +157,38 @@ describe('plugin-js-template collections', () => {
 
     expect(jsTemplateLogs.migrationRules).toEqual(['schema-only', 'skip']);
     expect(jsTemplateSourceOperations.migrationRules).toEqual(['overwrite', 'schema-only']);
+  });
+
+  it('scopes normalized project names to the application', async () => {
+    const projects = app.db.getRepository('jsTemplateProjects');
+    await projects.create({
+      values: {
+        vscRepoId: 'vscr_shared_main',
+        applicationName: 'main',
+        name: 'Shared Project',
+        normalizedName: 'shared-project',
+      },
+    });
+    await expect(
+      projects.create({
+        values: {
+          vscRepoId: 'vscr_shared_support',
+          applicationName: 'support',
+          name: 'shared project',
+          normalizedName: 'shared-project',
+        },
+      }),
+    ).resolves.toBeTruthy();
+    await expect(
+      projects.create({
+        values: {
+          vscRepoId: 'vscr_shared_main_duplicate',
+          applicationName: 'main',
+          name: 'SHARED PROJECT',
+          normalizedName: 'shared-project',
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it('creates the project usage foreign key from the final collection schema', async () => {

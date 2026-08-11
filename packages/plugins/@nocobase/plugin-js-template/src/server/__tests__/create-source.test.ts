@@ -8,6 +8,7 @@
  */
 
 import type { Transaction } from '@nocobase/database';
+import type { HandlerType } from '@nocobase/resourcer';
 import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 import { vi } from 'vitest';
@@ -15,9 +16,11 @@ import { vi } from 'vitest';
 import { DEFAULT_JS_TEMPLATE_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginJsTemplateServer from '../plugin';
 import type { JsTemplateCreateJob } from '../../shared/types';
+import { createJsTemplateCreateJobsResource } from '../resources/jsTemplateCreateJobs';
 import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
+import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
@@ -244,6 +247,7 @@ describe('plugin-js-template initial source creation', () => {
           values: {
             id: projectId,
             vscRepoId: 'vscr_missing_initial_commit',
+            applicationName: 'main',
             name: 'Missing Initial Commit',
             normalizedName: 'missing-initial-commit',
             headCommitId: null,
@@ -367,6 +371,86 @@ describe('plugin-js-template initial source creation', () => {
     await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual([
       expect.objectContaining({ id: activePending.id, status: 'pending' }),
     ]);
+  });
+
+  it('uses one non-enumerating 404 for missing, pruned, foreign-actor, and foreign-application jobs', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+    const pruned = await store.enqueue({ ...createJobInput('pruned-job'), actorUserId: '7' });
+    const foreignActor = await store.enqueue({
+      ...createJobInput('foreign-actor-job'),
+      title: 'Foreign actor secret title',
+      actorUserId: '8',
+    });
+    const foreignApplication = await store.enqueue({
+      ...createJobInput('foreign-application-job'),
+      applicationName: 'support',
+      title: 'Foreign application secret title',
+      actorUserId: '7',
+    });
+    await app.db.getRepository('jsTemplateCreateJobs').destroy({ filterByTk: pruned.id });
+
+    const permissionService = new JsTemplatePermissionService({} as never);
+    const auditService = { recordCreateJobEvent: vi.fn(async () => undefined) };
+    const resource = createJsTemplateCreateJobsResource({
+      store,
+      permissionService,
+      applicationName: 'main',
+      auditService: auditService as never,
+    });
+    const assertActionAllowed = vi.spyOn(permissionService, 'assertActionAllowed');
+
+    for (const jobId of ['jtcj_missing', pruned.id, foreignActor.id, foreignApplication.id]) {
+      const ctx = {
+        action: {
+          params: {
+            resourceName: 'jsTemplateCreateJobs',
+            actionName: 'dismiss',
+            values: { jobId },
+          },
+        },
+        auth: { user: { id: 7 } },
+        can: vi.fn(() => ({})),
+      };
+      const next = vi.fn(async () => undefined);
+
+      await (resource.actions?.dismiss as HandlerType)(ctx as never, next);
+
+      expect((ctx as { status?: number }).status).toBe(404);
+      expect((ctx as { withoutDataWrapping?: boolean }).withoutDataWrapping).toBe(true);
+      expect((ctx as { body?: unknown }).body).toEqual({
+        errors: [
+          {
+            code: 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+            message: `JS Template creation job "${jobId}" was not found`,
+            status: 404,
+          },
+        ],
+      });
+      expect(JSON.stringify((ctx as { body?: unknown }).body)).not.toMatch(
+        /Foreign actor secret title|Foreign application secret title|actorUserId|applicationName|sourceType|payload/u,
+      );
+      expect(next).not.toHaveBeenCalled();
+    }
+
+    const listContext = {
+      action: {
+        params: {
+          resourceName: 'jsTemplateCreateJobs',
+          actionName: 'list',
+          values: {},
+        },
+      },
+      auth: { user: { id: 7 } },
+    };
+    await (resource.actions?.list as HandlerType)(
+      listContext as never,
+      vi.fn(async () => undefined),
+    );
+
+    expect((listContext as { body?: unknown }).body).toEqual({ jobs: [] });
+    expect(assertActionAllowed).not.toHaveBeenCalled();
+    expect(auditService.recordCreateJobEvent).not.toHaveBeenCalled();
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(2);
   });
 });
 

@@ -110,6 +110,10 @@ export class JsTemplateProjectService {
     return this.validator;
   }
 
+  getCurrentApplicationName(): string {
+    return this.requireApplicationName();
+  }
+
   async createProject(
     input: JsTemplateCreateProjectInput,
     ctx: JsTemplateServiceContext = {},
@@ -297,7 +301,9 @@ export class JsTemplateProjectService {
     applicationName: string,
     ctx: JsTemplateServiceContext = {},
   ): Promise<void> {
-    this.assertCurrentApplication(applicationName);
+    if (applicationName.trim() !== this.requireApplicationName()) {
+      throw projectNotFoundError(projectId);
+    }
     await this.getInternalProject(projectId, ctx);
   }
 
@@ -365,7 +371,7 @@ export class JsTemplateProjectService {
     });
 
     if (!record) {
-      throw new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template project "${projectId}" was not found`);
+      throw projectNotFoundError(projectId);
     }
     this.assertProjectApplicationOwnership(record);
     return internalProjectFromModel(record);
@@ -578,7 +584,7 @@ export class JsTemplateProjectService {
         transaction,
       });
     } catch (error) {
-      if (error instanceof UniqueConstraintError) {
+      if (error instanceof UniqueConstraintError && isProjectNameConstraintError(error)) {
         throw projectConflictError(values.name, values.normalizedName);
       }
 
@@ -612,7 +618,7 @@ export class JsTemplateProjectService {
     });
 
     if (!record) {
-      throw new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template project "${projectId}" was not found`);
+      throw projectNotFoundError(projectId);
     }
     this.assertProjectApplicationOwnership(record);
     return internalProjectFromModel(record);
@@ -626,23 +632,12 @@ export class JsTemplateProjectService {
     return applicationName;
   }
 
-  private assertCurrentApplication(applicationName: string): void {
-    if (applicationName.trim() === this.requireApplicationName()) {
-      return;
-    }
-    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'JS Template project belongs to another application');
-  }
-
   private assertProjectApplicationOwnership(record: Model): void {
     const applicationName = record.get('applicationName');
     if (applicationName === this.requireApplicationName()) {
       return;
     }
-    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'JS Template project belongs to another application', {
-      details: {
-        projectId: String(record.get('id')),
-      },
-    });
+    throw projectNotFoundError(String(record.get('id')));
   }
 
   private async countBlockingProjectUsages(projectId: string, transaction?: Transaction): Promise<number> {
@@ -795,6 +790,50 @@ function projectConflictError(name: string, normalizedName: string): JsTemplateE
       normalizedName,
     },
   });
+}
+
+function projectNotFoundError(projectId: string): JsTemplateError {
+  return new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', `JS Template project "${projectId}" was not found`);
+}
+
+export function isProjectNameConstraintError(error: UniqueConstraintError): boolean {
+  const constraintNames = [error, error.parent, error.original].flatMap((value) => [
+    readStringProperty(value, 'constraint'),
+    readStringProperty(value, 'index'),
+  ]);
+  if (constraintNames.includes('jst_project_application_normalized_uq')) {
+    return true;
+  }
+
+  const fields = new Set<string>();
+  if (Array.isArray(error.fields)) {
+    for (const field of error.fields) {
+      if (typeof field === 'string') {
+        fields.add(field);
+      }
+    }
+  } else {
+    for (const field of Object.keys(error.fields || {})) {
+      fields.add(field);
+    }
+  }
+  for (const validationError of error.errors) {
+    if (validationError.path) {
+      fields.add(validationError.path);
+    }
+  }
+  return (
+    (fields.size === 1 && fields.has('jst_project_application_normalized_uq')) ||
+    (fields.size === 2 && fields.has('applicationName') && fields.has('normalizedName'))
+  );
+}
+
+function readStringProperty(value: unknown, property: string): string | null {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+  const propertyValue = (value as Record<string, unknown>)[property];
+  return typeof propertyValue === 'string' ? propertyValue : null;
 }
 
 function usageExistsError(projectId: string, usageCount: number): JsTemplateError {

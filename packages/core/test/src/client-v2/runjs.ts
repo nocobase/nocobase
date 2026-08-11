@@ -13,13 +13,8 @@ export function setupRunJSTestHosts(): void {
   let disposeHosts: (() => void) | undefined;
 
   beforeAll(async () => {
-    const [{ registerRunJSRegistryHost }, { registerRunJSRuntimeHost }, { runJSRegistryHost }, { runJSRuntimeHost }] =
-      await Promise.all([
-        import('../../../client-v2/src/flow/components/runjs-source/RunJSRegistryHost'),
-        import('../../../client-v2/src/flow/components/runjs-source/RunJSRuntimeHost'),
-        import('../../../runjs/src/workspace/client-v2/runJSRegistryHost'),
-        import('../../../runjs/src/workspace/client-v2/runJSRuntimeHost'),
-      ]);
+    const [{ registerRunJSRegistryHost, registerRunJSRuntimeHost }, { runJSRegistryHost, runJSRuntimeHost }] =
+      await Promise.all([import('@nocobase/client-v2'), import('@nocobase/runjs/workspace/client-v2')]);
     const disposeRegistryHost = registerRunJSRegistryHost(runJSRegistryHost);
     const disposeRuntimeHost = registerRunJSRuntimeHost(runJSRuntimeHost);
     disposeHosts = () => {
