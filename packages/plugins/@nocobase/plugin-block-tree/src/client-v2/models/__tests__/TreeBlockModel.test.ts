@@ -69,6 +69,15 @@ describe('TreeBlockModel', () => {
     expect(String(TreeFilterBlockMenuModel.meta?.searchPlaceholder)).toContain('Search');
   });
 
+  it('exposes default sorting in tree settings', () => {
+    const flow = TreeBlockModel.globalFlowRegistry.getFlow('treeSettings');
+
+    expect(flow.steps.defaultSorting).toMatchObject({
+      use: 'sortingRule',
+      title: expect.stringContaining('Default sorting'),
+    });
+  });
+
   it('keeps multi relation entries in associated records for tree filter block menu', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ TreeBlockModel });
