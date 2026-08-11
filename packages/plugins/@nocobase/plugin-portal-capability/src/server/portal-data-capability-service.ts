@@ -40,7 +40,7 @@ interface Repository {
 }
 
 interface DatabaseLike {
-  getRepository(name: string): Repository;
+  getRepository(name: string): unknown;
   getCollection?(name: string): unknown;
 }
 
@@ -63,13 +63,12 @@ interface AppLike {
   acl?: AclLike;
 }
 
-interface ContextWithRuntime extends Context {
+type ContextWithRuntime = Context & {
   app: AppLike;
-  db: DatabaseLike;
   can?: (options: { resource: string; action: string; rawResourceName?: string }) => unknown;
   get?: (field: string) => string | undefined;
   throw: (status: number, message?: string) => never;
-}
+};
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 50;
@@ -235,7 +234,7 @@ export class PortalDataCapabilityService {
       throw new Error('NocoBase database is not available');
     }
 
-    return db.getRepository(collection);
+    return db.getRepository(collection) as Repository;
   }
 
   private async resolvePermissionParams(

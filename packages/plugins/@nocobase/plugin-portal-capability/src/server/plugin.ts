@@ -24,7 +24,6 @@ type PortalCapabilityApp = ConstructorParameters<typeof Plugin>[0] & {
 
 export class PluginPortalCapabilityServer extends Plugin {
   declare app: PortalCapabilityApp;
-  declare name: string;
 
   dataCapability: PortalDataCapabilityService;
 
