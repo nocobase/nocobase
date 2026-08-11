@@ -188,15 +188,9 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
   );
 
   const searchIsActive = Boolean(searchValueRef.current.trim());
-  const valueKey = getValueKey(value);
-  const displayedOptions = React.useMemo(() => {
-    // rc-cascader caches path entities by the options reference. ArrayItems reuses row components when sorting,
-    // so use the latest cache snapshot when a different row value arrives.
-    if (!searchIsActive && valueKey) {
-      return createExportFieldsOptionsSnapshot(optionsCache);
-    }
-    return [...(searchIsActive ? searchOptions : cascaderOptions)];
-  }, [cascaderOptions, optionsCache, searchIsActive, searchOptions, valueKey]);
+  // ArrayItems can reuse this component after a value change. Remount Cascader so rc-cascader cannot retain
+  // path entities created from the previous lazy-loaded relation path.
+  const valueKey = getValueKey(cascaderValue);
 
   const displayRender = React.useCallback(
     (labels, selectedOptions) => {
@@ -215,10 +209,11 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
 
   return (
     <Cascader
+      key={valueKey}
       {...others}
       value={cascaderValue}
       fieldNames={exportFieldNames}
-      options={displayedOptions}
+      options={searchIsActive ? searchOptions : cascaderOptions}
       loadData={loadData}
       notFoundContent={searchStatus === 'loading' ? <Spin size="small" /> : notFoundContent}
       onChange={handleChange}

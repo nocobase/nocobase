@@ -262,10 +262,8 @@ describe('ExportFieldsCascader', () => {
         fireEvent.mouseDown(comboboxes[3]);
       });
       await waitFor(() => expect(optionsCache.preloadPath).toHaveBeenCalledWith(['org_m2o', 'company_name']));
-
-      await act(async () => {
-        form.setValuesIn('exportSettings.3.dataIndex', ['org_m2o', 'address']);
-      });
+      fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Address' }));
+      await waitFor(() => expect(form.values.exportSettings[3].dataIndex).toEqual(['org_m2o', 'address']));
 
       fireEvent.pointerDown(handles[3], { button: 0, buttons: 1, clientX: 12, clientY: 200, pointerId: 1 });
       await act(async () => Promise.resolve());
