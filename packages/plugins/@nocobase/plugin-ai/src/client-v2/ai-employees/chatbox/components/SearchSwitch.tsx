@@ -12,6 +12,7 @@ import { Button, Tooltip } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
+import { supportsWebSearchForModel } from '../../../repositories/AIConfigRepository';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { useChatBoxRuntime } from '../stores/runtime';
 
@@ -34,7 +35,7 @@ export const SearchSwitch: React.FC<{ disabled?: boolean }> = observer(({ disabl
     return services.find((service) => service.llmService === model.llmService) || null;
   }, [model, services]);
 
-  const supportWebSearch = currentService?.supportWebSearch ?? false;
+  const supportWebSearch = supportsWebSearchForModel(currentService, model?.model);
 
   useEffect(() => {
     if (!supportWebSearch && webSearch) {

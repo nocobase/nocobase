@@ -21,6 +21,7 @@ import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client-v2';
 import { type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
+import { applyReasoningStreamUpdate } from './reasoning-stream';
 
 const STREAM_UPDATE_INTERVAL = 50;
 
@@ -351,7 +352,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         }
         pendingStreamUpdates.delete(key);
         pending.updateLast((last) => {
-          const nextContent = { ...last.content };
+          let nextContent = { ...last.content };
           if (pending.from) {
             nextContent.from = pending.from;
           }
@@ -360,12 +361,7 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
               pending.content
             }`;
           }
-          if (pending.reasoningContent) {
-            nextContent.reasoning = {
-              status: pending.reasoningStatus,
-              content: `${last.content.reasoning?.content ?? ''}${pending.reasoningContent}`,
-            };
-          }
+          nextContent = applyReasoningStreamUpdate(nextContent, pending.reasoningContent, pending.reasoningStatus);
           return {
             ...last,
             createdAt: new Date().toISOString(),
@@ -442,10 +438,10 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
       const processReasoning = (data: StreamData, store: MessagesStore) => {
         const body = getStreamBody(data);
-        if (data.type === 'reasoning' && body?.content && typeof body.content === 'string') {
+        if (data.type === 'reasoning' && typeof body?.content === 'string') {
           aiDebugLogger.log(data.sessionId, 'stream_reasoning', {
-            phase: 'delta',
-            preview: body.content?.slice?.(0, 120) || '',
+            phase: body.status === 'stop' ? 'stop' : 'delta',
+            preview: body.content.slice(0, 120),
           });
           enqueueStreamUpdate(getStreamUpdateKey(data), store, {
             from: data.from,
