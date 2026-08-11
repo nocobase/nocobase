@@ -214,3 +214,44 @@ describe('underscored options', () => {
     }).toThrowError();
   });
 });
+
+describe.each([
+  { underscored: true, columnName: 'test_field' },
+  { underscored: false, columnName: 'testField' },
+])('index field options with underscored=$underscored', ({ underscored, columnName }) => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = await createMockDatabase({ underscored });
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.clean({ drop: true });
+    await db.close();
+  });
+
+  it('should preserve index options and normalize the field name', async () => {
+    const collection = db.collection({
+      name: 'prefixIndexTests',
+      fields: [{ type: 'string', name: 'testField', length: 1024 }],
+      indexes: [
+        {
+          name: 'idx_prefix_index_tests_field',
+          fields: [{ name: 'testField', length: 191 }],
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const indexes = await db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema());
+    const index = indexes.find((item) => item.name === 'idx_prefix_index_tests_field');
+    const configuredIndex = collection.model.options.indexes?.find(
+      (item) => item.name === 'idx_prefix_index_tests_field',
+    );
+
+    expect(index?.fields.map((field) => field.attribute)).toEqual([columnName]);
+    expect(configuredIndex?.fields).toEqual([{ name: columnName, length: 191 }]);
+  });
+});
