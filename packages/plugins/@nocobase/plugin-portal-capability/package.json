@@ -14,6 +14,7 @@
     "editionLevel": 0
   },
   "peerDependencies": {
+    "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/actions": "2.x",
     "@nocobase/acl": "2.x",
