@@ -8,6 +8,9 @@
  */
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { ArrayItems, FormItem, Input, Space } from '@formily/antd-v5';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -135,5 +138,136 @@ describe('ExportFieldsCascader', () => {
     unmount();
 
     expect(activeSignal?.aborted).toBe(true);
+  });
+
+  it('keeps relation field values intact when sorting export fields', async () => {
+    const originalPointerEvent = globalThis.PointerEvent;
+    class TestPointerEvent extends MouseEvent {
+      readonly isPrimary: boolean;
+      readonly pointerId: number;
+
+      constructor(type: string, init: PointerEventInit = {}) {
+        super(type, init);
+        this.isPrimary = init.isPrimary ?? true;
+        this.pointerId = init.pointerId ?? 1;
+      }
+    }
+    globalThis.PointerEvent = TestPointerEvent as unknown as typeof PointerEvent;
+
+    const optionsCache = {
+      getRootOptions: () => [
+        { name: 'id', title: 'ID', isLeaf: true },
+        { name: 'orgid', title: 'orgid', isLeaf: true },
+        { name: 'nickname', title: 'Nickname', isLeaf: true },
+        {
+          name: 'org_m2o',
+          title: 'org_m2o',
+          isLeaf: false,
+          children: [{ name: 'company_name', title: 'Company name', isLeaf: true }],
+        },
+        { name: 'username', title: 'Username', isLeaf: true },
+      ],
+      loadChildren: vi.fn(() => []),
+      preloadPath: vi.fn(() => false),
+      searchOptionsAsync: vi.fn(() => Promise.resolve([])),
+    };
+    const form = createForm({
+      values: {
+        exportSettings: [
+          { dataIndex: ['id'] },
+          { dataIndex: ['orgid'] },
+          { dataIndex: ['nickname'] },
+          { dataIndex: ['org_m2o', 'company_name'] },
+          { dataIndex: ['username'] },
+        ],
+      },
+    });
+    const SchemaField = createSchemaField({
+      components: {
+        ArrayItems,
+        ExportFieldsCascader,
+        FormItem,
+        Input,
+        Space,
+      },
+    });
+    const schema = {
+      type: 'object',
+      properties: {
+        exportSettings: {
+          type: 'array',
+          'x-component': 'ArrayItems',
+          items: {
+            type: 'object',
+            properties: {
+              layout: {
+                type: 'void',
+                'x-component': 'Space',
+                properties: {
+                  sort: {
+                    type: 'void',
+                    'x-component': 'ArrayItems.SortHandle',
+                  },
+                  dataIndex: {
+                    type: 'array',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'ExportFieldsCascader',
+                    'x-component-props': { optionsCache },
+                  },
+                  title: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+
+    try {
+      const { container } = render(
+        <FormProvider form={form}>
+          <SchemaField schema={schema} />
+        </FormProvider>,
+      );
+      const rows = Array.from(container.querySelectorAll<HTMLElement>('.ant-formily-array-items-item'));
+      const handles = container.querySelectorAll<HTMLElement>('.ant-formily-array-base-sort-handle');
+
+      rows.forEach((row, index) => {
+        const top = index * 64;
+        vi.spyOn(row, 'getBoundingClientRect').mockReturnValue({
+          bottom: top + 48,
+          height: 48,
+          left: 0,
+          right: 640,
+          top,
+          width: 640,
+          x: 0,
+          y: top,
+          toJSON: () => ({}),
+        });
+      });
+
+      fireEvent.pointerDown(handles[3], { button: 0, buttons: 1, clientX: 12, clientY: 200, pointerId: 1 });
+      await act(async () => Promise.resolve());
+      fireEvent.pointerMove(document, { button: 0, buttons: 1, clientX: 12, clientY: 290, pointerId: 1 });
+      await act(async () => Promise.resolve());
+      fireEvent.pointerUp(document, { button: 0, buttons: 0, clientX: 12, clientY: 290, pointerId: 1 });
+
+      await waitFor(() => {
+        expect(form.values.exportSettings.map((item) => item.dataIndex)).toEqual([
+          ['id'],
+          ['orgid'],
+          ['nickname'],
+          ['username'],
+          ['org_m2o', 'company_name'],
+        ]);
+      });
+    } finally {
+      globalThis.PointerEvent = originalPointerEvent;
+    }
   });
 });
