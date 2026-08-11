@@ -136,48 +136,51 @@ export function JsTemplateListTable({
         title: t('Actions'),
         key: 'actions',
         width: 350,
-        render: (_value, project) => (
-          <Space size="small" onClick={(event) => event.stopPropagation()}>
-            <Button
-              aria-label={t('Edit code')}
-              onClick={() => onSelectProject(project.id, 'source')}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit code')}
-            </Button>
-            <Button
-              aria-label={t('Sync code')}
-              onClick={() => onSelectProject(project.id, 'sync')}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Sync code')}
-            </Button>
-            <Button
-              aria-label={`${t('Edit details')} ${project.title || project.name}`}
-              onClick={() => onEditProject(project)}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Edit details')}
-            </Button>
-            <Button
-              aria-label={t('Remove')}
-              danger
-              loading={removingProjectIds.has(project.id)}
-              onClick={() => onRemoveProject(project)}
-              size="small"
-              style={TABLE_ACTION_BUTTON_STYLE}
-              type="link"
-            >
-              {t('Remove')}
-            </Button>
-          </Space>
-        ),
+        render: (_value, project) => {
+          const projectLabel = project.title || project.name;
+          return (
+            <Space size="small" onClick={(event) => event.stopPropagation()}>
+              <Button
+                aria-label={t('Edit code {{name}}').replace('{{name}}', projectLabel)}
+                onClick={() => onSelectProject(project.id, 'source')}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Edit code')}
+              </Button>
+              <Button
+                aria-label={t('Sync code {{name}}').replace('{{name}}', projectLabel)}
+                onClick={() => onSelectProject(project.id, 'sync')}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Sync code')}
+              </Button>
+              <Button
+                aria-label={t('Edit details {{name}}').replace('{{name}}', projectLabel)}
+                onClick={() => onEditProject(project)}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Edit details')}
+              </Button>
+              <Button
+                aria-label={t('Remove {{name}}').replace('{{name}}', projectLabel)}
+                danger
+                loading={removingProjectIds.has(project.id)}
+                onClick={() => onRemoveProject(project)}
+                size="small"
+                style={TABLE_ACTION_BUTTON_STYLE}
+                type="link"
+              >
+                {t('Remove')}
+              </Button>
+            </Space>
+          );
+        },
       },
     ],
     [changingProjectIds, onChangeLifecycle, onEditProject, onRemoveProject, onSelectProject, removingProjectIds, t],

@@ -17,7 +17,7 @@ import { vi } from 'vitest';
 
 import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
-import type { JsTemplateCreateJobSummary } from '../../shared/types';
+import type { JsTemplateCreateJobSummary, JsTemplateProject } from '../../shared/types';
 import { JsTemplateSyncHookError, type UseJsTemplateSyncResult } from '../hooks/useJsTemplateSync';
 import JsTemplateSourceProjectsPage, { matchesJsTemplateProjectSearch } from '../pages/JsTemplateSourceProjectsPage';
 
@@ -250,6 +250,10 @@ function LocationSearch() {
 describe('JsTemplateSourceProjectsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.api.listProjects.mockReset();
+    mocks.cache.invalidateRuntime.mockReset();
+    mocks.cache.invalidateSettings.mockReset();
+    mocks.createJobs.dismiss.mockReset();
     mocks.createJobs.initialJobs = [];
     mocks.workspace.dirty = true;
     mocks.createJobs.error = null;
@@ -371,6 +375,24 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.getByRole('columnheader', { name: 'Templates' })).toBeInTheDocument();
     expect(within(projectRow).getByText('js-block 1')).toBeInTheDocument();
     expect(within(projectRow).getByText('js-action 1')).toBeInTheDocument();
+  });
+
+  it('gives every row action a unique accessible name using the project title or technical name', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([
+      createProjectSummary({ id: 'jtp_sales', name: 'sales-widgets', title: 'Sales widgets' }),
+      createProjectSummary({ id: 'jtp_ops', name: 'ops-widgets', normalizedName: 'ops-widgets', title: '' }),
+    ]);
+
+    renderListPage();
+
+    expect(await screen.findByRole('button', { name: 'Edit code Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit code ops-widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sync code Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sync code ops-widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit details Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit details ops-widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove ops-widgets' })).toBeInTheDocument();
   });
 
   it('opens the create dialog from the query parameter', async () => {
@@ -563,6 +585,114 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('JS_TEMPLATE_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
   });
 
+  it('keeps the latest project list and loading state when an older load succeeds late', async () => {
+    const initialProject = createProjectSummary();
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    const latestLoad = createDeferred<JsTemplateProject[]>();
+    const currentLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects
+      .mockResolvedValueOnce([initialProject])
+      .mockReturnValueOnce(staleLoad.promise)
+      .mockReturnValueOnce(latestLoad.promise)
+      .mockReturnValueOnce(currentLoad.promise);
+    renderListPage('/admin/settings/js-templates?projectId=jtp_demo&panel=source');
+
+    const saveButton = await screen.findByRole('button', { name: 'Mock save source' });
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(3));
+
+    await act(async () => {
+      latestLoad.resolve([createProjectSummary({ title: 'Latest project' })]);
+      await latestLoad.promise;
+    });
+    expect(await screen.findByText('Latest project')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(4));
+    expect(screen.getByRole('button', { name: /Refresh/ })).toHaveClass('ant-btn-loading');
+
+    await act(async () => {
+      staleLoad.resolve([createProjectSummary({ title: 'Stale project' })]);
+      await staleLoad.promise;
+    });
+    expect(screen.queryByText('Stale project')).not.toBeInTheDocument();
+    expect(screen.getByText('Latest project')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).toHaveClass('ant-btn-loading');
+
+    await act(async () => {
+      currentLoad.resolve([createProjectSummary({ title: 'Current project' })]);
+      await currentLoad.promise;
+    });
+    expect(await screen.findByText('Current project')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+  });
+
+  it('ignores an older load rejection without showing its error or clearing the newer loading state', async () => {
+    const staleLoad = createDeferred<JsTemplateProject[]>();
+    const latestLoad = createDeferred<JsTemplateProject[]>();
+    mocks.api.listProjects
+      .mockResolvedValueOnce([createProjectSummary()])
+      .mockReturnValueOnce(staleLoad.promise)
+      .mockReturnValueOnce(latestLoad.promise);
+    renderListPage('/admin/settings/js-templates?projectId=jtp_demo&panel=source');
+
+    const saveButton = await screen.findByRole('button', { name: 'Mock save source' });
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(3));
+
+    await act(async () => {
+      staleLoad.reject(new Error('Stale project load failed'));
+      await staleLoad.promise.catch(() => undefined);
+    });
+    expect(screen.queryByText('Stale project load failed')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).toHaveClass('ant-btn-loading');
+
+    await act(async () => {
+      latestLoad.resolve([createProjectSummary({ title: 'Recovered project' })]);
+      await latestLoad.promise;
+    });
+    expect(await screen.findByText('Recovered project')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading');
+  });
+
+  it('does not show a transition notice when its project reload becomes stale', async () => {
+    const pending = createJobSummary();
+    const transitionLoad = createDeferred<JsTemplateProject[]>();
+    const latestLoad = createDeferred<JsTemplateProject[]>();
+    mocks.createJobs.initialJobs = [pending];
+    mocks.api.listProjects
+      .mockResolvedValueOnce([createProjectSummary()])
+      .mockReturnValueOnce(transitionLoad.promise)
+      .mockReturnValueOnce(latestLoad.promise);
+    renderListPage('/admin/settings/js-templates?projectId=jtp_demo&panel=source');
+
+    const saveButton = await screen.findByRole('button', { name: 'Mock save source' });
+    await act(async () => {
+      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
+    });
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
+    await userEvent.click(saveButton);
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(3));
+
+    await act(async () => {
+      latestLoad.resolve([createProjectSummary({ title: 'Latest project' })]);
+      await latestLoad.promise;
+    });
+    await act(async () => {
+      transitionLoad.resolve([createProjectSummary({ title: 'Transition project' })]);
+      await transitionLoad.promise;
+    });
+
+    expect(screen.getByText('Latest project')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+  });
+
   it('refreshes the ready project and notifies once after an observed creation succeeds', async () => {
     const pending = createJobSummary();
     mocks.createJobs.initialJobs = [pending];
@@ -587,7 +717,7 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     expect(await screen.findByText('Source Project creation succeeded: Demo')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit code' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
     expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
     await act(async () => {
       mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
@@ -598,6 +728,9 @@ describe('JsTemplateSourceProjectsPage', () => {
   it('preserves the project reload error instead of replacing it with a creation success notice', async () => {
     const pending = createJobSummary();
     mocks.createJobs.initialJobs = [pending];
+    mocks.cache.invalidateSettings.mockImplementationOnce(() => {
+      throw new Error('Cache invalidation failed');
+    });
     mocks.api.listProjects.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('Project refresh failed'));
     renderListPage();
     expect(await screen.findByText('Creation pending')).toBeInTheDocument();
@@ -608,25 +741,37 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     expect(await screen.findByText('Project refresh failed')).toBeInTheDocument();
     expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Some JS Template caches could not be refreshed')).not.toBeInTheDocument();
+    expect(mocks.cache.invalidateSettings).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
+    expect(mocks.cache.invalidateRuntime).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
-  it('shows a visible error when creation transition processing throws', async () => {
-    const pending = createJobSummary();
-    mocks.createJobs.initialJobs = [pending];
-    mocks.cache.invalidateSettings.mockImplementationOnce(() => {
-      throw new Error('Cache invalidation failed');
-    });
-    renderListPage();
-    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+  it.each(['settings', 'runtime'] as const)(
+    'attempts both cache invalidators and reloads the created project when the %s invalidator throws',
+    async (failedCache) => {
+      const pending = createJobSummary();
+      mocks.createJobs.initialJobs = [pending];
+      mocks.api.listProjects.mockResolvedValueOnce([]).mockResolvedValueOnce([createProjectSummary()]);
+      const invalidator = failedCache === 'settings' ? mocks.cache.invalidateSettings : mocks.cache.invalidateRuntime;
+      invalidator.mockImplementationOnce(() => {
+        throw new Error(`${failedCache} cache invalidation failed`);
+      });
+      renderListPage();
+      expect(await screen.findByText('Creation pending')).toBeInTheDocument();
 
-    await act(async () => {
-      mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
-    });
+      await act(async () => {
+        mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
+      });
 
-    expect(await screen.findByText('Failed to process creation task update')).toBeInTheDocument();
-    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
-  });
+      expect(await screen.findByText('Some JS Template caches could not be refreshed')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
+      expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+      expect(mocks.cache.invalidateSettings).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
+      expect(mocks.cache.invalidateRuntime).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
+      expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
+    },
+  );
 
   it('forgets disappeared job statuses before the same ID returns as terminal history', async () => {
     const pending = createJobSummary();
@@ -724,6 +869,9 @@ describe('JsTemplateSourceProjectsPage', () => {
       status: 'running',
     });
     mocks.createJobs.initialJobs = [newestFailed, olderSucceeded];
+    mocks.cache.invalidateSettings.mockImplementationOnce(() => {
+      throw new Error('Cache invalidation failed');
+    });
     renderListPage();
     expect(await screen.findByText('Newest failed')).toBeInTheDocument();
 
@@ -740,10 +888,44 @@ describe('JsTemplateSourceProjectsPage', () => {
       await screen.findByText('Source Project creation failed: Newest failed: Newest safe failure'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Some JS Template caches could not be refreshed')).not.toBeInTheDocument();
 
     await act(async () => {
       mocks.createJobs.update(terminalJobs);
     });
+    expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
+  });
+
+  it('prioritizes the newest creation failure when an older success reload fails', async () => {
+    const newestFailed = createJobSummary({
+      id: 'jtcj_newest',
+      name: 'newest',
+      title: 'Newest failed',
+      status: 'pending',
+    });
+    const olderSucceeded = createJobSummary({
+      id: 'jtcj_older',
+      name: 'older',
+      title: 'Older succeeded',
+      status: 'running',
+    });
+    mocks.createJobs.initialJobs = [newestFailed, olderSucceeded];
+    mocks.api.listProjects.mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('Project refresh failed'));
+    renderListPage();
+    expect(await screen.findByText('Newest failed')).toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([
+        { ...newestFailed, status: 'failed', errorMessage: 'Newest safe failure' },
+        { ...olderSucceeded, status: 'succeeded', resultProjectId: olderSucceeded.targetProjectId },
+      ]);
+    });
+
+    expect(
+      await screen.findByText('Source Project creation failed: Newest failed: Newest safe failure'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Project refresh failed')).not.toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
@@ -765,6 +947,54 @@ describe('JsTemplateSourceProjectsPage', () => {
     await userEvent.keyboard('{Enter}');
     await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
     expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
+  });
+
+  it('maps a missing creation task dismissal to localized safe text', async () => {
+    const succeeded = createJobSummary({ status: 'succeeded', resultProjectId: 'jtp_demo' });
+    mocks.createJobs.initialJobs = [succeeded];
+    mocks.createJobs.dismiss.mockRejectedValueOnce({
+      response: {
+        data: {
+          errors: [
+            {
+              code: 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+              message: 'Sensitive missing job detail',
+            },
+          ],
+        },
+      },
+    });
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove creation task Demo' }));
+
+    expect(await screen.findByText('Creation task is no longer available')).toBeInTheDocument();
+    expect(screen.queryByText('Sensitive missing job detail')).not.toBeInTheDocument();
+    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
+  });
+
+  it('uses a localized fallback and hides raw dismissal errors for unknown server failures', async () => {
+    const succeeded = createJobSummary({ status: 'succeeded', resultProjectId: 'jtp_demo' });
+    mocks.createJobs.initialJobs = [succeeded];
+    mocks.createJobs.dismiss.mockRejectedValueOnce({
+      response: {
+        data: {
+          errors: [
+            {
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Sensitive internal server detail',
+            },
+          ],
+        },
+      },
+    });
+    renderListPage();
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove creation task Demo' }));
+
+    expect(await screen.findByText('Failed to remove creation task')).toBeInTheDocument();
+    expect(screen.queryByText('Sensitive internal server detail')).not.toBeInTheDocument();
+    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -802,7 +1032,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     ]);
     renderListPage('/admin/settings/js-template?view=compact');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Sync code' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
     const drawer = await screen.findByRole('dialog', { name: 'Sync code' });
     expect(screen.getByTestId('location-search')).toHaveTextContent('view=compact');
     expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_browser_smoke');
@@ -856,7 +1086,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     mocks.api.listProjects.mockResolvedValueOnce([originalProject]);
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Sync code' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Mock Pull result' }));
 
     expect(await screen.findByText('js-block 3')).toBeInTheDocument();
@@ -1246,7 +1476,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     renderListPage();
 
     expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Sales widgets' }));
     const dialog = await screen.findByRole('dialog', { name: 'Remove this Source Project?' });
     expect(dialog).toHaveTextContent('Source Project to remove');
     expect(within(dialog).getByText('Sales widgets')).toBeInTheDocument();
@@ -1278,6 +1508,30 @@ function createJobSummary(overrides: Partial<JsTemplateCreateJobSummary> = {}): 
     updatedAt: '2026-07-27T00:00:01.000Z',
     ...overrides,
   };
+}
+
+function createProjectSummary(overrides: Partial<JsTemplateProject> = {}): JsTemplateProject {
+  return {
+    id: 'jtp_demo',
+    name: 'demo',
+    normalizedName: 'demo',
+    title: 'Demo',
+    description: null,
+    lifecycleStatus: 'enabled',
+    healthStatus: 'ready',
+    headCommitId: 'commit-ready',
+    ...overrides,
+  };
+}
+
+function createDeferred<T>() {
+  let resolveDeferred!: (value: T | PromiseLike<T>) => void;
+  let rejectDeferred!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    resolveDeferred = resolve;
+    rejectDeferred = reject;
+  });
+  return { promise, reject: rejectDeferred, resolve: resolveDeferred };
 }
 
 function gitConfig() {
