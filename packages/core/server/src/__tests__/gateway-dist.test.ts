@@ -87,6 +87,22 @@ test('gateway serves APP_PUBLIC_PATH + /dist/ from storage/dist-client', async (
   );
 });
 
+test.each([
+  ['root public path', '/', '/api/', '/api', '/api/?from=bare'],
+  ['custom public path', '/console/', '/console/api/', '/console/api', '/console/api/?from=bare'],
+])('gateway redirects bare API base path for %s', async (_label, appPublicPath, apiBasePath, requestPath, location) => {
+  process.env.APP_PUBLIC_PATH = appPublicPath;
+  process.env.API_BASE_PATH = apiBasePath;
+  process.env.STORAGE_PATH = '/tmp/nocobase-storage';
+
+  const gateway = Gateway.getInstance();
+  const response = await supertest.agent(gateway.getCallback()).get(`${requestPath}?from=bare`);
+
+  expect(response.status).toBe(308);
+  expect(response.headers.location).toBe(location);
+  expect(serveHandlerMock).not.toHaveBeenCalled();
+});
+
 test.each(['/console/x', '/console/x/'])(
   'gateway redirects portal root %s to the modern client root',
   async (requestPath) => {

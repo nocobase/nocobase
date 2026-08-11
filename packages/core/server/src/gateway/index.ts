@@ -95,6 +95,15 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+function resolveBareApiBasePathRedirect(pathname = '/') {
+  const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  if (apiBasePath === '/' || pathname !== apiBasePath) {
+    return null;
+  }
+
+  return `${apiBasePath}/`;
+}
+
 function getFilesPathPrefixes(appPublicPath = '/') {
   const normalizedPublicPath = normalizeBasePath(appPublicPath);
   const canonicalPrefix = `${normalizedPublicPath === '/' ? '' : normalizedPublicPath}/files/`;
@@ -724,6 +733,14 @@ export class Gateway extends EventEmitter {
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;
       res.end('ok');
+      return;
+    }
+
+    const apiBasePathRedirect = resolveBareApiBasePathRedirect(pathname);
+    if (apiBasePathRedirect) {
+      res.statusCode = 308;
+      res.setHeader('Location', `${apiBasePathRedirect}${search || ''}`);
+      res.end();
       return;
     }
 
