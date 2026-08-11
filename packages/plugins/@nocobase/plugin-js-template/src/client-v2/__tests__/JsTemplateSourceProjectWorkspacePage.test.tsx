@@ -576,6 +576,101 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
     expect(screen.queryByText('Project A failed')).not.toBeInTheDocument();
   });
 
+  it('keeps current Project B loading when stale Project A finishes', async () => {
+    let footerActions: JsTemplateSourceProjectWorkspaceFooterActions | null = null;
+    const projectB = {
+      id: 'jtp_b',
+      name: 'project-b',
+      normalizedName: 'project-b',
+      title: 'Project B',
+      lifecycleStatus: 'enabled' as const,
+      healthStatus: 'pending' as const,
+      headCommitId: 'commit-b',
+    };
+    const projectARequest = createDeferred<typeof projectB>();
+    const projectBPullResult = {
+      project: { id: projectB.id },
+      commit: { id: 'commit-b' },
+      tree: { hash: 'tree-b', entryCount: 1, byteSize: 24 },
+      unchanged: false,
+      files: [
+        {
+          path: 'src/client/project-b.tsx',
+          content: "export default 'project-b';\n",
+          language: 'typescript',
+        },
+      ],
+    };
+    const currentProjectBPullRequest = createDeferred<typeof projectBPullResult>();
+    let projectBPullCount = 0;
+    const handleFooterActionsChange = (actions: JsTemplateSourceProjectWorkspaceFooterActions | null) => {
+      footerActions = actions;
+    };
+    mocks.api.getProject.mockImplementation((projectId: string) =>
+      projectId === 'jtp_a' ? projectARequest.promise : Promise.resolve(projectB),
+    );
+    mocks.api.pull.mockImplementation(({ projectId }: { projectId: string }) => {
+      if (projectId !== projectB.id) {
+        throw new Error(`Unexpected pull for ${projectId}`);
+      }
+      projectBPullCount += 1;
+      return projectBPullCount === 1 ? Promise.resolve(projectBPullResult) : currentProjectBPullRequest.promise;
+    });
+
+    const view = render(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage
+          onFooterActionsChange={handleFooterActionsChange}
+          projectId={projectB.id}
+        />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Project B')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: "export default 'project-b-edited';\n" },
+    });
+    await waitFor(() => expect(footerActions?.disabled).toBe(false));
+
+    view.rerender(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage onFooterActionsChange={handleFooterActionsChange} projectId="jtp_a" />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(mocks.api.getProject).toHaveBeenCalledWith('jtp_a'));
+
+    view.rerender(
+      <MemoryRouter>
+        <JsTemplateSourceProjectWorkspacePage
+          onFooterActionsChange={handleFooterActionsChange}
+          projectId={projectB.id}
+        />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(projectBPullCount).toBe(2));
+    expect(screen.getByText('Project B')).toBeInTheDocument();
+    expect(screen.getByText('Loading source')).toBeInTheDocument();
+    expect(footerActions?.disabled).toBe(true);
+
+    await act(async () => {
+      projectARequest.reject(new Error('Stale Project A failed'));
+      await expect(projectARequest.promise).rejects.toThrow('Stale Project A failed');
+    });
+
+    await waitFor(() => expect(screen.getByText('Project B')).toBeInTheDocument());
+    expect(screen.getByText('Loading source')).toBeInTheDocument();
+    expect(screen.queryByText('Stale Project A failed')).not.toBeInTheDocument();
+    expect(footerActions?.disabled).toBe(true);
+
+    await act(async () => {
+      currentProjectBPullRequest.resolve(projectBPullResult);
+      await currentProjectBPullRequest.promise;
+    });
+
+    await waitFor(() => expect(screen.queryByText('Loading source')).not.toBeInTheDocument());
+    expect(screen.getByText('Project B')).toBeInTheDocument();
+    expect(screen.getByLabelText('Edit file content')).toHaveValue("export default 'project-b';\n");
+  });
+
   it('saves only dirty source changes without compiling a workspace preview first', async () => {
     render(
       <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
