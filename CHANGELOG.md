@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.39](https://github.com/nocobase/nocobase/compare/v2.1.38...v2.1.39) - 2026-08-11
+
+### 🐛 Bug Fixes
+
+- **[client-v2]** Fixed an issue where ctx.form.submit could not correctly submit form data. ([#10063](https://github.com/nocobase/nocobase/pull/10063)) by @gchust
+
+- **[database]** Fixed prefix indexes on camel-case fields when underscored database naming is enabled ([#10329](https://github.com/nocobase/nocobase/pull/10329)) by @2013xile
+
+- **[Action: Duplicate record]** Improve direct duplication failure feedback in v2 without duplicate API error messages. ([#10327](https://github.com/nocobase/nocobase/pull/10327)) by @katherinehhh
+
+- **[Record history]** Improved record history write performance for collections with large snapshot tables by @2013xile
+
+- **[Workflow: Approval]** Fix the issue where removed one-to-many relation records cannot be selected again in approval forms by @zhangzhonghe
+
+## [v2.1.38](https://github.com/nocobase/nocobase/compare/v2.1.37...v2.1.38) - 2026-08-10
+
+### 🚀 Improvements
+
+- **[undefined]** Clarified the default JavaScript Worker concurrency behavior and when to configure a concurrency limit ([#10317](https://github.com/nocobase/nocobase/pull/10317)) by @mytharcher
+Reference: [JavaScript node](https://docs.nocobase.com/workflow/nodes/javascript)
+- **[Workflow: JavaScript]** JavaScript workflow nodes now queue asynchronous Worker execution and limit per-process Worker concurrency to reduce resource spikes. ([#10280](https://github.com/nocobase/nocobase/pull/10280)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Flow engine]**
+  - Fixed popup record variables and association blocks for custom non-Sequelize data sources ([#10272](https://github.com/nocobase/nocobase/pull/10272)) by @gchust
+
+  - Fixed incorrect variable resolution for form field values ([#10319](https://github.com/nocobase/nocobase/pull/10319)) by @gchust
+
+- **[File manager]** Fixed file downloads failing after previewing cross-origin images when browser cache entries lack CORS response headers ([#10313](https://github.com/nocobase/nocobase/pull/10313)) by @mytharcher
+Reference: [File Preview](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/en/file-manager/file-preview/index.md) / [Aliyun OSS](https://github.com/nocobase/nocobase/blob/fix/file-manager-download-cors-cache/docs/docs/en/file-manager/storage/aliyun-oss.md)
 ## [v2.1.37](https://github.com/nocobase/nocobase/compare/v2.1.36...v2.1.37) - 2026-08-08
 
 ### 🎉 New Features

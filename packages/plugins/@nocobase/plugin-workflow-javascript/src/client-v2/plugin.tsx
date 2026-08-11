@@ -10,13 +10,14 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import type { PluginWorkflowClientV2 } from '@nocobase/plugin-workflow/client-v2';
 
+import { SCRIPT_INSTRUCTION_TYPE } from '../common/constants';
 import ScriptInstruction from './nodes/script';
 
 export class PluginWorkflowJavaScriptClientV2 extends Plugin<Record<string, never>, Application> {
   async load() {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowClientV2 | undefined;
     workflow?.registerInstruction?.(
-      'script',
+      SCRIPT_INSTRUCTION_TYPE,
       new ScriptInstruction().bindTranslate((key) => String(this.t(key))),
     );
   }

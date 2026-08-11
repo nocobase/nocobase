@@ -300,6 +300,39 @@ describe('memory queue adapter', () => {
   });
 
   describe('concurrency control', () => {
+    test('treats zero concurrency as unlimited', async () => {
+      const releases: Array<() => void> = [];
+      let active = 0;
+
+      await app.eventQueue.connect();
+      await app.eventQueue.subscribe('unlimited-test', {
+        concurrency: 0,
+        idle: () => true,
+        process: async () => {
+          active += 1;
+          await new Promise<void>((resolve) => {
+            releases.push(resolve);
+          });
+          active -= 1;
+        },
+      });
+
+      await app.eventQueue.publish('unlimited-test', 1);
+      await app.eventQueue.publish('unlimited-test', 2);
+      await app.eventQueue.publish('unlimited-test', 3);
+
+      for (let i = 0; i < 20 && releases.length < 3; i++) {
+        await sleep(50);
+      }
+
+      expect(releases).toHaveLength(3);
+      expect(active).toBe(3);
+
+      releases.forEach((release) => release());
+      await sleep(100);
+      expect(active).toBe(0);
+    });
+
     test('concurrent message processing with custom concurrency', async () => {
       const mockPlugin = app.pm.get(MockPlugin1);
       await app.start();

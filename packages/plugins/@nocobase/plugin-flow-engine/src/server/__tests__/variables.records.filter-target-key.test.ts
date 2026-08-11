@@ -82,6 +82,7 @@ describe('variable record filter target key selects', () => {
       appends: undefined,
       fields: ['id', 'name', 'uuid'],
       filterByTk: ['b', 'a'],
+      context,
     });
     expect(records).toEqual([
       { id: 2, name: 'B', uuid: 'b' },
@@ -109,6 +110,7 @@ describe('variable record filter target key selects', () => {
       appends: undefined,
       fields: ['id', 'uuid'],
       filterByTk: ['b', 'a'],
+      context,
     });
     expect(records).toEqual([
       { id: 2, uuid: 'b' },
