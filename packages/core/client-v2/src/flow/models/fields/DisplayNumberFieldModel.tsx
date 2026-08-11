@@ -71,7 +71,7 @@ function formatBigNumberWithSeparator(value, format = '0.00', step = 1, formatSt
   let number = value;
 
   if (formatStyle) {
-    number = new BigNumber(value).toString();
+    number = new BigNumber(value).toFixed();
   }
 
   let formattedNumber = '';
