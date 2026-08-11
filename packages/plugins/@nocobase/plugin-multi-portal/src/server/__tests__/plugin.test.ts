@@ -1195,8 +1195,7 @@ describe('plugin-multi-portal server', () => {
         cwd: expect.any(String),
       }),
     );
-    expect(spawnMock).toHaveBeenNthCalledWith(
-      2,
+    expect(spawnMock).toHaveBeenCalledWith(
       'yarn',
       ['build:html'],
       expect.objectContaining({

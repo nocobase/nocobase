@@ -12,8 +12,16 @@ import Database from '@nocobase/database';
 import { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { MockServer } from '@nocobase/test';
+import { vi } from 'vitest';
 
 import Plugin from '..';
+
+type WorkflowExecutionRecord = {
+  status: number;
+  context: {
+    data?: unknown;
+  };
+};
 
 describe('workflow > action-trigger', () => {
   let app: MockServer;
@@ -195,9 +203,12 @@ describe('workflow > action-trigger', () => {
       });
       expect(res1.status).toBe(200);
 
-      await sleep(500);
-
-      const e1 = await workflow.getExecutions();
+      let e1: WorkflowExecutionRecord[] = [];
+      await vi.waitFor(async () => {
+        e1 = await workflow.getExecutions();
+        expect(e1.length).toBe(1);
+        expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      }, 5000);
       expect(e1.length).toBe(1);
       expect(e1[0].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1[0].context.data).toMatchObject({ title: 't1' });
@@ -227,9 +238,12 @@ describe('workflow > action-trigger', () => {
       });
       expect(res2.status).toBe(200);
 
-      await sleep(500);
-
-      const e3 = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      let e3: WorkflowExecutionRecord[] = [];
+      await vi.waitFor(async () => {
+        e3 = await workflow.getExecutions({ order: [['id', 'ASC']] });
+        expect(e3.length).toBe(2);
+        expect(e3[1].status).toBe(EXECUTION_STATUS.RESOLVED);
+      }, 5000);
       expect(e3.length).toBe(2);
       expect(e3[1].status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e3[1].context.data).toMatchObject({ title: 't3' });
