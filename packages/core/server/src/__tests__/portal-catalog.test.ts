@@ -15,13 +15,13 @@ import { DirectoryPortalCatalog } from '../portal-host/portal-catalog';
 
 const tempDirs: string[] = [];
 
-async function createPortalWorkspace(files: string[]) {
+async function createPortalWorkspace(files: string[], packageJson = '{"name":"customer-portal","version":"1.0.0"}\n') {
   const portalsDir = await mkdtemp(path.join(os.tmpdir(), 'nocobase-portal-catalog-'));
   tempDirs.push(portalsDir);
 
   const portalDir = path.join(portalsDir, 'main', 'customer');
   await mkdir(portalDir, { recursive: true });
-  await writeFile(path.join(portalDir, 'package.json'), '{"name":"customer-portal","version":"1.0.0"}\n');
+  await writeFile(path.join(portalDir, 'package.json'), packageJson);
 
   for (const file of files) {
     const target = path.join(portalDir, file);
@@ -57,6 +57,36 @@ describe('DirectoryPortalCatalog', () => {
       {
         id: 'main:customer',
         entrypoint: 'server/embedded.ts',
+      },
+    ]);
+  });
+
+  it('uses the directory path as portal identity when package portal metadata is stale', async () => {
+    const { portalsDir } = await createPortalWorkspace(
+      ['dist/server/embedded.js'],
+      JSON.stringify(
+        {
+          name: 'customer-portal',
+          version: '1.0.0',
+          portal: {
+            appName: 'main',
+            portalName: 'main',
+            entrypoint: 'dist/server/embedded.js',
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    const catalog = new DirectoryPortalCatalog({ portalsDir });
+
+    await expect(catalog.discover()).resolves.toMatchObject([
+      {
+        id: 'main:customer',
+        appName: 'main',
+        portalName: 'customer',
+        basePath: '/portals/customer',
+        entrypoint: 'dist/server/embedded.js',
       },
     ]);
   });

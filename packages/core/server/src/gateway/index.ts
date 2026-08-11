@@ -106,13 +106,19 @@ function getFileAccessRestPath(pathname: string, appPublicPath = '/') {
   return prefix ? pathname.slice(prefix.length) : null;
 }
 
-function isPortalWebSocketPath(pathname = '/', publicPath = process.env.PORTAL_PUBLIC_PATH ?? '/portals') {
+function isPortalWebSocketPath(
+  pathname = '/',
+  publicPath = process.env.PORTAL_PUBLIC_PATH ??
+    `${resolvePublicPath(process.env.APP_PUBLIC_PATH || '/').replace(/\/$/, '')}/portals`,
+) {
   const normalizedPublicPath = normalizeBasePath(publicPath);
   const portalPrefix = normalizedPublicPath === '/' ? '/portals' : normalizedPublicPath;
   const escapedPortalPrefix = portalPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   return (
     new RegExp(`^${escapedPortalPrefix}/[^/]+/ws$`).test(pathname) ||
+    /^\/portals\/[^/]+\/ws$/.test(pathname) ||
+    new RegExp(`^${escapedPortalPrefix.replace(/\/portals$/, '')}/apps/[^/]+/portals/[^/]+/ws$`).test(pathname) ||
     /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname)
   );
 }

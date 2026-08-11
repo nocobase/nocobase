@@ -183,9 +183,9 @@ export class DirectoryPortalCatalog {
     portalName: string;
   }): Promise<PortalDefinition | null> {
     const { rootDir, packageJson } = options;
-    const appName = packageJson.portal?.appName ?? options.appName;
+    const appName = options.appName;
     const effectiveAppName = appName ?? DEFAULT_APP_NAME;
-    const portalName = packageJson.portal?.portalName ?? options.portalName;
+    const portalName = options.portalName;
     const entrypoint = await resolveEntrypoint(rootDir, packageJson);
 
     if (!entrypoint) {

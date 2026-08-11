@@ -41,16 +41,17 @@ export function registerPortalGatewayProxy(options: PortalGatewayProxyOptions = 
   const supervisor = PortalHostSupervisor.getInstance({
     targetUrl: options.targetUrl,
   });
-  const publicPath = normalizePublicPath(options.publicPath ?? process.env.PORTAL_PUBLIC_PATH ?? '/portals');
+  const publicPath = resolvePortalGatewayPublicPath(options.publicPath ?? process.env.PORTAL_PUBLIC_PATH);
   const handler: GatewayRequestHandler = async (req, res) => {
-    if (!isPortalRequest(req, publicPath)) {
+    const match = matchPortalRequest(req, publicPath);
+    if (!match) {
       return false;
     }
 
     try {
       const lease = await supervisor.acquire();
       try {
-        await proxyToPortalHost(req as IncomingMessage, res as ServerResponse, lease.targetUrl);
+        await proxyToPortalHost(req as IncomingMessage, res as ServerResponse, lease.targetUrl, match.targetPathname);
       } finally {
         lease.release();
       }
@@ -60,16 +61,17 @@ export function registerPortalGatewayProxy(options: PortalGatewayProxyOptions = 
     return true;
   };
   const wsHandler: GatewayWsHandler = async (req, socket, head) => {
-    if (!isPortalRequest(req, publicPath)) {
+    const match = matchPortalRequest(req, publicPath);
+    if (!match) {
       return false;
     }
-    if (isPortalWebSocketRequest(req, publicPath)) {
+    if (isPortalWebSocketPathname(match.targetPathname)) {
       return false;
     }
 
     try {
       const lease = await supervisor.acquire();
-      proxyWebSocketToPortalHost(req, socket as Socket, head, lease.targetUrl, lease.release);
+      proxyWebSocketToPortalHost(req, socket as Socket, head, lease.targetUrl, lease.release, match.targetPathname);
     } catch (error) {
       writePortalGatewaySocketError(socket as Socket, error);
     }
@@ -84,26 +86,63 @@ export function registerPortalGatewayProxy(options: PortalGatewayProxyOptions = 
   };
 }
 
-function isPortalRequest(req: { url?: string }, publicPath: string): boolean {
-  const pathname = parse(req.url ?? '/').pathname ?? '/';
-  return (
-    pathname === publicPath || pathname.startsWith(`${publicPath}/`) || /^\/apps\/[^/]+\/portals(?:\/|$)/.test(pathname)
-  );
+interface PortalRequestMatch {
+  targetPathname: string;
 }
 
-function isPortalWebSocketRequest(req: { url?: string }, publicPath: string): boolean {
+export function matchPortalRequest(req: { url?: string }, publicPath: string): PortalRequestMatch | null {
   const pathname = parse(req.url ?? '/').pathname ?? '/';
-  const escapedPublicPath = publicPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return (
-    new RegExp(`^${escapedPublicPath}/[^/]+/ws$`).test(pathname) || /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname)
-  );
+  const normalizedPublicPath = normalizePublicPath(publicPath);
+  const appPublicPath = getAppPublicPathFromPortalPublicPath(normalizedPublicPath);
+
+  const portalPathname = rewritePortalPathname(pathname, normalizedPublicPath, '/portals');
+  if (portalPathname) {
+    return {
+      targetPathname: portalPathname,
+    };
+  }
+
+  const internalPortalPathname = rewritePortalPathname(pathname, '/portals', '/portals');
+  if (internalPortalPathname) {
+    return {
+      targetPathname: internalPortalPathname,
+    };
+  }
+
+  const appPortalPathname = rewriteAppPortalPathname(pathname, appPublicPath);
+  if (appPortalPathname) {
+    return {
+      targetPathname: appPortalPathname,
+    };
+  }
+
+  const internalAppPortalPathname = rewriteAppPortalPathname(pathname, '');
+  if (internalAppPortalPathname) {
+    return {
+      targetPathname: internalAppPortalPathname,
+    };
+  }
+
+  return null;
 }
 
-function proxyToPortalHost(req: IncomingMessage, res: ServerResponse, target: URL): Promise<void> {
+function isPortalWebSocketPathname(pathname: string): boolean {
+  return /^\/portals\/[^/]+\/ws$/.test(pathname) || /^\/apps\/[^/]+\/portals\/[^/]+\/ws$/.test(pathname);
+}
+
+function proxyToPortalHost(
+  req: IncomingMessage,
+  res: ServerResponse,
+  target: URL,
+  targetPathname?: string,
+): Promise<void> {
   return new Promise((resolve) => {
     const requestUrl = new URL(req.url ?? '/', target);
     requestUrl.protocol = target.protocol;
     requestUrl.host = target.host;
+    if (targetPathname) {
+      requestUrl.pathname = targetPathname;
+    }
 
     const headers = filterRequestHeaders(req.headers);
     headers.host = target.host;
@@ -156,10 +195,14 @@ function proxyWebSocketToPortalHost(
   head: Buffer,
   target: URL,
   release: () => void,
+  targetPathname?: string,
 ): void {
   const requestUrl = new URL(req.url ?? '/', target);
   requestUrl.protocol = target.protocol;
   requestUrl.host = target.host;
+  if (targetPathname) {
+    requestUrl.pathname = targetPathname;
+  }
 
   const headers = filterRequestHeaders(req.headers);
   headers.host = target.host;
@@ -242,6 +285,45 @@ function forwardedProto(req: IncomingMessage): string {
 function normalizePublicPath(path: string): string {
   const normalized = `/${path}`.replace(/\/+/g, '/').replace(/\/$/, '');
   return normalized || '/portals';
+}
+
+function resolvePortalGatewayPublicPath(configuredPublicPath?: string): string {
+  if (configuredPublicPath) {
+    return normalizePublicPath(configuredPublicPath);
+  }
+
+  const appPublicPath = normalizePublicPath(process.env.APP_PUBLIC_PATH || '/');
+  return appPublicPath === '/' ? '/portals' : `${appPublicPath}/portals`;
+}
+
+function getAppPublicPathFromPortalPublicPath(publicPath: string): string {
+  if (publicPath === '/portals' || !publicPath.endsWith('/portals')) {
+    return '';
+  }
+
+  return publicPath.slice(0, -'/portals'.length) || '';
+}
+
+function rewritePortalPathname(pathname: string, publicPath: string, targetPublicPath: string): string | null {
+  if (pathname !== publicPath && !pathname.startsWith(`${publicPath}/`)) {
+    return null;
+  }
+
+  return `${targetPublicPath}${pathname.slice(publicPath.length)}` || targetPublicPath;
+}
+
+function rewriteAppPortalPathname(pathname: string, appPublicPath: string): string | null {
+  const prefix = appPublicPath || '';
+  const appPortalPattern = new RegExp(`^${escapeRegExp(prefix)}/apps/[^/]+/portals(?:/|$)`);
+  if (!appPortalPattern.test(pathname)) {
+    return null;
+  }
+
+  return prefix ? pathname.slice(prefix.length) || '/' : pathname;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function writePortalGatewayError(res: ServerResponse, error: unknown): void {
