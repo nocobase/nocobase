@@ -768,6 +768,43 @@ function extractRuntimePublicPath(html: string): string {
   return resolveAppPublicPath(match?.[1] ?? match?.[2] ?? DEFAULT_APP_PUBLIC_PATH);
 }
 
+function extractAssetPublicPathname(value: string): string {
+  try {
+    return new URL(value).pathname;
+  } catch {
+    return value;
+  }
+}
+
+function isVersionedDistAssetPublicPath(value: string): boolean {
+  const pathname = extractAssetPublicPathname(value);
+  return /(?:^|\/)dist\/[^/]+\/(?:v\/|settings\/)?$/.test(pathname);
+}
+
+function extractHtmlAssetPublicPath(html: string, fallbackPublicPath: string): string {
+  const assetAttributePattern =
+    /(?:src|href)=["']([^"']*(?:browser-checker\.js(?:\?[^"']*)?|global\.css|assets\/[^"']+))["']/gi;
+  const markers = ['browser-checker.js', 'global.css', 'assets/'];
+  let match: RegExpExecArray | null;
+
+  while ((match = assetAttributePattern.exec(html))) {
+    const assetPath = match[1];
+    const markerIndex = markers
+      .map((marker) => assetPath.indexOf(marker))
+      .filter((index) => index >= 0)
+      .sort((left, right) => left - right)[0];
+
+    if (markerIndex > 0) {
+      const candidate = ensureTrailingSlash(assetPath.slice(0, markerIndex));
+      if (isVersionedDistAssetPublicPath(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return fallbackPublicPath;
+}
+
 function rewriteHtmlAssetPublicPath(html: string, currentPublicPath: string, nextPublicPath: string): string {
   const currentPrefix = ensureTrailingSlash(currentPublicPath);
   const nextPrefix = ensureTrailingSlash(nextPublicPath);
@@ -1286,6 +1323,9 @@ async function buildNginxBundleFromSource(
   const settingsRuntimeScript = buildRuntimeConfigScriptTag(buildNginxRuntimeConfig(context, 'settings'));
   const sourceV1PublicPath = extractRuntimePublicPath(sourceIndexV1Content);
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
+  const sourceV1AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath);
+  const sourceV2AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath);
+  const sourceSettingsAssetPublicPath = extractHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/');
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
   const indexSettingsAssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/settings/`;
@@ -1333,15 +1373,19 @@ async function buildNginxBundleFromSource(
       snippetsDir: await mapProxyPathFromCliRoot(resolveEnvProxyNginxSnippetsOutputDir({ scope: options?.scope }), options),
     }),
     indexV1Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath, indexV1AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1AssetPublicPath, indexV1AssetPublicPath),
       v1RuntimeScript,
     ),
     indexV2Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath, indexV2AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2AssetPublicPath, indexV2AssetPublicPath),
       v2RuntimeScript,
     ),
     indexSettingsContent: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/', indexSettingsAssetPublicPath),
+      rewriteHtmlAssetPublicPath(
+        sourceIndexSettingsContent,
+        sourceSettingsAssetPublicPath,
+        indexSettingsAssetPublicPath,
+      ),
       settingsRuntimeScript,
     ),
   };
@@ -1383,6 +1427,9 @@ async function buildCaddyBundleFromSource(
   const settingsRuntimeScript = buildRuntimeConfigScriptTag(buildCaddyRuntimeConfig(context, 'settings'));
   const sourceV1PublicPath = extractRuntimePublicPath(sourceIndexV1Content);
   const sourceV2PublicPath = extractRuntimePublicPath(sourceIndexV2Content);
+  const sourceV1AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath);
+  const sourceV2AssetPublicPath = extractHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath);
+  const sourceSettingsAssetPublicPath = extractHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/');
   const indexV1AssetPublicPath = context.cdnBaseUrl;
   const indexV2AssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/${DEFAULT_MODERN_CLIENT_PREFIX}/`;
   const indexSettingsAssetPublicPath = `${trimTrailingSlash(context.cdnBaseUrl)}/settings/`;
@@ -1426,15 +1473,19 @@ async function buildCaddyBundleFromSource(
     appConfigContent,
     mainConfigContent: await buildEnvProxyMainConfig({ provider: 'caddy', scope: options?.scope }),
     indexV1Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1PublicPath, indexV1AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV1Content, sourceV1AssetPublicPath, indexV1AssetPublicPath),
       v1RuntimeScript,
     ),
     indexV2Content: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2PublicPath, indexV2AssetPublicPath),
+      rewriteHtmlAssetPublicPath(sourceIndexV2Content, sourceV2AssetPublicPath, indexV2AssetPublicPath),
       v2RuntimeScript,
     ),
     indexSettingsContent: injectRuntimeScriptIntoHtml(
-      rewriteHtmlAssetPublicPath(sourceIndexSettingsContent, '/settings/', indexSettingsAssetPublicPath),
+      rewriteHtmlAssetPublicPath(
+        sourceIndexSettingsContent,
+        sourceSettingsAssetPublicPath,
+        indexSettingsAssetPublicPath,
+      ),
       settingsRuntimeScript,
     ),
   };
