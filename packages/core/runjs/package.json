@@ -183,6 +183,7 @@
     "react-dom": ">=18.0.0"
   },
   "devDependencies": {
-    "ajv": "^6.12.6"
+    "ajv": "^6.12.6",
+    "cross-spawn": "^7.0.6"
   }
 }

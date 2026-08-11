@@ -27,6 +27,13 @@ export class JsTemplateCreateJobExecutor {
   ) {}
 
   async execute(job: JsTemplateCreateJob, claimToken: string): Promise<string> {
+    if (job.applicationName !== this.projectService.getCurrentApplicationName()) {
+      throw new JsTemplateError(
+        'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+        `JS Template creation job "${job.id}" was not found`,
+      );
+    }
+
     const existing = await this.projectService.findInternalProjectById(job.targetProjectId);
     if (existing) {
       if (existing.creationJobId === job.id && existing.healthStatus === 'ready' && existing.headCommitId) {

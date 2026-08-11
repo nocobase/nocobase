@@ -33,5 +33,8 @@ describe('client-v2 defineGlobalDeps', () => {
     expect(define).toHaveBeenCalledWith('dayjs', expect.any(Function));
     expect(define).toHaveBeenCalledWith('lodash', expect.any(Function));
     expect(define).toHaveBeenCalledWith('@emotion/css', expect.any(Function));
+
+    const factories = new Map(define.mock.calls.map(([name, factory]) => [name, factory]));
+    expect(factories.get('react-router')?.()).toBe(factories.get('react-router-dom')?.());
   });
 });

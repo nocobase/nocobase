@@ -15,8 +15,9 @@ import { vi } from 'vitest';
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
+import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
+import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
-import type { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
@@ -160,6 +161,110 @@ describe('JS Template durable creation jobs', () => {
     expect((ctx as { status?: number }).status).toBe(400);
     expect(store.enqueue).not.toHaveBeenCalled();
   });
+
+  it('rejects a caller-supplied application identity for ZIP creation before persistence', async () => {
+    const store = { enqueue: vi.fn() } as unknown as JsTemplateCreateJobStore;
+    const resource = createJsTemplateProjectsResource(
+      { sequelize: { transaction: vi.fn() } } as never,
+      {
+        normalizeCreateMetadata: vi.fn(),
+      } as unknown as JsTemplateProjectService,
+      {} as JsTemplateCompileService,
+      store,
+      { publish: vi.fn() } as unknown as JsTemplateCreateJobRunner,
+      'main',
+      { recordCreateJobEvent: vi.fn(async () => undefined) } as never,
+    );
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            name: 'Foreign ZIP',
+            applicationName: 'support',
+            zipBase64: 'UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==',
+          },
+        },
+      },
+    };
+
+    await (resource.actions?.create as HandlerType)(
+      ctx as never,
+      vi.fn(async () => undefined),
+    );
+
+    expect((ctx as { status?: number }).status).toBe(400);
+    expect((ctx as { body?: unknown }).body).toMatchObject({
+      errors: [{ code: 'JS_TEMPLATE_INVALID_INPUT', status: 400 }],
+    });
+    expect(store.enqueue).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    {
+      sourceType: 'starter' as const,
+      payload: { sourceType: 'starter' as const, message: 'Initial source' },
+    },
+    {
+      sourceType: 'zip' as const,
+      payload: {
+        sourceType: 'zip' as const,
+        message: 'Import source',
+        zipBase64: 'foreign-application-secret',
+      },
+    },
+    {
+      sourceType: 'git' as const,
+      payload: {
+        sourceType: 'git' as const,
+        provider: 'git' as const,
+        config: { url: 'https://support.example.test/secret.git' },
+        authRef: null,
+      },
+    },
+  ])(
+    'rejects a foreign-application $sourceType job before reading or persisting source',
+    async ({ sourceType, payload }) => {
+      const findInternalProjectById = vi.fn();
+      const projectService = {
+        getCurrentApplicationName: vi.fn(() => 'main'),
+        findInternalProjectById,
+      } as unknown as JsTemplateProjectService;
+      const runtimeCompileService = {
+        compileCurrentRuntime: vi.fn(),
+      } as unknown as JsTemplateCompileService;
+      const createFromRemote = vi.fn();
+      const createFromRemoteService = {
+        create: createFromRemote,
+      } as unknown as JsTemplateCreateFromRemoteService;
+      const store = {
+        assertCurrentClaim: vi.fn(),
+      } as unknown as JsTemplateCreateJobStore;
+      const executor = new JsTemplateCreateJobExecutor(
+        {} as Database,
+        projectService,
+        runtimeCompileService,
+        createFromRemoteService,
+        store,
+      );
+      const job = createJobRecord({
+        id: `jtcj_foreign_${sourceType}`,
+        applicationName: 'support',
+        sourceType,
+        payload,
+        status: 'running',
+      });
+
+      await expect(executor.execute(job, 'claim-foreign')).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
+        status: 404,
+        message: `JS Template creation job "${job.id}" was not found`,
+      });
+      expect(findInternalProjectById).not.toHaveBeenCalled();
+      expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
+      expect(createFromRemote).not.toHaveBeenCalled();
+      expect(store.assertCurrentClaim).not.toHaveBeenCalled();
+    },
+  );
 
   it('builds succeeded summaries with result identity and without internal execution fields', () => {
     const summary = toCreateJobSummary(

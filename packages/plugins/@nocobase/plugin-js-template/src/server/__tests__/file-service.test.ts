@@ -81,6 +81,140 @@ describe('plugin-js-template file service resource bridge', () => {
     });
   });
 
+  it('keeps every public Project mutation non-enumerating across application boundaries', async () => {
+    const supportAuditService = new JsTemplateAuditService(app.db);
+    const supportPermissionService = new JsTemplatePermissionService(supportAuditService);
+    const supportProjectService = new JsTemplateProjectService(
+      app.db,
+      supportAuditService,
+      supportPermissionService,
+      undefined,
+      undefined,
+      'support',
+    );
+    const mutationEntries = [
+      {
+        actionName: 'updateMetadata',
+        run: (projectId: string) =>
+          agent.resource('jsTemplateProjects').updateMetadata({
+            values: { projectId, title: 'Attacker update', description: 'Attacker description' },
+          }),
+      },
+      {
+        actionName: 'changeLifecycle',
+        run: (projectId: string) =>
+          agent.resource('jsTemplateProjects').changeLifecycle({
+            values: { projectId, lifecycleStatus: 'disabled' },
+          }),
+      },
+      {
+        actionName: 'delete',
+        run: (projectId: string) => agent.resource('jsTemplateProjects').delete({ values: { projectId } }),
+      },
+    ];
+
+    for (const [index, entry] of mutationEntries.entries()) {
+      const secretTitle = `Foreign ${entry.actionName} secret`;
+      const secretDescription = `Support-only ${entry.actionName} description`;
+      const foreignProject = await supportProjectService.createProject({
+        name: `Foreign ${entry.actionName} boundary ${index}`,
+        title: secretTitle,
+        description: secretDescription,
+      });
+      const projects = app.db.getRepository('jsTemplateProjects');
+      const foreignRecordBefore = await projects.findOne({ filterByTk: foreignProject.id });
+      const vscRepoId = String(foreignRecordBefore?.get('vscRepoId'));
+      const vscRepositoryBefore = await app.db.getRepository('vscFileRepositories').findOne({ filterByTk: vscRepoId });
+
+      const foreignResponse = await entry.run(foreignProject.id);
+
+      expect(foreignResponse.status).toBe(404);
+      expect(foreignResponse.body).toMatchObject({
+        errors: [
+          {
+            code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+            message: `JS Template project "${foreignProject.id}" was not found`,
+            status: 404,
+          },
+        ],
+      });
+      expect(JSON.stringify(foreignResponse.body)).not.toMatch(
+        new RegExp(`${secretTitle}|${secretDescription}|applicationName|vscRepoId|headCommitId`, 'u'),
+      );
+      const foreignRecordAfter = await projects.findOne({ filterByTk: foreignProject.id });
+      expect(foreignRecordAfter?.get('title')).toBe(secretTitle);
+      expect(foreignRecordAfter?.get('description')).toBe(secretDescription);
+      expect(foreignRecordAfter?.get('lifecycleStatus')).toBe('enabled');
+      expect(foreignRecordAfter?.get('applicationName')).toBe('support');
+      const vscRepositoryAfter = await app.db.getRepository('vscFileRepositories').findOne({ filterByTk: vscRepoId });
+      expect(vscRepositoryAfter?.get('status')).toBe(vscRepositoryBefore?.get('status'));
+
+      await projects.destroy({ filterByTk: foreignProject.id });
+      const missingResponse = await entry.run(foreignProject.id);
+
+      expect(missingResponse.status).toBe(404);
+      expect(missingResponse.body).toEqual(foreignResponse.body);
+    }
+  });
+
+  it('rejects the CLI saveSource persistence route before reading a foreign application Project', async () => {
+    const supportAuditService = new JsTemplateAuditService(app.db);
+    const supportPermissionService = new JsTemplatePermissionService(supportAuditService);
+    const supportProjectService = new JsTemplateProjectService(
+      app.db,
+      supportAuditService,
+      supportPermissionService,
+      undefined,
+      undefined,
+      'support',
+    );
+    const foreignProject = await supportProjectService.createProject({
+      name: 'Foreign CLI save boundary',
+      title: 'Foreign CLI secret title',
+      description: 'Foreign CLI secret description',
+    });
+    const projects = app.db.getRepository('jsTemplateProjects');
+    const commits = app.db.getRepository('vscFileCommits');
+    const commitCountBefore = await commits.count();
+    const runCliSave = (projectId: string) =>
+      agent.resource('jsTemplateFiles').saveSource({
+        values: {
+          projectId,
+          expectedHeadCommitId: null,
+          message: 'Attempt foreign CLI save',
+          files: [{ path: 'README.md', content: '# Foreign write attempt\n' }],
+        },
+      });
+
+    const foreignResponse = await runCliSave(foreignProject.id);
+
+    expect(foreignResponse.status).toBe(404);
+    expect(foreignResponse.body).toMatchObject({
+      errors: [
+        {
+          code: 'JS_TEMPLATE_PROJECT_NOT_FOUND',
+          message: `JS Template project "${foreignProject.id}" was not found`,
+          status: 404,
+        },
+      ],
+    });
+    expect(JSON.stringify(foreignResponse.body)).not.toMatch(
+      /Foreign CLI secret|applicationName|vscRepoId|headCommitId/u,
+    );
+    await expect(commits.count()).resolves.toBe(commitCountBefore);
+    const foreignRecordAfter = await projects.findOne({ filterByTk: foreignProject.id });
+    expect(foreignRecordAfter?.get('title')).toBe('Foreign CLI secret title');
+    expect(foreignRecordAfter?.get('description')).toBe('Foreign CLI secret description');
+    expect(foreignRecordAfter?.get('applicationName')).toBe('support');
+
+    await projects.destroy({ filterByTk: foreignProject.id });
+    const missingResponse = await runCliSave(foreignProject.id);
+
+    expect(missingResponse.status).toBe(404);
+    expect(missingResponse.body).toEqual(foreignResponse.body);
+    await expect(commits.count()).resolves.toBe(commitCountBefore);
+  });
+
   it('runs shared vsc permission hooks for js-template internal source operations', async () => {
     const capturedActions: string[] = [];
     const unregister = getVscPermissionHookRegistrar(app).registerPermissionHook((input) => {

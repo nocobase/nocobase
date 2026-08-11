@@ -47,6 +47,7 @@ describe('plugin-js-template initial source creation', () => {
     const internalProject = await app.db.getRepository('jsTemplateProjects').findOne({
       filterByTk: accepted.targetProjectId,
     });
+    const creationJob = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: accepted.id });
     const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
     const pullResponse = await app
@@ -73,6 +74,8 @@ describe('plugin-js-template initial source creation', () => {
       headCommitId: expect.stringMatching(/^vscc_/),
       lastCompiledAt: expect.any(String),
     });
+    expect(creationJob?.get('applicationName')).toBe('main');
+    expect(internalProject?.get('applicationName')).toBe('main');
     expect(internalProject?.get('creationJobId')).toBe(accepted.id);
     expect(repo).not.toHaveProperty('creationJobId');
     expect(pullResponse.body.data.files.map((file) => file.path).sort()).toEqual(
@@ -183,6 +186,7 @@ describe('plugin-js-template initial source creation', () => {
     const internalProject = await app.db.getRepository('jsTemplateProjects').findOne({
       filterByTk: accepted.targetProjectId,
     });
+    const creationJob = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: accepted.id });
     const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
     const pullResponse = await app
@@ -199,6 +203,8 @@ describe('plugin-js-template initial source creation', () => {
       });
 
     expect(repo).toMatchObject({ healthStatus: 'ready', headCommitId: expect.any(String) });
+    expect(creationJob?.get('applicationName')).toBe('main');
+    expect(internalProject?.get('applicationName')).toBe('main');
     expect(internalProject?.get('creationJobId')).toBe(accepted.id);
     expect(pullResponse.body.data.files.map((file) => file.path)).toEqual([
       'README.md',
@@ -242,6 +248,7 @@ describe('plugin-js-template initial source creation', () => {
   it('rolls back repository creation when the initial source commit is missing', async () => {
     const projectId = 'jtp_missing_initial_commit';
     const projectService = {
+      getCurrentApplicationName: vi.fn(() => 'main'),
       createProject: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
         await app.db.getRepository('jsTemplateProjects').create({
           values: {
@@ -329,6 +336,31 @@ describe('plugin-js-template initial source creation', () => {
     await expect(
       initialStore.fail(pending.id, 'main', 'claim-old', 'JS_TEMPLATE_CREATE_FAILED', 'JS Template creation failed'),
     ).resolves.toBeNull();
+  });
+
+  it('scopes claimable creation jobs and ZIP claims to the current application', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+    const mainJob = await store.enqueue(createJobInput('main-claimable'));
+    const supportZipJob = await store.enqueue({
+      ...createJobInput('support-zip-claimable'),
+      applicationName: 'support',
+      sourceType: 'zip',
+      payload: {
+        sourceType: 'zip',
+        message: 'Import support source',
+        zipBase64: 'support-application-secret',
+      },
+    });
+
+    await expect(store.findClaimableIds('main')).resolves.toEqual([mainJob.id]);
+    await expect(store.findClaimableIds('support')).resolves.toEqual([supportZipJob.id]);
+    await expect(store.claim(supportZipJob.id, 'main', 'main-runner', 60_000)).resolves.toBeNull();
+    await expect(store.claim(supportZipJob.id, 'support', 'support-runner', 60_000)).resolves.toMatchObject({
+      id: supportZipJob.id,
+      applicationName: 'support',
+      sourceType: 'zip',
+    });
+    await expect(store.findClaimableIds('main')).resolves.toEqual([mainJob.id]);
   });
 
   it('retains succeeded and failed jobs until their owner explicitly dismisses them', async () => {

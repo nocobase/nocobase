@@ -166,7 +166,11 @@ describe('JsTemplateCreateJobRunner', () => {
     }));
     const executor = new JsTemplateCreateJobExecutor(
       {} as Database,
-      { findInternalProjectById, deleteProject } as unknown as JsTemplateProjectService,
+      {
+        getCurrentApplicationName: vi.fn(() => 'main'),
+        findInternalProjectById,
+        deleteProject,
+      } as unknown as JsTemplateProjectService,
       {} as JsTemplateCompileService,
       {} as JsTemplateCreateFromRemoteService,
       store,

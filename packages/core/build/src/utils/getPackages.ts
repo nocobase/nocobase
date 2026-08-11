@@ -26,6 +26,7 @@ function getPackagesPath(pkgs: string[]) {
   const allPackageJson = fg.sync(['*/*/package.json', '*/*/*/package.json'], {
     cwd: PACKAGES_PATH,
     absolute: true,
+    ignore: ['**/node_modules/**'],
     onlyFiles: true,
   });
 
@@ -66,7 +67,9 @@ export interface SelectedBuildPackageNode<T> {
 
 export function getPackages(pkgs: string[], options: GetPackagesOptions = {}) {
   const packagePaths = getPackagesPath(pkgs);
-  const allPackages = getPackagesSync(ROOT_PATH).filter((pkg) => pkg.name !== '@nocobase/docs');
+  const allPackages = getPackagesSync(ROOT_PATH).filter(
+    (pkg) => pkg.name !== '@nocobase/docs' && !toUnixPath(pkg.location).includes('/node_modules/'),
+  );
   const packages = allPackages.filter((pkg) => packagePaths.includes(toUnixPath(pkg.location)));
 
   if (!options.withDependencies) {
@@ -74,11 +77,14 @@ export function getPackages(pkgs: string[], options: GetPackagesOptions = {}) {
   }
 
   const repositoryPackageNames = new Set(allPackages.map((pkg) => pkg.name));
+  const repositoryPackageVersions = new Set(
+    allPackages.filter((pkg) => pkg.name.startsWith('@nocobase/')).map((pkg) => pkg.version),
+  );
   const nodes = allPackages.map((pkg) => {
     const manifest = require(`${pkg.location}/package.json`);
     return {
       name: pkg.name,
-      dependencies: getInternalBuildDependencies(manifest, repositoryPackageNames),
+      dependencies: getInternalBuildDependencies(manifest, repositoryPackageNames, repositoryPackageVersions),
       value: pkg,
     };
   });
@@ -96,14 +102,18 @@ export function getInternalBuildDependencies(
     devDependencies?: Record<string, string>;
   },
   repositoryPackageNames: ReadonlySet<string>,
+  repositoryPackageVersions: ReadonlySet<string> = new Set(),
 ): string[] {
-  return [
-    ...new Set(
-      Object.keys({ ...manifest.dependencies, ...manifest.peerDependencies }).filter((dependencyName) =>
-        repositoryPackageNames.has(dependencyName),
-      ),
-    ),
-  ];
+  const dependencies = Object.entries(manifest.dependencies || {}).filter(
+    ([dependencyName, dependencyVersion]) =>
+      repositoryPackageNames.has(dependencyName) ||
+      (dependencyName.startsWith('@nocobase/') && repositoryPackageVersions.has(dependencyVersion)),
+  );
+  const peerDependencies = Object.entries(manifest.peerDependencies || {}).filter(([dependencyName]) =>
+    repositoryPackageNames.has(dependencyName),
+  );
+
+  return [...new Set([...dependencies, ...peerDependencies].map(([dependencyName]) => dependencyName))];
 }
 
 export function resolveSelectedBuildPackageDependencies<T>(

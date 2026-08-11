@@ -9,12 +9,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import spawn from 'cross-spawn';
 
 const codeMirrorPackages = [
   '@codemirror/lang-html',
@@ -44,6 +44,7 @@ async function main() {
 
     const runJSPack = packPackage(runJSRoot, packDirectory, runJSManifest);
     const pluginPack = packPackage(pluginRoot, packDirectory, pluginManifest);
+    assertNoNestedBundledDependencies(pluginPack);
     const clientV2Pack = verifyRealClientTopology
       ? packPackage(
           clientV2Root,
@@ -194,6 +195,21 @@ function parseNpmPackOutput(output) {
     throw new Error('npm pack returned unexpected metadata');
   }
   return parsed[0];
+}
+
+function assertNoNestedBundledDependencies(pack) {
+  const bundledDependencyRoot = 'dist/node_modules/';
+  const nestedDependencyFiles = pack.files.filter(
+    (file) =>
+      file.startsWith(bundledDependencyRoot) && file.slice(bundledDependencyRoot.length).includes('/node_modules/'),
+  );
+  if (nestedDependencyFiles.length) {
+    throw new Error(
+      `${pack.manifest.name} pack contains install-topology-dependent nested dependencies: ${nestedDependencyFiles.join(
+        ', ',
+      )}`,
+    );
+  }
 }
 
 function collectExportTargets(exportsField) {
@@ -840,7 +856,7 @@ function toPackageReport(pack) {
 }
 
 function runCommand(command, args, options) {
-  const result = spawnSync(command, args, {
+  const result = spawn.sync(command, args, {
     cwd: options.cwd,
     encoding: 'utf8',
     env: process.env,

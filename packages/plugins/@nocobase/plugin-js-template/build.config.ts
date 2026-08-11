@@ -20,10 +20,33 @@ const requiredJavaScriptArtifacts = [
 
 export default defineConfig({
   afterBuild: (log) => {
+    removeNestedBundledDependencies();
     assertBuildArtifacts(requiredJavaScriptArtifacts);
     log(`verified build artifacts: ${requiredJavaScriptArtifacts.join(', ')}`);
   },
 });
+
+function removeNestedBundledDependencies(): void {
+  const bundledDependenciesRoot = path.join(__dirname, 'dist/node_modules');
+  if (!fs.pathExistsSync(bundledDependenciesRoot)) {
+    return;
+  }
+
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.name === 'node_modules') {
+        fs.removeSync(entryPath);
+        continue;
+      }
+      if (entry.isDirectory()) {
+        visit(entryPath);
+      }
+    }
+  };
+
+  visit(bundledDependenciesRoot);
+}
 
 function assertBuildArtifacts(relativePaths: readonly string[]): void {
   const missingArtifacts = relativePaths.filter(
