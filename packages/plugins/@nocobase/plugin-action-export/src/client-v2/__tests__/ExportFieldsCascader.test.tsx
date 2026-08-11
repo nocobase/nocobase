@@ -8,7 +8,7 @@
  */
 
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ArrayItems, FormItem, Input, Space } from '@formily/antd-v5';
+import { ArrayItems, FormItem, Space } from '@formily/antd-v5';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import React from 'react';
@@ -155,9 +155,6 @@ describe('ExportFieldsCascader', () => {
     globalThis.PointerEvent = TestPointerEvent as unknown as typeof PointerEvent;
 
     const rootOptions: SearchOption[] = [
-      { name: 'id', title: 'ID', isLeaf: true },
-      { name: 'orgid', title: 'orgid', isLeaf: true },
-      { name: 'nickname', title: 'Nickname', isLeaf: true },
       {
         name: 'org_m2o',
         title: 'org_m2o',
@@ -169,7 +166,7 @@ describe('ExportFieldsCascader', () => {
       getRootOptions: () => rootOptions,
       loadChildren: vi.fn(() => []),
       preloadPath: vi.fn(() => {
-        rootOptions[3].children = [
+        rootOptions[0].children = [
           { name: 'company_name', title: 'Company name', isLeaf: true },
           { name: 'address', title: 'Address', isLeaf: true },
         ];
@@ -179,13 +176,7 @@ describe('ExportFieldsCascader', () => {
     };
     const form = createForm({
       values: {
-        exportSettings: [
-          { dataIndex: ['id'] },
-          { dataIndex: ['orgid'] },
-          { dataIndex: ['nickname'] },
-          { dataIndex: ['org_m2o', 'company_name'] },
-          { dataIndex: ['username'] },
-        ],
+        exportSettings: [{ dataIndex: ['org_m2o', 'company_name'] }, { dataIndex: ['username'] }],
       },
     });
     const SchemaField = createSchemaField({
@@ -193,7 +184,6 @@ describe('ExportFieldsCascader', () => {
         ArrayItems,
         ExportFieldsCascader,
         FormItem,
-        Input,
         Space,
       },
     });
@@ -219,11 +209,6 @@ describe('ExportFieldsCascader', () => {
                     'x-decorator': 'FormItem',
                     'x-component': 'ExportFieldsCascader',
                     'x-component-props': { optionsCache },
-                  },
-                  title: {
-                    type: 'string',
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input',
                   },
                 },
               },
@@ -259,23 +244,20 @@ describe('ExportFieldsCascader', () => {
       });
 
       await act(async () => {
-        fireEvent.mouseDown(comboboxes[3]);
+        fireEvent.mouseDown(comboboxes[0]);
       });
       await waitFor(() => expect(optionsCache.preloadPath).toHaveBeenCalledWith(['org_m2o', 'company_name']));
       fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Address' }));
-      await waitFor(() => expect(form.values.exportSettings[3].dataIndex).toEqual(['org_m2o', 'address']));
+      await waitFor(() => expect(form.values.exportSettings[0].dataIndex).toEqual(['org_m2o', 'address']));
 
-      fireEvent.pointerDown(handles[3], { button: 0, buttons: 1, clientX: 12, clientY: 200, pointerId: 1 });
+      fireEvent.pointerDown(handles[0], { button: 0, buttons: 1, clientX: 12, clientY: 8, pointerId: 1 });
       await act(async () => Promise.resolve());
-      fireEvent.pointerMove(document, { button: 0, buttons: 1, clientX: 12, clientY: 290, pointerId: 1 });
+      fireEvent.pointerMove(document, { button: 0, buttons: 1, clientX: 12, clientY: 90, pointerId: 1 });
       await act(async () => Promise.resolve());
-      fireEvent.pointerUp(document, { button: 0, buttons: 0, clientX: 12, clientY: 290, pointerId: 1 });
+      fireEvent.pointerUp(document, { button: 0, buttons: 0, clientX: 12, clientY: 90, pointerId: 1 });
 
       await waitFor(() => {
         expect(form.values.exportSettings.map((item) => item.dataIndex)).toEqual([
-          ['id'],
-          ['orgid'],
-          ['nickname'],
           ['username'],
           ['org_m2o', 'address'],
         ]);
