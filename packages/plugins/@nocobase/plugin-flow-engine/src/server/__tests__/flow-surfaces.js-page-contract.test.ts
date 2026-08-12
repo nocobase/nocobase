@@ -36,37 +36,37 @@ describe('flowSurfaces JS Page public contract', () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('creates a JS Page RunJS binding through the public create API', async () => {
+  it('creates an inline JS Page without workspace metadata when JS Template is disabled', async () => {
+    expect(context.app.resourceManager.isDefined('runJSSources')).toBe(false);
+
     const created = await createJSPage(context, 'Created JS Page');
     expect(created).toMatchObject({
       pageType: 'js-page',
       modelUse: 'JSPageModel',
-      runJSLocator: {
-        kind: 'flowModel.step',
-        modelUid: created.pageUid,
-        flowKey: 'jsSettings',
-        stepKey: 'runJs',
-        paramPath: ['code'],
-        versionPath: ['version'],
-      },
       capabilities: {
         tabs: false,
         blocks: false,
         compose: false,
         blueprint: false,
         export: false,
-        runJSWorkspace: true,
+        runJSWorkspace: false,
       },
-      workspaceStatus: 'ready',
-      workspaceRetryable: false,
       idempotentReplay: false,
     });
+    expect(created.runJSLocator).toBeUndefined();
+    expect(created.workspaceStatus).toBeUndefined();
+    expect(created.workspaceRetryable).toBeUndefined();
+    expect(created.workspaceError).toBeUndefined();
+
     const readback = await getSurface(context.rootAgent, { uid: created.pageUid });
     expect(readback.tree).toMatchObject({
       uid: created.pageUid,
       use: 'JSPageModel',
-      runJSLocator: created.runJSLocator,
     });
+    expect(readback.tree.runJSLocator).toBeUndefined();
+    expect(readback.tree.workspaceStatus).toBeUndefined();
+    expect(readback.tree.workspaceRetryable).toBeUndefined();
+    expect(readback.tree.workspaceError).toBeUndefined();
     expect(readback.tree.subModels?.tabs).toBeUndefined();
     expect(readback.tree.subModels?.grid).toBeUndefined();
   }, 120000);

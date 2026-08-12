@@ -23,16 +23,24 @@ import { SyncJobStore } from '../remotes/SyncJobStore';
 import { jsTemplateSyncAuditActionNames, remoteSyncAuditActionNames } from '../remotes/audit';
 import { DeterministicRemoteAdapter } from '../remotes/testing/DeterministicRemoteAdapter';
 import { normalizeGitRemoteConfigDraft } from '../remotes/providers/git/gitConfig';
+import { remoteInternalResourceNames } from '../remotes/resource';
 import { JsTemplateRemoteSyncModule } from '../plugin';
 import PluginJsTemplateServer from '../../plugin';
 
 describe('vsc-file remote runtime bootstrap', () => {
   it('reloads the Git adapter identity-safely and unregisters the runtime on disable', async () => {
     const registeredAuditActions: Array<{ name: string }> = [];
+    const removedResources: string[] = [];
     const app = {
       db: {} as Database,
       environment: { getVariables: vi.fn(() => ({})) },
-      resourceManager: { define: vi.fn() },
+      resourceManager: {
+        define: vi.fn(),
+        removeResource: vi.fn((name: string) => {
+          removedResources.push(name);
+          return true;
+        }),
+      },
       acl: { allow: vi.fn() },
       auditManager: {
         registerActions: vi.fn((actions: Array<{ name: string }>) => registeredAuditActions.push(...actions)),
@@ -66,6 +74,7 @@ describe('vsc-file remote runtime bootstrap', () => {
 
     await module.afterDisable();
     expect(() => module.getRemoteSyncRuntime()).toThrow('Remote sync runtime is not loaded');
+    expect(removedResources).toEqual(expect.arrayContaining([...remoteInternalResourceNames]));
 
     await module.load();
     expect(module.getRemoteSyncRuntime()).toBeDefined();

@@ -38,6 +38,10 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     await app?.destroy();
   });
 
+  it('exposes the RunJS workspace resource when JS Template is enabled', () => {
+    expect(app.resourceManager.isDefined('runJSSources')).toBe(true);
+  });
+
   it('opens and saves a Flow Engine source with only the JS Template host', async () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     await repository.insertModel({

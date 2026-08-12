@@ -21,7 +21,7 @@ import {
   GitCredentialMaterializer,
   GitRemoteAdapter,
 } from './remotes/providers/git';
-import { createRemoteInternalResources } from './remotes/resource';
+import { createRemoteInternalResources, remoteInternalResourceNames } from './remotes/resource';
 import { RemoteCredentialResolver } from './remotes/security/RemoteCredentialResolver';
 
 export class JsTemplateRemoteSyncModule {
@@ -103,6 +103,9 @@ export class JsTemplateRemoteSyncModule {
     this.unregisterGitAdapter?.();
     this.unregisterGitAdapter = undefined;
     this.remoteSyncRuntime = undefined;
+    for (const resourceName of remoteInternalResourceNames) {
+      this.app.resourceManager.removeResource?.(resourceName);
+    }
   }
 
   private async runRemoteRecovery(): Promise<void> {

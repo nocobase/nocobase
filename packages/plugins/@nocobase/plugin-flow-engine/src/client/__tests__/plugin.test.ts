@@ -8,7 +8,15 @@
  */
 
 import { LegacyRunJSEditorRegistry } from '@nocobase/client';
-import { RunJSEditorRegistry, RunJSSettingsDescriptorProviderRegistry } from '@nocobase/client-v2';
+import {
+  clearRunJSRegistryHosts,
+  clearRunJSRuntimeHosts,
+  getRunJSModelUse,
+  getRunJSRegistryHost,
+  getRunJSRuntimeHost,
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+} from '@nocobase/client-v2';
 
 import PluginFlowEngineClient from '..';
 
@@ -17,25 +25,35 @@ describe('PluginFlowEngineClient', () => {
     LegacyRunJSEditorRegistry.clear();
     RunJSEditorRegistry.clear();
     RunJSSettingsDescriptorProviderRegistry.clear();
+    clearRunJSRegistryHosts();
+    clearRunJSRuntimeHosts();
   });
 
-  it('owns the legacy and client-v2 RunJS workspace integration lifecycle', async () => {
+  it('owns only the resident legacy RunJS runtime lifecycle', async () => {
     const plugin = new PluginFlowEngineClient({}, { apiClient: { request: vi.fn() } } as never);
 
     await plugin.load();
-    expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(1);
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
+    expectRuntimeOnly();
 
     await plugin.beforeLoad();
-    expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(0);
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+    expectRuntimeOnly();
 
     await plugin.load();
+    expectRuntimeOnly();
     plugin.dispose();
+    expect(getRunJSRegistryHost()).toBeUndefined();
+    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
     expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
   });
 });
+
+function expectRuntimeOnly(): void {
+  expect(getRunJSRegistryHost()).toBeDefined();
+  expect(() => getRunJSRuntimeHost()).not.toThrow();
+  expect(getRunJSModelUse({ use: 'JSBlockModel' })).toBe('JSBlockModel');
+  expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(0);
+  expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+  expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+}

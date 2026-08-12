@@ -8,27 +8,31 @@
  */
 
 import { type Application, Plugin } from '@nocobase/client-v2';
-import { installRunJSWorkspaceClientV2 } from '@nocobase/runjs/workspace/client-v2';
+import { installRunJSWorkspaceRuntimeClientV2 } from '@nocobase/runjs/workspace/client-v2';
 
 export class PluginFlowEngineClientV2 extends Plugin<Record<string, never>, Application> {
-  private runJSWorkspaceDisposer?: () => void;
+  private runJSRuntimeDisposer?: () => void;
 
   async beforeLoad() {
-    this.disposeRunJSWorkspaceClient();
+    this.disposeRunJSRuntimeClient();
+    this.installRunJSRuntimeClient();
   }
 
   async load() {
-    this.disposeRunJSWorkspaceClient();
-    this.runJSWorkspaceDisposer = installRunJSWorkspaceClientV2(this.app);
+    this.installRunJSRuntimeClient();
   }
 
   dispose() {
-    this.disposeRunJSWorkspaceClient();
+    this.disposeRunJSRuntimeClient();
   }
 
-  private disposeRunJSWorkspaceClient(): void {
-    this.runJSWorkspaceDisposer?.();
-    this.runJSWorkspaceDisposer = undefined;
+  private disposeRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer?.();
+    this.runJSRuntimeDisposer = undefined;
+  }
+
+  private installRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer ||= installRunJSWorkspaceRuntimeClientV2();
   }
 }
 

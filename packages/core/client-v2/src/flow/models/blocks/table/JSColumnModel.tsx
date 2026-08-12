@@ -285,16 +285,22 @@ JSColumnModel.registerFlow({
           });
 
           if (mountedForks.length > 0) {
-            await Promise.allSettled(
+            const results = await Promise.allSettled(
               mountedForks.map((fork: any) => {
                 return fork.applyFlow('jsSettings', { preview: inlineRunJs });
               }),
             );
+            const firstRejected = results.find(
+              (result): result is PromiseRejectedResult => result.status === 'rejected',
+            );
+            if (firstRejected) {
+              throw firstRejected.reason;
+            }
             return;
           }
         }
 
-        ctx.onRefReady(ctx.ref, async (element) => {
+        const runColumnRuntime = async (element: HTMLElement, propagatePreviewError: boolean) => {
           const runId = beginJSFieldRuntimeRun(ctx.model);
           try {
             resetJSFieldRuntimeElement(element);
@@ -328,8 +334,20 @@ JSColumnModel.registerFlow({
               return;
             }
             renderJSFieldRuntimeError(element, error, 'js-column-runtime-error');
+            if (propagatePreviewError) {
+              throw error;
+            }
           }
-        });
+        };
+
+        // Master preview only dispatches to mounted forks, so the ref is already available here. Await the real
+        // resolver/runtime chain and rethrow after rendering the cell error so the master preview can observe it.
+        if (isPreview && isFork && ctx.ref.current) {
+          await runColumnRuntime(ctx.ref.current, true);
+          return;
+        }
+
+        ctx.onRefReady(ctx.ref, (element) => runColumnRuntime(element, false));
       },
     },
   },

@@ -10,21 +10,47 @@
 import fs from 'fs';
 import path from 'path';
 
-import { type Application } from '@nocobase/client-v2';
+import {
+  clearRunJSRegistryHosts,
+  clearRunJSRuntimeHosts,
+  getRunJSRegistryHost,
+  getRunJSRuntimeHost,
+  type Application,
+} from '@nocobase/client-v2';
 
-import { installRunJSWorkspaceClientV2 } from '../plugin';
+import {
+  installRunJSWorkspaceAuthoringClientV2,
+  installRunJSWorkspaceClientV2,
+  installRunJSWorkspaceRuntimeClientV2,
+} from '../plugin';
 import { RunJSEditorRegistry, RunJSSettingsDescriptorProviderRegistry } from '../runJSRegistryHost';
 
 describe('RunJS workspace client-v2 boundary', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
     RunJSSettingsDescriptorProviderRegistry.clear();
+    clearRunJSRegistryHosts();
+    clearRunJSRuntimeHosts();
   });
 
-  it('installs the core Studio and inline settings provider with identity-safe disposal', () => {
+  it('installs the resident registry and runtime hosts without authoring providers', () => {
+    const dispose = installRunJSWorkspaceRuntimeClientV2();
+
+    expect(getRunJSRegistryHost()).toBeDefined();
+    expect(() => getRunJSRuntimeHost()).not.toThrow();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+
+    dispose();
+    expect(getRunJSRegistryHost()).toBeUndefined();
+    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
+  });
+
+  it('installs Studio and inline settings authoring with identity-safe disposal', () => {
     const app = { apiClient: { request: vi.fn() } } as unknown as Application;
-    const disposeFirst = installRunJSWorkspaceClientV2(app);
-    const disposeSecond = installRunJSWorkspaceClientV2(app);
+    const disposeRuntime = installRunJSWorkspaceRuntimeClientV2();
+    const disposeFirst = installRunJSWorkspaceAuthoringClientV2(app);
+    const disposeSecond = installRunJSWorkspaceAuthoringClientV2(app);
 
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       '@nocobase/runjs/workspace/runjs-studio',
@@ -38,6 +64,25 @@ describe('RunJS workspace client-v2 boundary', () => {
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
 
     disposeSecond();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+    disposeRuntime();
+  });
+
+  it('keeps the compatibility installer identity-safe across overlapping lifecycles', () => {
+    const app = { apiClient: { request: vi.fn() } } as unknown as Application;
+    const disposeFirst = installRunJSWorkspaceClientV2(app);
+    const disposeSecond = installRunJSWorkspaceClientV2(app);
+
+    disposeFirst();
+    expect(getRunJSRegistryHost()).toBeDefined();
+    expect(() => getRunJSRuntimeHost()).not.toThrow();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
+
+    disposeSecond();
+    expect(getRunJSRegistryHost()).toBeUndefined();
+    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
   });

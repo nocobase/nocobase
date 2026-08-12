@@ -665,6 +665,50 @@ window.setTimeout(() => {
     setTimeoutSpy.mockRestore();
   });
 
+  it('keeps real window and document globals for inline JS Item code', async () => {
+    const { engine, model } = createJSItem({
+      sourceMode: 'inline',
+      code: `
+const sibling = document.querySelector('[data-testid="sibling-item"]');
+sibling?.setAttribute('data-inline-query-reached', 'true');
+ctx.render(
+  <span
+    data-testid="inline-browser-globals"
+    data-real-window={String(window === ctx.hostWindow)}
+    data-real-document={String(document === ctx.hostDocument)}
+  >
+    {sibling?.textContent}
+  </span>
+);
+      `,
+      version: 'v2',
+    });
+    model.context.defineProperty('hostWindow', {
+      value: window,
+    });
+    model.context.defineProperty('hostDocument', {
+      value: document,
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <span data-testid="sibling-item">sibling</span>
+            <FlowModelRenderer model={model} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('inline-browser-globals')).toHaveTextContent('sibling');
+    });
+    expect(screen.getByTestId('inline-browser-globals')).toHaveAttribute('data-real-window', 'true');
+    expect(screen.getByTestId('inline-browser-globals')).toHaveAttribute('data-real-document', 'true');
+    expect(screen.getByTestId('sibling-item')).toHaveAttribute('data-inline-query-reached', 'true');
+  });
+
   it('scopes safe document queries to the current JS Item subtree', async () => {
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'js-template',

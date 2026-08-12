@@ -22,7 +22,7 @@ const publicActions = {
   jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline', 'delete'],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
-  runJSSources: ['open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
+  runJSSources: ['capabilities', 'open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
 } as const;
 
 describe('js-template swagger', () => {
@@ -102,6 +102,7 @@ describe('js-template swagger', () => {
       'JsTemplateErrorResponse',
       'RunJSSourceWorkspaceFile',
       'RunJSSourceSettingsDescriptor',
+      'RunJSAuthoringCapabilities',
     ] as const) {
       expect(schemas[schemaName], schemaName).toBeTruthy();
     }

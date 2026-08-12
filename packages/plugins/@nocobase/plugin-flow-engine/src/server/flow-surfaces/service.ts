@@ -166,7 +166,7 @@ import {
   bootstrapFlowSurfaceRunJSWorkspace,
   buildFlowSurfaceJSPageCapabilities,
   buildFlowSurfaceRunJSLocator,
-  getFlowSurfaceRunJSWorkspaceProviderStatus,
+  hasFlowSurfaceRunJSWorkspaceBootstrapPort,
   isRouteBackedPageUse,
   JS_PAGE_MODEL_USE,
   resolveFlowSurfaceRunJSHost,
@@ -5146,7 +5146,10 @@ export class FlowSurfacesService {
   }
 
   private attachRunJSWorkspaceReadMetadata<T>(node: T): T {
-    const providerStatus = getFlowSurfaceRunJSWorkspaceProviderStatus(this.plugin.app);
+    if (!hasFlowSurfaceRunJSWorkspaceBootstrapPort(this.plugin.app)) {
+      return node;
+    }
+    const providerStatus: FlowSurfaceRunJSWorkspaceBootstrapResult = { status: 'ready', retryable: false };
     const visit = (current: unknown) => {
       if (!_.isPlainObject(current)) {
         return;
@@ -8969,7 +8972,9 @@ export class FlowSurfacesService {
             options.transaction,
             options.authoringContext,
           );
-          Object.assign(deferredResult, runJSWorkspace);
+          if (runJSWorkspace) {
+            Object.assign(deferredResult, runJSWorkspace);
+          }
         }
       },
       resolveBlockSettings: (settings, state, block) => this.resolveComposeBlockSettings(settings, state.keyMap, block),
@@ -9524,6 +9529,9 @@ export class FlowSurfacesService {
     transaction: any,
     authoringContext?: FlowSurfaceRunJSAuthoringContext,
   ) {
+    if (!hasFlowSurfaceRunJSWorkspaceBootstrapPort(this.plugin.app)) {
+      return undefined;
+    }
     const host = resolveFlowSurfaceRunJSHost(modelUse);
     if (!transaction) {
       throwInternalError(
@@ -9539,6 +9547,9 @@ export class FlowSurfacesService {
       transaction,
       authoringContext: authoringContext || {},
     });
+    if (!workspace) {
+      return undefined;
+    }
     return this.buildRunJSWorkspaceMetadata(modelUse, modelUid, workspace);
   }
 
@@ -9562,7 +9573,7 @@ export class FlowSurfacesService {
       options.transaction,
       options.authoringContext,
     );
-    return { ...result, ...workspace };
+    return workspace ? { ...result, ...workspace } : result;
   }
 
   private async initializeJSPageForRoute(
@@ -9655,8 +9666,8 @@ export class FlowSurfacesService {
       pageUid,
       pageType: 'js-page',
       modelUse: JS_PAGE_MODEL_USE,
-      capabilities: buildFlowSurfaceJSPageCapabilities(),
-      ...workspace,
+      capabilities: buildFlowSurfaceJSPageCapabilities(this.plugin.app),
+      ...(workspace || {}),
       idempotentReplay: false,
     };
   }
@@ -9727,6 +9738,19 @@ export class FlowSurfacesService {
     transaction: any,
     authoringContext?: FlowSurfaceRunJSAuthoringContext,
   ): Promise<Record<string, unknown>> {
+    if (!hasFlowSurfaceRunJSWorkspaceBootstrapPort(this.plugin.app)) {
+      const {
+        runJSLocator: _runJSLocator,
+        workspaceStatus: _workspaceStatus,
+        workspaceRetryable: _workspaceRetryable,
+        workspaceError: _workspaceError,
+        ...inlineResult
+      } = storedResult;
+      return {
+        ...inlineResult,
+        capabilities: buildFlowSurfaceJSPageCapabilities(this.plugin.app),
+      };
+    }
     if (storedResult.workspaceStatus === 'ready') {
       return storedResult;
     }
@@ -9741,7 +9765,8 @@ export class FlowSurfacesService {
     const { workspaceError: _previousWorkspaceError, ...currentResult } = storedResult;
     return {
       ...currentResult,
-      ...workspace,
+      capabilities: buildFlowSurfaceJSPageCapabilities(this.plugin.app),
+      ...(workspace || {}),
     };
   }
 

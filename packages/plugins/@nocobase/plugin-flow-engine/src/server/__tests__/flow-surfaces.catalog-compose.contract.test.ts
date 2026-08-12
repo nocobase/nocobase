@@ -9,6 +9,7 @@
 
 import _ from 'lodash';
 import { uid } from '@nocobase/utils';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   addBlockData,
   getComposeBlock,
@@ -27,6 +28,7 @@ import { loginFlowSurfacesRootAgent, syncFlowSurfacesEnabledPlugins } from './fl
 import {
   FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
   FLOW_SURFACES_MINIMAL_TEST_PLUGINS,
+  FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_TEST_PLUGINS,
 } from './flow-surfaces.test-plugins';
 import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.helpers';
@@ -465,7 +467,10 @@ describe('flowSurfaces catalog + compose contract', () => {
   }
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      plugins: [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+    });
     ({ app, flowRepo, rootAgent } = context);
     calendarPopupSourceTables.clear();
   }, 120000);

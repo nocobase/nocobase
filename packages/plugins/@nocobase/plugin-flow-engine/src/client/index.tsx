@@ -8,30 +8,34 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { installRunJSWorkspaceLegacyClient } from '@nocobase/runjs/workspace/client';
+import { installRunJSWorkspaceRuntimeLegacyClient } from '@nocobase/runjs/workspace/client';
 import _ from 'lodash';
 
 export class PluginFlowEngineClient extends Plugin {
-  private runJSWorkspaceDisposer?: () => void;
+  private runJSRuntimeDisposer?: () => void;
 
   async afterAdd() {}
 
   async beforeLoad() {
-    this.disposeRunJSWorkspaceClient();
+    this.disposeRunJSRuntimeClient();
+    this.installRunJSRuntimeClient();
   }
 
   async load() {
-    this.disposeRunJSWorkspaceClient();
-    this.runJSWorkspaceDisposer = installRunJSWorkspaceLegacyClient(this.app);
+    this.installRunJSRuntimeClient();
   }
 
   dispose() {
-    this.disposeRunJSWorkspaceClient();
+    this.disposeRunJSRuntimeClient();
   }
 
-  private disposeRunJSWorkspaceClient(): void {
-    this.runJSWorkspaceDisposer?.();
-    this.runJSWorkspaceDisposer = undefined;
+  private disposeRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer?.();
+    this.runJSRuntimeDisposer = undefined;
+  }
+
+  private installRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer ||= installRunJSWorkspaceRuntimeLegacyClient();
   }
 }
 

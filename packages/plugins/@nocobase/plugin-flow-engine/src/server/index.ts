@@ -21,6 +21,7 @@ export type {
 export {
   bootstrapFlowSurfaceRunJSWorkspace,
   buildFlowSurfaceRunJSLocator,
+  hasFlowSurfaceRunJSWorkspaceBootstrapPort,
   registerFlowSurfaceRunJSWorkspaceBootstrapPort,
   type FlowSurfaceRunJSLocator,
   type FlowSurfaceRunJSAuthoringContext,

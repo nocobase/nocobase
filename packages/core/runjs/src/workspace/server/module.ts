@@ -58,6 +58,7 @@ export class RunJSWorkspaceServerModule {
     this.loaded = false;
     this.unregisterSourceCodeInspector?.();
     this.unregisterSourceCodeInspector = undefined;
+    this.app.resourceManager.removeResource?.('runJSSources');
   }
 
   registerPermissionHook(hook: VscPermissionHook): () => void {
@@ -123,6 +124,7 @@ export class RunJSWorkspaceServerModule {
     this.loaded = false;
     this.unregisterSourceCodeInspector?.();
     this.unregisterSourceCodeInspector = undefined;
+    this.app.resourceManager.removeResource?.('runJSSources');
   }
 
   async remove(): Promise<void> {

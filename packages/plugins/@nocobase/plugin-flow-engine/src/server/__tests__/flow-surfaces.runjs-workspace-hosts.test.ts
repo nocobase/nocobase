@@ -8,6 +8,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 
 import {
   FLOW_SURFACE_RUNJS_HOSTS,
@@ -25,6 +26,7 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 type RunJSLocator = {
   kind: 'flowModel.step';
@@ -81,7 +83,10 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
   const hosts: WorkspaceHost[] = [];
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+      plugins: [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+    });
   }, 120000);
 
   afterAll(async () => {
@@ -570,7 +575,7 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     }
   }, 120000);
 
-  it('reports provider unavailability on readback without adding workspace metadata to non-JS nodes', async () => {
+  it('omits workspace metadata on readback when the workspace provider is unavailable', async () => {
     const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(context.app, async () => ({
       status: 'ready',
       retryable: false,
@@ -578,12 +583,9 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     unregister();
 
     const readback = await getSurface(context.rootAgent, { uid: hosts[0].locator.modelUid });
-    expect(readback.tree).toMatchObject({
-      workspaceStatus: 'pending',
-      workspaceRetryable: true,
-      workspaceError: {
-        code: 'FLOW_SURFACE_RUNJS_BOOTSTRAP_PROVIDER_UNAVAILABLE',
-      },
-    });
+    expect(readback.tree.runJSLocator).toBeUndefined();
+    expect(readback.tree.workspaceStatus).toBeUndefined();
+    expect(readback.tree.workspaceRetryable).toBeUndefined();
+    expect(readback.tree.workspaceError).toBeUndefined();
   });
 });

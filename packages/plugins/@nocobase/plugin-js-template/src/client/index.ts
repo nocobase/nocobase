@@ -8,6 +8,7 @@
  */
 
 import type React from 'react';
+import { installRunJSWorkspaceAuthoringLegacyClient } from '@nocobase/runjs/workspace/client';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
@@ -33,6 +34,7 @@ interface ClientV1SettingsOptions {
 
 interface ClientV1SettingsManager {
   add: (name: string, options: ClientV1SettingsOptions) => void;
+  remove?: (name: string) => void;
 }
 
 interface ClientV1I18n {
@@ -85,6 +87,15 @@ export class PluginJsTemplateClient {
   }
 
   async load() {
+    this.dispose();
+    if (this.app?.apiClient) {
+      this.disposers.push(
+        installRunJSWorkspaceAuthoringLegacyClient({
+          apiClient: this.app.apiClient,
+        }),
+      );
+    }
+
     const flowSettings = this.app?.flowEngine?.flowSettings;
     if (flowSettings?.registerComponents) {
       this.disposers.push(
@@ -107,6 +118,7 @@ export class PluginJsTemplateClient {
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
     };
     this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
+    this.disposers.push(() => this.app?.pluginSettingsManager?.remove?.(JS_TEMPLATE_SETTINGS_KEY));
     activeJsTemplateClientV1Instance = this;
   }
 }

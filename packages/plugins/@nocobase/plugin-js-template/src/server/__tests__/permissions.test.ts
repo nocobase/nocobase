@@ -22,6 +22,7 @@ import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
 import { jsTemplateRuntimeActionNames } from '../resources/jsTemplateRuntime';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import { remoteInternalResourceNames } from '../vsc-file/remotes/resource';
 import PluginJsTemplateServer from '../plugin';
 
 describe('plugin-js-template permission service', () => {
@@ -90,6 +91,7 @@ describe('plugin-js-template permission service', () => {
 
   it('registers and removes the hosted VSC permission hook directly', async () => {
     const definedResources: Array<{ name?: string; actions?: Record<string, unknown> }> = [];
+    const removedResources: string[] = [];
     const on = vi.fn();
     const off = vi.fn();
     const app = {
@@ -106,6 +108,10 @@ describe('plugin-js-template permission service', () => {
       resourceManager: {
         define: vi.fn((resource: { name?: string; actions?: Record<string, unknown> }) => {
           definedResources.push(resource);
+        }),
+        removeResource: vi.fn((name: string) => {
+          removedResources.push(name);
+          return true;
         }),
         options: {},
       },
@@ -147,6 +153,20 @@ describe('plugin-js-template permission service', () => {
     });
 
     await plugin.afterDisable();
+    expect(removedResources).toEqual(
+      expect.arrayContaining([
+        'runJSSources',
+        'jsTemplates',
+        'jsTemplateRuntime',
+        'jsTemplateUsages',
+        'jsTemplateProjects',
+        'jsTemplateFiles',
+        'jsTemplateCapabilities',
+        'jsTemplateSync',
+        'jsTemplateCreateJobs',
+        ...remoteInternalResourceNames,
+      ]),
+    );
     await expect(
       plugin.getPermissionHookRegistry().assertAllowed({
         userId: '1',

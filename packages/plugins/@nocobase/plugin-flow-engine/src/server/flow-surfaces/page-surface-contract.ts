@@ -76,7 +76,7 @@ export type FlowSurfaceJSPageCapabilities = {
   compose: false;
   blueprint: false;
   export: false;
-  runJSWorkspace: true;
+  runJSWorkspace: boolean;
 };
 
 const RUNJS_WORKSPACE_BOOTSTRAP_PORT = Symbol.for(
@@ -107,22 +107,18 @@ export function buildFlowSurfaceRunJSLocator(
   };
 }
 
-export function getFlowSurfaceRunJSWorkspaceProviderStatus(app: object): FlowSurfaceRunJSWorkspaceBootstrapResult {
-  const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
-  if (port) {
-    return { status: 'ready', retryable: false };
-  }
-  return buildProviderUnavailableResult();
+export function hasFlowSurfaceRunJSWorkspaceBootstrapPort(app: object): boolean {
+  return Boolean((app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT]);
 }
 
-export function buildFlowSurfaceJSPageCapabilities(): FlowSurfaceJSPageCapabilities {
+export function buildFlowSurfaceJSPageCapabilities(app: object): FlowSurfaceJSPageCapabilities {
   return {
     tabs: false,
     blocks: false,
     compose: false,
     blueprint: false,
     export: false,
-    runJSWorkspace: true,
+    runJSWorkspace: hasFlowSurfaceRunJSWorkspaceBootstrapPort(app),
   };
 }
 
@@ -142,23 +138,12 @@ export function registerFlowSurfaceRunJSWorkspaceBootstrapPort(
 export async function bootstrapFlowSurfaceRunJSWorkspace(
   app: object,
   input: FlowSurfaceRunJSWorkspaceBootstrapInput,
-): Promise<FlowSurfaceRunJSWorkspaceBootstrapResult> {
+): Promise<FlowSurfaceRunJSWorkspaceBootstrapResult | undefined> {
   const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
   if (!port) {
-    return buildProviderUnavailableResult();
+    return undefined;
   }
   return port(input);
-}
-
-function buildProviderUnavailableResult(): FlowSurfaceRunJSWorkspaceBootstrapResult {
-  return {
-    status: 'pending',
-    retryable: true,
-    error: {
-      code: 'FLOW_SURFACE_RUNJS_BOOTSTRAP_PROVIDER_UNAVAILABLE',
-      message: 'RunJS workspace bootstrap provider is unavailable',
-    },
-  };
 }
 
 export function isRouteBackedPageUse(use?: string) {

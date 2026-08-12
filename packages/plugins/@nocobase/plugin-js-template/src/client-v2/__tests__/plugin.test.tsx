@@ -15,6 +15,8 @@ import {
   clearFieldMenuItemProviders,
   createMockClient,
   ActionGroupModel,
+  clearRunJSRegistryHosts,
+  clearRunJSRuntimeHosts,
   JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
@@ -94,6 +96,8 @@ describe('PluginJsTemplateClientV2', () => {
     clearBlockGridSelectSceneAddBlockProviders();
     clearActionGroupMenuItemProviders();
     clearFieldMenuItemProviders();
+    clearRunJSRegistryHosts();
+    clearRunJSRuntimeHosts();
     vi.restoreAllMocks();
   });
 
@@ -136,23 +140,26 @@ describe('PluginJsTemplateClientV2', () => {
       [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSPageJsTemplateSourceField,
     });
     expectJsTemplateRegistrations(1);
+    expectWorkspaceAuthoringRegistrations(1);
 
     plugin.dispose();
 
+    expect(app.pluginSettingsManager.has(JS_TEMPLATE_SETTINGS_KEY)).toBe(false);
+    expect(app.pluginSettingsManager.has(`${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(false);
+    expect(app.router.has(`admin.settings.${JS_TEMPLATE_SETTINGS_KEY}`)).toBe(false);
+    expect(app.router.has(`admin.settings.${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(false);
     expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(JSPageSourceModeField);
     expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD]).toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeNull();
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs/workspace/inline-settings-descriptor',
-    ]);
-    expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
-      '@nocobase/runjs/workspace/runjs-studio',
-    ]);
+    expectWorkspaceAuthoringRegistrations(0);
     expect(getToolbarContributionKeys()).not.toContain(JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY);
     expectJsTemplateRegistrations(0);
 
     await plugin.load();
+    expect(app.pluginSettingsManager.has(JS_TEMPLATE_SETTINGS_KEY)).toBe(true);
+    expect(app.pluginSettingsManager.has(`${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(true);
     expectJsTemplateRegistrations(1);
+    expectWorkspaceAuthoringRegistrations(1);
     expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
       JSPageJsTemplateSourceField,
     );
@@ -162,6 +169,24 @@ describe('PluginJsTemplateClientV2', () => {
 
     plugin.dispose();
     expectJsTemplateRegistrations(0);
+    expectWorkspaceAuthoringRegistrations(0);
+  });
+
+  it('loads successfully when registered before the Flow Engine plugin', async () => {
+    const app = createMockClient({
+      plugins: [
+        [PluginFlowEngine, { name: 'flow-engine' }],
+        [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
+        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
+      ],
+    });
+
+    await expect(app.load()).resolves.toBeUndefined();
+    expectJsTemplateRegistrations(1);
+    expectWorkspaceAuthoringRegistrations(1);
+
+    (app.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2).dispose();
+    (app.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
   });
 
   it('hands active contributions from one client instance to the next', async () => {
@@ -379,6 +404,17 @@ function expectJsTemplateRegistrations(count: number) {
   expect(getToolbarContributionKeys().filter((key) => key === JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY)).toHaveLength(
     count,
   );
+}
+
+function expectWorkspaceAuthoringRegistrations(count: number) {
+  expect(
+    RunJSEditorRegistry.getProviders().filter((provider) => provider.key === '@nocobase/runjs/workspace/runjs-studio'),
+  ).toHaveLength(count);
+  expect(
+    RunJSSettingsDescriptorProviderRegistry.getProviders().filter(
+      (provider) => provider.key === '@nocobase/runjs/workspace/inline-settings-descriptor',
+    ),
+  ).toHaveLength(count);
 }
 
 function getToolbarContributionKeys(): string[] {

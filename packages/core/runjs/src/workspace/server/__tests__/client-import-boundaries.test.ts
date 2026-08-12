@@ -8,10 +8,59 @@
  */
 
 import { ESLint } from 'eslint';
+import { builtinModules } from 'module';
 import path from 'path';
 
 const repositoryRoot = path.resolve(__dirname, '../../../../../../..');
-const eslint = new ESLint({ cwd: repositoryRoot, useEslintrc: true });
+const browserBoundaryEslint = new ESLint({
+  cwd: repositoryRoot,
+  useEslintrc: true,
+  overrideConfig: {
+    ignorePatterns: ['**/__tests__/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...builtinModules.filter((moduleName) => !moduleName.startsWith('node:')),
+            '@nocobase/plugin-js-template',
+            '@nocobase/runjs/workspace/client',
+            '@nocobase/runjs/workspace/client-v2',
+            '@nocobase/runjs/workspace/server',
+          ],
+          patterns: [
+            '@nocobase/plugin-js-template/*',
+            '@nocobase/runjs/workspace/client/*',
+            '@nocobase/runjs/workspace/client-v2/*',
+            '@nocobase/runjs/workspace/server/*',
+            '**/workspace/client',
+            '**/workspace/client/*',
+            '**/workspace/client-v2',
+            '**/workspace/client-v2/*',
+            '**/workspace/server',
+            '**/workspace/server/*',
+            'node:*',
+          ],
+        },
+      ],
+    },
+  },
+});
+const clientV2BoundaryEslint = new ESLint({
+  cwd: repositoryRoot,
+  useEslintrc: true,
+  overrideConfig: {
+    ignorePatterns: ['**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: ['@nocobase/client', '@nocobase/client/*'],
+        },
+      ],
+    },
+  },
+});
 
 const prohibitedImportFixtures = [
   {
@@ -60,6 +109,7 @@ const prohibitedImportFixtures = [
 
 describe('RunJS and JS Template package boundaries', () => {
   it.each(prohibitedImportFixtures)('rejects $label', async ({ filePath, ruleId, source }) => {
+    const eslint = ruleId === 'no-restricted-imports' ? browserBoundaryEslint : clientV2BoundaryEslint;
     const [result] = await eslint.lintText(source, { filePath: path.join(repositoryRoot, filePath) });
     const violations = result.messages.filter((message) => message.ruleId === ruleId);
 
@@ -68,16 +118,23 @@ describe('RunJS and JS Template package boundaries', () => {
   });
 
   it('accepts the current production browser and client-v2 entry files', async () => {
-    const results = await eslint.lintFiles([
-      'packages/core/runjs/src/index.ts',
-      'packages/core/runjs/src/compiler/portable.ts',
-      'packages/core/runjs/src/settings/**/*.{ts,tsx}',
-      'packages/core/runjs/src/js-template/client/**/*.{ts,tsx}',
-      'packages/core/runjs/src/workspace/client/**/*.{ts,tsx}',
-      'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
-      'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
-      'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
-    ]);
+    const results = (
+      await Promise.all([
+        browserBoundaryEslint.lintFiles([
+          'packages/core/runjs/src/index.ts',
+          'packages/core/runjs/src/compiler/portable.ts',
+          'packages/core/runjs/src/settings/**/*.{ts,tsx}',
+          'packages/core/runjs/src/js-template/client/**/*.{ts,tsx}',
+          'packages/core/runjs/src/workspace/client/**/*.{ts,tsx}',
+          'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
+        ]),
+        clientV2BoundaryEslint.lintFiles([
+          'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
+          'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
+        ]),
+      ])
+    ).flat();
     const violations = results.flatMap((result) =>
       result.messages
         .filter((message) => message.ruleId?.endsWith('no-restricted-imports'))

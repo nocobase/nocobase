@@ -16,6 +16,8 @@
 
 JS Templates does not create Source Projects or detach code to Inline automatically. Both operations require an explicit authoring action.
 
+The plugin also owns the RunJS multi-file and TypeScript authoring layer. Disabling it removes Studio, Workspace APIs, and JS Template settings, while the Flow Engine keeps the legacy single-file Inline RunJS runtime and editor behavior available.
+
 ## Template and UI contract
 
 JS Template supports five Template kinds:

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import runJSWorkspaceSwagger from '@nocobase/runjs/workspace/swagger';
 import { jsTemplatePaths } from './paths';
 import { jsTemplateSchemas } from './schemas';
 import runJSSourcesSwagger from './runjs-sources';
@@ -28,11 +29,13 @@ export default {
   paths: {
     ...jsTemplatePaths,
     ...runJSSourcesSwagger.paths,
+    ...runJSWorkspaceSwagger.paths,
   },
   components: {
     schemas: {
       ...jsTemplateSchemas,
       ...runJSSourcesSwagger.components.schemas,
+      ...runJSWorkspaceSwagger.components.schemas,
     },
   },
 };

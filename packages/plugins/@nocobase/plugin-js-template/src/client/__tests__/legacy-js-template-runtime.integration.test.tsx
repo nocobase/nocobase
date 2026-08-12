@@ -16,7 +16,7 @@ import {
   type LegacyRunJSEditorProviderRenderProps,
 } from '@nocobase/client';
 import React from 'react';
-import { installRunJSWorkspaceLegacyClient, legacyRunJSStudioProvider } from '@nocobase/runjs/workspace/client';
+import { legacyRunJSStudioProvider } from '@nocobase/runjs/workspace/client';
 import {
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
@@ -33,6 +33,8 @@ import {
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
+  clearRunJSRegistryHosts,
+  clearRunJSRuntimeHosts,
 } from '@nocobase/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
@@ -44,6 +46,7 @@ import {
   JSPageJsTemplateSourceField,
 } from '../../client-v2/components/JSBlockJsTemplateSourceField';
 import PluginJsTemplateClient from '..';
+import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
 
 function createLegacyApplication() {
   return new Application({
@@ -53,14 +56,15 @@ function createLegacyApplication() {
 }
 
 async function loadLegacyPlugins(app: Application) {
-  installRunJSWorkspaceLegacyClient(app);
+  const flowEngine = new PluginFlowEngineClient({ name: 'plugin-flow-engine' }, app);
+  await flowEngine.load();
   const jsTemplate = new PluginJsTemplateClient({ name: 'js-template', packageName: NAMESPACE }, app);
 
   await jsTemplate.afterAdd();
   await jsTemplate.beforeLoad();
   await jsTemplate.load();
 
-  return jsTemplate;
+  return { flowEngine, jsTemplate };
 }
 
 describe('JS Template legacy admin-shell integration', () => {
@@ -72,13 +76,15 @@ describe('JS Template legacy admin-shell integration', () => {
     clearBlockGridSelectSceneAddBlockProviders();
     clearActionGroupMenuItemProviders();
     clearFieldMenuItemProviders();
+    clearRunJSRegistryHosts();
+    clearRunJSRuntimeHosts();
     vi.restoreAllMocks();
   });
 
   it('registers the canonical settings route with ACL and runtime', async () => {
     const firstApp = createLegacyApplication();
     await firstApp.load();
-    await loadLegacyPlugins(firstApp);
+    const firstPlugins = await loadLegacyPlugins(firstApp);
 
     const canonicalSettings = firstApp.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false);
     expect(canonicalSettings).toMatchObject({
@@ -114,7 +120,7 @@ describe('JS Template legacy admin-shell integration', () => {
     await secondJsTemplate.beforeLoad();
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeNull();
 
-    await loadLegacyPlugins(secondApp);
+    const secondPlugins = await loadLegacyPlugins(secondApp);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(1);
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).not.toBe(firstResolver);
     expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
@@ -124,6 +130,10 @@ describe('JS Template legacy admin-shell integration', () => {
     expect(LegacyRunJSEditorRegistry.getProviders().map((provider) => provider.key)).toEqual([
       '@nocobase/runjs/workspace/legacy-runjs-studio',
     ]);
+    secondPlugins.jsTemplate.dispose();
+    secondPlugins.flowEngine.dispose();
+    firstPlugins.jsTemplate.dispose();
+    firstPlugins.flowEngine.dispose();
   });
 
   it('uses legacy Studio only for flow model steps and preserves workflow fallback across reloads', async () => {
@@ -171,7 +181,7 @@ describe('JS Template legacy admin-shell integration', () => {
 
     const app = createLegacyApplication();
     await app.load();
-    const jsTemplate = await loadLegacyPlugins(app);
+    const { flowEngine, jsTemplate } = await loadLegacyPlugins(app);
     const studioProvider = LegacyRunJSEditorRegistry.getProvider(stepProps);
 
     expect(studioProvider?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
@@ -184,10 +194,12 @@ describe('JS Template legacy admin-shell integration', () => {
 
     jsTemplate.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
-    expect(RunJSEditorRegistry.getProviders()).toHaveLength(1);
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(0);
-    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(1);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+    expect(app.pluginSettingsManager.get(JS_TEMPLATE_SETTINGS_KEY, false)).toBeNull();
+    expect(app.router.has(`admin.settings.${JS_TEMPLATE_SETTINGS_KEY}`)).toBe(false);
     studio.unmount();
     render(<>{LegacyRunJSEditorRegistry.getProvider(workflowProps)?.renderEditor(workflowProps)}</>);
     expect(screen.getByText('Workflow inline editor')).toBeVisible();
@@ -208,6 +220,7 @@ describe('JS Template legacy admin-shell integration', () => {
 
     jsTemplate.dispose();
     expect(LegacyRunJSEditorRegistry.getProvider(workflowProps)).toBe(inlineProvider);
-    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)?.key).toBe('@nocobase/runjs/workspace/legacy-runjs-studio');
+    expect(LegacyRunJSEditorRegistry.getProvider(stepProps)).toBeNull();
+    flowEngine.dispose();
   });
 });

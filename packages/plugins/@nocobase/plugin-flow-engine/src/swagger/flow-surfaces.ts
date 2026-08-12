@@ -5342,7 +5342,7 @@ const schemas = {
       compose: { type: 'boolean', enum: [false] },
       blueprint: { type: 'boolean', enum: [false] },
       export: { type: 'boolean', enum: [false] },
-      runJSWorkspace: { type: 'boolean', enum: [true] },
+      runJSWorkspace: { type: 'boolean' },
     },
     additionalProperties: false,
   },

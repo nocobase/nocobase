@@ -44,7 +44,7 @@ The generated settings import is authoring-only and is not stored with runtime a
 
 ## Multi-file Workspace
 
-The `workspace` entries provide the RunJS Studio clients, shared authoring contracts, server persistence and compilation services, and Swagger schemas. The Flow Engine plugin owns the application lifecycle and installs the appropriate Workspace client and server integrations.
+The `workspace` entries provide the RunJS Studio clients, shared authoring contracts, server persistence and compilation services, and Swagger schemas. The Flow Engine plugin owns the resident inline RunJS registry and runtime. The JS Template plugin owns the multi-file and TypeScript authoring providers, Studio, Workspace server integration, and Workspace API lifecycle.
 
 ## Virtual-workspace compiler
 

@@ -8,6 +8,7 @@
  */
 
 import { JS_TEMPLATE_SCHEMA_LOCAL_PATH } from '@nocobase/runjs/js-template/schema';
+import type PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 import {
   getOrCreateRunJSWorkspaceServerModule,
   type RunJSSourceAdapter,
@@ -76,6 +77,7 @@ type AppWithPluginEvents = {
   };
   resourceManager?: {
     define?: (resource: unknown) => void;
+    removeResource?: (name: string) => boolean;
     options?: {
       prefix?: string;
     };
@@ -114,8 +116,21 @@ type JsTemplateRouteContext = {
   };
 };
 
+const JS_TEMPLATE_RESOURCE_NAMES = [
+  'jsTemplates',
+  'jsTemplateRuntime',
+  'jsTemplateUsages',
+  'jsTemplateProjects',
+  'jsTemplateFiles',
+  'jsTemplateCapabilities',
+  'jsTemplateSync',
+  'jsTemplateCreateJobs',
+] as const;
+
 export class PluginJsTemplateServer extends Plugin {
   private runJSWorkspaceServerModule?: RunJSWorkspaceServerModule;
+
+  private unregisterFlowEngineRunJSWorkspaceIntegration?: () => void;
 
   private remoteSyncModule?: JsTemplateRemoteSyncModule;
 
@@ -203,6 +218,9 @@ export class PluginJsTemplateServer extends Plugin {
     input: { rootUid: string; action?: string },
     ctx: Parameters<JsTemplateUsageService['syncFlowModelUsagesForNodeTree']>[1] = {},
   ) {
+    if (!this.domainAvailable) {
+      return;
+    }
     return this.usageService?.syncFlowModelUsagesForNodeTree(input, ctx);
   }
 
@@ -217,6 +235,9 @@ export class PluginJsTemplateServer extends Plugin {
     input: { rootUid: string; action?: string },
     ctx: Parameters<JsTemplateUsageService['markFlowModelUsagesOwnerMissingForNodeTree']>[1] = {},
   ) {
+    if (!this.domainAvailable) {
+      return;
+    }
     return this.usageService?.markFlowModelUsagesOwnerMissingForNodeTree(input, ctx);
   }
 
@@ -254,8 +275,10 @@ export class PluginJsTemplateServer extends Plugin {
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
     const workspaceModule = this.requireRunJSWorkspaceServerModule();
     await workspaceModule.load();
+    this.registerFlowEngineRunJSWorkspaceIntegration(workspaceModule);
     this.registerExternalizationCapability(workspaceModule);
     const remoteSyncModule = this.requireRemoteSyncModule();
     await remoteSyncModule.load();
@@ -443,7 +466,10 @@ export class PluginJsTemplateServer extends Plugin {
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
     await this.remoteSyncModule?.afterDisable();
+    await this.runJSWorkspaceServerModule?.afterDisable();
+    this.removeJsTemplateResources();
   }
 
   async afterEnable() {
@@ -462,8 +488,11 @@ export class PluginJsTemplateServer extends Plugin {
     this.unregisterExternalizationCapabilityWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
+    this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
     await this.remoteSyncModule?.remove();
     await this.shutdownCompileInfrastructure();
+    await this.runJSWorkspaceServerModule?.remove();
+    this.removeJsTemplateResources();
   }
 
   private requireRunJSWorkspaceServerModule(): RunJSWorkspaceServerModule {
@@ -497,9 +526,31 @@ export class PluginJsTemplateServer extends Plugin {
     );
   }
 
+  private registerFlowEngineRunJSWorkspaceIntegration(workspaceModule: RunJSWorkspaceServerModule) {
+    this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
+    const flowEnginePlugin = this.app.pm?.get('flow-engine') as PluginFlowEngineServer | undefined;
+    if (!flowEnginePlugin?.installRunJSWorkspaceIntegration) {
+      return;
+    }
+    this.unregisterFlowEngineRunJSWorkspaceIntegration =
+      flowEnginePlugin.installRunJSWorkspaceIntegration(workspaceModule);
+  }
+
+  private unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded() {
+    this.unregisterFlowEngineRunJSWorkspaceIntegration?.();
+    this.unregisterFlowEngineRunJSWorkspaceIntegration = undefined;
+  }
+
   private unregisterExternalizationCapabilityWhenNeeded() {
     this.unregisterExternalizationCapability?.();
     this.unregisterExternalizationCapability = undefined;
+  }
+
+  private removeJsTemplateResources(): void {
+    const resourceManager = (this.app as unknown as AppWithPluginEvents).resourceManager;
+    for (const resourceName of JS_TEMPLATE_RESOURCE_NAMES) {
+      resourceManager?.removeResource?.(resourceName);
+    }
   }
 
   private registerCompileShutdownListener() {

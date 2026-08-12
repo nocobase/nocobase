@@ -23,17 +23,36 @@ export function installRunJSStudioClientV2(): () => void {
   return RunJSEditorRegistry.registerProvider({ ...runJSStudioProvider });
 }
 
-export function installRunJSWorkspaceClientV2(app: RunJSWorkspaceClientApplication): () => void {
-  const disposers: Array<() => void> = [];
-  try {
-    disposers.push(registerRunJSRegistryHost(runJSRegistryHost));
-    disposers.push(registerRunJSRuntimeHost(runJSRuntimeHost));
-    disposers.push(installRunJSStudioClientV2());
-    disposers.push(
+export function installRunJSWorkspaceRuntimeClientV2(): () => void {
+  return installRunJSWorkspaceContributions([
+    () => registerRunJSRegistryHost({ ...runJSRegistryHost }),
+    () => registerRunJSRuntimeHost({ ...runJSRuntimeHost }),
+  ]);
+}
+
+export function installRunJSWorkspaceAuthoringClientV2(app: RunJSWorkspaceClientApplication): () => void {
+  return installRunJSWorkspaceContributions([
+    installRunJSStudioClientV2,
+    () =>
       RunJSSettingsDescriptorProviderRegistry.registerProvider(
         createInlineRunJSWorkspaceSettingsDescriptorProvider(app.apiClient as RunJSWorkspaceApiClientLike),
       ),
-    );
+  ]);
+}
+
+export function installRunJSWorkspaceClientV2(app: RunJSWorkspaceClientApplication): () => void {
+  return installRunJSWorkspaceContributions([
+    installRunJSWorkspaceRuntimeClientV2,
+    () => installRunJSWorkspaceAuthoringClientV2(app),
+  ]);
+}
+
+function installRunJSWorkspaceContributions(installers: Array<() => () => void>): () => void {
+  const disposers: Array<() => void> = [];
+  try {
+    for (const install of installers) {
+      disposers.push(install());
+    }
   } catch (error) {
     disposeRunJSWorkspaceClientV2(disposers);
     throw error;

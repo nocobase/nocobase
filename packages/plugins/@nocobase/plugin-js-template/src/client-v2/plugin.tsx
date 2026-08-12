@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
+import { installRunJSWorkspaceAuthoringClientV2 } from '@nocobase/runjs/workspace/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY } from '../constants';
 import {
@@ -31,6 +32,8 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
   }
 
   async load() {
+    this.dispose();
+    this.disposers.push(installRunJSWorkspaceAuthoringClientV2(this.app));
     this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
 
     this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
@@ -54,6 +57,7 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
       aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
       componentLoader: loadJsTemplateSourceProjectsPage,
     });
+    this.disposers.push(() => this.pluginSettingsManager.remove(JS_TEMPLATE_SETTINGS_KEY));
   }
 
   dispose() {

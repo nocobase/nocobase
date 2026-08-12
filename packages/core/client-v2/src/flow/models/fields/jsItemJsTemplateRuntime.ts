@@ -288,8 +288,10 @@ export async function runResolvedJSItemCode(input: {
     cache: false,
   });
 
-  const queryRoot = elementTarget || globalThis.document.createDocumentFragment();
-  const browserGlobals = createJSItemRuntimeBrowserGlobals(queryRoot, errorState);
+  const browserGlobals =
+    resolved.sourceMode === JS_TEMPLATE_SOURCE_MODE
+      ? createJSItemRuntimeBrowserGlobals(elementTarget || globalThis.document.createDocumentFragment(), errorState)
+      : undefined;
   const result = (await ctx.runjs(resolved.code, browserGlobals, {
     version: resolved.version,
   })) as RunJSExecutionResult;
