@@ -8,6 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/client';
+import { PrintActionModel } from '../client-v2/PrintActionModel';
 import { deprecatedPrintActionSettings, printActionSettings } from './PrintAction.Settings';
 import { PrintActionPluginProvider } from './PrintActionPluginProvider';
 export class PluginActionPrintClient extends Plugin {
@@ -29,6 +30,7 @@ export class PluginActionPrintClient extends Plugin {
 
     this.app.schemaInitializerManager.addItem('details:configureActions', 'enableActions.print', initializerData);
     this.app.schemaInitializerManager.addItem('CalendarFormActionInitializers', 'enableActions.print', initializerData);
+    this.app.flowEngine.registerModels({ PrintActionModel });
   }
 }
 
