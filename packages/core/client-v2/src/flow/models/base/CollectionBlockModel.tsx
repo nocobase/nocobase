@@ -16,10 +16,13 @@ import {
   tExpr,
   FlowModelContext,
   MultiRecordResource,
+  ResourceError,
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import type { FlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
+import React from 'react';
+import { BlockResourceErrorPlaceholder } from '../../components/placeholders/BlockPlaceholder';
 import { createDefaultCollectionBlockTitle } from '../../utils/blockUtils';
 import { areCapabilitiesSupported, getBlockCapabilityNamesFromModelClass } from '../../utils/actionCapability';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
@@ -548,6 +551,18 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     return this.resource.refresh();
   }
 
+  isExternalDataSource() {
+    const dataSourceKey = this.getResourceSettingsInitParams()?.dataSourceKey;
+    return Boolean(dataSourceKey && dataSourceKey !== 'main');
+  }
+
+  render() {
+    if (this.isExternalDataSource() && this.collection && this.resource?.getError()) {
+      return <BlockResourceErrorPlaceholder />;
+    }
+    return super.render();
+  }
+
   protected defaultBlockTitle() {
     const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
     const params = this.getResourceSettingsInitParams();
@@ -706,7 +721,14 @@ CollectionBlockModel.registerFlow({
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {
-          await ctx.model.resource.refresh();
+          try {
+            await resource.refresh();
+          } catch (error) {
+            if (blockModel.isExternalDataSource() && error instanceof ResourceError && resource.getError() === error) {
+              return;
+            }
+            throw error;
+          }
         }
       },
     },

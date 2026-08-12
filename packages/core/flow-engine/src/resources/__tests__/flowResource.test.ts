@@ -79,6 +79,9 @@ describe('FlowResource - error handling', () => {
     expect(r.getError()).toBeNull();
 
     const err = new ResourceError({ response: { data: { error: { message: 'boom', code: 'X' } } } });
+    expect(err.data).toEqual({ message: 'boom', code: 'X' });
+    expect(err.message).toBe('boom');
+    expect(err.code).toBe('X');
     const ret = r.setError(err);
     expect(ret).toBe(r);
     expect(r.error).toBe(err);

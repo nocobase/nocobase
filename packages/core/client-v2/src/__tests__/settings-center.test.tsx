@@ -254,6 +254,50 @@ describe('settings center', () => {
     expect(await screen.findByText('Demo plugin')).toBeInTheDocument();
   });
 
+  it('should redirect to the admin app when the role cannot access settings', async () => {
+    const originalLocation = globalThis.window.location;
+    const originalModernClientPrefix = window.__nocobase_modern_client_prefix__;
+    const replace = vi.fn();
+    Object.defineProperty(globalThis.window, 'location', {
+      configurable: true,
+      value: {
+        ...originalLocation,
+        replace,
+      },
+    });
+    window.__nocobase_modern_client_prefix__ = 'v';
+
+    try {
+      const app = createMockSettingsClient({
+        plugins: [SettingsBuildInPlugin, TestAclPlugin],
+        router: { type: 'memory', initialEntries: ['/settings/system-settings'] },
+      });
+      mockAdminRuntime(app, {
+        snippets: ['!pm', '!pm.system-settings.system-settings'],
+      });
+
+      await renderApp(app);
+      await waitForGetRequests(app, ['/auth:check', 'roles:check']);
+
+      await waitFor(() => {
+        expect(replace).toHaveBeenCalledWith('/v/admin');
+      });
+      expect(
+        screen.queryByRole('heading', { name: 'Your current role cannot access Settings' }),
+      ).not.toBeInTheDocument();
+    } finally {
+      Object.defineProperty(globalThis.window, 'location', {
+        configurable: true,
+        value: originalLocation,
+      });
+      if (originalModernClientPrefix === undefined) {
+        delete window.__nocobase_modern_client_prefix__;
+      } else {
+        window.__nocobase_modern_client_prefix__ = originalModernClientPrefix;
+      }
+    }
+  });
+
   it('should hide plugin-manager menu item when pm snippet is missing', async () => {
     const app = createMockSettingsClient({
       plugins: [SettingsBuildInPlugin, TestAclPlugin],
@@ -275,7 +319,9 @@ describe('settings center', () => {
       plugins: [SettingsBuildInPlugin, TestAclPlugin],
       router: { type: 'memory', initialEntries: ['/settings/unknown'] },
     });
-    mockAdminRuntime(app);
+    mockAdminRuntime(app, {
+      snippets: ['!pm', '!pm.system-settings.system-settings'],
+    });
 
     await renderApp(app);
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
@@ -285,6 +331,7 @@ describe('settings center', () => {
     expect(
       within(result).getByText('The settings page you requested does not exist or has been removed.'),
     ).toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/settings/unknown');
   });
 
   it('should allow direct access to hidden page without showing menu entry', async () => {
@@ -312,6 +359,7 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Hidden settings page')).toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Hidden demo' })).not.toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/settings/hidden-demo');
   });
 
   it('should show route empty state when direct access page has no permission', async () => {
@@ -345,6 +393,7 @@ describe('settings center', () => {
     expect(within(result).getByRole('heading', { name: '当前角色无权访问设置中心' })).toBeInTheDocument();
     expect(within(result).getByText('请切换至有权限的角色，或联系管理员获取访问权限。')).toBeInTheDocument();
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
+    expect(app.router.state.location.pathname).toBe('/settings/secure-demo');
   });
 
   it('should redirect a denied settings tab to the first accessible tab', async () => {

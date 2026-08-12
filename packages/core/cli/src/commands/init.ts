@@ -72,23 +72,6 @@ const INIT_ENV_ADD_FLAG_NAMES = [
 ] as const;
 
 const initText = (key: string, values?: Record<string, unknown>) => localeText(`commands.init.${key}`, values);
-const PUBLIC_APP_CLIENT_ENTRY_MODE_OPTIONS = [
-  {
-    value: 'modern-only',
-    label: initText('prompts.appClientEntryMode.modernOnlyLabel'),
-    hint: initText('prompts.appClientEntryMode.modernOnlyHint'),
-  },
-  {
-    value: 'modern-default',
-    label: initText('prompts.appClientEntryMode.modernDefaultLabel'),
-    hint: initText('prompts.appClientEntryMode.modernDefaultHint'),
-  },
-  {
-    value: 'legacy-default',
-    label: initText('prompts.appClientEntryMode.legacyDefaultLabel'),
-    hint: initText('prompts.appClientEntryMode.legacyDefaultHint'),
-  },
-] as const;
 
 function withExtraHidden<T extends PromptBlock>(def: T, extraHidden: (values: PromptCatalogValues) => boolean): T {
   if (def.type === 'run') {
@@ -476,15 +459,6 @@ Prompt modes:
     source: installLikeOnly(Download.prompts.source),
     version: installLikeOnly(Download.prompts.version),
     otherVersion: installLikeOnly(Download.prompts.otherVersion),
-    appClientEntryMode: installLikeOnly({
-      type: 'select',
-      message: initText('prompts.appClientEntryMode.message'),
-      options: [...PUBLIC_APP_CLIENT_ENTRY_MODE_OPTIONS],
-      variant: 'radio',
-      hidden: (values) => resolveInitDownloadVersion(values) === 'latest',
-      initialValue: (values) => defaultAppClientEntryModeForDownloadVersion(values.version),
-      required: true,
-    }),
     dockerRegistry: installLikeOnly(Download.prompts.dockerRegistry),
     dockerPlatform: installLikeOnly(Download.prompts.dockerPlatform),
     dockerSave: installLikeDownloadExecutionOnly(Download.prompts.dockerSave),
@@ -1060,7 +1034,6 @@ Prompt modes:
           source: c.source,
           version: c.version,
           otherVersion: c.otherVersion,
-          appClientEntryMode: c.appClientEntryMode,
           dockerRegistry: c.dockerRegistry,
           dockerPlatform: c.dockerPlatform,
           dockerSave: c.dockerSave,
