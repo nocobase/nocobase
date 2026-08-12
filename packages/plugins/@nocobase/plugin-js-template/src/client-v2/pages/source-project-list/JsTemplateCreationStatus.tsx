@@ -12,10 +12,10 @@ import React, { useId, useMemo } from 'react';
 
 import type { JsTemplateCreateJobStatus, JsTemplateCreateJobSummary } from '../../../shared/types';
 import { getJsTemplateSyncErrorTranslationKey } from '../../hooks/useJsTemplateSync';
+import { isTerminalCreateJobStatus, selectVisibleCreationJobs } from './logic';
 import type { JsTemplateListTranslate } from './types';
 
 const STATUS_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
-const TERMINAL_JOB_LIMIT = 3;
 
 interface JsTemplateCreationStatusProps {
   dismissingJobIds: Set<string>;
@@ -90,21 +90,6 @@ export function JsTemplateCreationStatus({
       </Card>
     </section>
   );
-}
-
-function selectVisibleCreationJobs(jobs: JsTemplateCreateJobSummary[]): JsTemplateCreateJobSummary[] {
-  const visibleTerminalJobIds = new Set(
-    jobs
-      .filter((job) => isTerminalCreateJobStatus(job.status))
-      .slice(0, TERMINAL_JOB_LIMIT)
-      .map((job) => job.id),
-  );
-
-  return jobs.filter((job) => !isTerminalCreateJobStatus(job.status) || visibleTerminalJobIds.has(job.id));
-}
-
-function isTerminalCreateJobStatus(status: JsTemplateCreateJobStatus): boolean {
-  return status === 'succeeded' || status === 'failed';
 }
 
 function creationStatusLabel(status: JsTemplateCreateJobStatus, t: JsTemplateListTranslate): string {

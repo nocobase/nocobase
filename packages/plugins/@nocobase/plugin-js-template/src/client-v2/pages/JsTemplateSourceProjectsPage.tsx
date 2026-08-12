@@ -34,11 +34,16 @@ import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
 import { JsTemplateCreationStatus } from './source-project-list/JsTemplateCreationStatus';
-import { JsTemplateListTable } from './source-project-list/JsTemplateListTable';
-import { JsTemplateListToolbar } from './source-project-list/JsTemplateListToolbar';
+import { JsTemplateSourceProjectTable } from './source-project-list/JsTemplateSourceProjectTable';
+import { JsTemplateSourceProjectToolbar } from './source-project-list/JsTemplateSourceProjectToolbar';
 import { JsTemplateProjectOverlays } from './source-project-list/JsTemplateProjectOverlays';
 import { JsTemplateSourceDrawer } from './source-project-list/JsTemplateSourceDrawer';
 import { JsTemplateSyncDrawerShell } from './source-project-list/JsTemplateSyncDrawerShell';
+import {
+  collectCreateJobTransitions,
+  matchesJsTemplateProjectSearch,
+  retainVisibleProjectSelection,
+} from './source-project-list/logic';
 import type {
   CreateProjectFormValues,
   EditProjectFormValues,
@@ -122,7 +127,6 @@ function JsTemplateSourceProjectsPageInner() {
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
   const [activePanel, setActivePanel] = useState<DetailPanel | null>(urlPanel);
-  const syncDrawerOpen = activePanel === 'sync' && Boolean(selectedProjectId);
 
   const updateProjects = useCallback((updater: ProjectsUpdater) => {
     projectsStateRevisionRef.current += 1;
@@ -272,17 +276,11 @@ function JsTemplateSourceProjectsPageInner() {
       return;
     }
 
-    const previousStatuses = previousCreateJobStatusesRef.current;
-    if (!previousStatuses) {
-      previousCreateJobStatusesRef.current = new Map(createJobs.map((job) => [job.id, job.status]));
-      return;
-    }
-
-    const transitionedJobs = createJobs.filter((job) => {
-      const previousStatus = previousStatuses.get(job.id);
-      return isActiveCreateJobStatus(previousStatus) && isTerminalCreateJobStatus(job.status);
-    });
-    previousCreateJobStatusesRef.current = new Map(createJobs.map((job) => [job.id, job.status]));
+    const { transitionedJobs, nextStatuses } = collectCreateJobTransitions(
+      previousCreateJobStatusesRef.current,
+      createJobs,
+    );
+    previousCreateJobStatusesRef.current = nextStatuses;
 
     if (!transitionedJobs.length) {
       return;
@@ -345,6 +343,7 @@ function JsTemplateSourceProjectsPageInner() {
     [projects, selectedProjectId],
   );
   const detailDrawerOpen = activePanel === 'source' && Boolean(selectedProject);
+  const syncDrawerOpen = activePanel === 'sync' && Boolean(selectedProject);
   const filteredProjects = useMemo(
     () => projects.filter((project) => matchesJsTemplateProjectSearch(project, keyword, lifecycleFilter)),
     [keyword, lifecycleFilter, projects],
@@ -355,9 +354,9 @@ function JsTemplateSourceProjectsPageInner() {
   );
 
   useEffect(() => {
-    const filteredProjectIds = new Set<React.Key>(filteredProjects.map((project) => project.id));
+    const filteredProjectIds = filteredProjects.map((project) => project.id);
     setSelectedRowKeys((current) => {
-      const visible = current.filter((key) => filteredProjectIds.has(key));
+      const visible = retainVisibleProjectSelection(current, filteredProjectIds);
       return visible.length === current.length ? current : visible;
     });
   }, [filteredProjects]);
@@ -372,8 +371,12 @@ function JsTemplateSourceProjectsPageInner() {
 
   const handleSelectedRowKeysChange = useCallback(
     (nextSelectedRowKeys: React.Key[]) => {
-      const filteredProjectIds = new Set<React.Key>(filteredProjects.map((project) => project.id));
-      setSelectedRowKeys(nextSelectedRowKeys.filter((key) => filteredProjectIds.has(key)));
+      setSelectedRowKeys(
+        retainVisibleProjectSelection(
+          nextSelectedRowKeys,
+          filteredProjects.map((project) => project.id),
+        ),
+      );
     },
     [filteredProjects],
   );
@@ -712,7 +715,7 @@ function JsTemplateSourceProjectsPageInner() {
         t={t}
       />
 
-      <JsTemplateListToolbar
+      <JsTemplateSourceProjectToolbar
         batchChanging={Boolean(batchChanging) || selectedProjects.some((project) => changingProjectIds.has(project.id))}
         gap={token.marginSM}
         keyword={keyword}
@@ -728,7 +731,7 @@ function JsTemplateSourceProjectsPageInner() {
         t={t}
       />
 
-      <JsTemplateListTable
+      <JsTemplateSourceProjectTable
         changingProjectIds={changingProjectIds}
         loading={loading}
         onChangeLifecycle={changeProjectLifecycle}
@@ -878,14 +881,6 @@ function parseDetailPanel(value: string | null): DetailPanel | null {
   return value === 'source' || value === 'sync' ? value : null;
 }
 
-function isActiveCreateJobStatus(status: JsTemplateCreateJobSummary['status'] | undefined): boolean {
-  return status === 'pending' || status === 'running';
-}
-
-function isTerminalCreateJobStatus(status: JsTemplateCreateJobSummary['status']): boolean {
-  return status === 'succeeded' || status === 'failed';
-}
-
 function getServerErrorCode(error: unknown): string | null {
   const errorRecord = toRecord(error);
   const response = toRecord(errorRecord?.response);
@@ -910,27 +905,6 @@ function getServerErrorCode(error: unknown): string | null {
 
 function toRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-}
-
-export function matchesJsTemplateProjectSearch(
-  project: JsTemplateProject,
-  keyword: string,
-  lifecycleFilter: JsTemplateProjectLifecycleFilter,
-): boolean {
-  if (lifecycleFilter !== 'all' && project.lifecycleStatus !== lifecycleFilter) {
-    return false;
-  }
-
-  const normalizedKeyword = keyword.trim().toLowerCase();
-  if (!normalizedKeyword) {
-    return true;
-  }
-
-  return [project.name, project.title, project.description].some((value) =>
-    String(value || '')
-      .toLowerCase()
-      .includes(normalizedKeyword),
-  );
 }
 
 export function createJsTemplateProjectName(): string {

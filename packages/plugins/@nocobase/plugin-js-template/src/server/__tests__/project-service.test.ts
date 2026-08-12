@@ -108,6 +108,22 @@ describe('plugin-js-template project service', () => {
     });
   });
 
+  it('checks project-name availability against the normalized application-scoped contract', async () => {
+    const projects = app.db.getRepository('jsTemplateProjects');
+    const findProject = vi.spyOn(projects, 'findOne');
+
+    await service.assertCreateNameAvailable('Friendly Project Name', 'friendly-project-name');
+
+    expect(findProject).toHaveBeenCalledTimes(1);
+    expect(findProject).toHaveBeenCalledWith({
+      filter: {
+        applicationName: 'main',
+        normalizedName: 'friendly-project-name',
+      },
+      transaction: expect.anything(),
+    });
+  });
+
   it('isolates projects by their persisted application owner', async () => {
     const mainProject = await service.createProject({ name: 'Shared application tools' });
     const auditService = new JsTemplateAuditService(app.db);

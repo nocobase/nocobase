@@ -552,7 +552,7 @@ export class JsTemplateProjectService {
     const conflict = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.projects).findOne({
       filter: {
         applicationName: this.requireApplicationName(),
-        $or: [{ name }, { normalizedName }],
+        normalizedName,
       },
       transaction,
     });

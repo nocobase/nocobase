@@ -71,6 +71,57 @@ describe('unique index', () => {
     ).rejects.toThrow();
   });
 
+  it('should preserve named unique indexes without materializing field uniqueness', async () => {
+    if (!db.inDialect('sqlite')) {
+      return;
+    }
+
+    const User = db.collection({
+      name: 'users',
+      indexes: [
+        {
+          name: 'users_scope_name_uq',
+          unique: true,
+          fields: ['scope', 'name'],
+        },
+        {
+          name: 'users_token_uq',
+          unique: true,
+          fields: ['token'],
+        },
+      ],
+      fields: [
+        { type: 'string', name: 'scope' },
+        { type: 'string', name: 'name' },
+        { type: 'string', name: 'token' },
+      ],
+    });
+
+    await db.sync();
+    await db.sync();
+
+    const indexes = await db.sequelize.getQueryInterface().showIndex(User.getTableNameWithSchema());
+    expect(indexes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'users_scope_name_uq', unique: true }),
+        expect.objectContaining({ name: 'users_token_uq', unique: true }),
+      ]),
+    );
+    expect(User.model.rawAttributes.name.unique).not.toBe(true);
+    expect(User.model.rawAttributes.token.unique).not.toBe(true);
+
+    await User.repository.create({ values: { scope: 'main', name: 'shared', token: 'main-token' } });
+    await expect(
+      User.repository.create({ values: { scope: 'support', name: 'shared', token: 'support-token' } }),
+    ).resolves.toBeTruthy();
+    await expect(
+      User.repository.create({ values: { scope: 'main', name: 'duplicate', token: 'main-token' } }),
+    ).rejects.toThrow();
+    await expect(
+      User.repository.create({ values: { scope: 'main', name: 'shared', token: 'distinct-token' } }),
+    ).rejects.toThrow();
+  });
+
   it('should sync unique index', async () => {
     const User = db.collection({
       name: 'users',

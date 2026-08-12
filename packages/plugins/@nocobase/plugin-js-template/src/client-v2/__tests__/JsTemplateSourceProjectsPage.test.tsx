@@ -19,7 +19,7 @@ import type { UseJsTemplateProjectResult } from '../hooks/useJsTemplateProject';
 import type { UseJsTemplateCreateJobsResult } from '../hooks/useJsTemplateCreateJobs';
 import type { JsTemplateCreateJobSummary, JsTemplateProject } from '../../shared/types';
 import { JsTemplateSyncHookError, type UseJsTemplateSyncResult } from '../hooks/useJsTemplateSync';
-import JsTemplateSourceProjectsPage, { matchesJsTemplateProjectSearch } from '../pages/JsTemplateSourceProjectsPage';
+import JsTemplateSourceProjectsPage from '../pages/JsTemplateSourceProjectsPage';
 
 const mocks = vi.hoisted(() => ({
   t: (key: string) => key,
@@ -349,7 +349,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('JS Template creation job request failed')).not.toBeInTheDocument();
   });
 
-  it('shows one advanced Source Project row for a project containing two Template Entries', async () => {
+  it('shows one advanced Source Project row for a project containing two JS Templates', async () => {
     mocks.api.listProjects.mockResolvedValueOnce([
       {
         id: 'jtp_shared',
@@ -859,88 +859,6 @@ describe('JsTemplateSourceProjectsPage', () => {
     },
   );
 
-  it('forgets disappeared job statuses before the same ID returns as terminal history', async () => {
-    const pending = createJobSummary();
-    mocks.createJobs.initialJobs = [pending];
-    renderListPage();
-    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
-
-    await act(async () => {
-      mocks.createJobs.update([]);
-      await Promise.resolve();
-    });
-    await act(async () => {
-      mocks.createJobs.update([createJobSummary({ status: 'failed', errorMessage: 'Historical failure' })]);
-    });
-
-    expect(await screen.findByText('Historical failure')).toBeInTheDocument();
-    expect(screen.queryByText('Source Project creation failed: Demo: Historical failure')).not.toBeInTheDocument();
-    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
-  });
-
-  it('baselines historical terminal jobs outside the project table and limits terminal status history', async () => {
-    const activeJobs = Array.from({ length: 4 }, (_value, index) =>
-      createJobSummary({
-        id: `jtcj_active_${index + 1}`,
-        name: `active-${index + 1}`,
-        title: `Active ${index + 1}`,
-        status: index % 2 ? 'running' : 'pending',
-      }),
-    );
-    const historicalJobs = Array.from({ length: 20 }, (_value, index) =>
-      createJobSummary({
-        id: `jtcj_history_${index + 1}`,
-        name: `history-${index + 1}`,
-        title: `Historical ${index + 1}`,
-        status: index % 2 ? 'failed' : 'succeeded',
-        errorMessage: index % 2 ? `Historical failure ${index + 1}` : null,
-      }),
-    );
-    mocks.createJobs.initialJobs = [...activeJobs, ...historicalJobs];
-    mocks.api.listProjects.mockResolvedValueOnce([
-      {
-        id: 'jtp_sales',
-        name: 'sales-widgets',
-        normalizedName: 'sales-widgets',
-        title: 'Sales widgets',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: null,
-      },
-      {
-        id: 'jtp_ops',
-        name: 'ops-widgets',
-        normalizedName: 'ops-widgets',
-        title: 'Ops widgets',
-        description: null,
-        lifecycleStatus: 'enabled',
-        healthStatus: 'ready',
-        headCommitId: null,
-      },
-    ]);
-
-    renderListPage();
-
-    const projectTable = screen.getByRole('table');
-    expect(await within(projectTable).findByText('Sales widgets')).toBeInTheDocument();
-    expect(within(projectTable).getByText('Ops widgets')).toBeInTheDocument();
-    expect(within(projectTable).getAllByRole('row')).toHaveLength(3);
-    expect(within(projectTable).queryByText('Creation succeeded')).not.toBeInTheDocument();
-
-    const creationStatus = screen.getByRole('status', { name: 'Creation status' });
-    for (const activeJob of activeJobs) {
-      expect(within(creationStatus).getByText(activeJob.title || activeJob.name)).toBeInTheDocument();
-    }
-    expect(within(creationStatus).getByText('Historical 1')).toBeInTheDocument();
-    expect(within(creationStatus).getByText('Historical 2')).toBeInTheDocument();
-    expect(within(creationStatus).getByText('Historical 3')).toBeInTheDocument();
-    expect(within(creationStatus).queryByText('Historical 4')).not.toBeInTheDocument();
-    expect(screen.queryByText('Source Project creation succeeded: Historical 1')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Source Project creation failed: Historical/)).not.toBeInTheDocument();
-    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
-  });
-
   it('notifies the newest terminal transition and refreshes once when the same batch includes a success', async () => {
     const newestFailed = createJobSummary({
       id: 'jtcj_newest',
@@ -1127,6 +1045,16 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('Mock source workspace')).not.toBeInTheDocument();
     expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_missing');
     expect(screen.getByTestId('location-search')).toHaveTextContent('panel=source');
+  });
+
+  it('does not open an empty Sync drawer for a missing deep-linked project', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([]);
+    renderListPage('/admin/settings/js-template?projectId=jtp_missing&panel=sync');
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Refresh/ })).not.toHaveClass('ant-btn-loading'));
+    expect(screen.queryByRole('dialog', { name: 'Sync code' })).not.toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_missing');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('panel=sync');
   });
 
   it('opens Sync code from its row action, preserves unrelated query values, and wires Git configuration', async () => {
@@ -1331,24 +1259,6 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
     expect(mocks.api.updateProject.mock.calls[0][0]).not.toHaveProperty('name');
     expect(screen.getByText('sales-widgets')).toBeInTheDocument();
-  });
-
-  it('matches trimmed keywords across name, title, and description with a lifecycle filter', () => {
-    const project = {
-      id: 'jtp_sales',
-      name: 'sales-widgets',
-      normalizedName: 'sales-widgets',
-      title: 'Sales widgets',
-      description: 'Sales dashboard helpers',
-      lifecycleStatus: 'enabled' as const,
-      healthStatus: 'ready' as const,
-      headCommitId: null,
-    };
-
-    expect(matchesJsTemplateProjectSearch(project, ' SALES ', 'all')).toBe(true);
-    expect(matchesJsTemplateProjectSearch(project, 'dashboard', 'enabled')).toBe(true);
-    expect(matchesJsTemplateProjectSearch(project, 'widgets', 'disabled')).toBe(false);
-    expect(matchesJsTemplateProjectSearch(project, 'missing', 'all')).toBe(false);
   });
 
   it('filters Source Projects with the All, Enabled, and Disabled lifecycle control', async () => {

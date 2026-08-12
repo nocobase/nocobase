@@ -14,7 +14,7 @@ import React from 'react';
 
 import type { JsTemplateListTranslate, JsTemplateProjectLifecycleFilter, ToggleLifecycleStatus } from './types';
 
-interface JsTemplateListToolbarProps {
+interface JsTemplateSourceProjectToolbarProps {
   batchChanging: boolean;
   gap: number;
   keyword: string;
@@ -30,7 +30,7 @@ interface JsTemplateListToolbarProps {
   t: JsTemplateListTranslate;
 }
 
-export function JsTemplateListToolbar({
+export function JsTemplateSourceProjectToolbar({
   batchChanging,
   gap,
   keyword,
@@ -44,7 +44,7 @@ export function JsTemplateListToolbar({
   onRefresh,
   selectedCount,
   t,
-}: JsTemplateListToolbarProps) {
+}: JsTemplateSourceProjectToolbarProps) {
   const batchActionItems: MenuProps['items'] = [
     {
       key: 'enabled',

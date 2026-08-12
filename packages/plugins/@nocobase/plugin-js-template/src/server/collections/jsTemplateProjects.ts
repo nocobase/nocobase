@@ -57,7 +57,6 @@ export default defineCollection({
       name: 'vscRepoId',
       length: 64,
       allowNull: false,
-      unique: true,
     },
     {
       type: 'string',
@@ -109,7 +108,6 @@ export default defineCollection({
       type: 'string',
       name: 'creationJobId',
       length: 64,
-      unique: true,
     },
   ],
 });

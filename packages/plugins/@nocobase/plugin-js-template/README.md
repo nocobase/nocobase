@@ -85,7 +85,7 @@ nb js-template save --dir ./workspace --yes --json-output
 
 ## Save and detach RunJS sources
 
-**Save as JS Template** saves the complete current workspace, including unsaved files, as a Template Entry in a new or existing Source Project. The server derives the Template kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
+**Save as JS Template** saves the complete current workspace, including unsaved files, as a JS Template in a new or existing Source Project. The server derives the Template kind from trusted owner metadata, checks the owner fingerprint and destination Head, relocates relative imports, validates and compiles the candidate, then updates the destination and host binding atomically.
 
 **Detach to Inline** copies the reachable Template files from the committed Source Project Head back to the owner and clears the external binding. It does not copy unsaved editor state or silently restore the older fallback snapshot.
 

@@ -131,18 +131,23 @@ describe('plugin-js-template collections', () => {
       target: JS_TEMPLATE_COLLECTIONS.templates,
       foreignKey: 'templateId',
     });
-    expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')?.unique).not.toBe(true);
     expect(getFieldOptions(jsTemplateProjects, 'applicationName')).toMatchObject({ allowNull: false });
     expect(getFieldOptions(jsTemplateProjects, 'name')?.unique).not.toBe(true);
     expect(getFieldOptions(jsTemplateProjects, 'normalizedName')?.unique).not.toBe(true);
-    expect(getFieldOptions(jsTemplateProjects, 'creationJobId')).toMatchObject({ unique: true });
+    expect(getFieldOptions(jsTemplateProjects, 'creationJobId')?.unique).not.toBe(true);
     expect(getFieldOptions(jsTemplateSourceOperations, 'identityHash')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateCreateJobs, 'targetProjectId')).toMatchObject({ unique: true });
 
-    expectCriticalIndex(jsTemplateProjects, ['applicationName', 'normalizedName'], true);
-    expectCriticalIndex(jsTemplateProjects, ['vscRepoId'], true);
+    expectNamedCriticalIndex(
+      jsTemplateProjects,
+      'jst_project_application_normalized_uq',
+      ['applicationName', 'normalizedName'],
+      true,
+    );
+    expectNamedCriticalIndex(jsTemplateProjects, 'jst_project_vsc_uq', ['vscRepoId'], true);
     expectCriticalIndex(jsTemplateProjects, ['applicationName']);
-    expectCriticalIndex(jsTemplateProjects, ['creationJobId'], true);
+    expectNamedCriticalIndex(jsTemplateProjects, 'jst_project_creation_job_uq', ['creationJobId'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'templateName'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'entryPath'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'healthStatus']);
@@ -186,6 +191,42 @@ describe('plugin-js-template collections', () => {
           applicationName: 'main',
           name: 'SHARED PROJECT',
           normalizedName: 'shared-project',
+        },
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('enforces the named project repository and creation-job unique indexes', async () => {
+    const projects = app.db.getRepository('jsTemplateProjects');
+    await projects.create({
+      values: {
+        vscRepoId: 'vscr_named_unique',
+        applicationName: 'main',
+        name: 'Named unique source',
+        normalizedName: 'named-unique-source',
+        creationJobId: 'job_named_unique',
+      },
+    });
+
+    await expect(
+      projects.create({
+        values: {
+          vscRepoId: 'vscr_named_unique',
+          applicationName: 'main',
+          name: 'Duplicate repository',
+          normalizedName: 'duplicate-repository',
+          creationJobId: 'job_distinct',
+        },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      projects.create({
+        values: {
+          vscRepoId: 'vscr_distinct',
+          applicationName: 'main',
+          name: 'Duplicate creation job',
+          normalizedName: 'duplicate-creation-job',
+          creationJobId: 'job_named_unique',
         },
       }),
     ).rejects.toThrow();
@@ -250,6 +291,16 @@ function expectCriticalIndex(definition: CollectionOptions, fields: string[], un
     (index) => Boolean(index.unique) === unique && (index.fields || []).map(String).join('\0') === fields.join('\0'),
   );
   expect(match, `${definition.name} index for ${fields.join(', ')}`).toBeTruthy();
+}
+
+function expectNamedCriticalIndex(definition: CollectionOptions, name: string, fields: string[], unique = false) {
+  const match = (definition.indexes || []).find(
+    (index) =>
+      index.name === name &&
+      Boolean(index.unique) === unique &&
+      (index.fields || []).map(String).join('\0') === fields.join('\0'),
+  );
+  expect(match, `${definition.name} index ${name} for ${fields.join(', ')}`).toBeTruthy();
 }
 
 function getFieldOptions(definition: CollectionOptions, fieldName: string) {

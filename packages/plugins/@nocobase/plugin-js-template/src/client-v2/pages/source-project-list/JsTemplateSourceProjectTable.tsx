@@ -18,7 +18,7 @@ import type { JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
 
 const TABLE_ACTION_BUTTON_STYLE: React.CSSProperties = { height: 'auto', paddingInline: 0 };
 
-interface JsTemplateListTableProps {
+interface JsTemplateSourceProjectTableProps {
   changingProjectIds: Set<string>;
   loading: boolean;
   onChangeLifecycle: (project: JsTemplateProject, lifecycleStatus: ToggleLifecycleStatus) => void;
@@ -32,7 +32,7 @@ interface JsTemplateListTableProps {
   t: JsTemplateListTranslate;
 }
 
-export function JsTemplateListTable({
+export function JsTemplateSourceProjectTable({
   changingProjectIds,
   loading,
   onChangeLifecycle,
@@ -44,7 +44,7 @@ export function JsTemplateListTable({
   removingProjectIds,
   selectedRowKeys,
   t,
-}: JsTemplateListTableProps) {
+}: JsTemplateSourceProjectTableProps) {
   const columns = useMemo<ColumnsType<JsTemplateProject>>(
     () => [
       {
