@@ -28,50 +28,83 @@ yarn pm create @my-project/plugin-hello
 After the command runs successfully, it will generate basic files in the `packages/plugins/@my-project/plugin-hello` directory. The default structure is as follows:
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client-v2.d.ts
-  ├─ client-v2.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # Default export server-side plugin
-     ├─ client-v2                 # Client-side code location
-     │  ├─ index.tsx             # Default exported client-side plugin class
-     │  ├─ plugin.tsx            # Plugin entry (extends @nocobase/client-v2 Plugin)
-     │  ├─ models                # Optional: frontend models (such as flow nodes)
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # Server-side code location
-     │  ├─ index.ts              # Default exported server-side plugin class
-     │  ├─ plugin.ts             # Plugin entry (extends @nocobase/server Plugin)
-     │  ├─ collections           # Optional: server-side collections
-     │  ├─ migrations            # Optional: data migrations
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # Optional: multi-language
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # v2 client entry type declaration
+├─ client-v2.js              # v2 client entry
+├─ client.d.ts               # v1 client entry type declaration
+├─ client.js                 # v1 client entry
+├─ server.d.ts               # Server entry type declaration
+├─ server.js                 # Server entry
+└─ src
+   ├─ index.ts               # Default export server-side plugin
+   ├─ client-v2              # v2 client-side code location
+   │  ├─ index.tsx           # Default exported client-side plugin class
+   │  ├─ plugin.tsx          # Plugin entry (extends @nocobase/client-v2 Plugin)
+   │  └─ client.d.ts
+   ├─ client                 # v1 client-side code location
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # Server-side code location
+   │  ├─ index.ts            # Default exported server-side plugin class
+   │  ├─ plugin.ts           # Plugin entry (extends @nocobase/server Plugin)
+   │  └─ collections         # Server-side collections (empty directory initially)
+   └─ locale                 # Locale resources
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-After creation, you can access the plugin manager page in your browser (default URL: http://localhost:13000/admin/settings/plugin-manager) to confirm whether the plugin appears in the list.
+The scaffold generates a minimal skeleton — `src/client-v2/` contains only entry files. The `models/` directory and `locale.ts` used in the following steps are ones you create yourself.
+
+Next, start development mode so your code changes hot-reload:
+
+- If the project was created with the NocoBase CLI (`nb init`), run this from the project root (`<app-path>`):
+
+  ```bash
+  nb source dev
+  ```
+
+- If you cloned the NocoBase source repository yourself, run this from the source root:
+
+  ```bash
+  yarn dev
+  ```
+
+Once it is running, access the plugin manager page in your browser (default URL: http://localhost:13000/admin/settings/plugin-manager) to confirm whether the plugin appears in the list.
 
 ## Step 2: Implement a Simple Client Block
 
 Next, we'll add a custom block model to the plugin to display a welcome message.
 
-1. **Create a new block model file** `client-v2/models/HelloBlockModel.tsx`:
+1. **Create the translation helper file** `src/client-v2/locale.ts`. `tExpr` declares a namespaced translation expression, and `useT` provides the translation function inside components:
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **Create a new block model file** `src/client-v2/models/HelloBlockModel.tsx`:
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Register the block model**. Edit `client-v2/models/index.ts` to export the new model for frontend runtime loading:
+3. **Register the block model**. Creating the model file is not enough on its own — the frontend runtime does not scan the `models/` directory automatically, so you have to register it explicitly in the plugin entry. Edit `src/client-v2/plugin.tsx` and declare how the model is loaded via `registerModelLoaders` inside `load()`:
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-After saving the code, if you're running a development script, you should see hot-reload logs in the terminal output.
+`registerModelLoaders` takes lazy-loading functions, so a model is only loaded once it is actually used. The key (`HelloBlockModel`) must match the model class name — the runtime uses it to pick the model class out of the module's named exports.
+
+After saving the code, if you're running development mode, you should see hot-reload logs in the terminal output.
 
 ## Step 3: Activate and Test the Plugin
 
@@ -162,7 +204,7 @@ If the plugin is created in a source code repository, the first build will trigg
 
 :::
 
-After the build completes, the package file is located at `storage/tar/@my-project/plugin-hello.tar.gz` by default.
+After the build completes, the package file is located under `storage/tar/` by default, named `<package-name>-<version>.tgz` — for example, `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 :::tip
 
@@ -173,6 +215,12 @@ It's recommended to write test cases to verify core logic before publishing a pl
 ## Step 5: Upload to Other NocoBase Applications
 
 Upload and extract the package file to the target application's `./storage/plugins` directory. For detailed steps, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).
+
+If the target application was created with the NocoBase CLI (`nb init`), you can also import it directly with `nb plugin import` instead of extracting it manually:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## Related Links
 

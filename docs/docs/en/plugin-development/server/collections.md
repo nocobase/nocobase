@@ -197,12 +197,6 @@ When a plugin is first activated, the system will automatically synchronize Coll
 yarn nocobase upgrade
 ```
 
-If exceptions or dirty data occur during synchronization, you can rebuild the table structure by reinstalling the application:
-
-```bash
-yarn nocobase install -f
-```
-
 If you need to migrate existing data during plugin upgrades -- such as renaming fields, splitting tables, backfilling default values, etc. -- you should handle it through [Migration](./migration.md) scripts rather than manually modifying the database.
 
 ## Making a Collection Appear in the UI Data Table List
