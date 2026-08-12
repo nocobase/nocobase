@@ -50,7 +50,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  await ctx.cache.set('key', 'value', 60); // 60秒間キャッシュ
+  await ctx.cache.set('key', 'value', 60 * 1000); // 60秒間キャッシュ（TTL の単位はミリ秒）
   const val = await ctx.cache.get('key');
   ctx.body = val;
 });
@@ -107,7 +107,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  const canEdit = await ctx.can('edit', 'posts');
+  const canEdit = ctx.can({ resource: 'posts', action: 'edit' });
   if (!canEdit) {
     ctx.throw(403, 'Forbidden');
   }

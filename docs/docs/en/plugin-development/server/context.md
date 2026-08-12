@@ -56,7 +56,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  await ctx.cache.set('key', 'value', { ttl: 60 }); // Cache for 60 seconds
+  await ctx.cache.set('key', 'value', 60 * 1000); // Cache for 60 seconds (TTL is in milliseconds)
   const val = await ctx.cache.get('key');
   ctx.body = val;
 });
