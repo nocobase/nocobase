@@ -40,6 +40,12 @@ interface DocsAssistantI18n {
   docsAiQuestionLabel: string;
   docsAiProgress: string;
   docsAiLoading: string;
+  docsAiProgressSubmitted: string;
+  docsAiProgressCallingModel: string;
+  docsAiProgressParsingCitations: string;
+  docsAiProgressVerifyingSources: string;
+  docsAiProgressSourcesVerified: string;
+  docsAiProgressRetrying: string;
   docsAiSources: string;
   docsAiAppliesWhen: string;
   docsAiSuggestions: string;
@@ -243,7 +249,7 @@ export function DocsAssistant() {
                     progress.map((item, index) => (
                       <li key={`${item.stage}-${item.attempt ?? 0}-${index}`}>
                         <span aria-hidden="true" />
-                        {item.message}
+                        {progressMessage(item, t)}
                       </li>
                     ))
                   ) : (
@@ -530,9 +536,39 @@ async function readAnswerStream(
 }
 
 function normalizeLanguage(lang: string): string {
-  return lang === 'cn' || lang.toLowerCase().startsWith('zh')
-    ? 'zh-CN'
-    : 'en-US';
+  const languageMap: Readonly<Record<string, string>> = {
+    en: 'en-US',
+    cn: 'zh-CN',
+    zh: 'zh-CN',
+    ja: 'ja-JP',
+    es: 'es-ES',
+    pt: 'pt-PT',
+    de: 'de-DE',
+    fr: 'fr-FR',
+    ru: 'ru-RU',
+    id: 'id-ID',
+    vi: 'vi-VN',
+  };
+  return languageMap[lang.toLowerCase()] ?? 'en-US';
+}
+
+function progressMessage(
+  progress: AnswerProgress,
+  t: ReturnType<typeof useI18n<DocsAssistantI18n>>,
+): string {
+  const messageKeys: Readonly<Record<string, keyof DocsAssistantI18n>> = {
+    submitted: 'docsAiProgressSubmitted',
+    calling_model: 'docsAiProgressCallingModel',
+    parsing_citations: 'docsAiProgressParsingCitations',
+    verifying_sources: 'docsAiProgressVerifyingSources',
+    sources_verified: 'docsAiProgressSourcesVerified',
+    retrying: 'docsAiProgressRetrying',
+  };
+  const key = messageKeys[progress.stage];
+  const message = key ? t(key) : progress.message;
+  return progress.attempt && progress.maxAttempts
+    ? `${message} (${progress.attempt}/${progress.maxAttempts})`
+    : message;
 }
 
 const DOCS_AI_SESSION_KEY = 'nocobase-docs-ai-session';
