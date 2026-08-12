@@ -307,6 +307,22 @@ describe('MobileLazySelect', () => {
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
 
+  it('clears the selected relation record when it is tapped again in single mode', () => {
+    const { onChange } = renderMobileLazySelect({
+      value: RELATION_OPTIONS[0],
+      multiple: false,
+    });
+
+    openLazyPopup();
+    expect(mockState.checklistProps?.value).toEqual([RELATION_OPTIONS[0].uuid]);
+
+    selectValues([]);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith(undefined);
+    expect(screen.queryByTestId('popup')).not.toBeInTheDocument();
+  });
+
   it('keeps pending relation records selected until confirm', () => {
     const { onChange, rerender } = renderMobileLazySelect();
 
