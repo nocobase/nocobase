@@ -197,12 +197,6 @@ export default defineCollection({
 yarn nocobase upgrade
 ```
 
-同期中に異常やダーティデータが発生した場合は、アプリケーションを再インストールすることでテーブル構造を再構築できます。
-
-```bash
-yarn nocobase install -f
-```
-
 プラグインのアップグレード時に既存データの移行が必要な場合――フィールド名の変更、テーブルの分割、デフォルト値の埋め戻しなど――は、データベースを手動で変更するのではなく、[Migration アップグレードスクリプト](./migration.md) で対応してください。
 
 ## Collection を UI のデータテーブルリストに表示する

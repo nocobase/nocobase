@@ -6,7 +6,7 @@ keywords: "プラグインビルド,プラグインパッケージング,yarn bu
 
 # ビルドとパッケージング
 
-プラグインの開発が完了したら、ビルド（ソースコードのコンパイル）とパッケージング（`.tar.gz` の生成）の 2 つのステップを経て、他の NocoBase アプリケーションに配布して使用できるようになります。
+プラグインの開発が完了したら、ビルド（ソースコードのコンパイル）とパッケージング（`.tgz` の生成）の 2 つのステップを経て、他の NocoBase アプリケーションに配布して使用できるようになります。
 
 ## プラグインのビルド
 
@@ -26,13 +26,13 @@ yarn build @my-project/plugin-hello
 
 ## プラグインのパッケージング
 
-パッケージングでは、ビルド成果物を `.tar.gz` ファイルに圧縮し、他の環境へのアップロードを容易にします：
+パッケージングでは、ビルド成果物を `.tgz` ファイルに圧縮し、他の環境へのアップロードを容易にします：
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-パッケージファイルはデフォルトで `storage/tar/@my-project/plugin-hello.tar.gz` に出力されます。
+パッケージファイルはデフォルトで `storage/tar/` ディレクトリに出力され、ファイル名は `<パッケージ名>-<バージョン番号>.tgz` になります。たとえば `storage/tar/@my-project/plugin-hello-0.1.0.tgz` です。
 
 `--tar` パラメータを使用すると、ビルドとパッケージングを 1 ステップにまとめることもできます：
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## 他の NocoBase アプリケーションへのアップロード
 
-`.tar.gz` ファイルをターゲットアプリケーションの `./storage/plugins` ディレクトリにアップロードして解凍するだけです。詳細な手順は [プラグインのインストールとアップグレード](../get-started/install-upgrade-plugins.mdx) をご覧ください。
+`.tgz` ファイルをターゲットアプリケーションの `./storage/plugins` ディレクトリにアップロードして解凍するだけです。詳細な手順は [プラグインのインストールとアップグレード](../get-started/install-upgrade-plugins.mdx) をご覧ください。
+
+ターゲットアプリケーションが NocoBase CLI（`nb init`）で作成されている場合は、`nb plugin import` で直接インポートすることもでき、手動で解凍する必要はありません：
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### デフォルトでプラグインを有効化する
 

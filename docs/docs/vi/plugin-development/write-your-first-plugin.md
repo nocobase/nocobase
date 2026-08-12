@@ -28,50 +28,83 @@ yarn pm create @my-project/plugin-hello
 Sau khi lệnh chạy thành công, các file cơ bản sẽ được tạo trong thư mục `packages/plugins/@my-project/plugin-hello`, cấu trúc mặc định như sau:
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client-v2.d.ts
-  ├─ client-v2.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # Mặc định export Plugin server
-     ├─ client-v2                 # Vị trí lưu mã client
-     │  ├─ index.tsx             # Class Plugin client export mặc định
-     │  ├─ plugin.tsx            # Entry Plugin (kế thừa Plugin từ @nocobase/client-v2)
-     │  ├─ models                # Tùy chọn: model front-end (như flow node)
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # Vị trí lưu mã server
-     │  ├─ index.ts              # Class Plugin server export mặc định
-     │  ├─ plugin.ts             # Entry Plugin (kế thừa Plugin từ @nocobase/server)
-     │  ├─ collections           # Tùy chọn: collection server
-     │  ├─ migrations            # Tùy chọn: migration dữ liệu
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # Tùy chọn: đa ngôn ngữ
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # Khai báo type cho entry client v2
+├─ client-v2.js              # Entry client v2
+├─ client.d.ts               # Khai báo type cho entry client v1
+├─ client.js                 # Entry client v1
+├─ server.d.ts               # Khai báo type cho entry server
+├─ server.js                 # Entry server
+└─ src
+   ├─ index.ts               # Mặc định export Plugin server
+   ├─ client-v2              # Vị trí lưu mã client v2
+   │  ├─ index.tsx           # Class Plugin client export mặc định
+   │  ├─ plugin.tsx          # Entry Plugin (kế thừa Plugin từ @nocobase/client-v2)
+   │  └─ client.d.ts
+   ├─ client                 # Vị trí lưu mã client v1
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # Vị trí lưu mã server
+   │  ├─ index.ts            # Class Plugin server export mặc định
+   │  ├─ plugin.ts           # Entry Plugin (kế thừa Plugin từ @nocobase/server)
+   │  └─ collections         # Collection server (ban đầu là thư mục rỗng)
+   └─ locale                 # Tài nguyên đa ngôn ngữ
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-Sau khi tạo xong, bạn có thể truy cập trang "Plugin Manager" trên trình duyệt (địa chỉ mặc định: http://localhost:13000/admin/settings/plugin-manager) để kiểm tra Plugin đã xuất hiện trong danh sách chưa.
+Scaffold chỉ sinh ra bộ khung tối thiểu, trong `src/client-v2/` chỉ có các file entry. Thư mục `models/` và file `locale.ts` dùng ở các bước sau là do bạn tự tạo.
+
+Tiếp theo, hãy khởi động chế độ phát triển để những thay đổi code sau đó được hot-reload:
+
+- Nếu dự án được tạo bằng NocoBase CLI (`nb init`), chạy lệnh sau tại thư mục gốc dự án (`<app-path>`):
+
+  ```bash
+  nb source dev
+  ```
+
+- Nếu bạn tự clone repo source code NocoBase, chạy lệnh sau tại thư mục gốc source code:
+
+  ```bash
+  yarn dev
+  ```
+
+Sau khi chạy lên, hãy truy cập trang "Plugin Manager" trên trình duyệt (địa chỉ mặc định: http://localhost:13000/admin/settings/plugin-manager) để kiểm tra Plugin đã xuất hiện trong danh sách chưa.
 
 ## Bước 2: Triển khai một Block client đơn giản
 
 Tiếp theo, hãy thêm một model Block tùy chỉnh vào Plugin để hiển thị một đoạn text chào mừng.
 
-1. **Thêm file model Block** `client-v2/models/HelloBlockModel.tsx`:
+1. **Thêm file tiện ích dịch** `src/client-v2/locale.ts`. `tExpr` dùng để khai báo biểu thức dịch kèm namespace, còn `useT` cung cấp hàm dịch để dùng bên trong component:
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **Thêm file model Block** `src/client-v2/models/HelloBlockModel.tsx`:
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Đăng ký model Block**. Sửa `client-v2/models/index.ts`, export model mới để runtime front-end load được:
+3. **Đăng ký model Block**. Chỉ tạo file model thôi là chưa đủ, runtime front-end không tự quét thư mục `models/`, bạn cần đăng ký tường minh trong entry của Plugin. Sửa `src/client-v2/plugin.tsx`, trong `load()` dùng `registerModelLoaders` để khai báo cách load model:
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-Sau khi lưu code, nếu bạn đang chạy script phát triển, bạn sẽ thấy log hot-reload xuất hiện ở terminal.
+`registerModelLoaders` nhận vào các hàm lazy-load, model chỉ được load khi thực sự được dùng đến. Tên key (`HelloBlockModel`) phải trùng với tên class model, runtime sẽ dựa vào tên này để lấy class model từ các named export của module.
+
+Sau khi lưu code, nếu bạn đang chạy chế độ phát triển, bạn sẽ thấy log hot-reload xuất hiện ở terminal.
 
 ## Bước 3: Kích hoạt và trải nghiệm Plugin
 
@@ -162,7 +204,7 @@ Nếu Plugin được tạo trong repo source code, lần build đầu tiên s�
 
 :::
 
-Sau khi build xong, file đóng gói mặc định nằm ở `storage/tar/@my-project/plugin-hello.tar.gz`.
+Sau khi build xong, file đóng gói mặc định nằm ở thư mục `storage/tar/`, với tên file là `<tên-package>-<phiên-bản>.tgz`, ví dụ `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 :::tip Mẹo
 
@@ -173,6 +215,12 @@ Trước khi phát hành Plugin, bạn nên viết test case để xác minh log
 ## Bước 5: Upload sang ứng dụng NocoBase khác
 
 Upload và giải nén file đóng gói vào thư mục `./storage/plugins` của ứng dụng đích. Các bước chi tiết xem tại [Cài đặt và nâng cấp Plugin](../get-started/install-upgrade-plugins.mdx).
+
+Nếu ứng dụng đích được tạo bằng NocoBase CLI (`nb init`), bạn cũng có thể dùng trực tiếp `nb plugin import` để import mà không cần giải nén thủ công:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## Liên kết liên quan
 

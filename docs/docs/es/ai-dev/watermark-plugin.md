@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 La AI generó la estructura estándar del directorio del plugin en `packages/plugins/@my-project/plugin-watermark/`.
 
+Una vez creado el esqueleto, inicie el modo de desarrollo para que los cambios de código se recarguen en caliente: si el proyecto se creó con `nb init`, ejecute `nb source dev` desde la raíz del proyecto (`<app-path>`); si clonó usted mismo el repositorio de código fuente de NocoBase, ejecute `yarn dev` desde la raíz del código fuente.
+
 ### 3. Escribir el código del lado del servidor
 
 La AI generará los siguientes archivos:
