@@ -47,18 +47,14 @@ function getErrorLog(error: unknown): string {
     return message;
   }
 
-  const details =
-    error instanceof Error
-      ? {
-          ...error,
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        }
-      : error;
-
   try {
-    return JSON.stringify(details, null, 2) || message;
+    const details = new Map<string, unknown>(Object.entries(error));
+    if (error instanceof Error) {
+      details.set('name', error.name);
+      details.set('message', error.message);
+      details.set('stack', error.stack);
+    }
+    return Array.from(details, ([key, value]) => `${key}: ${String(value)}`).join('\n') || message;
   } catch {
     return message;
   }

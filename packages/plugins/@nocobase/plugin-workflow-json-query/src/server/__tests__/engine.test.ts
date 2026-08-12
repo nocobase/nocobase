@@ -247,13 +247,12 @@ describe('json-query > engines', () => {
       const [job] = await execution.getJobs();
       expect(job.status).toBe(JOB_STATUS.ERROR);
       expect(job.result).toBeNull();
-      expect(JSON.parse(job.log)).toMatchObject({
-        code: 'S0203',
-        position: 1,
-        token: '(end)',
-        value: ')',
-        message: 'Expected ")" before end of expression',
-      });
+      expect(job.log).toContain('code: S0203');
+      expect(job.log).toContain('position: 1');
+      expect(job.log).toContain('token: (end)');
+      expect(job.log).toContain('value: )');
+      expect(job.log).toContain('message: Expected ")" before end of expression');
+      expect(job.log).not.toContain('{');
     });
   });
 });
