@@ -104,6 +104,67 @@ export async function sanitizeAssociationValues(options: SanitizeAssociationValu
   });
 }
 
+function collectAssociationPaths(
+  values: unknown,
+  collection?: Collection,
+  lastFieldPath = '',
+  visited = new WeakSet<object>(),
+): string[] {
+  if (!collection) {
+    return [];
+  }
+
+  const paths = new Set<string>();
+  const records = Array.isArray(values) ? values : [values];
+
+  for (const value of records) {
+    if (!_.isPlainObject(value)) {
+      continue;
+    }
+    if (visited.has(value)) {
+      continue;
+    }
+    visited.add(value);
+
+    for (const [fieldName, fieldValue] of Object.entries(value as Record<string, unknown>)) {
+      const field = collection.getField(fieldName);
+      if (!field || !['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type)) {
+        continue;
+      }
+
+      const hasObjectValue = Array.isArray(fieldValue)
+        ? fieldValue.some((item) => _.isPlainObject(item))
+        : _.isPlainObject(fieldValue);
+      if (!hasObjectValue) {
+        continue;
+      }
+
+      const targetCollection = collection.db.getCollection(field.target);
+      if (!targetCollection) {
+        continue;
+      }
+
+      const fieldPath = lastFieldPath ? `${lastFieldPath}.${fieldName}` : fieldName;
+      paths.add(fieldPath);
+      collectAssociationPaths(fieldValue, targetCollection, fieldPath, visited).forEach((path) => paths.add(path));
+    }
+  }
+
+  return [...paths];
+}
+
+function getUpdateAssociationValues(
+  actionName: string,
+  params: { updateAssociationValues?: string[]; values?: unknown },
+  collection?: Collection,
+) {
+  if (params.updateAssociationValues !== undefined || actionName !== 'create') {
+    return params.updateAssociationValues || [];
+  }
+
+  return collectAssociationPaths(params.values, collection);
+}
+
 export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   const timezone = (ctx.request?.get?.('x-timezone') ??
     ctx.request?.header?.['x-timezone'] ??
@@ -141,7 +202,7 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     resourceName,
     actionName,
     values: rawValues,
-    updateAssociationValues: params.updateAssociationValues || [],
+    updateAssociationValues: getUpdateAssociationValues(actionName, params, collection),
     protectedKeys,
     roles,
     currentRole: ctx.state.currentRole,
@@ -277,6 +338,10 @@ async function processValues(options: ProcessValuesOptions) {
       }
 
       for (const item of fieldValue) {
+        if (!_.isPlainObject(item)) {
+          processed.push(item);
+          continue;
+        }
         const r = await processAssociationChild({
           value: item,
           recordKey,
