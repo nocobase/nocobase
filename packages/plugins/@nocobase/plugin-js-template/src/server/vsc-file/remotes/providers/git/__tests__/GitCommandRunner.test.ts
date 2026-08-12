@@ -379,6 +379,17 @@ async function expectProcessToStop(pid: number): Promise<void> {
     } catch {
       return;
     }
+    if (process.platform === 'linux') {
+      try {
+        const processStat = await readFile(`/proc/${pid}/stat`, 'utf8');
+        const processState = processStat[processStat.lastIndexOf(')') + 2];
+        if (processState === 'Z' || processState === 'X') {
+          return;
+        }
+      } catch {
+        return;
+      }
+    }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   throw new Error(`Process ${pid} was not terminated`);
