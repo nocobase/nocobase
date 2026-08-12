@@ -8,7 +8,8 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { compileRunJSSourceWorkspace } from '@nocobase/runjs/compiler';
+
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   createFlowSurfacesContractContext,
   createPage,
@@ -18,784 +19,217 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
-import { collectRunJsAuthoringErrors } from '../flow-surfaces/runjs-authoring/collectors';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
-const JS_TEMPLATE_SOURCE_BINDING = {
-  type: 'js-template-entry',
-  projectId: 'jtp_sales',
-  templateId: 'jtt_kpi_cards',
-  kind: 'js-block',
+type JsTemplateBinding = {
+  type: 'js-template-entry';
+  projectId: string;
+  templateId: string;
+  kind: 'js-block';
 };
 
-const JS_TEMPLATE_ACTION_SOURCE_BINDING = {
-  type: 'js-template-entry',
-  projectId: 'jtp_sales',
-  templateId: 'jtt_refresh_sales_kpi',
-  kind: 'js-action',
-};
+const TEMPLATE_NAMES = ['binding-card', 'updated-card', 'protected-card'] as const;
 
-const LEGACY_SOURCE_REF = {
-  type: 'vsc-file',
-  path: 'packages/plugins/custom/src/blocks/finance-summary.tsx',
-};
-
-function findExportedJsBlock(blocks: Array<Record<string, unknown>>) {
-  return blocks.find((item) => item.type === 'jsBlock');
-}
-
-describe('flowSurfaces JS block js-template contract', () => {
+describe('flowSurfaces JS block JS Template public contract', () => {
   let context: FlowSurfacesContractContext;
-  let rootAgent: FlowSurfacesContractContext['rootAgent'];
+  let projectId: string;
+  const bindings = new Map<(typeof TEMPLATE_NAMES)[number], JsTemplateBinding>();
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
-    rootAgent = context.rootAgent;
+    context = await createFlowSurfacesContractContext({
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+      plugins: [
+        ...FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
+        [PluginJsTemplateServer, { name: 'js-template', packageName: '@nocobase/plugin-js-template' }],
+      ],
+    });
+    const createResponse = await context.rootAgent.resource('jsTemplateProjects').create({
+      values: {
+        name: `flow-surface-contract-${Date.now()}`,
+        title: 'Flow Surface JS Block contract',
+        initialFiles: TEMPLATE_NAMES.flatMap((templateName) => createTemplateFiles(templateName)),
+        message: 'Create Flow Surface contract templates',
+      },
+    });
+    expect(createResponse.status, readErrorMessage(createResponse)).toBe(202);
+    projectId = String(createResponse.body.data.targetProjectId);
+    await waitForSuccessfulCreate(context, String(createResponse.body.data.id), projectId);
+
+    const templatesResponse = await context.rootAgent.resource('jsTemplates').list({ values: { projectId } });
+    expect(templatesResponse.status, readErrorMessage(templatesResponse)).toBe(200);
+    for (const templateName of TEMPLATE_NAMES) {
+      const template = templatesResponse.body.data.find(
+        (item: { templateName?: string }) => item.templateName === templateName,
+      );
+      expect(template).toBeTruthy();
+      bindings.set(templateName, {
+        type: 'js-template-entry',
+        projectId,
+        templateId: String(template.id),
+        kind: 'js-block',
+      });
+    }
   }, 120000);
 
   afterAll(async () => {
     await destroyFlowSurfacesContractContext(context);
   });
 
-  it('should persist js-template binding and instance settings through addBlock/configure/updateSettings', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'JS block source page',
-      tabTitle: 'Main',
-    });
-
-    const block = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'jsBlock',
-          settings: {
-            title: 'Sales KPI',
-            sourceMode: 'js-template',
-            sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-            settings: {
-              region: 'APAC',
-            },
-          },
-        },
-      }),
-    );
-
-    let readback = await getSurface(rootAgent, { uid: block.uid });
+  it('resolves an executable artifact for a JS Block binding created through the public API', async () => {
+    const binding = getBinding(bindings, 'binding-card');
+    const block = await createBoundBlock(context, binding, 'Binding contract block');
+    const readback = await getSurface(context.rootAgent, { uid: block.uid });
     expect(readback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       sourceMode: 'js-template',
-      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-      settings: {
-        region: 'APAC',
-      },
+      sourceBinding: binding,
+      settings: { label: 'BOUND' },
     });
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('settings');
-    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceRef');
 
-    const nextBinding = {
-      ...JS_TEMPLATE_SOURCE_BINDING,
-      templateId: 'jtt_sales_kpi_v2',
-    };
-    const configureRes = await rootAgent.resource('flowSurfaces').configure({
+    const resolvedResponse = await context.rootAgent.resource('jsTemplateRuntime').resolve({
       values: {
-        target: {
-          uid: block.uid,
-        },
-        changes: {
-          sourceMode: 'js-template',
-          sourceBinding: nextBinding,
-          settings: {
-            region: 'EMEA',
-            refreshInterval: 60,
-          },
-          showBlockCard: false,
-        },
-      },
-    });
-    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
-
-    readback = await getSurface(rootAgent, { uid: block.uid });
-    expect(readback.tree.stepParams?.jsSettings).toMatchObject({
-      runJs: {
         sourceMode: 'js-template',
-        sourceBinding: nextBinding,
-        settings: {
-          region: 'EMEA',
-          refreshInterval: 60,
-        },
-      },
-      showBlockCard: {
-        showBlockCard: false,
+        sourceBinding: binding,
+        settings: { label: 'BOUND' },
       },
     });
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('settings');
+    expect(resolvedResponse.status, readErrorMessage(resolvedResponse)).toBe(200);
+    expect(resolvedResponse.body.data).toMatchObject({
+      templateId: binding.templateId,
+      artifactHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
+      settings: { label: 'BOUND' },
+    });
+    const artifactResponse = await context.rootAgent.resource('jsTemplateRuntime').getArtifact({
+      filterByTk: resolvedResponse.body.data.artifactHash,
+    });
+    expect(artifactResponse.status, readErrorMessage(artifactResponse)).toBe(200);
+    expect(artifactResponse.body).toMatchObject({
+      artifactHash: resolvedResponse.body.data.artifactHash,
+      code: expect.stringContaining('binding-card:v1'),
+    });
+  }, 120000);
 
-    const legacyMirrorUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+  it('serves the updated immutable artifact to an existing JS Block binding', async () => {
+    const binding = getBinding(bindings, 'updated-card');
+    await createBoundBlock(context, binding, 'Updated artifact contract block');
+    const beforeResponse = await context.rootAgent.resource('jsTemplateRuntime').resolve({
+      values: { sourceMode: 'js-template', sourceBinding: binding, settings: { label: 'BEFORE' } },
+    });
+    expect(beforeResponse.status, readErrorMessage(beforeResponse)).toBe(200);
+
+    const projectResponse = await context.rootAgent.resource('jsTemplateProjects').get({ filterByTk: projectId });
+    expect(projectResponse.status, readErrorMessage(projectResponse)).toBe(200);
+    const saveResponse = await context.rootAgent.resource('jsTemplateFiles').saveSource({
       values: {
-        target: {
-          uid: block.uid,
-        },
-        stepParams: {
-          jsSettings: {
-            sourceBinding: {
-              templateId: 'jtt_sales_kpi_v3',
-            },
-            settings: {
-              currency: 'USD',
-            },
-          },
-        },
-      },
-    });
-    expect(legacyMirrorUpdateRes.status, readErrorMessage(legacyMirrorUpdateRes)).toBe(400);
-
-    const updateRes = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: block.uid,
-        },
-        stepParams: {
-          jsSettings: {
-            runJs: {
-              sourceBinding: {
-                templateId: 'jtt_sales_kpi_v3',
-              },
-              settings: {
-                currency: 'USD',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect(updateRes.status, readErrorMessage(updateRes)).toBe(200);
-
-    readback = await getSurface(rootAgent, { uid: block.uid });
-    expect(readback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
-      sourceMode: 'js-template',
-      sourceBinding: {
-        ...nextBinding,
-        templateId: 'jtt_sales_kpi_v3',
-      },
-      settings: {
-        region: 'EMEA',
-        refreshInterval: 60,
-        currency: 'USD',
-      },
-    });
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('settings');
-    expect(readback.tree.stepParams?.jsSettings?.runJs?.sourceBinding?.settings).toBeUndefined();
-  });
-
-  it('should apply canonical compose bindings and reject direct JS Template detach', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'JS block template compose page',
-      tabTitle: 'Main',
-    });
-    const inlineSource = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: { uid: page.tabSchemaUid },
-          type: 'jsBlock',
-          settings: { code: "ctx.render('Template inline source');" },
-        },
-      }),
-    );
-    const inlineTemplate = getData(
-      await rootAgent.resource('flowSurfaces').saveTemplate({
-        values: {
-          target: { uid: inlineSource.uid },
-          name: 'Inline JS block template',
-          description: 'Template-backed compose workspace ordering coverage',
-          saveMode: 'duplicate',
-        },
-      }),
-    );
-    const jsTemplateSource = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: { uid: page.tabSchemaUid },
-          type: 'jsBlock',
-          settings: {
-            sourceMode: 'js-template',
-            sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-          },
-        },
-      }),
-    );
-    const jsTemplateTemplate = getData(
-      await rootAgent.resource('flowSurfaces').saveTemplate({
-        values: {
-          target: { uid: jsTemplateSource.uid },
-          name: 'JS Template JS block template',
-          description: 'Template-backed compose source-mode ordering coverage',
-          saveMode: 'duplicate',
-        },
-      }),
-    );
-
-    const composeResponse = await rootAgent.resource('flowSurfaces').compose({
-      values: {
-        target: { uid: page.tabSchemaUid },
-        blocks: [
+        projectId,
+        expectedHeadCommitId: projectResponse.body.data.headCommitId,
+        message: 'Update JS Block contract artifact',
+        files: [
           {
-            key: 'inlineOverride',
-            template: { uid: inlineTemplate.uid, mode: 'copy' },
-            settings: { code: "ctx.render('Inline compose override');", sourceMode: 'inline' },
-          },
-          {
-            key: 'externalizedCopy',
-            template: { uid: inlineTemplate.uid, mode: 'copy' },
-            settings: {
-              sourceMode: 'js-template',
-              sourceBinding: {
-                ...JS_TEMPLATE_SOURCE_BINDING,
-                templateId: 'jtt_template_externalized',
-              },
-            },
-          },
-        ],
-      },
-    });
-    expect(composeResponse.status, readErrorMessage(composeResponse)).toBe(200);
-    const blocks = getData(composeResponse).blocks as Array<{
-      key?: string;
-      uid?: string;
-      workspaceStatus?: string;
-      workspaceRetryable?: boolean;
-    }>;
-    const inlineOverride = blocks.find((item) => item.key === 'inlineOverride');
-    const externalizedCopy = blocks.find((item) => item.key === 'externalizedCopy');
-    expect(inlineOverride).toMatchObject({ workspaceStatus: 'ready', workspaceRetryable: false });
-    expect(externalizedCopy).not.toHaveProperty('workspaceStatus');
-
-    const inlineReadback = await getSurface(rootAgent, { uid: inlineOverride?.uid });
-    const locator = inlineReadback.tree.runJSLocator;
-    const openedResponse = await rootAgent.resource('runJSSources').open({ values: { locator } });
-    expect(openedResponse.status, readErrorMessage(openedResponse)).toBe(200);
-    const opened = getData(openedResponse);
-    expect(opened.files.find((file: { path: string }) => file.path === 'src/client/index.tsx')?.content).toBe(
-      "ctx.render('Inline compose override');",
-    );
-
-    const externalizedReadback = await getSurface(rootAgent, { uid: externalizedCopy?.uid });
-    expect(externalizedReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
-      sourceMode: 'js-template',
-      sourceBinding: {
-        templateId: 'jtt_template_externalized',
-      },
-    });
-
-    const directDetachResponse = await rootAgent.resource('flowSurfaces').compose({
-      values: {
-        target: { uid: page.tabSchemaUid },
-        blocks: [
-          {
-            key: 'directDetach',
-            template: { uid: jsTemplateTemplate.uid, mode: 'copy' },
-            settings: { code: "ctx.render('Detached inline after compose');", sourceMode: 'inline' },
-          },
-        ],
-      },
-    });
-    expect(directDetachResponse.status).toBe(409);
-    expect(readErrorMessage(directDetachResponse)).toContain(
-      'JS Template sources must be detached through jsTemplates:detachToInline',
-    );
-  });
-
-  it('should export a multi-file workspace runtime artifact as a portable fallback without its sourceRef', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'JS block export page',
-      tabTitle: 'Main',
-    });
-    const legacyCode = "ctx.render('Legacy inline summary');";
-
-    const composeResponse = await rootAgent.resource('flowSurfaces').compose({
-      values: {
-        target: {
-          uid: page.tabSchemaUid,
-        },
-        blocks: [
-          {
-            key: 'financeSummary',
-            type: 'jsBlock',
-            settings: {
-              title: 'Finance summary',
-              code: legacyCode,
-              version: 'v1',
-              sourceRef: LEGACY_SOURCE_REF,
-            },
-          },
-        ],
-      },
-    });
-    expect(composeResponse.status, readErrorMessage(composeResponse)).toBe(200);
-    const block = getData(composeResponse).blocks.find((item: { key?: string }) => item.key === 'financeSummary');
-    expect(block).toMatchObject({
-      workspaceStatus: 'ready',
-      workspaceRetryable: false,
-      runJSLocator: {
-        kind: 'flowModel.step',
-        flowKey: 'jsSettings',
-        stepKey: 'runJs',
-        paramPath: ['code'],
-      },
-    });
-
-    const initialReadback = await getSurface(rootAgent, { uid: block.uid });
-    const initialRunJs = initialReadback.tree.stepParams?.jsSettings?.runJs;
-    const locator = initialReadback.tree.runJSLocator;
-    expect(locator).toMatchObject({
-      kind: 'flowModel.step',
-      modelUid: block.uid,
-      flowKey: 'jsSettings',
-      stepKey: 'runJs',
-      paramPath: ['code'],
-    });
-    expect(initialRunJs?.sourceRef).toMatchObject({
-      type: 'vsc-file',
-      repoId: expect.any(String),
-      commitId: expect.any(String),
-      entry: 'src/client/index.tsx',
-    });
-
-    const openedResponse = await rootAgent.resource('runJSSources').open({
-      values: { locator },
-    });
-    expect(openedResponse.status, readErrorMessage(openedResponse)).toBe(200);
-    const opened = getData(openedResponse);
-    const expectedBlobHash = (path: string) =>
-      opened.files.find((file: { path: string }) => file.path === path)?.blobHash || null;
-    const workspaceEntry = "import { summaryLabel } from './summary-label';\nctx.render(summaryLabel);";
-    const saveResponse = await rootAgent.resource('runJSSources').saveChanges({
-      values: {
-        locator,
-        repoId: opened.repository.repoId,
-        baseCommitId: opened.repository.headCommitId,
-        baseOwnerFingerprint: opened.ownerFingerprint,
-        message: 'Materialize finance summary workspace',
-        entryPath: 'src/client/index.tsx',
-        changes: [
-          {
-            path: 'src/client/index.tsx',
-            operation: 'upsert',
-            expectedBlobHash: expectedBlobHash('src/client/index.tsx'),
-            content: workspaceEntry,
-            language: 'tsx',
-          },
-          {
-            path: 'src/client/summary-label.ts',
-            operation: 'upsert',
-            expectedBlobHash: expectedBlobHash('src/client/summary-label.ts'),
-            content: "export const summaryLabel = 'Legacy inline summary';",
+            path: 'src/client/js-blocks/updated-card/index.tsx',
+            content: 'ctx.render(`updated-card:v2:${String(ctx.settings.label)}`);\n',
             language: 'typescript',
           },
         ],
       },
     });
     expect(saveResponse.status, readErrorMessage(saveResponse)).toBe(200);
-    expect(getData(saveResponse)).toMatchObject({
-      artifact: {
-        entryPath: 'src/client/index.tsx',
-        diagnostics: [],
-      },
-    });
+    expect(saveResponse.body.data).toMatchObject({ compile: { status: 'success' }, diagnostics: [] });
 
-    const inlineReadback = await getSurface(rootAgent, { uid: block.uid });
-    const inlineRunJs = inlineReadback.tree.stepParams?.jsSettings?.runJs;
-    expect(inlineRunJs).toMatchObject({
-      code: expect.stringContaining('Legacy inline summary'),
-      version: 'v1',
-      sourceRef: {
-        type: 'vsc-file',
-        repoId: expect.any(String),
-        commitId: expect.any(String),
-        entry: 'src/client/index.tsx',
-      },
+    const afterResponse = await context.rootAgent.resource('jsTemplateRuntime').resolve({
+      values: { sourceMode: 'js-template', sourceBinding: binding, settings: { label: 'AFTER' } },
     });
-    expect(inlineRunJs?.sourceRef).not.toHaveProperty('path');
-    const inlineCode = inlineRunJs?.code;
-    const inlineSourceRef = inlineRunJs?.sourceRef;
-    expect(inlineCode).not.toContain(workspaceEntry);
-    expect(
-      collectRunJsAuthoringErrors('applyBlueprint', {
-        tabs: [{ blocks: [{ type: 'jsBlock', settings: { code: inlineCode } }] }],
-      }),
-    ).toEqual([]);
-    const ordinaryWrapperErrors = collectRunJsAuthoringErrors('applyBlueprint', {
-      tabs: [
-        {
-          blocks: [
-            {
-              type: 'jsBlock',
-              settings: { code: "function renderLater() { ctx.render('late'); }" },
-            },
-          ],
-        },
-      ],
+    expect(afterResponse.status, readErrorMessage(afterResponse)).toBe(200);
+    expect(afterResponse.body.data.artifactHash).not.toBe(beforeResponse.body.data.artifactHash);
+    const artifactResponse = await context.rootAgent.resource('jsTemplateRuntime').getArtifact({
+      filterByTk: afterResponse.body.data.artifactHash,
     });
-    expect(ordinaryWrapperErrors.map((error) => error.details?.repairClass)).toContain(
-      'render-top-level-function-wrapper',
-    );
-    const spoofedArtifactErrors = collectRunJsAuthoringErrors('applyBlueprint', {
-      tabs: [
-        {
-          blocks: [
-            {
-              type: 'jsBlock',
-              settings: {
-                code: [
-                  "function renderLater() { ctx.render('late'); }",
-                  "const marker = 'const __runjs_require__ = (specifier) => {';",
-                  '// runjs-launcher:__runjs_launcher__.js',
-                  'return __runjs_entry__.default();',
-                  '//# sourceURL=nocobase-runjs://bundle/0123456789abcdef.js',
-                ].join('\n'),
-              },
-            },
-          ],
-        },
-      ],
-    });
-    expect(spoofedArtifactErrors.map((error) => error.details?.repairClass)).toContain(
-      'render-top-level-function-wrapper',
-    );
-    const nestedRunJsArtifact = await compileRunJSSourceWorkspace({
-      files: [
-        {
-          path: 'src/client/index.tsx',
-          content: 'ctx.runjs("api/orders:list");\nctx.render("Orders");',
-        },
-      ],
-      entry: 'src/client/index.tsx',
-      surfaceStyle: 'render',
-    });
-    expect(nestedRunJsArtifact.artifact.diagnostics).toEqual([]);
-    const nestedRunJsArtifactErrors = collectRunJsAuthoringErrors('applyBlueprint', {
-      tabs: [
-        {
-          blocks: [
-            {
-              type: 'jsBlock',
-              settings: { code: nestedRunJsArtifact.artifact.code },
-            },
-          ],
-        },
-      ],
-    });
-    expect(nestedRunJsArtifactErrors.map((error) => error.ruleId)).toContain('runjs-nested-runjs-forbidden');
+    expect(artifactResponse.status, readErrorMessage(artifactResponse)).toBe(200);
+    expect(artifactResponse.body.code).toContain('updated-card:v2');
+  }, 120000);
 
-    const actionArtifact = await compileRunJSSourceWorkspace({
-      files: [
-        {
-          path: 'src/client/index.tsx',
-          content: 'ctx.message.success("Updated");',
-        },
-      ],
-      entry: 'src/client/index.tsx',
-      surfaceStyle: 'action',
-    });
-    expect(actionArtifact.artifact.diagnostics).toEqual([]);
-    const actionArtifactInRenderHostErrors = collectRunJsAuthoringErrors('applyBlueprint', {
-      tabs: [
-        {
-          blocks: [
-            {
-              type: 'jsBlock',
-              settings: { code: actionArtifact.artifact.code },
-            },
-          ],
-        },
-      ],
-    });
-    expect(actionArtifactInRenderHostErrors).not.toEqual([]);
-    expect(actionArtifactInRenderHostErrors.map((error) => error.details?.repairClass)).toContain(
-      'render-top-level-function-wrapper',
-    );
-    const artifactBudgetErrors = collectRunJsAuthoringErrors('applyBlueprint', {
-      tabs: [
-        {
-          blocks: Array.from({ length: 101 }, () => ({
-            type: 'jsBlock',
-            settings: { code: inlineCode },
-          })),
-        },
-      ],
-    });
-    expect(artifactBudgetErrors.map((error) => error.ruleId)).toContain('runjs-too-many-sources');
+  it('blocks deletion while a JS Block references the Template', async () => {
+    const binding = getBinding(bindings, 'protected-card');
+    await createBoundBlock(context, binding, 'Protected template contract block');
 
-    const inlineExportResponse = await rootAgent.resource('flowSurfaces').exportBlueprint({
-      values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
-      },
+    const blockedResponse = await context.rootAgent.resource('jsTemplates').delete({
+      values: { templateId: binding.templateId },
     });
-    expect(inlineExportResponse.status, readErrorMessage(inlineExportResponse)).toBe(200);
-    const inlineExported = getData(inlineExportResponse);
-    const inlineExportedJsBlock = findExportedJsBlock(inlineExported.document.tabs[0].blocks);
-    expect(inlineExportedJsBlock?.settings).toMatchObject({
-      code: inlineCode,
-      version: 'v1',
+    expect(blockedResponse.status).toBe(409);
+    expect(blockedResponse.body.errors[0]).toMatchObject({
+      code: 'JS_TEMPLATE_USAGE_EXISTS',
+      details: { templateId: binding.templateId, usageCount: 1 },
     });
-    expect(inlineExportedJsBlock?.settings).not.toHaveProperty('sourceRef');
+  }, 120000);
+});
 
-    const createDocument = {
-      ...inlineExported.document,
-      mode: 'create',
-      navigation: {
-        item: {
-          title: 'Imported finance summary',
-        },
-      },
-      page: {
-        ...inlineExported.document.page,
-        title: 'Imported finance summary',
-      },
-    };
-    delete createDocument.target;
-    const createResponse = await rootAgent.resource('flowSurfaces').applyBlueprint({
-      values: createDocument,
-    });
-    expect(createResponse.status, readErrorMessage(createResponse)).toBe(200);
-    const importedPageSchemaUid = getData(createResponse).target.pageSchemaUid;
-    const importedExportResponse = await rootAgent.resource('flowSurfaces').exportBlueprint({
-      values: {
-        target: {
-          pageSchemaUid: importedPageSchemaUid,
-        },
-      },
-    });
-    expect(importedExportResponse.status, readErrorMessage(importedExportResponse)).toBe(200);
-    const importedJsBlock = findExportedJsBlock(getData(importedExportResponse).document.tabs[0].blocks);
-    expect(importedJsBlock?.settings).toMatchObject({
-      code: inlineCode,
-      version: 'v1',
-    });
-    expect(importedJsBlock?.settings).not.toHaveProperty('sourceRef');
-
-    const configureRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: {
-          uid: block.uid,
-        },
-        changes: {
-          sourceMode: 'js-template',
-          sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-          settings: {
-            region: 'APAC',
-          },
-        },
-      },
-    });
-    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
-
-    const readback = await getSurface(rootAgent, { uid: block.uid });
-    expect(readback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: inlineCode,
-      version: 'v1',
-      sourceRef: inlineSourceRef,
-      sourceMode: 'js-template',
-      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-      settings: {
-        region: 'APAC',
-      },
-    });
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.jsSettings).not.toHaveProperty('settings');
-
-    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
-      values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
-      },
-    });
-    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
-    const exported = getData(exportRes);
-    expect(exported.unsupported).toEqual([]);
-
-    const exportedJsBlock = findExportedJsBlock(exported.document.tabs[0].blocks);
-    expect(exportedJsBlock).toMatchObject({
+async function createBoundBlock(context: FlowSurfacesContractContext, binding: JsTemplateBinding, title: string) {
+  const page = await createPage(context.rootAgent, {
+    title: `${title} page ${Date.now()}`,
+    tabTitle: 'Main',
+  });
+  const response = await context.rootAgent.resource('flowSurfaces').addBlock({
+    values: {
+      target: { uid: page.tabSchemaUid },
       type: 'jsBlock',
       settings: {
-        code: inlineCode,
-        version: 'v1',
+        title,
         sourceMode: 'js-template',
-        sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-        settings: {
-          region: 'APAC',
-        },
+        sourceBinding: binding,
+        settings: { label: title.startsWith('Binding') ? 'BOUND' : title },
       },
-    });
-    expect(exportedJsBlock?.settings).not.toHaveProperty('sourceRef');
-
-    const replaceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
-      values: exported.document,
-    });
-    expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
-
-    const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
-      values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
-      },
-    });
-    expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
-    const replaced = getData(replacedExportRes);
-    const replacedJsBlock = findExportedJsBlock(replaced.document.tabs[0].blocks);
-    expect(replacedJsBlock?.settings).toMatchObject({
-      code: inlineCode,
-      version: 'v1',
-      sourceMode: 'js-template',
-      sourceBinding: JS_TEMPLATE_SOURCE_BINDING,
-      settings: {
-        region: 'APAC',
-      },
-    });
-    expect(replacedJsBlock?.settings).not.toHaveProperty('sourceRef');
+    },
   });
+  expect(response.status, readErrorMessage(response)).toBe(200);
+  return getData(response);
+}
 
-  it('should keep inline configure active with canonical workspace sourceRef on readback', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Legacy inline configure page',
-      tabTitle: 'Main',
-    });
-    const block = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: { uid: page.tabSchemaUid },
-          type: 'jsBlock',
+function getBinding(
+  bindings: Map<(typeof TEMPLATE_NAMES)[number], JsTemplateBinding>,
+  templateName: (typeof TEMPLATE_NAMES)[number],
+) {
+  const binding = bindings.get(templateName);
+  if (!binding) {
+    throw new Error(`Missing JS Template binding for ${templateName}`);
+  }
+  return binding;
+}
+
+function createTemplateFiles(templateName: (typeof TEMPLATE_NAMES)[number]) {
+  return [
+    {
+      path: `src/client/js-blocks/${templateName}/index.tsx`,
+      content: `ctx.render(\`${templateName}:v1:\${String(ctx.settings.label)}\`);\n`,
+      language: 'typescript',
+    },
+    {
+      path: `src/client/js-blocks/${templateName}/entry.json`,
+      content: `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          key: templateName,
+          title: templateName,
           settings: {
-            code: "ctx.render('before');",
-            version: 'v1',
+            label: { type: 'string', default: 'DEFAULT' },
           },
         },
-      }),
-    );
-    const initialReadback = await getSurface(rootAgent, { uid: block.uid });
-    const inlineSourceRef = initialReadback.tree.stepParams?.jsSettings?.runJs?.sourceRef;
-    expect(inlineSourceRef).toMatchObject({
-      type: 'vsc-file',
-      repoId: expect.any(String),
-      commitId: expect.any(String),
-      entry: 'src/client/index.tsx',
-    });
-    expect(inlineSourceRef).not.toHaveProperty('path');
+        null,
+        2,
+      )}\n`,
+      language: 'json',
+    },
+  ];
+}
 
-    const configureRes = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: { uid: block.uid },
-        changes: {
-          code: "ctx.render('after');",
-          version: 'v2',
-        },
-      },
-    });
-    expect(configureRes.status, readErrorMessage(configureRes)).toBe(200);
-
-    const readback = await getSurface(rootAgent, { uid: block.uid });
-    expect(readback.tree.stepParams?.jsSettings?.runJs).toEqual({
-      code: "ctx.render('after');",
-      version: 'v2',
-      sourceRef: inlineSourceRef,
-    });
-    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.jsSettings?.runJs).not.toHaveProperty('sourceBinding');
-  });
-
-  it('should persist JS action source fields only in clickSettings.runJs', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'JS action source page',
-      tabTitle: 'Main',
-    });
-    const actionPanel = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
-          target: {
-            uid: page.tabSchemaUid,
-          },
-          type: 'actionPanel',
-        },
-      }),
-    );
-    const actionResponse = await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: actionPanel.uid,
-        },
-        type: 'js',
-        settings: {
-          title: 'Refresh KPI',
-          code: "ctx.message.success('Refreshed');",
-          version: 'v2',
-          sourceMode: 'js-template',
-          sourceBinding: JS_TEMPLATE_ACTION_SOURCE_BINDING,
-          settings: {
-            region: 'APAC',
-          },
-        },
-      },
-    });
-    expect(actionResponse.status, readErrorMessage(actionResponse)).toBe(200);
-    const action = getData(actionResponse);
-
-    let readback = await getSurface(rootAgent, { uid: action.uid });
-    expect(readback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
-      code: "ctx.message.success('Refreshed');",
-      version: 'v2',
-      sourceMode: 'js-template',
-      sourceBinding: JS_TEMPLATE_ACTION_SOURCE_BINDING,
-      settings: {
-        region: 'APAC',
-      },
-    });
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('settings');
-
-    const configureResponse = await rootAgent.resource('flowSurfaces').configure({
-      values: {
-        target: {
-          uid: action.uid,
-        },
-        changes: {
-          sourceBinding: {
-            templateId: 'jtt_refresh_sales_kpi_v2',
-          },
-          settings: {
-            currency: 'USD',
-          },
-        },
-      },
-    });
-    expect(configureResponse.status, readErrorMessage(configureResponse)).toBe(200);
-
-    readback = await getSurface(rootAgent, { uid: action.uid });
-    expect(readback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
-      code: "ctx.message.success('Refreshed');",
-      version: 'v2',
-      sourceMode: 'js-template',
-      sourceBinding: {
-        ...JS_TEMPLATE_ACTION_SOURCE_BINDING,
-        templateId: 'jtt_refresh_sales_kpi_v2',
-      },
-      settings: {
-        region: 'APAC',
-        currency: 'USD',
-      },
-    });
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('sourceMode');
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('sourceBinding');
-    expect(readback.tree.stepParams?.clickSettings).not.toHaveProperty('settings');
-  });
-});
+async function waitForSuccessfulCreate(context: FlowSurfacesContractContext, jobId: string, expectedProjectId: string) {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
+    const job = await context.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: jobId });
+    if (job?.get('status') === 'failed') {
+      throw new Error(`Creation job ${jobId} failed with ${String(job.get('errorCode'))}`);
+    }
+    if (job?.get('status') === 'succeeded' && job.get('resultProjectId') === expectedProjectId) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error(`Creation job ${jobId} did not finish`);
+}
