@@ -284,7 +284,7 @@ function getNormalizedFields(collectionName, { compile, collectionManager }) {
       const foreignKeyFieldIndex = foreignKeyFields.findIndex((f) => f.name === field.foreignKey);
       if (foreignKeyFieldIndex > -1) {
         const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
-        result.splice(i, 0, {
+        const normalizedForeignKeyField = {
           ...foreignKeyField,
           target: field.target,
           targetKey: field.targetKey,
@@ -295,7 +295,15 @@ function getNormalizedFields(collectionName, { compile, collectionManager }) {
             ...foreignKeyField.uiSchema,
             title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
-        });
+        };
+        const primaryForeignKeyFieldIndex = result.findIndex(
+          (item) => item.name === field.foreignKey && item.isForeignKey && item.primaryKey,
+        );
+        if (primaryForeignKeyFieldIndex > -1) {
+          result.splice(primaryForeignKeyFieldIndex, 1, normalizedForeignKeyField);
+        } else {
+          result.splice(i, 0, normalizedForeignKeyField);
+        }
         foreignKeyFields.splice(foreignKeyFieldIndex, 1);
       } else {
         result.splice(i, 0, {
