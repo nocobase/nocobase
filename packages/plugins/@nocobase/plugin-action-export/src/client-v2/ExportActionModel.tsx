@@ -309,7 +309,7 @@ ExportActionModel.registerFlow({
             title: ctx.t(title),
             appends: resource.getAppends(),
             sort: resource.getSort(),
-            filter,
+            filter: JSON.stringify(filter),
           },
         });
         const blob = new Blob([data], { type: 'application/x-xls' });
