@@ -198,7 +198,6 @@ describe('backup pages', () => {
           scheduled: true,
           cron: '0 1 * * *',
         }),
-        skipNotify: true,
       }),
     );
     expect(mutate).toHaveBeenCalledWith(

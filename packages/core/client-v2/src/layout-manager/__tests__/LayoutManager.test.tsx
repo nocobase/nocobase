@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { matchRoutes } from 'react-router-dom';
+import { matchRoutes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { RouterManager } from '../../RouterManager';
 import { LayoutManager } from '../LayoutManager';

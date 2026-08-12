@@ -30,6 +30,7 @@ import lodash from 'lodash';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as reactI18next from 'react-i18next';
+import * as ReactRouter from 'react-router';
 import * as ReactRouterDom from 'react-router-dom';
 import jsxRuntime from 'react/jsx-runtime';
 import * as nocobaseClientV2 from '../index';
@@ -63,7 +64,7 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   defineGlobalDep(requirejs, 'react/jsx-runtime', jsxRuntime);
 
   // react-router
-  defineGlobalDep(requirejs, 'react-router', ReactRouterDom);
+  defineGlobalDep(requirejs, 'react-router', ReactRouter);
   defineGlobalDep(requirejs, 'react-router-dom', ReactRouterDom);
 
   // antd

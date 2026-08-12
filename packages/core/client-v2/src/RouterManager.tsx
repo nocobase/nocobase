@@ -9,6 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
+import { matchRoutes } from 'react-router';
 import {
   type BrowserRouterProps,
   createBrowserRouter,
@@ -16,19 +17,16 @@ import {
   createMemoryRouter,
   type HashRouterProps,
   type MemoryRouterProps,
-  matchRoutes,
   Outlet,
   type RouteObject,
   RouterProvider,
-  type RouterProviderProps,
   useRouteError,
 } from 'react-router-dom';
 import type { BaseApplication } from './BaseApplication';
 import { BlankComponent, RouterContextCleaner } from './components';
 import { RouterBridge } from './components/RouterBridge';
+import { Router } from '@remix-run/router';
 import { getV2EffectiveBasePath } from './authRedirect';
-
-type DataRouter = RouterProviderProps['router'];
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -156,9 +154,9 @@ function removeBasename(pathname: string, basename?: string) {
 export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
-  private routerNavigate?: DataRouter['navigate'];
+  private routerNavigate?: Router['navigate'];
   public app: TApp;
-  public router!: DataRouter;
+  public router!: Router;
   get basename() {
     return this.router.basename;
   }
@@ -175,7 +173,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
     this.routes = options.routes || {};
   }
 
-  private navigateWithPortalPolicy: DataRouter['navigate'] = ((to, opts) => {
+  private navigateWithPortalPolicy: Router['navigate'] = ((to, opts) => {
     if (this.shouldOpenAdminRouteInNewWindow(to, opts)) {
       window.open(this.getAdminRouteNavigationHref(to as string), '_blank', 'noopener,noreferrer');
       return Promise.resolve();
@@ -183,11 +181,11 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
 
     const navigate = this.routerNavigate || this.router.navigate.bind(this.router);
     return navigate(to, opts);
-  }) as DataRouter['navigate'];
+  }) as Router['navigate'];
 
   private shouldOpenAdminRouteInNewWindow(
-    to: Parameters<DataRouter['navigate']>[0],
-    opts?: Parameters<DataRouter['navigate']>[1],
+    to: Parameters<Router['navigate']>[0],
+    opts?: Parameters<Router['navigate']>[1],
   ) {
     if (this.options.type && this.options.type !== 'browser') {
       return false;
@@ -398,7 +396,7 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
       ],
       opts,
     );
-    this.routerNavigate = this.router.navigate.bind(this.router) as DataRouter['navigate'];
+    this.routerNavigate = this.router.navigate.bind(this.router) as Router['navigate'];
     this.router.navigate = this.navigateWithPortalPolicy;
 
     const RenderRouter: RouterComponentType = ({ BaseLayout = BlankComponent }) => {
