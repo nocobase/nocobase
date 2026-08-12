@@ -320,6 +320,9 @@ describe('plugin-ui-layout route permissions', () => {
     );
 
     const reports = await screen.findByRole('checkbox', { name: 'Allow access to Reports' });
+    await waitFor(() => {
+      expect(reports).not.toHaveStyle({ pointerEvents: 'none' });
+    });
 
     await act(async () => {
       await user.click(reports);
