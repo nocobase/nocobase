@@ -151,6 +151,7 @@ const providerDescriptions: Record<string, string> = {
   mimo: 'Xiaomi MIMO',
   mistral: 'Mistral models',
   orcarouter: 'OrcaRouter (model routing gateway)',
+  shengsuanyun: '300+ latest mainstream models across leading model families',
 };
 
 const providerSortOrder: string[] = [
