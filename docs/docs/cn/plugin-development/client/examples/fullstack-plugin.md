@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ## 第二步：定义数据表（服务端）
 
 新建 `src/server/collections/todoItems.ts`，NocoBase 会自动加载这个目录下的 collection 定义：

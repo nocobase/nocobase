@@ -49,6 +49,8 @@ yarn pm create @my-project/plugin-simple-action
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ## 第二步：创建操作模型
 
 每个操作需要声明它出现的场景，通过 `static scene` 属性指定：

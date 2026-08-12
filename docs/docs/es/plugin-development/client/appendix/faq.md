@@ -12,7 +12,7 @@ Aquí hemos recopilado los problemas más habituales al desarrollar plugins de c
 
 ### Tras crear el plugin no aparece en el gestor
 
-Compruebe que ejecutó `yarn pm create` en lugar de crear el directorio a mano. `yarn pm create`, además de generar archivos, registra el plugin en la tabla `applicationPlugins` de la base de datos. Si creó el directorio manualmente, ejecute `yarn nocobase upgrade` para que se vuelva a escanear.
+Compruebe que ejecutó `yarn pm create` en lugar de crear el directorio a mano. `yarn pm create`, además de generar archivos, actualiza `tsconfig.paths.json` y ejecuta `yarn postinstall`, que enlaza el plugin en `node_modules` y regenera el índice de plugins de cliente para que la aplicación pueda descubrirlo. Un directorio creado manualmente se salta ese paso: ejecute `yarn nocobase upgrade` para volver a escanear y registrarlo en la tabla `applicationPlugins`.
 
 ### Tras activar el plugin la página no cambia
 

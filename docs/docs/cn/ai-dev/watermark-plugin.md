@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 AI 在 `packages/plugins/@my-project/plugin-watermark/` 下生成了标准的插件目录结构。
 
+脚手架创建好后启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ### 3. 编写服务端代码
 
 AI 会生成以下文件：
