@@ -12,6 +12,7 @@ import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RestoreFromBackup } from '../components/RestoreFromBackup';
 import { RestoreFromLocal } from '../components/RestoreFromLocal';
+import { RestoreLoadingProvider } from '../components/RestoreLoadingProvider';
 
 const mocks = vi.hoisted(() => ({
   flowContext: {
@@ -34,6 +35,30 @@ const mocks = vi.hoisted(() => ({
     },
   },
 }));
+
+const backup = {
+  name: 'backup.zip',
+  fileSize: '10KB',
+  createdAt: '2026-07-03T00:00:00.000Z',
+  inProgress: false,
+};
+
+function RestoreRouteHarness() {
+  const [showRestore, setShowRestore] = React.useState(true);
+
+  return (
+    <>
+      <button type="button" onClick={() => setShowRestore(false)}>
+        navigate-away
+      </button>
+      {showRestore ? <RestoreFromBackup backup={backup} /> : <div>Other page</div>}
+    </>
+  );
+}
+
+function renderWithRestoreProvider(node: React.ReactNode) {
+  return render(<RestoreLoadingProvider>{node}</RestoreLoadingProvider>);
+}
 
 vi.mock('@nocobase/flow-engine', () => ({
   useFlowContext: () => mocks.flowContext,
@@ -108,16 +133,7 @@ describe('backup restore components', () => {
   });
 
   it('starts restoring from an existing backup and shows the checking message', async () => {
-    render(
-      <RestoreFromBackup
-        backup={{
-          name: 'backup.zip',
-          fileSize: '10KB',
-          createdAt: '2026-07-03T00:00:00.000Z',
-          inProgress: false,
-        }}
-      />,
-    );
+    renderWithRestoreProvider(<RestoreFromBackup backup={backup} />);
 
     fireEvent.click(screen.getByText('Restore'));
     expect(screen.getByText('Confirm the application database schema')).toBeInTheDocument();
@@ -137,10 +153,40 @@ describe('backup restore components', () => {
     );
     expect(mocks.restoreTaskId.current).toBe('restore-task-1');
     expect(mocks.showCheckBackupMessage).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Restoring backup')).toBeInTheDocument();
+  });
+
+  it('keeps restore loading mounted when the restore action subtree unmounts', async () => {
+    renderWithRestoreProvider(<RestoreRouteHarness />);
+
+    fireEvent.click(screen.getByText('Restore'));
+    fireEvent.click(screen.getByText('Submit'));
+    expect(await screen.findByText('Restoring backup')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('navigate-away'));
+
+    expect(screen.getByText('Other page')).toBeInTheDocument();
+    expect(screen.getByText('Restoring backup')).toBeInTheDocument();
+  });
+
+  it('disables every restore entry point while a restore is running', async () => {
+    renderWithRestoreProvider(
+      <>
+        <RestoreFromLocal />
+        <RestoreFromBackup backup={backup} />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore', exact: true }));
+    fireEvent.click(screen.getByText('Submit'));
+
+    expect(await screen.findByText('Restoring backup')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Restore', exact: true })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Restore backup from local/ })).toBeDisabled();
   });
 
   it('closes and resets the existing-backup restore dialog without submitting', () => {
-    render(
+    renderWithRestoreProvider(
       <RestoreFromBackup
         backup={{
           name: 'backup.zip',
@@ -165,7 +211,7 @@ describe('backup restore components', () => {
       }),
     );
 
-    render(
+    renderWithRestoreProvider(
       <RestoreFromBackup
         backup={{
           name: 'backup.zip',
@@ -199,7 +245,7 @@ describe('backup restore components', () => {
       },
     };
 
-    render(
+    renderWithRestoreProvider(
       <RestoreFromBackup
         backup={{
           name: 'backup.zip',
@@ -216,7 +262,7 @@ describe('backup restore components', () => {
   });
 
   it('requires a local backup file before uploading and restoring it', async () => {
-    render(<RestoreFromLocal />);
+    renderWithRestoreProvider(<RestoreFromLocal />);
 
     fireEvent.click(screen.getByText('Restore backup from local'));
     fireEvent.click(screen.getByText('Submit'));
@@ -235,12 +281,13 @@ describe('backup restore components', () => {
     );
     expect(mocks.restoreTaskId.current).toBe('restore-task-1');
     expect(mocks.showCheckBackupMessage).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Restoring backup')).toBeInTheDocument();
   });
 
   it('keeps the local restore dialog blocked when the request is interrupted', async () => {
     mocks.flowContext.api.request.mockRejectedValue(new Error('Network Error'));
 
-    render(<RestoreFromLocal />);
+    renderWithRestoreProvider(<RestoreFromLocal />);
     fireEvent.click(screen.getByText('Restore backup from local'));
     fireEvent.click(screen.getByText('select-file'));
     fireEvent.click(screen.getByText('Submit'));
@@ -252,7 +299,7 @@ describe('backup restore components', () => {
   });
 
   it('allows removing the selected local backup before submitting', () => {
-    render(<RestoreFromLocal />);
+    renderWithRestoreProvider(<RestoreFromLocal />);
 
     fireEvent.click(screen.getByText('Restore backup from local'));
     fireEvent.click(screen.getByText('select-file'));
@@ -264,7 +311,7 @@ describe('backup restore components', () => {
   });
 
   it('closes the local restore dialog without uploading', () => {
-    render(<RestoreFromLocal />);
+    renderWithRestoreProvider(<RestoreFromLocal />);
 
     fireEvent.click(screen.getByText('Restore backup from local'));
     fireEvent.click(screen.getByText('select-file'));

@@ -13,6 +13,8 @@ import { PluginBackupsClientV2 } from '../plugin';
 
 function createPlugin(app: Record<string, unknown> = {}) {
   let runtime: BackupRestoreRuntime | undefined;
+  const use = vi.fn();
+  Object.defineProperty(app, 'use', { value: use, configurable: true });
   const defineProperty = vi.fn((key: string, descriptor: { value: BackupRestoreRuntime }) => {
     if (key === BACKUP_RESTORE_RUNTIME_KEY) {
       runtime = descriptor.value;
@@ -54,17 +56,18 @@ function createPlugin(app: Record<string, unknown> = {}) {
     t: { value: (key: string) => key, configurable: true },
   });
 
-  return { plugin, defineProperty, addMenuItem, addPageTabItem, getRuntime: () => runtime };
+  return { plugin, use, defineProperty, addMenuItem, addPageTabItem, getRuntime: () => runtime };
 }
 
 describe('PluginBackupsClientV2', () => {
   it('registers settings menu tabs and backup restore runtime', async () => {
     const setMaintaining = vi.fn();
     const app = { error: undefined, maintaining: false, setMaintaining };
-    const { plugin, defineProperty, addMenuItem, addPageTabItem, getRuntime } = createPlugin(app);
+    const { plugin, use, defineProperty, addMenuItem, addPageTabItem, getRuntime } = createPlugin(app);
 
     await plugin.load();
 
+    expect(use).toHaveBeenCalledWith(expect.any(Function));
     expect(defineProperty).toHaveBeenCalledWith(BACKUP_RESTORE_RUNTIME_KEY, { value: expect.any(Object) });
     expect(addMenuItem).toHaveBeenCalledWith({
       key: 'backups',
