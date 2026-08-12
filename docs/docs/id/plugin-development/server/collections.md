@@ -197,12 +197,6 @@ Saat plugin pertama kali diaktifkan, sistem akan secara otomatis menyinkronkan k
 yarn nocobase upgrade
 ```
 
-Jika terjadi exception atau data kotor selama proses sinkronisasi, dapat membangun ulang struktur tabel dengan menginstal ulang aplikasi:
-
-```bash
-yarn nocobase install -f
-```
-
 Jika upgrade plugin perlu melakukan migrasi pada data yang ada — seperti rename field, split tabel, mengisi nilai default, dll. — harus ditangani melalui [Migration Skrip Upgrade](./migration.md), bukan dengan mengubah database secara manual.
 
 ## Membuat Collection Muncul di Daftar Tabel Data UI

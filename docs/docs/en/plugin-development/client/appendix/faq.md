@@ -12,7 +12,7 @@ This page collects common pitfalls when developing client plugins. If you run in
 
 ### Plugin not visible in the Plugin Manager after creation
 
-Make sure you ran `yarn pm create` instead of manually creating the directory. `yarn pm create` not only generates files but also registers the plugin in the `applicationPlugins` database table. If you created the directory manually, run `yarn nocobase upgrade` to trigger a rescan.
+Make sure you ran `yarn pm create` instead of manually creating the directory. Besides generating files, `yarn pm create` updates `tsconfig.paths.json` and runs `yarn postinstall`, which links the plugin into `node_modules` and regenerates the client plugin index so the application can discover it. A manually created directory skips that step — run `yarn nocobase upgrade` to rescan and register it in the `applicationPlugins` table.
 
 ### No changes on the page after enabling a plugin
 

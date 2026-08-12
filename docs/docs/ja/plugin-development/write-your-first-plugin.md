@@ -28,50 +28,83 @@ yarn pm create @my-project/plugin-hello
 コマンドが正常に実行されると、`packages/plugins/@my-project/plugin-hello` ディレクトリに基本ファイルが生成されます。デフォルトの構造は以下の通りです：
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client-v2.d.ts
-  ├─ client-v2.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # デフォルトでサーバーサイドプラグインをエクスポート
-     ├─ client-v2                 # クライアントサイドコードの格納場所
-     │  ├─ index.tsx             # デフォルトでエクスポートされるクライアントサイドプラグインクラス
-     │  ├─ plugin.tsx            # プラグインエントリ（@nocobase/client-v2 Plugin を継承）
-     │  ├─ models                # オプション：フロントエンドモデル（フローノードなど）
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # サーバーサイドコードの格納場所
-     │  ├─ index.ts              # デフォルトでエクスポートされるサーバーサイドプラグインクラス
-     │  ├─ plugin.ts             # プラグインエントリ（@nocobase/server Plugin を継承）
-     │  ├─ collections           # オプション：サーバーサイドの collections
-     │  ├─ migrations            # オプション：データ移行
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # オプション：多言語
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # v2 クライアントエントリの型宣言
+├─ client-v2.js              # v2 クライアントエントリ
+├─ client.d.ts               # v1 クライアントエントリの型宣言
+├─ client.js                 # v1 クライアントエントリ
+├─ server.d.ts               # サーバーエントリの型宣言
+├─ server.js                 # サーバーエントリ
+└─ src
+   ├─ index.ts               # デフォルトでサーバーサイドプラグインをエクスポート
+   ├─ client-v2              # v2 クライアントサイドコードの格納場所
+   │  ├─ index.tsx           # デフォルトでエクスポートされるクライアントサイドプラグインクラス
+   │  ├─ plugin.tsx          # プラグインエントリ（@nocobase/client-v2 Plugin を継承）
+   │  └─ client.d.ts
+   ├─ client                 # v1 クライアントサイドコードの格納場所
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # サーバーサイドコードの格納場所
+   │  ├─ index.ts            # デフォルトでエクスポートされるサーバーサイドプラグインクラス
+   │  ├─ plugin.ts           # プラグインエントリ（@nocobase/server Plugin を継承）
+   │  └─ collections         # サーバーサイドの collections（初期状態では空ディレクトリ）
+   └─ locale                 # 多言語リソース
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-作成後、ブラウザで「プラグインマネージャー」ページ（デフォルトアドレス：http://localhost:13000/admin/settings/plugin-manager）にアクセスし、プラグインがリストに表示されているか確認できます。
+スケルトンが生成するのは最小限の骨組みで、`src/client-v2/` にはエントリファイルしかありません。以降の手順で使う `models/` や `locale.ts` は自分で新規作成する必要があります。
+
+続いて開発モードを起動すると、以降はコードを修正するだけでホットリロードされます：
+
+- プロジェクトを NocoBase CLI（`nb init`）で作成した場合は、プロジェクトのルートディレクトリ（`<app-path>`）で以下を実行します：
+
+  ```bash
+  nb source dev
+  ```
+
+- 自分で clone した NocoBase ソースリポジトリの場合は、ソースコードのルートディレクトリで以下を実行します：
+
+  ```bash
+  yarn dev
+  ```
+
+起動後、ブラウザで「プラグインマネージャー」ページ（デフォルトアドレス：http://localhost:13000/admin/settings/plugin-manager）にアクセスし、プラグインがリストに表示されているか確認します。
 
 ## ステップ 2：シンプルなクライアントブロックを実装する
 
 次に、プラグインにカスタムブロックモデルを追加し、ウェルカムテキストを表示してみましょう。
 
-1. **新しいブロックモデルファイル** `client-v2/models/HelloBlockModel.tsx` を作成します：
+1. **翻訳ユーティリティファイル** `src/client-v2/locale.ts` を作成します。`tExpr` は名前空間付きの翻訳式を宣言するために、`useT` はコンポーネント内で翻訳関数を取得するために使います：
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **新しいブロックモデルファイル** `src/client-v2/models/HelloBlockModel.tsx` を作成します：
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -89,18 +122,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **ブロックモデルを登録します**。`client-v2/models/index.ts` を編集し、新しいモデルをエクスポートして、フロントエンドランタイムでロードできるようにします：
+3. **ブロックモデルを登録します**。モデルファイルを作成しただけでは不十分で、フロントエンドランタイムは `models/` ディレクトリを自動的にスキャンしないため、プラグインエントリで明示的に登録する必要があります。`src/client-v2/plugin.tsx` を編集し、`load()` の中で `registerModelLoaders` を使ってモデルのロード方法を宣言します：
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-コードを保存した後、開発スクリプトを実行している場合は、ターミナル出力にホットリロードのログが表示されるはずです。
+`registerModelLoaders` が受け取るのは遅延ロード用の関数で、モデルは実際に使われたときに初めてロードされます。キー名（`HelloBlockModel`）はモデルのクラス名と一致させる必要があり、ランタイムはこの名前でモジュールの名前付きエクスポートからモデルクラスを取り出します。
+
+コードを保存した後、開発モードを実行している場合は、ターミナル出力にホットリロードのログが表示されるはずです。
 
 ## ステップ 3：プラグインをアクティブ化して体験する
 
@@ -162,7 +204,7 @@ yarn nocobase tar @my-project/plugin-hello
 
 :::
 
-ビルドが完了すると、パッケージファイルはデフォルトで `storage/tar/@my-project/plugin-hello.tar.gz` に配置されます。
+ビルドが完了すると、パッケージファイルはデフォルトで `storage/tar/` ディレクトリに配置され、ファイル名は `<パッケージ名>-<バージョン番号>.tgz` になります。たとえば `storage/tar/@my-project/plugin-hello-0.1.0.tgz` です。
 
 :::tip 提示
 
@@ -173,6 +215,12 @@ yarn nocobase tar @my-project/plugin-hello
 ## ステップ 5：他の NocoBase アプリケーションにアップロードする
 
 パッケージファイルをターゲットアプリケーションの `./storage/plugins` ディレクトリにアップロードして解凍します。詳細な手順は [プラグインのインストールとアップグレード](../get-started/install-upgrade-plugins.mdx) を参照してください。
+
+ターゲットアプリケーションが NocoBase CLI（`nb init`）で作成されている場合は、`nb plugin import` で直接インポートすることもでき、手動で解凍する必要はありません：
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## 関連リンク
 

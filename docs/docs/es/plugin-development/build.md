@@ -1,6 +1,6 @@
 # Compilación y empaquetado
 
-Una vez finalizado el desarrollo del plugin, son necesarios dos pasos — compilación (transpilación del código fuente) y empaquetado (generación del archivo `.tar.gz`) — antes de poder distribuirlo a otras aplicaciones NocoBase.
+Una vez finalizado el desarrollo del plugin, son necesarios dos pasos — compilación (transpilación del código fuente) y empaquetado (generación del archivo `.tgz`) — antes de poder distribuirlo a otras aplicaciones NocoBase.
 
 ## Compilar el plugin
 
@@ -20,13 +20,13 @@ Si el plugin se crea en el repositorio de código fuente, la primera compilació
 
 ## Empaquetar el plugin
 
-El empaquetado comprime los artefactos de compilación en un archivo `.tar.gz` para facilitar su subida a otros entornos:
+El empaquetado comprime los artefactos de compilación en un archivo `.tgz` para facilitar su subida a otros entornos:
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-El archivo empaquetado se genera por defecto en `storage/tar/@my-project/plugin-hello.tar.gz`.
+El archivo empaquetado se genera por defecto en el directorio `storage/tar/`, con el nombre `<nombre-del-paquete>-<versión>.tgz` — por ejemplo, `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 También puede usar el parámetro `--tar` para combinar la compilación y el empaquetado en un solo paso:
 
@@ -36,7 +36,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Subir a otra aplicación de NocoBase
 
-Suba el archivo `.tar.gz` y descomprímalo en el directorio `./storage/plugins` de la aplicación de destino. Para más detalles, consulte [Instalar y actualizar plugins](../get-started/install-upgrade-plugins.mdx).
+Suba el archivo `.tgz` y descomprímalo en el directorio `./storage/plugins` de la aplicación de destino. Para más detalles, consulte [Instalar y actualizar plugins](../get-started/install-upgrade-plugins.mdx).
+
+Si la aplicación de destino se creó con la CLI de NocoBase (`nb init`), también puede importarlo directamente con `nb plugin import`, sin necesidad de descomprimirlo manualmente:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Habilitar plugins por defecto
 

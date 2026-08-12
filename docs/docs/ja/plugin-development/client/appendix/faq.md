@@ -12,7 +12,7 @@ keywords: "FAQ,よくある質問,トラブルシューティング,Troubleshoot
 
 ### プラグイン作成後にプラグインマネージャーに表示されない
 
-手動でディレクトリを作成するのではなく、`yarn pm create` を実行したか確認してください。`yarn pm create` はファイル生成だけでなく、データベースの `applicationPlugins` テーブルへの登録も行います。手動で作成してしまった場合は、`yarn nocobase upgrade` を実行して再スキャンできます。
+手動でディレクトリを作成するのではなく、`yarn pm create` を実行したか確認してください。`yarn pm create` はファイル生成だけでなく、`tsconfig.paths.json` の更新と `yarn postinstall` の実行も行います。後者がプラグインを `node_modules` にリンクし、クライアントプラグインのインデックスを再生成するため、アプリケーションがプラグインを検出できるようになります。手動で作成したディレクトリはこのステップが抜けているので、`yarn nocobase upgrade` を実行して再スキャンし、`applicationPlugins` テーブルに登録してください。
 
 ### プラグインを有効化してもページに変化がない
 
