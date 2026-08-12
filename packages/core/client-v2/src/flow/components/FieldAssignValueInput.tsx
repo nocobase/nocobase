@@ -27,7 +27,6 @@ import {
   getFormItemPreferredFieldPath,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
-import { RunJSValueEditor, type RunJSValueEditorProps } from './RunJSValueEditor';
 import { pickOperatorStyle as pickStyle, resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { normalizeFilterValueByOperator } from '../models/blocks/filter-form/valueNormalization';
@@ -53,7 +52,7 @@ interface Props {
   value: any;
   onChange: (value: any) => void;
   placeholder?: string;
-  /** 额外变量树（置于 Constant/Null/RunJS 与 base metaTree 之间） */
+  /** 额外变量树（置于 Constant/Null 与 base metaTree 之间） */
   extraMetaTree?: MetaTreeNode[];
   /** 可选：当前字段的筛选操作符，用于在默认值/赋值编辑器中按 operator schema 适配输入组件 */
   operator?: string;
@@ -70,10 +69,7 @@ interface Props {
    * @deprecated Date 已作为独立一级变量提供，此参数仅为调用兼容保留。
    */
   enableDateVariableAsConstant?: boolean;
-  /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
-  allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
-  sourceLabel?: string;
   disabled?: boolean;
   variableConverters?: VariableInputProps['converters'];
 }
@@ -512,9 +508,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   operatorMetaList,
   preferFormItemFieldModel,
   associationFieldNamesOverride,
-  allowRunJS = true,
   maxAssociationFieldDepth = 2,
-  sourceLabel,
   disabled = false,
   variableConverters,
 }) => {
@@ -1027,24 +1021,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     return N;
   }, [flowCtx]);
 
-  const sourceLabelRef = React.useRef(sourceLabel);
-  sourceLabelRef.current = sourceLabel;
-
-  const RunJSComponent = React.useMemo(() => {
-    const C = (inputProps: Pick<RunJSValueEditorProps, 'value' | 'onChange' | 'disabled'>): JSX.Element => (
-      <RunJSValueEditor
-        t={flowCtx.t}
-        value={inputProps?.value}
-        onChange={inputProps?.onChange}
-        disabled={inputProps?.disabled}
-        sourceLabel={sourceLabelRef.current}
-        surfaceStyle="value"
-        editorChrome="embedded"
-      />
-    );
-    return C;
-  }, [flowCtx]);
-
   const baseMetaTree = React.useMemo<() => Promise<MetaTreeNode[]>>(() => {
     return async () => {
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
@@ -1067,12 +1043,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       baseMetaTree={baseMetaTree}
       constantComponent={ConstantValueEditor}
       nullComponent={NullComponent}
-      runJSComponent={RunJSComponent}
       isDateLikeField={isDateLikeField}
       dateComponentProps={dateVariableComponentProps}
       style={{ width: '100%' }}
       clearValue={''}
-      allowRunJS={allowRunJS}
       disabled={disabled}
       converters={variableConverters}
     />

@@ -993,11 +993,7 @@ const FieldAssignRulesActionComponent: React.FC<
     [onChange],
   );
 
-  const getValueInputProps = React.useCallback(() => {
-    return {
-      sourceLabel: `${t('Linkage rule')} / ${t('Field assignment')} / ${t('RunJS')}`,
-    };
-  }, [t]);
+  const getValueInputProps = React.useCallback(() => ({}), []);
 
   return (
     <FieldAssignRulesEditor

@@ -50,6 +50,7 @@ function renderInput(options?: {
   value?: unknown;
   isDateLikeField?: boolean;
   dateComponentProps?: DateVariableComponentProps;
+  includeRunJS?: boolean;
 }) {
   const onChange = vi.fn();
   render(
@@ -59,7 +60,7 @@ function renderInput(options?: {
       baseMetaTree={[{ name: 'currentUser', title: 'Current user', type: 'object', paths: ['currentUser'] }]}
       constantComponent={ConstantComponent}
       nullComponent={NullComponent}
-      runJSComponent={RunJSComponent}
+      runJSComponent={options?.includeRunJS === false ? undefined : RunJSComponent}
       isDateLikeField={options?.isDateLikeField ?? false}
       dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
     />,
@@ -108,6 +109,23 @@ describe('FieldValueVariableInput', () => {
       'nextYear',
     ]);
     expect(tree[4].name).toBe('currentUser');
+  });
+
+  it('omits RunJS when the host does not provide an editor', async () => {
+    const runJSValue = { code: 'return 1;', version: 'v2' };
+    renderInput({ value: runJSValue, includeRunJS: false });
+
+    const tree = await resolveMetaTree();
+    expect(tree.map((node) => node.name)).toEqual(['constant', 'null', 'date', 'currentUser']);
+    expect(mocks.variableInputProps?.converters?.resolvePathFromValue?.(runJSValue)).toEqual(['constant']);
+    expect(
+      mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+        name: 'runjs',
+        title: 'RunJS',
+        type: 'object',
+        paths: ['runjs'],
+      }),
+    ).toBeUndefined();
   });
 
   it('does not allow Now for pure date fields', async () => {

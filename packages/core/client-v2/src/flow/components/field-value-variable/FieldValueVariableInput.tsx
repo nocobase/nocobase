@@ -67,7 +67,7 @@ export type FieldValueVariableInputProps = Omit<
   baseMetaTree: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
   constantComponent: ValueEditorComponent;
   nullComponent: ValueEditorComponent;
-  runJSComponent: ValueEditorComponent;
+  runJSComponent?: ValueEditorComponent;
   isDateLikeField: boolean;
   dateComponentProps: DateVariableComponentProps;
   allowRunJS?: boolean;
@@ -238,7 +238,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           selectable: false,
           children: dateChildren,
         },
-        ...(allowRunJS
+        ...(allowRunJS && RunJSComponent
           ? [
               {
                 title: tExpr('RunJS'),
@@ -295,7 +295,7 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           if (firstPath === 'constant') return ConstantComponent;
           if (firstPath === 'null') return NullComponent;
           if (firstPath === 'date') return DateEditor;
-          if (allowRunJS && firstPath === 'runjs') return RunJSComponent;
+          if (allowRunJS && RunJSComponent && firstPath === 'runjs') return RunJSComponent;
           return null;
         },
         resolveValueFromPath: (item) => {
@@ -307,14 +307,14 @@ export const FieldValueVariableInput: React.FC<FieldValueVariableInputProps> = (
           if (firstPath === 'date') {
             return createInitialDateConfig(item.paths[1], isDateLikeField, dateComponentProps);
           }
-          if (allowRunJS && firstPath === 'runjs') return { code: '', version: 'v2' };
+          if (allowRunJS && RunJSComponent && firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
           const external = converters?.resolvePathFromValue?.(currentValue);
           if (external !== undefined) return external;
           if (currentValue === null) return ['null'];
-          if (allowRunJS && isRunJSValue(currentValue)) return ['runjs'];
+          if (allowRunJS && RunJSComponent && isRunJSValue(currentValue)) return ['runjs'];
           if (isDateVariableEditConfig(currentValue)) return ['date', getDateNodeName(currentValue)];
           return typeof currentValue === 'string' && isVariableExpression(currentValue)
             ? parseValueToPath(currentValue)

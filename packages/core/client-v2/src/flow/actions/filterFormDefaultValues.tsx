@@ -46,25 +46,21 @@ const FilterFormDefaultValuesUI = observer(
     const getValueInputProps = React.useCallback(
       (item: FieldAssignRuleItem) => {
         const targetPath = item?.targetPath ? String(item.targetPath) : '';
-        const sourceProps = {
-          sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
-        };
-        if (!targetPath) return sourceProps;
+        if (!targetPath) return {};
         const fieldModel: any = findFormItemModelByFieldPath(ctx.model, targetPath);
-        if (!fieldModel) return sourceProps;
+        if (!fieldModel) return {};
         const operator = getDefaultOperator(fieldModel);
         const opList =
           fieldModel?.collectionField?.filterable?.operators ||
           (fieldModel?.context?.filterField?.type ? (operators as any)?.[fieldModel.context.filterField.type] : []) ||
           [];
         return {
-          ...sourceProps,
           operator,
           operatorMetaList: opList,
           preferFormItemFieldModel: true,
         };
       },
-      [ctx.model, t],
+      [ctx.model],
     );
 
     // 兼容：将字段级默认值（filterFormItemSettings.initialValue）合并到表单级 defaultValues 里展示。

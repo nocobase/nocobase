@@ -230,7 +230,6 @@ export function AssignedFieldsEditor({
                   targetPath={field.name}
                   value={normalizedValue[field.name]}
                   onChange={(nextValue) => updateValue(field.name, nextValue)}
-                  allowRunJS={false}
                   disabled={mergedDisabled}
                   variableConverters={{
                     resolvePathFromValue: (currentValue) =>

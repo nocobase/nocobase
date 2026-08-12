@@ -79,11 +79,7 @@ const FormAssignRulesUI = observer(
       [canEdit, markInitialized, onChange],
     );
 
-    const getValueInputProps = React.useCallback(() => {
-      return {
-        sourceLabel: `${t('Field values')} / ${t('RunJS')}`,
-      };
-    }, [t]);
+    const getValueInputProps = React.useCallback(() => ({}), []);
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并（以免重复添加）。
     React.useEffect(() => {
