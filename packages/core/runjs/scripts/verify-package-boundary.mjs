@@ -35,7 +35,10 @@ async function main() {
   const runJSManifest = readJson(path.join(runJSRoot, 'package.json'));
   const pluginManifest = readJson(path.join(pluginRoot, 'package.json'));
   const clientV2Manifest = readJson(path.join(clientV2Root, 'package.json'));
-  const verifyRealClientTopology = process.platform !== 'win32';
+  if (options.realClientV2 && process.platform === 'win32') {
+    throw new Error('--real-client-v2 is not supported on Windows');
+  }
+  const verifyRealClientTopology = options.realClientV2;
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'nocobase-runjs-package-boundary-'));
 
   try {
@@ -131,11 +134,15 @@ async function main() {
 }
 
 function parseOptions(args) {
-  const options = { json: false, repositoryRoot: undefined };
+  const options = { json: false, realClientV2: false, repositoryRoot: undefined };
   for (let index = 0; index < args.length; index += 1) {
     const argument = args[index];
     if (argument === '--json') {
       options.json = true;
+      continue;
+    }
+    if (argument === '--real-client-v2') {
+      options.realClientV2 = true;
       continue;
     }
     if (argument === '--repository-root') {

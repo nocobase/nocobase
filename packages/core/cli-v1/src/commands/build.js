@@ -26,7 +26,6 @@ module.exports = (cli) => {
     .option('-w, --watch', 'watch compile the @nocobase/build package')
     .option('-s, --sourcemap', 'generate sourcemap')
     .option('--no-dts', 'not generate dts')
-    .option('--with-deps', 'build selected packages with their internal dependencies and peer dependencies')
     .action(async (pkgs, options) => {
       nodeCheck();
       process.env['VITE_CJS_IGNORE_WARNING'] = 'true';
@@ -49,7 +48,6 @@ module.exports = (cli) => {
         !options.dts ? '--no-dts' : '',
         options.sourcemap ? '--sourcemap' : '',
         options.retry ? '--retry' : '',
-        options.withDeps ? '--with-deps' : '',
       ]);
       buildIndexHtml(true);
     });
