@@ -8,12 +8,13 @@
  */
 
 import { useFlowModel } from '@nocobase/flow-engine';
-import { Result } from 'antd';
+import { useMemoizedFn } from 'ahooks';
+import { Button, Result } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockItemCard } from '../BlockItemCard';
-import { BlockModel } from '../../models/base/BlockModel';
+import type { BlockModel } from '../../models/base/BlockModel';
 
 function getResourceSettingsInitParams(model: any) {
   if (typeof model?.getResourceSettingsInitParams === 'function') {
@@ -43,26 +44,46 @@ function getBlockResourceInfo(model: any, t: (key: string) => string) {
   const dataSourceName = dataSource ? t(dataSource.displayName || dataSource.key) : dataSourceKey;
   const collectionLabel = collectionName ? `${t(collectionName) || collectionName}` : '';
   const dataSourceLabel = dataSourceName ? `${t(dataSourceName)} > ` : '';
+  const isDataSourceLoadFailed = ['loading-failed', 'reloading-failed'].includes(dataSource?.status);
 
   return {
     dataSourceName,
     nameValue: `${dataSourceLabel}${collectionLabel}`,
-    isDataSourceUnavailable: Boolean(dataSourceKey && !dataSource),
+    isDataSourceLoadFailed,
+    isDataSourceUnavailable: Boolean(dataSourceKey && (!dataSource || isDataSourceLoadFailed)),
   };
 }
 
-function DataSourceUnavailablePlaceholder({ dataSourceName }: { dataSourceName?: string }) {
+function getTemporarilyUnavailableMessage(t: (key: string, options?: Record<string, string>) => string, name?: string) {
+  return name
+    ? t('The data source "{{name}}" is temporarily unavailable. Please try again later or contact an administrator.', {
+        name,
+      })
+    : t('The data source is temporarily unavailable. Please try again later or contact an administrator.');
+}
+
+function DataSourceUnavailablePlaceholder({
+  dataSourceName,
+  isLoadFailed,
+}: {
+  dataSourceName?: string;
+  isLoadFailed?: boolean;
+}) {
   const { t } = useTranslation();
-  const subTitle = dataSourceName
-    ? t(
-        'The data source "{{name}}" used by this block is disabled or unavailable. Enable the data source to display this block.',
-        { name: dataSourceName },
-      )
-    : t('The data source used by this block is disabled or unavailable. Enable the data source to display this block.');
+  const subTitle = isLoadFailed
+    ? getTemporarilyUnavailableMessage(t, dataSourceName)
+    : dataSourceName
+      ? t(
+          'The data source "{{name}}" used by this block is disabled or unavailable. Enable the data source to display this block.',
+          { name: dataSourceName },
+        )
+      : t(
+          'The data source used by this block is disabled or unavailable. Enable the data source to display this block.',
+        );
 
   return (
-    <BlockItemCard>
-      <Result status="403" subTitle={subTitle}></Result>
+    <BlockItemCard role="alert" aria-live="polite">
+      <Result status={isLoadFailed ? 'warning' : '403'} subTitle={subTitle}></Result>
     </BlockItemCard>
   );
 }
@@ -70,7 +91,7 @@ function DataSourceUnavailablePlaceholder({ dataSourceName }: { dataSourceName?:
 export const BlockPlaceholder = () => {
   const { t } = useTranslation();
   const model: BlockModel = useFlowModel();
-  const { dataSourceName, isDataSourceUnavailable, nameValue } = useMemo(() => {
+  const { dataSourceName, isDataSourceLoadFailed, isDataSourceUnavailable, nameValue } = useMemo(() => {
     return getBlockResourceInfo(model, t);
   }, [model, t]);
 
@@ -86,10 +107,7 @@ export const BlockPlaceholder = () => {
   }, [actionName, nameValue, t]);
 
   if (isDataSourceUnavailable) {
-    if (!model.context.flowSettingsEnabled) {
-      return null;
-    }
-    return <DataSourceUnavailablePlaceholder dataSourceName={dataSourceName} />;
+    return <DataSourceUnavailablePlaceholder dataSourceName={dataSourceName} isLoadFailed={isDataSourceLoadFailed} />;
   }
 
   return (
@@ -101,8 +119,8 @@ export const BlockPlaceholder = () => {
 
 export function BlockDeletePlaceholder() {
   const { t } = useTranslation();
-  const model: any = useFlowModel();
-  const { dataSourceName, isDataSourceUnavailable, nameValue } = useMemo(() => {
+  const model: BlockModel = useFlowModel();
+  const { dataSourceName, isDataSourceLoadFailed, isDataSourceUnavailable, nameValue } = useMemo(() => {
     return getBlockResourceInfo(model, t);
   }, [model, t]);
 
@@ -115,15 +133,44 @@ export function BlockDeletePlaceholder() {
   }, [nameValue, t]);
 
   if (isDataSourceUnavailable) {
-    if (!model.context.flowSettingsEnabled) {
-      return null;
-    }
-    return <DataSourceUnavailablePlaceholder dataSourceName={dataSourceName} />;
+    return <DataSourceUnavailablePlaceholder dataSourceName={dataSourceName} isLoadFailed={isDataSourceLoadFailed} />;
   }
 
   return (
     <BlockItemCard>
       <Result status="404" subTitle={messageValue}></Result>
+    </BlockItemCard>
+  );
+}
+
+type RefreshableBlockModel = BlockModel & {
+  refresh?: () => Promise<unknown> | unknown;
+};
+
+export function BlockResourceErrorPlaceholder() {
+  const { t } = useTranslation();
+  const model = useFlowModel() as RefreshableBlockModel;
+  const { dataSourceName } = useMemo(() => getBlockResourceInfo(model, t), [model, t]);
+  const handleRetry = useMemoizedFn(async () => {
+    try {
+      await model.refresh?.();
+    } catch {
+      // The resource retains the latest error and keeps this placeholder visible.
+    }
+  });
+
+  return (
+    <BlockItemCard ref={model.context.ref} {...model.decoratorProps} role="alert" aria-live="polite">
+      <Result
+        status="warning"
+        title={t('Data loading failed')}
+        subTitle={getTemporarilyUnavailableMessage(t, dataSourceName)}
+        extra={
+          <Button type="primary" onClick={handleRetry}>
+            {t('Try again')}
+          </Button>
+        }
+      />
     </BlockItemCard>
   );
 }
