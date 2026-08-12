@@ -101,10 +101,6 @@ vi.mock('../ChatButton', () => ({
   ChatButton: () => null,
 }));
 
-vi.mock('../DebugPanel', () => ({
-  DebugPanel: () => null,
-}));
-
 vi.mock('../ToolModal', () => ({
   ToolModal: () => null,
 }));

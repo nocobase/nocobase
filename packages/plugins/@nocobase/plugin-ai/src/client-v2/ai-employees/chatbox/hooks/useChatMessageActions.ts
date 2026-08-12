@@ -15,7 +15,6 @@ import { AIEmployee, Attachment, ContextItem, Message, ResendOptions, SendOption
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { flattenMessages, parseWorkContext } from '../utils';
-import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { FlowUtils } from '../../flow';
@@ -235,26 +234,12 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
           }
         }
 
-        // [AI_DEBUG] backend tool results
         for (const msg of newMessages) {
           const toolCalls = msg.content?.tool_calls;
           if (toolCalls?.length) {
             for (const tc of toolCalls) {
               if (tc.willInterrupt) {
                 chatToolCallModel.updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
-              }
-              if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
-                const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
-                aiDebugLogger.log(sessionId, 'tool_result', {
-                  toolCallId: tc.id,
-                  toolName: tc.name,
-                  args: tc.args,
-                  status: tc.status,
-                  invokeStatus: tc.invokeStatus,
-                  auto: tc.auto,
-                  execution: 'backend',
-                  contentPreview: contentStr?.slice(0, 500),
-                });
               }
             }
           }
@@ -443,10 +428,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       const processReasoning = (data: StreamData, store: MessagesStore) => {
         const body = getStreamBody(data);
         if (data.type === 'reasoning' && body?.content && typeof body.content === 'string') {
-          aiDebugLogger.log(data.sessionId, 'stream_reasoning', {
-            phase: 'delta',
-            preview: body.content?.slice?.(0, 120) || '',
-          });
           enqueueStreamUpdate(getStreamUpdateKey(data), store, {
             from: data.from,
             content: '',
@@ -458,9 +439,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
       const processContent = (data: StreamData, store: MessagesStore) => {
         if (data.type === 'content' && data.body && typeof data.body === 'string') {
-          aiDebugLogger.log(data.sessionId, 'stream_text', {
-            preview: data.body?.slice?.(0, 100) || '',
-          });
           enqueueStreamUpdate(getStreamUpdateKey(data), store, {
             from: data.from,
             content: data.body,
@@ -472,9 +450,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       const processToolCallChunks = (data: StreamData, store: MessagesStore) => {
         const chunks = getStreamToolCallChunks(data);
         if (data.type === 'tool_call_chunks' && chunks.length > 0) {
-          aiDebugLogger.log(data.sessionId, 'stream_delta', {
-            chunk: chunks[0],
-          });
           store.updateLast((last) => {
             const toolCalls = last.content.tool_calls || [];
             const toolCallChunk = chunks[0];
@@ -567,9 +542,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
       const processWebSearch = (data: StreamData) => {
         const actions = Array.isArray(data.body) ? data.body : [];
         if (data.type === 'web_search' && actions.length) {
-          aiDebugLogger.log(data.sessionId, 'stream_search', {
-            actions,
-          });
           for (const item of actions) {
             sessionChat.setWebSearching(item as Parameters<typeof sessionChat.setWebSearching>[0]);
           }
@@ -578,7 +550,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
       const processNewMessage = (data: StreamData, store: MessagesStore) => {
         if (data.type === 'new_message') {
-          aiDebugLogger.log(data.sessionId, 'stream_start', {});
           store.addMessage({
             key: randomId(),
             role: aiEmployee.username,
@@ -591,9 +562,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
 
       const processError = (data: StreamData) => {
         if (data.type === 'error') {
-          aiDebugLogger.log(data.sessionId, 'stream_error', {
-            message: data.body,
-          });
           error = true;
           result = data.errorName ? data.errorName : String(data.body);
         }
@@ -689,12 +657,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
         result = getErrorMessage(err);
         sessionChat.setResponseLoading(false);
         onResponseLoadingChange?.(false);
-
-        aiDebugLogger.log(sessionId, 'error', {
-          message: getErrorMessage(err),
-          stack: err instanceof Error ? err.stack?.slice(0, 500) : undefined,
-          context: { phase: 'stream_processing' },
-        });
       }
 
       if (error) {
@@ -749,21 +711,6 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
     // Read model from store at call time to avoid stale closure
     const model = inputModel ?? chatBoxModel.model;
 
-    // [AI_DEBUG] request
-    aiDebugLogger.log(
-      sessionId || 'pending',
-      'request',
-      {
-        action: 'sendMessages',
-        employeeId: aiEmployee?.username,
-        model: model?.model,
-        messagesCount: sendMsgs.length,
-        hasAttachments: attachments?.length > 0,
-        hasContext: workContext?.length > 0,
-        editingMessageId,
-      },
-      { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
-    );
     const sessionMessages = Array.isArray(sessionChat.messages) ? sessionChat.messages : [];
     const renderedSessionMessages = flattenMessages(sessionMessages);
     const last = sessionMessages[sessionMessages.length - 1];

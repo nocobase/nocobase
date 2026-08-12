@@ -71,10 +71,6 @@ vi.mock('../../components/ChatBox', () => ({
   ChatBox: () => <div data-testid="chat-box" />,
 }));
 
-vi.mock('../../components/DebugPanel', () => ({
-  DebugPanel: () => <div data-testid="debug-panel" />,
-}));
-
 vi.mock('../../components/ToolModal', () => ({
   ToolModal: () => <div data-testid="tool-modal" />,
 }));
@@ -93,7 +89,6 @@ afterEach(() => {
   const runtime = getGlobalChatBoxRuntime();
   runtime.chatBoxModel.setOpen(false);
   runtime.chatBoxModel.setExpanded(false);
-  runtime.chatBoxModel.setShowDebugPanel(false);
   runtime.chatSenderModel.setSenderValue('');
   runtime.chatToolModel.setActiveTool(null);
   runtime.chatToolModel.setOpenToolModal(false);
@@ -255,7 +250,6 @@ describe('chatbox runtime context', () => {
     expect(screen.getByTestId('chat-box')).toBeTruthy();
 
     act(() => {
-      runtime.chatBoxModel.setShowDebugPanel(true);
       runtime.chatToolModel.setActiveTool({
         id: 'tool-a',
         type: 'function',
@@ -266,7 +260,6 @@ describe('chatbox runtime context', () => {
       });
     });
 
-    expect(screen.getByTestId('debug-panel')).toBeTruthy();
     expect(screen.getByTestId('tool-modal')).toBeTruthy();
 
     act(() => {
