@@ -188,6 +188,9 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
   );
 
   const searchIsActive = Boolean(searchValueRef.current.trim());
+  // ArrayItems can reuse this component after a value change. Remount Cascader so rc-cascader cannot retain
+  // path entities created from the previous lazy-loaded relation path.
+  const valueKey = getValueKey(cascaderValue);
 
   const displayRender = React.useCallback(
     (labels, selectedOptions) => {
@@ -206,6 +209,7 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
 
   return (
     <Cascader
+      key={valueKey}
       {...others}
       value={cascaderValue}
       fieldNames={exportFieldNames}
