@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import '../../../../index';
 import { FilterableItemModel, FlowEngine } from '@nocobase/flow-engine';
 import { CollectionBlockModel } from '../../../base';
+import { CascadeSelectFieldModel } from '../../../fields/AssociationFieldModel/CascadeSelectFieldModel';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
 import { NumberFieldModel } from '../../../fields/NumberFieldModel';
 import { FilterFormRecordSelectFieldModel } from '../fields/FilterFormRecordSelectFieldModel';
@@ -430,6 +431,122 @@ describe('FilterFormItemModel defineChildren association fields', () => {
 
     expect(filterItem.fieldPath).toBe('birthPlace');
     expect(filterItem.subModels.field).toBeInstanceOf(TestCascaderFilterFieldModel);
+  });
+
+  it('uses Cascader by default for tree to-one associations and keeps Dropdown for other associations', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FilterFormItemModel: FilterFormItemModel as any,
+      DummyCollectionBlockModel,
+      CascadeSelectFieldModel,
+      FilterFormRecordSelectFieldModel,
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds?.addCollection({
+      name: 'organizations',
+      template: 'tree',
+      filterTargetKey: 'id',
+      titleField: 'name',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+    ds?.addCollection({
+      name: 'departments',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number', filterable: { operators: [] } },
+        { name: 'name', type: 'string', interface: 'input', filterable: { operators: [] } },
+      ],
+    });
+    ds?.addCollection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [
+        {
+          name: 'organization',
+          title: 'Organization',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'organizations',
+          filterable: { operators: [] },
+        },
+        {
+          name: 'department',
+          title: 'Department',
+          type: 'belongsTo',
+          interface: 'm2o',
+          target: 'departments',
+          filterable: { operators: [] },
+        },
+        {
+          name: 'organizations',
+          title: 'Organizations',
+          type: 'belongsToMany',
+          interface: 'm2m',
+          target: 'organizations',
+          filterable: { operators: [] },
+        },
+      ],
+    });
+
+    const model = engine.createModel<DummyCollectionBlockModel>({
+      uid: 'users-tree-association-block',
+      use: 'DummyCollectionBlockModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+        },
+      },
+    });
+
+    const children = (await FilterFormItemModel.defineChildren({
+      blockGridModel: {
+        filterSubModels: (_key: string, predicate: (item: any) => boolean) => [model].filter(predicate),
+      },
+      t: (value: string) => value,
+    } as any)) as any[];
+    const groups = await children[0].children();
+    const fieldsGroup = groups.find((group: any) => group.key === 'fields');
+    const organizationItem = fieldsGroup?.children?.find((item: any) => item.key === 'organization');
+    const departmentItem = fieldsGroup?.children?.find((item: any) => item.key === 'department');
+    const organizationsItem = fieldsGroup?.children?.find((item: any) => item.key === 'organizations');
+
+    const organizationCreateOptions = await organizationItem.createModelOptions();
+    const departmentCreateOptions = await departmentItem.createModelOptions();
+    const organizationsCreateOptions = await organizationsItem.createModelOptions();
+
+    expect(organizationCreateOptions.subModels.field.use).toBe('CascadeSelectFieldModel');
+    expect(organizationCreateOptions.subModels.field.props).toMatchObject({
+      fieldNames: { label: 'name', value: 'id' },
+    });
+    expect(departmentCreateOptions.subModels.field.use).toBe('FilterFormRecordSelectFieldModel');
+    expect(organizationsCreateOptions.subModels.field.use).toBe('FilterFormRecordSelectFieldModel');
+
+    const filterItem = engine.createModel<FilterFormItemModel>({
+      uid: 'filter-item-tree-organization',
+      ...organizationCreateOptions,
+    });
+    const modelStep = filterItem.getFlow('filterFormItemSettings')?.steps?.model as any;
+    const settingsContext = {
+      engine,
+      collectionField: ds?.getCollection('users')?.getField('organization'),
+      t: (value: string) => engine.translate(value),
+    };
+    const options = modelStep.uiMode(settingsContext).props.options;
+
+    expect(modelStep.hideInSettings(settingsContext)).not.toBe(true);
+    expect(options).toEqual(
+      expect.arrayContaining([
+        { label: 'Dropdown select', value: 'FilterFormRecordSelectFieldModel' },
+        { label: 'Cascader', value: 'CascadeSelectFieldModel' },
+      ]),
+    );
   });
 
   it('provides fallback field metadata for sql fields without collection context', async () => {
