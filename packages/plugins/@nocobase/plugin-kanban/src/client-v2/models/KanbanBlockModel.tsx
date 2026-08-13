@@ -1180,7 +1180,12 @@ export class KanbanBlockModel extends CollectionBlockModel<{
       return;
     }
 
-    const action = await this.ensureCardViewAction();
+    // The drawer content is stored under the hidden card action. Persist that
+    // host before users add blocks in configuration mode so the content can be
+    // loaded again after the drawer is destroyed.
+    const action = this.context?.flowSettingsEnabled
+      ? await this.ensureCardViewAction({ persist: true })
+      : await this.ensureCardViewAction();
     if (!action || !record) {
       await this.openEmptyPopupShell({
         mode: this.getCardOpenMode(),
