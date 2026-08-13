@@ -8,6 +8,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { buildRunJSSourceRepositoryIdentity } from '@nocobase/runjs/workspace/server';
 import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 
 import {
@@ -346,6 +347,214 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
       });
       expect(model.settings?.code).toBeUndefined();
     }
+  }, 120000);
+
+  it('archives every complete JS host repository when its owning page is destroyed', async () => {
+    const page = await createPage(context.rootAgent, {
+      title: `Disposable RunJS host matrix ${Date.now()}`,
+      tabTitle: 'Main',
+    });
+    const table = await addBlockData(context.rootAgent, {
+      target: { uid: page.tabSchemaUid },
+      type: 'table',
+      resourceInit: { dataSourceKey: 'main', collectionName: 'users' },
+    });
+    const createForm = await addBlockData(context.rootAgent, {
+      target: { uid: page.tabSchemaUid },
+      type: 'createForm',
+      resourceInit: { dataSourceKey: 'main', collectionName: 'users' },
+    });
+    const disposableHosts = [
+      expectWorkspaceResult(
+        getData(
+          await context.rootAgent.resource('flowSurfaces').addBlock({
+            values: { target: { uid: page.tabSchemaUid }, type: 'jsBlock' },
+          }),
+        ),
+        'JSBlockModel',
+      ),
+      expectWorkspaceResult(
+        getData(
+          await context.rootAgent.resource('flowSurfaces').addField({
+            values: { target: { uid: table.uid }, fieldPath: 'nickname', renderer: 'js' },
+          }),
+        ),
+        'JSFieldModel',
+      ),
+      expectWorkspaceResult(
+        getData(
+          await context.rootAgent.resource('flowSurfaces').addField({
+            values: { target: { uid: table.uid }, type: 'jsColumn' },
+          }),
+        ),
+        'JSColumnModel',
+      ),
+      expectWorkspaceResult(
+        getData(
+          await context.rootAgent.resource('flowSurfaces').addField({
+            values: { target: { uid: createForm.uid }, type: 'jsItem' },
+          }),
+        ),
+        'JSItemModel',
+      ),
+    ];
+    const identities = disposableHosts.map((host) => buildRunJSSourceRepositoryIdentity(host.locator));
+    for (const identity of identities) {
+      expect(
+        await context.db.getRepository('vscFileRepositories').findOne({ filter: { ...identity, status: 'active' } }),
+      ).toBeTruthy();
+    }
+
+    const destroyResponse = await context.rootAgent.resource('flowSurfaces').destroyPage({
+      values: { uid: page.pageUid },
+    });
+    expect(destroyResponse.status, readErrorMessage(destroyResponse)).toBe(200);
+
+    for (const identity of identities) {
+      const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
+      expect(repository?.get('status')).toBe('archived');
+    }
+  }, 120000);
+
+  it('archives a JS Page repository when the page is destroyed', async () => {
+    const jsPage = getData(
+      await context.rootAgent.resource('flowSurfaces').createPage({
+        values: {
+          pageType: 'js-page',
+          idempotencyKey: `disposable-runjs-page-${Date.now()}`,
+          title: 'Disposable RunJS page',
+          icon: 'CodeOutlined',
+        },
+      }),
+    );
+    const host = expectWorkspaceResult(jsPage, 'JSPageModel');
+    const identity = buildRunJSSourceRepositoryIdentity(host.locator);
+    expect(
+      await context.db.getRepository('vscFileRepositories').findOne({ filter: { ...identity, status: 'active' } }),
+    ).toBeTruthy();
+
+    const destroyResponse = await context.rootAgent.resource('flowSurfaces').destroyPage({
+      values: { uid: host.locator.modelUid },
+    });
+    expect(destroyResponse.status, readErrorMessage(destroyResponse)).toBe(200);
+
+    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
+    expect(repository?.get('status')).toBe('archived');
+    expect(await context.flowRepo.findModelById(host.locator.modelUid, { includeAsyncNode: true })).toBeNull();
+  }, 120000);
+
+  it('archives a JS host repository when its route-backed tab is removed', async () => {
+    const page = await createPage(context.rootAgent, {
+      title: `Disposable RunJS tab ${Date.now()}`,
+      tabTitle: 'Main',
+      enableTabs: true,
+    });
+    const addedTab = getData(
+      await context.rootAgent.resource('flowSurfaces').addTab({
+        values: { target: { uid: page.pageUid }, title: 'Disposable' },
+      }),
+    );
+    const host = expectWorkspaceResult(
+      getData(
+        await context.rootAgent.resource('flowSurfaces').addBlock({
+          values: { target: { uid: addedTab.tabSchemaUid }, type: 'jsBlock' },
+        }),
+      ),
+      'JSBlockModel',
+    );
+    const identity = buildRunJSSourceRepositoryIdentity(host.locator);
+
+    const removeResponse = await context.rootAgent.resource('flowSurfaces').removeTab({
+      values: { uid: addedTab.tabSchemaUid },
+    });
+    expect(removeResponse.status, readErrorMessage(removeResponse)).toBe(200);
+
+    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
+    expect(repository?.get('status')).toBe('archived');
+    expect(await context.flowRepo.findModelById(host.locator.modelUid, { includeAsyncNode: true })).toBeNull();
+  }, 120000);
+
+  it('archives RunJS repositories through raw flowModels deletion', async () => {
+    const page = await createPage(context.rootAgent, {
+      title: `Disposable raw FlowModel ${Date.now()}`,
+      tabTitle: 'Main',
+    });
+    const host = expectWorkspaceResult(
+      getData(
+        await context.rootAgent.resource('flowSurfaces').addBlock({
+          values: { target: { uid: page.tabSchemaUid }, type: 'jsBlock' },
+        }),
+      ),
+      'JSBlockModel',
+    );
+    const identity = buildRunJSSourceRepositoryIdentity(host.locator);
+
+    const destroyResponse = await context.rootAgent.resource('flowModels').destroy({
+      filterByTk: host.locator.modelUid,
+    });
+    expect(destroyResponse.status, readErrorMessage(destroyResponse)).toBe(200);
+
+    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
+    expect(repository?.get('status')).toBe('archived');
+  }, 120000);
+
+  it('archives a legacy tab-anchor RunJS repository when converting a pending menu route into a JS Page', async () => {
+    const menu = getData(
+      await context.rootAgent.resource('flowSurfaces').createMenu({
+        values: {
+          title: `Convertible JS Page ${Date.now()}`,
+          type: 'item',
+          icon: 'FileOutlined',
+        },
+      }),
+    );
+    await context.flowRepo.upsertModel(
+      {
+        uid: menu.tabSchemaUid,
+        use: 'RootPageTabModel',
+        flowRegistry: {
+          beforeRender: {
+            key: 'beforeRender',
+            on: 'beforeRender',
+            steps: {
+              runLegacy: {
+                use: 'runjs',
+                defaultParams: { code: "ctx.logger?.info?.('Convertible');" },
+              },
+            },
+          },
+        },
+      },
+      {},
+    );
+    const runJSLocator = {
+      kind: 'flowModel.flowRegistry.runjs' as const,
+      modelUid: menu.tabSchemaUid,
+      flowKey: 'beforeRender',
+      stepKey: 'runLegacy',
+      sourcePath: ['defaultParams', 'code'],
+    };
+    const identity = buildRunJSSourceRepositoryIdentity(runJSLocator);
+    await context.db.getRepository('vscFileRepositories').create({
+      values: {
+        id: `convertible-${menu.tabSchemaUid}`,
+        ...identity,
+        status: 'active',
+      },
+    });
+
+    const convertResponse = await context.rootAgent.resource('flowSurfaces').createPage({
+      values: {
+        menuRouteId: menu.routeId,
+        pageType: 'js-page',
+        title: 'Converted JS Page',
+      },
+    });
+    expect(convertResponse.status, readErrorMessage(convertResponse)).toBe(200);
+
+    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
+    expect(repository?.get('status')).toBe('archived');
+    expect(await context.flowRepo.findModelById(menu.tabSchemaUid, { includeAsyncNode: true })).toBeNull();
   }, 120000);
 
   it('rejects a JS Page workspace save after the owner source changes outside the workspace', async () => {

@@ -17,6 +17,7 @@ import { JsTemplateError } from '../../shared/errors';
 import type {
   JsTemplateCreateJobAcceptedResult,
   JsTemplateInspectSourceArchiveResult,
+  JsTemplateProjectDetails,
   JsTemplateProjectLifecycleStatus,
   JsTemplateTreeEntryInput,
   JsTemplateUpdateProjectInput,
@@ -27,6 +28,7 @@ import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner
 import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
+import { isAllowedPermissionResult } from '../services/JsTemplatePermissionService';
 import { JS_TEMPLATE_VALIDATION_LIMITS } from '../services/JsTemplateValidator';
 import { isStrictUtf8Text, parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 import { toJsTemplateSourceError } from '../services/errorContract';
@@ -63,7 +65,7 @@ interface JsTemplateProjectActionServices {
 const resourceActionRunners: Record<JsTemplateProjectActionName, ResourceActionRunner> = {
   create: (services, input, currentUser) => enqueueProjectCreation(services, input, currentUser),
   list: (services, _input, currentUser) => services.projectService.listProjects(currentUser),
-  get: (services, input, currentUser) => services.projectService.getProject(requireProjectId(input), currentUser),
+  get: (services, input, currentUser) => getProjectDetails(services, input, currentUser),
   updateMetadata: (services, input, currentUser) =>
     services.projectService.updateProject(normalizeUpdateInput(input), currentUser),
   changeLifecycle: (services, input, currentUser) =>
@@ -83,6 +85,25 @@ const resourceActionRunners: Record<JsTemplateProjectActionName, ResourceActionR
     ),
   inspectSourceArchive: (services, input, currentUser) => inspectSourceArchive(services, input, currentUser),
 };
+
+async function getProjectDetails(
+  services: JsTemplateProjectActionServices,
+  input: ResourceActionInput,
+  currentUser: JsTemplateServiceContext,
+): Promise<JsTemplateProjectDetails> {
+  const project = await services.projectService.getProject(requireProjectId(input), currentUser);
+  const canWriteSource = currentUser.can
+    ? isAllowedPermissionResult(await currentUser.can({ resource: 'jsTemplateFiles', action: 'saveSource' })) &&
+      isAllowedPermissionResult(await currentUser.can({ resource: 'jsTemplate', action: 'writeSource' }))
+    : false;
+
+  return {
+    ...project,
+    permissions: {
+      canWriteSource,
+    },
+  };
+}
 
 export function createJsTemplateProjectsResource(
   db: Database,

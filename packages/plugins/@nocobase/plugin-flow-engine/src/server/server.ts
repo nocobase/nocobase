@@ -20,6 +20,7 @@ import {
 } from './flow-surfaces/js-template-usage-integration';
 import { FlowSchemaModel } from './model';
 import FlowModelRepository from './repository';
+import { archiveRunJSRepositoriesForNodeTree } from './runjs-sources/repository-cleanup';
 
 type JsTemplateUsageActionContext = {
   request?: {
@@ -128,11 +129,20 @@ export class PluginUISchemaStorageServer extends Plugin {
       await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
-    db.on('flowModels.beforeRemoveTree', async (payload, options) => {
+    db.on('flowModels.beforeRemoveTree', async (payload: { rootUid?: unknown }, options) => {
+      const rootUid = typeof payload?.rootUid === 'string' ? payload.rootUid.trim() : '';
+      if (!rootUid) {
+        return;
+      }
+      const repository = db.getCollection('flowModels').repository as FlowModelRepository;
+      const node = await repository.findModelById(rootUid, {
+        transaction: options?.transaction,
+        includeAsyncNode: true,
+      });
       await markJsTemplateUsagesOwnerMissingForNodeTree(
         this,
         {
-          rootUid: payload?.rootUid,
+          rootUid,
           action: 'flowModels.repository.remove',
         },
         {
@@ -140,6 +150,10 @@ export class PluginUISchemaStorageServer extends Plugin {
           requestSource: 'flowModels.beforeRemoveTree',
         },
       );
+      await archiveRunJSRepositoriesForNodeTree(this.app, db, node, {
+        transaction: options?.transaction,
+        requestSource: 'flowModels.beforeRemoveTree',
+      });
     });
 
     this.app.resourceManager.define({

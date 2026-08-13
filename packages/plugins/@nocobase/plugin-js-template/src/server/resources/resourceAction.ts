@@ -103,6 +103,7 @@ export function getServiceContext(ctx: JsTemplateResourceContext): JsTemplateSer
   const metadata = getRequestMetadata(ctx);
   return {
     actorUserId: metadata.actorUserId,
+    can: ctx.can,
     currentUser: ctx.state?.currentUser || ctx.auth?.user,
     requestId: metadata.requestId,
     requestSource: metadata.requestSource,

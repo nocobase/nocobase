@@ -115,6 +115,16 @@ export function getJsTemplateWorkspacePathAccess(
   }
 
   if (pathType === 'file') {
+    if (normalizedPath === `${templateRoot}/${JS_TEMPLATE_DESCRIPTOR_FILE}`) {
+      return {
+        canCreate: true,
+        canDelete: false,
+        canMove: false,
+        canRename: false,
+        canWrite: true,
+      };
+    }
+
     return allowAllPathOperations();
   }
 

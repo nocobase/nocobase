@@ -66,6 +66,12 @@ export interface JsTemplateProject {
   updatedAt?: string | null;
 }
 
+export interface JsTemplateProjectDetails extends JsTemplateProject {
+  permissions: {
+    canWriteSource: boolean;
+  };
+}
+
 export interface JsTemplateCreateProjectInput {
   name: string;
   title?: string | null;

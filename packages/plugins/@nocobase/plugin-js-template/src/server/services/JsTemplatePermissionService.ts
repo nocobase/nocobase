@@ -158,7 +158,7 @@ export class JsTemplatePermissionService {
   }
 }
 
-function isAllowedPermissionResult(value: unknown): boolean {
+export function isAllowedPermissionResult(value: unknown): boolean {
   return value !== false && value !== null && typeof value !== 'undefined';
 }
 

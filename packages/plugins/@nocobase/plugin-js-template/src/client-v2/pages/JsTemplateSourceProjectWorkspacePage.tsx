@@ -45,7 +45,7 @@ import type {
   JsTemplateDiagnostic,
   CompiledJsTemplateArtifact,
   JsTemplateFileChange,
-  JsTemplateProject,
+  JsTemplateProjectDetails,
   JsTemplateCommitRecord,
   JsTemplateTreeEntryInput,
 } from '../../shared/types';
@@ -161,7 +161,7 @@ function JsTemplateSourceProjectWorkspacePage({
     pullCommit,
     saveSource,
   } = useJsTemplateProject();
-  const [project, setProject] = useState<JsTemplateProject | null>(null);
+  const [project, setProject] = useState<JsTemplateProjectDetails | null>(null);
   const [baseCommitSeq, setBaseCommitSeq] = useState<number>();
   const [baseHeadCommitId, setBaseHeadCommitId] = useState<string | null>(null);
   const [baseFiles, setBaseFiles] = useState<WorkspaceFile[]>([]);
@@ -310,7 +310,7 @@ function JsTemplateSourceProjectWorkspacePage({
   const saveSummary = useMemo(() => summarizeWorkspaceChanges(baseFiles, filesForSave), [baseFiles, filesForSave]);
   const hasUnsavedLocalChanges = dirtyChanges.length > 0;
   hasUnsavedLocalChangesRef.current = hasUnsavedLocalChanges;
-  const canWrite = Boolean(project);
+  const canWrite = project?.permissions.canWriteSource === true;
   const hasBlockedDirtyChanges = dirtyChanges.some(
     (change) => !canChangeJsTemplateWorkspacePath(workspaceScope, change.path),
   );
@@ -320,7 +320,7 @@ function JsTemplateSourceProjectWorkspacePage({
   latestCheckSnapshotRef.current = checkSnapshotKey;
   const canPreview = templateScoped && Boolean(onPreview);
   const canDetachJsTemplateToInline =
-    templateScoped && Boolean(onDetachJsTemplateToInline) && Boolean(baseHeadCommitId);
+    templateScoped && canWrite && Boolean(onDetachJsTemplateToInline) && Boolean(baseHeadCommitId);
   const authoringSurfaceId =
     workspaceScope.mode === 'template' && canWrite
       ? buildJsTemplateAuthoringSurfaceId(projectId, workspaceScope, templateId)

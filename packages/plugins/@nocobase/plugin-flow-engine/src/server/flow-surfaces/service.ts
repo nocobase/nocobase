@@ -1519,14 +1519,8 @@ export class FlowSurfacesService {
   }
 
   private get routeSync() {
-    return new FlowSurfaceRouteSync(
-      this.db,
-      this.repository,
-      (values, options) => this.patchFlowSurfaceModelOptions(values, options),
-      (uid, transaction) =>
-        this.markJsTemplateUsagesOwnerMissingForNodeTree(uid, 'flowSurfaces.routeSync.removeTabAnchorTree', {
-          transaction,
-        }),
+    return new FlowSurfaceRouteSync(this.db, this.repository, (values, options) =>
+      this.patchFlowSurfaceModelOptions(values, options),
     );
   }
 
@@ -9599,9 +9593,13 @@ export class FlowSurfacesService {
     if (structure.pageModel?.uid) {
       await this.removeNodeTreeWithBindings(structure.pageModel.uid, transaction);
     }
-    for (const tabRoute of structure.tabRoutes) {
+    for (const { tabRoute, grid } of structure.tabGrids) {
       const tabSchemaUid = this.readRouteField(tabRoute, 'schemaUid');
+      if (grid?.uid) {
+        await this.removeNodeTreeWithBindings(String(grid.uid), transaction);
+      }
       if (tabSchemaUid) {
+        await this.removeNodeTreeWithBindings(String(tabSchemaUid), transaction);
         await this.routeSync.removeTabAnchorTree(String(tabSchemaUid), transaction);
       }
       await this.db.getRepository('desktopRoutes').destroy({
@@ -9909,6 +9907,7 @@ export class FlowSurfacesService {
       includeAsyncNode: true,
     });
     const chartUids = [...this.collectChartBlockUidsFromTree(pageModel)];
+    const tabGrids = new Map<string, string>();
     const tabRoutes = _.castArray(pageRoute?.get?.('children') || pageRoute?.children || []);
     for (const tabRoute of tabRoutes) {
       const tabSchemaUid = tabRoute?.get?.('schemaUid') || tabRoute?.schemaUid;
@@ -9920,6 +9919,9 @@ export class FlowSurfacesService {
         subKey: 'grid',
         includeAsyncNode: true,
       });
+      if (tabGrid?.uid) {
+        tabGrids.set(String(tabSchemaUid), String(tabGrid.uid));
+      }
       chartUids.push(...this.collectChartBlockUidsFromTree(tabGrid));
       await this.clearFlowTemplateUsagesForRouteSchemaUid(String(tabSchemaUid), options.transaction);
     }
@@ -9929,10 +9931,16 @@ export class FlowSurfacesService {
       await this.removeNodeTreeWithBindings(pageModel.uid, options.transaction);
     }
     for (const tabRoute of tabRoutes) {
-      await this.routeSync.removeTabAnchorTree(
-        tabRoute?.get?.('schemaUid') || tabRoute?.schemaUid,
-        options.transaction,
-      );
+      const tabSchemaUid = tabRoute?.get?.('schemaUid') || tabRoute?.schemaUid;
+      if (!tabSchemaUid) {
+        continue;
+      }
+      const tabGridUid = tabGrids.get(String(tabSchemaUid));
+      if (tabGridUid) {
+        await this.removeNodeTreeWithBindings(tabGridUid, options.transaction);
+      }
+      await this.removeNodeTreeWithBindings(String(tabSchemaUid), options.transaction);
+      await this.routeSync.removeTabAnchorTree(tabSchemaUid, options.transaction);
     }
     await this.db.getRepository('desktopRoutes').destroy({
       filter: {
@@ -10130,6 +10138,14 @@ export class FlowSurfacesService {
       : [];
     if (siblingTabRoutes.length <= 1) {
       throwBadRequest('flowSurfaces removeTab cannot delete the last route-backed tab; use destroyPage instead');
+    }
+    const tabGrid = await this.repository.findModelByParentId(resolved.uid, {
+      transaction: options.transaction,
+      subKey: 'grid',
+      includeAsyncNode: true,
+    });
+    if (tabGrid?.uid) {
+      await this.removeNodeTreeWithBindings(tabGrid.uid, options.transaction);
     }
     await this.removeNodeTreeWithBindings(resolved.uid, options.transaction);
     await this.clearFlowTemplateUsagesForRouteSchemaUid(resolved.uid, options.transaction);
@@ -21900,7 +21916,7 @@ export class FlowSurfacesService {
     );
   }
 
-  private async removeNodeTreeWithBindings(uid: string, transaction?: any) {
+  private async removeNodeTreeWithBindings(uid: string, transaction?: Transaction) {
     const node = await this.repository.findModelById(uid, {
       transaction,
       includeAsyncNode: true,
@@ -21912,9 +21928,6 @@ export class FlowSurfacesService {
     await this.removeFlowSqlBindingsForNodeTree(node, transaction);
     await this.cleanupNodeBindings(node, transaction);
     await this.clearFlowTemplateUsagesForNodeTree(node, transaction);
-    await this.markJsTemplateUsagesOwnerMissingForNodeTree(node.uid, 'flowSurfaces.removeNode', {
-      transaction,
-    });
     await this.repository.remove(uid, { transaction });
     if (detachedPopupCopyUid && detachedPopupCopyUid !== node.uid) {
       await this.removeNodeTreeWithBindings(detachedPopupCopyUid, transaction);

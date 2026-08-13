@@ -28,6 +28,7 @@ export interface AICodingButtonProps {
   scene: string;
   language: string;
   authoringSurfaceId?: string;
+  readonly?: boolean;
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }
@@ -37,14 +38,14 @@ const isBuiltIn = (aiEmployee: AIEmployee) => aiEmployee?.builtIn && aiEmployee?
 const isEngineer = (aiEmployee: AIEmployee) => isBuiltIn(aiEmployee) && aiEmployee.username === 'nathan';
 
 export const AICodingButton: React.FC<AICodingButtonProps> = observer(
-  ({ uid, scene, language, authoringSurfaceId, editorRef, setActive }) => {
+  ({ uid, scene, language, authoringSurfaceId, readonly = false, editorRef, setActive }) => {
     const t = useT();
     const app = useApp();
     const { token } = theme.useToken();
     const aiConfigRepository = useAIConfigRepository();
     const aiEmployees = aiConfigRepository.aiEmployees;
     const runtime = getGlobalChatBoxRuntime();
-    const { chatBoxModel, chatConversationModel } = runtime;
+    const { chatBoxModel, chatConversationModel, chatMessageModel } = runtime;
     const open = chatBoxModel.open;
     const currentEmployee = chatBoxModel.currentEmployee;
     const currentConversation = chatConversationModel.currentConversation;
@@ -66,25 +67,39 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
     }, [aiConfigRepository]);
 
     useEffect(() => {
-      if (authoringSurfaceId) {
+      if (authoringSurfaceId || readonly) {
         return;
       }
       setEditorRef(uid, editorRef);
       setCurrentEditorRefUid(uid);
+      chat.setFlowContext(ctx);
       return () => {
+        const ownedCurrentEditor =
+          chatMessageModel.currentEditorRefUid === uid && chatMessageModel.editorRef[uid] === editorRef;
         unregisterEditorRef(uid, editorRef);
+        if (ownedCurrentEditor && chatMessageModel.flowContext === ctx) {
+          chat.setFlowContext(undefined);
+        }
       };
-    }, [authoringSurfaceId, editorRef, setCurrentEditorRefUid, setEditorRef, uid, unregisterEditorRef]);
+    }, [
+      authoringSurfaceId,
+      chat,
+      chatMessageModel,
+      ctx,
+      editorRef,
+      readonly,
+      setCurrentEditorRefUid,
+      setEditorRef,
+      uid,
+      unregisterEditorRef,
+    ]);
 
     useEffect(() => {
-      setActive('AICodingButton', !!aiEmployee);
-    }, [aiEmployee, setActive]);
-
-    useEffect(() => {
-      if (!authoringSurfaceId) {
-        chat.setFlowContext(ctx);
-      }
-    }, [authoringSurfaceId, chat, ctx]);
+      setActive('AICodingButton', !readonly && !!aiEmployee);
+      return () => {
+        setActive('AICodingButton', false);
+      };
+    }, [aiEmployee, readonly, setActive]);
 
     useEffect(
       () => () => {
@@ -95,9 +110,10 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
 
     const [showTooltip, setShowTooltip] = useState(false);
     const [errorOccurred, setErrorOccurred] = useState(false);
+    const legacyTasksEnabled = !authoringSurfaceId && !readonly;
 
     useEffect(() => {
-      const isError = !authoringSurfaceId && editorRef.logs.some((log) => log.level === 'error');
+      const isError = !readonly && !authoringSurfaceId && editorRef.logs.some((log) => log.level === 'error');
       setErrorOccurred(isError);
       setShowTooltip(isError);
       if (!isError) {
@@ -109,14 +125,14 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
       return () => {
         window.clearTimeout(timer);
       };
-    }, [authoringSurfaceId, editorRef.logs]);
+    }, [authoringSurfaceId, editorRef.logs, readonly]);
 
     const taskMap = useMemo<Record<string, Task>>(() => {
       const createTask = (prototype: Partial<Task>): Task => {
         const { message, ...rest } = prototype;
         return {
           message: {
-            ...(!authoringSurfaceId
+            ...(legacyTasksEnabled
               ? {
                   workContext: [
                     {
@@ -152,11 +168,11 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
           autoSend: errorOccurred,
         }),
       };
-    }, [authoringSurfaceId, editorRef, errorOccurred, language, scene, t, uid]);
+    }, [editorRef, errorOccurred, language, legacyTasksEnabled, scene, t, uid]);
 
     const tasks = useMemo(() => Object.values(taskMap), [taskMap]);
 
-    if (!aiEmployee) {
+    if (!aiEmployee || readonly) {
       return null;
     }
 

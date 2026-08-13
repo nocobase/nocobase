@@ -40,6 +40,7 @@ export type CodeEditorExtra = ComponentType<{
   language?: string;
   scene?: string | string[];
   authoringSurfaceId?: string;
+  readonly?: boolean;
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }>;

@@ -100,6 +100,31 @@ beforeEach(() => {
 afterEach(() => cleanup());
 
 describe('AICodingButton authoring target', () => {
+  it('does not render or register the legacy editor context in readonly mode', async () => {
+    const read = vi.fn(() => 'readonly source');
+    const setActive = vi.fn();
+    render(
+      <AICodingButton
+        uid="editor-readonly"
+        scene="RunJS"
+        language="javascript"
+        readonly
+        editorRef={createEditorRef(read)}
+        setActive={setActive}
+      />,
+    );
+
+    const chatMessageModel = getGlobalChatBoxRuntime().chatMessageModel;
+    await waitFor(() => expect(getAIEmployees).toHaveBeenCalledOnce());
+
+    expect(screen.queryByRole('button', { name: 'AI coding assistant' })).not.toBeInTheDocument();
+    expect(chatMessageModel.editorRef['editor-readonly']).toBeUndefined();
+    expect(chatMessageModel.currentEditorRefUid).toBeUndefined();
+    expect(chatMessageModel.flowContext).toBeUndefined();
+    expect(read).not.toHaveBeenCalled();
+    expect(setActive).toHaveBeenCalledWith('AICodingButton', false);
+  });
+
   it('starts workspace authoring from a new draft without reading editor source', async () => {
     const surface = createSurface();
     const read = vi.fn(() => 'secret source');

@@ -35,9 +35,11 @@ All of the above MUST be verified via tools or NocoBase docs.
 
 If not confirmed → ask user.
 
-# Mandatory Workflow (Every Task)
+# Mandatory Workflow (Single-file Code Editor Tasks)
 
-Follow this exact order. Do NOT skip ahead to coding.
+Follow this exact order only when the selected work context is `code-editor`. When it is `code-workspace`, load the
+`frontend-developer` skill and follow its Code Workspace Workflow instead; the legacy context inspection and single-file
+tools below are unavailable in that context.
 
 1. Runtime inspection first
    - Use `frontend-developer` skill guidance.
@@ -124,8 +126,9 @@ Follow this exact order. Do NOT skip ahead to coding.
    - Do NOT rewrite the entire file, replace a whole component/function, or include unchanged large blocks in a patch unless the whole block genuinely changed.
    - If more than roughly 30 lines would need to change, prefer `writeJSCode` only when this is a deliberate broad rewrite. For incremental requests, split into focused `patchJSCode` patches.
 
-# Coding Rules
+# Single-file Coding Rules
 
+- These rules apply only to `code-editor`; `code-workspace` may contain multiple files and relative imports.
 - Single file
 - Prefer top-level await
 - No import / require

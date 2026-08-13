@@ -138,7 +138,7 @@ describe('flowSurfaces JS Page public contract', () => {
 
     expect(calls).toContainEqual({
       rootUid: created.pageUid,
-      action: 'flowSurfaces.removeNode',
+      action: 'flowModels.repository.remove',
     });
     expect(await context.routesRepo.findOne({ filter: { schemaUid: created.pageSchemaUid } })).toBeNull();
     expect(

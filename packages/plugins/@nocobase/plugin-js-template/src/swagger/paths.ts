@@ -47,7 +47,8 @@ export const jsTemplatePaths = {
     post: {
       tags: ['jsTemplateProjects'],
       summary: 'Get one Source Project for JS Templates',
-      description: 'Get project metadata and the current Head commit used for optimistic source editing.',
+      description:
+        'Get project metadata, the current Head commit used for optimistic source editing, and the effective source-write permission.',
       requestBody: {
         required: true,
         content: {
@@ -68,7 +69,7 @@ export const jsTemplatePaths = {
       responses: {
         200: {
           description: 'Project metadata.',
-          content: jsonContent('JsTemplateProjectEnvelope'),
+          content: jsonContent('JsTemplateProjectDetailsEnvelope'),
         },
         403: errorResponse('The current user cannot read this project.'),
         404: errorResponse('The project does not exist.'),

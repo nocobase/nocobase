@@ -215,6 +215,72 @@ describe('plugin-js-template file service resource bridge', () => {
     await expect(commits.count()).resolves.toBe(commitCountBefore);
   });
 
+  it('requires both the saveSource resource action and the writeSource domain permission', async () => {
+    const repo = await createRepoAndWait(app, agent, {
+      name: `Source permission matrix ${Date.now()}`,
+    });
+    const rootAgent = await app.agent().login(await app.db.getRepository('users').findOne());
+    const cases = [
+      { roleName: 'jsTemplateSaveOnly', saveSource: true, writeSource: false, expectedStatus: 403 },
+      { roleName: 'jsTemplateWriteOnly', saveSource: false, writeSource: true, expectedStatus: 403 },
+      { roleName: 'jsTemplateSaveAndWrite', saveSource: true, writeSource: true, expectedStatus: 200 },
+    ];
+
+    let expectedHeadCommitId = repo.headCommitId;
+    for (const entry of cases) {
+      const roleAgent = await createRoleAgent(app, entry.roleName);
+      await rootAgent.resource('roles.resources', entry.roleName).create({
+        values: {
+          name: 'jsTemplateProjects',
+          usingActionsConfig: true,
+          actions: [{ name: 'get' }],
+        },
+      });
+      if (entry.saveSource) {
+        await rootAgent.resource('roles.resources', entry.roleName).create({
+          values: {
+            name: 'jsTemplateFiles',
+            usingActionsConfig: true,
+            actions: [{ name: 'saveSource' }],
+          },
+        });
+      }
+      if (entry.writeSource) {
+        await rootAgent.resource('roles.resources', entry.roleName).create({
+          values: {
+            name: 'jsTemplate',
+            usingActionsConfig: true,
+            actions: [{ name: 'writeSource' }],
+          },
+        });
+      }
+
+      const projectResponse = await roleAgent.resource('jsTemplateProjects').get({ filterByTk: repo.id });
+      expect(projectResponse.status, JSON.stringify(projectResponse.body)).toBe(200);
+      expect(projectResponse.body.data.permissions).toEqual({
+        canWriteSource: entry.saveSource && entry.writeSource,
+      });
+
+      const response = await roleAgent.resource('jsTemplateFiles').saveSource({
+        values: {
+          projectId: repo.id,
+          expectedHeadCommitId,
+          message: `Permission matrix ${entry.roleName}`,
+          files: [{ path: `${entry.roleName}.md`, content: `# ${entry.roleName}\n` }],
+        },
+      });
+      expect(response.status, JSON.stringify(response.body)).toBe(entry.expectedStatus);
+      if (entry.saveSource && !entry.writeSource) {
+        expect(response.body).toMatchObject({
+          errors: [{ code: 'JS_TEMPLATE_PERMISSION_DENIED', details: { action: 'writeSource' } }],
+        });
+      }
+      if (response.status === 200) {
+        expectedHeadCommitId = response.body.data.project.headCommitId;
+      }
+    }
+  });
+
   it('runs shared vsc permission hooks for js-template internal source operations', async () => {
     const capturedActions: string[] = [];
     const unregister = getVscPermissionHookRegistrar(app).registerPermissionHook((input) => {

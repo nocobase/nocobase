@@ -386,6 +386,7 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       lifecycleStatus: 'enabled',
       healthStatus: 'pending',
       headCommitId: 'commit-1',
+      permissions: { canWriteSource: true },
     });
     mocks.api.pull.mockResolvedValue({
       project: { id: 'jtp_sales' },
@@ -446,6 +447,36 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
     mocks.archive.readJsTemplateWorkspaceArchive.mockResolvedValue('zip-base64');
   });
 
+  it('keeps a project workspace read-only when the role cannot save source', async () => {
+    mocks.api.getProject.mockResolvedValue({
+      id: 'jtp_sales',
+      name: 'sales-widgets',
+      normalizedName: 'sales-widgets',
+      title: 'Sales widgets',
+      lifecycleStatus: 'enabled',
+      healthStatus: 'pending',
+      headCommitId: 'commit-1',
+      permissions: { canWriteSource: false },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/admin/settings/js-template?panel=source&projectId=jtp_sales']}>
+        <JsTemplateSourceProjectWorkspacePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByLabelText('Edit file content')).toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: /Save/ })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText('Edit file content'), {
+      target: { value: 'export default function Changed() { return null; }' },
+    });
+    expect(screen.getByLabelText('Edit file content')).not.toHaveValue(
+      'export default function Changed() { return null; }',
+    );
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
   it('keeps Project B metadata, files, and base head when Project A succeeds late', async () => {
     const projectA = {
       id: 'jtp_a',
@@ -455,6 +486,7 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       lifecycleStatus: 'enabled' as const,
       healthStatus: 'pending' as const,
       headCommitId: 'commit-a',
+      permissions: { canWriteSource: true },
     };
     const projectB = {
       id: 'jtp_b',
@@ -464,6 +496,7 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       lifecycleStatus: 'enabled' as const,
       healthStatus: 'pending' as const,
       headCommitId: 'commit-b',
+      permissions: { canWriteSource: true },
     };
     const projectARequest = createDeferred<typeof projectA>();
     mocks.api.getProject.mockImplementation((projectId: string) =>
@@ -534,6 +567,7 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       lifecycleStatus: 'enabled' as const,
       healthStatus: 'pending' as const,
       headCommitId: 'commit-b',
+      permissions: { canWriteSource: true },
     };
     mocks.api.getProject.mockImplementation((projectId: string) =>
       projectId === 'jtp_a' ? projectARequest.promise : Promise.resolve(projectB),
@@ -586,6 +620,7 @@ describe('JsTemplateSourceProjectWorkspacePage', () => {
       lifecycleStatus: 'enabled' as const,
       healthStatus: 'pending' as const,
       headCommitId: 'commit-b',
+      permissions: { canWriteSource: true },
     };
     const projectARequest = createDeferred<typeof projectB>();
     const projectBPullResult = {

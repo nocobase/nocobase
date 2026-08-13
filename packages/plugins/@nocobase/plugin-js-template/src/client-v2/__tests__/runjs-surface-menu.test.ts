@@ -102,7 +102,7 @@ function registerModelMenuProviderTests() {
   ];
 
   describe('createJsTemplateModelMenuProvider', () => {
-    it('persists the four direct-menu model shapes through FlowEngine serialization and reload', async () => {
+    it('persists the four direct-menu model shapes without materializing descriptor defaults', async () => {
       const api = createApi();
       const block = await findLeaf(await getRootItem(api, { target: 'block' }), 'block');
       const action = await findLeaf(
@@ -152,6 +152,7 @@ function registerModelMenuProviderTests() {
           sourceMode: 'js-template',
           sourceBinding: expect.objectContaining({ type: 'js-template-entry' }),
         });
+        expect(runJs, item.label).toHaveProperty('settings', {});
         if (item.label === 'column') {
           expect(getAtPath(reloaded.serialize(), ['stepParams', 'tableColumnSettings', 'title'])).toEqual({
             title: 'column',
@@ -196,10 +197,7 @@ function registerModelMenuProviderTests() {
           templateId,
           kind: expect.stringMatching(/^js-/),
         },
-        settings: {
-          color: '#1677ff',
-          nested: { enabled: true },
-        },
+        settings: {},
       });
       if (options.target === 'column') {
         expect(leaf.createModelOptions).toMatchObject({

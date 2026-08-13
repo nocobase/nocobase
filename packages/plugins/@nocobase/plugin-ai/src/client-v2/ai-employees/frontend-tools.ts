@@ -15,6 +15,7 @@ import {
   getWorkspaceAuthoringToolManifests,
   parseWorkspaceAuthoringToolId,
 } from './tools/workspace-authoring';
+import { WorkspaceChangeCard } from './tools/WorkspaceChangeCard';
 
 type FrontendToolParams = {
   toolId?: unknown;
@@ -70,5 +71,8 @@ export const executeFrontendTool: [string, ToolsOptions] = [
   EXECUTE_FRONTEND_TOOL_NAME,
   {
     invoke: executeRegisteredFrontendTool,
+    ui: {
+      card: WorkspaceChangeCard,
+    },
   },
 ];

@@ -15,7 +15,6 @@ import {
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import type { RunJSSurfaceMenuItemProvider, RunJSSurfaceMenuItemProviderContext } from '@nocobase/client-v2';
-import { extractRunJSSettingsDefaults } from '@nocobase/runjs/settings';
 
 import { NAMESPACE } from '../../constants';
 import {
@@ -198,7 +197,7 @@ function createRunJs(template: JsTemplateSelectableTemplateSummary) {
   return {
     version: 'v2',
     ...persisted,
-    settings: extractRunJSSettingsDefaults(template.settingsSchema),
+    settings: {},
   };
 }
 

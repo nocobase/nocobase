@@ -53,7 +53,7 @@ When helping users with JavaScript code, follow this process:
 
 The workflow above and the legacy `readJSCode`, `writeJSCode`, `patchJSCode`, and `lintAndTestJS` tools apply only to a `code-editor` context. When the selected context is `code-workspace`, use only the workspace tools from its `frontendToolCatalog`:
 
-1. Call `workspaceDescribe`, then use `workspaceListFiles`, `workspaceReadFiles`, and `workspaceSearch` as needed to understand the current multi-file snapshot. Read source on demand; do not assume that initial context metadata contains source code.
+1. Call `workspaceDescribe`, then use the returned file metadata together with `workspaceReadFiles` and `workspaceSearch` as needed to understand the current multi-file snapshot. Read source on demand; do not assume that initial context metadata contains source code.
 2. Call `workspacePrepareChanges` with the latest `baseSnapshotId` and the complete exact set of file changes. Preparing a plan must not modify the draft.
 3. Call `workspaceApplyPreparedChanges` with only the returned `planId`. Do not ask for confirmation in chat: this tool uses runtime ASK approval and the UI will show the user the Allow use action.
 4. After approval and apply, call `workspaceValidateDraft`. Validation compiles the full draft but does not execute preview code and does not save.
@@ -71,7 +71,6 @@ For `code-workspace`, never use a Markdown code block as the final modification 
 - `patchJSCode`: Applies a minimal unified diff patch to the current editor code and writes it back. Provide only the patch; the tool reads the current editor code directly.
 - `lintAndTestJS`: Lints, performs sandbox checks, and trial-runs the current editor JavaScript/JSX code. Returns success/failure with diagnostics. **Always call this tool before final response to verify it works.**
 - `workspaceDescribe`: Describes the latest bound workspace snapshot, diagnostics, and capabilities.
-- `workspaceListFiles`: Lists readable source and virtual files in the bound workspace.
 - `workspaceReadFiles`: Reads selected workspace files through the surface read policy.
 - `workspaceSearch`: Searches readable workspace files.
 - `workspacePrepareChanges`: Prepares an exact multi-file plan without changing the draft.

@@ -89,11 +89,13 @@ vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
       activeFile,
       authoringSurfaceId,
       onChange,
+      readOnly,
       workspaceFiles,
     }: {
       activeFile?: { path: string; content: string };
       authoringSurfaceId?: string;
       onChange: (content: string) => void;
+      readOnly?: boolean;
       workspaceFiles: Array<{ path: string }>;
     }) => (
       <div
@@ -105,6 +107,7 @@ vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
         <textarea
           aria-label="Edit file content"
           onChange={(event) => onChange(event.target.value)}
+          readOnly={readOnly}
           value={activeFile?.content || ''}
         />
       </div>
@@ -155,6 +158,7 @@ describe('JsTemplateWorkspace authoring surface', () => {
       name: 'sales-widgets',
       title: 'Sales widgets',
       lifecycleStatus: 'enabled',
+      permissions: { canWriteSource: true },
     });
     mocks.api.pull.mockResolvedValue({
       project: { id: 'jtp_sales' },
@@ -321,5 +325,24 @@ describe('JsTemplateWorkspace authoring surface', () => {
       }),
     ).rejects.toMatchObject({ code: 'PATH_ACCESS_DENIED' });
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
+  it('keeps source readable but disables editing and AI authoring without save permission', async () => {
+    mocks.api.getProject.mockResolvedValue({
+      id: 'jtp_sales',
+      name: 'sales-widgets',
+      title: 'Sales widgets',
+      lifecycleStatus: 'enabled',
+      permissions: { canWriteSource: false },
+    });
+
+    renderTemplateWorkspace();
+
+    await screen.findByTestId('code-tab');
+    expect(screen.getByLabelText('Edit file content')).toHaveAttribute('readonly');
+    expect(screen.getByTestId('code-tab')).not.toHaveAttribute('data-authoring-surface-id');
+    expect(mocks.authoring.register).not.toHaveBeenCalled();
+    expect(mocks.api.getProject).toHaveBeenCalledWith('jtp_sales');
+    expect(mocks.api.pull).toHaveBeenCalledWith({ projectId: 'jtp_sales', includeContent: 'all' });
   });
 });

@@ -23,6 +23,7 @@ import type {
   JsTemplateInspectSourceArchiveResult,
   JsTemplatePullResult,
   JsTemplateProject,
+  JsTemplateProjectDetails,
   JsTemplateSaveSourceResult,
   JsTemplateUpdateProjectInput,
   JsTemplateWorkspacePreviewInput,
@@ -99,7 +100,7 @@ export interface JsTemplateSaveSourceInput {
 export interface UseJsTemplateProjectResult {
   listProjects(): Promise<JsTemplateProject[]>;
   createProject(input: JsTemplateCreateProjectInput): Promise<JsTemplateCreateJobAcceptedResult>;
-  getProject(projectId: string): Promise<JsTemplateProject>;
+  getProject(projectId: string): Promise<JsTemplateProjectDetails>;
   updateProject(input: JsTemplateUpdateProjectInput): Promise<JsTemplateProject>;
   changeLifecycle(input: JsTemplateChangeLifecycleInput): Promise<JsTemplateProject>;
   deleteProject(projectId: string): Promise<JsTemplateProject>;
@@ -151,7 +152,7 @@ type OperationInputMap = {
 type OperationResultMap = {
   listProjects: JsTemplateProject[];
   createProject: JsTemplateCreateJobAcceptedResult;
-  getProject: JsTemplateProject;
+  getProject: JsTemplateProjectDetails;
   updateProject: JsTemplateProject;
   changeLifecycle: JsTemplateProject;
   deleteProject: JsTemplateProject;

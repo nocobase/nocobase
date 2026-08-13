@@ -332,6 +332,28 @@ export const jsTemplateSchemas = {
       updatedAt: nullableDateTime,
     },
   },
+  JsTemplateProjectDetails: {
+    allOf: [
+      {
+        $ref: '#/components/schemas/JsTemplateProject',
+      },
+      {
+        type: 'object',
+        required: ['permissions'],
+        properties: {
+          permissions: {
+            type: 'object',
+            required: ['canWriteSource'],
+            properties: {
+              canWriteSource: {
+                type: 'boolean',
+              },
+            },
+          },
+        },
+      },
+    ],
+  },
   JsTemplateCreateJobSummary: {
     type: 'object',
     required: [
@@ -1204,6 +1226,15 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/JsTemplateProject',
+      },
+    },
+  },
+  JsTemplateProjectDetailsEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/JsTemplateProjectDetails',
       },
     },
   },

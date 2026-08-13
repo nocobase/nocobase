@@ -83,6 +83,13 @@ describe('JS Template workspace access', () => {
       canMove: false,
       canRename: false,
     });
+    expect(getJsTemplateWorkspacePathAccess(scope, 'src/client/js-blocks/current/entry.json', 'file')).toEqual({
+      canCreate: true,
+      canDelete: false,
+      canMove: false,
+      canRename: false,
+      canWrite: true,
+    });
   });
 
   it('keeps project workspaces unrestricted', () => {

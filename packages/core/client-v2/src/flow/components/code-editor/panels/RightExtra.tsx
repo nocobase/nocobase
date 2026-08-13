@@ -17,6 +17,7 @@ export const RightExtra: React.FC<{
   language?: string;
   scene?: string | string[];
   authoringSurfaceId?: string;
+  readonly?: boolean;
   extraEditorRef: EditorRef;
   onActionCountChange?: (count: number) => void;
   leftContent?: React.ReactNode;
@@ -26,6 +27,7 @@ export const RightExtra: React.FC<{
   language = 'javascript',
   scene,
   authoringSurfaceId,
+  readonly,
   extraEditorRef,
   onActionCountChange,
   leftContent,
@@ -72,6 +74,7 @@ export const RightExtra: React.FC<{
               language={language}
               scene={scene}
               authoringSurfaceId={authoringSurfaceId}
+              readonly={readonly}
               editorRef={extraEditorRef}
               setActive={setActive}
               key={extra.name}

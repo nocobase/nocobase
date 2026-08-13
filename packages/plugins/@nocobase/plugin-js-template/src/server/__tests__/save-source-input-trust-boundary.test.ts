@@ -27,6 +27,7 @@ describe('Save source input trust boundary', () => {
       throw new Error('Expected jsTemplateFiles:saveSource to be a resource action handler');
     }
     const next = vi.fn(async () => undefined);
+    const can = vi.fn(() => ({}));
     const ctx = {
       action: {
         params: {
@@ -56,6 +57,7 @@ describe('Save source input trust boundary', () => {
         },
       },
       auth: { user: { id: 42 } },
+      can,
       request: {
         headers: {
           'x-request-id': 'request-1',
@@ -82,6 +84,7 @@ describe('Save source input trust boundary', () => {
       },
       expect.objectContaining({
         actorUserId: '42',
+        can,
         requestId: 'request-1',
         requestSource: 'browser-preview-test',
       }),

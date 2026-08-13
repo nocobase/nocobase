@@ -237,6 +237,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         language={language}
         scene={resolvedScene}
         authoringSurfaceId={authoringSurfaceId}
+        readonly={readonly}
         extraEditorRef={extraEditorRef.current}
         leftContent={toolbarLeftExtra}
         extraContent={
