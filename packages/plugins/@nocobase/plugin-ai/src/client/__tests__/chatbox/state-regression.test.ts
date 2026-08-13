@@ -252,7 +252,6 @@ const resetStores = () => {
     senderRef: { current: null },
     showCodeHistory: false,
     model: null,
-    showDebugPanel: false,
     readonly: false,
     isShowSenderHint: false,
   });
@@ -334,14 +333,12 @@ describe('AI employee chatbox P0 state regression', () => {
     chatBox.setOpen(true);
     chatBox.setCollapsed(true);
     chatBox.setExpanded(true);
-    chatBox.setShowDebugPanel(true);
     chatBox.setShowConversations(true);
     chatBox.setSenderValue('draft survives drawer toggles');
 
     expect(useChatBoxStore.getState().open).toBe(getSnapshot(c01 as Fixture, 'C01-after-open').chatBox?.open);
     expect(useChatBoxStore.getState().expanded).toBe(getSnapshot(c02 as Fixture, 'C02-after-expand').chatBox?.expanded);
 
-    chatBox.setShowDebugPanel(false);
     chatBox.setExpanded(false);
     chatBox.setShowConversations(false);
     expect(useChatBoxStore.getState().senderValue).toBe('draft survives drawer toggles');

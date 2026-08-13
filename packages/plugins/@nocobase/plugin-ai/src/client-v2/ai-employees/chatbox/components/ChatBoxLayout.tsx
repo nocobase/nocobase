@@ -14,7 +14,6 @@ import { useApp, useMobileLayout } from '@nocobase/client-v2';
 import { observer } from '@nocobase/flow-engine';
 import { ChatBox } from './ChatBox';
 import { ChatButton } from './ChatButton';
-import { DebugPanel } from './DebugPanel';
 import { ToolModal } from './ToolModal';
 import { AISelection } from '../../AISelection';
 import { AISelectionControl } from '../../AISelectionControl';
@@ -50,7 +49,6 @@ const ChatBoxLayoutContent: React.FC<{
   const { chatBoxModel, chatToolModel } = useChatBoxRuntime();
   const open = chatBoxModel.open;
   const expanded = chatBoxModel.expanded;
-  const showDebugPanel = chatBoxModel.showDebugPanel;
   const activeTool = chatToolModel.activeTool;
   const { loadUnreadCounts } = useChatConversationActions();
   const { triggerTask } = useChatBoxActions();
@@ -154,7 +152,6 @@ html body {
       {activeTool ? <ToolModal /> : null}
       <AISelection />
       <AISelectionControl />
-      {showDebugPanel ? <DebugPanel /> : null}
     </>
   );
 });
