@@ -12,15 +12,8 @@
  * and https://api-docs.deepseek.com/zh-cn/guides/responses_api.
  */
 export const deepSeekThinkingModeFixture = {
-  responsesModel: 'deepseek-v4-flash',
-  chatCompletionsModel: 'deepseek-v4-pro',
-  chatThinkingEnabled: {
-    thinking: { type: 'enabled' },
-    reasoning_effort: 'high',
-  },
-  chatThinkingDisabled: {
-    thinking: { type: 'disabled' },
-  },
+  responsesModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+  chatCompletionsModels: ['deepseek-chat', 'deepseek-reasoner'],
   responsesThinkingEnabled: {
     reasoning: { effort: 'high' },
   },
@@ -28,7 +21,6 @@ export const deepSeekThinkingModeFixture = {
     reasoning: { effort: 'none' },
   },
   unsupportedThinkingFields: ['temperature', 'top_p', 'presence_penalty', 'frequency_penalty'],
-  chatEfforts: ['low', 'high', 'max'],
   responsesEfforts: ['none', 'low', 'high', 'max'],
   streamEvents: {
     reasoningDelta: 'response.reasoning_text.delta',

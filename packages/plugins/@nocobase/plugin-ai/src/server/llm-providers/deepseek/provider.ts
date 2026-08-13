@@ -26,6 +26,7 @@ import {
   adaptDeepSeekResponsesStream,
   DeepSeekReasoningConfig,
   extractDeepSeekReasoningText,
+  getDeepSeekModelCapabilities,
   getDeepSeekReasoningRequestParams,
   getDeepSeekResponsesReasoningItem,
   normalizeDeepSeekChatRequest,
@@ -320,7 +321,7 @@ export class DeepSeekProvider extends LLMProvider {
   prepareStoredAssistantAdditionalKwargs(
     additionalKwargs?: Record<string, unknown>,
   ): Record<string, unknown> | undefined {
-    if (this.modelOptions?.model !== 'deepseek-v4-flash' || !additionalKwargs) {
+    if (getDeepSeekModelCapabilities(String(this.modelOptions?.model))?.protocol !== 'responses' || !additionalKwargs) {
       return additionalKwargs;
     }
     const nextAdditionalKwargs = { ...additionalKwargs };
@@ -330,7 +331,10 @@ export class DeepSeekProvider extends LLMProvider {
   }
 
   protected builtInTools(): Record<string, unknown>[] {
-    if (this.modelOptions?.model === 'deepseek-v4-flash' && this.modelOptions?.builtIn?.webSearch === true) {
+    if (
+      getDeepSeekModelCapabilities(String(this.modelOptions?.model))?.supportsWebSearch === true &&
+      this.modelOptions?.builtIn?.webSearch === true
+    ) {
       return [{ type: 'web_search' }];
     }
     return [];
@@ -375,6 +379,6 @@ export const deepseekProviderOptions: LLMProviderMeta = {
     [SupportedModel.LLM]: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner'],
   },
   supportWebSearch: true,
-  webSearchModels: ['deepseek-v4-flash'],
+  webSearchModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
   provider: DeepSeekProvider,
 };

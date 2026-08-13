@@ -58,13 +58,13 @@ export const DEEPSEEK_MODEL_CAPABILITIES = {
     supportsWebSearch: true,
   },
   'deepseek-v4-pro': {
-    protocol: 'chat-completions',
+    protocol: 'responses',
     reasoning: 'switchable',
     defaultThinking: 'enabled',
     efforts: V4_EFFORTS,
     supportsFunctionTools: true,
     supportsStructuredOutput: true,
-    supportsWebSearch: false,
+    supportsWebSearch: true,
   },
   'deepseek-chat': {
     protocol: 'chat-completions',
@@ -97,14 +97,13 @@ export const getDeepSeekModelCapabilities = (model: string): DeepSeekModelCapabi
   isOfficialDeepSeekModel(model) ? DEEPSEEK_MODEL_CAPABILITIES[model] : null;
 
 const normalizeReasoningEffort = (
-  model: OfficialDeepSeekModel,
   mode: Exclude<ReasoningOptions['mode'], 'default' | 'off'>,
 ): DeepSeekReasoningEffort => {
   if (mode === 'minimal' || mode === 'low') {
     return 'low';
   }
   if (mode === 'xhigh') {
-    return model === 'deepseek-v4-pro' ? 'max' : 'high';
+    return 'high';
   }
   return 'high';
 };
@@ -148,7 +147,7 @@ export const resolveDeepSeekReasoningConfig = (
     throw new Error(`DeepSeek model "${model}" does not support reasoning`);
   }
 
-  const effort = normalizeReasoningEffort(model as OfficialDeepSeekModel, mode);
+  const effort = normalizeReasoningEffort(mode);
   return {
     protocol: capabilities.protocol,
     recognizedModel: true,

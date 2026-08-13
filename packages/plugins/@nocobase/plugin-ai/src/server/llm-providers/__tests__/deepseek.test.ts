@@ -47,8 +47,10 @@ describe('DeepSeek protocol contract', () => {
   it('freezes the official model protocol and web-search capability matrix', () => {
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].protocol).toBe('responses');
     expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-flash'].supportsWebSearch).toBe(true);
-    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].protocol).toBe('chat-completions');
-    expect(deepseekProviderOptions.webSearchModels).toEqual([deepSeekThinkingModeFixture.responsesModel]);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].protocol).toBe('responses');
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-v4-pro'].supportsWebSearch).toBe(true);
+    expect(DEEPSEEK_MODEL_CAPABILITIES['deepseek-chat'].protocol).toBe('chat-completions');
+    expect(deepseekProviderOptions.webSearchModels).toEqual(deepSeekThinkingModeFixture.responsesModels);
   });
 
   it.each([
@@ -60,12 +62,12 @@ describe('DeepSeek protocol contract', () => {
     ['deepseek-v4-flash', 'high', deepSeekThinkingModeFixture.responsesThinkingEnabled],
     ['deepseek-v4-flash', 'xhigh', { reasoning: { effort: 'high' } }],
     ['deepseek-v4-pro', 'default', {}],
-    ['deepseek-v4-pro', 'off', deepSeekThinkingModeFixture.chatThinkingDisabled],
-    ['deepseek-v4-pro', 'minimal', { thinking: { type: 'enabled' }, reasoning_effort: 'low' }],
-    ['deepseek-v4-pro', 'low', { thinking: { type: 'enabled' }, reasoning_effort: 'low' }],
-    ['deepseek-v4-pro', 'medium', deepSeekThinkingModeFixture.chatThinkingEnabled],
-    ['deepseek-v4-pro', 'high', deepSeekThinkingModeFixture.chatThinkingEnabled],
-    ['deepseek-v4-pro', 'xhigh', { thinking: { type: 'enabled' }, reasoning_effort: 'max' }],
+    ['deepseek-v4-pro', 'off', deepSeekThinkingModeFixture.responsesThinkingDisabled],
+    ['deepseek-v4-pro', 'minimal', { reasoning: { effort: 'low' } }],
+    ['deepseek-v4-pro', 'low', { reasoning: { effort: 'low' } }],
+    ['deepseek-v4-pro', 'medium', deepSeekThinkingModeFixture.responsesThinkingEnabled],
+    ['deepseek-v4-pro', 'high', deepSeekThinkingModeFixture.responsesThinkingEnabled],
+    ['deepseek-v4-pro', 'xhigh', { reasoning: { effort: 'high' } }],
   ] as const)('maps %s reasoning mode %s to the official wire format', (model, mode, expected) => {
     const config = resolveDeepSeekReasoningConfig(model, { mode });
     expect(getDeepSeekReasoningRequestParams(config)).toEqual(expected);
@@ -86,25 +88,22 @@ describe('DeepSeek protocol contract', () => {
     );
   });
 
-  it('normalizes the final Chat Completions request body', () => {
+  it('normalizes the final Chat Completions request body for legacy models', () => {
     const request = {
-      model: 'deepseek-v4-pro',
+      model: 'deepseek-reasoner',
       messages: [{ role: 'user', content: 'hello' }],
       temperature: 0.2,
       top_p: 0.8,
       presence_penalty: 1,
       frequency_penalty: 1,
       logprobs: true,
-      reasoning_effort: 'low',
-      thinking: { type: 'disabled' },
     } as unknown as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming & Record<string, unknown>;
 
-    normalizeDeepSeekChatRequest(request, resolveDeepSeekReasoningConfig('deepseek-v4-pro', { mode: 'high' }));
+    normalizeDeepSeekChatRequest(request, resolveDeepSeekReasoningConfig('deepseek-reasoner', { mode: 'high' }));
 
     expect(request).toMatchObject({
-      model: 'deepseek-v4-pro',
+      model: 'deepseek-reasoner',
       logprobs: true,
-      ...deepSeekThinkingModeFixture.chatThinkingEnabled,
     });
     for (const field of deepSeekThinkingModeFixture.unsupportedThinkingFields) {
       expect(request[field]).toBeUndefined();
@@ -144,29 +143,39 @@ describe('DeepSeek protocol contract', () => {
 });
 
 describe('DeepSeek final client routing', () => {
-  it('sends V4 Pro through Chat Completions after final-body normalization', async () => {
+  it('sends V4 Pro through Responses with the DeepSeek web_search tool', async () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
     const provider = new DeepSeekProvider({
       app: createApp({ apiKey: 'test-key' }),
-      modelOptions: { model: 'deepseek-v4-pro', temperature: 0.3, _reasoning: { mode: 'high' } },
+      modelOptions: {
+        model: 'deepseek-v4-pro',
+        builtIn: { webSearch: true },
+        _reasoning: { mode: 'high' },
+      },
     });
     const create = vi.fn(async (request: unknown) => ({ request }));
-    const model = provider.chatModel as unknown as {
-      client: unknown;
-      completionWithRetry: (request: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming) => Promise<unknown>;
-    };
-    model.client = { chat: { completions: { create } } };
+    const responses = (
+      provider.chatModel as unknown as {
+        responses: {
+          client: unknown;
+          completionWithRetry: (request: OpenAI.Responses.ResponseCreateParamsNonStreaming) => Promise<unknown>;
+        };
+      }
+    ).responses;
+    responses.client = { responses: { create } };
 
-    await model.completionWithRetry({
+    await responses.completionWithRetry({
       model: 'deepseek-v4-pro',
-      messages: [{ role: 'user', content: 'hello' }],
-      temperature: 0.3,
+      input: 'hello',
+      tools: provider.resolveTools([]) as OpenAI.Responses.Tool[],
       stream: false,
     });
 
     expect(create).toHaveBeenCalledOnce();
-    expect(create.mock.calls[0][0]).toMatchObject(deepSeekThinkingModeFixture.chatThinkingEnabled);
-    expect(create.mock.calls[0][0].temperature).toBeUndefined();
+    expect(create.mock.calls[0][0]).toMatchObject({
+      reasoning: { effort: 'high' },
+      tools: [{ type: 'web_search' }],
+    });
   });
 
   it('sends V4 Flash through Responses with the DeepSeek web_search tool', async () => {
@@ -274,7 +283,7 @@ describe('DeepSeek final client routing', () => {
     expect(chunks.map((chunk) => provider.parseResponseChunk(chunk.content)).filter(Boolean)).toEqual(['answer']);
   });
 
-  it('rejects web search for non-Flash DeepSeek models before provider invocation', async () => {
+  it('rejects web search for legacy DeepSeek models before provider invocation', async () => {
     const manager = new AIManager({
       app: createApp({ apiKey: 'test-key' }),
       db: {
@@ -288,7 +297,7 @@ describe('DeepSeek final client routing', () => {
     await expect(
       manager.getLLMService({
         llmService: 'deepseek-service',
-        model: 'deepseek-v4-pro',
+        model: 'deepseek-chat',
         webSearch: true,
       }),
     ).rejects.toThrow(/Web search is not supported/);

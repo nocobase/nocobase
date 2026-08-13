@@ -121,11 +121,12 @@ describe('AIConfigRepository', () => {
         { label: 'V4 Pro', value: 'deepseek-v4-pro' },
       ],
       supportWebSearch: true,
-      webSearchModels: ['deepseek-v4-flash'],
+      webSearchModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
     };
 
     expect(supportsWebSearchForModel(service, 'deepseek-v4-flash')).toBe(true);
-    expect(supportsWebSearchForModel(service, 'deepseek-v4-pro')).toBe(false);
+    expect(supportsWebSearchForModel(service, 'deepseek-v4-pro')).toBe(true);
+    expect(supportsWebSearchForModel(service, 'deepseek-chat')).toBe(false);
   });
 
   it('keeps provider-level web search compatibility when no model list is present', () => {
