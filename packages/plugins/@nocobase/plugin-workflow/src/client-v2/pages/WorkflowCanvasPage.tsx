@@ -97,7 +97,7 @@ export default function WorkflowCanvasPage() {
         title={t('Workflow does not exist')}
         extra={
           <Button type="primary" onClick={() => navigate('/admin/settings/workflow')}>
-            {t('Back to workflow list')}
+            {t('Workflow list')}
           </Button>
         }
       />

@@ -66,17 +66,13 @@ export function ExecutionCanvas({ record, resource, refresh }: { record: any; re
     }
   }, [jobs, viewJob?.id]);
 
-  const onBack = () => {
-    navigate(-1);
-  };
-
   if (!workflow) {
     return (
       <Result
         status="404"
         title={t('Not found')}
         subTitle={t('Workflow of execution is not existed')}
-        extra={<Button onClick={onBack}>{t('Go back')}</Button>}
+        extra={<Button onClick={() => navigate('/admin/settings/workflow')}>{t('Workflow list')}</Button>}
       />
     );
   }

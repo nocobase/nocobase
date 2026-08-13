@@ -112,7 +112,7 @@ describe('WorkflowCanvasPage', () => {
     render(<WorkflowCanvasPage />);
 
     expect(await screen.findByText('Workflow does not exist')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Back to workflow list' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Workflow list' }));
 
     expect(holder.navigate).toHaveBeenCalledWith('/admin/settings/workflow');
     expect(holder.listRevisions).not.toHaveBeenCalled();
