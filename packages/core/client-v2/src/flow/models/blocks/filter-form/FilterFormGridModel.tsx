@@ -81,6 +81,11 @@ export class FilterFormGridModel extends GridModel {
       return key;
     };
 
+    const fieldModelValueKey = normalizeKey(subModel.subModels?.field?.props?.fieldNames?.value);
+    if (fieldModelValueKey) {
+      return fieldModelValueKey;
+    }
+
     const filterTargetKey = normalizeKey(field?.targetCollection?.filterTargetKey);
     const fieldTargetKey = normalizeKey(field?.targetKey);
 
