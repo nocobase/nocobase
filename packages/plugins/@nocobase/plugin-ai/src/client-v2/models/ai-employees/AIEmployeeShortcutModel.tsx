@@ -12,6 +12,8 @@ import { Avatar, Card, Radio, Select, Space, Spin, Switch, Tag, Tooltip, Typogra
 import type { RadioGroupProps } from 'antd';
 import { FlowModel, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { FlowModelContext } from '@nocobase/flow-engine';
+import type { Field } from '@formily/core';
+import { useField } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { AIEmployeeShortcut } from '../../ai-employees/AIEmployeeShortcut';
 import { AddContextButton } from '../../ai-employees/AddContextButton';
@@ -23,7 +25,7 @@ import { dialogController } from '../../ai-employees/stores/dialog-controller';
 import type { AIEmployee, ContextItem, SkillSettings, Task } from '../../ai-employees/types';
 import { useT, tExpr } from '../../locale';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
-import type { LLMServiceItem } from '../../repositories/AIConfigRepository';
+import { supportsWebSearchForModel, type LLMServiceItem } from '../../repositories/AIConfigRepository';
 import { RemoteSelect } from '../../components/RemoteSelect';
 
 const { Meta } = Card;
@@ -132,6 +134,13 @@ const getServiceByOverride = (services: LLMServiceItem[], override?: Task['model
     return undefined;
   }
   return services.find((service) => service.llmService === override.llmService);
+};
+
+export const getShortcutTaskIndexFromFieldPath = (segments: Array<string | number>): number | null => {
+  const tasksIndex = segments.lastIndexOf('tasks');
+  const rawIndex = tasksIndex >= 0 ? segments[tasksIndex + 1] : undefined;
+  const index = typeof rawIndex === 'number' ? rawIndex : typeof rawIndex === 'string' ? Number(rawIndex) : Number.NaN;
+  return Number.isInteger(index) && index >= 0 ? index : null;
 };
 
 export const normalizeShortcutTaskSkillSettings = (
@@ -331,12 +340,14 @@ const TaskWebSearchSwitch: React.FC<{
 }> = observer(({ value, onChange }) => {
   const t = useT();
   const ctx = useFlowSettingsContext<AIEmployeeShortcutModel>();
+  const field = useField<Field>();
   const { services } = useLLMServices();
   const tasks = ctx.model.getStepParams('shortcutSettings', 'editTasks')?.tasks;
-  const currentModel = Array.isArray(tasks) ? tasks.find((task) => task?.webSearch === value)?.model : undefined;
+  const taskIndex = getShortcutTaskIndexFromFieldPath(Array.from(field.path.segments));
+  const currentModel = Array.isArray(tasks) && taskIndex != null ? tasks[taskIndex]?.model : undefined;
   const selectedService = useMemo(() => getServiceByOverride(services, currentModel), [currentModel, services]);
-  const supportWebSearch = selectedService?.supportWebSearch;
-  const isDisabled = !!currentModel && supportWebSearch === false;
+  const supportWebSearch = supportsWebSearchForModel(selectedService, currentModel?.model);
+  const isDisabled = !!currentModel && !supportWebSearch;
 
   useEffect(() => {
     if (isDisabled && value) {
