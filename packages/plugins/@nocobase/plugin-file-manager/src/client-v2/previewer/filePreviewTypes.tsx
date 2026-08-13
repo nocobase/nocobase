@@ -962,7 +962,7 @@ const VideoPreviewer = ({ file }: FilePreviewerProps) => {
     return null;
   }
   return (
-    <video controls width="100%" height="100%">
+    <video key={src} controls width="100%" height="100%">
       <source src={src} type={file?.type || file?.mimetype} />
       {t('Your browser does not support the video tag.')}
     </video>
