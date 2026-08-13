@@ -117,6 +117,14 @@ function selectPreferredDefaultRule(rules: FlowSurfaceFieldBindingRuleRecord[]) 
 
 const FIELD_BINDING_RULE_DEFINITIONS = [
   {
+    scope: 'filter',
+    modelClassName: 'CascadeSelectFieldModel',
+    interfaces: ['m2o', 'o2o', 'oho', 'obo'],
+    isDefault: true,
+    order: 60,
+    when: ({ targetCollection }) => getCollectionTemplate(targetCollection) === 'tree',
+  },
+  {
     scope: 'display',
     modelClassName: 'DisplayPreviewFieldModel',
     interfaces: ['attachment', 'attachmentURL', 'm2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'],
