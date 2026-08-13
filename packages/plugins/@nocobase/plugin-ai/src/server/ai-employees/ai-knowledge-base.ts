@@ -73,11 +73,37 @@ export const KNOWLEDGE_BASE_ON_DEMAND_PROMPT =
 export const KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT =
   'The <knowledgeBase> content was retrieved in advance for the current user request. Use it directly when it is sufficient to answer; do not call the knowledge base retrieval tool again unless additional or different knowledge-base information is genuinely needed.';
 
+export const KNOWLEDGE_BASE_NO_ACCESS_PROMPT =
+  'The current user does not have permission to access any knowledge base available to this AI employee. Clearly inform the user that no bound knowledge base is currently accessible and that they must contact an administrator to request knowledge-base access. Do not claim to have searched or used knowledge-base content.';
+
+export const getKnowledgeBaseBackgroundPrompt = ({
+  accessDenied,
+  onDemand,
+  preRetrieved,
+}: {
+  accessDenied: boolean;
+  onDemand: boolean;
+  preRetrieved: boolean;
+}): string | undefined => {
+  if (accessDenied) {
+    return KNOWLEDGE_BASE_NO_ACCESS_PROMPT;
+  }
+  if (onDemand) {
+    return KNOWLEDGE_BASE_ON_DEMAND_PROMPT;
+  }
+  return preRetrieved ? KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT : undefined;
+};
+
 export type KnowledgeBaseRetrieveOptions = {
   username?: string;
   employee?: AIEmployee;
   query: string;
   roleNames?: string[];
+};
+
+export type KnowledgeBaseAccessOptions = {
+  employee: AIEmployee;
+  roleNames: string[];
 };
 
 const normalizeMatchedQuestions = (value: unknown) => {
@@ -117,6 +143,15 @@ export class KnowledgeBaseManager {
       : await promptTemplate.format({
           knowledgeBaseData,
         });
+  }
+  async hasAccessibleKnowledgeBase({ employee, roleNames }: KnowledgeBaseAccessOptions): Promise<boolean> {
+    const knowledgeBaseKeys = employee.knowledgeBase?.knowledgeBaseKeys ?? [];
+    const knowledgeBaseFeature = this.plugin.features.knowledgeBase;
+    if (!knowledgeBaseFeature.getAccessibleKnowledgeBaseKeys) {
+      return true;
+    }
+    const accessibleKeys = await knowledgeBaseFeature.getAccessibleKnowledgeBaseKeys({ knowledgeBaseKeys, roleNames });
+    return accessibleKeys.length > 0;
   }
 
   async isEnabledKnowledgeBase(username: string): Promise<boolean>;

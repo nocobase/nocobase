@@ -12,8 +12,10 @@ import type { AIEmployee } from '../../collections/ai-employees';
 import { KnowledgeBaseManager } from '../ai-employees/ai-knowledge-base';
 import {
   getCurrentRoleNames,
-  normalizeKnowledgeBaseRetrievalStrategy,
+  getKnowledgeBaseBackgroundPrompt,
+  KNOWLEDGE_BASE_NO_ACCESS_PROMPT,
   KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT,
+  normalizeKnowledgeBaseRetrievalStrategy,
   withDefaultKnowledgeBaseRetrievalStrategy,
 } from '../ai-employees/ai-knowledge-base';
 
@@ -58,9 +60,30 @@ describe('knowledge base retrieval settings', () => {
     expect(getCurrentRoleNames({ currentRole: 'member' })).toEqual(['member']);
   });
 
-  it('instructs the agent to avoid redundant retrieval after automatic retrieval', () => {
+  it('selects the knowledge-base background instruction for each retrieval state', () => {
+    expect(getKnowledgeBaseBackgroundPrompt({ accessDenied: true, onDemand: true, preRetrieved: true })).toBe(
+      KNOWLEDGE_BASE_NO_ACCESS_PROMPT,
+    );
+    expect(getKnowledgeBaseBackgroundPrompt({ accessDenied: false, onDemand: false, preRetrieved: true })).toBe(
+      KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT,
+    );
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('contact an administrator');
     expect(KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT).toContain('<knowledgeBase>');
     expect(KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT).toContain('do not call the knowledge base retrieval tool again');
+  });
+
+  it('detects when the current roles cannot access any configured knowledge base', async () => {
+    const getAccessibleKnowledgeBaseKeys = vi.fn().mockResolvedValue([]);
+    const manager = new KnowledgeBaseManager({
+      features: { knowledgeBase: { getAccessibleKnowledgeBaseKeys } },
+    } as never);
+    const employee = createEmployee({ knowledgeBaseKeys: ['handbook'], topK: 3, score: '0.6' });
+
+    await expect(manager.hasAccessibleKnowledgeBase({ employee, roleNames: ['member'] })).resolves.toBe(false);
+    expect(getAccessibleKnowledgeBaseKeys).toHaveBeenCalledWith({
+      knowledgeBaseKeys: ['handbook'],
+      roleNames: ['member'],
+    });
   });
 
   it('passes an empty selection and all request roles to the search feature', async () => {

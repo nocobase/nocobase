@@ -27,4 +27,31 @@ describe('AIEmployee knowledge-base tools', () => {
     expect(getAIEmployeeTools).not.toHaveBeenCalled();
     expect(getToolsMap).not.toHaveBeenCalled();
   });
+
+  it('does not expose the knowledge-base tool when the current user has no accessible knowledge base', async () => {
+    const employee = Object.create(AIEmployee.prototype) as AIEmployee;
+    const hasAccessibleKnowledgeBase = vi.fn().mockResolvedValue(false);
+    const getTools = vi.fn();
+
+    Reflect.set(employee, 'employee', {
+      toJSON: () => ({ enableKnowledgeBase: true, knowledgeBase: { knowledgeBaseKeys: ['handbook'] } }),
+    });
+    Reflect.set(employee, 'ctx', { state: { currentUser: { roles: [{ name: 'member' }] } } });
+    Reflect.set(employee, 'plugin', {
+      knowledgeBaseManager: {
+        isEnabledKnowledgeBase: vi.fn().mockResolvedValue(true),
+        hasAccessibleKnowledgeBase,
+      },
+    });
+    Reflect.set(employee, 'toolsManager', { getTools });
+
+    await expect(
+      (employee as unknown as { getKnowledgeBaseRetrieveTool: () => Promise<unknown> }).getKnowledgeBaseRetrieveTool(),
+    ).resolves.toBeUndefined();
+    expect(hasAccessibleKnowledgeBase).toHaveBeenCalledWith({
+      employee: { enableKnowledgeBase: true, knowledgeBase: { knowledgeBaseKeys: ['handbook'] } },
+      roleNames: ['member'],
+    });
+    expect(getTools).not.toHaveBeenCalled();
+  });
 });

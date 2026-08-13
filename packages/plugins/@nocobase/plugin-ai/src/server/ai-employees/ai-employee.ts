@@ -22,8 +22,7 @@ import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
 import {
   getCurrentRoleNames,
-  KNOWLEDGE_BASE_ON_DEMAND_PROMPT,
-  KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT,
+  getKnowledgeBaseBackgroundPrompt,
   normalizeKnowledgeBaseRetrievalStrategy,
 } from './ai-knowledge-base';
 import {
@@ -177,15 +176,6 @@ export class AIEmployee {
   private getAIEmployeeRecord(): AIEmployeeType {
     return this.employee.toJSON() as AIEmployeeType;
   }
-
-  private async isOnDemandKnowledgeBaseEnabled(): Promise<boolean> {
-    const employee = this.getAIEmployeeRecord();
-    return (
-      (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
-      normalizeKnowledgeBaseRetrievalStrategy(employee.knowledgeBase?.retrievalStrategy) === 'onDemand'
-    );
-  }
-
   async getFormatMessages(userMessages: AIMessageInput[]) {
     const { provider } = await this.plugin.aiManager.getLLMService({
       ...this.model,
@@ -873,10 +863,21 @@ export class AIEmployee {
     }
 
     const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
-    const knowledgeBaseOnDemand = await this.isOnDemandKnowledgeBaseEnabled();
     if (this.systemPromptMode === 'raw') {
       return about;
     }
+    const employee = this.getAIEmployeeRecord();
+    const knowledgeBaseManager = this.plugin.knowledgeBaseManager;
+    const knowledgeBaseEnabled = await knowledgeBaseManager.isEnabledKnowledgeBase(employee);
+    const roleNames = getCurrentRoleNames(this.ctx.state);
+    const hasAccessibleKnowledgeBase = knowledgeBaseEnabled
+      ? await knowledgeBaseManager.hasAccessibleKnowledgeBase({ employee, roleNames })
+      : false;
+    const knowledgeBaseAccessDenied = knowledgeBaseEnabled && !hasAccessibleKnowledgeBase;
+    const knowledgeBaseOnDemand =
+      knowledgeBaseEnabled &&
+      hasAccessibleKnowledgeBase &&
+      normalizeKnowledgeBaseRetrievalStrategy(employee.knowledgeBase?.retrievalStrategy) === 'onDemand';
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
@@ -902,29 +903,25 @@ export class AIEmployee {
     if (addSystemPrompt.length) {
       background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
     }
-    if (knowledgeBaseOnDemand) {
-      background = `${background}\n${KNOWLEDGE_BASE_ON_DEMAND_PROMPT}`;
-    }
 
     let knowledgeBase: string | undefined;
-    const { knowledgeBaseManager } = this.plugin;
-    const employee = this.getAIEmployeeRecord();
-    if (
-      !knowledgeBaseOnDemand &&
-      (await knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
-      userMessages?.length
-    ) {
+    if (knowledgeBaseEnabled && hasAccessibleKnowledgeBase && !knowledgeBaseOnDemand && userMessages?.length) {
       const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
       if (lastUserMessage) {
         knowledgeBase = await knowledgeBaseManager.retrievePrompt({
           employee,
           query: lastUserMessage.content.content as string,
-          roleNames: getCurrentRoleNames(this.ctx.state),
+          roleNames,
         });
       }
     }
-    if (!knowledgeBaseOnDemand && knowledgeBase) {
-      background = `${background}\n${KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT}`;
+    const knowledgeBaseBackgroundPrompt = getKnowledgeBaseBackgroundPrompt({
+      accessDenied: knowledgeBaseAccessDenied,
+      onDemand: knowledgeBaseOnDemand,
+      preRetrieved: Boolean(knowledgeBase),
+    });
+    if (knowledgeBaseBackgroundPrompt) {
+      background = `${background}\n${knowledgeBaseBackgroundPrompt}`;
     }
     const availableSkills = await this.getAvailableSkills();
     const availableAIEmployees = await this.getAvailableAIEmployees();
@@ -1458,7 +1455,16 @@ If information is missing, clearly state it in the summary.</Important>`;
   }
 
   private async getKnowledgeBaseRetrieveTool(): Promise<ToolsEntry | undefined> {
-    if (!(await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.getAIEmployeeRecord()))) {
+    const employee = this.getAIEmployeeRecord();
+    const knowledgeBaseManager = this.plugin.knowledgeBaseManager;
+    if (!(await knowledgeBaseManager.isEnabledKnowledgeBase(employee))) {
+      return undefined;
+    }
+    const hasAccessibleKnowledgeBase = await knowledgeBaseManager.hasAccessibleKnowledgeBase({
+      employee,
+      roleNames: getCurrentRoleNames(this.ctx.state),
+    });
+    if (!hasAccessibleKnowledgeBase) {
       return undefined;
     }
     return await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, { ctx: this.ctx });
