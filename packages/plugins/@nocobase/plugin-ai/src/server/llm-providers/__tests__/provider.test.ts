@@ -361,21 +361,17 @@ describe('LLM provider baseURL guard', () => {
     expect(provider.chatModel.invocationParams().thinking).toBeUndefined();
   });
 
-  it('maps DeepSeek reasoning off to disabled thinking without reasoning effort', () => {
+  it('maps DeepSeek Responses reasoning off to none', () => {
     process.env.SERVER_REQUEST_WHITELIST = 'api.deepseek.com';
 
     const provider = new DeepSeekProvider({
       app: createApp({ apiKey: 'test-key' }),
       modelOptions: { model: 'deepseek-v4-pro', _reasoning: { mode: 'off' } },
     });
-    const params = provider.chatModel.invocationParams();
 
-    expect(params).toMatchObject({
-      thinking: {
-        type: 'disabled',
-      },
+    expect(provider.chatModel.invocationParams()).toMatchObject({
+      reasoning: { effort: 'none' },
     });
-    expect(params.reasoning_effort).toBeUndefined();
   });
 
   it('maps DeepSeek reasoning effort when thinking is enabled', () => {
@@ -387,10 +383,7 @@ describe('LLM provider baseURL guard', () => {
     });
 
     expect(provider.chatModel.invocationParams()).toMatchObject({
-      thinking: {
-        type: 'enabled',
-      },
-      reasoning_effort: 'high',
+      reasoning: { effort: 'high' },
     });
   });
 
