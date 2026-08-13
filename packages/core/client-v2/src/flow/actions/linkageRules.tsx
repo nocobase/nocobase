@@ -124,11 +124,16 @@ const isActionFlowModel = (model: any): boolean => {
   return false;
 };
 
+const isFormFieldModel = (model: unknown): model is FlowModel => {
+  if (!model || typeof model !== 'object') return false;
+  return !!(model as FlowModel).subModels?.field;
+};
+
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
     const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    return fieldModels.map((model: any) => ({
+    return fieldModels.filter(isFormFieldModel).map((model) => ({
       label: model.props.label || model.props.name,
       value: model.uid,
       model,
@@ -350,8 +355,8 @@ const FieldStateEditor = ({
 const getFormFieldsByForkModel = (ctx: any) => {
   try {
     const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    return fieldModels.map((model: any) => {
-      const forkModel = Array.from(model.forks)[0] as any;
+    return fieldModels.filter(isFormFieldModel).map((model) => {
+      const forkModel = Array.from(model.forks)[0] as FlowModel | undefined;
 
       if (forkModel) {
         return {
