@@ -74,7 +74,7 @@ const actionFields: Record<JsTemplateSyncActionName, ReadonlySet<string>> = {
     'expectedRemoteTargetVersion',
     'planFingerprint',
   ]),
-  createFromGit: new Set(['provider', 'config', 'name', 'title', 'description', 'authRef']),
+  createFromGit: new Set(['idempotencyKey', 'provider', 'config', 'name', 'title', 'description', 'authRef']),
 };
 const configFields = new Set(['url', 'branch', 'subdirectory', 'transport']);
 
@@ -172,6 +172,7 @@ function validateSyncInput(action: JsTemplateSyncActionName, input: unknown): vo
       requireNonEmptyString(record.planFingerprint);
       return;
     case 'createFromGit':
+      requireBoundedIdempotencyKey(record.idempotencyKey);
       validateProvider(record.provider);
       validateConfig(record.config);
       requireNonEmptyString(record.name);
@@ -179,6 +180,12 @@ function validateSyncInput(action: JsTemplateSyncActionName, input: unknown): vo
       requireOptionalNullableString(record, 'description');
       validateAuthRef(action, record);
       return;
+  }
+}
+
+function requireBoundedIdempotencyKey(value: unknown): void {
+  if (typeof value !== 'string' || !value.trim() || value !== value.trim() || value.length > 255) {
+    throw new JsTemplateSyncRequestInputError();
   }
 }
 
@@ -210,11 +217,13 @@ function validateAuthRef(action: JsTemplateSyncActionName, record: Record<string
   if (!('authRef' in record)) {
     return;
   }
-  if (!authRefActions.has(action) || typeof record.authRef !== 'string') {
+  if (!authRefActions.has(action)) {
     throw new JsTemplateSyncRequestInputError();
   }
-  if (!isCredentialInput(record.authRef)) {
-    throw new JsTemplateSyncRequestInputError();
+  if (record.authRef !== null) {
+    if (typeof record.authRef !== 'string' || !isCredentialInput(record.authRef)) {
+      throw new JsTemplateSyncRequestInputError();
+    }
   }
 }
 
@@ -238,7 +247,7 @@ function validateConfig(value: unknown): void {
   if (config.subdirectory !== undefined && config.subdirectory !== null) {
     requireTrimmedString(config.subdirectory, true);
   }
-  if (config.transport !== undefined && config.transport !== 'https' && config.transport !== 'ssh') {
+  if (config.transport !== undefined && config.transport !== 'http' && config.transport !== 'https') {
     throw new JsTemplateSyncRequestInputError();
   }
 }

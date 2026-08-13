@@ -119,7 +119,6 @@ export const getMenuCreationDefaultParams = (
 const MENU_TYPE_OPTIONS: Array<{ label: string; value: AdminLayoutMenuCreationType }> = [
   { label: 'Group', value: 'group' },
   { label: 'Page', value: 'flowPage' },
-  { label: 'JavaScript page', value: 'jsPage' },
   { label: 'Link', value: 'link' },
 ];
 
@@ -334,7 +333,7 @@ export const buildInsertRouteSchema = (
   tabSchemaUid: string,
   tabSchemaName: string,
 ) => {
-  return menuType === 'flowPage' || menuType === 'jsPage'
+  return menuType === 'flowPage'
     ? getFlowPageMenuSchema({ pageSchemaUid })
     : getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName });
 };

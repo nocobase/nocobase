@@ -85,6 +85,7 @@ export interface RemoteSyncAdapterCapabilities {
 export interface RemoteSyncAdapterTarget {
   config: VscRemoteNormalizedConfig;
   authRef: string | null;
+  signal?: AbortSignal;
 }
 
 export interface RemoteSyncProbeResult {
@@ -108,7 +109,7 @@ export interface RemoteSyncAdapter {
   readonly title: string;
   readonly capabilities: RemoteSyncAdapterCapabilities;
   normalizeConfig(input: unknown): VscRemoteNormalizedConfig;
-  resolveConfigDraft?(input: unknown, authRef: string | null): Promise<VscRemoteNormalizedConfig>;
+  resolveConfigDraft?(input: unknown, authRef: string | null, signal?: AbortSignal): Promise<VscRemoteNormalizedConfig>;
   probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult>;
   fetchSnapshot(target: RemoteSyncAdapterTarget, revision?: string | null): Promise<VscRemoteSnapshot>;
   publishSnapshot(

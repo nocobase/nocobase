@@ -9,7 +9,7 @@
 
 import * as _ from 'lodash';
 
-export type RunJsSourceBindingKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
+export type RunJsSourceBindingKind = 'js-block' | 'js-field' | 'js-action' | 'js-item' | 'runjs';
 
 export interface RunJsSourceBindingAuthoringError {
   path: string;

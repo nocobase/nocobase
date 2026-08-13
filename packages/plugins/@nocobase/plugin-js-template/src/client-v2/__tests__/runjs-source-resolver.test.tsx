@@ -9,7 +9,7 @@
 
 import type { JsTemplateArtifact, JsTemplateRuntimeResolveResult } from '../../shared/types';
 import { type ApiClientLike, type ApiRequestOptions } from '../api/jsTemplatesRequests';
-import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
+import { JSBlockJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
 import { createJsTemplateRunJSResolver } from '../resolvers/JsTemplateRunJSResolver';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { createForm } from '@formily/core';
@@ -467,7 +467,6 @@ function registerSourceModeErrorTests() {
   const SchemaField = createSchemaField({
     components: {
       JSBlockJsTemplateSourceField,
-      JSPageJsTemplateSourceField,
     },
   });
 
@@ -668,14 +667,14 @@ function registerSourceModeErrorTests() {
       expect(mocks.request.mock.calls.every(([options]) => options.url === 'jsTemplates:listSelectable')).toBe(true);
     });
 
-    it('requests and displays only js-page entries for the JS Page selector', async () => {
+    it('requests and displays js-block entries for the JS Block selector', async () => {
       mocks.request.mockImplementation((options: { url: string }) => {
         if (options.url === 'jsTemplates:listSelectable') {
           return Promise.resolve({
             data: {
               data: [
                 createSelectableTemplate(),
-                createSelectableTemplate({ id: 'template_page', kind: 'js-page', templateName: 'page-template' }),
+                createSelectableTemplate({ id: 'template_page', kind: 'js-block', templateName: 'page-template' }),
               ],
             },
           });
@@ -684,7 +683,7 @@ function registerSourceModeErrorTests() {
       });
       const form = createForm({ initialValues: { sourceMode: 'js-template' } });
 
-      renderSourceField(form, {}, 'JSPageJsTemplateSourceField');
+      renderSourceField(form, {}, 'JSBlockJsTemplateSourceField');
 
       await waitFor(() => {
         expect(mocks.request).toHaveBeenCalledWith({
@@ -694,14 +693,14 @@ function registerSourceModeErrorTests() {
       });
       fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Code source' }));
       expect(await screen.findByText('page-template')).toBeInTheDocument();
-      expect(screen.queryByText('sales')).not.toBeInTheDocument();
+      expect(screen.getByText('sales')).toBeInTheDocument();
     });
 
     it('shows translated empty and generic request error states without leaking server details', async () => {
       mocks.request.mockRejectedValue(new Error('private binding source text'));
       const form = createForm({ initialValues: { sourceMode: 'js-template' } });
 
-      renderSourceField(form, {}, 'JSPageJsTemplateSourceField', 'sourceBinding');
+      renderSourceField(form, {}, 'JSBlockJsTemplateSourceField', 'sourceBinding');
 
       expect(await screen.findByText('Failed to load templates')).toBeInTheDocument();
       expect(screen.queryByText('private binding source text')).not.toBeInTheDocument();
@@ -762,9 +761,7 @@ function registerSourceModeErrorTests() {
     };
   }
 
-  function createSelectableTemplate(
-    options: { id?: string; kind?: 'js-block' | 'js-page'; templateName?: string } = {},
-  ) {
+  function createSelectableTemplate(options: { id?: string; kind?: 'js-block'; templateName?: string } = {}) {
     const id = options.id || 'template_sales';
     const kind = options.kind || 'js-block';
     const templateName = options.templateName || 'sales';

@@ -29,17 +29,9 @@ export function normalizeGitRepositoryUrlSyntax(value: string): GitRepositoryUrl
     return { valid: false, reason: 'invalid-url' };
   }
 
-  const scpLikeMatch = /^(?<username>[A-Za-z0-9._-]+)@(?<hostname>[^:/\s]+):(?<path>[^\s]+)$/u.exec(value);
-  const candidate = scpLikeMatch?.groups
-    ? `ssh://${scpLikeMatch.groups.username}@${scpLikeMatch.groups.hostname}/${scpLikeMatch.groups.path.replace(
-        /^\/+/,
-        '',
-      )}`
-    : value;
-
   let url: URL;
   try {
-    url = new URL(candidate);
+    url = new URL(value);
   } catch {
     return { valid: false, reason: 'invalid-url' };
   }
@@ -51,7 +43,7 @@ export function normalizeGitRepositoryUrlSyntax(value: string): GitRepositoryUrl
   if (!url.hostname || !url.pathname || url.pathname === '/' || url.search || url.hash) {
     return { valid: false, reason: 'invalid-url' };
   }
-  if ((transport === 'https' && (url.username || url.password)) || (transport === 'ssh' && url.password)) {
+  if (url.username || url.password) {
     return { valid: false, reason: 'url-credentials-forbidden', transport };
   }
   if (url.pathname.includes('\\')) {
@@ -111,11 +103,11 @@ export function validateGitSubdirectorySyntax(subdirectory: string): GitSubdirec
 }
 
 function protocolToTransport(protocol: string): VscGitRemoteTransport | null {
+  if (protocol === 'http:') {
+    return 'http';
+  }
   if (protocol === 'https:') {
     return 'https';
-  }
-  if (protocol === 'ssh:') {
-    return 'ssh';
   }
   return null;
 }

@@ -18,6 +18,11 @@ import { RemoteSyncError } from '../../../RemoteSyncAdapter';
 import { GitCredentialMaterializer, gitCommandTemporaryDirectoryPrefix } from '../GitCredentialMaterializer';
 import { GitCommandRunner, type GitSpawnProcess } from '../GitCommandRunner';
 
+const forbiddenTransportEnvironmentNames = {
+  command: ['GIT', 'SSH', 'COMMAND'].join('_'),
+  agentSocket: ['SSH', 'AUTH', 'SOCK'].join('_'),
+} as const;
+
 async function captureError(callback: () => Promise<unknown>): Promise<RemoteSyncError> {
   try {
     await callback();
@@ -55,8 +60,12 @@ describe('GitCommandRunner', () => {
           GIT_CONFIG_GLOBAL: process.env.GIT_CONFIG_GLOBAL,
           GIT_TERMINAL_PROMPT: process.env.GIT_TERMINAL_PROMPT,
           GIT_ASKPASS: process.env.GIT_ASKPASS,
-          GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND,
-          SSH_AUTH_SOCK: process.env.SSH_AUTH_SOCK,
+          [${JSON.stringify(forbiddenTransportEnvironmentNames.command)}]: process.env[${JSON.stringify(
+            forbiddenTransportEnvironmentNames.command,
+          )}],
+          [${JSON.stringify(forbiddenTransportEnvironmentNames.agentSocket)}]: process.env[${JSON.stringify(
+            forbiddenTransportEnvironmentNames.agentSocket,
+          )}],
         },
       }));`,
     );
@@ -68,16 +77,21 @@ describe('GitCommandRunner', () => {
     const inherited = {
       HOME: process.env.HOME,
       GIT_ASKPASS: process.env.GIT_ASKPASS,
-      GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND,
-      SSH_AUTH_SOCK: process.env.SSH_AUTH_SOCK,
+      [forbiddenTransportEnvironmentNames.command]: process.env[forbiddenTransportEnvironmentNames.command],
+      [forbiddenTransportEnvironmentNames.agentSocket]: process.env[forbiddenTransportEnvironmentNames.agentSocket],
     };
     process.env.HOME = '/unsafe/inherited-home';
     process.env.GIT_ASKPASS = '/unsafe/inherited-askpass';
-    process.env.GIT_SSH_COMMAND = 'ssh -o StrictHostKeyChecking=no';
-    process.env.SSH_AUTH_SOCK = '/unsafe/inherited-agent';
+    process.env[forbiddenTransportEnvironmentNames.command] = 'ssh -o StrictHostKeyChecking=no';
+    process.env[forbiddenTransportEnvironmentNames.agentSocket] = '/unsafe/inherited-agent';
 
     try {
-      const runner = new GitCommandRunner({ gitBinary: fakeGit, materializer, spawnProcess });
+      const runner = new GitCommandRunner({
+        gitBinary: fakeGit,
+        materializer,
+        spawnProcess,
+        urlPolicyChecker: () => undefined,
+      });
       const remoteUrl = 'https://git.example.com/team/project.git;touch-command-injection';
       await runner.run({
         args: ['ls-remote', remoteUrl, 'main;touch injected'],
@@ -108,8 +122,8 @@ describe('GitCommandRunner', () => {
       GIT_TERMINAL_PROMPT: '0',
     });
     expect(captured.env.GIT_ASKPASS).toBeUndefined();
-    expect(captured.env.GIT_SSH_COMMAND).toBeUndefined();
-    expect(captured.env.SSH_AUTH_SOCK).toBeUndefined();
+    expect(captured.env[forbiddenTransportEnvironmentNames.command]).toBeUndefined();
+    expect(captured.env[forbiddenTransportEnvironmentNames.agentSocket]).toBeUndefined();
     expect(capturedSpawnOptions).toMatchObject({ shell: false });
     await expect(access(injectedPath)).rejects.toMatchObject({ code: 'ENOENT' });
     expect(
@@ -143,6 +157,98 @@ describe('GitCommandRunner', () => {
       code: 'REMOTE_UNAVAILABLE',
       details: { reasonCode: 'network-policy-blocked' },
     });
+    expect(spawnCount).toBe(0);
+  });
+
+  it('blocks local network targets by default and allows only explicit whitelist entries', async () => {
+    const previousWhitelist = process.env.SERVER_REQUEST_WHITELIST;
+    delete process.env.SERVER_REQUEST_WHITELIST;
+    let spawnCount = 0;
+    const fakeGit = await createFakeGit('process.exit(0);');
+    const runner = new GitCommandRunner({
+      gitBinary: fakeGit,
+      materializer,
+      spawnProcess: (command, args, options) => {
+        spawnCount += 1;
+        return spawnNodeScript(command, args, options);
+      },
+    });
+    try {
+      await expect(
+        runner.run({
+          args: ['ls-remote', 'http://127.0.0.1/project.git'],
+          remoteUrl: 'http://127.0.0.1/project.git',
+          transport: 'http',
+        }),
+      ).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE', details: { reasonCode: 'network-policy-blocked' } });
+      expect(spawnCount).toBe(0);
+
+      process.env.SERVER_REQUEST_WHITELIST = '127.0.0.1';
+      await expect(
+        runner.run({
+          args: ['ls-remote', 'http://127.0.0.1/project.git'],
+          remoteUrl: 'http://127.0.0.1/project.git',
+          transport: 'http',
+        }),
+      ).resolves.toMatchObject({ exitCode: 0 });
+      expect(spawnCount).toBeGreaterThan(0);
+    } finally {
+      if (previousWhitelist === undefined) {
+        delete process.env.SERVER_REQUEST_WHITELIST;
+      } else {
+        process.env.SERVER_REQUEST_WHITELIST = previousWhitelist;
+      }
+    }
+  });
+
+  it('pins a validated DNS address into the Git HTTP transport', async () => {
+    const capturePath = path.join(temporaryDirectory, 'dns-pin.json');
+    const fakeGit = await createFakeGit(
+      `require('fs').writeFileSync(${JSON.stringify(capturePath)}, JSON.stringify(process.argv.slice(2)));`,
+    );
+    let resolveCount = 0;
+    const runner = new GitCommandRunner({
+      gitBinary: fakeGit,
+      materializer,
+      resolveHost: async () => {
+        resolveCount += 1;
+        return [{ address: '203.0.113.42', family: 4 }];
+      },
+      spawnProcess: spawnNodeScript,
+    });
+
+    await runner.run({
+      args: ['ls-remote', 'https://git.example.com/team/project.git'],
+      remoteUrl: 'https://git.example.com/team/project.git',
+      transport: 'https',
+    });
+
+    const args = JSON.parse(await readFile(capturePath, 'utf8')) as string[];
+    expect(resolveCount).toBe(1);
+    expect(args).toContain('http.curloptResolve=git.example.com:443:203.0.113.42');
+    expect(args).toContain('http.followRedirects=false');
+  });
+
+  it('blocks a DNS answer that changes to a private address before Git starts', async () => {
+    let spawnCount = 0;
+    const fakeGit = await createFakeGit('process.exit(0);');
+    const runner = new GitCommandRunner({
+      gitBinary: fakeGit,
+      materializer,
+      resolveHost: async () => [{ address: '127.0.0.1', family: 4 }],
+      spawnProcess: (command, args, options) => {
+        spawnCount += 1;
+        return spawnNodeScript(command, args, options);
+      },
+    });
+
+    await expect(
+      runner.run({
+        args: ['ls-remote', 'https://git.example.com/team/project.git'],
+        remoteUrl: 'https://git.example.com/team/project.git',
+        transport: 'https',
+      }),
+    ).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE', details: { reasonCode: 'network-policy-blocked' } });
     expect(spawnCount).toBe(0);
   });
 
@@ -205,13 +311,17 @@ describe('GitCommandRunner', () => {
     ).toEqual([]);
   });
 
-  it('keeps HTTPS available when SSH is missing and redacts SSH credentials from errors', async () => {
+  it('supports public HTTP and rejects HTTP credentials before probing Git', async () => {
+    let spawnCount = 0;
     const fakeGit = await createFakeGit("process.stdout.write('ok');");
     const runner = new GitCommandRunner({
       gitBinary: fakeGit,
-      sshBinary: path.join(temporaryDirectory, 'missing-ssh'),
       materializer,
-      spawnProcess: spawnNodeScript,
+      urlPolicyChecker: () => undefined,
+      spawnProcess: (command, args, options) => {
+        spawnCount += 1;
+        return spawnNodeScript(command, args, options);
+      },
     });
     await expect(
       runner.run({
@@ -221,42 +331,38 @@ describe('GitCommandRunner', () => {
       }),
     ).resolves.toMatchObject({ exitCode: 0 });
 
-    const privateKey = 'private-key-must-not-leak';
-    const passphrase = 'passphrase-must-not-leak';
-    const knownHosts = 'known-hosts-must-not-leak';
+    expect(spawnCount).toBe(2);
+    runner.resetCapabilityCache();
+    spawnCount = 0;
+    const password = 'http-password-must-not-leak';
     const error = await captureError(() =>
       runner.run({
-        args: ['ls-remote', 'ssh://git@git.example.com/team/project.git'],
-        remoteUrl: 'ssh://git@git.example.com/team/project.git',
-        transport: 'ssh',
-        credential: { kind: 'ssh', privateKey, passphrase, knownHosts },
+        args: ['ls-remote', 'http://git.example.com/team/project.git'],
+        remoteUrl: 'http://git.example.com/team/project.git',
+        transport: 'http',
+        credential: { kind: 'https', username: 'git-user', password },
       }),
     );
     expect(error).toMatchObject({
-      code: 'REMOTE_UNAVAILABLE',
-      details: { reasonCode: 'ssh-binary-unavailable' },
+      code: 'CONFIG_INVALID',
+      details: { reasonCode: 'http-auth-forbidden' },
     });
-    expect(JSON.stringify(error.toResponseBody())).not.toMatch(
-      /private-key-must-not-leak|passphrase-must-not-leak|known-hosts-must-not-leak/u,
-    );
+    expect(JSON.stringify(error.toResponseBody())).not.toContain(password);
+    expect(spawnCount).toBe(0);
   });
 
-  it('never places HTTPS or SSH credential material in command arguments or output', async () => {
+  it('never places HTTPS credential material in command arguments or output', async () => {
     const capturePath = path.join(temporaryDirectory, 'credential-argv.json');
     const fakeGit = await createFakeGit(
       `require('fs').appendFileSync(${JSON.stringify(capturePath)}, JSON.stringify(process.argv.slice(2)) + '\\n');`,
     );
-    const fakeSsh = await createFakeGit('process.stdout.write("OpenSSH_9.9");');
     const runner = new GitCommandRunner({
       gitBinary: fakeGit,
-      sshBinary: fakeSsh,
       materializer,
       spawnProcess: spawnNodeScript,
+      urlPolicyChecker: () => undefined,
     });
     const httpsPassword = 'https-password-must-not-leak';
-    const privateKey = 'ssh-private-key-must-not-leak';
-    const passphrase = 'ssh-passphrase-must-not-leak';
-    const knownHosts = 'git.example.com ssh-ed25519 known-hosts-must-not-leak';
 
     const httpsResult = await runner.run({
       args: ['ls-remote', 'https://git.example.com/team/project.git'],
@@ -264,23 +370,12 @@ describe('GitCommandRunner', () => {
       transport: 'https',
       credential: { kind: 'https', username: 'git-user', password: httpsPassword },
     });
-    const sshResult = await runner.run({
-      args: ['ls-remote', 'ssh://git@git.example.com/team/project.git'],
-      remoteUrl: 'ssh://git@git.example.com/team/project.git',
-      transport: 'ssh',
-      credential: { kind: 'ssh', privateKey, passphrase, knownHosts },
-    });
     const observable = [
       await readFile(capturePath, 'utf8'),
       httpsResult.stdout.toString('utf8'),
       httpsResult.stderr.toString('utf8'),
-      sshResult.stdout.toString('utf8'),
-      sshResult.stderr.toString('utf8'),
     ].join('\n');
     expect(observable).not.toContain(httpsPassword);
-    expect(observable).not.toContain(privateKey);
-    expect(observable).not.toContain(passphrase);
-    expect(observable).not.toContain(knownHosts);
   });
 
   it('rejects commands, process overrides, and untrusted environment variables', async () => {

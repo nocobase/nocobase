@@ -9,14 +9,11 @@
 
 import type { JsTemplateTreeEntryInput } from './types';
 
-import { DEFAULT_JS_PAGE_TEMPLATE_FILES } from './default-template-js-pages';
-
 export const DEFAULT_JS_TEMPLATE_README = `# JS Template source
 
 Put each reusable JS Template in its own directory:
 
 - JS Block: \`src/client/js-blocks/<template-name>/index.tsx\`
-- JS Page: \`src/client/js-pages/<template-name>/index.tsx\`
 - JS Action: \`src/client/js-actions/<template-name>/index.ts\`
 - JS Field / JS Column: \`src/client/js-fields/<template-name>/index.tsx\`
 - JS Item: \`src/client/js-items/<template-name>/index.tsx\`
@@ -36,7 +33,6 @@ export const BASE_JS_TEMPLATE_TEMPLATE_FILES: readonly JsTemplateTreeEntryInput[
 
 export const DEFAULT_JS_TEMPLATE_TEMPLATE_FILES: readonly JsTemplateTreeEntryInput[] = [
   ...BASE_JS_TEMPLATE_TEMPLATE_FILES,
-  ...DEFAULT_JS_PAGE_TEMPLATE_FILES,
   {
     path: 'src/client/js-blocks/welcome-card/index.tsx',
     content: `const { Card } = ctx.libs.antd;

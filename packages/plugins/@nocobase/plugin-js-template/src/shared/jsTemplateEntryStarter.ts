@@ -24,7 +24,6 @@ export interface JsTemplateEntryStarterInput {
 
 const entryRoots: Record<JsTemplateKind, string> = {
   'js-block': 'src/client/js-blocks',
-  'js-page': 'src/client/js-pages',
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',
@@ -35,7 +34,6 @@ const renderedEntrySource = `ctx.render(<span>{ctx.t('New JS Template')}</span>)
 
 const entrySources: Record<JsTemplateKind, { fileName: string; content: string }> = {
   'js-block': { fileName: 'index.tsx', content: renderedEntrySource },
-  'js-page': { fileName: 'index.tsx', content: renderedEntrySource },
   'js-field': { fileName: 'index.tsx', content: renderedEntrySource },
   'js-action': {
     fileName: 'index.ts',

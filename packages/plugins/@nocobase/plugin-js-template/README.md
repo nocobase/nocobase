@@ -20,12 +20,11 @@ The plugin also owns the RunJS multi-file and TypeScript authoring layer. Disabl
 
 ## Template and UI contract
 
-JS Template supports five Template kinds:
+JS Template supports four Template kinds:
 
 | Template kind | JS surface | Source root |
 | --- | --- | --- |
 | `js-block` | JS Block | `src/client/js-blocks/<entry-name>/` |
-| `js-page` | JS Page | `src/client/js-pages/<entry-name>/` |
 | `js-field` | JS Field, editable JS Field, and JS Column | `src/client/js-fields/<entry-name>/` |
 | `js-action` | JS Action families | `src/client/js-actions/<entry-name>/` |
 | `js-item` | JS Item families | `src/client/js-items/<entry-name>/` |
@@ -91,7 +90,7 @@ nb js-template save --dir ./workspace --yes --json-output
 
 **Detach to Inline** copies the reachable Template files from the committed Source Project Head back to the owner and clears the external binding. It does not copy unsaved editor state or silently restore the older fallback snapshot.
 
-Both directions support `flowModel.step` owners for JS Block, JS Page, JS Field/Column, JS Action, and JS Item. Unsupported or permission-denied Hosts do not expose the conversion actions. A failed conversion leaves Source Project source, artifacts, Host state, and usages unchanged.
+Both directions support `flowModel.step` owners for JS Block, JS Field/Column, JS Action, and JS Item. Unsupported or permission-denied Hosts do not expose the conversion actions. A failed conversion leaves Source Project source, artifacts, Host state, and usages unchanged.
 
 ## Workspace ZIP safety
 
@@ -103,7 +102,7 @@ Project imports replace the local working copy. Template-scoped imports preserve
 
 ## Git synchronization safety
 
-`jsTemplateSync` is the public Git synchronization API. Its only provider is `git`; GitHub, GitLab, Gitea, Bitbucket, Azure DevOps, and self-hosted Git services are addressed through standard HTTPS, `ssh://`, or scp-like SSH URLs. It supports configuration, connection tests, Plan, Pull, Push, disconnect, and project creation from Git without exposing internal VSC records or job state.
+`jsTemplateSync` is the public Git synchronization API. Its only provider is `git`; GitHub, GitLab, Gitea, Bitbucket, Azure DevOps, and self-hosted Git services are addressed through standard HTTP or HTTPS URLs. It supports configuration, connection tests, Plan, Pull, Push, disconnect, and project creation from Git without exposing internal VSC records or job state.
 
 The ACL actions are independent:
 
@@ -114,13 +113,13 @@ The ACL actions are independent:
 
 Push and Pull require the exact local Head, remote revision, target version, and plan fingerprint returned by the latest Plan. Configuration changes, disconnect, and delete are blocked while a sync job is active. Push uses an explicit lease and refuses to overwrite a branch that changed after Plan.
 
-Git credentials are optional. Private HTTPS requires a complete `{{ $env.NAME }}` reference to a Secret JSON value containing `kind: "https"`, `username`, and `password`; literal credentials are rejected and only the Secret reference is stored in the remote record. SSH accepts a Secret JSON value containing `kind: "ssh"`, `privateKey`, optional `passphrase`, and required trusted `knownHosts`; when omitted, Git uses the NocoBase process user's SSH configuration, default keys, and SSH Agent. The transport and Secret kind must match, and strict host-key checking cannot be disabled for supplied SSH credentials.
+Git credentials are optional. Private HTTPS requires a complete `{{ $env.NAME }}` reference to a Secret JSON value containing `kind: "https"`, `username`, and `password`; literal credentials are rejected and only the Secret reference is stored in the remote record. HTTP is restricted to public repositories and rejects every authentication reference or credential input.
 
 Branch is optional while configuring or creating from a non-empty Git repository. When omitted, the remote symbolic `HEAD` is resolved and the resulting branch is persisted. An empty repository has no default branch, so its branch must be supplied explicitly; NocoBase does not guess `main` or another branch name.
 
 Git Remote reuses `SERVER_REQUEST_WHITELIST` for outbound host policy. It rejects local paths, `file://`, `git://`, custom remote helpers, symlinks, gitlinks/submodules, Git LFS pointers, binary files, and invalid UTF-8. Repository content is handled as source snapshots and is never checked out or executed.
 
-Official runtime images include Git and OpenSSH clients. Non-Docker deployments must provide `git` and `ssh` in the NocoBase service user's `PATH`.
+Official runtime images include Git and CA certificates. Non-Docker deployments must provide `git` and a trusted CA certificate store in the NocoBase service user's runtime environment.
 
 ## Asynchronous project creation
 

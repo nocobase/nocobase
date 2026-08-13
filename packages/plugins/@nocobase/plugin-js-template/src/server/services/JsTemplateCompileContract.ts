@@ -57,13 +57,6 @@ export const JS_TEMPLATE_AUTHORING_SURFACES: Record<JsTemplateKind, JsTemplateAu
     modelUse: 'JSBlockModel',
     surface: 'js-model.render',
   },
-  'js-page': {
-    kind: 'js-page',
-    surfaceStyle: 'render',
-    compilerSurfaceStyle: 'render',
-    modelUse: 'JSPageModel',
-    surface: 'js-model.render',
-  },
   'js-field': {
     kind: 'js-field',
     surfaceStyle: 'render',
@@ -286,7 +279,7 @@ export interface JsTemplateCompileBatchAggregate {
 }
 
 export interface JsTemplateCompileExecutor {
-  submitWithBackpressure(job: JsTemplateCompileJob): Promise<JsTemplateCompileResult>;
+  submitWithBackpressure(job: JsTemplateCompileJob, signal?: AbortSignal): Promise<JsTemplateCompileResult>;
 }
 
 export function normalizeJsTemplateCompileResult(

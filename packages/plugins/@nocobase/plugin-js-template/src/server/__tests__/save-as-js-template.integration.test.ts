@@ -150,7 +150,6 @@ describe('SaveAsJsTemplateService', () => {
 
   it.each([
     ['JSBlockModel', 'js-block', 'src/client/js-blocks'],
-    ['JSPageModel', 'js-page', 'src/client/js-pages'],
     ['JSActionModel', 'js-action', 'src/client/js-actions'],
     ['JSFieldModel', 'js-field', 'src/client/js-fields'],
     ['JSColumnModel', 'js-field', 'src/client/js-fields'],
@@ -377,16 +376,16 @@ describe('SaveAsJsTemplateService', () => {
     },
   );
 
-  it('creates a new project with a compiled JS Page template before binding it', async () => {
+  it('creates a new project with a compiled JS Block template before binding it', async () => {
     const transaction = { id: 'tx_create' } as unknown as Transaction;
     const recordLifecycleEvent = vi.fn(async () => undefined);
     let reservedProjectId = '';
     const createdProject = { ...project, name: 'sales-tools', normalizedName: 'sales-tools' };
     const createdEntry = {
       ...entry,
-      kind: 'js-page' as const,
-      entryPath: 'src/client/js-pages/sales-kpi/index.tsx',
-      descriptorPath: 'src/client/js-pages/sales-kpi/entry.json',
+      kind: 'js-block' as const,
+      entryPath: 'src/client/js-blocks/sales-kpi/index.tsx',
+      descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
     };
     const createProject = vi.fn(async (_input: unknown, _ctx: unknown, options: { projectId: string }) => ({
       ...createdProject,
@@ -440,11 +439,11 @@ describe('SaveAsJsTemplateService', () => {
             readLegacy: vi.fn(async () => ({
               code: 'return 1;',
               version: 'v2',
-              label: 'JavaScript page',
+              label: 'JavaScript block',
               surfaceStyle: 'render',
               language: 'typescript',
               ownerFingerprint: 'owner_before',
-              metadata: { modelUse: 'JSPageModel' },
+              metadata: { modelUse: 'JSBlockModel' },
             })),
             writeExternalBinding,
             getFingerprint: vi.fn(async () => 'owner_after'),
@@ -457,7 +456,7 @@ describe('SaveAsJsTemplateService', () => {
 
     const result = await service.saveAsJsTemplate(
       {
-        idempotencyKey: 'save-as-new-sales-kpi-page',
+        idempotencyKey: 'save-as-new-sales-kpi-block',
         locator,
         expectedOwnerFingerprint: 'owner_before',
         sourceRepoId: 'runjs_repo',
@@ -476,8 +475,8 @@ describe('SaveAsJsTemplateService', () => {
     expect(initialPaths.sort()).toEqual(
       [
         'README.md',
-        'src/client/js-pages/sales-kpi/entry.json',
-        'src/client/js-pages/sales-kpi/index.tsx',
+        'src/client/js-blocks/sales-kpi/entry.json',
+        'src/client/js-blocks/sales-kpi/index.tsx',
         'tsconfig.json',
       ].sort(),
     );
@@ -497,7 +496,7 @@ describe('SaveAsJsTemplateService', () => {
     expect(result.binding).toMatchObject({
       projectId: reservedProjectId,
       templateId: createdEntry.id,
-      kind: 'js-page',
+      kind: 'js-block',
     });
     expect(recordLifecycleEvent).toHaveBeenCalledTimes(1);
     expect(recordLifecycleEvent).toHaveBeenCalledWith({
@@ -507,7 +506,7 @@ describe('SaveAsJsTemplateService', () => {
       requestId: 'req_save_as_new',
       actorUserId: undefined,
       message: 'RunJS source saved as a JS Template',
-      details: { destinationType: 'new', templateId: createdEntry.id, kind: 'js-page' },
+      details: { destinationType: 'new', templateId: createdEntry.id, kind: 'js-block' },
       transaction,
     });
   });
@@ -1008,14 +1007,14 @@ describe('SaveAsJsTemplateService', () => {
     expect(operationModel.getValues()).toMatchObject({ status: 'completed' });
   });
 
-  it('rejects a disabled destination before writing JS Page state', async () => {
+  it('rejects a disabled destination before writing JS Block state', async () => {
     const lifecycleStatus = 'disabled';
     const saveSource = vi.fn();
     const writeExternalBinding = vi.fn();
     const syncUsages = vi.fn();
     const service = createFailureService({
       destinationProject: { ...project, lifecycleStatus },
-      modelUse: 'JSPageModel',
+      modelUse: 'JSBlockModel',
       saveSource,
       writeExternalBinding,
       syncUsages,
@@ -1043,14 +1042,14 @@ describe('SaveAsJsTemplateService', () => {
     expect(syncUsages).not.toHaveBeenCalled();
   });
 
-  it('does not bind or sync usages when JS Page compilation fails', async () => {
+  it('does not bind or sync usages when JS Block compilation fails', async () => {
     const saveSource = vi.fn(async () => {
       throw new Error('compile failed');
     });
     const writeExternalBinding = vi.fn();
     const syncUsages = vi.fn();
     const service = createFailureService({
-      modelUse: 'JSPageModel',
+      modelUse: 'JSBlockModel',
       saveSource,
       writeExternalBinding,
       syncUsages,
@@ -1083,13 +1082,13 @@ describe('SaveAsJsTemplateService', () => {
     const saveSource = vi.fn(async () => ({ project, commit: {}, tree: {}, compile: {}, diagnostics: [] }));
     const savedPageTemplate = {
       ...entry,
-      kind: 'js-page' as const,
-      entryPath: 'src/client/js-pages/sales-kpi/index.ts',
-      descriptorPath: 'src/client/js-pages/sales-kpi/entry.json',
+      kind: 'js-block' as const,
+      entryPath: 'src/client/js-blocks/sales-kpi/index.ts',
+      descriptorPath: 'src/client/js-blocks/sales-kpi/entry.json',
     };
     const service = createFailureService({
       transaction,
-      modelUse: 'JSPageModel',
+      modelUse: 'JSBlockModel',
       savedTemplate: savedPageTemplate,
       saveSource,
       writeExternalBinding: vi.fn(async () => {

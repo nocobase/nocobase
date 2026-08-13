@@ -22,7 +22,6 @@ import { JS_TEMPLATE_KIND_BY_MODEL_USE } from '../jsTemplateRunJSIntegrationCont
 
 const KIND_NAME_LABELS = {
   'js-block': 'JS Block name',
-  'js-page': 'JS page name',
   'js-action': 'JS Action name',
   'js-field': 'JS Field name',
   'js-item': 'JS Item name',
@@ -50,7 +49,6 @@ describe('SaveAsJsTemplate', () => {
 
   it.each([
     ['js-block', 'JS Block name'],
-    ['js-page', 'JS page name'],
     ['js-action', 'JS Action name'],
     ['js-field', 'JS Field name'],
     ['js-item', 'JS Item name'],
@@ -109,10 +107,10 @@ describe('SaveAsJsTemplate', () => {
     expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
   });
 
-  it('only contributes Save as JS Template for writable JS Page sources', () => {
+  it('only contributes Save as JS Template for writable JS Block sources', () => {
     const contribution = createSaveAsJsTemplateContribution({ request: vi.fn() });
     const context = createContext(vi.fn());
-    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
+    context.workspace.source.metadata = { modelUse: 'JSBlockModel' };
 
     expect(contribution.isVisible?.(context)).toBe(true);
     context.readOnly = true;
@@ -205,7 +203,7 @@ describe('SaveAsJsTemplate', () => {
                 type: 'js-template-entry',
                 projectId: 'jtp_existing',
                 templateId: 'jtt_sales_kpi',
-                kind: 'js-page',
+                kind: 'js-block',
               },
               ownerFingerprint: 'owner_after',
             },
@@ -215,13 +213,13 @@ describe('SaveAsJsTemplate', () => {
       throw new Error(`Unexpected request: ${url}`);
     });
     const context = createContext(onExternalBindingPersisted);
-    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
-    context.workspace.source.label = 'JavaScript page / Write JavaScript';
+    context.workspace.source.metadata = { modelUse: 'JSBlockModel' };
+    context.workspace.source.label = 'JavaScript block / Write JavaScript';
     context.sourceBinding = {
       type: 'js-template-entry',
       projectId: 'jtp_origin',
       templateId: 'jtt_origin',
-      kind: 'js-page',
+      kind: 'js-block',
     };
 
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
@@ -231,7 +229,7 @@ describe('SaveAsJsTemplate', () => {
       expect(request).toHaveBeenCalledWith(expect.objectContaining({ url: 'jsTemplateProjects:list' })),
     );
     fireEvent.click(screen.getByRole('radio', { name: 'Existing Source Project' }));
-    fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: 'Sales page' } });
+    fireEvent.change(screen.getByLabelText('JS Block name'), { target: { value: 'Sales block' } });
     fireEvent.mouseDown(screen.getByRole('combobox'));
     fireEvent.click(await screen.findByText('Shared tools'));
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -249,12 +247,12 @@ describe('SaveAsJsTemplate', () => {
               type: 'js-template-entry',
               projectId: 'jtp_origin',
               templateId: 'jtt_origin',
-              kind: 'js-page',
+              kind: 'js-block',
             },
             destination: { type: 'existing', projectId: 'jtp_existing' },
             files: [expect.objectContaining({ content: 'return unsaved;' })],
-            templateName: 'sales-page',
-            templateTitle: 'Sales page',
+            templateName: 'sales-block',
+            templateTitle: 'Sales block',
           }),
         }),
       );
@@ -265,7 +263,7 @@ describe('SaveAsJsTemplate', () => {
         type: 'js-template-entry',
         projectId: 'jtp_existing',
         templateId: 'jtt_sales_kpi',
-        kind: 'js-page',
+        kind: 'js-block',
       },
     });
   });
@@ -286,7 +284,7 @@ describe('SaveAsJsTemplate', () => {
                 type: 'js-template-entry',
                 projectId: 'jtp_new',
                 templateId: 'jtt_new',
-                kind: 'js-page',
+                kind: 'js-block',
               },
               ownerFingerprint: 'owner_after',
             },
@@ -297,8 +295,8 @@ describe('SaveAsJsTemplate', () => {
     });
 
     const context = createContext(onExternalBindingPersisted);
-    context.workspace.source.metadata = { modelUse: 'JSPageModel' };
-    context.workspace.source.label = 'JavaScript page / Write JavaScript';
+    context.workspace.source.metadata = { modelUse: 'JSBlockModel' };
+    context.workspace.source.label = 'JavaScript block / Write JavaScript';
     render(<SaveAsJsTemplate api={{ request }} context={context} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Save as JS Template' }));
@@ -306,7 +304,7 @@ describe('SaveAsJsTemplate', () => {
     await screen.findByLabelText('Source Project name');
     expect(screen.queryByLabelText('JS Template title')).toBeNull();
     fireEvent.change(screen.getByLabelText('Source Project name'), { target: { value: '销售工具' } });
-    fireEvent.change(screen.getByLabelText('JS page name'), { target: { value: '销售页面' } });
+    fireEvent.change(screen.getByLabelText('JS Block name'), { target: { value: '销售区块' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
     await waitFor(() => {
@@ -320,8 +318,8 @@ describe('SaveAsJsTemplate', () => {
               name: expect.stringMatching(/^js-template-[a-z0-9]+$/),
               title: '销售工具',
             },
-            templateName: expect.stringMatching(/^js-page-[a-z0-9]+$/),
-            templateTitle: '销售页面',
+            templateName: expect.stringMatching(/^js-block-[a-z0-9]+$/),
+            templateTitle: '销售区块',
           }),
         }),
       );

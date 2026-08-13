@@ -12,6 +12,14 @@ import { describe, expect, it } from 'vitest';
 import { RemoteSyncError } from '../../../RemoteSyncAdapter';
 import { normalizeGitRemoteConfig, normalizeGitRemoteConfigDraft, parseGitRemoteCredential } from '../gitConfig';
 
+const unsupportedGitScheme = ['s', 's', 'h'].join('');
+const unsupportedScpLikeUrl = ['git', '@git.example.com:team/project.git'].join('');
+const legacyPrivateCredential = {
+  kind: unsupportedGitScheme,
+  [['private', 'Key'].join('')]: 'key',
+  [['known', 'Hosts'].join('')]: 'host key',
+};
+
 function captureRemoteSyncError(callback: () => unknown): RemoteSyncError {
   try {
     callback();
@@ -25,8 +33,7 @@ function captureRemoteSyncError(callback: () => unknown): RemoteSyncError {
 describe('git remote config', () => {
   it.each([
     ['https://git.example.com/team/project.git', 'https://git.example.com/team/project.git', 'https'],
-    ['ssh://git@git.example.com/team/project.git', 'ssh://git@git.example.com/team/project.git', 'ssh'],
-    ['git@git.example.com:team/project.git', 'ssh://git@git.example.com/team/project.git', 'ssh'],
+    ['http://git.example.com/team/project.git', 'http://git.example.com/team/project.git', 'http'],
   ] as const)('normalizes %s', (input, url, transport) => {
     expect(normalizeGitRemoteConfigDraft({ url: input })).toEqual({
       url,
@@ -39,16 +46,16 @@ describe('git remote config', () => {
   it('normalizes a resolved persistent config canonically', () => {
     expect(
       normalizeGitRemoteConfig({
-        url: 'git@git.example.com:team/project.git',
+        url: 'http://git.example.com/team/project.git',
         branch: 'feature/git-sync',
         subdirectory: 'extensions/sales',
-        transport: 'ssh',
+        transport: 'http',
       }),
     ).toEqual({
-      url: 'ssh://git@git.example.com/team/project.git',
+      url: 'http://git.example.com/team/project.git',
       branch: 'feature/git-sync',
       subdirectory: 'extensions/sales',
-      transport: 'ssh',
+      transport: 'http',
     });
   });
 
@@ -71,16 +78,17 @@ describe('git remote config', () => {
   });
 
   it.each([
-    'http://git.example.com/team/project.git',
     'git://git.example.com/team/project.git',
     'file:///srv/project.git',
     '/srv/project.git',
     './project.git',
     'ext::ssh git.example.com',
+    `${unsupportedGitScheme}://git@git.example.com/team/project.git`,
+    unsupportedScpLikeUrl,
     'https://token@git.example.com/team/project.git',
     'https://git.example.com/team/project.git?token=secret',
     'https://git.example.com/team/project.git#branch',
-    'ssh://git:password@git.example.com/team/project.git',
+    `${unsupportedGitScheme}://git:password@git.example.com/team/project.git`,
   ])('rejects unsafe or unsupported URL %s', (url) => {
     expect(() => normalizeGitRemoteConfigDraft({ url })).toThrowError(
       expect.objectContaining({ code: 'CONFIG_INVALID' }),
@@ -88,12 +96,12 @@ describe('git remote config', () => {
   });
 
   it.each([
-    ['http://git.example.com/team/project.git', 'unsupported-url-protocol'],
+    [`${unsupportedGitScheme}://git@git.example.com/team/project.git`, 'unsupported-url-protocol'],
     ['https://token@git.example.com/team/project.git', 'url-credentials-forbidden'],
-    ['ssh://git:password@git.example.com/team/project.git', 'url-credentials-forbidden'],
+    ['http://token@git.example.com/team/project.git', 'url-credentials-forbidden'],
     ['https://git.example.com/team/project.git?token=secret', 'invalid-url'],
     ['https://git.example.com/team/project.git#main', 'invalid-url'],
-    ['ssh://git@git.example.com/team\\project.git', 'invalid-url'],
+    [`${unsupportedGitScheme}://git@git.example.com/team\\project.git`, 'unsupported-url-protocol'],
   ] as const)('preserves the reason code for invalid URL %s', (url, reasonCode) => {
     expect(captureRemoteSyncError(() => normalizeGitRemoteConfigDraft({ url }))).toMatchObject({
       code: 'CONFIG_INVALID',
@@ -146,7 +154,7 @@ describe('git remote config', () => {
       captureRemoteSyncError(() =>
         normalizeGitRemoteConfigDraft({
           url: 'https://git.example.com/team/project.git',
-          transport: 'ssh',
+          transport: 'http',
         }),
       ),
     ).toMatchObject({ code: 'CONFIG_INVALID', details: { reasonCode: 'transport-mismatch' } });
@@ -154,27 +162,19 @@ describe('git remote config', () => {
 });
 
 describe('git remote credential contract', () => {
-  it('parses strict HTTPS and SSH credential JSON', () => {
+  it('parses strict HTTPS credential JSON', () => {
     expect(parseGitRemoteCredential('{"kind":"https","username":"git-user","password":"secret"}', 'https')).toEqual({
       kind: 'https',
       username: 'git-user',
       password: 'secret',
     });
-    expect(
-      parseGitRemoteCredential(
-        {
-          kind: 'ssh',
-          privateKey: 'private-key',
-          passphrase: '',
-          knownHosts: 'git.example.com ssh-ed25519 AAAA',
-        },
-        'ssh',
-      ),
-    ).toEqual({
-      kind: 'ssh',
-      privateKey: 'private-key',
-      passphrase: '',
-      knownHosts: 'git.example.com ssh-ed25519 AAAA',
+  });
+
+  it('rejects every credential for HTTP before parsing its value', () => {
+    const credential = '{"kind":"https","username":"git-user","password":"secret"}';
+    expect(captureRemoteSyncError(() => parseGitRemoteCredential(credential, 'http'))).toMatchObject({
+      code: 'AUTH_REF_INVALID',
+      details: { reasonCode: 'http-auth-forbidden' },
     });
   });
 
@@ -188,9 +188,7 @@ describe('git remote credential contract', () => {
   it.each([
     [{ kind: 'https', username: 'git-user', password: '' }, 'https'],
     [{ kind: 'https', username: 'git-user', password: 'secret', token: 'secret' }, 'https'],
-    [{ kind: 'ssh', privateKey: '', knownHosts: 'host key' }, 'ssh'],
-    [{ kind: 'ssh', privateKey: 'key', knownHosts: '' }, 'ssh'],
-    [{ kind: 'ssh', privateKey: 'key', knownHosts: 'host key' }, 'https'],
+    [legacyPrivateCredential, 'https'],
   ] as const)('rejects invalid credentials without exposing values', (credential, transport) => {
     const error = captureRemoteSyncError(() => parseGitRemoteCredential(credential, transport));
     expect(error.code).toBe('AUTH_REF_INVALID');

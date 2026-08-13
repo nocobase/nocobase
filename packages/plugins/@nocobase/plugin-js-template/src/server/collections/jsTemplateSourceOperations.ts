@@ -17,13 +17,6 @@ export default defineCollection({
   autoGenId: false,
   timestamps: true,
   migrationRules: ['overwrite', 'schema-only'],
-  indexes: [
-    {
-      name: 'jst_source_operation_identity_uq',
-      unique: true,
-      fields: ['identityHash'],
-    },
-  ],
   fields: [
     {
       type: 'uid',

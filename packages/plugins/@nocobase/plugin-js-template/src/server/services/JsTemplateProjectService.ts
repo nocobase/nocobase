@@ -41,13 +41,17 @@ import { normalizeVscBridgeError } from './errorContract';
 
 export interface JsTemplateServiceContext {
   actorUserId?: string | null;
+  sessionId?: string | null;
   can?: JsTemplateCanFunction;
   currentUser?: unknown;
   requestId?: string;
   requestSource?: string;
   state?: Record<string, unknown>;
+  currentRole?: string;
+  currentRoles?: string[];
   timezone?: string;
   transaction?: Transaction;
+  signal?: AbortSignal;
 }
 
 export interface JsTemplateProjectInternalRecord extends JsTemplateProject {
@@ -71,6 +75,8 @@ export interface JsTemplateCreateProjectOptions {
   projectId?: string;
   creationJobId?: string;
 }
+
+type JsTemplateCompositeCreateProjectInput = Omit<JsTemplateCreateProjectInput, 'idempotencyKey'>;
 
 export interface JsTemplateListProjectsOptions {
   includeTemplateSummary?: boolean;
@@ -124,7 +130,7 @@ export class JsTemplateProjectService {
 
   /** @internal Composite use cases own their single main audit record. */
   async createProjectForCompositeUseCase(
-    input: JsTemplateCreateProjectInput,
+    input: JsTemplateCompositeCreateProjectInput,
     ctx: JsTemplateServiceContext = {},
     options: JsTemplateCreateProjectOptions = {},
   ): Promise<JsTemplateProject> {
@@ -132,7 +138,7 @@ export class JsTemplateProjectService {
   }
 
   private async createProjectInternal(
-    input: JsTemplateCreateProjectInput,
+    input: JsTemplateCreateProjectInput | JsTemplateCompositeCreateProjectInput,
     ctx: JsTemplateServiceContext,
     options: JsTemplateCreateProjectOptions,
     recordMainAudit: boolean,

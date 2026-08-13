@@ -35,6 +35,7 @@ describe('JS Template create-job permissions', () => {
         },
       },
       auth: { user: { id: 7 } },
+      getBearerToken: () => createUnsignedSessionToken('session-7'),
     };
 
     await (resource.actions?.list as HandlerType)(
@@ -42,7 +43,7 @@ describe('JS Template create-job permissions', () => {
       vi.fn(async () => undefined),
     );
 
-    expect(store.listOwnVisibleJobs).toHaveBeenCalledWith('main', '7');
+    expect(store.listOwnVisibleJobs).toHaveBeenCalledWith('main', '7', 'session-7');
     expect((ctx as { body?: unknown }).body).toEqual({ jobs: [] });
   });
 
@@ -72,6 +73,7 @@ describe('JS Template create-job permissions', () => {
       const ctx = {
         action: { params: { values: { jobId: job.id } } },
         auth: { user: { id: 7 } },
+        getBearerToken: () => createUnsignedSessionToken('session-7'),
         can: ({ action }: { action: string }) => (allowed.includes(action) ? {} : null),
       };
 
@@ -115,6 +117,7 @@ describe('JS Template create-job permissions', () => {
           },
         },
         auth: { user: { id: 7 } },
+        getBearerToken: () => createUnsignedSessionToken('session-7'),
         can,
       };
       const next = vi.fn(async () => undefined);
@@ -135,7 +138,7 @@ describe('JS Template create-job permissions', () => {
       expect(JSON.stringify((ctx as { body?: unknown }).body)).not.toMatch(
         /actorUserId|applicationName|targetProjectId|sourceType|payload|errorMessage/u,
       );
-      expect(store.getOwn).toHaveBeenCalledWith(jobId, 'main', '7');
+      expect(store.getOwn).toHaveBeenCalledWith(jobId, 'main', '7', 'session-7');
       expect(store.dismiss).not.toHaveBeenCalled();
       expect(can).not.toHaveBeenCalled();
       expect(audit.recordCreateJobEvent).not.toHaveBeenCalled();
@@ -143,3 +146,8 @@ describe('JS Template create-job permissions', () => {
     },
   );
 });
+
+function createUnsignedSessionToken(jti: string): string {
+  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
+  return `header.${payload}.signature`;
+}

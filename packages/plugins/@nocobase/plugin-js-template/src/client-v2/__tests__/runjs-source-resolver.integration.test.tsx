@@ -8,7 +8,7 @@
  */
 
 import { type JsTemplateRuntimeSourceBinding } from '../../shared/types';
-import { JSBlockJsTemplateSourceField, JSPageJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
+import { JSBlockJsTemplateSourceField } from '../components/JSBlockJsTemplateSourceField';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
@@ -39,17 +39,16 @@ function registerSourceModeRoundTripTests() {
   // Old case -> new owner:
   // save-without-clearing-inline / keeps existing JS Block inline code... -> mounts the JS Block binding editor without mutating the snapshot.
   // save-without-clearing-inline / renders as a JS Block binding editor... -> mounts the JS Block binding editor without mutating the snapshot.
-  // save-without-clearing-inline / keeps the complete JS Page inline snapshot... -> renders the binding-only editor without mutating the snapshot.
+  // save-without-clearing-inline / keeps the complete JS Block inline snapshot... -> renders the binding-only editor without mutating the snapshot.
   // New owner: Inline remains authoritative when historical data still has a JS Template binding.
 
   const SchemaField = createSchemaField({
     components: {
       JSBlockJsTemplateSourceField,
-      JSPageJsTemplateSourceField,
     },
   });
 
-  type SourceFieldComponent = 'JSBlockJsTemplateSourceField' | 'JSPageJsTemplateSourceField';
+  type SourceFieldComponent = 'JSBlockJsTemplateSourceField';
 
   type RunJSFormValues = {
     sourceMode: string;
@@ -64,17 +63,17 @@ function registerSourceModeRoundTripTests() {
     type: 'js-template-entry',
     projectId: 'project_sales',
     templateId: 'template_sales',
-    kind: 'js-page',
+    kind: 'js-block',
   };
 
   const template = {
     id: 'template_sales',
     projectId: 'project_sales',
     target: 'client',
-    kind: 'js-page',
+    kind: 'js-block',
     templateName: 'sales',
-    entryPath: 'src/client/js-pages/sales/index.tsx',
-    descriptorPath: 'src/client/js-pages/sales/entry.json',
+    entryPath: 'src/client/js-blocks/sales/index.tsx',
+    descriptorPath: 'src/client/js-blocks/sales/entry.json',
     title: 'Sales',
     description: null,
     category: null,
@@ -93,7 +92,7 @@ function registerSourceModeRoundTripTests() {
     runtimeArtifact: {
       code: 'ctx.render("sales");',
       version: 'v2',
-      entryPath: 'src/client/js-pages/sales/index.tsx',
+      entryPath: 'src/client/js-blocks/sales/index.tsx',
     },
     runtimeVersion: 'v2',
     surfaceStyle: 'render',
@@ -217,7 +216,7 @@ function registerSourceModeRoundTripTests() {
 
   function renderSourceModeField(
     form: ReturnType<typeof createRunJSForm>,
-    component: SourceFieldComponent = 'JSPageJsTemplateSourceField',
+    component: SourceFieldComponent = 'JSBlockJsTemplateSourceField',
   ) {
     return renderWithEngine(
       form,
@@ -237,7 +236,7 @@ function registerSourceModeRoundTripTests() {
 
   function renderSourceBindingField(
     form: ReturnType<typeof createRunJSForm>,
-    component: SourceFieldComponent = 'JSPageJsTemplateSourceField',
+    component: SourceFieldComponent = 'JSBlockJsTemplateSourceField',
   ) {
     return renderWithEngine(
       form,

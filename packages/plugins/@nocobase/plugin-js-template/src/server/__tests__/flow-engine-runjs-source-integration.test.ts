@@ -281,8 +281,8 @@ describe('JS Template Flow Engine RunJS source integration', () => {
   it('returns a non-retryable bootstrap error after rolling back partial workspace writes and can retry cleanly', async () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     await repository.insertModel({
-      uid: 'invalid-inline-js-page',
-      use: 'JSPageModel',
+      uid: 'invalid-inline-js-block',
+      use: 'JSBlockModel',
       stepParams: {
         jsSettings: {
           runJs: {
@@ -295,7 +295,7 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     const user = await app.db.getRepository('users').findOne();
     const locator = {
       kind: 'flowModel.step' as const,
-      modelUid: 'invalid-inline-js-page',
+      modelUid: 'invalid-inline-js-block',
       flowKey: 'jsSettings' as const,
       stepKey: 'runJs' as const,
       paramPath: ['code'] as ['code'],
@@ -312,8 +312,8 @@ describe('JS Template Flow Engine RunJS source integration', () => {
 
     const failed = await app.db.sequelize.transaction((transaction) =>
       bootstrapFlowSurfaceRunJSWorkspace(app, {
-        hostKind: 'js-page',
-        modelUse: 'JSPageModel',
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
         locator,
         transaction,
         authoringContext,
@@ -328,12 +328,12 @@ describe('JS Template Flow Engine RunJS source integration', () => {
       },
     });
     await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
-    await expect(repository.findModelById('invalid-inline-js-page')).resolves.not.toHaveProperty(
+    await expect(repository.findModelById('invalid-inline-js-block')).resolves.not.toHaveProperty(
       'stepParams.jsSettings.runJs.sourceRef',
     );
 
     await repository.patch({
-      uid: 'invalid-inline-js-page',
+      uid: 'invalid-inline-js-block',
       stepParams: {
         jsSettings: {
           runJs: {
@@ -345,8 +345,8 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     });
     const retried = await app.db.sequelize.transaction((transaction) =>
       bootstrapFlowSurfaceRunJSWorkspace(app, {
-        hostKind: 'js-page',
-        modelUse: 'JSPageModel',
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
         locator,
         transaction,
         authoringContext,
@@ -355,7 +355,7 @@ describe('JS Template Flow Engine RunJS source integration', () => {
 
     expect(retried).toEqual({ status: 'ready', retryable: false });
     await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount + 1);
-    await expect(repository.findModelById('invalid-inline-js-page')).resolves.toMatchObject({
+    await expect(repository.findModelById('invalid-inline-js-block')).resolves.toMatchObject({
       stepParams: {
         jsSettings: {
           runJs: {
@@ -374,15 +374,15 @@ describe('JS Template Flow Engine RunJS source integration', () => {
   it('rolls back the ordinary repository and sourceRef when the surrounding Host transaction fails', async () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     await repository.insertModel({
-      uid: 'rolled-back-inline-js-page',
-      use: 'JSPageModel',
+      uid: 'rolled-back-inline-js-block',
+      use: 'JSBlockModel',
       stepParams: {},
     });
     const user = await app.db.getRepository('users').findOne();
     const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
     const locator = {
       kind: 'flowModel.step' as const,
-      modelUid: 'rolled-back-inline-js-page',
+      modelUid: 'rolled-back-inline-js-block',
       flowKey: 'jsSettings' as const,
       stepKey: 'runJs' as const,
       paramPath: ['code'] as ['code'],
@@ -392,8 +392,8 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     await expect(
       app.db.sequelize.transaction(async (transaction) => {
         await bootstrapFlowSurfaceRunJSWorkspace(app, {
-          hostKind: 'js-page',
-          modelUse: 'JSPageModel',
+          hostKind: 'js-block',
+          modelUse: 'JSBlockModel',
           locator,
           transaction,
           authoringContext: {
@@ -409,6 +409,6 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     ).rejects.toThrow('Host write failed');
 
     await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
-    await expect(repository.findModelById('rolled-back-inline-js-page')).resolves.toMatchObject({ stepParams: {} });
+    await expect(repository.findModelById('rolled-back-inline-js-block')).resolves.toMatchObject({ stepParams: {} });
   });
 });

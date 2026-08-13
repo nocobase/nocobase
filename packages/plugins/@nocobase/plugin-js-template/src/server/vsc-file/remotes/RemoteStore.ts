@@ -12,9 +12,11 @@ import type { Database, Model, Transaction } from '@nocobase/database';
 import { VscError } from '@nocobase/runjs/workspace/shared';
 import type {
   RemoteSyncErrorCode,
+  VscFileRemoteConfig,
   VscFileRemoteRecord,
   VscRemoteNormalizedConfig,
   VscRemoteProvider,
+  VscUnsupportedGitRemoteConfig,
 } from '../../../shared/vsc-file/remote-sync-types';
 import { normalizeGitRemoteConfig } from './providers/git/gitConfig';
 import { RemoteSyncError } from './RemoteSyncAdapter';
@@ -310,21 +312,28 @@ export class RemoteStore {
 
 export function remoteFromRecord(record: Model): VscFileRemoteRecord {
   const provider = record.get('provider') as VscRemoteProvider;
-
-  return {
+  const persistedConfig = record.get('config') as unknown;
+  const unsupportedConfig = provider === 'git' ? normalizeUnsupportedPersistedGitConfig(persistedConfig) : null;
+  const common = {
     id: record.get('id') as string,
     repoId: record.get('repoId') as string,
     name: record.get('name') as string,
     provider,
-    config: validateNormalizedConfig(provider, record.get('config') as VscRemoteNormalizedConfig),
     authRef: nullableString(record.get('authRef')),
-    status: record.get('status') as VscFileRemoteRecord['status'],
     version: record.get('version') as number,
     lastCheckedAt: nullableDateString(record.get('lastCheckedAt')),
     lastSyncedAt: nullableDateString(record.get('lastSyncedAt')),
     lastErrorCode: nullableString(record.get('lastErrorCode')) as RemoteSyncErrorCode | null,
     createdAt: nullableDateString(record.get('createdAt')) || undefined,
     updatedAt: nullableDateString(record.get('updatedAt')) || undefined,
+  };
+  if (unsupportedConfig) {
+    return { ...common, config: unsupportedConfig, status: 'unsupported' };
+  }
+  return {
+    ...common,
+    config: validateNormalizedConfig(provider, persistedConfig as VscRemoteNormalizedConfig),
+    status: record.get('status') as 'active' | 'disabled',
   };
 }
 
@@ -339,6 +348,27 @@ function validateNormalizedConfig(
   }
 
   throw new RemoteSyncError('UNSUPPORTED_PROVIDER', `Unsupported remote provider "${provider}"`);
+}
+
+function normalizeUnsupportedPersistedGitConfig(value: unknown): VscUnsupportedGitRemoteConfig | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const config = value as Record<string, unknown>;
+  if (config.transport !== 'ssh') {
+    return null;
+  }
+  return {
+    url: safeLegacyString(config.url),
+    branch: safeLegacyString(config.branch),
+    subdirectory: typeof config.subdirectory === 'string' ? config.subdirectory : null,
+    transport: 'unsupported',
+    legacyTransport: 'ssh',
+  };
+}
+
+function safeLegacyString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
 }
 
 function assertNoSensitiveConfigKeys(value: unknown): void {
@@ -365,7 +395,10 @@ function serializeNullableAuthRef(authRef: VscRemoteCredentialRef | null): strin
   return authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
 }
 
-function sameConfig(left: VscRemoteNormalizedConfig, right: VscRemoteNormalizedConfig): boolean {
+function sameConfig(left: VscFileRemoteConfig, right: VscRemoteNormalizedConfig): boolean {
+  if (left.transport === 'unsupported') {
+    return false;
+  }
   return (
     left.url === right.url &&
     left.branch === right.branch &&

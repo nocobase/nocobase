@@ -11,7 +11,6 @@ import type { Database } from '@nocobase/database';
 import type { Application } from '@nocobase/server';
 import { resolve } from 'node:path';
 
-import { createRunJSSourceAuditActions, createVscFileAuditActions } from './audit';
 import type { VscPermissionHook } from './permissions';
 import { createRunJSSourcePermissionHook, VscPermissionHookRegistry } from './permissions';
 import {
@@ -116,8 +115,6 @@ export class RunJSWorkspaceServerModule {
       ),
     );
     this.app.acl.allow('runJSSources', [...runJSSourceActionNames], 'loggedIn');
-    this.app.auditManager.registerActions(createVscFileAuditActions(this.db));
-    this.app.auditManager.registerActions(createRunJSSourceAuditActions(this.db));
   }
 
   async afterDisable(): Promise<void> {

@@ -9,7 +9,7 @@
 
 import type { Database } from '@nocobase/database';
 import type { VscPermissionHookInput } from '@nocobase/runjs/workspace/server';
-import type { Application } from '@nocobase/server';
+import { AuditManager, type Application } from '@nocobase/server';
 import { vi } from 'vitest';
 
 import { JS_TEMPLATE_ACL_ACTIONS, JS_TEMPLATE_ACL_SNIPPET, NAMESPACE } from '../../constants';
@@ -40,10 +40,7 @@ describe('plugin-js-template permission service', () => {
       db: {} as Database,
       environment: { getVariables: vi.fn(() => ({})) },
       acl,
-      auditManager: {
-        registerActions: vi.fn(),
-        log: vi.fn(),
-      },
+      auditManager: new AuditManager(),
       resourceManager: {
         define: vi.fn(),
         options: {},
@@ -101,10 +98,7 @@ describe('plugin-js-template permission service', () => {
         allow: vi.fn(),
         registerSnippet: vi.fn(),
       },
-      auditManager: {
-        registerActions: vi.fn(),
-        log: vi.fn(),
-      },
+      auditManager: new AuditManager(),
       resourceManager: {
         define: vi.fn((resource: { name?: string; actions?: Record<string, unknown> }) => {
           definedResources.push(resource);

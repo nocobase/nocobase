@@ -716,8 +716,6 @@ describe('RunJSEditorField FlowModel integration', () => {
         sourcePath: ['code'],
       },
     },
-    { name: 'chart option', locator: { kind: 'chart.option', modelUid: 'chart_option' } },
-    { name: 'chart events', locator: { kind: 'chart.events', modelUid: 'chart_events' } },
   ])('keeps $name on the inline editor when a step-only Studio provider is installed', ({ locator }) => {
     const harness = createFlowModelHarness();
     const renderStudio = vi.fn(() => <div>step studio</div>);

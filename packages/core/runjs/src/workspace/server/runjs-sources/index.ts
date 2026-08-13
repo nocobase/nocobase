@@ -20,6 +20,13 @@ export {
 export { RunJSWorkspaceSchemaValidator } from './settings-validator/schemaPolicy';
 export { assertRunJSCompileInputLimits, createRunJSSourcesResource, runJSSourceActionNames } from './resource';
 export {
+  defaultRunJSWorkspaceZipLimits,
+  readRunJSWorkspaceZip,
+  type ReadRunJSWorkspaceZipOptions,
+  type RunJSWorkspaceZipLimits,
+  type RunJSWorkspaceZipMetadataPolicy,
+} from './workspaceZip';
+export {
   createFlowSurfaceRunJSWorkspaceBootstrapPort,
   RUNJS_WORKSPACE_HOSTS,
   type RunJSWorkspaceBootstrapInput,

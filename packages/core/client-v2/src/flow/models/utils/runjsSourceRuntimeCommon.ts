@@ -329,7 +329,7 @@ export function createJsTemplateSourceBindingStep(options: {
 }
 
 export function createJsTemplateRunJsUISchema(options: {
-  kind: 'js-action' | 'js-field' | 'js-item' | 'js-page';
+  kind: 'js-action' | 'js-field' | 'js-item';
   scene: string;
   surfaceStyle: 'action' | 'render' | 'value';
   minHeight?: string;

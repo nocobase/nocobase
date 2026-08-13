@@ -18,32 +18,32 @@ import {
 describe('JS Template to Inline workspace conversion', () => {
   it('relocates the reachable source closure while preserving authoring imports for compiler preparation', () => {
     const result = convertJsTemplateToInlineWorkspace({
-      entryPath: 'src/client/js-pages/orders/index.tsx',
+      entryPath: 'src/client/js-blocks/orders/index.tsx',
       runtimeVersion: 'v2',
       files: [
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content: [
-            'import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";',
-            'import type { Settings } from "js-template:settings/client/js-page/orders";',
+            'import { type JSBlockContext, defineSettings } from "@nocobase/runjs/js-template/client";',
+            'import type { Settings } from "js-template:settings/client/js-block/orders";',
             'import { title } from "./title";',
             'const settings = defineSettings({ title });',
-            'function inspect(value: JSPageContext<Settings>) { return value.page.uid; }',
+            'function inspect(value: JSBlockContext<Settings>) { return value.record?.id; }',
             'ctx.render(<div>{settings.title}</div>);',
             '',
           ].join('\n'),
         },
         {
-          path: 'src/client/js-pages/orders/title.ts',
+          path: 'src/client/js-blocks/orders/title.ts',
           content: 'export const title = "Orders";\n',
         },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: '{"schemaVersion":1,"key":"orders"}\n',
           language: 'json',
         },
         {
-          path: 'src/client/js-pages/sibling/index.tsx',
+          path: 'src/client/js-blocks/sibling/index.tsx',
           content: 'ctx.render(<div>Sibling</div>);\n',
         },
       ],
@@ -59,7 +59,7 @@ describe('JS Template to Inline workspace conversion', () => {
     const entry = result.files.find((file) => file.path === result.entryPath)?.content || '';
     expect(entry).toContain('from "./title"');
     expect(entry).toContain('from "@nocobase/runjs/js-template/client"');
-    expect(entry).toContain('from "js-template:settings/client/js-page/orders"');
+    expect(entry).toContain('from "js-template:settings/client/js-block/orders"');
     expect(entry).not.toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
   });
 

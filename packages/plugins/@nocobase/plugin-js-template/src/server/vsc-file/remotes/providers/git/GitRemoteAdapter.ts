@@ -46,6 +46,7 @@ export interface GitRemoteAdapterOptions {
 interface GitTargetContext {
   config: VscGitRemoteConfig;
   credential: GitRemoteCredential | null;
+  signal?: AbortSignal;
 }
 
 interface ProbedBranch {
@@ -88,22 +89,26 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     return normalizeGitRemoteConfig(input);
   }
 
-  async resolveConfigDraft(input: unknown, authRef: unknown = null): Promise<VscGitRemoteConfig> {
+  async resolveConfigDraft(input: unknown, authRef: unknown = null, signal?: AbortSignal): Promise<VscGitRemoteConfig> {
+    signal?.throwIfAborted();
     const draft = normalizeGitRemoteConfigDraft(input);
+    assertHttpAuthenticationDisabled(draft.transport, authRef);
     const credential = await this.resolveCredential(draft.transport, authRef, 'optional');
     if (draft.branch !== null) {
       return normalizeGitRemoteConfig(draft);
     }
-    const probed = await this.probeDefaultBranch(draft.url, draft.transport, credential);
+    const probed = await this.probeDefaultBranch(draft.url, draft.transport, credential, signal);
     return normalizeGitRemoteConfig({ ...draft, branch: probed.branch });
   }
 
   async probe(target: RemoteSyncAdapterTarget): Promise<RemoteSyncProbeResult> {
+    target.signal?.throwIfAborted();
     const draft = normalizeGitRemoteConfigDraft(target.config);
+    assertHttpAuthenticationDisabled(draft.transport, target.authRef);
     const credential = await this.resolveCredential(draft.transport, target.authRef, 'optional');
     const probed = draft.branch
-      ? await this.probeBranch(draft.url, draft.transport, credential, draft.branch)
-      : await this.probeDefaultBranch(draft.url, draft.transport, credential);
+      ? await this.probeBranch(draft.url, draft.transport, credential, draft.branch, target.signal)
+      : await this.probeDefaultBranch(draft.url, draft.transport, credential, target.signal);
     return {
       revision: probed.revision,
       metadata: createMetadata(draft.url, draft.transport, probed.branch, probed.defaultBranch, null),
@@ -124,6 +129,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
           context.config.transport,
           context.credential,
           context.config.branch,
+          context.signal,
         );
         if (probed.revision !== null) {
           throw remoteChanged(null, probed.revision, 'head-mismatch', 'fetch');
@@ -138,6 +144,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
           context.config.transport,
           context.credential,
           context.config.branch,
+          context.signal,
         );
         if (probed.revision === null) {
           return emptySnapshot(context.config, probed.defaultBranch);
@@ -186,6 +193,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
       context.config.transport,
       context.credential,
       context.config.branch,
+      context.signal,
     );
     if (current.revision !== expectedRevision) {
       throw remoteChanged(expectedRevision, current.revision, 'head-mismatch');
@@ -218,6 +226,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
           context.config.transport,
           context.credential,
           context.config.branch,
+          context.signal,
         );
         if (observed.revision !== current.revision) {
           throw remoteChanged(current.revision, observed.revision, 'head-mismatch');
@@ -245,6 +254,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
             context.config.transport,
             context.credential,
             context.config.branch,
+            context.signal,
           );
         } catch {
           throw safePushError(pushError);
@@ -263,6 +273,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
         context.config.transport,
         context.credential,
         context.config.branch,
+        context.signal,
       );
       if (observed.revision !== commitOid) {
         throw remoteChanged(commitOid, observed.revision, 'published-head-mismatch');
@@ -277,9 +288,10 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
   }
 
   private async createContext(target: RemoteSyncAdapterTarget, mode: RemoteCredentialMode): Promise<GitTargetContext> {
+    target.signal?.throwIfAborted();
     const config = this.normalizeConfig(target.config);
     const credential = await this.resolveCredential(config.transport, target.authRef, mode);
-    return { config, credential };
+    return { config, credential, signal: target.signal };
   }
 
   private async resolveCredential(
@@ -287,6 +299,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     authRef: unknown,
     requestedMode: RemoteCredentialMode,
   ): Promise<GitRemoteCredential | null> {
+    assertHttpAuthenticationDisabled(transport, authRef);
     const rawCredential = await this.credentialResolver.resolve(authRef, requestedMode);
     return rawCredential === null ? null : parseGitRemoteCredential(rawCredential, transport);
   }
@@ -295,6 +308,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     url: string,
     transport: VscGitRemoteTransport,
     credential: GitRemoteCredential | null,
+    signal?: AbortSignal,
   ): Promise<ProbedBranch> {
     const result = await this.runRemote(
       ['ls-remote', '--symref', url, 'HEAD'],
@@ -302,6 +316,8 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
       transport,
       credential,
       'probe-default-branch',
+      undefined,
+      signal,
     );
     if (result.stdout.byteLength === 0) {
       throw new RemoteSyncError('CONFIG_INVALID', 'Git default branch is unavailable', {
@@ -333,6 +349,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     transport: VscGitRemoteTransport,
     credential: GitRemoteCredential | null,
     branch: string,
+    signal?: AbortSignal,
   ): Promise<ProbedBranch> {
     const ref = `refs/heads/${branch}`;
     const result = await this.runRemote(
@@ -342,6 +359,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
       credential,
       'probe-branch',
       [0, 2],
+      signal,
     );
     if (result.exitCode === 2 || result.stdout.byteLength === 0) {
       return { branch, revision: null, defaultBranch: null };
@@ -364,6 +382,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     credential: GitRemoteCredential | null,
     operation: string,
     acceptableExitCodes?: readonly number[],
+    signal?: AbortSignal,
   ): Promise<GitCommandResult> {
     return this.runner.run({
       args,
@@ -372,6 +391,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
       credential,
       operation,
       acceptableExitCodes,
+      signal,
     });
   }
 
@@ -383,6 +403,15 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
       limits: this.limits,
       temporaryDirectory: this.temporaryDirectory,
       identity: this.identity,
+      signal: context.signal,
+    });
+  }
+}
+
+function assertHttpAuthenticationDisabled(transport: VscGitRemoteTransport, authRef: unknown): void {
+  if (transport === 'http' && authRef !== null && typeof authRef !== 'undefined') {
+    throw new RemoteSyncError('AUTH_REF_INVALID', 'HTTP Git remotes do not support credentials; use HTTPS', {
+      details: { provider: 'git', reasonCode: 'http-auth-forbidden' },
     });
   }
 }

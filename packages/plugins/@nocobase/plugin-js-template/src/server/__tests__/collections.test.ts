@@ -95,6 +95,12 @@ describe('plugin-js-template collections', () => {
         name: 'create-default',
         normalizedName: 'create-default',
         sourceType: 'starter',
+        idempotencyKey: 'create-default-request',
+        requestHash: '0'.repeat(64),
+        actorUserId: '7',
+        sessionId: 'session-create-default',
+        authorizationRole: 'member',
+        authorizationRoles: ['member'],
       },
     });
 
@@ -131,11 +137,11 @@ describe('plugin-js-template collections', () => {
       target: JS_TEMPLATE_COLLECTIONS.templates,
       foreignKey: 'templateId',
     });
-    expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')?.unique).not.toBe(true);
+    expect(getFieldOptions(jsTemplateProjects, 'vscRepoId')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateProjects, 'applicationName')).toMatchObject({ allowNull: false });
     expect(getFieldOptions(jsTemplateProjects, 'name')?.unique).not.toBe(true);
     expect(getFieldOptions(jsTemplateProjects, 'normalizedName')?.unique).not.toBe(true);
-    expect(getFieldOptions(jsTemplateProjects, 'creationJobId')?.unique).not.toBe(true);
+    expect(getFieldOptions(jsTemplateProjects, 'creationJobId')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateSourceOperations, 'identityHash')).toMatchObject({ unique: true });
     expect(getFieldOptions(jsTemplateCreateJobs, 'targetProjectId')).toMatchObject({ unique: true });
 
@@ -145,17 +151,15 @@ describe('plugin-js-template collections', () => {
       ['applicationName', 'normalizedName'],
       true,
     );
-    expectNamedCriticalIndex(jsTemplateProjects, 'jst_project_vsc_uq', ['vscRepoId'], true);
     expectCriticalIndex(jsTemplateProjects, ['applicationName']);
-    expectNamedCriticalIndex(jsTemplateProjects, 'jst_project_creation_job_uq', ['creationJobId'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'templateName'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'target', 'kind', 'entryPath'], true);
     expectCriticalIndex(jsTemplates, ['projectId', 'healthStatus']);
     expectCriticalIndex(jsTemplates, ['artifactHash']);
     expectCriticalIndex(jsTemplateUsages, ['ownerLocatorHash', 'projectId', 'templateId'], true);
     expectCriticalIndex(jsTemplateUsages, ['projectId', 'templateId', 'resolvedStatus']);
-    expectCriticalIndex(jsTemplateSourceOperations, ['identityHash'], true);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'reservationKey'], true);
+    expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'actorUserId', 'sessionId', 'idempotencyKey'], true);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'status']);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'status', 'leaseExpiresAt']);
     expectCriticalIndex(jsTemplateCreateJobs, ['applicationName', 'actorUserId', 'status']);
@@ -196,7 +200,7 @@ describe('plugin-js-template collections', () => {
     ).rejects.toThrow();
   });
 
-  it('enforces the named project repository and creation-job unique indexes', async () => {
+  it('enforces the project repository and creation-job field-level uniqueness', async () => {
     const projects = app.db.getRepository('jsTemplateProjects');
     await projects.create({
       values: {

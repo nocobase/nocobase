@@ -8,7 +8,7 @@
  */
 
 import type { HandlerType } from '@nocobase/resourcer';
-import type { Database } from '@nocobase/database';
+import type { Database, Model } from '@nocobase/database';
 import { UniqueConstraintError } from '@nocobase/database';
 import { vi } from 'vitest';
 
@@ -18,11 +18,21 @@ import { createJsTemplateProjectsResource } from '../resources/jsTemplateProject
 import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
 import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
+import { requireCreateJobAuthorizationContext } from '../resources/resourceAction';
 import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 
 describe('JS Template durable creation jobs', () => {
+  it('canonicalizes the persisted union-role set before request hashing', () => {
+    expect(
+      requireCreateJobAuthorizationContext({
+        currentRole: '__union__',
+        currentRoles: ['member', 'editor', 'member'],
+      }),
+    ).toEqual({ authorizationRole: '__union__', authorizationRoles: ['editor', 'member'] });
+  });
+
   it('returns 202 after reservation persistence without compiling in the request', async () => {
     const job = createJobRecord();
     let durableStatus: JsTemplateCreateJob['status'] | 'empty' = 'empty';
@@ -58,12 +68,17 @@ describe('JS Template durable creation jobs', () => {
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
     const executor = {
       execute: vi.fn(async () => job.targetProjectId),
+      finalizeSucceededResult: vi.fn(async () => {
+        durableStatus = 'succeeded';
+        return createJobRecord({ status: 'succeeded', resultProjectId: job.targetProjectId });
+      }),
       cleanup: vi.fn(async () => false),
     } as unknown as JsTemplateCreateJobExecutor;
     const runner = new JsTemplateCreateJobRunner(store, executor, {
       applicationName: 'main',
       eventQueue: { subscribe: vi.fn(), unsubscribe: vi.fn(), publish },
       logger,
+      authorize: vi.fn(async () => undefined),
     });
     const projectService = {
       normalizeCreateMetadata: vi.fn(() => ({
@@ -97,11 +112,13 @@ describe('JS Template durable creation jobs', () => {
         params: {
           resourceName: 'jsTemplateProjects',
           actionName: 'create',
-          values: { name: 'Demo' },
+          values: { idempotencyKey: 'create-demo-1', name: 'Demo' },
         },
       },
       auth: { user: { id: 7 } },
+      getBearerToken: () => createUnsignedSessionToken('session-request-1'),
       request: { headers: { 'x-request-id': 'request-1' } },
+      state: { currentRole: 'member', currentRoles: ['member'] },
     };
 
     await handler(
@@ -131,7 +148,7 @@ describe('JS Template durable creation jobs', () => {
     await vi.waitFor(() => expect(executor.execute).toHaveBeenCalledTimes(1));
     await runner.stop();
 
-    expect(executor.execute).toHaveBeenCalledWith(claimedJob, 'claim-scanner');
+    expect(executor.execute).toHaveBeenCalledWith(claimedJob, 'claim-scanner', expect.any(AbortSignal));
     expect(durableStatus).toBe('succeeded');
     await expect(store.findClaimableIds('main')).resolves.toEqual([]);
   });
@@ -209,7 +226,7 @@ describe('JS Template durable creation jobs', () => {
       payload: {
         sourceType: 'zip' as const,
         message: 'Import source',
-        zipBase64: 'foreign-application-secret',
+        files: [{ path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(null);\n' }],
       },
     },
     {
@@ -245,6 +262,7 @@ describe('JS Template durable creation jobs', () => {
         runtimeCompileService,
         createFromRemoteService,
         store,
+        vi.fn(async () => undefined),
       );
       const job = createJobRecord({
         id: `jtcj_foreign_${sourceType}`,
@@ -295,9 +313,12 @@ describe('JS Template durable creation jobs', () => {
   });
 
   it('maps only the application reservation constraint to a project-name conflict', async () => {
-    const create = vi.fn();
+    const findOrCreate = vi.fn();
     const store = new JsTemplateCreateJobStore({
-      getRepository: vi.fn(() => ({ create })),
+      getRepository: vi.fn(() => ({
+        model: { findOrCreate },
+        findOne: vi.fn(async () => null),
+      })),
     } as unknown as Database);
     const input = {
       applicationName: 'main',
@@ -306,9 +327,15 @@ describe('JS Template durable creation jobs', () => {
       normalizedName: 'demo',
       sourceType: 'starter' as const,
       payload: { sourceType: 'starter' as const, message: 'Initial source' },
+      idempotencyKey: 'create-demo-1',
+      requestHash: 'request-hash-demo',
+      actorUserId: '7',
+      sessionId: 'session-request-1',
+      authorizationRole: 'member',
+      authorizationRoles: ['member'],
     };
 
-    create.mockRejectedValueOnce(
+    findOrCreate.mockRejectedValueOnce(
       new UniqueConstraintError({ fields: { jst_create_job_reservation_uq: 'sha256:reservation' } }),
     );
     await expect(store.enqueue(input)).rejects.toMatchObject({
@@ -316,7 +343,7 @@ describe('JS Template durable creation jobs', () => {
       status: 409,
     });
 
-    create.mockRejectedValueOnce(
+    findOrCreate.mockRejectedValueOnce(
       new UniqueConstraintError({ fields: { applicationName: 'main', reservationKey: 'sha256:reservation' } }),
     );
     await expect(store.enqueue(input)).rejects.toMatchObject({
@@ -325,7 +352,7 @@ describe('JS Template durable creation jobs', () => {
     });
 
     const targetProjectConflict = new UniqueConstraintError({ fields: { targetProjectId: 'jtp_target' } });
-    create.mockRejectedValueOnce(targetProjectConflict);
+    findOrCreate.mockRejectedValueOnce(targetProjectConflict);
     let caught: unknown;
     try {
       await store.enqueue(input);
@@ -335,7 +362,145 @@ describe('JS Template durable creation jobs', () => {
     expect(caught).toBe(targetProjectConflict);
     expect(caught).not.toBeInstanceOf(JsTemplateError);
   });
+
+  it('replays the same request only inside its actor session and revives soft-hidden history', async () => {
+    const repository = createInMemoryCreateJobRepository();
+    const store = new JsTemplateCreateJobStore({
+      getRepository: vi.fn(() => repository),
+    } as unknown as Database);
+    const input = createStoreInput();
+
+    const [first, replay] = await Promise.all([store.enqueue(input), store.enqueue(input)]);
+    expect(replay.id).toBe(first.id);
+    expect(repository.model.findOrCreate).toHaveBeenCalledTimes(2);
+
+    await repository.records.get(createIdempotencyScope(input))?.update({ dismissed: true });
+    const revived = await store.enqueue(input);
+    expect(revived.id).toBe(first.id);
+    expect(revived.dismissed).toBe(false);
+
+    const nextSession = await store.enqueue({
+      ...input,
+      targetProjectId: 'jtp_target_session_2',
+      name: 'Demo Session Two',
+      normalizedName: 'demo-session-two',
+      requestHash: 'request-hash-demo-session-two',
+      sessionId: 'session-request-2',
+    });
+    expect(nextSession.id).not.toBe(first.id);
+    expect(repository.records).toHaveLength(2);
+  });
+
+  it('rejects a reused session idempotency key when the request hash changes', async () => {
+    const repository = createInMemoryCreateJobRepository();
+    const store = new JsTemplateCreateJobStore({
+      getRepository: vi.fn(() => repository),
+    } as unknown as Database);
+    const input = createStoreInput();
+    await store.enqueue(input);
+
+    await expect(store.enqueue({ ...input, requestHash: 'different-request-hash' })).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_IDEMPOTENCY_CONFLICT',
+      status: 409,
+    });
+    expect(repository.records).toHaveLength(1);
+  });
+
+  it('lets only one concurrent name reservation win across different idempotency keys', async () => {
+    const repository = createInMemoryCreateJobRepository();
+    const store = new JsTemplateCreateJobStore({
+      getRepository: vi.fn(() => repository),
+    } as unknown as Database);
+    const first = createStoreInput();
+    const second = {
+      ...first,
+      targetProjectId: 'jtp_target_second_key',
+      idempotencyKey: 'create-demo-2',
+      requestHash: 'request-hash-demo-2',
+    };
+
+    const results = await Promise.allSettled([store.enqueue(first), store.enqueue(second)]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({ code: 'JS_TEMPLATE_PROJECT_CONFLICT', status: 409 }),
+      }),
+    ]);
+    expect(repository.records).toHaveLength(1);
+  });
 });
+
+function createStoreInput() {
+  return {
+    applicationName: 'main',
+    targetProjectId: 'jtp_target',
+    name: 'Demo',
+    normalizedName: 'demo',
+    sourceType: 'starter' as const,
+    payload: { sourceType: 'starter' as const, message: 'Initial source' },
+    idempotencyKey: 'create-demo-1',
+    requestHash: 'request-hash-demo',
+    actorUserId: '7',
+    sessionId: 'session-request-1',
+    authorizationRole: 'member',
+    authorizationRoles: ['member'],
+  };
+}
+
+function createIdempotencyScope(input: ReturnType<typeof createStoreInput>): string {
+  return [input.applicationName, input.actorUserId, input.sessionId, input.idempotencyKey].join('\0');
+}
+
+function createInMemoryCreateJobRepository() {
+  const records = new Map<string, Model>();
+  const reservationScopes = new Set<string>();
+  let sequence = 0;
+  const findOne = vi.fn(async ({ filter }: { filter: Record<string, unknown> }) => {
+    const scope = [filter.applicationName, filter.actorUserId, filter.sessionId, filter.idempotencyKey].join('\0');
+    return records.get(scope) || null;
+  });
+  const findOrCreate = vi.fn(
+    async ({ where, defaults }: { where: Record<string, unknown>; defaults: Record<string, unknown> }) => {
+      const scope = [where.applicationName, where.actorUserId, where.sessionId, where.idempotencyKey].join('\0');
+      const existing = records.get(scope);
+      if (existing) {
+        return [existing, false] as const;
+      }
+      const reservationScope = [defaults.applicationName, defaults.normalizedName].join('\0');
+      if (reservationScopes.has(reservationScope)) {
+        throw new UniqueConstraintError({
+          fields: { applicationName: defaults.applicationName, reservationKey: defaults.reservationKey },
+        });
+      }
+      sequence += 1;
+      const record = createStoreModel({
+        id: `jtcj_memory_${sequence}`,
+        ...defaults,
+        createdAt: new Date(`2026-08-13T00:00:0${sequence}.000Z`),
+        updatedAt: new Date(`2026-08-13T00:00:0${sequence}.000Z`),
+      });
+      records.set(scope, record);
+      reservationScopes.add(reservationScope);
+      return [record, true] as const;
+    },
+  );
+  return {
+    records,
+    findOne,
+    model: { findOrCreate },
+  };
+}
+
+function createStoreModel(initialValues: Record<string, unknown>): Model {
+  const values = { ...initialValues };
+  return {
+    get: (key: string) => values[key],
+    update: vi.fn(async (nextValues: Record<string, unknown>) => {
+      Object.assign(values, nextValues, { updatedAt: new Date('2026-08-13T00:01:00.000Z') });
+      return undefined;
+    }),
+  } as unknown as Model;
+}
 
 function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTemplateCreateJob {
   return {
@@ -347,6 +512,8 @@ function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTempla
     title: null,
     description: null,
     sourceType: 'starter',
+    idempotencyKey: 'create-demo-1',
+    requestHash: 'request-hash-demo',
     status: 'pending',
     resultProjectId: null,
     payload: { sourceType: 'starter', message: 'Initial JS Template source' },
@@ -354,6 +521,10 @@ function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTempla
     errorMessage: null,
     reservationKey: 'sha256:reservation',
     actorUserId: '7',
+    sessionId: 'session-request-1',
+    authorizationRole: 'member',
+    authorizationRoles: ['member'],
+    dismissed: false,
     requestId: 'request-1',
     claimToken: null,
     claimOwner: null,
@@ -366,4 +537,9 @@ function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTempla
     updatedAt: '2026-07-27T00:00:00.000Z',
     ...overrides,
   };
+}
+
+function createUnsignedSessionToken(jti: string): string {
+  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
+  return `header.${payload}.signature`;
 }

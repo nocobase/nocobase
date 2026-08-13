@@ -11,7 +11,7 @@ import type { JsTemplateCreateJobStatus, JsTemplateCreateJobSummary, JsTemplateP
 import type { JsTemplateProjectLifecycleFilter } from './types';
 
 export function isActiveCreateJobStatus(status: JsTemplateCreateJobStatus | undefined): boolean {
-  return status === 'pending' || status === 'running';
+  return status === 'pending' || status === 'running' || status === 'finalize-pending';
 }
 
 export function isTerminalCreateJobStatus(status: JsTemplateCreateJobStatus): boolean {

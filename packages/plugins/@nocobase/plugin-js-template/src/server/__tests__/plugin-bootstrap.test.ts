@@ -8,6 +8,7 @@
  */
 
 import type { Application } from '@nocobase/server';
+import { AuditManager } from '@nocobase/server';
 import type { Database } from '@nocobase/database';
 import { sha256Hex } from '@nocobase/runjs/server';
 import { getOrCreateRunJSWorkspaceServerModule } from '@nocobase/runjs/workspace/server';
@@ -60,10 +61,7 @@ describe('plugin-js-template bootstrap', () => {
       environment: { getVariables: vi.fn(() => ({})) },
       acl: { allow: vi.fn(), registerSnippet: vi.fn() },
       resourceManager: { define: defineResource, options: {} },
-      auditManager: {
-        registerActions: vi.fn(),
-        log: vi.fn(),
-      },
+      auditManager: new AuditManager(),
       use: vi.fn(),
       on: vi.fn((eventName: string, listener: () => Promise<void>) => {
         if (eventName === 'afterStart') {
@@ -116,7 +114,7 @@ describe('plugin-js-template bootstrap', () => {
       environment: { getVariables: vi.fn(() => ({})) },
       acl: { allow: vi.fn(), registerSnippet: vi.fn() },
       resourceManager: { define: vi.fn(), options: {} },
-      auditManager: { registerActions: vi.fn(), log: vi.fn() },
+      auditManager: new AuditManager(),
       use: vi.fn(),
       on: vi.fn((eventName: string, listener: () => Promise<void>) => {
         if (eventName === 'beforeStop') {
@@ -221,6 +219,100 @@ describe('plugin-js-template bootstrap', () => {
 
     expect(load).toHaveBeenCalledTimes(1);
     expect(start).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for the previous create-job runner to drain before enable builds a fresh runner', async () => {
+    let resolveShutdown: (() => void) | undefined;
+    const shutdown = new Promise<void>((resolve) => {
+      resolveShutdown = resolve;
+    });
+    const oldStart = vi.fn(async () => undefined);
+    const freshStart = vi.fn(async () => undefined);
+    const app = {
+      db: { hasCollection: vi.fn(() => true) } as unknown as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
+      eventQueue: {},
+      logger: {},
+      resourceManager: { define: vi.fn(), options: {} },
+    } as unknown as Application;
+    const plugin = new PluginJsTemplateServer(app, {
+      name: 'js-template',
+      packageName: NAMESPACE,
+    });
+    const state = plugin as unknown as {
+      createJobRunner?: { start: () => Promise<void> };
+      createJobShutdownPromise?: Promise<void>;
+      compileWorkerPool?: object;
+      runRemoteRecovery: () => Promise<void>;
+    };
+    state.createJobRunner = { start: oldStart };
+    state.createJobShutdownPromise = shutdown;
+    state.compileWorkerPool = {};
+    state.runRemoteRecovery = vi.fn(async () => undefined);
+    const finishShutdown = () => {
+      state.createJobRunner = undefined;
+      state.compileWorkerPool = undefined;
+      resolveShutdown?.();
+    };
+    vi.spyOn(plugin, 'load').mockImplementation(async () => {
+      await shutdown;
+      state.createJobRunner = { start: freshStart };
+      state.compileWorkerPool = {};
+      state.createJobShutdownPromise = undefined;
+    });
+
+    const enabling = plugin.afterEnable();
+    await Promise.resolve();
+    expect(oldStart).not.toHaveBeenCalled();
+    expect(freshStart).not.toHaveBeenCalled();
+
+    finishShutdown();
+    await enabling;
+    expect(oldStart).not.toHaveBeenCalled();
+    expect(freshStart).toHaveBeenCalledTimes(1);
+  });
+
+  it('owns raw-write audit actions only while the plugin is loaded or enabled', async () => {
+    const auditManager = new AuditManager();
+    const app = {
+      db: {} as Database,
+      environment: { getVariables: vi.fn(() => ({})) },
+      acl: { allow: vi.fn(), registerSnippet: vi.fn() },
+      resourceManager: { define: vi.fn(), removeResource: vi.fn(), options: {} },
+      auditManager,
+      use: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+    } as unknown as Application;
+    const plugin = new PluginJsTemplateServer(app, {
+      name: 'js-template',
+      packageName: NAMESPACE,
+    });
+    getOrCreateRunJSWorkspaceServerModule(app, app.db);
+
+    await plugin.load();
+    expect(auditManager.getAction('push', 'vscFile')).toMatchObject({ name: 'vscFile:push' });
+    expect(auditManager.getAction('saveChanges', 'runJSSources')).toMatchObject({
+      name: 'runJSSources:saveChanges',
+    });
+
+    await plugin.afterDisable();
+    expect(auditManager.getAction('push', 'vscFile')).toBeNull();
+    expect(auditManager.getAction('saveChanges', 'runJSSources')).toBeNull();
+
+    vi.spyOn(plugin, 'load');
+    const state = plugin as unknown as { runRemoteRecovery: () => Promise<void> };
+    state.runRemoteRecovery = vi.fn(async () => undefined);
+    await plugin.afterEnable();
+    expect(plugin.load).toHaveBeenCalledTimes(1);
+    expect(auditManager.getAction('push', 'vscFile')).toMatchObject({ name: 'vscFile:push' });
+    expect(auditManager.getAction('saveChanges', 'runJSSources')).toMatchObject({
+      name: 'runJSSources:saveChanges',
+    });
+
+    await plugin.remove();
+    expect(auditManager.getAction('push', 'vscFile')).toBeNull();
+    expect(auditManager.getAction('saveChanges', 'runJSSources')).toBeNull();
   });
 });
 

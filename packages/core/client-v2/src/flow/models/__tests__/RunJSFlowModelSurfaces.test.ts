@@ -21,11 +21,6 @@ import {
 import { JSCollectionActionModel } from '../actions/JSCollectionActionModel';
 import { JSItemActionModel } from '../actions/JSItemActionModel';
 import { JSRecordActionModel } from '../actions/JSRecordActionModel';
-import { JSPageModel } from '../base/PageModel/JSPageModel';
-import {
-  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
-} from '../base/PageModel/JSPageSourceModeField';
 import { FilterFormJSActionModel } from '../blocks/filter-form/FilterFormJSActionModel';
 import { JSFormActionModel } from '../blocks/form/JSFormActionModel';
 import { JSBlockModel } from '../blocks/js-block/JSBlock';
@@ -52,7 +47,7 @@ type SurfaceSpec = {
   name: string;
   modelClass: typeof FlowModel;
   flowKey: string;
-  jsTemplateKind: 'js-block' | 'js-page' | 'js-action' | 'js-field' | 'js-item';
+  jsTemplateKind: 'js-block' | 'js-action' | 'js-field' | 'js-item';
   surfaceStyle: RunJSSurfaceStyle;
   scene: string;
   sourceComponent?: string;
@@ -205,18 +200,6 @@ const surfaces: SurfaceSpec[] = [
     settingsComponent: JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
     hasSourceBindingStep: true,
   },
-  {
-    name: 'JSPageModel',
-    modelClass: JSPageModel,
-    flowKey: 'jsSettings',
-    jsTemplateKind: 'js-page',
-    surfaceStyle: 'render',
-    scene: 'page',
-    sourceComponent: JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
-    settingsComponent: JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
-    hasSourceBindingStep: false,
-    minHeight: 'calc(100vh - 42px)',
-  },
 ];
 
 function getRunJsCodeSchema(spec: SurfaceSpec): CodeSchema {
@@ -290,11 +273,9 @@ describe('RunJS FlowModel surfaces', () => {
 
     if (spec.sourceComponent) {
       expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component']).toBe(spec.sourceComponent);
-      if (spec.jsTemplateKind !== 'js-page') {
-        expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
-          kind: spec.jsTemplateKind,
-        });
-      }
+      expect(sourceModeStep?.uiSchema?.sourceMode?.['x-component-props']).toMatchObject({
+        kind: spec.jsTemplateKind,
+      });
     } else {
       expect(sourceModeStep?.uiMode).toMatchObject({ type: 'cascadeMenu', key: 'sourceMode' });
     }

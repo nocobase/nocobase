@@ -68,7 +68,6 @@ const RUNJS_MANIFEST_PATH = '.nocobase/runjs-source.json';
 const INLINE_ENTRY_DESCRIPTOR_PATH = 'src/client/entry.json';
 const ENTRY_ROOTS: Record<JsTemplateKind, string> = {
   'js-block': 'src/client/js-blocks',
-  'js-page': 'src/client/js-pages',
   'js-field': 'src/client/js-fields',
   'js-action': 'src/client/js-actions',
   'js-item': 'src/client/js-items',

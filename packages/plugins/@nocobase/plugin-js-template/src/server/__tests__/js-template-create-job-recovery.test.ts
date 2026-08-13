@@ -8,7 +8,7 @@
  */
 
 import { vi } from 'vitest';
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 
 import type { JsTemplateCreateJob } from '../../shared/types';
 import { RemoteSyncError } from '../vsc-file/remotes';
@@ -42,7 +42,7 @@ describe('JsTemplateCreateJobRunner', () => {
     await runner.run(job.id);
 
     expect(store.claim).toHaveBeenCalledTimes(2);
-    expect(executor.execute).toHaveBeenCalledWith(job, job.claimToken);
+    expect(executor.execute).toHaveBeenCalledWith(job, job.claimToken, expect.any(AbortSignal));
     expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual([
       'createJobStart',
       'createJobSucceed',
@@ -58,7 +58,7 @@ describe('JsTemplateCreateJobRunner', () => {
     await Promise.all([runner.run(job.id), runner.run(job.id)]);
 
     expect(executor.execute).toHaveBeenCalledTimes(1);
-    expect(store.succeed).toHaveBeenCalledWith(job.id, 'main', job.claimToken, job.targetProjectId);
+    expect(executor.finalizeSucceededResult).toHaveBeenCalledWith(job, job.claimToken, job.targetProjectId);
     expect(executor.cleanup).not.toHaveBeenCalled();
   });
 
@@ -129,7 +129,105 @@ describe('JsTemplateCreateJobRunner', () => {
     expect(options.eventQueue.subscribe).toHaveBeenCalledTimes(1);
     expect(store.findClaimableIds).toHaveBeenCalledWith('main', 100);
     expect(executor.execute).toHaveBeenCalledTimes(1);
-    expect(store.succeed).toHaveBeenCalledTimes(1);
+    expect(executor.finalizeSucceededResult).toHaveBeenCalledTimes(1);
+  });
+
+  it('terminalizes a committed finalize-pending result without reauthorization or source execution', async () => {
+    const job = createJob({
+      status: 'finalize-pending',
+      resultProjectId: 'jtp_demo',
+      payload: null,
+    });
+    const store = createStore({ claim: vi.fn(async () => job) });
+    const executor = createExecutor();
+    const authorize = vi.fn(async () => Promise.reject(new Error('authorization revoked after commit')));
+    const recordCreateJobEvent = vi.fn(async (_event: JsTemplateCreateJobAuditInput) => undefined);
+    const runner = new JsTemplateCreateJobRunner(store, executor, runnerOptions({ authorize }), {
+      recordCreateJobEvent,
+    } as unknown as JsTemplateAuditService);
+
+    await runner.run(job.id);
+
+    expect(authorize).not.toHaveBeenCalled();
+    expect(executor.execute).not.toHaveBeenCalled();
+    expect(executor.finalizeSucceededResult).toHaveBeenCalledWith(job, job.claimToken, job.targetProjectId);
+    expect(recordCreateJobEvent.mock.calls.map(([event]) => event.action)).toEqual(['createJobSucceed']);
+  });
+
+  it('rejects a finalize-pending result with a different target identity before opening the final transaction', async () => {
+    const job = createJob({ status: 'finalize-pending', resultProjectId: 'jtp_demo', payload: null });
+    const store = createStore();
+    const executor = new JsTemplateCreateJobExecutor(
+      {} as Database,
+      {} as JsTemplateProjectService,
+      {} as JsTemplateCompileService,
+      {} as JsTemplateCreateFromRemoteService,
+      store,
+      vi.fn(async () => undefined),
+    );
+
+    await expect(executor.finalizeSucceededResult(job, job.claimToken || '', 'jtp_foreign')).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_SOURCE_ERROR',
+    });
+    expect(store.succeed).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['creation job identity', { creationJobId: 'jtcj_foreign' }],
+    ['ready health', { healthStatus: 'pending' }],
+    ['head commit', { headCommitId: null }],
+  ])('keeps finalize-pending non-terminal when %s validation fails', async (_label, mismatch) => {
+    const job = createJob({ status: 'finalize-pending', resultProjectId: 'jtp_demo', payload: null });
+    const validateResult = vi.fn();
+    const store = createStore({
+      succeed: vi.fn(
+        async (
+          _jobId: string,
+          _applicationName: string,
+          _claimToken: string,
+          _resultProjectId: string,
+          validate: (transaction: Transaction) => Promise<void>,
+        ) => {
+          validateResult();
+          await validate({} as Transaction);
+          return { ...job, status: 'succeeded' };
+        },
+      ),
+    });
+    const project = {
+      id: job.targetProjectId,
+      creationJobId: job.id,
+      healthStatus: 'ready',
+      headCommitId: 'vscc_ready',
+      ...mismatch,
+    };
+    const executor = new JsTemplateCreateJobExecutor(
+      {} as Database,
+      { lockInternalProjectForUpdate: vi.fn(async () => project) } as unknown as JsTemplateProjectService,
+      {} as JsTemplateCompileService,
+      {} as JsTemplateCreateFromRemoteService,
+      store,
+      vi.fn(async () => undefined),
+    );
+
+    await expect(
+      executor.finalizeSucceededResult(job, job.claimToken || '', job.resultProjectId || ''),
+    ).rejects.toMatchObject({ code: 'JS_TEMPLATE_SOURCE_ERROR' });
+    expect(validateResult).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not emit a success audit when a stale finalize claimant loses its fence', async () => {
+    const job = createJob({ status: 'finalize-pending', resultProjectId: 'jtp_demo', payload: null });
+    const store = createStore({ claim: vi.fn(async () => job) });
+    const executor = createExecutor({ finalizeSucceededResult: vi.fn(async () => null) });
+    const recordCreateJobEvent = vi.fn(async (_event: JsTemplateCreateJobAuditInput) => undefined);
+    const runner = new JsTemplateCreateJobRunner(store, executor, runnerOptions(), {
+      recordCreateJobEvent,
+    } as unknown as JsTemplateAuditService);
+
+    await runner.run(job.id);
+
+    expect(recordCreateJobEvent).not.toHaveBeenCalled();
   });
 
   it('heartbeats a long-running executor before the lease expires', async () => {
@@ -154,6 +252,37 @@ describe('JsTemplateCreateJobRunner', () => {
     await running;
   });
 
+  it('aborts active execution during shutdown and retains the leased job for recovery', async () => {
+    const job = createJob();
+    const store = createStore();
+    let executionSignal: AbortSignal | undefined;
+    const executor = createExecutor({
+      execute: vi.fn(
+        async (_job: JsTemplateCreateJob, _claimToken: string, signal: AbortSignal) =>
+          new Promise<string>((_resolve, reject) => {
+            executionSignal = signal;
+            signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+          }),
+      ),
+    });
+    const options = runnerOptions();
+    const runner = new JsTemplateCreateJobRunner(store, executor, options);
+
+    const running = runner.run(job.id);
+    await vi.waitFor(() => expect(executor.execute).toHaveBeenCalledTimes(1));
+    await runner.stop();
+    await running;
+
+    expect(executionSignal?.aborted).toBe(true);
+    expect(store.fail).not.toHaveBeenCalled();
+    expect(executor.finalizeSucceededResult).not.toHaveBeenCalled();
+    expect(executor.cleanup).not.toHaveBeenCalled();
+    expect(options.logger.info).toHaveBeenCalledWith(
+      'JS Template create job interrupted; job retained for lease recovery',
+      { jobId: job.id, sourceType: job.sourceType },
+    );
+  });
+
   it('never fails or cleans up a ready Project when success persistence throws across 100 restarts', async () => {
     const job = createJob();
     const store = createStore({ succeed: vi.fn(async () => Promise.reject(new Error('injected persistence loss'))) });
@@ -164,16 +293,27 @@ describe('JsTemplateCreateJobRunner', () => {
       healthStatus: 'ready',
       headCommitId: 'vscc_ready',
     }));
+    const lockInternalProjectForUpdate = vi.fn(async () => ({
+      id: job.targetProjectId,
+      creationJobId: job.id,
+      healthStatus: 'ready',
+      headCommitId: 'vscc_ready',
+    }));
+    const transaction = { LOCK: { UPDATE: 'UPDATE' } };
     const executor = new JsTemplateCreateJobExecutor(
-      {} as Database,
+      {
+        sequelize: { transaction: vi.fn(async (run: (current: object) => Promise<unknown>) => run(transaction)) },
+      } as unknown as Database,
       {
         getCurrentApplicationName: vi.fn(() => 'main'),
         findInternalProjectById,
+        lockInternalProjectForUpdate,
         deleteProject,
       } as unknown as JsTemplateProjectService,
       {} as JsTemplateCompileService,
       {} as JsTemplateCreateFromRemoteService,
       store,
+      vi.fn(async () => undefined),
     );
     const runner = new JsTemplateCreateJobRunner(store, executor, runnerOptions());
 
@@ -211,6 +351,7 @@ describe('JsTemplateCreateJobRunner', () => {
       {} as JsTemplateCompileService,
       {} as JsTemplateCreateFromRemoteService,
       store,
+      vi.fn(async () => undefined),
     );
 
     await expect(executor.cleanup(job, job.claimToken || '')).resolves.toBe(false);
@@ -331,7 +472,11 @@ describe('JsTemplateCreateJobRunner', () => {
     await secondRunner.run(persistedJob.id);
     await firstRunner.run(persistedJob.id);
 
-    expect(secondExecutor.execute).toHaveBeenCalledWith(expect.objectContaining({ claimToken: 'claim-2' }), 'claim-2');
+    expect(secondExecutor.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ claimToken: 'claim-2' }),
+      'claim-2',
+      expect.any(AbortSignal),
+    );
     expect(secondExecutor.cleanup).toHaveBeenCalledWith(expect.objectContaining({ claimToken: 'claim-2' }), 'claim-2');
     expect(store.fail).toHaveBeenCalledTimes(1);
     expect(store.fail).toHaveBeenCalledWith(
@@ -403,6 +548,7 @@ function runnerOptionsBase() {
       warn: vi.fn(),
       error: vi.fn(),
     },
+    authorize: vi.fn(async () => undefined),
     scanIntervalMs: 60_000,
     runningTimeoutMs: 600_000,
     claimOwner: 'runner-test',
@@ -418,6 +564,7 @@ function createStore(
     succeed: vi.fn(async () => ({ ...job, status: 'succeeded', resultProjectId: job.targetProjectId })),
     fail: vi.fn(async () => ({ ...job, status: 'failed' })),
     heartbeat: vi.fn(async () => true),
+    assertCurrentFinalizableClaim: vi.fn(async () => undefined),
     findClaimableIds: vi.fn(async () => []),
     ...overrides,
   } as unknown as JsTemplateCreateJobStore;
@@ -429,6 +576,11 @@ function createExecutor(
   const job = createJob();
   return {
     execute: vi.fn(async () => job.targetProjectId),
+    finalizeSucceededResult: vi.fn(async () => ({
+      ...job,
+      status: 'succeeded',
+      resultProjectId: job.targetProjectId,
+    })),
     cleanup: vi.fn(async () => false),
     ...overrides,
   } as unknown as JsTemplateCreateJobExecutor;
@@ -451,6 +603,10 @@ function createJob(overrides: Partial<JsTemplateCreateJob> = {}): JsTemplateCrea
     errorMessage: null,
     reservationKey: 'sha256:demo',
     actorUserId: '7',
+    sessionId: 'session-demo',
+    authorizationRole: 'member',
+    authorizationRoles: ['member'],
+    dismissed: false,
     requestId: 'request-demo',
     claimToken: 'claim-demo',
     claimOwner: 'runner-test',

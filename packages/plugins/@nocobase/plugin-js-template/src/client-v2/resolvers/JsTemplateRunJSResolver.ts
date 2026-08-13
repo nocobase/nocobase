@@ -598,9 +598,6 @@ function getKindLabel(kind: JsTemplateKind | string, t: (key: string) => string)
   if (kind === 'js-block') {
     return t('JS Block');
   }
-  if (kind === 'js-page') {
-    return t('JS page');
-  }
   if (kind === 'js-field') {
     return t('JS Field');
   }

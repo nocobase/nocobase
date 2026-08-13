@@ -25,14 +25,23 @@ import type {
 import type { JsTemplateServiceContext } from '../services/JsTemplateProjectService';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
-import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
+import {
+  hashJsTemplateCreateRequest,
+  JsTemplateCreateJobStore,
+  toCreateJobSummary,
+} from '../services/JsTemplateCreateJobStore';
 import { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { isAllowedPermissionResult } from '../services/JsTemplatePermissionService';
-import { JS_TEMPLATE_VALIDATION_LIMITS } from '../services/JsTemplateValidator';
 import { isStrictUtf8Text, parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 import { toJsTemplateSourceError } from '../services/errorContract';
-import { createTypedResourceAction, getServiceContext, toRecord, type ResourceActionInput } from './resourceAction';
+import {
+  createTypedResourceAction,
+  getServiceContext,
+  requireCreateJobAuthorizationContext,
+  toRecord,
+  type ResourceActionInput,
+} from './resourceAction';
 
 export const jsTemplateProjectActionNames = [
   'create',
@@ -156,12 +165,14 @@ async function enqueueProjectCreation(
   currentUser: JsTemplateServiceContext,
 ): Promise<JsTemplateCreateJobAcceptedResult> {
   assertOnlyCreateKeys(input);
-  const createInput = normalizeCreateJobInput(input);
+  const actorUserId = requireAuthenticatedActor(currentUser.actorUserId);
+  const sessionId = requireAuthenticatedSession(currentUser.sessionId);
+  const authorization = requireCreateJobAuthorizationContext(currentUser);
+  const createInput = await normalizeCreateJobInput(input, services.projectService);
   const metadata = services.projectService.normalizeCreateMetadata(createInput);
   const targetProjectId = `jtp_${uid()}`;
   const job = await services.db.sequelize.transaction(async (transaction) => {
-    await services.projectService.assertCreateNameAvailable(metadata.name, metadata.normalizedName, transaction);
-    return services.createJobStore.enqueue(
+    const currentJob = await services.createJobStore.enqueue(
       {
         applicationName: services.applicationName,
         targetProjectId,
@@ -171,11 +182,19 @@ async function enqueueProjectCreation(
         description: metadata.description,
         sourceType: createInput.sourceType,
         payload: createInput.payload,
-        actorUserId: currentUser.actorUserId,
+        idempotencyKey: createInput.idempotencyKey,
+        requestHash: hashJsTemplateCreateRequest({ metadata, payload: createInput.payload, authorization }),
+        actorUserId,
+        sessionId,
+        ...authorization,
         requestId: currentUser.requestId,
       },
       transaction,
     );
+    if (currentJob.targetProjectId === targetProjectId) {
+      await services.projectService.assertCreateNameAvailable(metadata.name, metadata.normalizedName, transaction);
+    }
+    return currentJob;
   });
   await services.createJobRunner.publish(job.id);
   try {
@@ -194,6 +213,20 @@ async function enqueueProjectCreation(
   return toCreateJobSummary(job);
 }
 
+function requireAuthenticatedActor(actorUserId: string | null | undefined): string {
+  if (!actorUserId) {
+    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated user identity is required');
+  }
+  return actorUserId;
+}
+
+function requireAuthenticatedSession(sessionId: string | null | undefined): string {
+  if (!sessionId) {
+    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated session identity is required');
+  }
+  return sessionId;
+}
+
 async function inspectSourceArchive(
   services: JsTemplateProjectActionServices,
   input: ResourceActionInput,
@@ -208,15 +241,19 @@ async function inspectSourceArchive(
   return { files };
 }
 
-function normalizeCreateJobInput(input: ResourceActionInput): {
+async function normalizeCreateJobInput(
+  input: ResourceActionInput,
+  projectService: JsTemplateProjectService,
+): Promise<{
   sourceType: 'starter' | 'zip';
+  idempotencyKey: string;
   name: string;
   title?: string | null;
   description?: string | null;
   payload:
     | { sourceType: 'starter'; message: string; initialFiles?: JsTemplateTreeEntryInput[] }
-    | { sourceType: 'zip'; message: string; zipBase64: string };
-} {
+    | { sourceType: 'zip'; message: string; files: JsTemplateTreeEntryInput[] };
+}> {
   const zipBase64 = optionalString(input, 'zipBase64');
   const suppliedInitialFiles = optionalArray(input, 'initialFiles', normalizeTreeEntryInput);
   if (Object.hasOwn(input, 'zipBase64') && !zipBase64) {
@@ -225,19 +262,18 @@ function normalizeCreateJobInput(input: ResourceActionInput): {
   if (zipBase64 && suppliedInitialFiles) {
     throw invalidInput('zipBase64 and initialFiles cannot be used together');
   }
-  if (zipBase64) {
-    assertLightweightZipInput(zipBase64);
-  }
   assertTextSourceFiles(suppliedInitialFiles || []);
   const message =
     optionalString(input, 'message') || (zipBase64 ? 'Import JS Template source' : 'Initial JS Template source');
+  const files = zipBase64 ? await parseJsTemplateSourceArchive(zipBase64, projectService.getValidator()) : undefined;
   return {
+    idempotencyKey: requireIdempotencyKey(input),
     name: requireString(input, 'name'),
     title: optionalNullableString(input, 'title'),
     description: optionalNullableString(input, 'description'),
     sourceType: zipBase64 ? 'zip' : 'starter',
-    payload: zipBase64
-      ? { sourceType: 'zip', zipBase64, message }
+    payload: files
+      ? { sourceType: 'zip', files, message }
       : {
           sourceType: 'starter',
           message,
@@ -251,6 +287,7 @@ function assertOnlyCreateKeys(input: ResourceActionInput): void {
     'resourceName',
     'actionName',
     'name',
+    'idempotencyKey',
     'title',
     'description',
     'zipBase64',
@@ -262,14 +299,12 @@ function assertOnlyCreateKeys(input: ResourceActionInput): void {
   }
 }
 
-function assertLightweightZipInput(zipBase64: string): void {
-  if (!zipBase64 || zipBase64.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/u.test(zipBase64)) {
-    throw invalidInput('zipBase64 must be valid base64');
+function requireIdempotencyKey(input: ResourceActionInput): string {
+  const value = requireString(input, 'idempotencyKey');
+  if (value.length > 255) {
+    throw invalidInput('idempotencyKey must be at most 255 characters');
   }
-  const compressedBytes = Buffer.from(zipBase64, 'base64').byteLength;
-  if (compressedBytes > JS_TEMPLATE_VALIDATION_LIMITS.maxZipBytes) {
-    throw invalidInput('Source ZIP exceeds the compressed size limit');
-  }
+  return value;
 }
 
 function normalizeUpdateInput(input: ResourceActionInput): JsTemplateUpdateProjectInput {

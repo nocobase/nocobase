@@ -26,9 +26,9 @@ const cases: Array<{ entryPath: string; kind: JsTemplateKind; lockedPath: string
     lockedPath: 'src/client/js-actions/other/index.ts',
   },
   {
-    entryPath: 'src/client/js-pages/current/index.tsx',
-    kind: 'js-page',
-    lockedPath: 'src/client/js-pages/other/index.tsx',
+    entryPath: 'src/client/js-blocks/current/index.tsx',
+    kind: 'js-block',
+    lockedPath: 'src/client/js-blocks/other/index.tsx',
   },
   {
     entryPath: 'src/client/js-actions/current/index.ts',
@@ -188,9 +188,9 @@ describe('JS Template workspace access', () => {
   });
 
   it('recognizes only managed template root folders', () => {
-    expect(getManagedJsTemplateRoot('src/client/js-pages/orders')).toEqual({
-      kind: 'js-page',
-      path: 'src/client/js-pages/orders',
+    expect(getManagedJsTemplateRoot('src/client/js-blocks/orders')).toEqual({
+      kind: 'js-block',
+      path: 'src/client/js-blocks/orders',
     });
     expect(getManagedJsTemplateRoot('src/client/js-actions/send-email')).toEqual({
       kind: 'js-action',

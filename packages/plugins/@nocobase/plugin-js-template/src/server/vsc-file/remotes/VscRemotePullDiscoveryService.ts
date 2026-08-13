@@ -11,6 +11,7 @@ import type { Database, Model, Transaction } from '@nocobase/database';
 
 import type {
   RemoteSyncErrorCode,
+  VscFileActiveRemoteRecord,
   VscFileRemoteRecord,
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
@@ -55,7 +56,7 @@ export interface VscRemotePullDiscoveryContext {
 }
 
 export interface VscRemotePullHandle {
-  remote: VscFileRemoteRecord;
+  remote: VscFileActiveRemoteRecord;
   jobId: string;
   claimToken: string;
   leaseDurationMs: number;
@@ -106,7 +107,7 @@ export interface VscRemotePullOwnerApply<TOwner, TResult> {
 }
 
 interface PreparedPull {
-  remote: VscFileRemoteRecord;
+  remote: VscFileActiveRemoteRecord;
   repository: VscRepositoryRecord;
   job: VscFileSyncJobRecord;
   localSnapshot: VscRemoteSnapshot;
@@ -901,7 +902,7 @@ function isUnprovablePinnedRevision(error: RemoteSyncError): boolean {
   return error.code === 'REMOTE_CHANGED' || error.code === 'REMOTE_NOT_FOUND';
 }
 
-function remoteTarget(remote: VscFileRemoteRecord) {
+function remoteTarget(remote: VscFileActiveRemoteRecord) {
   return { config: remote.config, authRef: remote.authRef };
 }
 

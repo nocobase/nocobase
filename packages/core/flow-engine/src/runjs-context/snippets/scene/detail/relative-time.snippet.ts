@@ -10,9 +10,10 @@
 import type { SnippetModule } from '../../types';
 import { JSEditableFieldRunJSContext } from '../../../contexts/JSEditableFieldRunJSContext';
 import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
+import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: [JSFieldRunJSContext, JSEditableFieldRunJSContext],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSEditableFieldRunJSContext],
   prefix: 'sn-jsf-relative-time',
   label: 'Display date field as relative time',
   description: 'Render date values as “3 days ago”, “just now”, etc.',

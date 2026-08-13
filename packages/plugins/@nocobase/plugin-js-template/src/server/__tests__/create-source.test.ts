@@ -13,6 +13,7 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import JSZip from 'jszip';
 import { vi } from 'vitest';
 
+import { JS_TEMPLATE_ACL_SNIPPET } from '../../constants';
 import { DEFAULT_JS_TEMPLATE_TEMPLATE_FILES } from '../../shared/default-template';
 import PluginJsTemplateServer from '../plugin';
 import type { JsTemplateCreateJob } from '../../shared/types';
@@ -28,11 +29,15 @@ import { parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchiv
 
 describe('plugin-js-template initial source creation', () => {
   let app: MockServer;
+  let agent: ReturnType<MockServer['agent']>;
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: [PluginJsTemplateServer],
+      registerActions: true,
+      acl: true,
+      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', PluginJsTemplateServer],
     });
+    agent = await createRoleAgent(app, 'jsTemplateCreateSourceAdmin', [JS_TEMPLATE_ACL_SNIPPET]);
   });
 
   afterEach(async () => {
@@ -40,7 +45,9 @@ describe('plugin-js-template initial source creation', () => {
   });
 
   it('creates and compiles the default source as the first version when ZIP is omitted', async () => {
-    const createResponse = await app.agent().post('/jsTemplateProjects:create').send({ name: 'Default Source' });
+    const createResponse = await agent
+      .post('/jsTemplateProjects:create')
+      .send({ idempotencyKey: 'create-default-source', name: 'Default Source' });
     expect(createResponse.status).toBe(202);
     const accepted = createResponse.body.data;
     await waitForSuccessfulCreate(app, accepted.id, accepted.targetProjectId);
@@ -48,26 +55,17 @@ describe('plugin-js-template initial source creation', () => {
       filterByTk: accepted.targetProjectId,
     });
     const creationJob = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: accepted.id });
-    const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
+    const repoResponse = await agent.resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
-    const pullResponse = await app
-      .agent()
-      .resource('jsTemplateFiles')
-      .pull({
-        values: { projectId: repo.id, includeContent: 'all' },
-      });
-    const historyResponse = await app
-      .agent()
-      .resource('jsTemplateFiles')
-      .listCommits({
-        values: { projectId: repo.id },
-      });
-    const entriesResponse = await app
-      .agent()
-      .resource('jsTemplates')
-      .list({
-        values: { projectId: repo.id },
-      });
+    const pullResponse = await agent.resource('jsTemplateFiles').pull({
+      values: { projectId: repo.id, includeContent: 'all' },
+    });
+    const historyResponse = await agent.resource('jsTemplateFiles').listCommits({
+      values: { projectId: repo.id },
+    });
+    const entriesResponse = await agent.resource('jsTemplates').list({
+      values: { projectId: repo.id },
+    });
 
     expect(repo).toMatchObject({
       healthStatus: 'ready',
@@ -82,7 +80,7 @@ describe('plugin-js-template initial source creation', () => {
       DEFAULT_JS_TEMPLATE_TEMPLATE_FILES.map((file) => file.path).sort(),
     );
     expect(historyResponse.body.data).toHaveLength(1);
-    expect(entriesResponse.body.data).toHaveLength(6);
+    expect(entriesResponse.body.data).toHaveLength(5);
     expect(entriesResponse.body.data).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'js-block', templateName: 'welcome-card', healthStatus: 'ready' }),
@@ -90,7 +88,6 @@ describe('plugin-js-template initial source creation', () => {
         expect.objectContaining({ kind: 'js-field', templateName: 'status-tag', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-field', templateName: 'record-status-column', healthStatus: 'ready' }),
         expect.objectContaining({ kind: 'js-item', templateName: 'form-total-preview', healthStatus: 'ready' }),
-        expect.objectContaining({ kind: 'js-page', templateName: 'hello-page', healthStatus: 'ready' }),
       ]),
     );
     expect(entriesResponse.body.data.some((entry) => entry.kind === 'runjs')).toBe(false);
@@ -119,16 +116,15 @@ describe('plugin-js-template initial source creation', () => {
       },
     });
 
-    const createResponse = await app
-      .agent()
+    const createResponse = await agent
       .post('/jsTemplateProjects:create')
-      .send({ name: 'Removed RunJS Source', zipBase64 });
+      .send({ idempotencyKey: 'create-removed-runjs-source', name: 'Removed RunJS Source', zipBase64 });
 
-    expect(createResponse.status).toBe(202);
-    await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
-      status: 'failed',
-      errorCode: 'JS_TEMPLATE_VALIDATION_FAILED',
-    });
+    expect(createResponse.status).toBe(422);
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(0);
+    await expect(app.db.getRepository('jsTemplateProjects').count()).resolves.toBe(0);
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(0);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(0);
   });
 
   it('rejects directly supplied source that uses the removed generic RunJS root', async () => {
@@ -157,10 +153,11 @@ describe('plugin-js-template initial source creation', () => {
       ]),
     );
 
-    const createResponse = await app
-      .agent()
-      .post('/jsTemplateProjects:create')
-      .send({ name: 'Direct Removed RunJS Source', initialFiles });
+    const createResponse = await agent.post('/jsTemplateProjects:create').send({
+      idempotencyKey: 'create-direct-removed-runjs-source',
+      name: 'Direct Removed RunJS Source',
+      initialFiles,
+    });
 
     expect(createResponse.status).toBe(202);
     await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
@@ -176,10 +173,9 @@ describe('plugin-js-template initial source creation', () => {
     zip.file('uploaded/src/client/js-blocks/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
     const zipBase64 = await zip.generateAsync({ type: 'base64' });
 
-    const createResponse = await app
-      .agent()
+    const createResponse = await agent
       .post('/jsTemplateProjects:create')
-      .send({ name: 'Uploaded Source', zipBase64 });
+      .send({ idempotencyKey: 'create-uploaded-source', name: 'Uploaded Source', zipBase64 });
     expect(createResponse.status).toBe(202);
     const accepted = createResponse.body.data;
     await waitForSuccessfulCreate(app, accepted.id, accepted.targetProjectId);
@@ -187,23 +183,18 @@ describe('plugin-js-template initial source creation', () => {
       filterByTk: accepted.targetProjectId,
     });
     const creationJob = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: accepted.id });
-    const repoResponse = await app.agent().resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
+    const repoResponse = await agent.resource('jsTemplateProjects').get({ filterByTk: accepted.targetProjectId });
     const repo = repoResponse.body.data;
-    const pullResponse = await app
-      .agent()
-      .resource('jsTemplateFiles')
-      .pull({
-        values: { projectId: repo.id, includeContent: 'all' },
-      });
-    const entriesResponse = await app
-      .agent()
-      .resource('jsTemplates')
-      .list({
-        values: { projectId: repo.id },
-      });
+    const pullResponse = await agent.resource('jsTemplateFiles').pull({
+      values: { projectId: repo.id, includeContent: 'all' },
+    });
+    const entriesResponse = await agent.resource('jsTemplates').list({
+      values: { projectId: repo.id },
+    });
 
     expect(repo).toMatchObject({ healthStatus: 'ready', headCommitId: expect.any(String) });
     expect(creationJob?.get('applicationName')).toBe('main');
+    expect(creationJob?.get('payload')).toBeNull();
     expect(internalProject?.get('applicationName')).toBe('main');
     expect(internalProject?.get('creationJobId')).toBe(accepted.id);
     expect(pullResponse.body.data.files.map((file) => file.path)).toEqual([
@@ -230,16 +221,16 @@ describe('plugin-js-template initial source creation', () => {
     const vscProjectCount = await app.db.getRepository('vscFileRepositories').count();
     const commitCount = await app.db.getRepository('vscFileCommits').count();
 
-    const createResponse = await app
-      .agent()
+    const createResponse = await agent
       .post('/jsTemplateProjects:create')
-      .send({ name: 'Broken Uploaded Source', zipBase64 });
+      .send({ idempotencyKey: 'create-broken-uploaded-source', name: 'Broken Uploaded Source', zipBase64 });
 
     expect(createResponse.status).toBe(202);
     await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
       status: 'failed',
       errorCode: 'JS_TEMPLATE_VALIDATION_FAILED',
     });
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(1);
     await expect(app.db.getRepository('jsTemplateProjects').count()).resolves.toBe(projectCount);
     await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(vscProjectCount);
     await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
@@ -249,7 +240,7 @@ describe('plugin-js-template initial source creation', () => {
     const projectId = 'jtp_missing_initial_commit';
     const projectService = {
       getCurrentApplicationName: vi.fn(() => 'main'),
-      createProject: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+      createProjectForCompositeUseCase: vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
         await app.db.getRepository('jsTemplateProjects').create({
           values: {
             id: projectId,
@@ -269,7 +260,8 @@ describe('plugin-js-template initial source creation', () => {
       }),
     } as unknown as JsTemplateProjectService;
     const runtimeCompileService = {
-      compileCurrentRuntime: vi.fn(),
+      prepareInitialWorkspace: vi.fn(async () => ({ projectId })),
+      applyPreparedInitialWorkspace: vi.fn(),
     } as unknown as JsTemplateCompileService;
     Object.assign(projectService, { findInternalProjectById: vi.fn(async () => null) });
     const executor = new JsTemplateCreateJobExecutor(
@@ -278,6 +270,7 @@ describe('plugin-js-template initial source creation', () => {
       runtimeCompileService,
       {} as JsTemplateCreateFromRemoteService,
       { assertCurrentClaim: vi.fn(async () => undefined) } as unknown as JsTemplateCreateJobStore,
+      vi.fn(async () => undefined),
     );
 
     await expect(
@@ -287,13 +280,101 @@ describe('plugin-js-template initial source creation', () => {
       details: { projectId },
     });
 
-    expect(runtimeCompileService.compileCurrentRuntime).not.toHaveBeenCalled();
+    expect(runtimeCompileService.applyPreparedInitialWorkspace).not.toHaveBeenCalled();
     await expect(
       app.db.getRepository('jsTemplateProjects').findOne({
         filterByTk: projectId,
       }),
     ).resolves.toBeNull();
   });
+
+  it.each([
+    ['starter', 'first-write'],
+    ['zip', 'first-write'],
+    ['starter', 'final-transaction'],
+    ['zip', 'final-transaction'],
+  ] as const)(
+    'rolls back %s creation when authorization is revoked at the %s fence',
+    async (sourceType, revocationPoint) => {
+      const projectId = `jtp_auth_${sourceType}_${revocationPoint}`;
+      const prepareInitialWorkspace = vi.fn(async () => ({ projectId }));
+      const applyPreparedInitialWorkspace = vi.fn(async () => ({ project: { id: projectId } }));
+      const createProjectForCompositeUseCase = vi.fn(async (_input: unknown, ctx: { transaction?: Transaction }) => {
+        await app.db.getRepository('jsTemplateProjects').create({
+          values: {
+            id: projectId,
+            vscRepoId: `vscr_auth_${sourceType}_${revocationPoint}`,
+            applicationName: 'main',
+            name: `Authorization ${sourceType} ${revocationPoint}`,
+            normalizedName: `authorization-${sourceType}-${revocationPoint}`,
+            headCommitId: 'vscc_authorized',
+          },
+          transaction: ctx.transaction,
+        });
+        return { id: projectId, headCommitId: 'vscc_authorized' };
+      });
+      const projectService = {
+        getCurrentApplicationName: vi.fn(() => 'main'),
+        findInternalProjectById: vi.fn(async () => null),
+        createProjectForCompositeUseCase,
+      } as unknown as JsTemplateProjectService;
+      const store = {
+        assertCurrentClaim: vi.fn(async () => undefined),
+        markFinalizePending: vi.fn(async () => undefined),
+      } as unknown as JsTemplateCreateJobStore;
+      const authorize = vi.fn(async () => {
+        const revocationCall = revocationPoint === 'first-write' ? 1 : 2;
+        if (authorize.mock.calls.length === revocationCall) {
+          throw new Error(`authorization revoked at ${revocationPoint}`);
+        }
+      });
+      const executor = new JsTemplateCreateJobExecutor(
+        app.db,
+        projectService,
+        { prepareInitialWorkspace, applyPreparedInitialWorkspace } as unknown as JsTemplateCompileService,
+        {} as JsTemplateCreateFromRemoteService,
+        store,
+        authorize,
+      );
+      const baseJob = createJob(
+        `jtcj_auth_${sourceType}_${revocationPoint}`,
+        projectId,
+        `Authorization ${sourceType} ${revocationPoint}`,
+      );
+      const job: JsTemplateCreateJob = {
+        ...baseJob,
+        sourceType,
+        payload:
+          sourceType === 'zip'
+            ? {
+                sourceType: 'zip',
+                message: 'Import ZIP source',
+                files: [{ path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(null);\n' }],
+              }
+            : { sourceType: 'starter', message: 'Initial JS Template source' },
+      };
+
+      await expect(executor.execute(job, job.claimToken || '')).rejects.toThrow(
+        `authorization revoked at ${revocationPoint}`,
+      );
+
+      expect(prepareInitialWorkspace).toHaveBeenCalledOnce();
+      if (revocationPoint === 'first-write') {
+        expect(createProjectForCompositeUseCase).not.toHaveBeenCalled();
+        expect(applyPreparedInitialWorkspace).not.toHaveBeenCalled();
+        expect(store.assertCurrentClaim).toHaveBeenCalledOnce();
+        expect(authorize).toHaveBeenCalledOnce();
+      } else {
+        expect(createProjectForCompositeUseCase).toHaveBeenCalledOnce();
+        expect(applyPreparedInitialWorkspace).toHaveBeenCalledOnce();
+        expect(store.assertCurrentClaim).toHaveBeenCalledTimes(2);
+        expect(authorize).toHaveBeenCalledTimes(2);
+      }
+      expect(store.markFinalizePending).not.toHaveBeenCalled();
+      expect(authorize.mock.calls.every(([, transaction]) => Boolean(transaction))).toBe(true);
+      await expect(app.db.getRepository('jsTemplateProjects').findOne({ filterByTk: projectId })).resolves.toBeNull();
+    },
+  );
 
   it('reclaims an expired lease once and fences the old worker from terminal writes', async () => {
     let now = new Date('2026-07-27T00:00:00.000Z');
@@ -330,6 +411,15 @@ describe('plugin-js-template initial source creation', () => {
       throw new Error('Expected one recovery claimant');
     }
     const currentStore = currentClaim.claimToken === 'claim-first-recovery' ? firstRecovery : secondRecovery;
+    await app.db.sequelize.transaction((transaction) =>
+      currentStore.markFinalizePending(
+        pending.id,
+        'main',
+        currentClaim.claimToken || '',
+        pending.targetProjectId,
+        transaction,
+      ),
+    );
     await expect(
       currentStore.succeed(pending.id, 'main', currentClaim.claimToken, pending.targetProjectId),
     ).resolves.toMatchObject({ status: 'succeeded', resultProjectId: pending.targetProjectId });
@@ -348,7 +438,7 @@ describe('plugin-js-template initial source creation', () => {
       payload: {
         sourceType: 'zip',
         message: 'Import support source',
-        zipBase64: 'support-application-secret',
+        files: [{ path: 'src/client/js-blocks/support/index.tsx', content: 'ctx.render(null);\n' }],
       },
     });
 
@@ -363,6 +453,82 @@ describe('plugin-js-template initial source creation', () => {
     await expect(store.findClaimableIds('main')).resolves.toEqual([mainJob.id]);
   });
 
+  it('does not reclaim a finalize-pending job while its lease is live', async () => {
+    const now = new Date('2026-07-27T00:00:00.000Z');
+    const store = new JsTemplateCreateJobStore(
+      app.db,
+      () => now,
+      () => 'claim-live',
+    );
+    const pending = await store.enqueue(createJobInput('finalize-live'));
+    const claimed = await store.claim(pending.id, 'main', 'runner-live', 60_000);
+    if (!claimed?.claimToken) {
+      throw new Error('Expected live finalize claimant');
+    }
+    await app.db.sequelize.transaction((transaction) =>
+      store.markFinalizePending(pending.id, 'main', claimed.claimToken || '', pending.targetProjectId, transaction),
+    );
+
+    await expect(store.findClaimableIds('main')).resolves.not.toContain(pending.id);
+    await expect(store.claim(pending.id, 'main', 'runner-recovery', 60_000)).resolves.toBeNull();
+  });
+
+  it.each([
+    ['expired', new Date('2026-07-27T00:00:02.000Z')],
+    ['missing', null],
+  ] as const)(
+    'allows exactly one claimant to recover a finalize-pending job with a %s lease',
+    async (_label, lease) => {
+      let now = new Date('2026-07-27T00:00:00.000Z');
+      const initialStore = new JsTemplateCreateJobStore(
+        app.db,
+        () => now,
+        () => 'claim-initial',
+      );
+      const pending = await initialStore.enqueue(createJobInput(`finalize-${_label}`));
+      const claimed = await initialStore.claim(pending.id, 'main', 'runner-initial', 1_000);
+      if (!claimed?.claimToken) {
+        throw new Error('Expected initial finalize claimant');
+      }
+      await app.db.sequelize.transaction((transaction) =>
+        initialStore.markFinalizePending(
+          pending.id,
+          'main',
+          claimed.claimToken || '',
+          pending.targetProjectId,
+          transaction,
+        ),
+      );
+      now = new Date('2026-07-27T00:00:02.000Z');
+      await app.db.getRepository('jsTemplateCreateJobs').update({
+        filterByTk: pending.id,
+        values: { leaseExpiresAt: lease },
+      });
+      const firstRecovery = new JsTemplateCreateJobStore(
+        app.db,
+        () => now,
+        () => 'claim-recovery-one',
+      );
+      const secondRecovery = new JsTemplateCreateJobStore(
+        app.db,
+        () => now,
+        () => 'claim-recovery-two',
+      );
+
+      const recovered = await Promise.all([
+        firstRecovery.claim(pending.id, 'main', 'runner-recovery-one', 60_000),
+        secondRecovery.claim(pending.id, 'main', 'runner-recovery-two', 60_000),
+      ]);
+
+      expect(recovered.filter(Boolean)).toHaveLength(1);
+      expect(recovered.find(Boolean)).toMatchObject({
+        status: 'finalize-pending',
+        resultProjectId: pending.targetProjectId,
+        attempt: 2,
+      });
+    },
+  );
+
   it('retains succeeded and failed jobs until their owner explicitly dismisses them', async () => {
     const store = new JsTemplateCreateJobStore(app.db, () => new Date('2026-07-27T00:00:00.000Z'));
     const succeededPending = await store.enqueue({ ...createJobInput('visible-success'), actorUserId: '7' });
@@ -370,6 +536,15 @@ describe('plugin-js-template initial source creation', () => {
     if (!succeededClaim?.claimToken) {
       throw new Error('Expected succeeded job claim');
     }
+    await app.db.sequelize.transaction((transaction) =>
+      store.markFinalizePending(
+        succeededClaim.id,
+        'main',
+        succeededClaim.claimToken || '',
+        succeededClaim.targetProjectId,
+        transaction,
+      ),
+    );
     await store.succeed(succeededClaim.id, 'main', succeededClaim.claimToken, succeededClaim.targetProjectId);
 
     const failedPending = await store.enqueue({ ...createJobInput('visible-failure'), actorUserId: '7' });
@@ -386,7 +561,7 @@ describe('plugin-js-template initial source creation', () => {
     );
     const activePending = await store.enqueue({ ...createJobInput('visible-pending'), actorUserId: '7' });
 
-    await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual(
+    await expect(store.listOwnVisibleJobs('main', '7', 'session-7')).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: succeededClaim.id,
@@ -397,12 +572,151 @@ describe('plugin-js-template initial source creation', () => {
         expect.objectContaining({ id: activePending.id, status: 'pending' }),
       ]),
     );
-    await expect(store.dismiss(activePending.id, 'main', '7')).rejects.toMatchObject({ status: 409 });
-    await store.dismiss(succeededClaim.id, 'main', '7');
-    await store.dismiss(failedClaim.id, 'main', '7');
-    await expect(store.listOwnVisibleJobs('main', '7')).resolves.toEqual([
+    await expect(store.dismiss(activePending.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 409 });
+    await store.dismiss(succeededClaim.id, 'main', '7', 'session-7');
+    await store.dismiss(failedClaim.id, 'main', '7', 'session-7');
+    await expect(store.listOwnVisibleJobs('main', '7', 'session-7')).resolves.toEqual([
       expect.objectContaining({ id: activePending.id, status: 'pending' }),
     ]);
+  });
+
+  it('soft-prunes terminal history beyond 100 records without looping and revives an idempotent replay', async () => {
+    const now = new Date('2026-07-27T00:00:00.000Z');
+    const store = new JsTemplateCreateJobStore(
+      app.db,
+      () => now,
+      () => 'claim-prune-trigger',
+    );
+    const terminalRecords = Array.from({ length: 101 }, (_, index) => ({
+      id: `jtcj_prune_${String(index).padStart(3, '0')}`,
+      applicationName: 'main',
+      targetProjectId: `jtp_prune_${String(index).padStart(3, '0')}`,
+      name: `Prune ${index}`,
+      normalizedName: `prune-${index}`,
+      sourceType: 'starter',
+      idempotencyKey: `create-prune-${index}`,
+      requestHash: `hash-prune-${index}`,
+      status: 'failed',
+      payload: null,
+      errorCode: 'JS_TEMPLATE_CREATE_FAILED',
+      errorMessage: 'Historical failure',
+      actorUserId: '7',
+      sessionId: 'session-7',
+      authorizationRole: 'member',
+      authorizationRoles: ['member'],
+      dismissed: false,
+      attempt: 1,
+      finishedAt: now,
+    }));
+    await app.db.getRepository('jsTemplateCreateJobs').createMany({ records: terminalRecords });
+    const trigger = await store.enqueue(createJobInput('prune-trigger'));
+    const claim = await store.claim(trigger.id, 'main', 'runner-prune', 60_000);
+    if (!claim?.claimToken) {
+      throw new Error('Expected pruning trigger claim');
+    }
+
+    await expect(
+      store.fail(claim.id, 'main', claim.claimToken, 'JS_TEMPLATE_CREATE_FAILED', 'Trigger terminal pruning'),
+    ).resolves.toMatchObject({ status: 'failed' });
+
+    const visibleTerminalCount = await app.db.getRepository('jsTemplateCreateJobs').count({
+      filter: { actorUserId: '7', sessionId: 'session-7', status: 'failed', dismissed: false },
+    });
+    const dismissed = await app.db.getRepository('jsTemplateCreateJobs').find({
+      filter: { actorUserId: '7', sessionId: 'session-7', status: 'failed', dismissed: true },
+      sort: ['id'],
+    });
+    expect(visibleTerminalCount).toBe(100);
+    expect(dismissed).toHaveLength(2);
+
+    const replayedRecord = dismissed.find((record) => String(record.get('id')).startsWith('jtcj_prune_'));
+    if (!replayedRecord) {
+      throw new Error('Expected a pruned historical job');
+    }
+    const replayedId = String(replayedRecord.get('id'));
+    const replayedIndex = Number(replayedId.slice('jtcj_prune_'.length));
+    await expect(
+      store.enqueue({
+        ...createJobInput(`prune-${replayedIndex}`),
+        targetProjectId: `jtp_prune_${String(replayedIndex).padStart(3, '0')}`,
+        name: `Prune ${replayedIndex}`,
+        normalizedName: `prune-${replayedIndex}`,
+        idempotencyKey: `create-prune-${replayedIndex}`,
+        requestHash: `hash-prune-${replayedIndex}`,
+      }),
+    ).resolves.toMatchObject({ id: replayedId, dismissed: false });
+  });
+
+  it('keeps list, get, retry and dismiss non-enumerating across sessions of the same actor', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+    const firstSession = await store.enqueue(createJobInput('session-one'));
+    const secondSession = await store.enqueue({
+      ...createJobInput('session-two'),
+      sessionId: 'session-8',
+    });
+
+    await expect(store.listOwnVisibleJobs('main', '7', 'session-7')).resolves.toEqual([
+      expect.objectContaining({ id: firstSession.id }),
+    ]);
+    await expect(store.getOwn(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
+    await expect(store.retry(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
+    await expect(store.dismiss(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('returns one durable job for concurrent SQLite enqueue calls with the same idempotency key', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+    const input = createJobInput('concurrent-same-key');
+
+    const [first, replay] = await Promise.all([store.enqueue(input), store.enqueue(input)]);
+
+    expect(replay.id).toBe(first.id);
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(1);
+  });
+
+  it('lets only one concurrent SQLite enqueue reserve the same normalized name across different keys', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+    const first = createJobInput('concurrent-name');
+    const second = {
+      ...first,
+      targetProjectId: 'jtp_stale_concurrent-name-second',
+      idempotencyKey: 'create-concurrent-name-second',
+      requestHash: 'hash-concurrent-name-second',
+    };
+
+    const results = await Promise.allSettled([store.enqueue(first), store.enqueue(second)]);
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toEqual([
+      expect.objectContaining({
+        reason: expect.objectContaining({ code: 'JS_TEMPLATE_PROJECT_CONFLICT', status: 409 }),
+      }),
+    ]);
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(1);
+  });
+
+  it('keeps a caller SQLite transaction usable after a name-reservation conflict', async () => {
+    const store = new JsTemplateCreateJobStore(app.db);
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      const first = createJobInput('caller-transaction-first');
+      await store.enqueue(first, transaction);
+      await expect(
+        store.enqueue(
+          {
+            ...first,
+            targetProjectId: 'jtp_stale_caller-transaction-conflict',
+            idempotencyKey: 'create-caller-transaction-conflict',
+            requestHash: 'hash-caller-transaction-conflict',
+          },
+          transaction,
+        ),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_PROJECT_CONFLICT', status: 409 });
+
+      await store.enqueue(createJobInput('caller-transaction-after-conflict'), transaction);
+      await expect(app.db.getRepository('jsTemplateCreateJobs').count({ transaction })).resolves.toBe(2);
+    });
+
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(2);
   });
 
   it('uses one non-enumerating 404 for missing, pruned, foreign-actor, and foreign-application jobs', async () => {
@@ -441,6 +755,7 @@ describe('plugin-js-template initial source creation', () => {
           },
         },
         auth: { user: { id: 7 } },
+        getBearerToken: () => createUnsignedSessionToken('session-7'),
         can: vi.fn(() => ({})),
       };
       const next = vi.fn(async () => undefined);
@@ -473,6 +788,7 @@ describe('plugin-js-template initial source creation', () => {
         },
       },
       auth: { user: { id: 7 } },
+      getBearerToken: () => createUnsignedSessionToken('session-7'),
     };
     await (resource.actions?.list as HandlerType)(
       listContext as never,
@@ -494,7 +810,29 @@ function createJobInput(name: string) {
     normalizedName: name,
     sourceType: 'starter' as const,
     payload: { sourceType: 'starter' as const, message: 'Initial JS Template source' },
+    idempotencyKey: `create-${name}`,
+    requestHash: `hash-${name}`,
+    actorUserId: '7',
+    sessionId: 'session-7',
+    authorizationRole: 'member',
+    authorizationRoles: ['member'],
   };
+}
+
+async function createRoleAgent(app: MockServer, roleName: string, snippets: string[]) {
+  await app.db.getRepository('roles').create({ values: { name: roleName, snippets } });
+  const user = await app.db.getRepository('users').create({
+    values: {
+      nickname: roleName,
+      roles: [roleName],
+    },
+  });
+  return (await app.agent().login(user)).set('x-role', roleName);
+}
+
+function createUnsignedSessionToken(sessionId: string): string {
+  const encode = (value: Record<string, unknown>) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ jti: sessionId })}.signature`;
 }
 
 async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId: string): Promise<void> {
@@ -515,14 +853,14 @@ async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId
 }
 
 async function waitForFailedCreateJob(app: MockServer, jobId: string): Promise<JsTemplateCreateJob> {
-  for (let attempt = 0; attempt < 1200; attempt += 1) {
+  for (let attempt = 0; attempt < 500; attempt += 1) {
     const record = await app.db.getRepository('jsTemplateCreateJobs').findOne({ filterByTk: jobId });
     if (record?.get('status') === 'failed') {
       return record.toJSON() as JsTemplateCreateJob;
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  throw new Error(`Creation job ${jobId} did not finish`);
+  throw new Error(`Creation job ${jobId} did not fail`);
 }
 
 function createJob(id: string, targetProjectId: string, name: string): JsTemplateCreateJob {
@@ -535,13 +873,19 @@ function createJob(id: string, targetProjectId: string, name: string): JsTemplat
     title: null,
     description: null,
     sourceType: 'starter',
+    idempotencyKey: 'create-missing-initial-commit',
+    requestHash: 'hash-missing-initial-commit',
     status: 'running',
     resultProjectId: null,
     payload: { sourceType: 'starter', message: 'Initial JS Template source' },
     errorCode: null,
     errorMessage: null,
     reservationKey: 'sha256:missing',
-    actorUserId: null,
+    actorUserId: '7',
+    sessionId: 'session-7',
+    authorizationRole: 'member',
+    authorizationRoles: ['member'],
+    dismissed: false,
     requestId: null,
     claimToken: 'claim-missing-commit',
     claimOwner: 'runner-test',

@@ -16,8 +16,6 @@ import {
   JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD,
   JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
-  JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD,
-  JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD,
 } from '@nocobase/client-v2';
 import {
   RunJSEditorRegistry,
@@ -32,7 +30,6 @@ import {
   JSBlockJsTemplateSourceField,
   JSFieldJsTemplateSourceField,
   JSItemJsTemplateSourceField,
-  JSPageJsTemplateSourceField,
 } from './components/JSBlockJsTemplateSourceField';
 import { createJsTemplateRunJSEditorProvider } from './components/RunJSJsTemplateEditorProvider';
 import { createSaveAsJsTemplateContribution } from './components/SaveAsJsTemplate';
@@ -55,8 +52,6 @@ export function createJsTemplateRunJSFlowSettingsComponents(): Record<string, Re
     [JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD]: SettingsSingleField,
     [JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD]: JSItemJsTemplateSourceField,
     [JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD]: SettingsSingleField,
-    [JS_TEMPLATE_PAGE_FULL_SOURCE_FIELD]: JSPageJsTemplateSourceField,
-    [JS_TEMPLATE_PAGE_SETTINGS_STEP_FIELD]: SettingsSingleField,
   };
 }
 

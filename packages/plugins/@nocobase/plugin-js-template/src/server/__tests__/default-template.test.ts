@@ -15,8 +15,8 @@ import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspa
 
 const ENTRY_CASES: Array<{ entryPath: string; kind: JsTemplateKind }> = [
   {
-    entryPath: 'src/client/js-pages/hello-page/index.tsx',
-    kind: 'js-page',
+    entryPath: 'src/client/js-blocks/hello-page/index.tsx',
+    kind: 'js-block',
   },
   {
     entryPath: 'src/client/js-blocks/welcome-card/index.tsx',
@@ -199,7 +199,7 @@ describe('plugin-js-template default source template', () => {
     expect(success).not.toHaveBeenCalled();
   });
 
-  it('validates and compiles the single-entry starter for all five supported kinds', async () => {
+  it('validates and compiles the single-entry starter for all four supported kinds', async () => {
     const bridge = new JsTemplateWorkspaceCompilerBridge();
 
     for (const kind of new Set(ENTRY_CASES.map((entry) => entry.kind))) {

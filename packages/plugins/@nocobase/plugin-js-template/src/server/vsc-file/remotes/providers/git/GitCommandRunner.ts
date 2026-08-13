@@ -9,7 +9,11 @@
 
 import { spawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process';
 
-import { checkUrlAgainstWhitelist } from '@nocobase/utils';
+import type { LookupAddress } from 'node:dns';
+import { Resolver } from 'node:dns/promises';
+import ipaddr from 'ipaddr.js';
+
+import { matchesDomainPattern } from '@nocobase/utils';
 
 import type { VscGitRemoteTransport } from '../../../../../shared/vsc-file/remote-sync-types';
 import { RemoteSyncError } from '../../RemoteSyncAdapter';
@@ -78,15 +82,27 @@ export interface GitCommandLimits {
 
 export interface GitCommandRunnerOptions {
   gitBinary?: string;
-  sshBinary?: string;
   pathEnvironment?: string;
   proxyEnvironmentVariables?: readonly string[];
   limits?: Partial<GitCommandLimits>;
   commandLimits?: Readonly<Record<string, Partial<GitCommandLimits>>>;
   materializer?: GitCredentialMaterializer;
   spawnProcess?: GitSpawnProcess;
-  urlPolicyChecker?: (url: string) => void;
+  urlPolicyChecker?: GitRemoteNetworkPolicyChecker;
+  resolveHost?: GitHostResolver;
 }
+
+export interface GitRemoteNetworkResolution {
+  address: string;
+  host: string;
+  port: number;
+}
+
+export type GitRemoteNetworkPolicyChecker = (
+  url: string,
+) => void | GitRemoteNetworkResolution | Promise<void | GitRemoteNetworkResolution>;
+
+export type GitHostResolver = (host: string) => Promise<readonly LookupAddress[]>;
 
 export interface GitCommandRequest {
   args: readonly string[];
@@ -111,7 +127,7 @@ export interface GitCommandResult {
 export interface GitBinaryCapability {
   available: boolean;
   version?: string;
-  reasonCode?: 'git-binary-unavailable' | 'ssh-binary-unavailable';
+  reasonCode?: 'git-binary-unavailable';
 }
 
 export type GitSpawnProcess = (
@@ -122,7 +138,7 @@ export type GitSpawnProcess = (
 
 interface ExecuteProcessRequest {
   binary: string;
-  binaryKind: 'git' | 'ssh';
+  binaryKind: 'git';
   args: readonly string[];
   cwd: string;
   environment: NodeJS.ProcessEnv;
@@ -136,8 +152,6 @@ interface ExecuteProcessRequest {
 
 export class GitCommandRunner {
   private readonly gitBinary: string;
-
-  private readonly sshBinary: string;
 
   private readonly pathEnvironment: string;
 
@@ -153,15 +167,12 @@ export class GitCommandRunner {
 
   private readonly spawnProcess: GitSpawnProcess;
 
-  private readonly urlPolicyChecker: (url: string) => void;
+  private readonly urlPolicyChecker: GitRemoteNetworkPolicyChecker;
 
   private gitCapabilityPromise?: Promise<GitBinaryCapability>;
 
-  private sshCapabilityPromise?: Promise<GitBinaryCapability>;
-
   constructor(options: GitCommandRunnerOptions = {}) {
     this.gitBinary = requireTrustedBinary(options.gitBinary || 'git', 'Git');
-    this.sshBinary = requireTrustedBinary(options.sshBinary || 'ssh', 'SSH');
     this.pathEnvironment = options.pathEnvironment || defaultPathEnvironment;
     this.proxyEnvironmentVariables = validateProxyEnvironmentVariables(options.proxyEnvironmentVariables || []);
     this.limitOverrides = options.limits || {};
@@ -169,15 +180,17 @@ export class GitCommandRunner {
     this.commandLimits = options.commandLimits || {};
     this.materializer = options.materializer || new GitCredentialMaterializer();
     this.spawnProcess = options.spawnProcess || spawn;
-    this.urlPolicyChecker = options.urlPolicyChecker || checkUrlAgainstWhitelist;
+    const resolveHost: GitHostResolver = options.resolveHost || resolveGitHost;
+    this.urlPolicyChecker = options.urlPolicyChecker || ((url) => enforceGitRemoteNetworkPolicy(url, resolveHost));
   }
 
   async run(request: GitCommandRequest): Promise<GitCommandResult> {
     const command = validateCommand(request.args);
     const target = this.validateRemoteTarget(request, command);
+    let networkResolution: GitRemoteNetworkResolution | void;
     if (target) {
       try {
-        this.urlPolicyChecker(target.policyUrl);
+        networkResolution = await this.urlPolicyChecker(target.policyUrl);
       } catch {
         throw mapGitNetworkPolicyError(request.operation || command);
       }
@@ -194,21 +207,13 @@ export class GitCommandRunner {
     if (!gitCapability.available) {
       throw mapGitCommandError({ binary: 'git', errorCode: 'ENOENT', operation: request.operation || command });
     }
-    if (target?.transport === 'ssh') {
-      const sshCapability = await this.probeSsh();
-      if (!sshCapability.available) {
-        throw mapGitCommandError({ binary: 'ssh', errorCode: 'ENOENT', operation: request.operation || command });
-      }
-    }
-
     const materialized = await this.materializer.materialize({
       transport: target?.transport || 'https',
       credential: request.credential,
-      sshBinary: this.sshBinary,
     });
     try {
       const limits = this.getLimitsForCommand(command);
-      const gitArgs = addFixedGitConfiguration(request.args, materialized.hooksDirectory);
+      const gitArgs = addFixedGitConfiguration(request.args, materialized.hooksDirectory, networkResolution);
       const environment = this.buildEnvironment(materialized, request.environment);
       return await this.executeProcess({
         binary: this.gitBinary,
@@ -233,21 +238,11 @@ export class GitCommandRunner {
     return this.gitCapabilityPromise;
   }
 
-  probeSsh(): Promise<GitBinaryCapability> {
-    this.sshCapabilityPromise ||= this.probeBinary(this.sshBinary, 'ssh', ['-V']);
-    return this.sshCapabilityPromise;
-  }
-
   resetCapabilityCache(): void {
     this.gitCapabilityPromise = undefined;
-    this.sshCapabilityPromise = undefined;
   }
 
-  private async probeBinary(
-    binary: string,
-    binaryKind: 'git' | 'ssh',
-    args: readonly string[],
-  ): Promise<GitBinaryCapability> {
+  private async probeBinary(binary: string, binaryKind: 'git', args: readonly string[]): Promise<GitBinaryCapability> {
     const materialized = await this.materializer.materialize({ transport: 'https' });
     try {
       const result = await this.executeProcess({
@@ -303,16 +298,13 @@ export class GitCommandRunner {
     if (!url.hostname || url.search || url.hash || url.password) {
       throw invalidRequest('Git remote URL is invalid', 'invalid-url');
     }
-    if (request.transport === 'https') {
-      if (url.protocol !== 'https:' || url.username) {
-        throw invalidRequest('Git remote URL does not match the HTTPS transport', 'transport-mismatch');
-      }
-      return { policyUrl: url.toString(), transport: 'https' };
+    if (url.protocol !== `${request.transport}:` || url.username) {
+      throw invalidRequest('Git remote URL does not match the HTTP transport', 'transport-mismatch');
     }
-    if (url.protocol !== 'ssh:') {
-      throw invalidRequest('Git remote URL does not match the SSH transport', 'transport-mismatch');
+    if (request.transport === 'http' && request.credential !== null && request.credential !== undefined) {
+      throw invalidRequest('HTTP Git remotes do not support credentials; use HTTPS', 'http-auth-forbidden');
     }
-    return { policyUrl: `https://${url.host}/`, transport: 'ssh' };
+    return { policyUrl: url.toString(), transport: request.transport };
   }
 
   private buildEnvironment(
@@ -512,6 +504,97 @@ export class GitCommandRunner {
   }
 }
 
+async function resolveGitHost(host: string): Promise<readonly LookupAddress[]> {
+  const resolver = new Resolver();
+  const [ipv4, ipv6] = await Promise.all([
+    resolver.resolve4(host).catch(() => []),
+    resolver.resolve6(host).catch(() => []),
+  ]);
+  return [
+    ...ipv4.map((address) => ({ address, family: 4 as const })),
+    ...ipv6.map((address) => ({ address, family: 6 as const })),
+  ];
+}
+
+async function enforceGitRemoteNetworkPolicy(
+  value: string,
+  resolveHost: GitHostResolver,
+): Promise<GitRemoteNetworkResolution | void> {
+  const url = new URL(value);
+  const host = normalizedHostname(url);
+  const allowlist = process.env.SERVER_REQUEST_WHITELIST?.split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  const hostAllowed = Boolean(allowlist?.some((entry) => matchesGitAllowlistEntry(host, entry)));
+
+  if (isBlockedGitTarget(host) && !hostAllowed) {
+    throw new Error('Git target is blocked by network policy');
+  }
+  if (ipaddr.isValid(host)) {
+    return;
+  }
+
+  const addresses = await resolveHost(host);
+  if (
+    addresses.length === 0 ||
+    addresses.some(
+      (address) =>
+        isBlockedGitTarget(address.address) &&
+        !hostAllowed &&
+        !allowlist?.some((entry) => matchesGitAllowlistEntry(address.address, entry)),
+    )
+  ) {
+    throw new Error('Git target resolves to a blocked network address');
+  }
+  return {
+    address: normalizeIpAddress(ipaddr.parse(addresses[0].address)).toString(),
+    host,
+    port: url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80,
+  };
+}
+
+function normalizedHostname(url: URL): string {
+  return url.hostname.startsWith('[') && url.hostname.endsWith(']') ? url.hostname.slice(1, -1) : url.hostname;
+}
+
+function matchesGitAllowlistEntry(host: string, entry: string): boolean {
+  if (!ipaddr.isValid(host)) {
+    return matchesDomainPattern(host, entry);
+  }
+  try {
+    const address = normalizeIpAddress(ipaddr.parse(host));
+    if (entry.includes('/')) {
+      const cidr = ipaddr.parseCIDR(entry);
+      if (address.kind() !== cidr[0].kind()) {
+        return false;
+      }
+      return address.kind() === 'ipv4'
+        ? (address as ipaddr.IPv4).match(cidr as [ipaddr.IPv4, number])
+        : (address as ipaddr.IPv6).match(cidr as [ipaddr.IPv6, number]);
+    }
+    return address.toString() === normalizeIpAddress(ipaddr.parse(entry)).toString();
+  } catch {
+    return false;
+  }
+}
+
+function isBlockedGitTarget(host: string): boolean {
+  if (host.toLowerCase() === 'localhost' || host.toLowerCase() === 'metadata.google.internal') {
+    return true;
+  }
+  if (!ipaddr.isValid(host)) {
+    return false;
+  }
+  const range = normalizeIpAddress(ipaddr.parse(host)).range();
+  return new Set(['loopback', 'private', 'linkLocal', 'uniqueLocal', 'unspecified']).has(range);
+}
+
+function normalizeIpAddress(address: ipaddr.IPv4 | ipaddr.IPv6): ipaddr.IPv4 | ipaddr.IPv6 {
+  return address.kind() === 'ipv6' && (address as ipaddr.IPv6).isIPv4MappedAddress()
+    ? (address as ipaddr.IPv6).toIPv4Address()
+    : address;
+}
+
 function validateCommand(args: readonly string[]): string {
   if (args.length === 0 || args.some((argument) => typeof argument !== 'string' || argument.includes('\0'))) {
     throw invalidRequest('Git command arguments are invalid', 'invalid-command-arguments');
@@ -552,7 +635,19 @@ function getNetworkRemoteArgument(args: readonly string[]): string | undefined {
   return undefined;
 }
 
-function addFixedGitConfiguration(args: readonly string[], hooksDirectory: string): string[] {
+function addFixedGitConfiguration(
+  args: readonly string[],
+  hooksDirectory: string,
+  networkResolution?: GitRemoteNetworkResolution | void,
+): string[] {
+  const curlResolution = networkResolution
+    ? [
+        '-c',
+        `http.curloptResolve=${networkResolution.host}:${networkResolution.port}:${formatCurlResolveAddress(
+          networkResolution.address,
+        )}`,
+      ]
+    : [];
   return [
     '-c',
     'credential.helper=',
@@ -564,8 +659,13 @@ function addFixedGitConfiguration(args: readonly string[], hooksDirectory: strin
     'protocol.ext.allow=never',
     '-c',
     'http.followRedirects=false',
+    ...curlResolution,
     ...args,
   ];
+}
+
+function formatCurlResolveAddress(address: string): string {
+  return address.includes(':') ? `[${address}]` : address;
 }
 
 function mergeAndValidateLimits(base: GitCommandLimits, override?: Partial<GitCommandLimits>): GitCommandLimits {

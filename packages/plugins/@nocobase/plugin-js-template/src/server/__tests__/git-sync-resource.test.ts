@@ -69,12 +69,16 @@ const createJob = {
   errorMessage: null,
   reservationKey: 'sha256:reservation',
   actorUserId: null,
+  sessionId: 'session-7',
+  dismissed: false,
   requestId: null,
   startedAt: null,
   finishedAt: null,
   createdAt: '2026-07-27T00:00:00.000Z',
   updatedAt: '2026-07-27T00:00:00.000Z',
 };
+
+const unsupportedGitScheme = ['s', 's', 'h'].join('');
 
 describe('jsTemplateSync resource', () => {
   it('returns a deeply frozen safe DTO and masks the saved auth reference', async () => {
@@ -185,6 +189,47 @@ describe('jsTemplateSync resource', () => {
     expect(fixture.runtime.planUnconfigured).toHaveBeenCalledWith(repo.vscRepoId);
   });
 
+  it('exposes legacy SSH metadata as unsupported while allowing disconnect only', async () => {
+    const unsupportedRemote: VscFileRemoteRecord = {
+      ...remote,
+      status: 'unsupported',
+      config: {
+        url: `${unsupportedGitScheme}://git@example.com/project.git`,
+        branch: 'main',
+        subdirectory: null,
+        transport: 'unsupported',
+        legacyTransport: 'ssh',
+      },
+    };
+    const fixture = createFixture({ remote: unsupportedRemote });
+
+    const get = await runAction(fixture, 'get', { projectId: repo.id }, ['manageSyncSource']);
+    const planned = await runAction(fixture, 'plan', { projectId: repo.id }, ['manageSyncSource']);
+    const tested = await runAction(fixture, 'testConnection', { projectId: repo.id }, ['manageSyncSource']);
+    const disconnected = await runAction(fixture, 'disconnect', { projectId: repo.id }, ['manageSyncSource']);
+
+    expect(get.body).toMatchObject({
+      source: {
+        status: 'unsupported',
+        config: { transport: 'unsupported', legacyTransport: 'ssh' },
+        credentialConfigured: false,
+        authRefDisplay: null,
+      },
+    });
+    expect(JSON.stringify(get.body)).not.toContain('LEGACY_SSH');
+    expect(planned.body).toMatchObject({
+      source: { status: 'unsupported' },
+      plan: { state: 'error', reasonCode: 'legacy-ssh-unsupported', canPull: false, canPush: false },
+    });
+    expect(tested).toMatchObject({
+      status: 422,
+      body: { errors: [{ code: 'JS_TEMPLATE_SYNC_CONFIG_INVALID' }] },
+    });
+    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
+    expect(disconnected.status).toBeUndefined();
+    expect(fixture.runtime.disconnectRemote).toHaveBeenCalledWith(unsupportedRemote.id);
+  });
+
   it('enforces strict input allowlists before calling the runtime', async () => {
     const fixture = createFixture();
     const ctx = await runAction(
@@ -278,7 +323,7 @@ describe('jsTemplateSync resource', () => {
 
   it.each([
     ['get', { projectId: repo.id }, 'manageSyncSource'],
-    ['configure', { projectId: repo.id, provider: 'git', config: remote.config, authRef: null }, 'manageSyncSource'],
+    ['configure', { projectId: repo.id, provider: 'git', config: remote.config }, 'manageSyncSource'],
     ['disconnect', { projectId: repo.id }, 'manageSyncSource'],
     ['testConnection', { projectId: repo.id }, 'manageSyncSource'],
     ['plan', { projectId: repo.id }, 'pullFromSyncSource'],
@@ -730,6 +775,9 @@ async function runAction(
       params: { ...actionParams, values },
     },
     request,
+    auth: { user: { id: 7 } },
+    getBearerToken: () => createUnsignedSessionToken('session-7'),
+    state: { currentRole: 'member', currentRoles: ['member'] },
     can: ({ action }: { resource: string; action: string }) =>
       allowedActions.includes(action)
         ? { params: scopeMatches ? {} : { filter: { normalizedName: 'scope-miss' } } }
@@ -740,6 +788,11 @@ async function runAction(
     vi.fn(async () => undefined),
   );
   return ctx as typeof ctx & { body?: unknown; status?: number };
+}
+
+function createUnsignedSessionToken(jti: string): string {
+  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
+  return `header.${payload}.signature`;
 }
 
 function executionInput() {
@@ -754,6 +807,7 @@ function executionInput() {
 
 function createFromGitInput() {
   return {
+    idempotencyKey: 'create-from-git-1',
     provider: 'git',
     config: remote.config,
     authRef: remote.authRef,

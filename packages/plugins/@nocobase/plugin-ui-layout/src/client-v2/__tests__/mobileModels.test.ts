@@ -8,9 +8,9 @@
  */
 
 import {
+  ACLContext,
   BaseLayoutModel,
   ChildPageModel,
-  JSPageModel,
   KeepAlive,
   linkageSetMenuItemProps,
   menuLinkageRules,
@@ -53,7 +53,6 @@ import {
 } from '../models/MobileLayoutModel';
 import {
   MobileChildPageModel as ExportedMobileChildPageModel,
-  MobileJSPageModel as ExportedMobileJSPageModel,
   MobileLayoutModel as ExportedMobileLayoutModel,
   MobileRootPageModel as ExportedMobileRootPageModel,
 } from '@nocobase/plugin-ui-layout/client-v2';
@@ -64,7 +63,7 @@ import {
   MobileMenuSettingsIconPicker,
 } from '../models/MobileMenuModels';
 import { getMobileMenuItemUid } from '../models/MobileMenuUtils';
-import { MobileChildPageModel, MobileJSPageModel, MobileRootPageModel } from '../models/MobilePageModels';
+import { MobileChildPageModel, MobileRootPageModel } from '../models/MobilePageModels';
 import { registerMobilePageModelResolution } from '../mobilePageModelResolution';
 import enUS from '../../locale/en-US.json';
 import zhCN from '../../locale/zh-CN.json';
@@ -110,16 +109,29 @@ describe('plugin-ui-layout mobile models', () => {
     expect(ExportedMobileLayoutModel).toBe(MobileLayoutModel);
     expect(ExportedMobileRootPageModel).toBe(MobileRootPageModel);
     expect(ExportedMobileChildPageModel).toBe(MobileChildPageModel);
-    expect(ExportedMobileJSPageModel).toBe(MobileJSPageModel);
   });
 
   beforeEach(() => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
 
+  function createACLContextValue(allowConfigUI = true) {
+    return {
+      loading: false,
+      data: {
+        data: {
+          snippets: allowConfigUI ? ['ui.*'] : [],
+        },
+        meta: {},
+      },
+      refresh: vi.fn(async () => {}),
+    };
+  }
+
   function renderMobileLayoutWithRouteRepository(
     routeRepository: MobileRouteRepositoryForTest,
     options: {
+      allowConfigUI?: boolean;
       beforeRender?: (model: MobileLayoutModel) => void;
       api?: {
         request: (options: Record<string, unknown>) => Promise<{ data?: { data?: NocoBaseDesktopRoute[] } }>;
@@ -188,40 +200,46 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          ConfigProvider,
+          ACLContext.Provider,
           {
-            theme: options.theme,
+            value: createACLContextValue(options.allowConfigUI !== false),
           },
           React.createElement(
-            AntdApp,
-            null,
+            ConfigProvider,
+            {
+              theme: options.theme,
+            },
             React.createElement(
-              MemoryRouter,
-              {
-                initialEntries: options.initialEntries || [
-                  options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
-                ],
-                basename: options.memoryRouterBasename,
-              },
+              AntdApp,
+              null,
               React.createElement(
-                Routes,
-                null,
-                options.outletElement
-                  ? React.createElement(
-                      Route,
-                      {
-                        path: routerRoutePath,
+                MemoryRouter,
+                {
+                  initialEntries: options.initialEntries || [
+                    options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
+                  ],
+                  basename: options.memoryRouterBasename,
+                },
+                React.createElement(
+                  Routes,
+                  null,
+                  options.outletElement
+                    ? React.createElement(
+                        Route,
+                        {
+                          path: routerRoutePath,
+                          element: model.render(),
+                        },
+                        React.createElement(Route, {
+                          path: ':name',
+                          element: options.outletElement,
+                        }),
+                      )
+                    : React.createElement(Route, {
+                        path: `${routerRoutePath}/*`,
                         element: model.render(),
-                      },
-                      React.createElement(Route, {
-                        path: ':name',
-                        element: options.outletElement,
                       }),
-                    )
-                  : React.createElement(Route, {
-                      path: `${routerRoutePath}/*`,
-                      element: model.render(),
-                    }),
+                ),
               ),
             ),
           ),
@@ -365,95 +383,6 @@ describe('plugin-ui-layout mobile models', () => {
     expect(MobileLayoutModel.prototype).toBeInstanceOf(BaseLayoutModel);
     expect(MobileRootPageModel.prototype).toBeInstanceOf(RootPageModel);
     expect(MobileChildPageModel.prototype).toBeInstanceOf(ChildPageModel);
-    expect(MobileJSPageModel.prototype).toBeInstanceOf(JSPageModel);
-    expect(MobileJSPageModel.prototype).not.toBeInstanceOf(MobileRootPageModel);
-    expect(Object.prototype.hasOwnProperty.call(JSPageModel, 'resolveUse')).toBe(true);
-    expect(JSPageModel.resolveUse).not.toBe(RootPageModel.resolveUse);
-  });
-
-  it('should resolve JS pages only to the dedicated mobile JS page model inside mobile layouts', () => {
-    registerMobilePageModelResolution();
-
-    const engine = new FlowEngine();
-    engine.registerModels({
-      JSPageModel,
-      MobileJSPageModel,
-      RouteModel,
-    });
-    const desktopRoute = engine.createModel<RouteModel>({
-      uid: 'desktop-js-page-parent',
-      use: 'RouteModel',
-    });
-    const mobileRoute = engine.createModel<RouteModel>({
-      uid: 'mobile-js-page-parent',
-      use: 'RouteModel',
-    });
-    mobileRoute.context.defineProperty('isMobileLayout', {
-      value: true,
-    });
-    mobileRoute.context.defineProperty('layout', {
-      value: {
-        layoutModelClass: 'MobileLayoutModel',
-        rootPageModelClass: 'MobileRootPageModel',
-        childPageModelClass: 'MobileChildPageModel',
-      },
-    });
-
-    const desktopPage = engine.createModel({
-      uid: 'desktop-js-page',
-      parentId: desktopRoute.uid,
-      subKey: 'page',
-      subType: 'object',
-      use: 'JSPageModel',
-    });
-    const mobilePage = engine.createModel({
-      uid: 'mobile-js-page',
-      parentId: mobileRoute.uid,
-      subKey: 'page',
-      subType: 'object',
-      use: 'JSPageModel',
-    });
-
-    expect(desktopPage.constructor).toBe(JSPageModel);
-    expect(mobilePage.constructor).toBe(MobileJSPageModel);
-    expect(mobilePage).not.toBeInstanceOf(MobileRootPageModel);
-    expect(mobilePage.context.isMobileLayout).toBe(true);
-  });
-
-  it('should render the dedicated mobile JS page surface without tabs', () => {
-    const engine = new FlowEngine();
-    engine.registerModels({ MobileJSPageModel });
-    engine.context.defineProperty('t', {
-      value: (key: string) => key,
-    });
-    engine.context.defineProperty('view', {
-      value: {
-        type: 'embed',
-        inputArgs: {},
-        close: vi.fn(),
-      },
-    });
-    engine.context.defineProperty('themeToken', {
-      value: {
-        marginBlock: 16,
-      },
-    });
-    const model = engine.createModel<MobileJSPageModel>({
-      uid: 'mobile-js-page-surface',
-      use: 'MobileJSPageModel',
-    });
-
-    const { container } = render(
-      React.createElement(FlowEngineProvider, { engine }, MobileJSPageModel.prototype.render.call(model)),
-    );
-
-    expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
-    expect(screen.getByLabelText('JavaScript page content')).toBeInTheDocument();
-    expect(container.querySelector('.nb-ui-layout-mobile-surface')).toBeInTheDocument();
-    expect(container.querySelector('.ant-tabs')).not.toBeInTheDocument();
-    expect(screen.queryByText('Add tab')).not.toBeInTheDocument();
-    expect(model.context.themeToken).toMatchObject({ marginBlock: 12, paddingLG: 16, paddingSM: 8 });
-    expect(model.getFlow('jsSettings')).toBeDefined();
   });
 
   it('should resolve persisted root and child pages to mobile page models inside mobile layouts', () => {
@@ -1315,18 +1244,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createACLContextValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
@@ -1498,18 +1431,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createACLContextValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
@@ -2681,6 +2618,44 @@ describe('plugin-ui-layout mobile models', () => {
       });
       expect(screen.getByRole('button', { name: 'Add mobile tab' })).toBeInTheDocument();
       expect(screen.queryByText('Add block')).not.toBeInTheDocument();
+    } finally {
+      restoreBreakpoint();
+    }
+  });
+
+  it.each([
+    { title: 'without a stored preference', storedPreference: undefined },
+    { title: 'with an enabled stored preference', storedPreference: '1' },
+  ])('should hide the UI editor when the role cannot configure the interface $title', async ({ storedPreference }) => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      ensureAccessibleLoaded: vi.fn(async () => []),
+    };
+
+    try {
+      if (storedPreference) {
+        window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, storedPreference);
+      }
+      const { engine } = renderMobileLayoutWithRouteRepository(routeRepository, {
+        allowConfigUI: false,
+        beforeRender: (model) => {
+          // Start enabled so the assertion below proves the permission-sync effect actively disables Flow Settings.
+          model.flowEngine.flowSettings.enabled = true;
+        },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('No mobile pages yet')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('ui-editor-button')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add mobile tab' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Pad preview' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mobile preview' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'QR code' })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(engine.context.flowSettingsEnabled).toBe(false);
+      });
     } finally {
       restoreBreakpoint();
     }

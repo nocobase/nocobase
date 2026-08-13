@@ -115,27 +115,6 @@ describe('Specific RunJSContext implementations', () => {
     });
   });
 
-  describe('JSPageRunJSContext', () => {
-    it('documents the stable page facade and inherited render surface', () => {
-      const ctx = new FlowContext();
-      ctx.defineProperty('model', { value: { constructor: { name: 'JSPageModel' } } });
-      const doc = getRunJSDocFor(ctx, { version: 'v2' });
-
-      expect(doc?.properties?.element).toBeTruthy();
-      expect(doc?.methods?.render).toBeTruthy();
-      expect(doc?.properties?.settings).toBeTruthy();
-      expect(doc?.properties?.runJsSource).toBeTruthy();
-      expect(doc?.properties?.page?.properties).toMatchObject({
-        uid: expect.anything(),
-        active: expect.anything(),
-        refresh: expect.anything(),
-        setDocumentTitle: expect.anything(),
-      });
-      expect(doc?.properties?.page?.properties).not.toHaveProperty('route');
-      expect(doc?.properties).not.toHaveProperty('app');
-    });
-  });
-
   describe('JSFieldRunJSContext', () => {
     it('should have record, value, and collection properties', () => {
       const ctx: any = { model: { constructor: { name: 'JSFieldModel' } } };
@@ -220,6 +199,35 @@ describe('Specific RunJSContext implementations', () => {
       (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
       const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
       expect(doc?.label).toMatch(/JS 集合动作/);
+    });
+  });
+
+  describe('FormJSFieldItemRunJSContext', () => {
+    it('should have element property', () => {
+      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.properties?.element).toBeTruthy();
+    });
+
+    it('should have value and record properties', () => {
+      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.properties?.value).toBeTruthy();
+      expect(doc?.properties?.record).toBeTruthy();
+    });
+
+    it('should have setProps method', () => {
+      const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.methods?.setProps).toBeTruthy();
+    });
+
+    it('should support zh-CN locale', () => {
+      const ctx = new FlowContext();
+      (ctx as any).defineProperty('model', { value: { constructor: { name: 'FormJSFieldItemModel' } } });
+      (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
+      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
+      expect(doc?.label).toMatch(/表单 JS 字段项/);
     });
   });
 

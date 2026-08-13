@@ -12,6 +12,7 @@ import type { Database, Model, Transaction } from '@nocobase/database';
 import { VscError } from '@nocobase/runjs/workspace/shared';
 import type {
   RemoteSyncErrorCode,
+  VscFileActiveRemoteRecord,
   VscFileRemoteRecord,
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
@@ -76,7 +77,7 @@ export interface VscRemotePushServiceOptions {
 }
 
 interface PreparedPush {
-  remote: VscFileRemoteRecord;
+  remote: VscFileActiveRemoteRecord;
   repository: VscRepositoryRecord;
   job: VscFileSyncJobRecord;
   snapshot: VscRemoteSnapshot;
@@ -603,7 +604,7 @@ export async function loadVscSnapshot(
   };
 }
 
-function remoteTarget(remote: VscFileRemoteRecord) {
+function remoteTarget(remote: VscFileActiveRemoteRecord) {
   return { config: remote.config, authRef: remote.authRef };
 }
 

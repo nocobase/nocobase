@@ -123,18 +123,6 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     });
     actionPanelUid = actionPanel.uid;
 
-    const jsPage = getData(
-      await context.rootAgent.resource('flowSurfaces').createPage({
-        values: {
-          pageType: 'js-page',
-          idempotencyKey: `runjs-host-page-${Date.now()}`,
-          title: 'RunJS host page',
-          icon: 'CodeOutlined',
-        },
-      }),
-    );
-    hosts.push(expectWorkspaceResult(jsPage, 'JSPageModel'));
-
     const jsBlock = getData(
       await context.rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -368,7 +356,11 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
       expectWorkspaceResult(
         getData(
           await context.rootAgent.resource('flowSurfaces').addBlock({
-            values: { target: { uid: page.tabSchemaUid }, type: 'jsBlock' },
+            values: {
+              target: { uid: page.tabSchemaUid },
+              type: 'jsBlock',
+              settings: { code: 'ctx.render(null);' },
+            },
           }),
         ),
         'JSBlockModel',
@@ -416,33 +408,6 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     }
   }, 120000);
 
-  it('archives a JS Page repository when the page is destroyed', async () => {
-    const jsPage = getData(
-      await context.rootAgent.resource('flowSurfaces').createPage({
-        values: {
-          pageType: 'js-page',
-          idempotencyKey: `disposable-runjs-page-${Date.now()}`,
-          title: 'Disposable RunJS page',
-          icon: 'CodeOutlined',
-        },
-      }),
-    );
-    const host = expectWorkspaceResult(jsPage, 'JSPageModel');
-    const identity = buildRunJSSourceRepositoryIdentity(host.locator);
-    expect(
-      await context.db.getRepository('vscFileRepositories').findOne({ filter: { ...identity, status: 'active' } }),
-    ).toBeTruthy();
-
-    const destroyResponse = await context.rootAgent.resource('flowSurfaces').destroyPage({
-      values: { uid: host.locator.modelUid },
-    });
-    expect(destroyResponse.status, readErrorMessage(destroyResponse)).toBe(200);
-
-    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
-    expect(repository?.get('status')).toBe('archived');
-    expect(await context.flowRepo.findModelById(host.locator.modelUid, { includeAsyncNode: true })).toBeNull();
-  }, 120000);
-
   it('archives a JS host repository when its route-backed tab is removed', async () => {
     const page = await createPage(context.rootAgent, {
       title: `Disposable RunJS tab ${Date.now()}`,
@@ -457,7 +422,11 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     const host = expectWorkspaceResult(
       getData(
         await context.rootAgent.resource('flowSurfaces').addBlock({
-          values: { target: { uid: addedTab.tabSchemaUid }, type: 'jsBlock' },
+          values: {
+            target: { uid: addedTab.tabSchemaUid },
+            type: 'jsBlock',
+            settings: { code: 'ctx.render(null);' },
+          },
         }),
       ),
       'JSBlockModel',
@@ -482,7 +451,11 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
     const host = expectWorkspaceResult(
       getData(
         await context.rootAgent.resource('flowSurfaces').addBlock({
-          values: { target: { uid: page.tabSchemaUid }, type: 'jsBlock' },
+          values: {
+            target: { uid: page.tabSchemaUid },
+            type: 'jsBlock',
+            settings: { code: 'ctx.render(null);' },
+          },
         }),
       ),
       'JSBlockModel',
@@ -496,200 +469,6 @@ describe('flowSurfaces complete RunJS workspace hosts', () => {
 
     const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
     expect(repository?.get('status')).toBe('archived');
-  }, 120000);
-
-  it('archives a legacy tab-anchor RunJS repository when converting a pending menu route into a JS Page', async () => {
-    const menu = getData(
-      await context.rootAgent.resource('flowSurfaces').createMenu({
-        values: {
-          title: `Convertible JS Page ${Date.now()}`,
-          type: 'item',
-          icon: 'FileOutlined',
-        },
-      }),
-    );
-    await context.flowRepo.upsertModel(
-      {
-        uid: menu.tabSchemaUid,
-        use: 'RootPageTabModel',
-        flowRegistry: {
-          beforeRender: {
-            key: 'beforeRender',
-            on: 'beforeRender',
-            steps: {
-              runLegacy: {
-                use: 'runjs',
-                defaultParams: { code: "ctx.logger?.info?.('Convertible');" },
-              },
-            },
-          },
-        },
-      },
-      {},
-    );
-    const runJSLocator = {
-      kind: 'flowModel.flowRegistry.runjs' as const,
-      modelUid: menu.tabSchemaUid,
-      flowKey: 'beforeRender',
-      stepKey: 'runLegacy',
-      sourcePath: ['defaultParams', 'code'],
-    };
-    const identity = buildRunJSSourceRepositoryIdentity(runJSLocator);
-    await context.db.getRepository('vscFileRepositories').create({
-      values: {
-        id: `convertible-${menu.tabSchemaUid}`,
-        ...identity,
-        status: 'active',
-      },
-    });
-
-    const convertResponse = await context.rootAgent.resource('flowSurfaces').createPage({
-      values: {
-        menuRouteId: menu.routeId,
-        pageType: 'js-page',
-        title: 'Converted JS Page',
-      },
-    });
-    expect(convertResponse.status, readErrorMessage(convertResponse)).toBe(200);
-
-    const repository = await context.db.getRepository('vscFileRepositories').findOne({ filter: identity });
-    expect(repository?.get('status')).toBe('archived');
-    expect(await context.flowRepo.findModelById(menu.tabSchemaUid, { includeAsyncNode: true })).toBeNull();
-  }, 120000);
-
-  it('rejects a JS Page workspace save after the owner source changes outside the workspace', async () => {
-    const jsPage = getData(
-      await context.rootAgent.resource('flowSurfaces').createPage({
-        values: {
-          pageType: 'js-page',
-          idempotencyKey: `runjs-stale-page-${Date.now()}`,
-          title: 'RunJS stale owner page',
-          icon: 'CodeOutlined',
-        },
-      }),
-    );
-    const host = expectWorkspaceResult(jsPage, 'JSPageModel');
-    const openedResponse = await context.rootAgent.resource('runJSSources').open({
-      values: { locator: host.locator },
-    });
-    expect(openedResponse.status, readErrorMessage(openedResponse)).toBe(200);
-    const opened = readRecord(openedResponse.body.data);
-    const repository = readRecord(opened.repository);
-    const files = opened.files as Array<Record<string, unknown>>;
-    const entry = files.find((file) => file.path === 'src/client/index.tsx');
-
-    const model = await context.flowRepo.findModelById(host.locator.modelUid, { includeAsyncNode: true });
-    await context.flowRepo.patch({
-      uid: host.locator.modelUid,
-      stepParams: {
-        ...model.stepParams,
-        jsSettings: {
-          ...model.stepParams?.jsSettings,
-          runJs: {
-            ...model.stepParams?.jsSettings?.runJs,
-            code: 'ctx.render("changed outside the workspace");',
-          },
-        },
-      },
-    });
-
-    const staleSave = await context.rootAgent.resource('runJSSources').saveChanges({
-      values: {
-        locator: host.locator,
-        repoId: repository.repoId,
-        baseCommitId: repository.headCommitId,
-        baseOwnerFingerprint: opened.ownerFingerprint,
-        message: 'Reject stale JS Page workspace',
-        entryPath: 'src/client/index.tsx',
-        changes: [
-          {
-            path: 'src/client/index.tsx',
-            operation: 'upsert',
-            expectedBlobHash: entry?.blobHash || null,
-            content: 'ctx.render("stale save");',
-            language: 'tsx',
-          },
-        ],
-      },
-    });
-    expect(staleSave.status).toBe(409);
-    expect(staleSave.body.errors[0]).toMatchObject({
-      code: 'RUNJS_SOURCE_OWNER_OUTDATED',
-      status: 409,
-    });
-  }, 120000);
-
-  it('enforces JS Page workspace read and write permissions through public resources', async () => {
-    const jsPage = getData(
-      await context.rootAgent.resource('flowSurfaces').createPage({
-        values: {
-          pageType: 'js-page',
-          idempotencyKey: `runjs-acl-page-${Date.now()}`,
-          title: 'RunJS ACL page',
-          icon: 'CodeOutlined',
-        },
-      }),
-    );
-    const host = expectWorkspaceResult(jsPage, 'JSPageModel');
-    await context.db.getRepository('roles').create({ values: { name: 'runjs-page-no-read' } });
-    await context.db.getRepository('roles').create({ values: { name: 'runjs-page-readonly' } });
-    context.app.acl.define({ role: 'runjs-page-no-read', actions: {} });
-    context.app.acl.define({
-      role: 'runjs-page-readonly',
-      actions: {
-        'flowModels:findOne': {},
-      },
-    });
-    const noReadUser = await context.db.getRepository('users').create({
-      values: { nickname: 'RunJS Page no read', roles: ['runjs-page-no-read'] },
-    });
-    const readonlyUser = await context.db.getRepository('users').create({
-      values: { nickname: 'RunJS Page readonly', roles: ['runjs-page-readonly'] },
-    });
-    const noReadAgent = (await context.app.agent().login(noReadUser)).set('x-role', 'runjs-page-no-read');
-    const readonlyAgent = (await context.app.agent().login(readonlyUser)).set('x-role', 'runjs-page-readonly');
-
-    const deniedOpen = await noReadAgent.resource('runJSSources').open({ values: { locator: host.locator } });
-    expect(deniedOpen.status).toBe(403);
-    expect(deniedOpen.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      details: { resource: 'flowModels', action: 'findOne' },
-    });
-
-    const readonlyOpen = await readonlyAgent.resource('runJSSources').open({
-      values: { locator: host.locator },
-    });
-    expect(readonlyOpen.status).toBe(200);
-    expect(readonlyOpen.body.data.files).toEqual(
-      expect.arrayContaining([expect.objectContaining({ path: 'src/client/index.tsx' })]),
-    );
-    const repository = readRecord(readonlyOpen.body.data.repository);
-    const files = readonlyOpen.body.data.files as Array<Record<string, unknown>>;
-    const entry = files.find((file) => file.path === 'src/client/index.tsx');
-    const deniedSave = await readonlyAgent.resource('runJSSources').saveChanges({
-      values: {
-        locator: host.locator,
-        repoId: repository.repoId,
-        baseCommitId: repository.headCommitId,
-        baseOwnerFingerprint: readonlyOpen.body.data.ownerFingerprint,
-        message: 'Reject readonly JS Page workspace',
-        entryPath: 'src/client/index.tsx',
-        changes: [
-          {
-            path: 'src/client/index.tsx',
-            operation: 'upsert',
-            expectedBlobHash: entry?.blobHash || null,
-            content: 'ctx.render("denied");',
-            language: 'tsx',
-          },
-        ],
-      },
-    });
-    expect(deniedSave.status).toBe(403);
-    expect(deniedSave.body.errors[0]).toMatchObject({
-      code: 'PERMISSION_DENIED',
-      details: { resource: 'flowModels', action: 'save' },
-    });
   }, 120000);
 
   it('preserves workspace metadata through batch, compose, and applyBlueprint results', async () => {

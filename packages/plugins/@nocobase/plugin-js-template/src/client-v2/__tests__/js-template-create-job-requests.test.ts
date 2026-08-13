@@ -10,7 +10,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
-import { dismissJsTemplateCreateJob, listJsTemplateCreateJobs } from '../api/jsTemplateCreateJobRequests';
+import {
+  dismissJsTemplateCreateJob,
+  getJsTemplateCreateJob,
+  listJsTemplateCreateJobs,
+  retryJsTemplateCreateJob,
+} from '../api/jsTemplateCreateJobRequests';
 
 describe('js-template create-job requests', () => {
   it('uses only the safe create-job API actions', async () => {
@@ -19,13 +24,23 @@ describe('js-template create-job requests', () => {
 
     await listJsTemplateCreateJobs(api);
     request.mockResolvedValueOnce({ data: { data: { id: 'jtcj_1' } } });
+    await getJsTemplateCreateJob(api, 'jtcj_1');
+    request.mockResolvedValueOnce({ data: { data: { id: 'jtcj_1' } } });
+    await retryJsTemplateCreateJob(api, 'jtcj_1');
+    request.mockResolvedValueOnce({ data: { data: { id: 'jtcj_1' } } });
     await dismissJsTemplateCreateJob(api, 'jtcj_1');
 
     expect(request.mock.calls.map(([options]) => options.url)).toEqual([
       'jsTemplateCreateJobs:list',
+      'jsTemplateCreateJobs:get',
+      'jsTemplateCreateJobs:retry',
       'jsTemplateCreateJobs:dismiss',
     ]);
-    expect(request.mock.calls[1][0]).toMatchObject({ data: { jobId: 'jtcj_1' }, skipNotify: true });
+    expect(request.mock.calls.slice(1).map(([options]) => options.data)).toEqual([
+      { jobId: 'jtcj_1' },
+      { jobId: 'jtcj_1' },
+      { jobId: 'jtcj_1' },
+    ]);
     expect(JSON.stringify(request.mock.calls)).not.toContain('payload');
     expect(JSON.stringify(request.mock.calls)).not.toContain('authRef');
   });

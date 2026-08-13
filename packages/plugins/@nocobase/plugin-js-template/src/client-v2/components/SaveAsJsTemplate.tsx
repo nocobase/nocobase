@@ -38,7 +38,6 @@ interface SaveAsJsTemplateFormValues {
 
 const DEFAULT_KIND_NAMES: Record<JsTemplateKind, string> = {
   'js-block': 'JS Block',
-  'js-page': 'JavaScript page',
   'js-action': 'JS Action',
   'js-field': 'JS Field',
   'js-item': 'JS Item',
@@ -46,7 +45,6 @@ const DEFAULT_KIND_NAMES: Record<JsTemplateKind, string> = {
 
 const KIND_NAME_LABELS: Record<JsTemplateKind, string> = {
   'js-block': 'JS Block name',
-  'js-page': 'JS page name',
   'js-action': 'JS Action name',
   'js-field': 'JS Field name',
   'js-item': 'JS Item name',

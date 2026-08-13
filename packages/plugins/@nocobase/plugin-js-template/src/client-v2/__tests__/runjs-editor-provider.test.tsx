@@ -376,7 +376,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
   });
 
-  it('waits for Host persistence when detaching a JS Page workspace to Inline', async () => {
+  it('waits for Host persistence when detaching a JS Block workspace to Inline', async () => {
     const provider = createJsTemplateRunJSEditorProvider();
     let resolveHostRefresh: (() => void) | undefined;
     const onPersistedChange = vi.fn(
@@ -401,8 +401,8 @@ describe('RunJSJsTemplateEditorProvider', () => {
                 id: 'jtt_example',
                 projectId: 'jtp_example',
                 templateName: 'example',
-                entryPath: 'src/client/js-pages/example/index.tsx',
-                kind: 'js-page',
+                entryPath: 'src/client/js-blocks/example/index.tsx',
+                kind: 'js-block',
                 title: 'Example',
               },
             },
@@ -439,7 +439,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
         type: 'js-template-entry' as const,
         projectId: 'jtp_example',
         templateId: 'jtt_example',
-        kind: 'js-page' as const,
+        kind: 'js-block' as const,
       },
       settings: { title: 'Revenue' },
       sourceRef: {
@@ -462,7 +462,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
             stepKey: 'runJs',
             paramPath: ['code'],
           },
-          sourceMetadata: { jsTemplateKind: 'js-page', modelUse: 'JSPageModel' },
+          sourceMetadata: { jsTemplateKind: 'js-block', modelUse: 'JSBlockModel' },
           surfaceStyle: 'render',
           onPersistedChange,
           renderNext: () => <div>inline workspace editor</div>,
@@ -525,8 +525,8 @@ describe('RunJSJsTemplateEditorProvider', () => {
                 id: 'jtt_page',
                 projectId: 'jtp_pages',
                 templateName: 'page',
-                entryPath: 'src/client/js-pages/page/index.tsx',
-                kind: 'js-page',
+                entryPath: 'src/client/js-blocks/page/index.tsx',
+                kind: 'js-block',
               },
             },
           };
@@ -538,14 +538,14 @@ describe('RunJSJsTemplateEditorProvider', () => {
       }),
     };
     const value = {
-      code: 'ctx.render(ctx.page.uid);',
+      code: 'ctx.render(String(ctx.record?.id ?? ""));',
       version: 'v2',
       sourceMode: 'js-template',
       sourceBinding: {
         type: 'js-template-entry' as const,
         projectId: 'jtp_pages',
         templateId: 'jtt_page',
-        kind: 'js-page' as const,
+        kind: 'js-block' as const,
       },
       settings: { title: 'Page' },
     };
@@ -562,7 +562,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
             stepKey: 'runJs',
             paramPath: ['code'],
           },
-          sourceMetadata: { jsTemplateKind: 'js-page', modelUse: 'JSPageModel' },
+          sourceMetadata: { jsTemplateKind: 'js-block', modelUse: 'JSBlockModel' },
           surfaceStyle: 'render',
           onPersistedChange,
         })}
@@ -596,7 +596,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
     expect(onPersistedChange).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
     expect(
-      screen.getByText('workspace:jtp_pages:jtt_page:src/client/js-pages/page/index.tsx:js-page'),
+      screen.getByText('workspace:jtp_pages:jtt_page:src/client/js-blocks/page/index.tsx:js-block'),
     ).toBeInTheDocument();
   });
 
@@ -706,7 +706,7 @@ describe('RunJSJsTemplateEditorProvider', () => {
 
   it.each([
     ['js-block', 'blocks', 'JSBlockModel'],
-    ['js-page', 'pages', 'JSPageModel'],
+    ['js-block', 'pages', 'JSBlockModel'],
     ['js-field', 'fields', 'JSColumnModel'],
     ['js-action', 'actions', 'JSActionModel'],
     ['js-item', 'items', 'JSItemModel'],

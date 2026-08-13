@@ -8,23 +8,19 @@
  */
 
 import {
-  createTemplateRecord,
-  createJsActionTemplateRecord,
   createJsActionNode,
+  createJsActionTemplateRecord,
   createJsBlockNode,
-  createJsFieldTemplateRecord,
   createJsFieldNode,
   createJsFieldSourceBinding,
-  createJsItemTemplateRecord,
+  createJsFieldTemplateRecord,
   createJsItemNode,
-  createJsPageTemplateRecord,
-  createJsPageNode,
-  createJsPageUsageRecord,
-  createJsPageSourceBinding,
-  createSourceBinding,
-  createUsageRecord,
+  createJsItemTemplateRecord,
   createJsTemplateUsageServiceFixture,
   createProjectRecord,
+  createSourceBinding,
+  createTemplateRecord,
+  createUsageRecord,
   stableJsonHash,
 } from './usage-test-helpers';
 import {
@@ -35,93 +31,90 @@ import {
 import type { JsTemplateRuntimeSourceBinding } from '../../shared/types';
 
 describe('plugin-js-template usage service', () => {
-  it('maintains an independent JS Page usage through external updates and return to inline', async () => {
+  it('maintains a JS Block usage through external updates and return to inline', async () => {
     const { service, repositories, flowModelTrees, projectService } = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
-        flow_js_page: createJsPageNode({
+        flow_js_block: createJsBlockNode({
           settings: {
             threshold: 7,
             region: 'EMEA',
           },
         }),
       },
-      projects: [createProjectRecord({ id: 'jtp_pages' }), createProjectRecord({ id: 'jtp_support' })],
-      templates: [
-        createJsPageTemplateRecord(),
-        createJsPageTemplateRecord({ id: 'jtt_support_page', projectId: 'jtp_support' }),
-      ],
+      projects: [createProjectRecord({ id: 'jtp_sales' }), createProjectRecord({ id: 'jtp_support' })],
+      templates: [createTemplateRecord(), createTemplateRecord({ id: 'jtt_support_block', projectId: 'jtp_support' })],
     });
     const lockProject = vi.spyOn(projectService, 'lockInternalProjectForUpdate');
 
     await service.syncFlowModelUsagesForNodeTree({
-      rootUid: 'flow_js_page',
+      rootUid: 'flow_js_block',
       action: 'flowModels.save',
     });
 
-    const pageAdapter = getUsageOwnerAdapterByUse('JSPageModel');
     const blockAdapter = getUsageOwnerAdapterByUse('JSBlockModel');
-    if (!pageAdapter || !blockAdapter) {
-      throw new Error('Expected JS Page and JS Block usage owner adapters');
+    const fieldAdapter = getUsageOwnerAdapterByUse('JSFieldModel');
+    if (!blockAdapter || !fieldAdapter) {
+      throw new Error('Expected JS Block and JS Field usage owner adapters');
     }
-    const pageLocator = buildUsageOwnerLocator(pageAdapter, 'flow_js_page', 'JSPageModel');
-    const blockLocator = buildUsageOwnerLocator(blockAdapter, 'flow_js_page', 'JSBlockModel');
-    expect(pageLocator).toMatchObject({
-      kind: 'flowModel.pageSettings',
-      use: 'JSPageModel',
-      stepPath: ['stepParams', 'jsSettings', 'runJs'],
+    const blockLocator = buildUsageOwnerLocator(blockAdapter, 'flow_js_block', 'JSBlockModel');
+    const fieldLocator = buildUsageOwnerLocator(fieldAdapter, 'flow_js_block', 'JSFieldModel');
+    expect(blockLocator).toMatchObject({
+      kind: 'flowModel.step',
+      use: 'JSBlockModel',
+      stepPath: ['stepParams', 'jsSettings'],
     });
-    expect(hashUsageOwnerLocator(pageLocator)).not.toBe(hashUsageOwnerLocator(blockLocator));
-    expect(hashUsageOwnerLocator(pageLocator)).toBe(
-      hashUsageOwnerLocator(buildUsageOwnerLocator(pageAdapter, 'flow_js_page', 'JSPageModel')),
+    expect(hashUsageOwnerLocator(blockLocator)).not.toBe(hashUsageOwnerLocator(fieldLocator));
+    expect(hashUsageOwnerLocator(blockLocator)).toBe(
+      hashUsageOwnerLocator(buildUsageOwnerLocator(blockAdapter, 'flow_js_block', 'JSBlockModel')),
     );
     expect(repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
-      projectId: 'jtp_pages',
-      templateId: 'jtt_sales_page',
-      kind: 'js-page',
-      ownerKind: 'flowModel.pageSettings',
-      ownerLocator: pageLocator,
-      ownerLocatorHash: hashUsageOwnerLocator(pageLocator),
+      projectId: 'jtp_sales',
+      templateId: 'jtt_sales_kpi',
+      kind: 'js-block',
+      ownerKind: 'flowModel.step',
+      ownerLocator: blockLocator,
+      ownerLocatorHash: hashUsageOwnerLocator(blockLocator),
       settingsHash: stableJsonHash({ threshold: 7, region: 'EMEA' }),
       resolvedStatus: 'active',
     });
-    expect(lockProject).toHaveBeenCalledWith('jtp_pages', expect.objectContaining({ transaction: expect.anything() }));
+    expect(lockProject).toHaveBeenCalledWith('jtp_sales', expect.objectContaining({ transaction: expect.anything() }));
 
-    flowModelTrees.flow_js_page = createJsPageNode({
+    flowModelTrees.flow_js_block = createJsBlockNode({
       settings: {
         threshold: 8,
         region: 'EMEA',
       },
     });
-    await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+    await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_block', action: 'flowModels.save' });
     expect(repositories.jsTemplateUsages.records).toHaveLength(1);
     expect(repositories.jsTemplateUsages.records[0].get('settingsHash')).toBe(
       stableJsonHash({ threshold: 8, region: 'EMEA' }),
     );
 
-    flowModelTrees.flow_js_page = createJsPageNode({
-      sourceBinding: createJsPageSourceBinding({
+    flowModelTrees.flow_js_block = createJsBlockNode({
+      sourceBinding: createSourceBinding({
         projectId: 'jtp_support',
-        templateId: 'jtt_support_page',
+        templateId: 'jtt_support_block',
       }),
     });
-    await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_page', action: 'flowModels.save' });
+    await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_block', action: 'flowModels.save' });
     expect(repositories.jsTemplateUsages.records).toHaveLength(1);
     expect(repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
       projectId: 'jtp_support',
-      templateId: 'jtt_support_page',
+      templateId: 'jtt_support_block',
       resolvedStatus: 'active',
     });
 
-    flowModelTrees.flow_js_page = createJsPageNode({ sourceMode: 'inline' });
+    flowModelTrees.flow_js_block = createJsBlockNode({ sourceMode: 'inline' });
     const inlineResult = await service.syncFlowModelUsagesForNodeTree({
-      rootUid: 'flow_js_page',
+      rootUid: 'flow_js_block',
       action: 'jsTemplates.detachToInline',
     });
     expect(inlineResult).toMatchObject({ scanned: 1, removed: 1 });
     expect(repositories.jsTemplateUsages.records).toHaveLength(0);
   });
 
-  it('derives JS Page rebuild status from project, template, runtime, and settings state', async () => {
+  it('derives JS Block rebuild status from project, template, runtime, and settings state', async () => {
     const cases: Array<{
       name: string;
       project: Record<string, unknown>;
@@ -133,26 +126,26 @@ describe('plugin-js-template usage service', () => {
     }> = [
       {
         name: 'project disabled',
-        project: createProjectRecord({ id: 'jtp_pages', lifecycleStatus: 'disabled' }),
-        template: createJsPageTemplateRecord(),
+        project: createProjectRecord({ id: 'jtp_sales', lifecycleStatus: 'disabled' }),
+        template: createTemplateRecord(),
         expected: 'project_disabled',
       },
       {
         name: 'template missing',
-        project: createProjectRecord({ id: 'jtp_pages' }),
-        template: createJsPageTemplateRecord({ healthStatus: 'missing' }),
+        project: createProjectRecord({ id: 'jtp_sales' }),
+        template: createTemplateRecord({ healthStatus: 'missing' }),
         expected: 'template_missing',
       },
       {
         name: 'runtime missing',
-        project: createProjectRecord({ id: 'jtp_pages' }),
-        template: createJsPageTemplateRecord({ compiledCommitId: null, runtimeArtifact: null, runtimeCodeHash: null }),
+        project: createProjectRecord({ id: 'jtp_sales' }),
+        template: createTemplateRecord({ compiledCommitId: null, runtimeArtifact: null, runtimeCodeHash: null }),
         expected: 'runtime_missing',
       },
       {
         name: 'settings invalid',
-        project: createProjectRecord({ id: 'jtp_pages' }),
-        template: createJsPageTemplateRecord(),
+        project: createProjectRecord({ id: 'jtp_sales' }),
+        template: createTemplateRecord(),
         settings: { threshold: 99, region: 'EMEA' },
         expected: 'settings_invalid',
       },
@@ -161,7 +154,7 @@ describe('plugin-js-template usage service', () => {
     for (const testCase of cases) {
       const { service, repositories, recordUsageEvent } = createJsTemplateUsageServiceFixture({
         flowModelTrees: {
-          flow_js_page: createJsPageNode({
+          flow_js_block: createJsBlockNode({
             settings: testCase.settings,
             sourceBinding: testCase.sourceBinding,
           }),
@@ -170,7 +163,7 @@ describe('plugin-js-template usage service', () => {
         templates: [testCase.template],
       });
 
-      await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_page', action: 'usageRebuild' });
+      await service.syncFlowModelUsagesForNodeTree({ rootUid: 'flow_js_block', action: 'usageRebuild' });
 
       expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus'), testCase.name).toBe(testCase.expected);
       if (testCase.expected === 'settings_invalid') {
@@ -181,30 +174,30 @@ describe('plugin-js-template usage service', () => {
       expect(recordUsageEvent, testCase.name).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'usageConflict',
-          ownerKind: 'flowModel.pageSettings',
+          ownerKind: 'flowModel.step',
           reasonCode: testCase.reason || testCase.expected,
         }),
       );
     }
   });
 
-  it('refreshes JS Page project lifecycle status without saving the page and marks deleted pages missing', async () => {
+  it('refreshes JS Block project lifecycle status without saving the page and marks deleted pages missing', async () => {
     const { service, repositories, flowModelTrees } = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
-        flow_js_page: createJsPageNode(),
+        flow_js_block: createJsBlockNode(),
       },
-      projects: [createProjectRecord({ id: 'jtp_pages' })],
-      templates: [createJsPageTemplateRecord()],
-      usages: [createJsPageUsageRecord()],
+      projects: [createProjectRecord({ id: 'jtp_sales' })],
+      templates: [createTemplateRecord()],
+      usages: [createUsageRecord()],
     });
 
     await repositories.jsTemplateProjects.records[0].update({ lifecycleStatus: 'disabled' });
-    await service.refreshUsagesForProject('jtp_pages');
+    await service.refreshUsagesForProject('jtp_sales');
     expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus')).toBe('project_disabled');
 
-    delete flowModelTrees.flow_js_page;
+    delete flowModelTrees.flow_js_block;
     await service.markFlowModelUsagesOwnerMissingForNodeTree({
-      rootUid: 'flow_js_page',
+      rootUid: 'flow_js_block',
       action: 'flowSurfaces.destroyPage',
     });
     expect(repositories.jsTemplateUsages.records[0].get('resolvedStatus')).toBe('owner_missing');
@@ -341,14 +334,13 @@ describe('plugin-js-template usage service', () => {
     }
   });
 
-  it('indexes usages for all five retained JS Template kinds', async () => {
+  it('indexes usages for all four retained JS Template kinds', async () => {
     const { service, repositories } = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
         root: {
           uid: 'root',
           subModels: {
             block: createJsBlockNode(),
-            page: createJsPageNode(),
             field: createJsFieldNode(),
             action: createJsActionNode(),
             item: createJsItemNode(),
@@ -357,14 +349,12 @@ describe('plugin-js-template usage service', () => {
       },
       projects: [
         createProjectRecord(),
-        createProjectRecord({ id: 'jtp_pages' }),
         createProjectRecord({ id: 'jtp_fields' }),
         createProjectRecord({ id: 'jtp_actions' }),
         createProjectRecord({ id: 'jtp_items' }),
       ],
       templates: [
         createTemplateRecord(),
-        createJsPageTemplateRecord(),
         createJsFieldTemplateRecord(),
         createJsActionTemplateRecord(),
         createJsItemTemplateRecord(),
@@ -377,10 +367,10 @@ describe('plugin-js-template usage service', () => {
     });
 
     expect(result).toMatchObject({
-      scanned: 5,
-      upserted: 5,
+      scanned: 4,
+      upserted: 4,
       statusCounts: {
-        active: 5,
+        active: 4,
       },
     });
     expect(repositories.jsTemplateUsages.records.map((record) => record.get('kind')).sort()).toEqual([
@@ -388,7 +378,6 @@ describe('plugin-js-template usage service', () => {
       'js-block',
       'js-field',
       'js-item',
-      'js-page',
     ]);
   });
 

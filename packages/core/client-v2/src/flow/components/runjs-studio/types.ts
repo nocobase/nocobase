@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type React from 'react';
 import type { RunJSValue } from '@nocobase/flow-engine';
+import type React from 'react';
 import type { CodeEditorJsonSchema } from '../code-editor';
 
 export interface RunJSWorkspaceFileLike {
@@ -48,14 +48,6 @@ export type RunJSSourceLocator =
       flowKey: string;
       stepKey: string;
       sourcePath: readonly string[];
-    }
-  | {
-      kind: 'chart.option';
-      modelUid: string;
-    }
-  | {
-      kind: 'chart.events';
-      modelUid: string;
     };
 
 export type RunJSSourceKind = RunJSSourceLocator['kind'];

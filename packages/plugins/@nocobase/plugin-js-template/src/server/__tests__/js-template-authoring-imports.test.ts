@@ -28,8 +28,8 @@ const publicTypeCases = [
   { name: 'JsTemplateContextRecord', fragment: 'Record<string, unknown>' },
   { name: 'JsTemplateDataContext', fragment: 'record?: Record<string, unknown> | null' },
   { name: 'JSBlockContext', fragment: 'element?: HTMLElement | null' },
-  { name: 'JSPageRuntimeFacade', fragment: 'readonly uid: string' },
-  { name: 'JSPageContext', fragment: 'page: { readonly uid: string' },
+  { name: 'JSBlockContext', fragment: 'record?: Record<string, unknown> | null' },
+  { name: 'JSBlockContext', fragment: 'render?: (node: unknown) => void' },
   { name: 'JSFieldContext', fragment: 'value?: TValue' },
   { name: 'JSActionContext', fragment: 'event?: unknown' },
   { name: 'JSItemContext', fragment: 'value?: TValue' },
@@ -39,7 +39,7 @@ const publicTypeCases = [
 describe('JS Template authoring imports', () => {
   it.each(publicTypeCases)('lowers the public $name type with its usable shape', ({ name, fragment }) => {
     const source = `import type { ${name} as LocalType } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";\ntype Probe = LocalType;\n`;
-    const result = rewriteJsTemplateAuthoringImports('src/client/js-pages/orders/index.tsx', source);
+    const result = rewriteJsTemplateAuthoringImports('src/client/js-blocks/orders/index.tsx', source);
 
     expect(result.diagnostics).toEqual([]);
     expect(result.content).toContain('export {};');
@@ -52,25 +52,27 @@ describe('JS Template authoring imports', () => {
   it('preserves aliases, mixed helper imports, module scope, and source line counts', () => {
     const source = [
       `import {`,
-      `  type JSPageRuntimeFacade as PageFacade,`,
+      `  type JSBlockContext as BlockFacade,`,
       `  defineSettings as define,`,
       `} from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
       `const settings = define({ title: "Orders" });`,
-      `type Page = PageFacade;`,
+      `type Block = BlockFacade;`,
       '',
     ].join('\n');
-    const result = rewriteJsTemplateAuthoringImports('src/client/js-pages/orders/index.tsx', source);
+    const result = rewriteJsTemplateAuthoringImports('src/client/js-blocks/orders/index.tsx', source);
 
     expect(result.diagnostics).toEqual([]);
     expect(result.content).toContain('export {};');
-    expect(result.content).toContain('type PageFacade = { readonly uid: string; readonly active: boolean;');
+    expect(result.content).toContain(
+      'type BlockFacade<TSettings = unknown> = ({ settings: TSettings; record?: Record<string, unknown> | null;',
+    );
     expect(result.content).toContain('function define<TSettings>(settings: TSettings): TSettings');
     expect(result.content.match(/\n/gu)).toHaveLength(source.match(/\n/gu)?.length || 0);
   });
 
   it('keeps the public settings context assignable without requiring the ambient ctx shape', () => {
     const result = rewriteJsTemplateAuthoringImports(
-      'src/client/js-pages/orders/index.ts',
+      'src/client/js-blocks/orders/index.ts',
       `import type { JsTemplateSettingsContext } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";\nconst value: JsTemplateSettingsContext<{ title: string }> = { settings: { title: "Orders" } };\n`,
     );
 
@@ -81,9 +83,9 @@ describe('JS Template authoring imports', () => {
 
   it.each(['js', 'jsx'])('emits valid JavaScript syntax for runtime helpers in .%s files', (extension) => {
     const source = `import { defineSettings as define } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";\nconst settings = define({ title: "Orders" });\n`;
-    const result = rewriteJsTemplateAuthoringImports(`src/client/js-pages/orders/index.${extension}`, source);
+    const result = rewriteJsTemplateAuthoringImports(`src/client/js-blocks/orders/index.${extension}`, source);
     const sourceFile = ts.createSourceFile(
-      `src/client/js-pages/orders/index.${extension}`,
+      `src/client/js-blocks/orders/index.${extension}`,
       result.content,
       ts.ScriptTarget.Latest,
       true,
@@ -98,7 +100,7 @@ describe('JS Template authoring imports', () => {
 
   it.each(['ts', 'tsx'])('preserves TypeScript runtime helper declarations in .%s files', (extension) => {
     const source = `import { defineSettings as define } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";\nconst settings = define({ title: "Orders" });\n`;
-    const path = `src/client/js-pages/orders/index.${extension}`;
+    const path = `src/client/js-blocks/orders/index.${extension}`;
     const result = rewriteJsTemplateAuthoringImports(path, source);
     const sourceFile = ts.createSourceFile(
       path,
@@ -117,17 +119,17 @@ describe('JS Template authoring imports', () => {
   it('lowers client and settings namespaces plus SDK and settings import types', () => {
     const source = [
       `import type * as SDK from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
-      `import type * as Template from "js-template:settings/client/js-page/orders";`,
-      `type Page = SDK.JSPageContext<Template.Settings>;`,
-      `type ImportedPage = import("${JS_TEMPLATE_SDK_CLIENT_IMPORT}").JSPageContext<Template.Settings>;`,
-      `type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;`,
-      `const untouched = "js-template:settings/client/js-page/orders";`,
+      `import type * as Template from "js-template:settings/client/js-block/orders";`,
+      `type Block = SDK.JSBlockContext<Template.Settings>;`,
+      `type ImportedBlock = import("${JS_TEMPLATE_SDK_CLIENT_IMPORT}").JSBlockContext<Template.Settings>;`,
+      `type ImportedSettings = import("js-template:settings/client/js-block/orders").Settings;`,
+      `const untouched = "js-template:settings/client/js-block/orders";`,
       `// ${JS_TEMPLATE_SDK_CLIENT_IMPORT}`,
       '',
     ].join('\n');
-    const result = rewriteJsTemplateAuthoringImports('src/client/js-pages/orders/index.tsx', source);
+    const result = rewriteJsTemplateAuthoringImports('src/client/js-blocks/orders/index.tsx', source);
     const sourceFile = ts.createSourceFile(
-      'src/client/js-pages/orders/index.tsx',
+      'src/client/js-blocks/orders/index.tsx',
       result.content,
       ts.ScriptTarget.Latest,
       true,
@@ -135,13 +137,13 @@ describe('JS Template authoring imports', () => {
     );
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.content).toContain('type __jsTemplateAuthoring_SDK_JSPageRuntimeFacade');
+    expect(result.content).toContain('type __jsTemplateAuthoring_SDK_JSBlockContext');
     expect(result.content).toContain('type __jsTemplateAuthoring_Template_Context =');
-    expect(result.content).toContain('type ImportedPage =');
-    expect(result.content).toContain('page: { readonly uid: string; readonly active: boolean;');
+    expect(result.content).toContain('type ImportedBlock =');
+    expect(result.content).toContain('record?: Record<string, unknown> | null');
     expect(result.content).not.toContain('Template.Settings');
     expect(result.content).toContain('__jsTemplateAuthoring_Template_Settings');
-    expect(result.content).toContain('const untouched = "js-template:settings/client/js-page/orders";');
+    expect(result.content).toContain('const untouched = "js-template:settings/client/js-block/orders";');
     expect(result.content).toContain(`// ${JS_TEMPLATE_SDK_CLIENT_IMPORT}`);
     expect(
       collectStaticModuleReferences(sourceFile).filter(
@@ -155,26 +157,26 @@ describe('JS Template authoring imports', () => {
   it.each([
     {
       name: 'named import',
-      source: 'import type { Settings } from "js-template:settings/client/js-page/orders";',
+      source: 'import type { Settings } from "js-template:settings/client/js-block/orders";',
       contractPatch: { settingsTypeExpression: '' },
       message: 'does not provide an exact "Settings" authoring type',
     },
     {
       name: 'namespace import',
-      source: 'import type * as Template from "js-template:settings/client/js-page/orders";',
+      source: 'import type * as Template from "js-template:settings/client/js-block/orders";',
       contractPatch: { settingsSchemaSummaryTypeExpression: '' },
       message: 'does not provide every exact authoring type',
     },
     {
       name: 'import type',
-      source: 'type Settings = import("js-template:settings/client/js-page/orders").Context;',
-      contractPatch: { context: { publicTypeName: 'JSPageContext' as const, settingsTypeExpression: '' } },
+      source: 'type Settings = import("js-template:settings/client/js-block/orders").Context;',
+      contractPatch: { context: { publicTypeName: 'JSBlockContext' as const, settingsTypeExpression: '' } },
       message: 'does not provide an exact "Context" authoring type',
     },
   ])('rejects an incomplete exact settings contract for a $name', ({ source, contractPatch, message }) => {
     const contract = createSettingsContract(contractPatch);
     const result = rewriteJsTemplateAuthoringImports(
-      'src/client/js-pages/orders/index.tsx',
+      'src/client/js-blocks/orders/index.tsx',
       `${source}\nctx.render(null);\n`,
       { settingsContracts: new Map([[contract.specifier, contract]]) },
     );
@@ -196,7 +198,7 @@ describe('JS Template authoring imports', () => {
 
     expect(result.diagnostics).toEqual([]);
     expect(result.content).toContain('type __jsTemplateAuthoring_SDK_JsTemplateContextRecord');
-    expect(result.content).not.toContain('type __jsTemplateAuthoring_SDK_JSPageContext');
+    expect(result.content).not.toContain('type __jsTemplateAuthoring_SDK_JSBlockContext');
   });
 
   it.each([
@@ -209,22 +211,22 @@ describe('JS Template authoring imports', () => {
     {
       name: 'unknown settings namespace type',
       source:
-        'import type * as Template from "js-template:settings/client/js-page/orders";\ntype Missing = Template.SettingsContext;\n',
+        'import type * as Template from "js-template:settings/client/js-block/orders";\ntype Missing = Template.SettingsContext;\n',
       code: 'settings_type_import_invalid',
       message: 'is not exported',
     },
     {
       name: 'unknown settings namespace type nested in an SDK import type',
       source: [
-        'import type * as Template from "js-template:settings/client/js-page/orders";',
-        `type Missing = import("${JS_TEMPLATE_SDK_CLIENT_IMPORT}").JSPageContext<Template.SettingsContext>;`,
+        'import type * as Template from "js-template:settings/client/js-block/orders";',
+        `type Missing = import("${JS_TEMPLATE_SDK_CLIENT_IMPORT}").JSBlockContext<Template.SettingsContext>;`,
         '',
       ].join('\n'),
       code: 'settings_type_import_invalid',
       message: 'is not exported',
     },
   ])('rejects $name', ({ source, code, message }) => {
-    const result = rewriteJsTemplateAuthoringImports('src/client/js-pages/orders/index.tsx', source);
+    const result = rewriteJsTemplateAuthoringImports('src/client/js-blocks/orders/index.tsx', source);
 
     expect(result.diagnostics).toHaveLength(1);
     expect(result.diagnostics[0]).toMatchObject({ code, message: expect.stringContaining(message) });
@@ -251,7 +253,7 @@ describe('JS Template authoring imports', () => {
     },
     {
       name: 'SDK runtime type export',
-      source: `import { JSPageContext } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
+      source: `import { JSBlockContext } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
       code: 'import_not_allowed',
       message: 'Runtime import',
     },
@@ -263,19 +265,19 @@ describe('JS Template authoring imports', () => {
     },
     {
       name: 'host type from shared SDK',
-      source: `import type { JSPageContext } from "${JS_TEMPLATE_SDK_SHARED_IMPORT}";`,
+      source: `import type { JSBlockContext } from "${JS_TEMPLATE_SDK_SHARED_IMPORT}";`,
       code: 'import_not_allowed',
       message: 'not a public authoring type',
     },
     {
       name: 'settings runtime import',
-      source: `import { Settings } from "js-template:settings/client/js-page/orders";`,
+      source: `import { Settings } from "js-template:settings/client/js-block/orders";`,
       code: 'settings_type_import_runtime_not_allowed',
       message: 'must use import type',
     },
     {
       name: 'unknown settings type',
-      source: `import type { SettingsContext } from "js-template:settings/client/js-page/orders";`,
+      source: `import type { SettingsContext } from "js-template:settings/client/js-block/orders";`,
       code: 'settings_type_import_invalid',
       message: 'is not exported',
     },
@@ -293,7 +295,7 @@ describe('JS Template authoring imports', () => {
     },
   ])('returns a stable diagnostic for $name', ({ source, code, message }) => {
     const result = rewriteJsTemplateAuthoringImports(
-      'src/client/js-pages/orders/index.tsx',
+      'src/client/js-blocks/orders/index.tsx',
       `${source}\nctx.render(null);\n`,
     );
 
@@ -309,11 +311,11 @@ function createSettingsContract(
   return {
     ...buildJsTemplateSettingsAuthoringContract({
       target: 'client',
-      kind: 'js-page',
+      kind: 'js-block',
       templateName: 'orders',
-      entryKey: 'client/js-page/orders',
-      descriptorPath: 'src/client/js-pages/orders/entry.json',
-      virtualImport: 'js-template:settings/client/js-page/orders',
+      entryKey: 'client/js-block/orders',
+      descriptorPath: 'src/client/js-blocks/orders/entry.json',
+      virtualImport: 'js-template:settings/client/js-block/orders',
       schema: { type: 'object', properties: { count: { type: 'number' } } },
       schemaHash: 'schema-hash',
     }),

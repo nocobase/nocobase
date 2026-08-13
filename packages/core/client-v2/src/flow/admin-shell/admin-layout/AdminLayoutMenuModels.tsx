@@ -11,7 +11,7 @@ import React from 'react';
 import { FlowModel } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { JS_PAGE_TYPE, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import {
   AdminLayoutMenuCreationMeta,
   AdminLayoutMenuCreationParams,
@@ -392,7 +392,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
   async createMenuFromMeta(meta: AdminLayoutMenuCreationMeta, values: AdminLayoutMenuCreationParams) {
     const routeType =
-      meta.menuType === 'flowPage' || meta.menuType === 'jsPage'
+      meta.menuType === 'flowPage'
         ? NocoBaseDesktopRouteType.flowPage
         : meta.menuType === 'page'
           ? NocoBaseDesktopRouteType.page
@@ -446,7 +446,6 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       schemaUid: pageSchemaUid,
       menuSchemaUid,
       enableTabs: false,
-      ...(meta.menuType === 'jsPage' ? { options: { pageType: JS_PAGE_TYPE } } : {}),
       children: [
         {
           type: NocoBaseDesktopRouteType.tabs,

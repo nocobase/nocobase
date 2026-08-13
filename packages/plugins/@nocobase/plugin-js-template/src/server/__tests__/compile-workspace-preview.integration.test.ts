@@ -659,14 +659,14 @@ function registerCompilePreviewTests() {
       );
     });
 
-    it('previews JS Page templates with the render surface and shared helpers', async () => {
+    it('previews JS Block templates with the render surface and shared helpers', async () => {
       const project = createProject();
       const { db } = createDbStub([
         {
           ...createTemplateRecord({ id: 'jtt_orders', projectId: project.id, templateName: 'orders' }),
-          kind: 'js-page',
-          entryPath: 'src/client/js-pages/orders/index.tsx',
-          descriptorPath: 'src/client/js-pages/orders/entry.json',
+          kind: 'js-block',
+          entryPath: 'src/client/js-blocks/orders/index.tsx',
+          descriptorPath: 'src/client/js-blocks/orders/entry.json',
         },
       ]);
       const fileService = createFileServiceStub(project, [
@@ -675,11 +675,12 @@ function registerCompilePreviewTests() {
           content: 'export const format = (value: string) => value.toUpperCase();\n',
         },
         {
-          path: 'src/client/js-pages/orders/index.tsx',
-          content: 'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid));\n',
+          path: 'src/client/js-blocks/orders/index.tsx',
+          content:
+            'import { format } from "../../../shared/format";\nctx.render(format(String(ctx.record?.id ?? "")));\n',
         },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: '{"schemaVersion":1,"key":"orders"}',
         },
       ]);
@@ -687,7 +688,7 @@ function registerCompilePreviewTests() {
 
       const result = await service.compilePreview(
         { projectId: project.id, templateIds: ['jtt_orders'] },
-        { requestId: 'req_compile_preview_js_page' },
+        { requestId: 'req_compile_preview_js_block' },
       );
 
       expect(result).toMatchObject({
@@ -696,13 +697,13 @@ function registerCompilePreviewTests() {
         templates: [
           {
             templateId: 'jtt_orders',
-            kind: 'js-page',
+            kind: 'js-block',
             status: 'success',
             accepted: true,
             artifact: {
-              entryPath: 'src/client/js-pages/orders/index.tsx',
+              entryPath: 'src/client/js-blocks/orders/index.tsx',
               metadata: expect.objectContaining({
-                kind: 'js-page',
+                kind: 'js-block',
                 templateName: 'orders',
                 compilerSurfaceStyle: 'render',
               }),
@@ -714,7 +715,7 @@ function registerCompilePreviewTests() {
         expect.objectContaining({
           templateId: 'jtt_orders',
           result: 'success',
-          requestId: 'req_compile_preview_js_page',
+          requestId: 'req_compile_preview_js_block',
         }),
       );
     });
@@ -1171,14 +1172,14 @@ function registerWorkspaceCompilerBridgeTests() {
       expect(result.artifact.sourceMap).toBeTruthy();
     });
 
-    it('compiles JS Page templates through the existing render artifact contract', async () => {
+    it('compiles JS Block templates through the existing render artifact contract', async () => {
       const result = await bridge.compileEntry(
         {
           projectId: 'jtp_pages',
           templateId: 'jtt_orders',
-          kind: 'js-page',
+          kind: 'js-block',
           templateName: 'orders',
-          entryPath: 'src/client/js-pages/orders/index.tsx',
+          entryPath: 'src/client/js-blocks/orders/index.tsx',
           surfaceStyle: 'render',
           files: [
             {
@@ -1186,34 +1187,34 @@ function registerWorkspaceCompilerBridgeTests() {
               content: 'export const format = (uid: string, title: string) => `${uid}:${title}`;\n',
             },
             {
-              path: 'src/client/js-pages/orders/index.tsx',
+              path: 'src/client/js-blocks/orders/index.tsx',
               content:
-                'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid, String(ctx.settings.title)));\n',
+                'import { format } from "../../../shared/format";\nctx.render(format(String(ctx.record?.id ?? ""), String(ctx.settings.title)));\n',
             },
           ],
         },
-        { requestId: 'req_compile_js_page' },
+        { requestId: 'req_compile_js_block' },
       );
 
       expect(result).toMatchObject({
         accepted: true,
         diagnostics: [],
         surface: {
-          kind: 'js-page',
+          kind: 'js-block',
           surfaceStyle: 'render',
           compilerSurfaceStyle: 'render',
-          modelUse: 'JSPageModel',
+          modelUse: 'JSBlockModel',
           surface: 'js-model.render',
         },
         artifact: {
           version: 'v2',
-          entryPath: 'src/client/js-pages/orders/index.tsx',
+          entryPath: 'src/client/js-blocks/orders/index.tsx',
           metadata: expect.objectContaining({
             projectId: 'jtp_pages',
             templateId: 'jtt_orders',
-            kind: 'js-page',
+            kind: 'js-block',
             templateName: 'orders',
-            modelUse: 'JSPageModel',
+            modelUse: 'JSBlockModel',
             surface: 'js-model.render',
             surfaceStyle: 'render',
             compilerSurfaceStyle: 'render',
@@ -1223,11 +1224,11 @@ function registerWorkspaceCompilerBridgeTests() {
       const rendered: unknown[] = [];
       await executeArtifact(result.artifact.code, {
         libs: {},
-        page: { uid: 'page-1' },
+        record: { id: 'record-1' },
         settings: { title: 'Orders' },
         render: (value: unknown) => rendered.push(value),
       });
-      expect(rendered).toEqual(['page-1:Orders']);
+      expect(rendered).toEqual(['record-1:Orders']);
     });
 
     it('compiles without permission or audit dependencies', async () => {
@@ -1390,27 +1391,27 @@ function registerWorkspaceCompilerBridgeTests() {
       const result = await bridge.compileEntry({
         projectId: 'jtp_orders',
         templateId: 'jtt_orders',
-        kind: 'js-page',
+        kind: 'js-block',
         templateName: 'orders',
-        entryPath: 'src/client/js-pages/orders/index.tsx',
+        entryPath: 'src/client/js-blocks/orders/index.tsx',
         surfaceStyle: 'render',
         files: [
           {
-            path: 'src/client/js-pages/orders/index.tsx',
+            path: 'src/client/js-blocks/orders/index.tsx',
             content: [
-              'import { type JsTemplateContextRecord as Row, type JSPageRuntimeFacade as PageFacade, defineSettings as define } from "@nocobase/runjs/js-template/client";',
+              'import { type JsTemplateContextRecord as Row, type JSBlockContext as BlockFacade, defineSettings as define } from "@nocobase/runjs/js-template/client";',
               'import type * as SDK from "@nocobase/runjs/js-template/client";',
-              'import type * as Template from "js-template:settings/client/js-page/orders";',
-              'type ImportedPage = import("@nocobase/runjs/js-template/client").JSPageContext<Template.Settings>;',
-              'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
-              'function inspect(row: Row, facade: PageFacade, page: SDK.JSPageContext<Template.Settings>, imported: ImportedPage, settings: ImportedSettings) { facade.setDocumentTitle(String(row.id)); return [page.page.uid, imported.page.active, settings]; }',
+              'import type * as Template from "js-template:settings/client/js-block/orders";',
+              'type ImportedBlock = import("@nocobase/runjs/js-template/client").JSBlockContext<Template.Settings>;',
+              'type ImportedSettings = import("js-template:settings/client/js-block/orders").Settings;',
+              'function inspect(row: Row, facade: BlockFacade, block: SDK.JSBlockContext<Template.Settings>, imported: ImportedBlock, settings: ImportedSettings) { return [row.id, facade.record?.id, block.record?.id, imported.settings, settings]; }',
               'const settings = define({ title: "Orders" });',
               'ctx.render(<div>{settings.title}</div>);',
               '',
             ].join('\n'),
           },
           {
-            path: 'src/client/js-pages/orders/entry.json',
+            path: 'src/client/js-blocks/orders/entry.json',
             content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
           },
         ],

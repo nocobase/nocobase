@@ -21,23 +21,8 @@ const askpassScript = `#!/bin/sh
 case "$NBS_GIT_ASKPASS_MODE:$1" in
   https:*sername*) printf '%s\\n' "$NBS_GIT_HTTPS_USERNAME" ;;
   https:*) printf '%s\\n' "$NBS_GIT_HTTPS_PASSWORD" ;;
-  ssh:*) printf '%s\\n' "$NBS_GIT_SSH_PASSPHRASE" ;;
   *) exit 1 ;;
 esac
-`;
-
-const sshWrapperScript = `#!/bin/sh
-exec "$NBS_GIT_SSH_BINARY" -F /dev/null \
-  -o IdentitiesOnly=yes \
-  -o IdentityAgent=none \
-  -o StrictHostKeyChecking=yes \
-  -o UserKnownHostsFile="$NBS_GIT_SSH_KNOWN_HOSTS" \
-  -o GlobalKnownHostsFile=/dev/null \
-  -o PasswordAuthentication=no \
-  -o KbdInteractiveAuthentication=no \
-  -o ChallengeResponseAuthentication=no \
-  -i "$NBS_GIT_SSH_PRIVATE_KEY" \
-  "$@"
 `;
 
 export interface GitCredentialMaterializerOptions {
@@ -47,7 +32,6 @@ export interface GitCredentialMaterializerOptions {
 export interface GitCredentialMaterializationRequest {
   transport: VscGitRemoteTransport;
   credential?: unknown;
-  sshBinary?: string;
 }
 
 export interface MaterializedGitCredential {
@@ -104,13 +88,6 @@ export class GitCredentialMaterializer {
         XDG_CONFIG_HOME: xdgConfigDirectory,
       };
 
-      if (request.transport === 'ssh' && credential === null) {
-        environment.HOME = process.env.HOME || os.homedir();
-        if (process.env.SSH_AUTH_SOCK) {
-          environment.SSH_AUTH_SOCK = process.env.SSH_AUTH_SOCK;
-        }
-      }
-
       if (credential?.kind === 'https') {
         const askpassPath = path.join(credentialDirectory, 'askpass.sh');
         await writeFile(askpassPath, askpassScript, { encoding: 'utf8', mode: 0o700 });
@@ -118,29 +95,6 @@ export class GitCredentialMaterializer {
         environment.NBS_GIT_ASKPASS_MODE = 'https';
         environment.NBS_GIT_HTTPS_USERNAME = credential.username;
         environment.NBS_GIT_HTTPS_PASSWORD = credential.password;
-      }
-
-      if (credential?.kind === 'ssh') {
-        const privateKeyPath = path.join(credentialDirectory, 'private-key');
-        const knownHostsPath = path.join(credentialDirectory, 'known-hosts');
-        const askpassPath = path.join(credentialDirectory, 'askpass.sh');
-        const sshWrapperPath = path.join(credentialDirectory, 'ssh-wrapper.sh');
-        await Promise.all([
-          writeFile(privateKeyPath, credential.privateKey, { encoding: 'utf8', mode: 0o600 }),
-          writeFile(knownHostsPath, credential.knownHosts, { encoding: 'utf8', mode: 0o600 }),
-          writeFile(askpassPath, askpassScript, { encoding: 'utf8', mode: 0o700 }),
-          writeFile(sshWrapperPath, sshWrapperScript, { encoding: 'utf8', mode: 0o700 }),
-        ]);
-        environment.GIT_SSH = sshWrapperPath;
-        environment.GIT_SSH_VARIANT = 'ssh';
-        environment.SSH_ASKPASS = askpassPath;
-        environment.SSH_ASKPASS_REQUIRE = 'force';
-        environment.DISPLAY = 'nocobase-git-askpass';
-        environment.NBS_GIT_ASKPASS_MODE = 'ssh';
-        environment.NBS_GIT_SSH_BINARY = request.sshBinary || 'ssh';
-        environment.NBS_GIT_SSH_PRIVATE_KEY = privateKeyPath;
-        environment.NBS_GIT_SSH_KNOWN_HOSTS = knownHostsPath;
-        environment.NBS_GIT_SSH_PASSPHRASE = credential.passphrase || '';
       }
 
       return {

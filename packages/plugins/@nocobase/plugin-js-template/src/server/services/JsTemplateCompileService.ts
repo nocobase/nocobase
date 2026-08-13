@@ -581,11 +581,14 @@ export class JsTemplateCompileService {
     const compileExecutor = this.compileExecutor;
     let compiledResults: JsTemplateCompileResult[];
     if (compileExecutor) {
-      compiledResults = await Promise.all(compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job)));
+      compiledResults = await Promise.all(
+        compileJobs.map(({ job }) => compileExecutor.submitWithBackpressure(job, ctx.signal)),
+      );
     } else {
       // The direct executor path is intentionally serial. Production compile paths use the bounded isolated worker.
       compiledResults = [];
       for (const { job, input } of compileJobs) {
+        ctx.signal?.throwIfAborted();
         compiledResults.push(
           this.compilerBridge
             ? await this.compileTemplateWithoutWorker(job, input)
@@ -593,6 +596,7 @@ export class JsTemplateCompileService {
         );
       }
     }
+    ctx.signal?.throwIfAborted();
     return {
       results: [...reusedResults, ...compiledResults].sort(
         (left, right) => left.ordinal - right.ordinal || left.templateId.localeCompare(right.templateId),

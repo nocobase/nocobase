@@ -121,9 +121,10 @@ export class RemoteSyncAdapterRegistry {
     provider: VscRemoteProvider,
     input: unknown,
     authRef: string | null,
+    signal?: AbortSignal,
   ): Promise<VscRemoteNormalizedConfig> {
     const adapter = this.require(provider);
-    const resolved = adapter.resolveConfigDraft ? await adapter.resolveConfigDraft(input, authRef) : input;
+    const resolved = adapter.resolveConfigDraft ? await adapter.resolveConfigDraft(input, authRef, signal) : input;
     return this.normalizeConfig(provider, resolved);
   }
 }

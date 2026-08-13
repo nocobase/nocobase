@@ -27,7 +27,6 @@ import FlowModelRepository from '../repository';
 
 type FlowModelStepLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.step' }>;
 type FlowRegistryRunJSLocator = Extract<RunJSSourceLocator, { kind: 'flowModel.flowRegistry.runjs' }>;
-type ChartLocator = Extract<RunJSSourceLocator, { kind: 'chart.option' | 'chart.events' }>;
 type JsonRecord = Record<string, unknown>;
 type JsonPath = Array<string | number>;
 
@@ -45,7 +44,6 @@ export const JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT = Object.freeze({
   sourceMetadataKindKey: 'jsTemplateKind',
   modelSurfaces: Object.freeze([
     { modelUse: 'JSBlockModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
-    { modelUse: 'JSPageModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSEditableFieldModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
     { modelUse: 'JSItemModel', flowKey: 'jsSettings', surfaceStyle: 'render' },
@@ -56,10 +54,6 @@ export const JS_TEMPLATE_FLOW_MODEL_RUNJS_ADAPTER_CONTRACT = Object.freeze({
     { modelUse: 'JSCollectionActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
     { modelUse: 'JSFormActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
     { modelUse: 'FilterFormJSActionModel', flowKey: 'clickSettings', surfaceStyle: 'action' },
-  ] as const),
-  chartSurfaces: Object.freeze([
-    { kind: 'chart.option', surfaceStyle: 'value' },
-    { kind: 'chart.events', surfaceStyle: 'action' },
   ] as const),
 });
 
@@ -81,31 +75,12 @@ const INITIALIZABLE_FLOW_MODEL_RUNJS_PATHS = new Map<string, string>([
   ),
 ]);
 
-const CHART_OPTION_RAW_PATH = ['stepParams', 'chartSettings', 'configure', 'chart', 'option', 'raw'];
-const CHART_EVENTS_RAW_PATH = ['stepParams', 'chartSettings', 'configure', 'chart', 'events', 'raw'];
-const LEGACY_CHART_OPTION_RAW_PATH = ['settings', 'visual', 'raw'];
-const LEGACY_CHART_EVENTS_RAW_PATH = ['settings', 'events', 'raw'];
-const CHART_ENTRY_PATH = 'src/main.ts';
-const CHART_OPTION_DEFAULT_CODE = `return {
-  xAxis: { type: 'category', data: [] },
-  yAxis: { type: 'value' },
-  series: [],
-};`;
-const CHART_EVENTS_DEFAULT_CODE = `// The chart variable is the ECharts instance for this block.
-// chart.on('click', (params) => {
-//   ctx.message.info(params.name);
-// });`;
 const UNSAFE_JSON_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 const JS_TEMPLATE_SOURCE_BINDING_KEYS = new Set(['type', 'projectId', 'templateId', 'kind']);
-const JS_TEMPLATE_SOURCE_BINDING_KINDS = new Set(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']);
+const JS_TEMPLATE_SOURCE_BINDING_KINDS = new Set(['js-block', 'js-field', 'js-action', 'js-item']);
 
 export function createFlowModelRunJSSourceAdapters(db: Database): RunJSSourceAdapter[] {
-  return [
-    createFlowModelStepAdapter(db),
-    createFlowRegistryRunJSAdapter(db),
-    createChartAdapter(db, 'chart.option'),
-    createChartAdapter(db, 'chart.events'),
-  ];
+  return [createFlowModelStepAdapter(db), createFlowRegistryRunJSAdapter(db)];
 }
 
 function createFlowModelStepAdapter(db: Database): RunJSSourceAdapter<FlowModelStepLocator> {
@@ -252,68 +227,6 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
       return buildWriteResult(await this.getFingerprint({ locator, ctx }));
     },
   };
-}
-
-function createChartAdapter(db: Database, kind: ChartLocator['kind']): RunJSSourceAdapter<ChartLocator> {
-  return {
-    kind,
-    async assertCanRead({ locator, ctx }) {
-      await assertChartFlowModelPermission(db, ctx, locator, 'findOne');
-    },
-    async assertCanWrite({ locator, ctx }) {
-      await assertChartFlowModelPermission(db, ctx, locator, 'save');
-    },
-    async readLegacy({ locator, ctx }) {
-      const model = await loadFlowModel(db, locator.modelUid, ctx);
-      const rawPath = resolveChartRawPath(model, locator.kind);
-      const raw = getAtPath(model, rawPath);
-      const code = typeof raw === 'string' ? raw : getChartDefaultCode(locator.kind);
-
-      return {
-        code,
-        version: 'v2',
-        label: buildFlowModelLabel(model, locator.kind === 'chart.option' ? 'Chart option' : 'Chart events'),
-        surfaceStyle: locator.kind === 'chart.option' ? 'value' : 'action',
-        language: 'javascript',
-        entryPath: CHART_ENTRY_PATH,
-        entry: CHART_ENTRY_PATH,
-        ownerFingerprint: buildChartFingerprint(locator, model),
-        metadata: modelUseMetadata(getChartAuthoringModelUse(locator.kind)),
-      };
-    },
-    async getFingerprint({ locator, ctx }) {
-      return buildChartFingerprint(locator, await loadFlowModel(db, locator.modelUid, ctx));
-    },
-    async writeRuntime({ locator, artifact, baseOwnerFingerprint, ctx }) {
-      const transaction = requireTransaction(ctx);
-      await assertChartFlowModelPermission(db, ctx, locator, 'save');
-      await lockFlowModelForUpdate(db, locator.modelUid, transaction);
-      await assertChartFlowModelPermission(db, ctx, locator, 'save');
-      const model = await loadFlowModel(db, locator.modelUid, ctx);
-      const rawPath = resolveChartRawPath(model, locator.kind);
-      assertOwnerFingerprintMatches(buildChartFingerprint(locator, model), baseOwnerFingerprint, locator.kind);
-      const rootKey = rawPath[0] as string;
-      const nextRoot = cloneJsonRecord(getAtPath(model, [rootKey]));
-
-      setAtPath(nextRoot, rawPath.slice(1), artifact.code);
-
-      await getFlowModelRepository(db).patch({ uid: locator.modelUid, [rootKey]: nextRoot }, { transaction });
-
-      return buildWriteResult(await this.getFingerprint({ locator, ctx }));
-    },
-  };
-}
-
-async function assertChartFlowModelPermission(
-  db: Database,
-  ctx: RunJSSourceAdapterContext,
-  locator: ChartLocator,
-  action: 'findOne' | 'save',
-): Promise<void> {
-  const permission = requireFlowModelPermission(ctx, action);
-  await assertFlowModelRecordPermission(db, ctx, locator.modelUid, permission);
-  const model = await loadFlowModel(db, locator.modelUid, ctx);
-  assertFlowModelPermissionFields(permission, action, [resolveChartRawPath(model, locator.kind)[0] as string]);
 }
 
 async function loadFlowModel(db: Database, modelUid: string, ctx: RunJSSourceAdapterContext): Promise<JsonRecord> {
@@ -634,21 +547,6 @@ function buildFlowRegistryRunJSFingerprint(locator: FlowRegistryRunJSLocator, mo
   });
 }
 
-function buildChartFingerprint(locator: ChartLocator, model: JsonRecord): string {
-  const rawPath = resolveChartRawPath(model, locator.kind);
-  const raw = getAtPath(model, rawPath);
-
-  return buildRunJSOwnerFingerprint({
-    locator,
-    ownerUpdatedAt: {
-      ...getFlowModelFingerprintOwner(model),
-      rawPath,
-    },
-    selectedLegacyValue: raw,
-    selectedVersion: 'v2',
-  });
-}
-
 function assertOwnerFingerprintMatches(current: string, expected: string, kind: string): void {
   if (current === expected) {
     return;
@@ -782,36 +680,6 @@ function buildFlowModelLabel(model: JsonRecord, fallback: string): string {
   const use = typeof model.use === 'string' && model.use.trim() ? model.use.trim() : 'FlowModel';
 
   return title ? `${title} / ${fallback}` : `${use} / ${fallback}`;
-}
-
-function getChartRawPath(kind: ChartLocator['kind']): string[] {
-  return kind === 'chart.option' ? CHART_OPTION_RAW_PATH : CHART_EVENTS_RAW_PATH;
-}
-
-function getLegacyChartRawPath(kind: ChartLocator['kind']): string[] {
-  return kind === 'chart.option' ? LEGACY_CHART_OPTION_RAW_PATH : LEGACY_CHART_EVENTS_RAW_PATH;
-}
-
-function getChartDefaultCode(kind: ChartLocator['kind']): string {
-  return kind === 'chart.option' ? CHART_OPTION_DEFAULT_CODE : CHART_EVENTS_DEFAULT_CODE;
-}
-
-function resolveChartRawPath(model: JsonRecord, kind: ChartLocator['kind']): string[] {
-  const standardPath = getChartRawPath(kind);
-  const legacyPath = getLegacyChartRawPath(kind);
-
-  if (typeof getAtPath(model, standardPath) !== 'undefined') {
-    return standardPath;
-  }
-  if (typeof getAtPath(model, legacyPath) !== 'undefined') {
-    return legacyPath;
-  }
-
-  return standardPath;
-}
-
-function getChartAuthoringModelUse(kind: ChartLocator['kind']): string {
-  return kind === 'chart.option' ? 'ChartOptionModel' : 'ChartEventsModel';
 }
 
 function readMetadataString(artifact: RunJSRuntimeArtifact, key: string): string | null {

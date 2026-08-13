@@ -114,12 +114,10 @@ describe('detach to inline integration', () => {
   // detach-to-inline / js-field + JSColumnModel -> host-kind support matrix below.
   // detach-to-inline / js-action + JSActionModel -> host-kind support matrix below.
   // detach-to-inline / js-item + JSItemModel -> host-kind support matrix below.
-  // detach-to-inline / js-page + JSPageModel -> host-kind support matrix below.
-  // detach-to-inline / js-page + JSBlockModel -> host-kind support matrix below.
   // detach-to-inline / js-block + JSColumnModel -> host-kind support matrix below.
   // detach-to-inline / checks the prepared workspace with the real RunJS manifest before opening a database transaction -> file-limit matrix below.
   // detach-to-inline / allows a 200-file workspace when the relocated dependency closure fits with the manifest -> file-limit matrix below.
-  // detach-to-inline / detaches a JS Page with its snapshot and settings while removing the active usage -> this suite.
+  // detach-to-inline / detaches a JS Block with its snapshot and settings while removing the active usage -> this suite.
   // detach-to-inline / rejects a host that no longer points to the selected JS Template entry -> this suite.
   // New owner: detach late failure rolls back the external binding, RunJS repository Head, and usage index.
 
@@ -593,8 +591,6 @@ describe('detach to inline integration', () => {
       ['js-field', 'JSColumnModel', true],
       ['js-action', 'JSActionModel', true],
       ['js-item', 'JSItemModel', true],
-      ['js-page', 'JSPageModel', true],
-      ['js-page', 'JSBlockModel', false],
       ['js-block', 'JSColumnModel', false],
       ['js-block', undefined, false],
     ])('checks whether %s can detach from %s back to inline code', (kind, modelUse, expected) => {
@@ -999,7 +995,7 @@ describe('detach to inline integration', () => {
 
     it.each([
       ['entryPath', { ...entry, entryPath: 'src/client/js-blocks/sales/renamed.tsx' }],
-      ['kind', { ...entry, kind: 'js-page' as const }],
+      ['kind', { ...entry, kind: 'js-field' as const }],
       ['runtimeVersion', { ...entry, runtimeVersion: 'v3' }],
       ['compiledCommitId', { ...entry, compiledCommitId: 'commit_recompiled' }],
     ])('rejects Template %s that changes after exact-commit source preparation', async (field, currentTemplate) => {
@@ -1025,19 +1021,19 @@ describe('detach to inline integration', () => {
       expect(fixture.ensureAndPush).not.toHaveBeenCalled();
     });
 
-    it('detaches a JS Page to Inline with its snapshot and settings while removing the active usage', async () => {
+    it('detaches a JS Block to Inline with its snapshot and settings while removing the active usage', async () => {
       const transaction = { LOCK: { UPDATE: 'UPDATE' } } as unknown as Transaction;
       const operationModel = createJsTemplateSourceOperationModel();
-      const pageLocator = { ...locator, modelUid: 'fm_js_page' };
-      const pageBinding = { ...binding, projectId: 'jtp_pages', templateId: 'jtt_page', kind: 'js-page' as const };
+      const pageLocator = { ...locator, modelUid: 'fm_js_block' };
+      const pageBinding = { ...binding, projectId: 'jtp_pages', templateId: 'jtt_page', kind: 'js-block' as const };
       const pageEntry = {
         ...entry,
         id: pageBinding.templateId,
         projectId: pageBinding.projectId,
-        kind: 'js-page' as const,
+        kind: 'js-block' as const,
         templateName: 'page',
-        entryPath: 'src/client/js-pages/page/index.tsx',
-        descriptorPath: 'src/client/js-pages/page/entry.json',
+        entryPath: 'src/client/js-blocks/page/index.tsx',
+        descriptorPath: 'src/client/js-blocks/page/entry.json',
         title: 'Page',
       };
       const currentSettings = {
@@ -1058,7 +1054,7 @@ describe('detach to inline integration', () => {
       const descriptorContent = `\ufeff${canonicalDescriptorContent.replace(/\n/gu, '\r\n')}`;
       const flowModel = {
         uid: pageLocator.modelUid,
-        use: 'JSPageModel',
+        use: 'JSBlockModel',
         stepParams: {
           jsSettings: {
             runJs: {
@@ -1120,11 +1116,11 @@ describe('detach to inline integration', () => {
       const readLegacy = vi.fn(async () => ({
         code: 'ctx.render("old");',
         version: 'v2',
-        label: 'JS page',
+        label: 'JS block',
         surfaceStyle: 'render' as const,
         language: 'typescript' as const,
         ownerFingerprint: 'owner_before',
-        metadata: { modelUse: 'JSPageModel' },
+        metadata: { modelUse: 'JSBlockModel' },
       }));
       const adapter = {
         kind: 'flowModel.step',
@@ -1230,7 +1226,7 @@ describe('detach to inline integration', () => {
           path: pageEntry.entryPath,
           content: [
             'import { defineSettings } from "@nocobase/runjs/js-template/client";',
-            'import type { Settings } from "js-template:settings/client/js-page/page";',
+            'import type { Settings } from "js-template:settings/client/js-block/page";',
             "import { used } from '../../../shared/used';",
             'const authoringSettings = defineSettings({ enabled: true });',
             'const settingsTypeProbe: Settings | null = null;',
@@ -1244,7 +1240,7 @@ describe('detach to inline integration', () => {
         { path: 'src/shared/used.ts', content: 'export const used = true;\n' },
         { path: 'src/shared/unused.ts', content: 'export const unused = true;\n' },
         {
-          path: 'src/client/js-pages/sibling/index.tsx',
+          path: 'src/client/js-blocks/sibling/index.tsx',
           content: 'ctx.render("sibling");\n',
         },
       ];
@@ -1299,9 +1295,9 @@ describe('detach to inline integration', () => {
         }),
       );
       expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/shared/unused.ts');
-      expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/client/js-pages/sibling/index.tsx');
+      expect(JSON.stringify(prepareEntry.mock.calls)).not.toContain('src/client/js-blocks/sibling/index.tsx');
       expect(JSON.stringify(prepareEntry.mock.calls)).toContain('@nocobase/runjs/js-template/client');
-      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('js-template:settings/client/js-page/page');
+      expect(JSON.stringify(prepareEntry.mock.calls)).toContain('js-template:settings/client/js-block/page');
       expect(prepareEntry).toHaveBeenCalledOnce();
       expect(compileEntry).not.toHaveBeenCalled();
       expect(ensureAndPush).toHaveBeenCalledWith(
@@ -1439,9 +1435,9 @@ describe('detach to inline integration', () => {
               target: 'client',
               projectId: pageBinding.projectId,
               templateId: pageBinding.templateId,
-              kind: 'js-page',
+              kind: 'js-block',
               templateName: 'page',
-              modelUse: 'JSPageModel',
+              modelUse: 'JSBlockModel',
               surface: 'js-model.render',
               compilerSurfaceStyle: 'render',
               runtimeCodeHash: createHash('sha256').update(result.code).digest('hex'),
@@ -1491,7 +1487,7 @@ describe('detach to inline integration', () => {
         details: {
           destinationType: 'inline',
           templateId: pageBinding.templateId,
-          kind: 'js-page',
+          kind: 'js-block',
           runJSRepoId: 'runjs_repo',
         },
         transaction,

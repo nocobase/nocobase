@@ -21,6 +21,7 @@ import type { RunJSSourceLocator, VscCommitRecord } from '@nocobase/runjs/worksp
 import type {
   VscGitRemoteConfig,
   VscGitRemoteConfigDraft,
+  VscUnsupportedGitRemoteConfig,
   VscRemotePlannerAction,
   VscRemotePlannerLocalSummary,
   VscRemotePlannerRemoteSummary,
@@ -73,6 +74,7 @@ export interface JsTemplateProjectDetails extends JsTemplateProject {
 }
 
 export interface JsTemplateCreateProjectInput {
+  idempotencyKey: string;
   name: string;
   title?: string | null;
   description?: string | null;
@@ -85,7 +87,7 @@ export const jsTemplateCreateSourceTypes = ['starter', 'zip', 'git'] as const;
 
 export type JsTemplateCreateSourceType = (typeof jsTemplateCreateSourceTypes)[number];
 
-export const jsTemplateCreateJobStatuses = ['pending', 'running', 'succeeded', 'failed'] as const;
+export const jsTemplateCreateJobStatuses = ['pending', 'running', 'finalize-pending', 'succeeded', 'failed'] as const;
 
 export type JsTemplateCreateJobStatus = (typeof jsTemplateCreateJobStatuses)[number];
 
@@ -98,6 +100,8 @@ export interface JsTemplateCreateJob {
   title: string | null;
   description: string | null;
   sourceType: JsTemplateCreateSourceType;
+  idempotencyKey: string;
+  requestHash: string;
   status: JsTemplateCreateJobStatus;
   resultProjectId: string | null;
   payload: Record<string, unknown> | null;
@@ -105,7 +109,11 @@ export interface JsTemplateCreateJob {
   errorReasonCode?: string | null;
   errorMessage: string | null;
   reservationKey: string | null;
-  actorUserId: string | null;
+  actorUserId: string;
+  sessionId: string;
+  authorizationRole: string;
+  authorizationRoles: string[];
+  dismissed: boolean;
   requestId: string | null;
   claimToken: string | null;
   claimOwner: string | null;
@@ -155,6 +163,14 @@ export interface JsTemplateCreateJobDismissResult {
 export interface JsTemplateCreateJobActionContract {
   list: {
     result: JsTemplateCreateJobListResult;
+  };
+  get: {
+    input: JsTemplateCreateJobMutationInput;
+    result: JsTemplateCreateJobSummary;
+  };
+  retry: {
+    input: JsTemplateCreateJobMutationInput;
+    result: JsTemplateCreateJobSummary;
   };
   dismiss: {
     input: JsTemplateCreateJobDismissInput;
@@ -586,7 +602,6 @@ export interface JsTemplateArtifact {
 
 export type JsTemplateUsageOwnerKind =
   | 'flowModel.step'
-  | 'flowModel.pageSettings'
   | 'flowModel.fieldSettings'
   | 'flowModel.actionSettings'
   | 'flowModel.itemSettings';
@@ -697,11 +712,11 @@ export type JsTemplateSyncState = VscRemotePlannerState;
 
 export type JsTemplateSyncAction = VscRemotePlannerAction;
 
-export type JsTemplateSyncSourceStatus = 'active' | 'disabled';
+export type JsTemplateSyncSourceStatus = 'active' | 'disabled' | 'unsupported';
 
 export interface JsTemplateSyncRemoteTarget {
   provider: JsTemplateSyncProvider;
-  config: VscGitRemoteConfig;
+  config: VscGitRemoteConfig | VscUnsupportedGitRemoteConfig;
 }
 
 export interface JsTemplateSyncRemoteTargetDraft {
@@ -728,7 +743,7 @@ export interface JsTemplateSyncGetResult {
 }
 
 export interface JsTemplateSyncConfigureInput extends JsTemplateSyncGetInput, JsTemplateSyncRemoteTargetDraft {
-  authRef?: string;
+  authRef?: string | null;
 }
 
 export interface JsTemplateSyncConfigureResult {
@@ -794,6 +809,7 @@ export type JsTemplateSyncPullResult = JsTemplateSyncOperationResult;
 export type JsTemplateSyncPushResult = JsTemplateSyncOperationResult;
 
 export interface JsTemplateSyncCreateFromGitInput extends JsTemplateSyncRemoteTargetDraft {
+  idempotencyKey: string;
   name: string;
   title?: string | null;
   description?: string | null;

@@ -60,74 +60,24 @@ describe('GitCredentialMaterializer', () => {
     await expect(access(result.rootDirectory)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  it('writes SSH material with private permissions and a strict secret-free wrapper', async () => {
-    const privateKey = '-----BEGIN PRIVATE KEY-----\nprivate-material\n-----END PRIVATE KEY-----';
-    const passphrase = 'passphrase-do-not-write';
-    const knownHosts = 'git.example.com ssh-ed25519 known-host-material';
-    const result = await materializer.materialize({
-      transport: 'ssh',
-      sshBinary: '/usr/bin/ssh',
-      credential: { kind: 'ssh', privateKey, passphrase, knownHosts },
-    });
-
-    const privateKeyPath = result.environment.NBS_GIT_SSH_PRIVATE_KEY as string;
-    const knownHostsPath = result.environment.NBS_GIT_SSH_KNOWN_HOSTS as string;
-    const wrapperPath = result.environment.GIT_SSH as string;
-    const wrapper = await readFile(wrapperPath, 'utf8');
-    if (process.platform !== 'win32') {
-      expect((await stat(privateKeyPath)).mode & 0o777).toBe(0o600);
-      expect((await stat(knownHostsPath)).mode & 0o777).toBe(0o600);
-    }
-    expect(await readFile(privateKeyPath, 'utf8')).toBe(privateKey);
-    expect(await readFile(knownHostsPath, 'utf8')).toBe(knownHosts);
-    expect(wrapper).toMatch(/IdentitiesOnly=yes/u);
-    expect(wrapper).toMatch(/IdentityAgent=none/u);
-    expect(wrapper).toMatch(/StrictHostKeyChecking=yes/u);
-    expect(wrapper).toMatch(/UserKnownHostsFile=/u);
-    expect(wrapper).toMatch(/GlobalKnownHostsFile=\/dev\/null/u);
-    expect(wrapper).toMatch(/PasswordAuthentication=no/u);
-    expect(wrapper).toMatch(/KbdInteractiveAuthentication=no/u);
-    expect(wrapper).not.toMatch(/StrictHostKeyChecking=(?:no|accept-new)/u);
-    expect(wrapper).not.toContain(privateKey);
-    expect(wrapper).not.toContain(passphrase);
-    expect(wrapper).not.toContain(knownHosts);
-    expect(result.environment).not.toHaveProperty('SSH_AUTH_SOCK');
-
-    await result.cleanup();
-    await expect(access(privateKeyPath)).rejects.toMatchObject({ code: 'ENOENT' });
-    await expect(access(knownHostsPath)).rejects.toMatchObject({ code: 'ENOENT' });
-  });
-
-  it('uses the process user SSH environment when the credential is omitted', async () => {
-    const originalAgent = process.env.SSH_AUTH_SOCK;
-    process.env.SSH_AUTH_SOCK = '/run/user/1000/ssh-agent.sock';
-    try {
-      const result = await materializer.materialize({ transport: 'ssh' });
-      expect(result.environment).toMatchObject({
-        HOME: process.env.HOME || os.homedir(),
-        SSH_AUTH_SOCK: '/run/user/1000/ssh-agent.sock',
-      });
-      expect(result.environment).not.toHaveProperty('GIT_SSH');
-      await result.cleanup();
-    } finally {
-      if (originalAgent === undefined) {
-        delete process.env.SSH_AUTH_SOCK;
-      } else {
-        process.env.SSH_AUTH_SOCK = originalAgent;
-      }
-    }
-  });
-
-  it('rejects malformed SSH credentials without leaving temporary resources', async () => {
+  it('rejects HTTP credentials before creating temporary resources', async () => {
     const malformed = await captureError(() =>
       materializer.materialize({
-        transport: 'ssh',
-        credential: { kind: 'ssh', privateKey: 'key', knownHosts: '' },
+        transport: 'http',
+        credential: { kind: 'https', username: 'git-user', password: 'secret' },
       }),
     );
-    expect(malformed).toMatchObject({ code: 'AUTH_REF_INVALID', details: { reasonCode: 'invalid-known-hosts' } });
-    expect(JSON.stringify(malformed.toResponseBody())).not.toContain('privateKey');
+    expect(malformed).toMatchObject({ code: 'AUTH_REF_INVALID', details: { reasonCode: 'http-auth-forbidden' } });
+    expect(JSON.stringify(malformed.toResponseBody())).not.toContain('secret');
     expect(await readdir(temporaryDirectory)).toEqual([]);
+  });
+
+  it('isolates public HTTP without credential helpers', async () => {
+    const result = await materializer.materialize({ transport: 'http' });
+    expect(result.environment).not.toHaveProperty('GIT_ASKPASS');
+    expect(result.environment).not.toHaveProperty('NBS_GIT_HTTPS_USERNAME');
+    expect(result.environment).not.toHaveProperty('NBS_GIT_HTTPS_PASSWORD');
+    await result.cleanup();
   });
 
   it('cleans only expired directories created by this module', async () => {

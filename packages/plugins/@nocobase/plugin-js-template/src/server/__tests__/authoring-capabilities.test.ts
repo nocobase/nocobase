@@ -8,7 +8,7 @@
  */
 
 import type { Database } from '@nocobase/database';
-import type { Application } from '@nocobase/server';
+import { AuditManager, type Application } from '@nocobase/server';
 import {
   getOrCreateRunJSWorkspaceServerModule,
   RUNJS_EXTERNALIZATION_DESTINATION_TYPES,
@@ -65,7 +65,7 @@ function createApp(): Application {
     environment: { getVariables: vi.fn(() => ({})) },
     acl: { allow: vi.fn(), registerSnippet: vi.fn() },
     resourceManager: { define: vi.fn(), options: {} },
-    auditManager: { registerActions: vi.fn(), log: vi.fn() },
+    auditManager: new AuditManager(),
     use: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),

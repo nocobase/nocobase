@@ -43,7 +43,7 @@ export const JS_TEMPLATE_ACL_SNIPPET = 'pm.js-template' as const;
 export const JS_TEMPLATE_OWNER_TYPE = 'js-template' as const;
 export const JS_TEMPLATE_ERROR_CODE_PREFIX = 'JS_TEMPLATE_' as const;
 
-export const JS_TEMPLATE_SUPPORTED_KINDS = ['js-block', 'js-page', 'js-field', 'js-action', 'js-item'] as const;
+export const JS_TEMPLATE_SUPPORTED_KINDS = ['js-block', 'js-field', 'js-action', 'js-item'] as const;
 export const JS_TEMPLATE_KEY_PATTERN = new RegExp(JS_TEMPLATE_KEY_PATTERN_SOURCE);
 export { JS_TEMPLATE_SCHEMA_VERSION };
 export const JS_TEMPLATE_SCHEMA_URL = JS_TEMPLATE_SCHEMA_URI;

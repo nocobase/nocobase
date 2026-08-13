@@ -21,6 +21,7 @@ import {
 import type { RemoteSyncRuntime } from './vsc-file/remotes';
 import { JsTemplateRemoteSyncModule } from './vsc-file/plugin';
 import { Plugin } from '@nocobase/server';
+import type { Transaction } from '@nocobase/database';
 import { resolve } from 'path';
 
 import { JS_TEMPLATE_ACL_ACTIONS, JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_COLLECTIONS } from '../constants';
@@ -28,6 +29,9 @@ import { JsTemplateError } from '../shared/errors';
 import { registerJsTemplateDomainAvailabilityGuard } from './domainAvailability';
 import { jsTemplateExternalizationCapabilities } from './externalizationCapabilities';
 import { jsTemplateV1SchemaFileContent } from './jsTemplateSchema';
+import { registerJsTemplateGitPreLogGuard } from './jsTemplateGitPreLogGuard';
+import { registerJsTemplateRunJSWriteAuditActions } from './runJSWriteAuditLifecycle';
+import { authorizeJsTemplateCreateJob } from './authorizeJsTemplateCreateJob';
 import {
   createJsTemplateCapabilitiesResource,
   jsTemplateCapabilitiesActionNames,
@@ -196,11 +200,17 @@ export class PluginJsTemplateServer extends Plugin {
 
   private createJobStopListener?: () => Promise<void>;
 
+  private createJobShutdownPromise?: Promise<void>;
+
   private domainAvailable = false;
 
   private domainAvailabilityGuardRegistered = false;
 
   private entrySchemaHttpRouteRegistered = false;
+
+  private gitPreLogGuardRegistered = false;
+
+  private unregisterRunJSWriteAuditActions?: () => void;
 
   registerPermissionHook(hook: VscPermissionHook): () => void {
     return this.requireRunJSWorkspaceServerModule().registerPermissionHook(hook);
@@ -266,6 +276,7 @@ export class PluginJsTemplateServer extends Plugin {
       return;
     }
 
+    this.registerGitPreLogGuard();
     await this.requireRunJSWorkspaceServerModule().beforeLoad();
 
     if (this.options.packageName || db.hasCollection(JS_TEMPLATE_COLLECTIONS.projects)) {
@@ -287,9 +298,11 @@ export class PluginJsTemplateServer extends Plugin {
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterRunJSWriteAuditActionsWhenNeeded();
     this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
     const workspaceModule = this.requireRunJSWorkspaceServerModule();
     await workspaceModule.load();
+    this.registerRunJSWriteAuditActions();
     this.registerFlowEngineRunJSWorkspaceIntegration(workspaceModule);
     this.registerFlowEngineRunJSWorkspaceIntegrationListeners();
     this.registerExternalizationCapability(workspaceModule);
@@ -362,6 +375,7 @@ export class PluginJsTemplateServer extends Plugin {
       this.runtimeCompileService,
       createFromRemoteService,
       this.createJobStore,
+      (job, transaction) => this.authorizeCreateJob(job, transaction),
     );
     this.createJobRunner = new JsTemplateCreateJobRunner(
       this.createJobStore,
@@ -370,6 +384,7 @@ export class PluginJsTemplateServer extends Plugin {
         applicationName: this.app.name,
         eventQueue: this.app.eventQueue,
         logger: this.app.logger,
+        authorize: (job) => this.authorizeCreateJob(job),
       },
       this.auditService,
     );
@@ -462,6 +477,7 @@ export class PluginJsTemplateServer extends Plugin {
         permissionService: this.permissionService,
         applicationName: this.app.name,
         auditService: this.auditService,
+        runner: this.createJobRunner,
       }),
     );
     this.registerEntrySchemaHttpRoute();
@@ -476,6 +492,7 @@ export class PluginJsTemplateServer extends Plugin {
     this.domainAvailable = false;
     await this.shutdownCreateJobRunner();
     this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterRunJSWriteAuditActionsWhenNeeded();
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
@@ -487,6 +504,9 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   async afterEnable() {
+    if (this.createJobShutdownPromise) {
+      await this.createJobShutdownPromise;
+    }
     if (!this.createJobRunner || !this.compileWorkerPool) {
       await this.load();
     }
@@ -500,6 +520,7 @@ export class PluginJsTemplateServer extends Plugin {
     this.domainAvailable = false;
     await this.shutdownCreateJobRunner();
     this.unregisterExternalizationCapabilityWhenNeeded();
+    this.unregisterRunJSWriteAuditActionsWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
@@ -600,6 +621,16 @@ export class PluginJsTemplateServer extends Plugin {
     this.unregisterExternalizationCapability = undefined;
   }
 
+  private registerRunJSWriteAuditActions(): void {
+    this.unregisterRunJSWriteAuditActionsWhenNeeded();
+    this.unregisterRunJSWriteAuditActions = registerJsTemplateRunJSWriteAuditActions(this.app.auditManager, this.db);
+  }
+
+  private unregisterRunJSWriteAuditActionsWhenNeeded(): void {
+    this.unregisterRunJSWriteAuditActions?.();
+    this.unregisterRunJSWriteAuditActions = undefined;
+  }
+
   private removeJsTemplateResources(): void {
     const resourceManager = (this.app as unknown as AppWithPluginEvents).resourceManager;
     for (const resourceName of JS_TEMPLATE_RESOURCE_NAMES) {
@@ -630,6 +661,14 @@ export class PluginJsTemplateServer extends Plugin {
     }
     registerJsTemplateDomainAvailabilityGuard(this.app, () => this.domainAvailable, 'js-template-domain-availability');
     this.domainAvailabilityGuardRegistered = true;
+  }
+
+  private registerGitPreLogGuard() {
+    if (this.gitPreLogGuardRegistered) {
+      return;
+    }
+    registerJsTemplateGitPreLogGuard(this.app);
+    this.gitPreLogGuardRegistered = true;
   }
 
   private removeCompileShutdownListener() {
@@ -691,20 +730,42 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   private async startCreateJobRunner(): Promise<void> {
+    if (this.createJobShutdownPromise) {
+      await this.createJobShutdownPromise;
+    }
     if (!this.db?.hasCollection?.(JS_TEMPLATE_COLLECTIONS.createJobs)) {
       return;
     }
     await this.createJobRunner?.start();
   }
 
+  private async stopCreateJobRunner(runner: JsTemplateCreateJobRunner): Promise<void> {
+    await runner.stop();
+    if (this.createJobRunner === runner) {
+      this.createJobRunner = undefined;
+      this.createJobExecutor = undefined;
+      this.createJobStore = undefined;
+    }
+  }
+
   private async shutdownCreateJobRunner(): Promise<void> {
+    if (this.createJobShutdownPromise) {
+      await this.createJobShutdownPromise;
+      return;
+    }
     this.removeCreateJobLifecycleListeners();
     const runner = this.createJobRunner;
-    this.createJobRunner = undefined;
-    this.createJobExecutor = undefined;
-    this.createJobStore = undefined;
-    if (runner) {
-      await runner.stop();
+    if (!runner) {
+      return;
+    }
+    const shutdown = this.stopCreateJobRunner(runner);
+    this.createJobShutdownPromise = shutdown;
+    try {
+      await shutdown;
+    } finally {
+      if (this.createJobShutdownPromise === shutdown) {
+        this.createJobShutdownPromise = undefined;
+      }
     }
   }
 
@@ -726,6 +787,17 @@ export class PluginJsTemplateServer extends Plugin {
         ...jsTemplateCapabilitiesActionNames.map((action) => `jsTemplateCapabilities:${action}`),
       ],
     });
+  }
+
+  async authorizeCreateJob(
+    job: import('../shared/types').JsTemplateCreateJob,
+    transaction?: Transaction,
+  ): Promise<void> {
+    await authorizeJsTemplateCreateJob(
+      { db: this.db, authManager: this.app.authManager, acl: this.app.acl },
+      job,
+      transaction,
+    );
   }
 
   private registerSyncAcl(app: AppWithPluginEvents) {

@@ -22,7 +22,6 @@ export const JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY = '@nocobase/plugin-js-template
 
 export const JS_TEMPLATE_KIND_BY_MODEL_USE: Readonly<Record<string, JsTemplateKind>> = Object.freeze({
   JSBlockModel: 'js-block',
-  JSPageModel: 'js-page',
   JSFieldModel: 'js-field',
   JSEditableFieldModel: 'js-field',
   JSColumnModel: 'js-field',

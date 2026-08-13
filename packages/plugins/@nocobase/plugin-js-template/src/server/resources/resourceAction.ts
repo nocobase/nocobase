@@ -10,7 +10,7 @@
 import type { Context } from '@nocobase/actions';
 import type { HandlerType } from '@nocobase/resourcer';
 
-import { isJsTemplateError } from '../../shared/errors';
+import { isJsTemplateError, JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCanFunction } from '../services/JsTemplatePermissionService';
 import type { JsTemplateServiceContext } from '../services/JsTemplateProjectService';
 
@@ -103,17 +103,42 @@ export function getServiceContext(ctx: JsTemplateResourceContext): JsTemplateSer
   const metadata = getRequestMetadata(ctx);
   return {
     actorUserId: metadata.actorUserId,
+    sessionId: metadata.sessionId,
     can: ctx.can,
     currentUser: ctx.state?.currentUser || ctx.auth?.user,
     requestId: metadata.requestId,
     requestSource: metadata.requestSource,
     state: ctx.state,
+    currentRole: normalizeRole(ctx.state?.currentRole),
+    currentRoles: normalizeRoles(ctx.state?.currentRoles),
     timezone: ctx.timezone,
   };
 }
 
+export function requireCreateJobAuthorizationContext(ctx: JsTemplateServiceContext): {
+  authorizationRole: string;
+  authorizationRoles: string[];
+} {
+  const authorizationRole = normalizeRole(ctx.currentRole ?? ctx.state?.currentRole);
+  const currentRoles = normalizeRoles(ctx.currentRoles ?? ctx.state?.currentRoles);
+  if (!authorizationRole) {
+    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated role context is required');
+  }
+  const authorizationRoles =
+    authorizationRole === '__union__'
+      ? currentRoles
+      : currentRoles.includes(authorizationRole)
+        ? [authorizationRole]
+        : [];
+  if (!authorizationRoles.length) {
+    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated role context is invalid');
+  }
+  return { authorizationRole, authorizationRoles };
+}
+
 export function getRequestMetadata(ctx: JsTemplateResourceContext): {
   actorUserId: string | null;
+  sessionId: string | null;
   requestId?: string;
   requestSource?: string;
 } {
@@ -121,9 +146,27 @@ export function getRequestMetadata(ctx: JsTemplateResourceContext): {
 
   return {
     actorUserId: getCurrentUserId(ctx),
+    sessionId: getCurrentSessionId(ctx),
     requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
     requestSource: getHeader(headers, 'x-request-source'),
   };
+}
+
+function getCurrentSessionId(ctx: JsTemplateResourceContext): string | null {
+  const token = (ctx as JsTemplateResourceContext & { getBearerToken?: () => unknown }).getBearerToken?.();
+  if (typeof token !== 'string' || !token) {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as { jti?: unknown };
+    return typeof payload.jti === 'string' && payload.jti ? payload.jti : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getCurrentUserId(ctx: JsTemplateResourceContext): string | null {
@@ -157,4 +200,17 @@ function getHeader(headers: Record<string, string | string[] | undefined>, name:
   }
 
   return value;
+}
+
+function normalizeRole(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function normalizeRoles(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return [...new Set(value.map(normalizeRole).filter((role): role is string => Boolean(role)))].sort((left, right) =>
+    left.localeCompare(right),
+  );
 }

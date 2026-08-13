@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { JsTemplateCreateJobDismissResult, JsTemplateCreateJobListResult } from '../../shared/types';
+import type {
+  JsTemplateCreateJobDismissResult,
+  JsTemplateCreateJobListResult,
+  JsTemplateCreateJobSummary,
+} from '../../shared/types';
 import type { ApiClientLike } from './jsTemplatesRequests';
 import { unwrapResourceResponse } from './jsTemplatesRequests';
 
@@ -36,6 +40,28 @@ export async function dismissJsTemplateCreateJob(
 ): Promise<JsTemplateCreateJobDismissResult> {
   const response = await api.request<ResourceResponse<JsTemplateCreateJobDismissResult>>({
     url: 'jsTemplateCreateJobs:dismiss',
+    method: 'post',
+    data: { jobId: requireJobId(jobId) },
+    skipNotify: true,
+  });
+  return unwrapResourceResponse(response);
+}
+
+export async function getJsTemplateCreateJob(api: ApiClientLike, jobId: string): Promise<JsTemplateCreateJobSummary> {
+  return requestJsTemplateCreateJob(api, 'get', jobId);
+}
+
+export async function retryJsTemplateCreateJob(api: ApiClientLike, jobId: string): Promise<JsTemplateCreateJobSummary> {
+  return requestJsTemplateCreateJob(api, 'retry', jobId);
+}
+
+async function requestJsTemplateCreateJob(
+  api: ApiClientLike,
+  action: 'get' | 'retry',
+  jobId: string,
+): Promise<JsTemplateCreateJobSummary> {
+  const response = await api.request<ResourceResponse<JsTemplateCreateJobSummary>>({
+    url: `jsTemplateCreateJobs:${action}`,
     method: 'post',
     data: { jobId: requireJobId(jobId) },
     skipNotify: true,

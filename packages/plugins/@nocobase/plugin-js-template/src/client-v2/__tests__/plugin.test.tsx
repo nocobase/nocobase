@@ -21,9 +21,6 @@ import {
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
-  JSPageSourceModeField,
   PluginFlowEngine,
   RunJSEditorField,
 } from '@nocobase/client-v2';
@@ -43,7 +40,7 @@ import {
   JSActionJsTemplateSourceField,
   JSFieldJsTemplateSourceField,
   JSItemJsTemplateSourceField,
-  JSPageJsTemplateSourceField,
+  JSBlockJsTemplateSourceField,
 } from '../components/JSBlockJsTemplateSourceField';
 import {
   JS_TEMPLATE_EDITOR_PROVIDER_KEY,
@@ -137,7 +134,6 @@ describe('PluginJsTemplateClientV2', () => {
       [JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD]: expect.any(Function),
       [JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSFieldJsTemplateSourceField,
       [JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSItemJsTemplateSourceField,
-      [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSPageJsTemplateSourceField,
     });
     expectJsTemplateRegistrations(1);
     expectWorkspaceAuthoringRegistrations(1);
@@ -148,8 +144,6 @@ describe('PluginJsTemplateClientV2', () => {
     expect(app.pluginSettingsManager.has(`${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(false);
     expect(app.router.has(`admin.settings.${JS_TEMPLATE_SETTINGS_KEY}`)).toBe(false);
     expect(app.router.has(`admin.settings.${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(false);
-    expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(JSPageSourceModeField);
-    expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD]).toBeUndefined();
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeNull();
     expectWorkspaceAuthoringRegistrations(0);
     expect(getToolbarContributionKeys()).not.toContain(JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY);
@@ -160,9 +154,6 @@ describe('PluginJsTemplateClientV2', () => {
     expect(app.pluginSettingsManager.has(`${JS_TEMPLATE_SETTINGS_KEY}.index`)).toBe(true);
     expectJsTemplateRegistrations(1);
     expectWorkspaceAuthoringRegistrations(1);
-    expect(app.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
-      JSPageJsTemplateSourceField,
-    );
 
     await plugin.load();
     expectJsTemplateRegistrations(1);
@@ -231,30 +222,16 @@ describe('PluginJsTemplateClientV2', () => {
       expect(resolverB).not.toBe(resolverA);
       expect(editorProviderB).not.toBe(editorProviderA);
       expect(toolbarContributionB).not.toBe(toolbarContributionA);
-      expect(appA.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
-        JSPageSourceModeField,
-      );
-      expect(appB.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
-        JSPageJsTemplateSourceField,
-      );
-
       pluginA.dispose();
 
       expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBe(resolverB);
       expect(getJsTemplateEditorProvider()).toBe(editorProviderB);
       expect(getJsTemplateToolbarContribution()).toBe(toolbarContributionB);
       expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(true);
-      expect(appB.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
-        JSPageJsTemplateSourceField,
-      );
-
       pluginB.dispose();
 
       expectJsTemplateRegistrations(0);
       expect(ActionGroupModel.menuItemProviders.has(JS_TEMPLATE_MODEL_MENU_PROVIDER_KEY)).toBe(false);
-      expect(appB.flowEngine.flowSettings.components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(
-        JSPageSourceModeField,
-      );
     } finally {
       pluginA?.dispose();
       pluginB?.dispose();

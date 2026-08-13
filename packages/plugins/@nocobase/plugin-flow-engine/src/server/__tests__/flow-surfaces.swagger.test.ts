@@ -554,6 +554,59 @@ describe('flowSurfaces swagger', () => {
         settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
       }),
     ).toBe(true);
+    const validateComposeRecordAction = compileVariant(schemas.FlowSurfaceComposeRecordActionSpec);
+    expect(
+      validateComposeRecordAction({
+        type: 'js',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-action') },
+      }),
+    ).toBe(true);
+    expect(
+      validateComposeRecordAction({
+        type: 'js',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
+      }),
+    ).toBe(false);
+    const validateApprovalAction = compileVariant(schemas.FlowSurfaceApprovalBlueprintActionSpec);
+    expect(validateApprovalAction({ type: 'approvalSaveDraft' })).toBe(true);
+    const validateApprovalBlock = compileVariant(schemas.FlowSurfaceApprovalBlueprintBlockSpec);
+    expect(
+      validateApprovalBlock({
+        key: 'custom-approval-block',
+        type: 'jsBlock',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-block') },
+      }),
+    ).toBe(true);
+    expect(
+      validateApprovalBlock({
+        key: 'custom-approval-block',
+        type: 'jsBlock',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') },
+      }),
+    ).toBe(false);
+    const validateApplyBlueprintLayoutCell = compileVariant(schemas.FlowSurfaceApplyBlueprintLayoutCell);
+    expect(validateApplyBlueprintLayoutCell({ key: 'users', span: 12 })).toBe(true);
+    const validateApplyBlueprintField = compileVariant(schemas.FlowSurfaceApplyBlueprintFieldSpec);
+    expect(
+      validateApplyBlueprintField({
+        field: 'nickname',
+        renderer: 'js',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') },
+      }),
+    ).toBe(true);
+    expect(
+      validateApplyBlueprintField({
+        field: 'nickname',
+        renderer: 'js',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-item') },
+      }),
+    ).toBe(false);
+    expect(
+      validateApplyBlueprintField({
+        type: 'jsItem',
+        settings: { sourceMode: 'js-template', sourceBinding: sourceBinding('js-field') },
+      }),
+    ).toBe(false);
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.rules.description).toContain('Pass `[]` to clear');
     expect(schemas.FlowSurfaceSetFieldValueRulesRequest.properties.expectedFingerprint.description).toContain(
       '`getReactionMeta.capabilities[].fingerprint`',
@@ -2191,9 +2244,6 @@ describe('flowSurfaces swagger', () => {
     const createPageRequest =
       swaggerDocument.paths['/flowSurfaces:createPage'].post.requestBody.content['application/json'];
     expect(createPageRequest.example.menuRouteId).toBe(1002);
-    expect(swaggerDocument.paths['/flowSurfaces:createPage'].post.summary).toBe('Create JS page');
-    expect(createPageRequest.example.pageType).toBe('js-page');
-    expect(createPageRequest.example.idempotencyKey).toBe('employees-js-page-v1');
 
     const listNavigationTargets = swaggerDocument.paths['/flowSurfaces:listNavigationTargets'].post;
     expect(listNavigationTargets.description).toContain('capabilities.multiPortal=false');
@@ -2361,17 +2411,6 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCreatePageRequest.properties.layoutUid.description).toContain('existing route');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.portalUid.description).toContain('Mutually exclusive');
     expect(schemas.FlowSurfaceCreatePageRequest.properties.menuRouteId).toBeTruthy();
-    expect(schemas.FlowSurfaceCreatePageRequest.properties.pageType.enum).toEqual(['root-page', 'js-page']);
-    expect(schemas.FlowSurfaceCreatePageRequest.properties.idempotencyKey.minLength).toBe(1);
-    expect(schemas.FlowSurfaceCreatePageResult.properties.runJSLocator.$ref).toBe(
-      '#/components/schemas/FlowSurfaceRunJSLocator',
-    );
-    expect(schemas.FlowSurfaceCreatePageResult.properties.capabilities.$ref).toBe(
-      '#/components/schemas/FlowSurfaceJSPageCapabilities',
-    );
-    expect(schemas.FlowSurfaceJSPageCapabilities.properties.runJSWorkspace).toEqual({ type: 'boolean' });
-    expect(schemas.FlowSurfaceCreatePageResult.properties.workspaceStatus.enum).toEqual(['ready', 'pending', 'error']);
-    expect(schemas.FlowSurfaceCreatePageResult.properties.idempotentReplay.type).toBe('boolean');
     expect(schemas.FlowSurfaceRunJSLocator.required).toEqual([
       'kind',
       'modelUid',

@@ -11,9 +11,10 @@ import type { SnippetModule } from '../types';
 import { JSBlockRunJSContext } from '../../contexts/JSBlockRunJSContext';
 import { JSEditableFieldRunJSContext } from '../../contexts/JSEditableFieldRunJSContext';
 import { JSFieldRunJSContext } from '../../contexts/JSFieldRunJSContext';
+import { FormJSFieldItemRunJSContext } from '../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: [JSBlockRunJSContext, JSFieldRunJSContext, JSEditableFieldRunJSContext],
+  contexts: [JSBlockRunJSContext, JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSEditableFieldRunJSContext],
   prefix: 'sn-query-selector',
   label: 'Query selector',
   description: 'Find a child element inside rendered DOM using querySelector',

@@ -146,9 +146,6 @@ function collectRunJSSourceLocatorsForNodeTree(node: unknown): RunJSSourceLocato
         }
       });
     });
-    if (current.use === 'ChartBlockModel') {
-      locators.push({ kind: 'chart.option', modelUid }, { kind: 'chart.events', modelUid });
-    }
     const subModels = _.isPlainObject(current.subModels) ? (current.subModels as Record<string, unknown>) : {};
     Object.values(subModels).forEach((children) => {
       _.castArray(children).forEach(visit);

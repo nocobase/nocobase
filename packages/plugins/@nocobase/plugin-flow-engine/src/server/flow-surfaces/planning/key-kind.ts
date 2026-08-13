@@ -18,14 +18,13 @@ import {
 import { normalizeApprovalSemanticUse } from '../approval';
 import { throwBadRequest } from '../errors';
 import { isPopupHostUse } from '../placement';
-import { isRouteBackedPageUse } from '../page-surface-contract';
 import { isFieldNodeUse } from '../service-utils';
 import type { FlowSurfaceBindKey } from '../types';
 
 export function buildPlanKeyKind(node: any, resolvedKind?: string) {
   const use = String(node?.use || '').trim();
   const semanticUse = normalizeApprovalSemanticUse(use);
-  if (isRouteBackedPageUse(semanticUse) || resolvedKind === 'page') {
+  if (semanticUse === 'RootPageModel' || resolvedKind === 'page') {
     return 'page';
   }
   if (semanticUse === 'RootPageTabModel' || resolvedKind === 'tab') {

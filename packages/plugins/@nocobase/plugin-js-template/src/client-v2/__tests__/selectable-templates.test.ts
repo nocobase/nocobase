@@ -24,17 +24,23 @@ function registerSelectableCatalogCacheTests() {
     it('deduplicates concurrent full-catalog loads and filters the shared result locally', async () => {
       const request = vi
         .fn()
-        .mockResolvedValue(resourceResponse([createTemplate('jtt-block'), createTemplate('jtt-page', 'js-page')]));
+        .mockResolvedValue(
+          resourceResponse([
+            createTemplate('jtt-block'),
+            createTemplate('jtt-field', 'js-field'),
+            createTemplate('jtt-other-project', 'js-block', { projectId: 'jtp-2' }),
+          ]),
+        );
       const api = createApi(request);
 
-      const [blocks, pages, projectTemplates] = await Promise.all([
+      const [blocks, fields, projectTemplates] = await Promise.all([
         listSelectableJsTemplates(api, { kind: 'js-block' }),
-        listSelectableJsTemplates(api, { kind: 'js-page' }),
+        listSelectableJsTemplates(api, { kind: 'js-field' }),
         listSelectableJsTemplates(api, { projectId: 'jtp-1' }),
       ]);
 
-      expect(blocks.map((template) => template.id)).toEqual(['jtt-block']);
-      expect(pages.map((template) => template.id)).toEqual(['jtt-page']);
+      expect(blocks.map((template) => template.id)).toEqual(['jtt-block', 'jtt-other-project']);
+      expect(fields.map((template) => template.id)).toEqual(['jtt-field']);
       expect(projectTemplates).toHaveLength(2);
       expect(request).toHaveBeenCalledTimes(1);
       expect(request).toHaveBeenCalledWith({ url: 'jsTemplates:listSelectable', method: 'post' });
@@ -86,10 +92,14 @@ function registerSelectableCatalogCacheTests() {
     };
   }
 
-  function createTemplate(id: string, kind = 'js-block', labels: { projectName?: string; projectTitle?: string } = {}) {
+  function createTemplate(
+    id: string,
+    kind = 'js-block',
+    labels: { projectId?: string; projectName?: string; projectTitle?: string } = {},
+  ) {
     return {
       id,
-      projectId: 'jtp-1',
+      projectId: labels.projectId || 'jtp-1',
       ...labels,
       kind,
       templateName: id,

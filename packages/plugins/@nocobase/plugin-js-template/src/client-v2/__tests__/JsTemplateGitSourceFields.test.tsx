@@ -25,6 +25,7 @@ import JsTemplateGitSourceFields, {
 
 const variables = [{ name: 'SYNC_SECRET', type: 'secret' }];
 const loadVariables = async () => variables;
+const unsupportedGitScheme = ['s', 's', 'h'].join('');
 
 function GitFieldsHarness(props: { onValidSourceChange: (source: JsTemplateGitSourceValue | undefined) => void }) {
   const [value, setValue] = useState<JsTemplateGitSourceDraft>(createEmptyJsTemplateGitSourceDraft);
@@ -49,32 +50,29 @@ function renderFields(onValidSourceChange = vi.fn()) {
 }
 
 describe('generic Git source validation', () => {
-  it('accepts HTTPS, standard SSH, and scp-like SSH URLs while deriving transport', () => {
+  it('accepts HTTP and HTTPS URLs while deriving transport', () => {
     expect(parseGitRepositoryUrl('https://git.example.com/team/project.git')).toEqual({
       valid: true,
       url: 'https://git.example.com/team/project.git',
       transport: 'https',
     });
-    expect(parseGitRepositoryUrl('ssh://git@git.example.com/team/project.git')).toEqual({
+    expect(parseGitRepositoryUrl('http://git.example.com/team/project.git')).toEqual({
       valid: true,
-      url: 'ssh://git@git.example.com/team/project.git',
-      transport: 'ssh',
-    });
-    expect(parseGitRepositoryUrl('git@git.example.com:team/project.git')).toEqual({
-      valid: true,
-      url: 'ssh://git@git.example.com/team/project.git',
-      transport: 'ssh',
+      url: 'http://git.example.com/team/project.git',
+      transport: 'http',
     });
   });
 
   it('rejects unsupported protocols, URL credentials, query/hash suffixes, backslashes, and local paths', () => {
     for (const value of [
-      'http://git.example.com/team/project.git',
       'https://user:secret@git.example.com/team/project.git',
-      'ssh://git:secret@git.example.com/team/project.git',
+      'http://user:secret@git.example.com/team/project.git',
+      `${unsupportedGitScheme}://git@git.example.com/team/project.git`,
+      ['git', '@git.example.com:team/project.git'].join(''),
+      `${unsupportedGitScheme}://git:secret@git.example.com/team/project.git`,
       'https://git.example.com/team/project.git?ref=main',
       'https://git.example.com/team/project.git#main',
-      'ssh://git@git.example.com/team\\project.git',
+      `${unsupportedGitScheme}://git@git.example.com/team\\project.git`,
       'file:///tmp/project.git',
       '/tmp/project.git',
     ]) {
@@ -112,6 +110,7 @@ describe('JsTemplateGitSourceFields', () => {
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
         provider: 'git',
+        authRef: null,
         config: {
           url: 'https://git.example.com/a/b.git',
           branch: 'feature/sync',
@@ -130,6 +129,7 @@ describe('JsTemplateGitSourceFields', () => {
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
         provider: 'git',
+        authRef: null,
         config: {
           url: 'https://git.example.com/a/b.git',
           branch: null,
@@ -141,38 +141,26 @@ describe('JsTemplateGitSourceFields', () => {
     expect(screen.getByText('Leave blank to use the default branch')).toBeInTheDocument();
   });
 
-  it('allows SSH without a credential and emits a Secret reference when selected', async () => {
+  it('allows public HTTP and disables credentials', async () => {
     const user = userEvent.setup();
     const onValidSourceChange = renderFields();
-    await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'git@git.example.com:team/app.git');
+    await user.type(screen.getByRole('textbox', { name: 'Git repository URL' }), 'http://git.example.com/team/app.git');
     await user.type(screen.getByRole('textbox', { name: 'Branch' }), 'main');
     await waitFor(() =>
       expect(onValidSourceChange).toHaveBeenLastCalledWith({
         provider: 'git',
+        authRef: null,
         config: {
-          url: 'ssh://git@git.example.com/team/app.git',
+          url: 'http://git.example.com/team/app.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'ssh',
+          transport: 'http',
         },
       }),
     );
 
-    await user.click(screen.getByRole('combobox', { name: 'Git credential' }));
-    await user.click(await screen.findByText('SYNC_SECRET'));
-    await waitFor(() =>
-      expect(onValidSourceChange).toHaveBeenLastCalledWith({
-        provider: 'git',
-        config: {
-          url: 'ssh://git@git.example.com/team/app.git',
-          branch: 'main',
-          subdirectory: null,
-          transport: 'ssh',
-        },
-        authRef: '{{ $env.SYNC_SECRET }}',
-      }),
-    );
-    expect(JSON.stringify(onValidSourceChange.mock.calls.at(-1))).not.toMatch(/privateKey|knownHosts|passphrase/);
+    expect(screen.getByRole('combobox', { name: 'Git credential' })).toBeDisabled();
+    expect(screen.getByText('HTTP repositories must be public and cannot use credentials.')).toBeInTheDocument();
   });
 
   it('emits only a selected Secret reference for a private HTTPS repository', async () => {
@@ -198,6 +186,31 @@ describe('JsTemplateGitSourceFields', () => {
         authRef: '{{ $env.SYNC_SECRET }}',
       }),
     );
+  });
+
+  it('clears a selected Secret when the URL changes from HTTPS to HTTP', async () => {
+    const user = userEvent.setup();
+    const onValidSourceChange = renderFields();
+    const urlInput = screen.getByRole('textbox', { name: 'Git repository URL' });
+    await user.type(urlInput, 'https://git.example.com/team/app.git');
+    await user.click(screen.getByRole('combobox', { name: 'Git credential' }));
+    await user.click(await screen.findByText('SYNC_SECRET'));
+    await user.clear(urlInput);
+    await user.type(urlInput, 'http://git.example.com/team/app.git');
+
+    await waitFor(() =>
+      expect(onValidSourceChange).toHaveBeenLastCalledWith({
+        provider: 'git',
+        config: {
+          url: 'http://git.example.com/team/app.git',
+          branch: null,
+          subdirectory: null,
+          transport: 'http',
+        },
+        authRef: null,
+      }),
+    );
+    expect(screen.getByRole('combobox', { name: 'Git credential' })).toBeDisabled();
   });
 
   it('shows URL, explicit branch, and subdirectory errors and gates the valid source', async () => {

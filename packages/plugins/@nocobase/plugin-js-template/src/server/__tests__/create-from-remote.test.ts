@@ -97,6 +97,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
     const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
     const applyPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'applyPreparedInitialWorkspace');
     const assertCurrentClaim = vi.fn(async () => undefined);
+    const authorize = vi.fn(async () => undefined);
     const result = await service.create(
       {
         name: 'Remote Sales KPI',
@@ -111,6 +112,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
         targetProjectId: 'jtp_durable_target',
         creationJobId: 'jtcj_git_durable',
         assertCurrentClaim,
+        authorize,
       },
     );
     const internalProject = await projectService.getInternalProject(result.project.id);
@@ -128,6 +130,7 @@ describe('JsTemplateCreateFromRemoteService', () => {
     expect(prepareInitialWorkspace.mock.calls[0][1]?.transaction).toBeUndefined();
     expect(applyPreparedInitialWorkspace.mock.calls[0][2].transaction).toBeDefined();
     expect(assertCurrentClaim).toHaveBeenCalledWith(expect.anything());
+    expect(authorize).toHaveBeenCalledTimes(2);
     expect(internalProject.creationJobId).toBe('jtcj_git_durable');
     expect(result.project).not.toHaveProperty('creationJobId');
     expect(result).toMatchObject({
@@ -161,7 +164,62 @@ describe('JsTemplateCreateFromRemoteService', () => {
     expect(JSON.stringify(auditLogs.map((log) => log.toJSON()))).not.toContain('GIT_SYNC');
   });
 
-  it.skipIf(process.env.RUN_JS_TEMPLATE_GITHUB_SSH_E2E !== '1')(
+  it.each(['first-write', 'final-transaction'] as const)(
+    'rolls back Git creation when authorization is revoked at the %s fence',
+    async (revocationPoint) => {
+      const counts = await persistenceCounts();
+      const prepareInitialWorkspace = vi.spyOn(runtimeCompileService, 'prepareInitialWorkspace');
+      const applyPreparedInitialWorkspace = vi.spyOn(runtimeCompileService, 'applyPreparedInitialWorkspace');
+      const establishInitialBaseline = vi.spyOn(runtime, 'establishInitialBaseline');
+      const recordSyncEvent = vi.spyOn(auditService, 'recordSyncEvent');
+      const assertCurrentClaim = vi.fn(async () => undefined);
+      const markFinalizePending = vi.fn(async () => undefined);
+      const authorize = vi.fn(async () => {
+        const revocationCall = revocationPoint === 'first-write' ? 1 : 2;
+        if (authorize.mock.calls.length === revocationCall) {
+          throw new Error(`authorization revoked at ${revocationPoint}`);
+        }
+      });
+
+      await expect(
+        service.create(
+          {
+            name: `Git Authorization ${revocationPoint}`,
+            provider: 'git',
+            config: remoteConfig,
+            authRef: null,
+          },
+          { requestId: `req_git_authorization_${revocationPoint}` },
+          {
+            targetProjectId: `jtp_git_authorization_${revocationPoint}`,
+            creationJobId: `jtcj_git_authorization_${revocationPoint}`,
+            assertCurrentClaim,
+            markFinalizePending,
+            authorize,
+          },
+        ),
+      ).rejects.toThrow(`authorization revoked at ${revocationPoint}`);
+
+      expect(prepareInitialWorkspace).toHaveBeenCalledOnce();
+      if (revocationPoint === 'first-write') {
+        expect(applyPreparedInitialWorkspace).not.toHaveBeenCalled();
+        expect(establishInitialBaseline).not.toHaveBeenCalled();
+        expect(assertCurrentClaim).toHaveBeenCalledOnce();
+        expect(authorize).toHaveBeenCalledOnce();
+      } else {
+        expect(applyPreparedInitialWorkspace).toHaveBeenCalledOnce();
+        expect(establishInitialBaseline).toHaveBeenCalledOnce();
+        expect(assertCurrentClaim).toHaveBeenCalledTimes(2);
+        expect(authorize).toHaveBeenCalledTimes(2);
+      }
+      expect(markFinalizePending).not.toHaveBeenCalled();
+      expect(recordSyncEvent).not.toHaveBeenCalled();
+      expect(authorize.mock.calls.every(([transaction]) => Boolean(transaction))).toBe(true);
+      await expect(persistenceCounts()).resolves.toEqual(counts);
+    },
+  );
+
+  it.skipIf(process.env.RUN_JS_TEMPLATE_GITHUB_HTTPS_E2E !== '1')(
     'imports and compiles all templates from gchust/nocobase-js-template at 6fd1c4f8',
     async () => {
       const registry = new RemoteSyncAdapterRegistry();

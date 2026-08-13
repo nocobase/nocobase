@@ -32,7 +32,7 @@ export interface JsTemplateGitSourceDraft {
 export interface JsTemplateGitSourceValue {
   provider: 'git';
   config: VscGitRemoteConfigDraft;
-  authRef?: string;
+  authRef: string | null;
 }
 
 export type GitRepositoryUrlResult =
@@ -114,7 +114,13 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
   const subdirectoryValidation = useMemo(() => validateGitSubdirectory(value.subdirectory), [value.subdirectory]);
 
   const validSource = useMemo<JsTemplateGitSourceValue | undefined>(() => {
-    if (!urlResult.valid || !branchValidation.valid || !subdirectoryValidation.valid || !authValidation.valid) {
+    if (
+      !urlResult.valid ||
+      !branchValidation.valid ||
+      !subdirectoryValidation.valid ||
+      !authValidation.valid ||
+      (urlResult.transport === 'http' && Boolean(authValidation.authRef))
+    ) {
       return undefined;
     }
 
@@ -126,7 +132,7 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
         subdirectory: subdirectoryValidation.subdirectory,
         transport: urlResult.transport,
       },
-      ...(authValidation.authRef ? { authRef: authValidation.authRef } : {}),
+      authRef: authValidation.authRef || null,
     };
   }, [authValidation, branchValidation, subdirectoryValidation, urlResult]);
 
@@ -143,6 +149,19 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
       onChange({ ...value, [field]: nextValue });
     },
     [onChange, value],
+  );
+
+  const updateUrl = useCallback(
+    (nextUrl: string) => {
+      const parsed = parseGitRepositoryUrl(nextUrl);
+      if (parsed.valid && parsed.transport === 'http' && value.authRef) {
+        setAuthValidation({ valid: true });
+        onChange({ ...value, url: nextUrl, authRef: '' });
+        return;
+      }
+      updateField('url', nextUrl);
+    },
+    [onChange, updateField, value],
   );
 
   const urlError = urlTouched && 'reason' in urlResult ? getRepositoryUrlError(urlResult.reason, t) : undefined;
@@ -162,8 +181,8 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
           aria-label={t('Git repository URL')}
           disabled={disabled}
           onBlur={() => setUrlTouched(true)}
-          onChange={(event) => updateField('url', event.target.value)}
-          placeholder={t('HTTPS or SSH Git repository URL')}
+          onChange={(event) => updateUrl(event.target.value)}
+          placeholder={t('HTTP or HTTPS Git repository URL')}
           status={urlError ? 'error' : undefined}
           value={value.url}
         />
@@ -201,15 +220,15 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
       </Form.Item>
       <Form.Item
         extra={
-          urlResult.valid && urlResult.transport === 'ssh'
-            ? t("Optional. Leave blank to use the NocoBase process user's SSH configuration.")
+          urlResult.valid && urlResult.transport === 'http'
+            ? t('HTTP repositories must be public and cannot use credentials.')
             : t('Optional for public repositories. Choose a Secret variable.')
         }
         label={t('Git credential')}
       >
         <JsTemplateCredentialInput
           aria-label={t('Git credential')}
-          disabled={disabled}
+          disabled={disabled || (urlResult.valid && urlResult.transport === 'http')}
           loadEnvironmentVariables={loadEnvironmentVariables}
           onChange={(nextValue) => {
             setAuthValidation(nextValue.trim() ? { valid: false } : { valid: true });

@@ -116,18 +116,11 @@ const JS_TEMPLATE_SHARED_ROOT = 'src/shared';
 const JS_TEMPLATE_PROJECT_ROOT_FILE_PATHS = ['README.md', 'tsconfig.json'] as const;
 const JS_TEMPLATE_PROJECT_ROOT_FILES = new Set<string>(JS_TEMPLATE_PROJECT_ROOT_FILE_PATHS);
 const JS_TEMPLATE_CLIENT_KIND_TEMPLATE_FILES = [
-  'src/client/js-pages/hello-page/index.tsx',
-  'src/client/js-pages/hello-page/entry.json',
   'src/client/js-fields/status-tag/index.tsx',
   'src/client/js-actions/refresh-data/index.ts',
   'src/client/js-items/form-total-preview/index.tsx',
 ] as const;
-const JS_TEMPLATE_CLIENT_KIND_ROOTS = [
-  'src/client/js-pages',
-  'src/client/js-fields',
-  'src/client/js-actions',
-  'src/client/js-items',
-] as const;
+const JS_TEMPLATE_CLIENT_KIND_ROOTS = ['src/client/js-fields', 'src/client/js-actions', 'src/client/js-items'] as const;
 const DEFAULT_NEW_FILE_NAME = 'helper';
 const DEFAULT_NEW_FILE_EXTENSION = '.ts';
 const HISTORY_PAGE_SIZE = 20;
@@ -1419,7 +1412,7 @@ function redactJsTemplateDiagnosticMessage(
   workspaceScope: Extract<JsTemplateWorkspaceScope, { mode: 'template' }>,
 ): string {
   return message.replace(
-    /src[\\/]client[\\/](?:js-actions|js-blocks|js-fields|js-items|js-pages)[\\/][^\s"'`()[\]{}:,;]+/g,
+    /src[\\/]client[\\/](?:js-actions|js-blocks|js-fields|js-items)[\\/][^\s"'`()[\]{}:,;]+/g,
     (path) => (canReadJsTemplateWorkspacePathForAI(workspaceScope, path) ? path : '[redacted JS Template path]'),
   );
 }

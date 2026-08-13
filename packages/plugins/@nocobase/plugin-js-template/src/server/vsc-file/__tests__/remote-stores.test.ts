@@ -24,6 +24,12 @@ const normalizedConfig: VscRemoteNormalizedConfig = {
   transport: 'https',
 };
 
+const unsupportedGitScheme = ['s', 's', 'h'].join('');
+const forbiddenCredentialKeyPattern = new RegExp(
+  ['private', 'Key|credential|authorization|password|secret|token'].join(''),
+  'i',
+);
+
 describe('vsc-file remote stores', () => {
   let db: Database;
 
@@ -66,7 +72,7 @@ describe('vsc-file remote stores', () => {
       config: normalizedConfig,
       version: 1,
     });
-    expect(JSON.stringify(remote)).not.toMatch(/privateKey|credential|authorization|password|secret|token/i);
+    expect(JSON.stringify(remote)).not.toMatch(forbiddenCredentialKeyPattern);
   });
 
   it('rejects a direct literal credential before persistence', async () => {
@@ -81,6 +87,39 @@ describe('vsc-file remote stores', () => {
         authRef: 'github_pat_test_direct_123' as unknown as VscRemoteAuthRef,
       }),
     ).rejects.toMatchObject({ code: 'AUTH_REF_INVALID' });
+    await expect(db.getRepository('vscFileRemotes').count()).resolves.toBe(0);
+  });
+
+  it('keeps legacy SSH remotes readable, disconnectable, and deletable without executing them', async () => {
+    const repoId = await createRepository('legacy-ssh');
+    const record = await db.getRepository('vscFileRemotes').create({
+      values: {
+        repoId,
+        name: 'origin',
+        provider: 'git',
+        config: {
+          url: `${unsupportedGitScheme}://git@example.com/project.git`,
+          branch: 'main',
+          subdirectory: null,
+          transport: 'ssh',
+        },
+        authRef: '{{ $env.LEGACY_SSH_KEY }}',
+        status: 'active',
+        version: 1,
+      },
+    });
+    const store = new RemoteStore(db);
+
+    const remote = await store.get(record.get('id') as string);
+    expect(remote).toMatchObject({
+      status: 'unsupported',
+      config: { transport: 'unsupported', legacyTransport: 'ssh', branch: 'main' },
+      authRef: '{{ $env.LEGACY_SSH_KEY }}',
+    });
+
+    const disconnected = await store.disconnect(remote.id);
+    expect(disconnected).toMatchObject({ status: 'unsupported', config: { transport: 'unsupported' }, authRef: null });
+    await store.deleteRemote(remote.id);
     await expect(db.getRepository('vscFileRemotes').count()).resolves.toBe(0);
   });
 

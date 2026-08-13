@@ -23,5 +23,4 @@ export * from './PageModel';
 export * from './PopupActionModel';
 export * from './RecordActionModel';
 export * from './RouteModel';
-export * from './resolveRoutePageModelClass';
 //

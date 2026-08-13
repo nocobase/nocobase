@@ -355,10 +355,21 @@ export function JsTemplateSyncDrawer(props: JsTemplateSyncDrawerProps) {
 
             {loadState === 'ready' && source && plan ? (
               <>
+                {source.status === 'unsupported' ? (
+                  <Alert
+                    description={t('Legacy SSH sync sources can only be disconnected or replaced with HTTP/HTTPS.')}
+                    message={t('Legacy SSH sync source is unsupported')}
+                    role="alert"
+                    showIcon
+                    type="warning"
+                  />
+                ) : null}
                 <Descriptions bordered column={1} size="small">
                   <Descriptions.Item label={t('Provider')}>Git</Descriptions.Item>
                   <Descriptions.Item label={t('Git repository URL')}>{source.config.url}</Descriptions.Item>
-                  <Descriptions.Item label={t('Transport')}>{source.config.transport.toUpperCase()}</Descriptions.Item>
+                  <Descriptions.Item label={t('Transport')}>
+                    {source.config.transport === 'unsupported' ? 'SSH' : source.config.transport.toUpperCase()}
+                  </Descriptions.Item>
                   <Descriptions.Item label={t('Branch')}>
                     {source.config.branch || t('Default branch')}
                   </Descriptions.Item>
@@ -402,21 +413,21 @@ export function JsTemplateSyncDrawer(props: JsTemplateSyncDrawerProps) {
 
                 <Space wrap>
                   <Button
-                    disabled={actionsDisabled}
+                    disabled={actionsDisabled || source.status === 'unsupported'}
                     loading={currentProjectOperation === 'testConnection'}
                     onClick={runTestConnection}
                   >
                     {t('Test connection')}
                   </Button>
                   <Button
-                    disabled={!canPull}
+                    disabled={!canPull || source.status === 'unsupported'}
                     loading={currentProjectOperation === 'pull'}
                     onClick={() => runSyncOperation('pull')}
                   >
                     {t('Pull from Git')}
                   </Button>
                   <Button
-                    disabled={!canPush}
+                    disabled={!canPush || source.status === 'unsupported'}
                     loading={currentProjectOperation === 'push'}
                     onClick={confirmPush}
                     type="primary"

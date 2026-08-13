@@ -10,7 +10,6 @@
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
 import { mobileOpenView } from './mobileOpenViewAction';
-import { registerMobileJSPageRunJSContext } from './mobileJSPageRunJSContext';
 import { registerMobilePageModelResolution } from './mobilePageModelResolution';
 import { MobileMenuSettingsIconPicker } from './models/MobileMenuComponents';
 
@@ -29,9 +28,6 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileChildPageModel: {
         loader: () => import('./models/MobilePageModels'),
       },
-      MobileJSPageModel: {
-        loader: () => import('./models/MobilePageModels'),
-      },
     });
     this.app.flowEngine.registerActions({
       openView: mobileOpenView,
@@ -40,7 +36,6 @@ export class PluginUiLayoutClientV2 extends Plugin<Record<string, never>, Applic
       MobileMenuSettingsIconPicker,
     });
     registerMobilePageModelResolution();
-    registerMobileJSPageRunJSContext();
   }
 }
 

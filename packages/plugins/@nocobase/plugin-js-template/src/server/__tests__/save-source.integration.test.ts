@@ -482,9 +482,9 @@ describe('plugin-js-template saveSource runtime compile', () => {
     expect(persisted.files?.find((file) => file.path.endsWith('/index.tsx'))?.content).toBe(canonicalContent);
   });
 
-  it('persists and resolves an immutable JS Page render artifact', async () => {
+  it('persists and resolves an immutable JS Block render artifact', async () => {
     const descriptor = {
-      path: 'src/client/js-pages/orders/entry.json',
+      path: 'src/client/js-blocks/orders/entry.json',
       content: JSON.stringify({
         schemaVersion: 1,
         key: 'orders',
@@ -495,12 +495,12 @@ describe('plugin-js-template saveSource runtime compile', () => {
       language: 'json',
     };
     const repo = await projectService.createProject({
-      name: 'JS Page Runtime',
+      name: 'JS Block Runtime',
       initialFiles: [
         descriptor,
         {
-          path: 'src/client/js-pages/orders/index.tsx',
-          content: 'ctx.render(ctx.page.uid);\n',
+          path: 'src/client/js-blocks/orders/index.tsx',
+          content: 'ctx.render(String(ctx.record?.id ?? ""));\n',
           language: 'typescript',
         },
       ],
@@ -508,7 +508,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
 
     const result = await saveCurrentSource({
       projectId: repo.id,
-      message: 'compile js page runtime',
+      message: 'compile JS Block runtime',
       files: [
         {
           path: 'src/shared/format.ts',
@@ -516,9 +516,9 @@ describe('plugin-js-template saveSource runtime compile', () => {
           language: 'typescript',
         },
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content:
-            'import { format } from "../../../shared/format";\nctx.render(format(ctx.page.uid, String(ctx.settings.title)));\n',
+            'import { format } from "../../../shared/format";\nctx.render(format(String(ctx.record?.id ?? ""), String(ctx.settings.title)));\n',
           language: 'typescript',
         },
       ],
@@ -531,19 +531,19 @@ describe('plugin-js-template saveSource runtime compile', () => {
         type: 'js-template-entry',
         projectId: repo.id,
         templateId: compiled.templateId,
-        kind: 'js-page',
+        kind: 'js-block',
       },
       settings: { title: 'Orders' },
     });
     const artifact = await runtimeService.getArtifact(runtime.artifactHash);
 
     expect(result).toMatchObject({ compile: { status: 'success' }, diagnostics: [] });
-    expect(entry?.get('kind')).toBe('js-page');
+    expect(entry?.get('kind')).toBe('js-block');
     expect(entry?.get('surfaceStyle')).toBe('render');
     expect(entry?.get('runtimeArtifact')).toMatchObject({
       version: 'v2',
-      entryPath: 'src/client/js-pages/orders/index.tsx',
-      metadata: expect.objectContaining({ kind: 'js-page', modelUse: 'JSPageModel' }),
+      entryPath: 'src/client/js-blocks/orders/index.tsx',
+      metadata: expect.objectContaining({ kind: 'js-block', modelUse: 'JSBlockModel' }),
     });
     expect(runtime).toMatchObject({
       templateId: compiled.templateId,
@@ -553,7 +553,7 @@ describe('plugin-js-template saveSource runtime compile', () => {
     });
     expect(runtime).not.toHaveProperty('code');
     expect(artifact).toMatchObject({
-      entryPath: 'src/client/js-pages/orders/index.tsx',
+      entryPath: 'src/client/js-blocks/orders/index.tsx',
       runtimeContract: 'js-template.artifact.v1',
     });
   });

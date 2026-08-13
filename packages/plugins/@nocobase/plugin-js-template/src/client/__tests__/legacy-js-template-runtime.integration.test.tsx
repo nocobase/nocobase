@@ -28,7 +28,6 @@ import {
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
   PluginFlowEngine,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
@@ -43,7 +42,6 @@ import {
   JSBlockJsTemplateSourceField,
   JSFieldJsTemplateSourceField,
   JSItemJsTemplateSourceField,
-  JSPageJsTemplateSourceField,
 } from '../../client-v2/components/JSBlockJsTemplateSourceField';
 import PluginJsTemplateClient from '..';
 import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
@@ -102,7 +100,6 @@ describe('JS Template legacy admin-shell integration', () => {
       [JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSBlockJsTemplateSourceField,
       [JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSFieldJsTemplateSourceField,
       [JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSItemJsTemplateSourceField,
-      [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSPageJsTemplateSourceField,
     });
     expect(RunJSEditorRegistry.getProviders()).toContainEqual(runJSStudioProvider);
     expect(RunJSEditorRegistry.getProviders().map((provider) => provider.key)).toContain('js-template-runjs-value');

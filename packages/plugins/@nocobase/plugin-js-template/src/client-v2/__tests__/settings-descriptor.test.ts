@@ -117,10 +117,10 @@ function registerSettingsDescriptorCacheTests() {
           settingsSchema: createMessageSchema('D'),
         }),
         createTemplate({
-          kind: 'js-page',
+          kind: 'js-field',
           templateId: 'jtt_sales_primary',
-          schemaHash: 'sales-page',
-          settingsSchema: createMessageSchema('Page'),
+          schemaHash: 'sales-field',
+          settingsSchema: createMessageSchema('Field'),
         }),
       ];
       const request = vi.fn(async () => resourceResponse(templates));
@@ -138,9 +138,9 @@ function registerSettingsDescriptorCacheTests() {
       await expect(getDescriptor(resolver, {}, 'jtp_sales', 'jtt_sales_action', 'js-action')).resolves.toMatchObject({
         settingsSchemaHash: 'sales-action',
       });
-      await expect(getDescriptor(resolver, {}, 'jtp_sales', 'jtt_sales_primary', 'js-page')).resolves.toMatchObject({
-        settingsSchemaHash: 'sales-page',
-        defaults: { message: 'Page' },
+      await expect(getDescriptor(resolver, {}, 'jtp_sales', 'jtt_sales_primary', 'js-field')).resolves.toMatchObject({
+        settingsSchemaHash: 'sales-field',
+        defaults: { message: 'Field' },
       });
       expect(request).toHaveBeenCalledTimes(1);
     });
@@ -450,7 +450,7 @@ function registerSettingsDescriptorMutationTests() {
       await expect(listSelectableJsTemplates(mocks.api)).resolves.toMatchObject([{ id: 'jtt-1' }]);
 
       await act(async () => {
-        await result.current.createProject({ name: 'sales' });
+        await result.current.createProject({ idempotencyKey: 'create-sales-1', name: 'sales' });
       });
       await expect(listSelectableJsTemplates(mocks.api)).resolves.toMatchObject([{ id: 'jtt-1' }]);
 

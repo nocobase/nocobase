@@ -27,7 +27,7 @@ import {
   RUNJS_SETTINGS_CONDITION_LOGICS,
   RUNJS_SETTINGS_CONDITION_OPERATORS,
 } from '@nocobase/runjs/settings';
-import type { Application } from '@nocobase/server';
+import { AuditManager, type Application } from '@nocobase/server';
 import { createHash } from 'crypto';
 import { vi } from 'vitest';
 
@@ -78,7 +78,7 @@ describe('entry descriptor schema', () => {
       templateSchemaUri: JS_TEMPLATE_SCHEMA_URI,
       templateSchemaSha256: jsTemplateV1SchemaSha256,
     });
-    expect(capabilities.supportedKinds).toEqual(['js-block', 'js-page', 'js-field', 'js-action', 'js-item']);
+    expect(capabilities.supportedKinds).toEqual(['js-block', 'js-field', 'js-action', 'js-item']);
     expect(capabilities.allowedPaths.templates.runjs).toBeUndefined();
     expect(capabilities.allowedPaths.project).not.toContain('src/client/runjs/**');
     expect(JSON.stringify(capabilities)).not.toMatch(/meta\.json|settings\.json|\$not"/u);
@@ -90,7 +90,7 @@ describe('entry descriptor schema', () => {
     const app = {
       db: {} as Database,
       acl,
-      auditManager: { registerActions: vi.fn() },
+      auditManager: new AuditManager(),
       pm: { get: vi.fn(() => null), getPlugins: vi.fn(() => new Map()) },
       resourceManager: { define: vi.fn(), options: { prefix: '/api' } },
       on: vi.fn(),

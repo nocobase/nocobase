@@ -93,10 +93,12 @@ function JsTemplateSourceProjectsPageInner() {
     error: createJobsError,
     addAcceptedJob,
     dismiss: dismissCreateJob,
+    retry: retryCreateJob,
   } = useJsTemplateCreateJobs();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm<CreateProjectFormValues>();
   const [editForm] = Form.useForm<EditProjectFormValues>();
+  const createAttemptRef = useRef<{ fingerprint: string; idempotencyKey: string } | null>(null);
   const [projects, setProjects] = useState<JsTemplateProject[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(searchParams.get('projectId'));
   const [loading, setLoading] = useState(false);
@@ -314,6 +316,17 @@ function JsTemplateSourceProjectsPageInner() {
     [dismissCreateJob, t],
   );
 
+  const retryFailedCreateJob = useCallback(
+    async (jobId: string) => {
+      try {
+        await retryCreateJob(jobId);
+      } catch {
+        setNotice({ type: 'error', message: t('Failed to retry creation task') });
+      }
+    },
+    [retryCreateJob, t],
+  );
+
   useEffect(() => {
     const projectId = searchParams.get('projectId');
     if (projectId !== selectedProjectId) {
@@ -450,15 +463,24 @@ function JsTemplateSourceProjectsPageInner() {
         title: values.title.trim(),
         description: values.description?.trim() || null,
       };
+      const requestFingerprint = JSON.stringify({ metadata, createSource });
+      const currentAttempt = createAttemptRef.current;
+      const idempotencyKey =
+        currentAttempt?.fingerprint === requestFingerprint
+          ? currentAttempt.idempotencyKey
+          : createJsTemplateCreateJobIdempotencyKey();
+      createAttemptRef.current = { fingerprint: requestFingerprint, idempotencyKey };
       const acceptedJob =
         createSource.mode === 'git'
           ? await createFromGitRequest({
+              idempotencyKey,
               ...metadata,
               provider: createSource.provider,
               config: createSource.config,
               ...(createSource.authRef ? { authRef: createSource.authRef } : {}),
             })
           : await createProjectRequest({
+              idempotencyKey,
               ...metadata,
               ...(createSource.mode === 'zip' ? { zipBase64: createSource.zipBase64 } : {}),
             });
@@ -470,6 +492,7 @@ function JsTemplateSourceProjectsPageInner() {
       form.resetFields();
       setCreateSource({ mode: 'starter' });
       setCreateSourceKey((current) => current + 1);
+      createAttemptRef.current = null;
       setNotice(null);
     } catch (error) {
       const syncErrorKey =
@@ -712,6 +735,7 @@ function JsTemplateSourceProjectsPageInner() {
         jobs={createJobs}
         marginBottom={token.margin}
         onDismiss={dismissTerminalCreateJob}
+        onRetry={retryFailedCreateJob}
         t={t}
       />
 
@@ -909,6 +933,14 @@ function toRecord(value: unknown): Record<string, unknown> | null {
 
 export function createJsTemplateProjectName(): string {
   return `jt_${uid()}`;
+}
+
+export function createJsTemplateCreateJobIdempotencyKey(): string {
+  const randomUuid = globalThis.crypto?.randomUUID;
+  if (typeof randomUuid === 'function') {
+    return `create-source-project-${randomUuid.call(globalThis.crypto)}`;
+  }
+  return `create-source-project-${uid()}`;
 }
 
 export default JsTemplateSourceProjectsPage;

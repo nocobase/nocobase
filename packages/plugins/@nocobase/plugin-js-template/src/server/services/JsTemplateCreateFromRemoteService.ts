@@ -46,6 +46,9 @@ export interface JsTemplateCreateFromRemoteOptions {
   targetProjectId?: string;
   creationJobId?: string;
   assertCurrentClaim?: (transaction: Transaction) => Promise<void>;
+  markFinalizePending?: (resultProjectId: string, transaction: Transaction) => Promise<void>;
+  authorize?: (transaction: Transaction) => Promise<void>;
+  signal?: AbortSignal;
 }
 
 export class JsTemplateCreateFromRemoteService {
@@ -62,12 +65,17 @@ export class JsTemplateCreateFromRemoteService {
     ctx: JsTemplateServiceContext = {},
     options: JsTemplateCreateFromRemoteOptions = {},
   ): Promise<JsTemplateCreateFromRemoteResult> {
+    if (options.creationJobId && !options.authorize) {
+      throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Creation job authorization callback is unavailable');
+    }
+    options.signal?.throwIfAborted();
     const metadata = this.projectService.normalizeCreateMetadata(input);
     const runtime = this.getRemoteSyncRuntime();
     const fetched = await runtime.fetchTarget({
       provider: input.provider,
       config: input.config,
       authRef: input.authRef,
+      signal: options.signal,
     });
     const revision = requireRemoteRevision(fetched.snapshot.revision);
     const initialFiles = toInitialFiles(fetched.snapshot.files);
@@ -78,11 +86,17 @@ export class JsTemplateCreateFromRemoteService {
       {
         ...ctx,
         requestSource: ctx.requestSource || 'js-template-create-from-git-prepare',
+        signal: options.signal,
       },
     );
 
+    options.signal?.throwIfAborted();
+
     return this.db.sequelize.transaction(async (transaction) => {
+      options.signal?.throwIfAborted();
       await options.assertCurrentClaim?.(transaction);
+      await options.authorize?.(transaction);
+      options.signal?.throwIfAborted();
       const transactionContext: JsTemplateServiceContext = {
         ...ctx,
         transaction,
@@ -99,6 +113,7 @@ export class JsTemplateCreateFromRemoteService {
         transactionContext,
         { projectId, creationJobId: options.creationJobId },
       );
+      options.signal?.throwIfAborted();
       if (!project.headCommitId) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template initial source commit is missing', {
           details: { projectId: project.id },
@@ -109,6 +124,7 @@ export class JsTemplateCreateFromRemoteService {
         ...transactionContext,
         requestSource: 'js-template-create-from-git-apply',
       });
+      options.signal?.throwIfAborted();
       const internalProject = await this.projectService.getInternalProject(project.id, transactionContext);
       const established = await runtime.establishInitialBaseline(
         {
@@ -122,6 +138,10 @@ export class JsTemplateCreateFromRemoteService {
         },
         transaction,
       );
+      options.signal?.throwIfAborted();
+      await options.assertCurrentClaim?.(transaction);
+      await options.authorize?.(transaction);
+      options.signal?.throwIfAborted();
       await this.auditService.recordSyncEvent({
         projectId: compiled.project.id,
         action: 'syncCreateFromGit',
@@ -138,6 +158,9 @@ export class JsTemplateCreateFromRemoteService {
         message: 'syncCreateFromGit succeeded',
         transaction,
       });
+      options.signal?.throwIfAborted();
+      await options.markFinalizePending?.(compiled.project.id, transaction);
+      options.signal?.throwIfAborted();
 
       return {
         project: compiled.project,

@@ -15,13 +15,15 @@ import { jsTemplateActionNames } from '../resources/jsTemplates';
 import { jsTemplateFileActionNames } from '../resources/jsTemplateFiles';
 import { jsTemplateUsageActionNames } from '../resources/jsTemplateUsages';
 import { jsTemplateProjectActionNames } from '../resources/jsTemplateProjects';
+import { jsTemplateSyncActionNames } from '../resources/jsTemplateSync';
 
 const publicActions = {
-  jsTemplateProjects: ['list', 'get'],
-  jsTemplateCreateJobs: ['list', 'dismiss'],
+  jsTemplateProjects: ['create', 'list', 'get'],
+  jsTemplateCreateJobs: ['list', 'get', 'retry', 'dismiss'],
   jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline', 'delete'],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
+  jsTemplateSync: ['get', 'configure', 'disconnect', 'testConnection', 'plan', 'pull', 'push', 'createFromGit'],
   runJSSources: ['capabilities', 'open', 'openLatest', 'compilePreview', 'save', 'saveChanges'],
 } as const;
 
@@ -33,6 +35,7 @@ describe('js-template swagger', () => {
       jsTemplates: jsTemplateActionNames,
       jsTemplateUsages: jsTemplateUsageActionNames,
       jsTemplateFiles: jsTemplateFileActionNames,
+      jsTemplateSync: jsTemplateSyncActionNames,
       runJSSources: runJSSourceActionNames,
     };
     const expectedPaths = Object.entries(publicActions)
@@ -47,6 +50,57 @@ describe('js-template swagger', () => {
         expect(swaggerDocument.paths[`/${resource}:${action}`].post).toBeTruthy();
       }
     }
+  });
+
+  it('documents the complete HTTP/HTTPS Git synchronization contract', () => {
+    const schemas = swaggerDocument.components.schemas;
+    const config = schemas.JsTemplateGitRemoteConfigDraft;
+    const createRequest = schemas.JsTemplateSyncCreateFromGitRequest;
+
+    expect(config.properties.transport.enum).toEqual(['http', 'https']);
+    expect(config.properties.url.pattern).toBe('^https?://');
+    expect(createRequest).toMatchObject({
+      type: 'object',
+      required: ['idempotencyKey', 'provider', 'config', 'name'],
+      additionalProperties: false,
+    });
+    expect(createRequest.properties).not.toHaveProperty('projectId');
+    expect(createRequest).not.toHaveProperty('allOf');
+
+    for (const action of jsTemplateSyncActionNames) {
+      const operation = swaggerDocument.paths[`/jsTemplateSync:${action}`].post;
+      expect(operation.responses).toHaveProperty('400');
+      expect(operation.responses).toHaveProperty('403');
+      expect(operation.responses).toHaveProperty('409');
+      expect(operation.responses).toHaveProperty('422');
+    }
+    expect(swaggerDocument.paths['/jsTemplateSync:createFromGit'].post.responses).toHaveProperty('202');
+    expect(schemas.JsTemplateSyncExecutionRequest.required).toEqual(
+      expect.arrayContaining([
+        'expectedHeadCommitId',
+        'expectedRemoteRevision',
+        'expectedRemoteTargetVersion',
+        'planFingerprint',
+      ]),
+    );
+  });
+
+  it('documents durable starter and ZIP creation plus distinct job mutation semantics', () => {
+    const create = swaggerDocument.paths['/jsTemplateProjects:create'].post;
+    const createRequest = swaggerDocument.components.schemas.JsTemplateCreateProjectRequest;
+    const getJob = swaggerDocument.paths['/jsTemplateCreateJobs:get'].post;
+    const retryJob = swaggerDocument.paths['/jsTemplateCreateJobs:retry'].post;
+    const dismissJob = swaggerDocument.paths['/jsTemplateCreateJobs:dismiss'].post;
+
+    expect(create.responses).toHaveProperty('202');
+    expect(create.requestBody.content['application/json'].schema).toEqual({
+      $ref: '#/components/schemas/JsTemplateCreateProjectRequest',
+    });
+    expect(createRequest.required).toEqual(['idempotencyKey', 'name']);
+    expect(createRequest.properties).toHaveProperty('zipBase64');
+    expect(getJob.responses).not.toHaveProperty('409');
+    expect(retryJob.responses).toHaveProperty('409');
+    expect(dismissJob.description).toMatch(/soft-dismiss/iu);
   });
 
   it('does not expose the raw VSC transport through OpenAPI', () => {
@@ -150,10 +204,9 @@ describe('js-template swagger', () => {
     }
   });
 
-  it('documents exactly the five retained authoring kinds, including JS Page', () => {
+  it('documents exactly the four retained authoring kinds', () => {
     expect(swaggerDocument.components.schemas.JsTemplateKind.enum).toEqual([
       'js-block',
-      'js-page',
       'js-field',
       'js-action',
       'js-item',

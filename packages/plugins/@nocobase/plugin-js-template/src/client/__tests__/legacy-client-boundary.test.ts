@@ -27,8 +27,6 @@ import {
   JS_FIELD_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
-  JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD,
-  JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   clearRunJSRegistryHosts,
   clearRunJSRuntimeHosts,
   clearActionGroupMenuItemProviders,
@@ -37,8 +35,6 @@ import {
 } from '@nocobase/client-v2';
 import { installRunJSWorkspaceRuntimeLegacyClient } from '@nocobase/runjs/workspace/client';
 
-import { JSPageJsTemplateSourceField } from '../../client-v2/components/JSBlockJsTemplateSourceField';
-import { SettingsSingleField } from '../../client-v2/components/SettingsAutoForm';
 import {
   JS_TEMPLATE_EDITOR_PROVIDER_KEY,
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
@@ -82,10 +78,7 @@ describe('plugin-js-template legacy client boundary', () => {
   it('registers a thin settings bridge, runtime resolver, and source editor without a direct v1 import', async () => {
     const add = vi.fn<AddLegacySettingsRoute>();
     const remove = vi.fn<(name: string) => void>();
-    const PreviousJSPageSourceField = () => null;
-    const components: Record<string, React.ElementType> = {
-      [JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]: PreviousJSPageSourceField,
-    };
+    const components: Record<string, React.ElementType> = {};
     const registerComponents = vi.fn((nextComponents: Record<string, React.ElementType>) => {
       Object.assign(components, nextComponents);
     });
@@ -152,8 +145,6 @@ describe('plugin-js-template legacy client boundary', () => {
     );
     const registeredComponents = registerComponents.mock.calls[0][0];
     expect(registeredComponents.RunJSJsTemplateSourceField).toBeUndefined();
-    expect(registeredComponents[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(JSPageJsTemplateSourceField);
-    expect(registeredComponents[JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD]).toBe(SettingsSingleField);
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     expect(remove).toHaveBeenCalledWith(JS_TEMPLATE_SETTINGS_KEY);
     expect(RunJSSourceResolverRegistry.getResolver('js-template')).toBeNull();
@@ -161,8 +152,6 @@ describe('plugin-js-template legacy client boundary', () => {
     expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(0);
     expect(unregisterToolbar).toHaveBeenCalledTimes(1);
-    expect(components[JS_PAGE_JS_TEMPLATE_FULL_SOURCE_FIELD]).toBe(PreviousJSPageSourceField);
-    expect(components[JS_PAGE_JS_TEMPLATE_SETTINGS_STEP_FIELD]).toBeUndefined();
 
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 

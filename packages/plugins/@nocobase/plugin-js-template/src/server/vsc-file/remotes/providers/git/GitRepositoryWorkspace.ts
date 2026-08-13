@@ -81,6 +81,7 @@ export interface GitRepositoryWorkspaceOptions {
   limits: GitSnapshotLimits;
   temporaryDirectory?: string;
   identity?: Partial<GitCommitIdentity>;
+  signal?: AbortSignal;
 }
 
 export interface GitCommitIdentity {
@@ -111,6 +112,8 @@ export class GitRepositoryWorkspace {
 
   private readonly identity: GitCommitIdentity;
 
+  private readonly signal?: AbortSignal;
+
   private cleaned = false;
 
   private constructor(options: GitRepositoryWorkspaceOptions, rootDirectory: string, identity: GitCommitIdentity) {
@@ -122,6 +125,7 @@ export class GitRepositoryWorkspace {
     this.repositoryDirectory = path.join(rootDirectory, 'repository.git');
     this.indexFile = path.join(rootDirectory, 'index');
     this.identity = identity;
+    this.signal = options.signal;
   }
 
   static async create(options: GitRepositoryWorkspaceOptions): Promise<GitRepositoryWorkspace> {
@@ -326,6 +330,7 @@ export class GitRepositoryWorkspace {
       transport: this.config.transport,
       credential: this.credential,
       operation,
+      signal: this.signal,
     });
   }
 
@@ -341,6 +346,7 @@ export class GitRepositoryWorkspace {
       stdin,
       environment,
       operation,
+      signal: this.signal,
     });
   }
 }

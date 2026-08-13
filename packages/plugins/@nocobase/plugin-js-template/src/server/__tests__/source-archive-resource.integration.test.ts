@@ -46,8 +46,8 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     const zip = new JSZip();
     zip.file('workspace/README.md', '# Inspected\n');
     zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
-    zip.file('workspace/src/client/js-pages/orders/entry.json', '{"schemaVersion":1,"key":"orders"}\n');
-    zip.file('workspace/src/client/js-pages/orders/index.tsx', 'ctx.render(ctx.page.uid);\n');
+    zip.file('workspace/src/client/js-blocks/orders/entry.json', '{"schemaVersion":1,"key":"orders"}\n');
+    zip.file('workspace/src/client/js-blocks/orders/index.tsx', 'ctx.render(String(ctx.record?.id ?? ""));\n');
     const ctx = createActionContext({
       projectId: 'jtp_inspect',
       zipBase64: await zip.generateAsync({ type: 'base64' }),
@@ -69,12 +69,12 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
           language: 'typescript',
         }),
         expect.objectContaining({
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           language: 'json',
         }),
         expect.objectContaining({
-          path: 'src/client/js-pages/orders/index.tsx',
-          content: 'ctx.render(ctx.page.uid);\n',
+          path: 'src/client/js-blocks/orders/index.tsx',
+          content: 'ctx.render(String(ctx.record?.id ?? ""));\n',
           language: 'typescript',
         }),
       ]),
@@ -152,7 +152,81 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     });
     expect(getValidator).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['path traversal', async () => createZipBase64({ '../escape.ts': 'export default true;\n' })],
+    ['absolute path', async () => createZipBase64({ '/escape.ts': 'export default true;\n' })],
+    ['case duplicate', async () => createZipBase64({ 'README.md': '# One\n', 'readme.md': '# Two\n' })],
+    ['invalid UTF-8', async () => createZipBase64({ 'src/shared/binary.bin': Buffer.from([0, 255, 1]) })],
+    ['NUL byte', async () => createZipBase64({ 'src/shared/value.ts': Buffer.from('export\0const value = 1;') })],
+    [
+      'symbolic link',
+      async () => {
+        const zip = new JSZip();
+        zip.file('src/shared/link.ts', '../target.ts', { unixPermissions: 0o120777 });
+        return zip.generateAsync({ type: 'base64', platform: 'UNIX' });
+      },
+    ],
+  ])('rejects a %s archive before enqueue, publish, audit, transaction, or compile', async (_label, createZip) => {
+    const enqueue = vi.fn();
+    const publish = vi.fn();
+    const recordCreateJobEvent = vi.fn();
+    const transaction = vi.fn();
+    const prepareInitialWorkspace = vi.fn();
+    const resource = createJsTemplateProjectsResource(
+      { sequelize: { transaction } } as unknown as Database,
+      {
+        normalizeCreateMetadata: vi.fn(),
+        getValidator: vi.fn(() => new JsTemplateValidator()),
+      } as unknown as JsTemplateProjectService,
+      { prepareInitialWorkspace } as unknown as JsTemplateCompileService,
+      { enqueue } as never,
+      { publish } as never,
+      'main',
+      { recordCreateJobEvent } as never,
+    );
+    const ctx = {
+      action: {
+        params: {
+          values: {
+            idempotencyKey: `attack-${_label}`,
+            name: `Attack ${_label}`,
+            zipBase64: await createZip(),
+          },
+        },
+      },
+      auth: { user: { id: 7 } },
+      getBearerToken: () => createUnsignedSessionToken('session-attack'),
+      request: { headers: {} },
+      state: { currentRole: 'member', currentRoles: ['member'] },
+    };
+
+    await resource.actions?.create?.(
+      ctx as never,
+      vi.fn(async () => undefined),
+    );
+
+    expect((ctx as { status?: number }).status).toBe(422);
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
+    expect(recordCreateJobEvent).not.toHaveBeenCalled();
+    expect(transaction).not.toHaveBeenCalled();
+    expect(prepareInitialWorkspace).not.toHaveBeenCalled();
+  });
 });
+
+async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {
+  const zip = new JSZip();
+  for (const [path, content] of Object.entries(files)) {
+    zip.file(path, content);
+  }
+  return zip.generateAsync({ type: 'base64' });
+}
+
+function createUnsignedSessionToken(jti: string): string {
+  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
+  return `header.${payload}.signature`;
+}
 
 function createActionContext(values: Record<string, unknown>): Context {
   return {

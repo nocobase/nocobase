@@ -29,9 +29,7 @@ describe('git command error mapping', () => {
       'tls-validation-failed',
     ],
     ['fatal: Could not resolve host: git.example.com', true, 'REMOTE_UNAVAILABLE', 'network-error'],
-    ['WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!', true, 'REMOTE_UNAVAILABLE', 'ssh-host-key-mismatch'],
-    ['Load key /private/job/key: error in libcrypto', true, 'AUTH_FAILED', 'ssh-private-key-invalid'],
-    ['git@git.example.com: Permission denied (publickey).', true, 'AUTH_FAILED', 'ssh-permission-denied'],
+    ['fatal: unable to access: Connection refused', false, 'REMOTE_UNAVAILABLE', 'network-error'],
   ] as const)('maps a stable safe error for %s', (stderr, credentialProvided, code, reasonCode) => {
     const error = mapGitCommandError({
       binary: 'git',
@@ -48,7 +46,6 @@ describe('git command error mapping', () => {
 
   it.each([
     [{ binary: 'git', errorCode: 'ENOENT' }, 'git-binary-unavailable'],
-    [{ binary: 'ssh', errorCode: 'ENOENT' }, 'ssh-binary-unavailable'],
     [{ binary: 'git', terminationReason: 'timeout' }, 'command-timeout'],
     [{ binary: 'git', terminationReason: 'aborted' }, 'command-aborted'],
     [{ binary: 'git', terminationReason: 'stdout-limit' }, 'command-output-limit'],
@@ -68,8 +65,8 @@ describe('git command error mapping', () => {
   });
 
   it('removes URL userinfo from safe display values', () => {
-    expect(toSafeGitDisplayUrl('ssh://git:should-not-appear@git.example.com:2222/team/project.git')).toBe(
-      'ssh://git.example.com:2222/team/project.git',
+    expect(toSafeGitDisplayUrl('https://git:should-not-appear@git.example.com:8443/team/project.git')).toBe(
+      'https://git.example.com:8443/team/project.git',
     );
     expect(toSafeGitDisplayUrl('not-a-url')).toBe('git-remote');
   });

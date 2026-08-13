@@ -44,11 +44,10 @@ export interface JsTemplateCreateJobRunnerOptions {
   heartbeatIntervalMs?: number;
   scanBatchSize?: number;
   claimOwner?: string;
+  authorize: (job: JsTemplateCreateJob) => Promise<void>;
 }
 
 const queueChannel = 'js-template.create-jobs';
-
-const shutdownGraceMs = 5_000;
 
 export class JsTemplateCreateJobRunner {
   private readonly scanIntervalMs: number;
@@ -70,6 +69,8 @@ export class JsTemplateCreateJobRunner {
   private scanPromise?: Promise<void>;
 
   private readonly activeRuns = new Set<Promise<void>>();
+
+  private readonly activeControllers = new Set<AbortController>();
 
   private readonly heartbeatStops = new Set<() => Promise<void>>();
 
@@ -111,7 +112,7 @@ export class JsTemplateCreateJobRunner {
       process: async (message, options) => {
         const jobId = getJobId(message);
         if (jobId) {
-          await waitForExecutionOrStop(this.run(jobId), this.getStopSignal(), options?.signal);
+          await waitForExecutionOrStop(this.run(jobId, options?.signal), this.getStopSignal(), options?.signal);
         } else {
           await waitForExecutionOrStop(this.scanClaimable(), this.getStopSignal(), options?.signal);
         }
@@ -131,14 +132,18 @@ export class JsTemplateCreateJobRunner {
     }
     this.stopping = true;
     this.resolveStopSignal?.();
+    for (const controller of this.activeControllers) {
+      controller.abort(new Error('JS Template create-job runner is stopping'));
+    }
     if (this.scanTimer) {
       clearInterval(this.scanTimer);
       this.scanTimer = undefined;
     }
-    await waitForSettled(
-      [...this.heartbeatStops].map((stop) => stop()).concat([this.scanPromise, ...this.activeRuns]),
-      shutdownGraceMs,
-    );
+    const activePromises = [...this.heartbeatStops]
+      .map((stop) => stop())
+      .concat([this.scanPromise, ...this.activeRuns])
+      .filter((promise): promise is Promise<void> => Boolean(promise));
+    await Promise.allSettled(activePromises);
   }
 
   async publish(jobId: string): Promise<void> {
@@ -152,33 +157,55 @@ export class JsTemplateCreateJobRunner {
     }
   }
 
-  async run(jobId: string): Promise<void> {
-    const execution = this.runClaimedJob(jobId);
+  async run(jobId: string, signal?: AbortSignal): Promise<void> {
+    const controller = new AbortController();
+    const removeExternalAbortListener = forwardAbort(signal, controller);
+    this.activeControllers.add(controller);
+    const execution = this.runClaimedJob(jobId, controller.signal);
     this.activeRuns.add(execution);
     try {
       await execution;
     } finally {
       this.activeRuns.delete(execution);
+      this.activeControllers.delete(controller);
+      removeExternalAbortListener();
     }
   }
 
-  private async runClaimedJob(jobId: string): Promise<void> {
+  private async runClaimedJob(jobId: string, signal: AbortSignal): Promise<void> {
     const job = await this.claimWithSqliteRetry(jobId);
     if (!job?.claimToken) {
       return;
     }
     const claimToken = job.claimToken;
     const startedAt = Date.now();
-    await this.recordAuditBestEffort(job, 'createJobStart', 'success');
     if (this.stopping) {
+      return;
+    }
+    if (job.status === 'finalize-pending' && job.resultProjectId) {
+      await this.finalize(job, claimToken, job.resultProjectId, startedAt);
+      return;
+    }
+    await this.recordAuditBestEffort(job, 'createJobStart', 'success');
+    try {
+      await this.options.authorize(job);
+    } catch (error) {
+      await this.handleExecutionFailure(job, claimToken, error, startedAt);
       return;
     }
     const heartbeat = this.startHeartbeat(job, claimToken);
     this.heartbeatStops.add(heartbeat.stop);
     let resultProjectId: string;
     try {
-      resultProjectId = await this.executor.execute(job, claimToken);
+      resultProjectId = await this.executor.execute(job, claimToken, signal);
     } catch (error) {
+      if (signal.aborted || this.stopping) {
+        this.options.logger.info('JS Template create job interrupted; job retained for lease recovery', {
+          jobId: job.id,
+          sourceType: job.sourceType,
+        });
+        return;
+      }
       await this.handleExecutionFailure(job, claimToken, error, startedAt);
       return;
     } finally {
@@ -186,11 +213,20 @@ export class JsTemplateCreateJobRunner {
       this.heartbeatStops.delete(heartbeat.stop);
     }
 
+    await this.finalize(job, claimToken, resultProjectId, startedAt);
+  }
+
+  private async finalize(
+    job: JsTemplateCreateJob,
+    claimToken: string,
+    resultProjectId: string,
+    startedAt: number,
+  ): Promise<void> {
     let succeeded: JsTemplateCreateJob | null;
     try {
-      succeeded = await this.store.succeed(job.id, this.options.applicationName, claimToken, resultProjectId);
+      succeeded = await this.executor.finalizeSucceededResult(job, claimToken, resultProjectId);
     } catch (error) {
-      this.options.logger.warn('JS Template create-job success was not persisted', {
+      this.options.logger.warn('JS Template create-job committed result validation or finalization failed', {
         jobId: job.id,
         ...safeErrorMeta(error),
       });
@@ -444,22 +480,6 @@ function validatePositiveInteger(value: number, label: string): void {
   }
 }
 
-async function waitForSettled(promises: Array<Promise<void> | undefined>, timeoutMs: number): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    await Promise.race([
-      Promise.allSettled(promises.filter((promise): promise is Promise<void> => Boolean(promise))),
-      new Promise<void>((resolve) => {
-        timer = setTimeout(resolve, timeoutMs);
-      }),
-    ]);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
-}
-
 async function waitForExecutionOrStop(
   execution: Promise<void>,
   stopSignal: Promise<void>,
@@ -489,4 +509,17 @@ async function waitForExecutionOrStop(
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function forwardAbort(signal: AbortSignal | undefined, controller: AbortController): () => void {
+  if (!signal) {
+    return () => undefined;
+  }
+  const abort = () => controller.abort(signal.reason);
+  if (signal.aborted) {
+    abort();
+    return () => undefined;
+  }
+  signal.addEventListener('abort', abort, { once: true });
+  return () => signal.removeEventListener('abort', abort);
 }

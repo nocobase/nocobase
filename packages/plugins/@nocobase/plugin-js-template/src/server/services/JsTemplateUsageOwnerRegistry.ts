@@ -23,8 +23,6 @@ export type UsageOwnerAdapter = JsTemplateUsageOwnerAdapterContract & {
 };
 
 const JS_BLOCK_STEP_PATH: ['stepParams', 'jsSettings'] = ['stepParams', 'jsSettings'];
-const JS_PAGE_STEP_PATH: ['stepParams', 'jsSettings', 'runJs'] = ['stepParams', 'jsSettings', 'runJs'];
-
 const USAGE_OWNER_ADAPTERS: UsageOwnerAdapter[] = [
   {
     kind: 'js-block',
@@ -33,14 +31,6 @@ const USAGE_OWNER_ADAPTERS: UsageOwnerAdapter[] = [
     locatorContract: 'FlowModel JSBlockModel step settings locator',
     modelUse: 'JSBlockModel',
     stepPath: JS_BLOCK_STEP_PATH,
-  },
-  {
-    kind: 'js-page',
-    ownerKind: 'flowModel.pageSettings',
-    title: 'JS Page',
-    locatorContract: 'FlowModel JSPageModel page settings locator',
-    modelUse: 'JSPageModel',
-    stepPath: JS_PAGE_STEP_PATH,
   },
   {
     kind: 'js-field',

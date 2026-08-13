@@ -202,7 +202,7 @@ describe('GitRemoteAdapter', () => {
     expect(published.contentHash).toBe(snapshot.contentHash);
   });
 
-  it('parses credential kinds before every transport reaches the runner', async () => {
+  it('parses HTTPS credentials and rejects HTTP auth before resolving the Secret or running Git', async () => {
     const fakeOid = 'a'.repeat(40);
     const fakeRunner: GitCommandExecutor = {
       run: vi.fn(async (request) => ({
@@ -220,44 +220,51 @@ describe('GitRemoteAdapter', () => {
         if (authRef === 'https-auth') {
           return JSON.stringify({ kind: 'https', username: 'git-user', password: 'secret' });
         }
-        return JSON.stringify({
-          kind: 'ssh',
-          privateKey: 'private-key',
-          knownHosts: 'git.test ssh-ed25519 AAAA',
-        });
+        return JSON.stringify({ kind: 'https', username: 'git-user', password: 'secret' });
       }),
     };
     const fakeAdapter = new GitRemoteAdapter({ credentialResolver, runner: fakeRunner });
     await fakeAdapter.probe(target(config, 'https-auth'));
-    await fakeAdapter.probe(
-      target(
-        {
-          url: 'ssh://git@git.test/team/project.git',
-          branch: 'main',
-          subdirectory: null,
-          transport: 'ssh',
-        },
-        'ssh-auth',
-      ),
-    );
-    await fakeAdapter.probe(
-      target({
-        url: 'ssh://git@git.test/team/project.git',
+    const httpTarget = target(
+      {
+        url: 'http://git.test/team/project.git',
         branch: 'main',
         subdirectory: null,
-        transport: 'ssh',
-      }),
+        transport: 'http',
+      },
+      'http-auth',
     );
+    await expect(fakeAdapter.probe(httpTarget)).rejects.toMatchObject({
+      code: 'AUTH_REF_INVALID',
+      details: { reasonCode: 'http-auth-forbidden' },
+    });
+    await fakeAdapter.probe(target({ ...httpTarget.config, transport: 'http' }));
 
     const calls = vi.mocked(fakeRunner.run).mock.calls.map(([request]) => request);
     expect(calls[0].credential).toEqual({ kind: 'https', username: 'git-user', password: 'secret' });
-    expect(calls[1].credential).toEqual({
-      kind: 'ssh',
-      privateKey: 'private-key',
-      knownHosts: 'git.test ssh-ed25519 AAAA',
-    });
-    expect(calls[2].credential).toBeNull();
+    expect(calls[1].credential).toBeNull();
     expect(credentialResolver.resolve).toHaveBeenLastCalledWith(null, 'optional');
+    expect(credentialResolver.resolve).not.toHaveBeenCalledWith('http-auth', expect.anything());
+  });
+
+  it('rejects HTTP auth inherited from a saved HTTPS target before Secret resolution or Git execution', async () => {
+    const fakeRunner: GitCommandExecutor = { run: vi.fn() };
+    const credentialResolver = { resolve: vi.fn() };
+    const fakeAdapter = new GitRemoteAdapter({ credentialResolver, runner: fakeRunner });
+
+    await expect(
+      fakeAdapter.resolveConfigDraft(
+        {
+          url: 'http://git.test/team/project.git',
+          branch: 'main',
+          subdirectory: null,
+          transport: 'http',
+        },
+        '{{ $env.SAVED_HTTPS_SECRET }}',
+      ),
+    ).rejects.toMatchObject({ code: 'AUTH_REF_INVALID', details: { reasonCode: 'http-auth-forbidden' } });
+    expect(credentialResolver.resolve).not.toHaveBeenCalled();
+    expect(fakeRunner.run).not.toHaveBeenCalled();
   });
 
   it('does not publish a second commit when the verified snapshot already matches', async () => {

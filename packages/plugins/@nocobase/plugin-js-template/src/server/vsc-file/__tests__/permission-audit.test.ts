@@ -316,8 +316,8 @@ describe('vsc-file permission hooks and audit registration', () => {
           },
           artifact: {
             entryPath: 'src/main.tsx',
-            filesHash: 'response-files-hash',
-            runtimeCodeHash: 'response-runtime-hash',
+            filesHash: 'a'.repeat(64),
+            runtimeCodeHash: 'b'.repeat(64),
             code: 'ctx.render("response artifact secret");',
             diagnostics: [{ message: 'ignored detail' }],
           },
@@ -338,21 +338,13 @@ describe('vsc-file permission hooks and audit registration', () => {
         commitId: 'commit_next',
         ownerId: 'fm_audit',
         repositoryOwnerId: 'runjs:flowModel.step:fm_audit:source-path-hash',
-        message: 'Update JS action',
       },
     );
 
     expect(metadata.request?.body).toMatchObject({
       locatorKind: 'flowModel.step',
       repoId: 'repo_audit',
-      message: 'Update JS action',
-      files: [
-        {
-          path: 'src/main.tsx',
-          operation: 'upsert',
-          language: 'typescript',
-        },
-      ],
+      fileCount: 1,
     });
     expect(metadata.response?.body).toMatchObject({
       commit: {
@@ -360,9 +352,8 @@ describe('vsc-file permission hooks and audit registration', () => {
         repoId: 'repo_audit',
       },
       artifact: {
-        entryPath: 'src/main.tsx',
-        filesHash: 'response-files-hash',
-        runtimeCodeHash: 'response-runtime-hash',
+        filesHash: 'a'.repeat(64),
+        runtimeCodeHash: 'b'.repeat(64),
         diagnosticsCount: 1,
       },
       fileCount: 1,
@@ -370,6 +361,8 @@ describe('vsc-file permission hooks and audit registration', () => {
     expect(JSON.stringify(metadata)).not.toContain('request secret');
     expect(JSON.stringify(metadata)).not.toContain('response artifact secret');
     expect(JSON.stringify(metadata)).not.toContain('response file secret');
+    expect(JSON.stringify(metadata)).not.toContain('Update JS action');
+    expect(JSON.stringify(metadata)).not.toContain('src/main.tsx');
   });
 
   it('audits successful and conflicting incremental saves with content summaries only', async () => {
@@ -431,33 +424,23 @@ describe('vsc-file permission hooks and audit registration', () => {
         repoId: 'repo_incremental_audit',
         commitId: 'commit_next',
         ownerId: 'fm_incremental_audit',
-        message: 'Update one incremental file',
       },
     );
 
     expect(success.request?.body).toMatchObject({
       locatorKind: 'flowModel.step',
       repoId: 'repo_incremental_audit',
-      message: 'Update one incremental file',
-      changes: [
-        {
-          path: 'src/client/index.tsx',
-          operation: 'upsert',
-          expectedBlobHash: 'a'.repeat(64),
-          size: Buffer.byteLength(content, 'utf8'),
-          contentHash: expect.stringMatching(/^[a-f0-9]{64}$/u),
-        },
-        {
-          path: 'src/client/obsolete.ts',
-          operation: 'delete',
-          expectedBlobHash: 'b'.repeat(64),
-        },
-      ],
+      totalSize: Buffer.byteLength(content, 'utf8'),
+      contentHashes: [expect.stringMatching(/^[a-f0-9]{64}$/u)],
     });
     expect(success.request?.body).not.toHaveProperty('files');
+    expect(success.request?.body).not.toHaveProperty('changes');
     expect(JSON.stringify(success)).not.toContain('incremental request secret');
     expect(JSON.stringify(success)).not.toContain('compiled response secret');
     expect(JSON.stringify(success)).not.toContain('source map secret');
+    expect(JSON.stringify(success)).not.toContain('Update one incremental file');
+    expect(JSON.stringify(success)).not.toContain('src/client/index.tsx');
+    expect(JSON.stringify(success)).not.toContain('src/client/obsolete.ts');
 
     const conflict = await expectRunJSSourceAuditMetadata(
       'saveChanges',
@@ -482,20 +465,16 @@ describe('vsc-file permission hooks and audit registration', () => {
         locatorKind: 'flowModel.step',
         repoId: 'repo_incremental_audit',
         ownerId: 'fm_incremental_audit',
-        message: 'Update one incremental file',
       },
     );
 
     expect(conflict.request?.body).toMatchObject({
-      changes: expect.arrayContaining([
-        expect.objectContaining({
-          path: 'src/client/index.tsx',
-          operation: 'upsert',
-          expectedBlobHash: 'a'.repeat(64),
-        }),
-      ]),
+      totalSize: Buffer.byteLength(content, 'utf8'),
+      contentHashes: [expect.stringMatching(/^[a-f0-9]{64}$/u)],
     });
     expect(JSON.stringify(conflict)).not.toContain('incremental request secret');
+    expect(JSON.stringify(conflict)).not.toContain('Update one incremental file');
+    expect(JSON.stringify(conflict)).not.toContain('src/client/index.tsx');
   });
 
   it('audits RunJS import and recovery without leaking ZIP or source content', async () => {
@@ -545,7 +524,6 @@ describe('vsc-file permission hooks and audit registration', () => {
         action: 'importZip',
         repoId: 'repo_audit',
         commitId: 'commit_next',
-        message: 'Import RunJS workspace',
       },
     );
     const recoveryResponse = {
@@ -573,6 +551,8 @@ describe('vsc-file permission hooks and audit registration', () => {
 
     expect(JSON.stringify(importMetadata)).not.toContain('zip-source-secret');
     expect(JSON.stringify(importMetadata)).not.toContain('response source secret');
+    expect(JSON.stringify(importMetadata)).not.toContain('Import RunJS workspace');
+    expect(JSON.stringify(importMetadata)).not.toContain('src/main.tsx');
     expect(JSON.stringify(recoveryMetadata)).not.toContain('request source secret');
     expect(JSON.stringify(recoveryMetadata)).not.toContain('response source secret');
   });

@@ -181,8 +181,10 @@ export {
   createRunJSSourcesResource,
   createRunJSWorkspaceDiagnostic,
   createRunJSWorkspaceDiagnosticAt,
+  defaultRunJSWorkspaceZipLimits,
   getRunJSWorkspaceDiagnosticDetailsKey,
   inspectRunJSSourceCode,
+  readRunJSWorkspaceZip,
   RUNJS_WORKSPACE_HOSTS,
   RunJSAuthoringCapabilityRegistry,
   runJSSourceActionNames,
@@ -193,11 +195,14 @@ export {
 
 export type {
   CanonicalRunJSCompileFile,
+  ReadRunJSWorkspaceZipOptions,
   RunJSWorkspaceBootstrapInput,
   RunJSWorkspaceBootstrapPort,
   RunJSWorkspaceBootstrapResult,
   RunJSWorkspaceHostKind,
   RunJSWorkspaceModelUse,
+  RunJSWorkspaceZipLimits,
+  RunJSWorkspaceZipMetadataPolicy,
 } from './runjs-sources';
 
 export { BlobService, normalizeBlob } from './services/BlobService';

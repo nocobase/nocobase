@@ -30,7 +30,7 @@ export type JsTemplateCreateJobPayload =
   | {
       sourceType: 'zip';
       message: string;
-      zipBase64: string;
+      files: JsTemplateTreeEntryInput[];
     }
   | {
       sourceType: 'git';
@@ -48,7 +48,12 @@ export interface EnqueueJsTemplateCreateJobInput {
   description?: string | null;
   sourceType: JsTemplateCreateSourceType;
   payload: JsTemplateCreateJobPayload;
-  actorUserId?: string | null;
+  idempotencyKey: string;
+  requestHash: string;
+  actorUserId: string;
+  sessionId: string;
+  authorizationRole: string;
+  authorizationRoles: string[];
   requestId?: string | null;
 }
 
@@ -62,7 +67,7 @@ const retainedTerminalJobLimit = 100;
 
 const terminalJobPruneBatchSize = 100;
 
-const activeJobStatuses = ['pending', 'running'] as const;
+const activeJobStatuses = ['pending', 'running', 'finalize-pending'] as const;
 
 const terminalJobStatuses = ['succeeded', 'failed'] as const;
 
@@ -74,9 +79,37 @@ export class JsTemplateCreateJobStore {
   ) {}
 
   async enqueue(input: EnqueueJsTemplateCreateJobInput, transaction?: Transaction): Promise<JsTemplateCreateJob> {
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        return await this.enqueueOnce(input, transaction);
+      } catch (error) {
+        if (transaction || !isSqliteDatabase(this.db) || !isSqliteBusyError(error) || attempt >= 4) {
+          throw error;
+        }
+        await delay(100 * (attempt + 1));
+      }
+    }
+  }
+
+  private async enqueueOnce(
+    input: EnqueueJsTemplateCreateJobInput,
+    transaction?: Transaction,
+  ): Promise<JsTemplateCreateJob> {
+    const existing = await this.findByIdempotency(input, transaction);
+    if (existing) {
+      return existing;
+    }
     try {
-      const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).create({
-        values: {
+      // Sequelize wraps findOrCreate in an internal transaction/savepoint. On PostgreSQL, this keeps the caller's
+      // outer transaction usable after a competing insert wins the idempotency or name-reservation constraint.
+      const [record] = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).model.findOrCreate({
+        where: {
+          applicationName: input.applicationName,
+          actorUserId: input.actorUserId,
+          sessionId: input.sessionId,
+          idempotencyKey: input.idempotencyKey,
+        },
+        defaults: {
           applicationName: input.applicationName,
           targetProjectId: input.targetProjectId,
           name: input.name,
@@ -84,6 +117,8 @@ export class JsTemplateCreateJobStore {
           title: input.title ?? null,
           description: input.description ?? null,
           sourceType: input.sourceType,
+          idempotencyKey: input.idempotencyKey,
+          requestHash: input.requestHash,
           status: 'pending',
           resultProjectId: null,
           payload: input.payload,
@@ -91,7 +126,11 @@ export class JsTemplateCreateJobStore {
           errorReasonCode: null,
           errorMessage: null,
           reservationKey: createReservationKey(input.applicationName, input.normalizedName),
-          actorUserId: input.actorUserId ?? null,
+          actorUserId: input.actorUserId,
+          sessionId: input.sessionId,
+          authorizationRole: input.authorizationRole,
+          authorizationRoles: input.authorizationRoles,
+          dismissed: false,
           requestId: input.requestId ?? null,
           claimToken: null,
           claimOwner: null,
@@ -103,13 +142,55 @@ export class JsTemplateCreateJobStore {
         },
         transaction,
       });
-      return createJobFromModel(record);
+      return await this.resolveIdempotencyRecord(record, input, transaction);
     } catch (error) {
-      if (error instanceof UniqueConstraintError && isCreateJobReservationConstraintError(error)) {
-        throw createNameConflict(input.name, input.normalizedName);
+      if (error instanceof UniqueConstraintError) {
+        const raced = await this.findByIdempotency(input, transaction);
+        if (raced) {
+          return raced;
+        }
+        if (isCreateJobReservationConstraintError(error)) {
+          throw createNameConflict(input.name, input.normalizedName);
+        }
       }
       throw error;
     }
+  }
+
+  private async findByIdempotency(
+    input: EnqueueJsTemplateCreateJobInput,
+    transaction?: Transaction,
+  ): Promise<JsTemplateCreateJob | null> {
+    const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).findOne({
+      filter: {
+        applicationName: input.applicationName,
+        actorUserId: input.actorUserId,
+        sessionId: input.sessionId,
+        idempotencyKey: input.idempotencyKey,
+      },
+      transaction,
+    });
+    if (!record) {
+      return null;
+    }
+    return this.resolveIdempotencyRecord(record, input, transaction);
+  }
+
+  private async resolveIdempotencyRecord(
+    record: Model,
+    input: EnqueueJsTemplateCreateJobInput,
+    transaction?: Transaction,
+  ): Promise<JsTemplateCreateJob> {
+    if (record.get('requestHash') !== input.requestHash) {
+      throw new JsTemplateError(
+        'JS_TEMPLATE_IDEMPOTENCY_CONFLICT',
+        'Creation job idempotency key was already used with a different request',
+      );
+    }
+    if (record.get('dismissed')) {
+      await record.update({ dismissed: false }, { transaction });
+    }
+    return createJobFromModel(record);
   }
 
   async findClaimableIds(applicationName: string, limit = 100): Promise<string[]> {
@@ -122,6 +203,8 @@ export class JsTemplateCreateJobStore {
           { status: 'pending' },
           { status: 'running', leaseExpiresAt: { $lte: now } },
           { status: 'running', leaseExpiresAt: null },
+          { status: 'finalize-pending', leaseExpiresAt: { $lte: now } },
+          { status: 'finalize-pending', leaseExpiresAt: null },
         ],
       },
       fields: ['id'],
@@ -151,8 +234,8 @@ export class JsTemplateCreateJobStore {
       }
       await record.update(
         {
-          status: 'running',
-          resultProjectId: null,
+          status: record.get('status') === 'finalize-pending' ? 'finalize-pending' : 'running',
+          resultProjectId: record.get('status') === 'finalize-pending' ? record.get('resultProjectId') : null,
           claimToken: this.claimTokenFactory(),
           claimOwner,
           leaseExpiresAt: new Date(now.getTime() + leaseDurationMs),
@@ -210,20 +293,39 @@ export class JsTemplateCreateJobStore {
     );
   }
 
+  async assertCurrentFinalizableClaim(
+    jobId: string,
+    applicationName: string,
+    claimToken: string,
+    transaction: Transaction,
+  ): Promise<void> {
+    await this.withLockedJob(
+      jobId,
+      async (record) => {
+        if (!isCurrentFinalizableClaim(record, applicationName, claimToken, this.clock())) {
+          throw claimLost();
+        }
+      },
+      transaction,
+    );
+  }
+
   async succeed(
     jobId: string,
     applicationName: string,
     claimToken: string,
     resultProjectId: string,
+    validateResult?: (transaction: Transaction) => Promise<void>,
   ): Promise<JsTemplateCreateJob | null> {
     if (!resultProjectId.trim()) {
       throw new JsTemplateError('JS_TEMPLATE_INVALID_INPUT', 'Creation job result Project identity is required');
     }
     const succeeded = await this.withLockedJob(jobId, async (record, transaction) => {
       const now = this.clock();
-      if (!isCurrentLiveClaim(record, applicationName, claimToken, now)) {
+      if (!isCurrentFinalizableClaim(record, applicationName, claimToken, now)) {
         return null;
       }
+      await validateResult?.(transaction);
       await record.update(
         {
           status: 'succeeded',
@@ -244,9 +346,36 @@ export class JsTemplateCreateJobStore {
       return createJobFromModel(record);
     });
     if (succeeded) {
-      await this.pruneTerminalJobsBestEffort(applicationName, succeeded.actorUserId);
+      await this.pruneTerminalJobsBestEffort(applicationName, succeeded.actorUserId, succeeded.sessionId);
     }
     return succeeded;
+  }
+
+  async markFinalizePending(
+    jobId: string,
+    applicationName: string,
+    claimToken: string,
+    resultProjectId: string,
+    transaction: Transaction,
+  ): Promise<JsTemplateCreateJob> {
+    return this.withLockedJob(
+      jobId,
+      async (record) => {
+        if (!isCurrentLiveClaim(record, applicationName, claimToken, this.clock())) {
+          throw claimLost();
+        }
+        await record.update(
+          {
+            status: 'finalize-pending',
+            resultProjectId,
+            payload: null,
+          },
+          { transaction },
+        );
+        return createJobFromModel(record);
+      },
+      transaction,
+    );
   }
 
   async fail(
@@ -269,7 +398,6 @@ export class JsTemplateCreateJobStore {
           errorCode,
           errorReasonCode,
           errorMessage,
-          payload: null,
           reservationKey: null,
           claimToken: null,
           claimOwner: null,
@@ -282,7 +410,7 @@ export class JsTemplateCreateJobStore {
       return createJobFromModel(record);
     });
     if (failed) {
-      await this.pruneTerminalJobsBestEffort(applicationName, failed.actorUserId);
+      await this.pruneTerminalJobsBestEffort(applicationName, failed.actorUserId, failed.sessionId);
     }
     return failed;
   }
@@ -291,10 +419,11 @@ export class JsTemplateCreateJobStore {
     jobId: string,
     applicationName: string,
     actorUserId: string,
+    sessionId: string,
     transaction?: Transaction,
   ): Promise<JsTemplateCreateJob> {
     const record = await this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs).findOne({
-      filter: { id: jobId, applicationName, actorUserId },
+      filter: { id: jobId, applicationName, actorUserId, sessionId, dismissed: false },
       transaction,
     });
     if (!record) {
@@ -303,27 +432,89 @@ export class JsTemplateCreateJobStore {
     return createJobFromModel(record);
   }
 
-  async dismiss(jobId: string, applicationName: string, actorUserId: string): Promise<void> {
+  async dismiss(jobId: string, applicationName: string, actorUserId: string, sessionId: string): Promise<void> {
     await this.withLockedJob(jobId, async (record, transaction) => {
       if (!record) {
         throw jobNotFound(jobId);
       }
-      assertJobOwner(record, applicationName, actorUserId);
+      assertJobOwner(record, applicationName, actorUserId, sessionId);
       if (!['succeeded', 'failed'].includes(String(record.get('status')))) {
         throw invalidJobState('Only terminal creation jobs can be dismissed');
       }
-      await record.destroy({ transaction });
+      await record.update({ dismissed: true }, { transaction });
     });
   }
 
-  async listOwnVisibleJobs(applicationName: string, actorUserId: string): Promise<JsTemplateCreateJobSummary[]> {
+  async retry(
+    jobId: string,
+    applicationName: string,
+    actorUserId: string,
+    sessionId: string,
+  ): Promise<JsTemplateCreateJob> {
+    return this.withLockedJob(jobId, async (record, transaction) => {
+      if (!record) {
+        throw jobNotFound(jobId);
+      }
+      assertJobOwner(record, applicationName, actorUserId, sessionId);
+      const status = String(record.get('status'));
+      if (status !== 'failed') {
+        throw invalidJobState('Only failed creation jobs can be retried');
+      }
+      if (!record.get('payload')) {
+        throw invalidJobState('Creation job no longer has retryable source input');
+      }
+      try {
+        await record.update(
+          {
+            status: 'pending',
+            resultProjectId: null,
+            reservationKey: createReservationKey(applicationName, String(record.get('normalizedName'))),
+            errorCode: null,
+            errorReasonCode: null,
+            errorMessage: null,
+            claimToken: null,
+            claimOwner: null,
+            leaseExpiresAt: null,
+            heartbeatAt: null,
+            startedAt: null,
+            finishedAt: null,
+          },
+          { transaction },
+        );
+      } catch (error) {
+        if (error instanceof UniqueConstraintError && isCreateJobReservationConstraintError(error)) {
+          throw createNameConflict(String(record.get('name')), String(record.get('normalizedName')));
+        }
+        throw error;
+      }
+      return createJobFromModel(record);
+    });
+  }
+
+  async listOwnVisibleJobs(
+    applicationName: string,
+    actorUserId: string,
+    sessionId: string,
+  ): Promise<JsTemplateCreateJobSummary[]> {
     const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs);
     const activeRecords = await repository.find({
-      filter: { applicationName, actorUserId, status: { $in: activeJobStatuses } },
+      filter: {
+        applicationName,
+        actorUserId,
+        sessionId,
+        dismissed: false,
+        status: { $in: activeJobStatuses },
+      },
       sort: ['-createdAt', '-id'],
     });
     const terminalRecords = await repository.find({
-      filter: { applicationName, actorUserId, status: { $in: terminalJobStatuses } },
+      filter: {
+        applicationName,
+        actorUserId,
+        sessionId,
+        dismissed: false,
+        status: { $in: terminalJobStatuses },
+      },
       sort: ['-createdAt', '-id'],
       limit: visibleTerminalJobLimit,
     });
@@ -335,13 +526,23 @@ export class JsTemplateCreateJobStore {
     return [...jobsById.values()].sort(compareCreateJobsNewestFirst);
   }
 
-  private async pruneTerminalJobsBestEffort(applicationName: string, actorUserId: string | null): Promise<void> {
+  private async pruneTerminalJobsBestEffort(
+    applicationName: string,
+    actorUserId: string | null,
+    sessionId: string,
+  ): Promise<void> {
     try {
       const repository = this.db.getRepository(JS_TEMPLATE_COLLECTIONS.createJobs);
       let staleJobIds: string[];
       do {
         const staleRecords = await repository.find({
-          filter: { applicationName, actorUserId, status: { $in: terminalJobStatuses } },
+          filter: {
+            applicationName,
+            actorUserId,
+            sessionId,
+            dismissed: false,
+            status: { $in: terminalJobStatuses },
+          },
           fields: ['id'],
           sort: ['-createdAt', '-id'],
           offset: retainedTerminalJobLimit,
@@ -349,7 +550,10 @@ export class JsTemplateCreateJobStore {
         });
         staleJobIds = staleRecords.map((record) => String(record.get('id')));
         if (staleJobIds.length) {
-          await repository.destroy({ filterByTk: staleJobIds });
+          await repository.update({
+            filter: { id: { $in: staleJobIds } },
+            values: { dismissed: true },
+          });
         }
       } while (staleJobIds.length);
     } catch (error) {
@@ -391,6 +595,27 @@ export class JsTemplateCreateJobStore {
   }
 }
 
+export function hashJsTemplateCreateRequest(value: unknown): string {
+  return createHash('sha256')
+    .update(JSON.stringify(sortObjectKeys(value)))
+    .digest('hex');
+}
+
+function sortObjectKeys(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(sortObjectKeys);
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, entryValue]) => typeof entryValue !== 'undefined')
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, entryValue]) => [key, sortObjectKeys(entryValue)]),
+  );
+}
+
 function compareCreateJobsNewestFirst(left: JsTemplateCreateJobSummary, right: JsTemplateCreateJobSummary): number {
   const createdAtDifference = Date.parse(right.createdAt) - Date.parse(left.createdAt);
   return createdAtDifference || right.id.localeCompare(left.id);
@@ -426,6 +651,8 @@ export function createJobFromModel(record: Model): JsTemplateCreateJob {
     title: nullableString(record.get('title')),
     description: nullableString(record.get('description')),
     sourceType: record.get('sourceType') as JsTemplateCreateSourceType,
+    idempotencyKey: String(record.get('idempotencyKey')),
+    requestHash: String(record.get('requestHash')),
     status: record.get('status') as JsTemplateCreateJob['status'],
     resultProjectId: nullableString(record.get('resultProjectId')),
     payload: record.get('payload') as Record<string, unknown> | null,
@@ -433,7 +660,11 @@ export function createJobFromModel(record: Model): JsTemplateCreateJob {
     errorReasonCode: nullableString(record.get('errorReasonCode')),
     errorMessage: nullableString(record.get('errorMessage')),
     reservationKey: nullableString(record.get('reservationKey')),
-    actorUserId: nullableString(record.get('actorUserId')),
+    actorUserId: String(record.get('actorUserId')),
+    sessionId: String(record.get('sessionId')),
+    authorizationRole: String(record.get('authorizationRole')),
+    authorizationRoles: normalizeStoredRoles(record.get('authorizationRoles')),
+    dismissed: Boolean(record.get('dismissed')),
     requestId: nullableString(record.get('requestId')),
     claimToken: nullableString(record.get('claimToken')),
     claimOwner: nullableString(record.get('claimOwner')),
@@ -452,11 +683,27 @@ function isClaimable(record: Model, now: Date): boolean {
   if (status === 'pending') {
     return true;
   }
-  if (status !== 'running') {
+  if (status !== 'running' && status !== 'finalize-pending') {
     return false;
   }
   const leaseExpiresAt = dateValue(record.get('leaseExpiresAt'));
   return !leaseExpiresAt || leaseExpiresAt.getTime() <= now.getTime();
+}
+
+function isCurrentFinalizableClaim(
+  record: Model | null,
+  applicationName: string,
+  claimToken: string,
+  now: Date,
+): record is Model {
+  if (record?.get('status') !== 'finalize-pending') {
+    return false;
+  }
+  return (
+    record.get('applicationName') === applicationName &&
+    record.get('claimToken') === claimToken &&
+    Boolean(dateValue(record.get('leaseExpiresAt'))?.getTime() > now.getTime())
+  );
 }
 
 function isCurrentLiveClaim(
@@ -481,10 +728,21 @@ function createReservationKey(applicationName: string, normalizedName: string): 
   return `sha256:${createHash('sha256').update(`${applicationName}\0${normalizedName}`).digest('hex')}`;
 }
 
-function assertJobOwner(record: Model, applicationName: string, actorUserId: string): void {
-  if (record.get('applicationName') !== applicationName || String(record.get('actorUserId')) !== actorUserId) {
+function assertJobOwner(record: Model, applicationName: string, actorUserId: string, sessionId: string): void {
+  if (
+    record.get('applicationName') !== applicationName ||
+    String(record.get('actorUserId')) !== actorUserId ||
+    String(record.get('sessionId')) !== sessionId ||
+    Boolean(record.get('dismissed'))
+  ) {
     throw jobNotFound(String(record.get('id')));
   }
+}
+
+function normalizeStoredRoles(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((role): role is string => typeof role === 'string' && Boolean(role.trim()))
+    : [];
 }
 
 function nullableString(value: unknown): string | null {
@@ -527,10 +785,19 @@ function isSqliteBusyError(error: unknown): boolean {
     return false;
   }
   const candidate = error as {
+    code?: unknown;
     original?: { code?: unknown };
     parent?: { code?: unknown };
   };
-  return candidate.original?.code === 'SQLITE_BUSY' || candidate.parent?.code === 'SQLITE_BUSY';
+  return (
+    candidate.code === 'SQLITE_BUSY' ||
+    candidate.original?.code === 'SQLITE_BUSY' ||
+    candidate.parent?.code === 'SQLITE_BUSY'
+  );
+}
+
+function isSqliteDatabase(db: Database): boolean {
+  return db.sequelize?.getDialect?.() === 'sqlite';
 }
 
 function delay(ms: number): Promise<void> {

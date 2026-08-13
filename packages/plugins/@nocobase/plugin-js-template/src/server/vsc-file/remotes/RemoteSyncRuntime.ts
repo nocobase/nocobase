@@ -58,6 +58,7 @@ export interface RemoteSyncTestTargetInput {
   provider: VscRemoteProvider;
   config: unknown;
   authRef: string | null;
+  signal?: AbortSignal;
 }
 
 export interface RemoteSyncTestTargetResult {

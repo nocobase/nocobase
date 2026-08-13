@@ -18,7 +18,7 @@ it('imports the Flow Engine package entry without eagerly initializing RunJS con
   ]);
 
   await setupRunJSContexts();
-  expect(flowEngine.RunJSContextRegistry.resolve('v2', 'JSPageModel')?.prototype).toBeInstanceOf(
+  expect(flowEngine.RunJSContextRegistry.resolve('v2', 'JSBlockModel')?.prototype).toBeInstanceOf(
     flowEngine.FlowRunJSContext,
   );
 });

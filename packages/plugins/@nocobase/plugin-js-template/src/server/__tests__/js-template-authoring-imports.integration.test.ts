@@ -16,14 +16,14 @@ import { JsTemplateValidator } from '../services/JsTemplateValidator';
 import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspaceCompilerBridge';
 import { collectAndRelocateInlineFiles } from '../services/conversion/jsTemplateToInlineWorkspace';
 
-const settingsImport = 'js-template:settings/client/js-page/orders';
-const entryPath = 'src/client/js-pages/orders/index.tsx';
+const settingsImport = 'js-template:settings/client/js-block/orders';
+const entryPath = 'src/client/js-blocks/orders/index.tsx';
 
 const publicTypeCases = [
   {
-    name: 'JSPageRuntimeFacade',
+    name: 'JSBlockContext',
     typeArguments: '',
-    probe: 'value.setDocumentTitle(value.uid); return value.refresh();',
+    probe: 'value.render?.(value.record?.id); return value.element;',
   },
   {
     name: 'JSFieldContext',
@@ -38,7 +38,7 @@ describe('JS Template authoring imports across compile and detach', () => {
     async ({ name, typeArguments, probe }) => {
       const source = buildSource(name, typeArguments, probe);
       const descriptor = {
-        path: 'src/client/js-pages/orders/entry.json',
+        path: 'src/client/js-blocks/orders/entry.json',
         content: JSON.stringify({ schemaVersion: 1, key: 'orders', settings: {} }),
       };
       const validator = new JsTemplateValidator();
@@ -50,7 +50,7 @@ describe('JS Template authoring imports across compile and detach', () => {
 
       const bridge = new JsTemplateWorkspaceCompilerBridge();
       const compileInput = {
-        kind: 'js-page' as const,
+        kind: 'js-block' as const,
         templateName: 'orders',
         entryPath,
         surfaceStyle: 'render' as const,
@@ -82,12 +82,12 @@ describe('JS Template authoring imports across compile and detach', () => {
       const preparedInlineEntry = inlinePreparation.files.find((file) => file.path === 'src/client/index.tsx');
       expect(findAuthoringModuleReferences(preparedInlineEntry?.content || '')).toEqual([]);
       expect(preparation.files.find((file) => file.path === entryPath)?.content).toContain(
-        'descriptorPath: "src/client/js-pages/orders/entry.json"',
+        'descriptorPath: "src/client/js-blocks/orders/entry.json"',
       );
       expect(preparedInlineEntry?.content).toContain('descriptorPath: "src/client/entry.json"');
 
       const inlineCompiled = await bridge.compileEntry({
-        kind: 'js-page',
+        kind: 'js-block',
         templateName: 'orders-inline',
         entryPath: 'src/client/index.tsx',
         surfaceStyle: 'render',
@@ -109,15 +109,15 @@ describe('JS Template authoring imports across compile and detach', () => {
       'const namespaced: Template.Settings = aliased;',
       'const imported: ImportedSettings = namespaced;',
       'const optional: string | undefined = imported.title?.trim();',
-      'const kind: "js-page" = null as unknown as SettingsSchemaSummary["kind"];',
-      'const entryKey: "client/js-page/orders" = null as unknown as Template.SettingsSchemaSummary["entryKey"];',
-      'const descriptorPath: "src/client/js-pages/orders/entry.json" = null as unknown as Template.SettingsSchemaSummary["descriptorPath"];',
+      'const kind: "js-block" = null as unknown as SettingsSchemaSummary["kind"];',
+      'const entryKey: "client/js-block/orders" = null as unknown as Template.SettingsSchemaSummary["entryKey"];',
+      'const descriptorPath: "src/client/js-blocks/orders/entry.json" = null as unknown as Template.SettingsSchemaSummary["descriptorPath"];',
       'const readContext = (context: Context): number => context.settings.count;',
       'ctx.render(<div>{String(readContext(null as unknown as Context))}:{optional}:{kind}:{entryKey}:{descriptorPath}</div>);',
       '',
     ].join('\n');
     const input = {
-      kind: 'js-page' as const,
+      kind: 'js-block' as const,
       templateName: 'orders',
       entryPath,
       surfaceStyle: 'render' as const,
@@ -132,8 +132,8 @@ describe('JS Template authoring imports across compile and detach', () => {
     expect(preparation.accepted, JSON.stringify(preparation.diagnostics, null, 2)).toBe(true);
     expect(preparedEntry).toContain('count: number');
     expect(preparedEntry).toContain('title?: string');
-    expect(preparedEntry).toContain('kind: "js-page"');
-    expect(preparedEntry).toContain('descriptorPath: "src/client/js-pages/orders/entry.json"');
+    expect(preparedEntry).toContain('kind: "js-block"');
+    expect(preparedEntry).toContain('descriptorPath: "src/client/js-blocks/orders/entry.json"');
     expect(findAuthoringModuleReferences(preparedEntry)).toEqual([]);
     expect(compiled.accepted, JSON.stringify(compiled.diagnostics, null, 2)).toBe(true);
     expect(compiled.diagnostics).toEqual([]);
@@ -174,7 +174,7 @@ describe('JS Template authoring imports across compile and detach', () => {
   ])('rejects invalid precise settings $name during compilation', async ({ body, message }) => {
     const bridge = new JsTemplateWorkspaceCompilerBridge();
     const result = await bridge.compileEntry({
-      kind: 'js-page',
+      kind: 'js-block',
       templateName: 'orders',
       entryPath,
       files: [
@@ -194,12 +194,12 @@ describe('JS Template authoring imports across compile and detach', () => {
 
   it('reports a structurally valid settings module that is absent from the current workspace', () => {
     const source = [
-      'import type { Settings } from "js-template:settings/client/js-page/missing";',
+      'import type { Settings } from "js-template:settings/client/js-block/missing";',
       'ctx.render(null as unknown as Settings);',
       '',
     ].join('\n');
     const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
-      kind: 'js-page',
+      kind: 'js-block',
       templateName: 'orders',
       entryPath,
       files: [{ path: entryPath, content: source }, preciseSettingsDescriptor()],
@@ -254,7 +254,7 @@ describe('JS Template authoring imports across compile and detach', () => {
       const files = [
         { path: entryPath, content: source },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders', settings: {} }),
         },
       ];
@@ -270,7 +270,7 @@ describe('JS Template authoring imports across compile and detach', () => {
       expect(validation.diagnostics).toContainEqual(expectedDiagnostic);
 
       const preparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
-        kind: 'js-page',
+        kind: 'js-block',
         templateName: 'orders',
         entryPath,
         files,
@@ -283,7 +283,7 @@ describe('JS Template authoring imports across compile and detach', () => {
       expect(findAuthoringModuleReferences(inlineEntry?.content || '')).not.toEqual([]);
 
       const inlinePreparation = new JsTemplateWorkspaceCompilerBridge().prepareEntry({
-        kind: 'js-page',
+        kind: 'js-block',
         templateName: 'orders-inline',
         entryPath: 'src/client/index.tsx',
         files: inlineFiles,
@@ -322,7 +322,7 @@ function buildSource(name: string, typeArguments: string, probe: string): string
 
 function preciseSettingsDescriptor() {
   return {
-    path: 'src/client/js-pages/orders/entry.json',
+    path: 'src/client/js-blocks/orders/entry.json',
     content: JSON.stringify({
       schemaVersion: 1,
       key: 'orders',

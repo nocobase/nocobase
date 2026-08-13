@@ -11,8 +11,8 @@ import { vi } from 'vitest';
 
 import type { JsTemplateUsageListInput } from '../../shared/types';
 import {
-  createJsPageTemplateRecord,
-  createJsPageUsageRecord,
+  createTemplateRecord,
+  createUsageRecord,
   createJsTemplateUsageServiceFixture,
   createProjectRecord,
   createUsageRecord,
@@ -303,19 +303,19 @@ describe('plugin-js-template template-level Usage visibility', () => {
     });
   });
 
-  it('uses JS Page route visibility when reading page usages', async () => {
+  it('uses JS Block route visibility when reading page usages', async () => {
     for (const testCase of [
       { role: 'page-hidden', desktopRoutes: [], visible: false },
-      { role: 'page-reader', desktopRoutes: [{ id: 'route_js_page' }], visible: true },
+      { role: 'page-reader', desktopRoutes: [{ id: 'route_js_block' }], visible: true },
     ]) {
       const { service, recordUsageEvent } = createJsTemplateUsageServiceFixture({
-        flowModels: [{ uid: 'flow_js_page_visible', options: { title: 'Sales page model' } }],
-        flowModelTreePaths: [{ ancestor: 'js_page_schema', descendant: 'flow_js_page_visible' }],
-        desktopRoutes: [{ id: 'route_js_page', schemaUid: 'js_page_schema', title: 'Sales page' }],
+        flowModels: [{ uid: 'flow_js_block_visible', options: { title: 'Sales page model' } }],
+        flowModelTreePaths: [{ ancestor: 'js_block_schema', descendant: 'flow_js_block_visible' }],
+        desktopRoutes: [{ id: 'route_js_block', schemaUid: 'js_block_schema', title: 'Sales page' }],
         roles: [{ name: testCase.role, desktopRoutes: testCase.desktopRoutes }],
-        projects: [createProjectRecord({ id: 'jtp_pages' })],
-        templates: [createJsPageTemplateRecord()],
-        usages: [createJsPageUsageRecord({ modelUid: 'flow_js_page_visible' })],
+        projects: [createProjectRecord({ id: 'jtp_sales' })],
+        templates: [createTemplateRecord()],
+        usages: [createUsageRecord({ modelUid: 'flow_js_block_visible' })],
       });
       const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
         if (resource === 'jsTemplate' && action === 'readUsages') {
@@ -325,16 +325,16 @@ describe('plugin-js-template template-level Usage visibility', () => {
       });
 
       const result = await service.listUsages(
-        { templateId: 'jtt_sales_page', page: 1, pageSize: 20 },
-        { can, requestId: `req_js_page_${testCase.role}`, state: { currentRoles: [testCase.role] } },
+        { templateId: 'jtt_sales_kpi', page: 1, pageSize: 20 },
+        { can, requestId: `req_js_block_${testCase.role}`, state: { currentRoles: [testCase.role] } },
       );
 
       expect(result.data).toHaveLength(testCase.visible ? 1 : 0);
       if (testCase.visible) {
         expect(result.data[0]).toMatchObject({
-          kind: 'js-page',
-          ownerKind: 'flowModel.pageSettings',
-          ownerLocator: { modelUid: 'flow_js_page_visible', use: 'JSPageModel' },
+          kind: 'js-block',
+          ownerKind: 'flowModel.step',
+          ownerLocator: { modelUid: 'flow_js_block_visible', use: 'JSBlockModel' },
           locationTitle: 'Sales page',
         });
       } else {
@@ -343,7 +343,7 @@ describe('plugin-js-template template-level Usage visibility', () => {
           expect.objectContaining({
             action: 'listUsages',
             result: 'denied',
-            requestId: 'req_js_page_page-hidden',
+            requestId: 'req_js_block_page-hidden',
             reasonCode: 'owner_not_visible',
           }),
         );

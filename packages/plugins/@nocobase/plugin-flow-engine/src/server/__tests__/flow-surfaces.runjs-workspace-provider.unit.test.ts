@@ -11,17 +11,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   bootstrapFlowSurfaceRunJSWorkspace,
-  buildFlowSurfaceJSPageCapabilities,
   hasFlowSurfaceRunJSWorkspaceBootstrapPort,
   registerFlowSurfaceRunJSWorkspaceBootstrapPort,
 } from '../flow-surfaces/page-surface-contract';
 
 describe('Flow Surface RunJS workspace provider contract', () => {
-  it('uses inline capabilities and no bootstrap result without a provider', async () => {
+  it('returns no bootstrap result without a provider', async () => {
     const app = {};
 
     expect(hasFlowSurfaceRunJSWorkspaceBootstrapPort(app)).toBe(false);
-    expect(buildFlowSurfaceJSPageCapabilities(app).runJSWorkspace).toBe(false);
     await expect(bootstrapFlowSurfaceRunJSWorkspace(app, {} as never)).resolves.toBeUndefined();
   });
 
@@ -31,7 +29,6 @@ describe('Flow Surface RunJS workspace provider contract', () => {
     const unregister = registerFlowSurfaceRunJSWorkspaceBootstrapPort(app, port);
 
     expect(hasFlowSurfaceRunJSWorkspaceBootstrapPort(app)).toBe(true);
-    expect(buildFlowSurfaceJSPageCapabilities(app).runJSWorkspace).toBe(true);
     await expect(bootstrapFlowSurfaceRunJSWorkspace(app, {} as never)).resolves.toEqual({
       status: 'ready',
       retryable: false,

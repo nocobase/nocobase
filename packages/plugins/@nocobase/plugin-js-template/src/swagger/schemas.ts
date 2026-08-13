@@ -23,6 +23,134 @@ const nullableDateTime = {
 };
 
 export const jsTemplateSchemas = {
+  JsTemplateGitRemoteConfigDraft: {
+    type: 'object',
+    required: ['url'],
+    properties: {
+      url: {
+        type: 'string',
+        format: 'uri',
+        pattern: '^https?://',
+        description: 'HTTP or HTTPS Git repository URL without userinfo, query, or fragment.',
+      },
+      branch: nullableString,
+      subdirectory: nullableString,
+      transport: {
+        type: 'string',
+        enum: ['http', 'https'],
+        description: 'Must match the repository URL. HTTP only supports public repositories without authRef.',
+      },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncProjectRequest: {
+    type: 'object',
+    required: ['projectId'],
+    properties: {
+      projectId: { type: 'string', minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncConfigureRequest: {
+    type: 'object',
+    required: ['projectId', 'provider', 'config'],
+    properties: {
+      projectId: { type: 'string', minLength: 1 },
+      provider: { type: 'string', enum: ['git'] },
+      config: { $ref: '#/components/schemas/JsTemplateGitRemoteConfigDraft' },
+      authRef: {
+        type: 'string',
+        pattern: '^\\{\\{ \\$env\\.[A-Za-z_][A-Za-z0-9_]* \\}\\}$',
+        description: 'HTTPS-only reference to a Secret JSON credential. Literal credentials are forbidden.',
+      },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncTestConnectionRequest: {
+    type: 'object',
+    required: ['projectId'],
+    properties: {
+      projectId: { type: 'string', minLength: 1 },
+      provider: { type: 'string', enum: ['git'] },
+      config: { $ref: '#/components/schemas/JsTemplateGitRemoteConfigDraft' },
+      authRef: {
+        type: 'string',
+        pattern: '^\\{\\{ \\$env\\.[A-Za-z_][A-Za-z0-9_]* \\}\\}$',
+        description: 'HTTPS-only reference to a Secret JSON credential. Literal credentials are forbidden.',
+      },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncExecutionRequest: {
+    type: 'object',
+    required: [
+      'projectId',
+      'expectedHeadCommitId',
+      'expectedRemoteRevision',
+      'expectedRemoteTargetVersion',
+      'planFingerprint',
+    ],
+    properties: {
+      projectId: { type: 'string', minLength: 1 },
+      expectedHeadCommitId: nullableString,
+      expectedRemoteRevision: nullableString,
+      expectedRemoteTargetVersion: { type: 'integer', minimum: 1 },
+      planFingerprint: { type: 'string', minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncCreateFromGitRequest: {
+    type: 'object',
+    required: ['idempotencyKey', 'provider', 'config', 'name'],
+    properties: {
+      idempotencyKey: { type: 'string', minLength: 1, maxLength: 255 },
+      provider: { type: 'string', enum: ['git'] },
+      config: { $ref: '#/components/schemas/JsTemplateGitRemoteConfigDraft' },
+      authRef: {
+        type: 'string',
+        pattern: '^\\{\\{ \\$env\\.[A-Za-z_][A-Za-z0-9_]* \\}\\}$',
+        description: 'HTTPS-only reference to a Secret JSON credential. Literal credentials are forbidden.',
+      },
+      name: { type: 'string', minLength: 1 },
+      title: nullableString,
+      description: nullableString,
+    },
+    additionalProperties: false,
+    description: 'Create a Source Project from an HTTP/HTTPS Git target without an existing projectId.',
+  },
+  JsTemplateCreateProjectRequest: {
+    type: 'object',
+    required: ['idempotencyKey', 'name'],
+    properties: {
+      idempotencyKey: { type: 'string', minLength: 1, maxLength: 255 },
+      name: { type: 'string', minLength: 1 },
+      title: nullableString,
+      description: nullableString,
+      zipBase64: {
+        type: 'string',
+        minLength: 1,
+        description: 'Optional base64 ZIP archive validated completely before the creation job is persisted.',
+      },
+      initialFiles: {
+        type: 'array',
+        items: { $ref: '#/components/schemas/JsTemplateWorkspaceFile' },
+      },
+      message: { type: 'string', minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateSyncResultEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        type: 'object',
+        description:
+          'Safe JS Template synchronization result without Secret values, source text, or internal VSC handles.',
+        additionalProperties: true,
+      },
+    },
+  },
   JsTemplateErrorCode: {
     type: 'string',
     enum: [...JS_TEMPLATE_ERROR_CODES],
@@ -1244,6 +1372,24 @@ export const jsTemplateSchemas = {
     properties: {
       data: {
         $ref: '#/components/schemas/JsTemplateCreateJobListResult',
+      },
+    },
+  },
+  JsTemplateCreateJobEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/JsTemplateCreateJobSummary',
+      },
+    },
+  },
+  JsTemplateCreateJobAcceptedEnvelope: {
+    type: 'object',
+    required: ['data'],
+    properties: {
+      data: {
+        $ref: '#/components/schemas/JsTemplateCreateJobSummary',
       },
     },
   },

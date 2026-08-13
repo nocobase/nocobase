@@ -28,7 +28,113 @@ function errorResponse(description: string) {
   };
 }
 
+function syncOperation(
+  summary: string,
+  requestSchema: string,
+  successSchema: string,
+  successDescription: string,
+  successStatus = 200,
+) {
+  return {
+    post: {
+      tags: ['jsTemplateSync'],
+      summary,
+      requestBody: {
+        required: true,
+        content: jsonContent(requestSchema),
+      },
+      responses: {
+        [successStatus]: {
+          description: successDescription,
+          content: jsonContent(successSchema),
+        },
+        400: errorResponse(
+          'The Git synchronization request is invalid or contains a credential outside an HTTPS Secret reference.',
+        ),
+        403: errorResponse('The current user does not have the required Source Project synchronization permission.'),
+        409: errorResponse(
+          'The Source Project Head, remote revision, remote target version, or plan fingerprint is stale.',
+        ),
+        422: errorResponse(
+          'The Git configuration, credential reference, remote content, or compiled workspace is invalid.',
+        ),
+      },
+    },
+  };
+}
+
 export const jsTemplatePaths = {
+  '/jsTemplateSync:get': syncOperation(
+    'Get the Git synchronization source',
+    'JsTemplateSyncProjectRequest',
+    'JsTemplateSyncResultEnvelope',
+    'Current safe synchronization source metadata.',
+  ),
+  '/jsTemplateSync:configure': syncOperation(
+    'Configure a Git HTTP/HTTPS synchronization source',
+    'JsTemplateSyncConfigureRequest',
+    'JsTemplateSyncResultEnvelope',
+    'The tested and persisted synchronization source.',
+  ),
+  '/jsTemplateSync:disconnect': syncOperation(
+    'Disconnect a Git synchronization source',
+    'JsTemplateSyncProjectRequest',
+    'JsTemplateSyncResultEnvelope',
+    'The Source Project no longer has a synchronization source.',
+  ),
+  '/jsTemplateSync:testConnection': syncOperation(
+    'Test a Git HTTP/HTTPS synchronization source',
+    'JsTemplateSyncTestConnectionRequest',
+    'JsTemplateSyncResultEnvelope',
+    'Validated Git configuration and safe remote revision metadata.',
+  ),
+  '/jsTemplateSync:plan': syncOperation(
+    'Plan Git synchronization without changing state',
+    'JsTemplateSyncProjectRequest',
+    'JsTemplateSyncResultEnvelope',
+    'The current local/remote comparison and CAS fingerprint.',
+  ),
+  '/jsTemplateSync:pull': syncOperation(
+    'Pull a planned Git revision into the Source Project',
+    'JsTemplateSyncExecutionRequest',
+    'JsTemplateSyncResultEnvelope',
+    'The atomically updated Source Project and next synchronization plan.',
+  ),
+  '/jsTemplateSync:push': syncOperation(
+    'Push a planned Source Project Head to Git',
+    'JsTemplateSyncExecutionRequest',
+    'JsTemplateSyncResultEnvelope',
+    'The published remote revision and next synchronization plan.',
+  ),
+  '/jsTemplateSync:createFromGit': syncOperation(
+    'Create a Source Project from Git',
+    'JsTemplateSyncCreateFromGitRequest',
+    'JsTemplateCreateJobAcceptedEnvelope',
+    'A durable Source Project creation job was accepted.',
+    202,
+  ),
+  '/jsTemplateProjects:create': {
+    post: {
+      tags: ['jsTemplateProjects'],
+      summary: 'Create a Source Project from a starter or ZIP archive',
+      description:
+        'Validate the complete starter or ZIP source before persistence and accept one durable, session-scoped creation job.',
+      requestBody: {
+        required: true,
+        content: jsonContent('JsTemplateCreateProjectRequest'),
+      },
+      responses: {
+        202: {
+          description: 'A durable Source Project creation job was accepted.',
+          content: jsonContent('JsTemplateCreateJobAcceptedEnvelope'),
+        },
+        400: errorResponse('The creation request or archive is invalid.'),
+        403: errorResponse('The current user cannot create Source Projects.'),
+        409: errorResponse('The idempotency key or reserved Source Project name conflicts with another request.'),
+        422: errorResponse('The starter or ZIP workspace failed validation.'),
+      },
+    },
+  },
   '/jsTemplateProjects:list': {
     post: {
       tags: ['jsTemplateProjects'],
@@ -96,7 +202,7 @@ export const jsTemplatePaths = {
       tags: ['jsTemplateCreateJobs'],
       summary: 'Dismiss one terminal Source Project creation job',
       description:
-        'Delete one succeeded or failed creation job owned by the current user in the current application. Missing and invisible jobs use the same non-enumerating 404 response.',
+        'Soft-dismiss one succeeded or failed creation job owned by the current user in the current application and session. Its durable idempotency record remains available for a safe replay. Missing and invisible jobs use the same non-enumerating 404 response.',
       requestBody: {
         required: true,
         content: {
@@ -130,6 +236,16 @@ export const jsTemplatePaths = {
       },
     },
   },
+  '/jsTemplateCreateJobs:get': createJobMutationOperation(
+    'Get one Source Project creation job',
+    'Return one creation job owned by the current user and application after rechecking its source permissions.',
+    false,
+  ),
+  '/jsTemplateCreateJobs:retry': createJobMutationOperation(
+    'Retry one failed Source Project creation job',
+    'Reset one retryable failed creation job to pending without creating a replacement job or project.',
+    true,
+  ),
   '/jsTemplates:get': {
     post: {
       tags: ['jsTemplates'],
@@ -583,3 +699,33 @@ export const jsTemplatePaths = {
     },
   },
 };
+
+function createJobMutationOperation(summary: string, description: string, retry: boolean) {
+  return {
+    post: {
+      tags: ['jsTemplateCreateJobs'],
+      summary,
+      description,
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              required: ['jobId'],
+              properties: { jobId: { type: 'string', minLength: 1 } },
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: 'Creation job.', content: jsonContent('JsTemplateCreateJobEnvelope') },
+        400: errorResponse('jobId or the request payload is invalid.'),
+        403: errorResponse('The current user can no longer access this creation source.'),
+        404: errorResponse('The creation job is not visible to the current user and application.'),
+        ...(retry ? { 409: errorResponse('The creation job cannot be retried in its current state.') } : {}),
+      },
+    },
+  };
+}

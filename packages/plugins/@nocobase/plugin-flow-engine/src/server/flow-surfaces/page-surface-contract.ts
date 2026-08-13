@@ -9,12 +9,8 @@
 
 import type { Transaction } from '@nocobase/database';
 import type { RunJSSourceAdapterContext } from '@nocobase/runjs/workspace/server';
-import { FlowSurfaceBadRequestError } from './errors';
-
-export const JS_PAGE_MODEL_USE = 'JSPageModel';
 
 export const FLOW_SURFACE_RUNJS_HOSTS = {
-  JSPageModel: { hostKind: 'js-page', flowKey: 'jsSettings' },
   JSBlockModel: { hostKind: 'js-block', flowKey: 'jsSettings' },
   JSFieldModel: { hostKind: 'js-field', flowKey: 'jsSettings' },
   JSEditableFieldModel: { hostKind: 'js-editable-field', flowKey: 'jsSettings' },
@@ -70,15 +66,6 @@ export type FlowSurfaceRunJSWorkspaceBootstrapPort = (
   input: FlowSurfaceRunJSWorkspaceBootstrapInput,
 ) => Promise<FlowSurfaceRunJSWorkspaceBootstrapResult>;
 
-export type FlowSurfaceJSPageCapabilities = {
-  tabs: false;
-  blocks: false;
-  compose: false;
-  blueprint: false;
-  export: false;
-  runJSWorkspace: boolean;
-};
-
 const RUNJS_WORKSPACE_BOOTSTRAP_PORT = Symbol.for(
   '@nocobase/plugin-flow-engine/flow-surface-runjs-workspace-bootstrap-port',
 );
@@ -111,17 +98,6 @@ export function hasFlowSurfaceRunJSWorkspaceBootstrapPort(app: object): boolean 
   return Boolean((app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT]);
 }
 
-export function buildFlowSurfaceJSPageCapabilities(app: object): FlowSurfaceJSPageCapabilities {
-  return {
-    tabs: false,
-    blocks: false,
-    compose: false,
-    blueprint: false,
-    export: false,
-    runJSWorkspace: hasFlowSurfaceRunJSWorkspaceBootstrapPort(app),
-  };
-}
-
 export function registerFlowSurfaceRunJSWorkspaceBootstrapPort(
   app: object,
   port: FlowSurfaceRunJSWorkspaceBootstrapPort,
@@ -147,7 +123,7 @@ export async function bootstrapFlowSurfaceRunJSWorkspace(
 }
 
 export function isRouteBackedPageUse(use?: string) {
-  return use === 'RootPageModel' || use === JS_PAGE_MODEL_USE;
+  return use === 'RootPageModel';
 }
 
 export function supportsPageTabs(use?: string) {
@@ -160,17 +136,4 @@ export function supportsPageBlockAuthoring(use?: string) {
 
 export function supportsStandardPageBlueprint(use?: string) {
   return use === 'RootPageModel';
-}
-
-export function throwJSPageOperationUnsupported(action: string, use = JS_PAGE_MODEL_USE): never {
-  throw new FlowSurfaceBadRequestError(
-    `flowSurfaces ${action} does not support JS page surfaces`,
-    'FLOW_SURFACE_JS_PAGE_OPERATION_UNSUPPORTED',
-    {
-      details: {
-        action,
-        pageUse: use,
-      },
-    },
-  );
 }

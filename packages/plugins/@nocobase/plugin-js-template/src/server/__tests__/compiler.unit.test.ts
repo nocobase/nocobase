@@ -100,7 +100,7 @@ function registerCompileContractTests() {
         { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div />);' },
         { path: 'src/client/js-blocks/example/entry.json', content: '{"schemaVersion":1,"key":"example"}' },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: '{"schemaVersion":1,"key":"orders","settings":{"title":{"type":"string"}}}',
         },
         { path: 'src/shared/format.ts', content: 'export const format = String;' },
@@ -176,7 +176,7 @@ function registerCompileKeyTests() {
       expect(first.inputManifest.files).toEqual([
         expect.objectContaining({ path: template.descriptorPath, blobHash: 'blob_descriptor' }),
         expect.objectContaining({ path: 'src/client/js-blocks/sales/index.tsx', blobHash: 'blob_entry' }),
-        expect.objectContaining({ path: 'src/client/js-pages/orders/entry.json', blobHash: 'blob_orders_descriptor' }),
+        expect.objectContaining({ path: 'src/client/js-blocks/orders/entry.json', blobHash: 'blob_orders_descriptor' }),
         expect.objectContaining({ path: 'src/shared/format.ts', blobHash: 'blob_shared' }),
       ]);
       expect(JSON.stringify(first.inputManifest)).not.toContain('source body');
@@ -215,7 +215,7 @@ function registerCompileKeyTests() {
       const changedReferencedSettings = buildJsTemplateCompileKey({
         template,
         files: files.map((file) =>
-          file.path === 'src/client/js-pages/orders/entry.json'
+          file.path === 'src/client/js-blocks/orders/entry.json'
             ? { ...file, blobHash: 'blob_orders_descriptor_changed' }
             : file,
         ),
@@ -297,7 +297,7 @@ function registerCompileKeyTests() {
         mode: '100644',
       },
       {
-        path: 'src/client/js-pages/orders/entry.json',
+        path: 'src/client/js-blocks/orders/entry.json',
         blobHash: 'blob_orders_descriptor',
         language: 'json',
         mode: '100644',

@@ -19,7 +19,10 @@ describe('workspace archive UI', () => {
     const files = Object.freeze([
       { path: 'src/shared/value.ts', content: 'export const value = 2;\n' },
       { path: 'src/client/js-blocks/example/index.tsx', content: 'ctx.render(<div>Draft</div>);\n' },
-      { path: 'src/client/js-pages/orders/index.tsx', content: 'ctx.render(<div>{ctx.page.uid}</div>);\n' },
+      {
+        path: 'src/client/js-blocks/orders/index.tsx',
+        content: 'ctx.render(<div>{String(ctx.record?.id ?? "")}</div>);\n',
+      },
     ]);
     const blob = await createJsTemplateWorkspaceArchive(files);
     const zip = await JSZip.loadAsync(await readBlobAsArrayBuffer(blob));
@@ -30,23 +33,22 @@ describe('workspace archive UI', () => {
       'src/client/js-blocks/',
       'src/client/js-blocks/example/',
       'src/client/js-blocks/example/index.tsx',
-      'src/client/js-pages/',
-      'src/client/js-pages/orders/',
-      'src/client/js-pages/orders/index.tsx',
+      'src/client/js-blocks/orders/',
+      'src/client/js-blocks/orders/index.tsx',
       'src/shared/',
       'src/shared/value.ts',
     ]);
     expect(files.map((file) => file.path)).toEqual([
       'src/shared/value.ts',
       'src/client/js-blocks/example/index.tsx',
-      'src/client/js-pages/orders/index.tsx',
+      'src/client/js-blocks/orders/index.tsx',
     ]);
     await expect(zip.file('src/shared/value.ts')?.async('string')).resolves.toBe('export const value = 2;\n');
     await expect(zip.file('src/client/js-blocks/example/index.tsx')?.async('string')).resolves.toBe(
       'ctx.render(<div>Draft</div>);\n',
     );
-    await expect(zip.file('src/client/js-pages/orders/index.tsx')?.async('string')).resolves.toBe(
-      'ctx.render(<div>{ctx.page.uid}</div>);\n',
+    await expect(zip.file('src/client/js-blocks/orders/index.tsx')?.async('string')).resolves.toBe(
+      'ctx.render(<div>{String(ctx.record?.id ?? "")}</div>);\n',
     );
   });
 

@@ -27,7 +27,35 @@ import type { PulledFile } from '../services/VscFileService';
 import { assertRunJSCompileInputLimits } from './compileMaterialization';
 import { compactObject, normalizeAllowedRunJSWorkspacePath, toStringValue } from './resourceInput';
 
-const maxZipCompressionRatio = 20;
+export interface RunJSWorkspaceZipLimits {
+  maxCompressedBytes: number;
+  maxFiles: number;
+  maxFileBytes: number;
+  maxTotalBytes: number;
+  maxCompressionRatio: number;
+}
+
+export type RunJSWorkspaceZipMetadataPolicy = boolean | ((path: string) => boolean);
+
+export interface ReadRunJSWorkspaceZipOptions {
+  limits?: Partial<RunJSWorkspaceZipLimits>;
+  pathMode?: 'workspace' | 'archive';
+  stripSingleTopLevelDirectory?: boolean;
+  ignoreMetadata?: RunJSWorkspaceZipMetadataPolicy;
+}
+
+export const defaultRunJSWorkspaceZipLimits: Readonly<RunJSWorkspaceZipLimits> = Object.freeze({
+  maxCompressedBytes: maxRepoTextSize,
+  maxFiles: maxFilesPerRepo,
+  maxFileBytes: maxFileSize,
+  maxTotalBytes: maxRepoTextSize,
+  maxCompressionRatio: 20,
+});
+
+interface RunJSWorkspaceZipBudget {
+  totalBytes: number;
+  limits: RunJSWorkspaceZipLimits;
+}
 
 export async function createRunJSWorkspaceZip(files: PulledFile[]): Promise<Buffer> {
   const zip = new JSZip();
@@ -41,13 +69,17 @@ export async function createRunJSWorkspaceZip(files: PulledFile[]): Promise<Buff
   });
 }
 
-export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileChange[]> {
+export async function readRunJSWorkspaceZip(
+  zipBase64: string,
+  options: ReadRunJSWorkspaceZipOptions = {},
+): Promise<VscFileChange[]> {
+  const limits = normalizeRunJSWorkspaceZipLimits(options.limits);
   const buffer = decodeBase64Buffer(zipBase64, 'zipBase64');
-  if (buffer.length > maxRepoTextSize) {
-    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP size must not exceed ${maxRepoTextSize} bytes`, {
+  if (buffer.length > limits.maxCompressedBytes) {
+    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP size must not exceed ${limits.maxCompressedBytes} bytes`, {
       details: {
         size: buffer.length,
-        maxRepoTextSize,
+        maxCompressedBytes: limits.maxCompressedBytes,
       },
     });
   }
@@ -65,23 +97,34 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
   const filesByPath = new Map<string, VscFileChange>();
   const zipEntries = Object.values(zip.files);
   for (const entry of zipEntries) {
+    normalizeRunJSZipStructuralPath(getRunJSZipEntryName(entry), entry.dir);
     if (isRunJSZipSymbolicLink(entry)) {
       throw new VscError('PATH_INVALID', `ZIP entry "${getRunJSZipEntryName(entry)}" must not be a symbolic link`);
     }
   }
-  const entries = zipEntries.filter((entry) => !entry.dir);
-  if (entries.length > maxFilesPerRepo) {
-    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP must not contain more than ${maxFilesPerRepo} files`, {
+  const entries = zipEntries.filter(
+    (entry) => !entry.dir && !shouldIgnoreRunJSZipMetadata(getRunJSZipEntryName(entry), options.ignoreMetadata),
+  );
+  if (entries.length > limits.maxFiles) {
+    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP must not contain more than ${limits.maxFiles} files`, {
       details: {
         fileCount: entries.length,
-        maxFilesPerRepo,
+        maxFiles: limits.maxFiles,
       },
     });
   }
-  const budget = { totalBytes: 0, declaredBytes: 0, compressedBytes: buffer.length };
+  const rawPaths = entries.map((entry) => normalizeRunJSZipEntryPath(getRunJSZipEntryName(entry)));
+  const topLevelDirectory = options.stripSingleTopLevelDirectory ? findRunJSZipSingleTopLevelDirectory(rawPaths) : null;
+  const paths = rawPaths.map((path) => stripRunJSZipTopLevelDirectory(path, topLevelDirectory));
+  assertUniqueRunJSZipPaths(paths);
+  const budget: RunJSWorkspaceZipBudget = {
+    totalBytes: 0,
+    limits,
+  };
 
-  for (const entry of entries) {
-    const path = normalizeAllowedRunJSWorkspacePath(getRunJSZipEntryName(entry), 'zip.entry');
+  for (let index = 0; index < entries.length; index += 1) {
+    const entry = entries[index];
+    const path = normalizeRunJSZipOutputPath(paths[index], options.pathMode);
     const pathKey = path.toLocaleLowerCase('en-US');
     if (filesByPath.has(pathKey)) {
       throw new VscError('PATH_INVALID', `Duplicate file path "${path}" in ZIP`);
@@ -94,7 +137,9 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
   }
 
   const files = Array.from(filesByPath.values()).sort((left, right) => left.path.localeCompare(right.path));
-  assertRunJSCompileInputLimits(files);
+  if (usesDefaultRunJSWorkspaceContentLimits(limits)) {
+    assertRunJSCompileInputLimits(files);
+  }
 
   return files;
 }
@@ -102,27 +147,26 @@ export async function readRunJSWorkspaceZip(zipBase64: string): Promise<VscFileC
 async function readRunJSZipEntryText(
   entry: JSZipObject,
   path: string,
-  budget: { totalBytes: number; declaredBytes: number; compressedBytes: number },
+  budget: RunJSWorkspaceZipBudget,
 ): Promise<string> {
   const declaredSize = getZipEntryDeclaredSize(entry);
-  if (declaredSize !== null && declaredSize > maxFileSize) {
-    throw new VscError('FILE_TOO_LARGE', `ZIP entry "${path}" exceeds ${maxFileSize} bytes`, {
+  if (declaredSize !== null && declaredSize > budget.limits.maxFileBytes) {
+    throw new VscError('FILE_TOO_LARGE', `ZIP entry "${path}" exceeds ${budget.limits.maxFileBytes} bytes`, {
       details: {
         path,
         size: declaredSize,
-        maxFileSize,
+        maxFileBytes: budget.limits.maxFileBytes,
       },
     });
   }
   if (declaredSize !== null) {
-    budget.declaredBytes += declaredSize;
-    assertRunJSZipCompressionRatio(budget.compressedBytes, budget.declaredBytes);
+    assertRunJSZipCompressionRatio(getZipEntryCompressedSize(entry), declaredSize, budget.limits);
   }
-  if (declaredSize !== null && budget.totalBytes + declaredSize > maxRepoTextSize) {
-    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP content exceeds ${maxRepoTextSize} bytes`, {
+  if (declaredSize !== null && budget.totalBytes + declaredSize > budget.limits.maxTotalBytes) {
+    throw new VscError('REPO_LIMIT_EXCEEDED', `ZIP content exceeds ${budget.limits.maxTotalBytes} bytes`, {
       details: {
         byteSize: budget.totalBytes + declaredSize,
-        maxRepoTextSize,
+        maxTotalBytes: budget.limits.maxTotalBytes,
       },
     });
   }
@@ -161,22 +205,26 @@ async function readRunJSZipEntryText(
         const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
         fileBytes += buffer.length;
         budget.totalBytes += buffer.length;
-        if (fileBytes > maxFileSize) {
-          limitError = new VscError('FILE_TOO_LARGE', `ZIP entry "${path}" exceeds ${maxFileSize} bytes`, {
-            details: {
-              path,
-              size: fileBytes,
-              maxFileSize,
+        if (fileBytes > budget.limits.maxFileBytes) {
+          limitError = new VscError(
+            'FILE_TOO_LARGE',
+            `ZIP entry "${path}" exceeds ${budget.limits.maxFileBytes} bytes`,
+            {
+              details: {
+                path,
+                size: fileBytes,
+                maxFileBytes: budget.limits.maxFileBytes,
+              },
             },
-          });
+          );
           stopAtLimit();
           return;
         }
-        if (budget.totalBytes > maxRepoTextSize) {
-          limitError = new VscError('REPO_LIMIT_EXCEEDED', `ZIP content exceeds ${maxRepoTextSize} bytes`, {
+        if (budget.totalBytes > budget.limits.maxTotalBytes) {
+          limitError = new VscError('REPO_LIMIT_EXCEEDED', `ZIP content exceeds ${budget.limits.maxTotalBytes} bytes`, {
             details: {
               byteSize: budget.totalBytes,
-              maxRepoTextSize,
+              maxTotalBytes: budget.limits.maxTotalBytes,
             },
           });
           stopAtLimit();
@@ -207,7 +255,7 @@ async function readRunJSZipEntryText(
     throw limitError;
   }
 
-  assertRunJSZipCompressionRatio(budget.compressedBytes, budget.totalBytes);
+  assertRunJSZipCompressionRatio(getZipEntryCompressedSize(entry), fileBytes, budget.limits);
   let content: string;
   try {
     content = new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks, fileBytes));
@@ -219,11 +267,110 @@ async function readRunJSZipEntryText(
   return normalizeText(content);
 }
 
-function assertRunJSZipCompressionRatio(compressedBytes: number, uncompressedBytes: number): void {
-  if (compressedBytes > 0 && uncompressedBytes / compressedBytes > maxZipCompressionRatio) {
+function assertRunJSZipCompressionRatio(
+  compressedBytes: number,
+  uncompressedBytes: number,
+  limits: RunJSWorkspaceZipLimits,
+): void {
+  if (uncompressedBytes > 0 && compressedBytes === 0) {
     throw new VscError('REPO_LIMIT_EXCEEDED', 'ZIP compression ratio is too high', {
-      details: { compressedBytes, uncompressedBytes, maxZipCompressionRatio },
+      details: { compressedBytes, uncompressedBytes, maxCompressionRatio: limits.maxCompressionRatio },
     });
+  }
+  if (compressedBytes > 0 && uncompressedBytes / compressedBytes > limits.maxCompressionRatio) {
+    throw new VscError('REPO_LIMIT_EXCEEDED', 'ZIP compression ratio is too high', {
+      details: { compressedBytes, uncompressedBytes, maxCompressionRatio: limits.maxCompressionRatio },
+    });
+  }
+}
+
+function normalizeRunJSWorkspaceZipLimits(overrides?: Partial<RunJSWorkspaceZipLimits>): RunJSWorkspaceZipLimits {
+  const limits = { ...defaultRunJSWorkspaceZipLimits, ...overrides };
+  for (const [name, value] of Object.entries(limits)) {
+    if (!Number.isSafeInteger(value) || value <= 0) {
+      throw new VscError(
+        'RUNJS_SOURCE_LOCATOR_INVALID',
+        `RunJS workspace ZIP limit "${name}" must be a positive integer`,
+      );
+    }
+  }
+  return limits;
+}
+
+function usesDefaultRunJSWorkspaceContentLimits(limits: RunJSWorkspaceZipLimits): boolean {
+  return (
+    limits.maxFiles === maxFilesPerRepo &&
+    limits.maxFileBytes === maxFileSize &&
+    limits.maxTotalBytes === maxRepoTextSize
+  );
+}
+
+function shouldIgnoreRunJSZipMetadata(
+  path: string,
+  ignoreMetadata: ReadRunJSWorkspaceZipOptions['ignoreMetadata'],
+): boolean {
+  if (!ignoreMetadata) {
+    return false;
+  }
+  if (typeof ignoreMetadata === 'function') {
+    return ignoreMetadata(path);
+  }
+
+  const segments = path.replace(/\\/g, '/').split('/').filter(Boolean);
+  const fileName = segments[segments.length - 1];
+  return segments.includes('__MACOSX') || fileName === '.DS_Store' || fileName?.startsWith('._') === true;
+}
+
+function findRunJSZipSingleTopLevelDirectory(paths: string[]): string | null {
+  if (!paths.length || paths.some(isRunJSWorkspaceRootPath)) {
+    return null;
+  }
+
+  const firstSegments = paths.map((path) => path.split('/')[0]);
+  const topLevelDirectory = firstSegments[0];
+  if (!topLevelDirectory || paths.some((path) => !path.includes('/'))) {
+    return null;
+  }
+  return firstSegments.every((segment) => segment === topLevelDirectory) ? topLevelDirectory : null;
+}
+
+function isRunJSWorkspaceRootPath(path: string): boolean {
+  return path === 'README.md' || path === runJSManifestPath || path.startsWith('src/');
+}
+
+function stripRunJSZipTopLevelDirectory(path: string, topLevelDirectory: string | null): string {
+  return topLevelDirectory ? path.slice(topLevelDirectory.length + 1) : path;
+}
+
+function normalizeRunJSZipEntryPath(path: string): string {
+  assertRunJSZipUsesPosixPath(path);
+  return normalizePath(path);
+}
+
+function normalizeRunJSZipOutputPath(path: string, pathMode: ReadRunJSWorkspaceZipOptions['pathMode']): string {
+  return pathMode === 'archive' ? normalizePath(path) : normalizeAllowedRunJSWorkspacePath(path, 'zip.entry');
+}
+
+function assertUniqueRunJSZipPaths(paths: string[]): void {
+  const seen = new Set<string>();
+  for (const path of paths) {
+    const key = path.toLocaleLowerCase('en-US');
+    if (seen.has(key)) {
+      throw new VscError('PATH_INVALID', `Duplicate file path "${path}" in ZIP`);
+    }
+    seen.add(key);
+  }
+}
+
+function normalizeRunJSZipStructuralPath(path: string, directory: boolean): string {
+  const candidate = directory && path.endsWith('/') ? path.slice(0, -1) : path;
+  assertRunJSZipUsesPosixPath(candidate);
+  return normalizePath(candidate);
+}
+
+function assertRunJSZipUsesPosixPath(path: string): void {
+  if (path.includes('\\')) {
+    throw new VscError('PATH_INVALID', 'ZIP entry paths must use POSIX separators');
   }
 }
 
@@ -242,13 +389,36 @@ function getZipEntryDeclaredSize(entry: JSZipObject): number | null {
   return typeof size === 'number' && Number.isSafeInteger(size) && size >= 0 ? size : null;
 }
 
+function getZipEntryCompressedSize(entry: JSZipObject): number {
+  const size = (entry as JSZipObject & { _data?: { compressedSize?: unknown } })._data?.compressedSize;
+  if (typeof size !== 'number' || !Number.isSafeInteger(size) || size < 0) {
+    throw new VscError('PATH_INVALID', `ZIP entry "${getRunJSZipEntryName(entry)}" has invalid size metadata`);
+  }
+  return size;
+}
+
 function decodeBase64Buffer(value: string, field: string): Buffer {
-  const normalized = value.includes(',') ? value.slice(value.indexOf(',') + 1) : value;
-  if (!normalized.trim()) {
+  const trimmed = value.trim();
+  const normalized = trimmed.startsWith('data:') ? decodeRunJSZipDataUri(trimmed, field) : trimmed;
+  if (!normalized || normalized.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/u.test(normalized)) {
     throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${field}" is invalid`);
   }
+  const buffer = Buffer.from(normalized, 'base64');
+  if (!buffer.length || buffer.toString('base64') !== normalized) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${field}" is invalid`);
+  }
+  return buffer;
+}
 
-  return Buffer.from(normalized, 'base64');
+function decodeRunJSZipDataUri(value: string, field: string): string {
+  const match =
+    /^data:(?:application\/(?:zip|x-zip-compressed)|application\/octet-stream);base64,([A-Za-z0-9+/]*={0,2})$/u.exec(
+      value,
+    );
+  if (!match) {
+    throw new VscError('RUNJS_SOURCE_LOCATOR_INVALID', `RunJS source field "${field}" is invalid`);
+  }
+  return match[1];
 }
 
 export function readRunJSWorkspaceManifest(files: VscFileChange[]): { entryPath?: string; version?: string } {

@@ -12,8 +12,6 @@ import { vi } from 'vitest';
 import {
   createTemplateRecord,
   createJsBlockNode,
-  createJsPageTemplateRecord,
-  createJsPageNode,
   createRepository,
   createUsageRecord,
   createJsTemplateUsageServiceFixture,
@@ -23,17 +21,17 @@ import {
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 
 describe('plugin-js-template usage rebuild audit', () => {
-  it('rebuilds a JS Page root idempotently and supports dry-run root filtering', async () => {
-    const pageNode = createJsPageNode({
-      uid: 'flow_js_page_rebuild',
+  it('rebuilds a JS Block root idempotently and supports dry-run root filtering', async () => {
+    const pageNode = createJsBlockNode({
+      uid: 'flow_js_block_rebuild',
       settings: { threshold: 7, region: 'EMEA' },
     });
     const { service, repositories } = createJsTemplateUsageServiceFixture({
       flowModelTrees: {
-        flow_js_page_rebuild: pageNode,
+        flow_js_block_rebuild: pageNode,
       },
-      projects: [createProjectRecord({ id: 'jtp_pages' })],
-      templates: [createJsPageTemplateRecord()],
+      projects: [createProjectRecord({ id: 'jtp_sales' })],
+      templates: [createTemplateRecord()],
     });
     const can = vi.fn(({ resource, action }: { resource: string; action: string }) => {
       if (resource === 'jsTemplate' && action === 'updateUsages') {
@@ -43,32 +41,32 @@ describe('plugin-js-template usage rebuild audit', () => {
     });
 
     const first = await service.rebuildUsages(
-      { rootUid: 'flow_js_page_rebuild' },
-      { requestId: 'req_js_page_rebuild', can },
+      { rootUid: 'flow_js_block_rebuild' },
+      { requestId: 'req_js_block_rebuild', can },
     );
     const second = await service.rebuildUsages(
-      { rootUid: 'flow_js_page_rebuild' },
-      { requestId: 'req_js_page_rebuild_repeat', can },
+      { rootUid: 'flow_js_block_rebuild' },
+      { requestId: 'req_js_block_rebuild_repeat', can },
     );
 
     expect(first).toMatchObject({ scanned: 1, upserted: 1, removed: 0, ownerMissing: 0 });
     expect(second).toMatchObject({ scanned: 1, upserted: 1, removed: 0, ownerMissing: 0 });
     expect(repositories.jsTemplateUsages.records).toHaveLength(1);
     expect(repositories.jsTemplateUsages.records[0].toJSON()).toMatchObject({
-      kind: 'js-page',
-      ownerKind: 'flowModel.pageSettings',
+      kind: 'js-block',
+      ownerKind: 'flowModel.step',
       ownerLocator: {
-        modelUid: 'flow_js_page_rebuild',
-        use: 'JSPageModel',
-        stepPath: ['stepParams', 'jsSettings', 'runJs'],
+        modelUid: 'flow_js_block_rebuild',
+        use: 'JSBlockModel',
+        stepPath: ['stepParams', 'jsSettings'],
       },
       resolvedStatus: 'active',
     });
 
     repositories.jsTemplateUsages.records.splice(0);
     const dryRun = await service.rebuildUsages(
-      { rootUid: 'flow_js_page_rebuild', dryRun: true },
-      { requestId: 'req_js_page_rebuild_dry_run', can },
+      { rootUid: 'flow_js_block_rebuild', dryRun: true },
+      { requestId: 'req_js_block_rebuild_dry_run', can },
     );
     expect(dryRun).toMatchObject({
       dryRun: true,
@@ -77,8 +75,8 @@ describe('plugin-js-template usage rebuild audit', () => {
       items: [
         expect.objectContaining({
           action: 'upsert',
-          kind: 'js-page',
-          ownerKind: 'flowModel.pageSettings',
+          kind: 'js-block',
+          ownerKind: 'flowModel.step',
           resolvedStatus: 'active',
         }),
       ],

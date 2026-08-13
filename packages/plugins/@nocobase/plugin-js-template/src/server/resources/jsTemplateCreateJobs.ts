@@ -11,11 +11,13 @@ import type { HandlerType, ResourceOptions } from '@nocobase/resourcer';
 
 import { JsTemplateError } from '../../shared/errors';
 import type {
+  JsTemplateCreateJobAcceptedResult,
   JsTemplateCreateJobDismissResult,
   JsTemplateCreateJobListResult,
   JsTemplateCreateSourceType,
 } from '../../shared/types';
-import { JsTemplateCreateJobStore } from '../services/JsTemplateCreateJobStore';
+import type { JsTemplateCreateJobRunner } from '../services/JsTemplateCreateJobRunner';
+import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import { JsTemplateAuditService } from '../services/JsTemplateAuditService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 import {
@@ -25,7 +27,7 @@ import {
   type ResourceActionInput,
 } from './resourceAction';
 
-export const jsTemplateCreateJobActionNames = ['list', 'dismiss'] as const;
+export const jsTemplateCreateJobActionNames = ['list', 'get', 'retry', 'dismiss'] as const;
 
 type JsTemplateCreateJobActionName = (typeof jsTemplateCreateJobActionNames)[number];
 
@@ -34,6 +36,7 @@ interface JsTemplateCreateJobActionServices {
   permissionService: JsTemplatePermissionService;
   applicationName: string;
   auditService: JsTemplateAuditService;
+  runner: JsTemplateCreateJobRunner;
 }
 
 export function createJsTemplateCreateJobsResource(services: JsTemplateCreateJobActionServices): ResourceOptions {
@@ -43,9 +46,63 @@ export function createJsTemplateCreateJobsResource(services: JsTemplateCreateJob
       getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
       run: async (currentServices, _input, ctx): Promise<JsTemplateCreateJobListResult> => {
         const actorUserId = requireActorUserId(ctx.actorUserId);
+        const sessionId = requireSessionId(ctx.sessionId);
+        const jobs = await currentServices.store.listOwnVisibleJobs(
+          currentServices.applicationName,
+          actorUserId,
+          sessionId,
+        );
+        const visibleJobs = [];
+        for (const job of jobs) {
+          if (await hasSourcePermissions(currentServices.permissionService, job.sourceType, ctx)) {
+            visibleJobs.push(job);
+          }
+        }
         return {
-          jobs: await currentServices.store.listOwnVisibleJobs(currentServices.applicationName, actorUserId),
+          jobs: visibleJobs,
         };
+      },
+    }),
+    get: createTypedResourceAction({
+      services,
+      getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
+      run: async (currentServices, input, ctx): Promise<JsTemplateCreateJobAcceptedResult> => {
+        assertOnlyJobId(input);
+        const actorUserId = requireActorUserId(ctx.actorUserId);
+        const sessionId = requireSessionId(ctx.sessionId);
+        const job = await currentServices.store.getOwn(
+          requireJobId(input),
+          currentServices.applicationName,
+          actorUserId,
+          sessionId,
+        );
+        await assertSourcePermissions(currentServices.permissionService, job.sourceType, ctx);
+        return toCreateJobSummary(job);
+      },
+    }),
+    retry: createTypedResourceAction({
+      services,
+      getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
+      run: async (currentServices, input, ctx): Promise<JsTemplateCreateJobAcceptedResult> => {
+        assertOnlyJobId(input);
+        const actorUserId = requireActorUserId(ctx.actorUserId);
+        const sessionId = requireSessionId(ctx.sessionId);
+        const current = await currentServices.store.getOwn(
+          requireJobId(input),
+          currentServices.applicationName,
+          actorUserId,
+          sessionId,
+        );
+        await assertSourcePermissions(currentServices.permissionService, current.sourceType, ctx);
+        const job = await currentServices.store.retry(
+          current.id,
+          currentServices.applicationName,
+          actorUserId,
+          sessionId,
+        );
+        await currentServices.runner.publish(job.id);
+        await recordMutationAudit(currentServices.auditService, job, 'createJobRetry');
+        return toCreateJobSummary(job);
       },
     }),
     dismiss: createTypedResourceAction({
@@ -54,10 +111,11 @@ export function createJsTemplateCreateJobsResource(services: JsTemplateCreateJob
       run: async (currentServices, input, ctx): Promise<JsTemplateCreateJobDismissResult> => {
         assertOnlyJobId(input);
         const actorUserId = requireActorUserId(ctx.actorUserId);
+        const sessionId = requireSessionId(ctx.sessionId);
         const jobId = requireJobId(input);
-        const job = await currentServices.store.getOwn(jobId, currentServices.applicationName, actorUserId);
+        const job = await currentServices.store.getOwn(jobId, currentServices.applicationName, actorUserId, sessionId);
         await assertSourcePermissions(currentServices.permissionService, job.sourceType, ctx);
-        await currentServices.store.dismiss(job.id, currentServices.applicationName, actorUserId);
+        await currentServices.store.dismiss(job.id, currentServices.applicationName, actorUserId, sessionId);
         await recordMutationAudit(currentServices.auditService, job, 'createJobDismiss');
         return { id: job.id };
       },
@@ -80,7 +138,7 @@ async function recordMutationAudit(
     requestId: string | null;
     actorUserId: string | null;
   },
-  action: 'createJobDismiss',
+  action: 'createJobRetry' | 'createJobDismiss',
 ): Promise<void> {
   try {
     await auditService.recordCreateJobEvent({
@@ -110,6 +168,22 @@ async function assertSourcePermissions(
   await permissionService.assertActionAllowed({ action: 'pullFromSyncSource', ctx });
 }
 
+async function hasSourcePermissions(
+  permissionService: JsTemplatePermissionService,
+  sourceType: JsTemplateCreateSourceType,
+  ctx: { can?: JsTemplateResourceContext['can'] },
+): Promise<boolean> {
+  try {
+    await assertSourcePermissions(permissionService, sourceType, ctx);
+    return true;
+  } catch (error) {
+    if (error instanceof JsTemplateError && error.code === 'JS_TEMPLATE_PERMISSION_DENIED') {
+      return false;
+    }
+    throw error;
+  }
+}
+
 function assertOnlyJobId(input: ResourceActionInput): void {
   const keys = Object.keys(input).filter((key) => typeof input[key] !== 'undefined');
   if (keys.some((key) => key !== 'resourceName' && key !== 'actionName' && key !== 'jobId' && key !== 'filterByTk')) {
@@ -130,4 +204,11 @@ function requireActorUserId(actorUserId: string | null | undefined): string {
     throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated user identity is required');
   }
   return actorUserId;
+}
+
+function requireSessionId(sessionId: string | null | undefined): string {
+  if (!sessionId) {
+    throw new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', 'Authenticated session identity is required');
+  }
+  return sessionId;
 }

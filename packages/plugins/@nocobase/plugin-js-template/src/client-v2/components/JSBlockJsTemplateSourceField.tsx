@@ -476,10 +476,6 @@ export const JSItemJsTemplateSourceField: React.FC<Omit<JSBlockJsTemplateSourceF
   <JSBlockJsTemplateSourceField {...props} kind="js-item" />
 );
 
-export const JSPageJsTemplateSourceField: React.FC<Omit<JSBlockJsTemplateSourceFieldProps, 'kind'>> = (props) => (
-  <JSBlockJsTemplateSourceField {...props} kind="js-page" />
-);
-
 function getJsTemplateLabel(template: JsTemplateSelectableTemplateSummary): string {
   return template.templateName || template.id;
 }

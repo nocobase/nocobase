@@ -10,6 +10,7 @@
 import type { Database, Model, Transaction } from '@nocobase/database';
 
 import type {
+  VscFileActiveRemoteRecord,
   VscFileRemoteRecord,
   VscFileSyncJobRecord,
   VscRemoteNormalizedConfig,
@@ -267,13 +268,20 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
   }
 
   async testTarget(input: RemoteSyncTestTargetInput): Promise<RemoteSyncTestTargetResult> {
+    input.signal?.throwIfAborted();
     const adapter = this.adapterRegistry.require(input.provider);
     const authRef = input.authRef === null ? null : await this.credentialResolver.validate(input.authRef);
     const serializedAuthRef = authRef === null ? null : serializeVscRemoteCredentialRef(authRef);
-    const config = await this.adapterRegistry.resolveConfigDraft(input.provider, input.config, serializedAuthRef);
+    const config = await this.adapterRegistry.resolveConfigDraft(
+      input.provider,
+      input.config,
+      serializedAuthRef,
+      input.signal,
+    );
     const probe = await adapter.probe({
       config,
       authRef: serializedAuthRef,
+      signal: input.signal,
     });
     return cloneFrozen({
       provider: input.provider,
@@ -294,6 +302,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
       await adapter.fetchSnapshot({
         config: tested.config,
         authRef: input.authRef,
+        signal: input.signal,
       }),
     );
     return cloneFrozen({
@@ -658,7 +667,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
     return loadVscSnapshot(this.db, this.commitService, this.treeService, repoId, repository.headCommitId);
   }
 
-  private async requireActiveRemote(remoteId: string): Promise<VscFileRemoteRecord> {
+  private async requireActiveRemote(remoteId: string): Promise<VscFileActiveRemoteRecord> {
     const remote = await this.remoteStore.get(remoteId);
     if (remote.status !== 'active') {
       throw new RemoteSyncError('CONFIG_INVALID', 'Remote is disabled', {
@@ -680,7 +689,7 @@ export class RemoteSyncRuntimeService implements RemoteSyncRuntime {
   }
 }
 
-function toAdapterTarget(remote: VscFileRemoteRecord) {
+function toAdapterTarget(remote: VscFileActiveRemoteRecord) {
   return {
     provider: remote.provider,
     config: remote.config,

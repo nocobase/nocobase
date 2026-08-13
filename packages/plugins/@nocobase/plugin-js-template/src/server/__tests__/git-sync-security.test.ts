@@ -9,7 +9,7 @@
 
 import type { Database } from '@nocobase/database';
 import type { HandlerType } from '@nocobase/resourcer';
-import type { Application } from '@nocobase/server';
+import { AuditManager, type Application } from '@nocobase/server';
 import { vi } from 'vitest';
 
 import { NAMESPACE } from '../../constants';
@@ -80,7 +80,7 @@ describe('JS Template Git sync permissions acceptance', () => {
         }),
         registerSnippet: vi.fn(),
       },
-      auditManager: { registerActions: vi.fn(), log: vi.fn() },
+      auditManager: new AuditManager(),
       pm: { get: vi.fn(() => null), getPlugins: vi.fn(() => new Map()) },
       resourceManager: { define: vi.fn(), options: {} },
       on: vi.fn(),
@@ -252,6 +252,7 @@ describe('JS Template Git credential logging integration', () => {
       const user = await app.db.getRepository('users').findOne();
       const agent = await app.agent().login(user);
       const createResponse = await agent.post('/jsTemplateSync:createFromGit').send({
+        idempotencyKey: `credential-logging-${Date.now()}`,
         provider: 'git',
         config: gitSyncRemoteConfig,
         name: 'Credential logging integration',
@@ -275,9 +276,9 @@ describe('JS Template Git credential logging integration', () => {
       auditLogs.length = 0;
       const secretMarkers = {
         httpsPassword: 'https-password-cross-layer-secret',
-        privateKey: '-----BEGIN PRIVATE KEY-----cross-layer-private-key',
-        passphrase: 'ssh-passphrase-cross-layer-secret',
-        knownHosts: 'git.example.com ssh-ed25519 cross-layer-host-key',
+        nestedCredential: 'nested-credential-cross-layer-secret',
+        queryCredential: 'query-credential-cross-layer-secret',
+        responseCredential: 'response-credential-cross-layer-secret',
       };
       const authorization = `Bearer ${secretMarkers.httpsPassword}`;
       const requestValues = { projectId, provider: 'git', config: gitSyncRemoteConfig };
@@ -288,7 +289,11 @@ describe('JS Template Git credential logging integration', () => {
       const queryResponse = await restrictedAgent
         .post('/jsTemplateSync:configure')
         .set('x-request-id', 'credential-query-rejected')
-        .query({ authRef: secretMarkers.passphrase })
+        .query({ authRef: secretMarkers.queryCredential })
+        .send(requestValues);
+      const permissionResponse = await restrictedAgent
+        .post('/jsTemplateSync:configure')
+        .set('x-request-id', 'credential-permission-rejected')
         .send(requestValues);
       const headerResponse = await agent
         .post('/jsTemplateSync:configure')
@@ -305,14 +310,15 @@ describe('JS Template Git credential logging integration', () => {
           },
         ],
       });
-      expect(queryResponse.status).toBe(403);
+      expect(queryResponse.status).toBe(400);
+      expect(permissionResponse.status).toBe(403);
       expect(headerResponse.status).toBe(400);
 
       const rawProviderError = Object.assign(new Error(`provider raw failure: ${authorization}`), {
-        cause: new Error(secretMarkers.privateKey),
+        cause: new Error(secretMarkers.nestedCredential),
         config: { headers: { Authorization: authorization } },
-        request: { body: secretMarkers.passphrase },
-        response: { data: { knownHosts: secretMarkers.knownHosts } },
+        request: { body: secretMarkers.queryCredential },
+        response: { data: { credential: secretMarkers.responseCredential } },
         vscRepoId: 'vscr_internal_secret',
         remoteId: 'vscrmt_internal_secret',
         jobId: 'job_internal_secret',
@@ -335,9 +341,9 @@ describe('JS Template Git credential logging integration', () => {
       expect(pullResponse.body).toMatchObject({
         errors: [{ code: 'JS_TEMPLATE_SYNC_REMOTE_UNAVAILABLE' }],
       });
-      expect(requestLogs).toHaveLength(8);
-      expect(requestLogs.filter((entry) => toRecord(entry).message?.toString().startsWith('request '))).toHaveLength(4);
-      expect(auditLogs).toHaveLength(4);
+      expect(requestLogs).toHaveLength(6);
+      expect(requestLogs.filter((entry) => toRecord(entry).message?.toString().startsWith('request '))).toHaveLength(3);
+      expect(auditLogs).toHaveLength(3);
       expect(auditLogs.find((log) => log.action === 'pull')).toMatchObject({
         resource: 'jsTemplateSync',
         action: 'pull',
@@ -354,7 +360,13 @@ describe('JS Template Git credential logging integration', () => {
       });
 
       const serialized = JSON.stringify({
-        responses: [bodyResponse.body, queryResponse.body, headerResponse.body, pullResponse.body],
+        responses: [
+          bodyResponse.body,
+          queryResponse.body,
+          permissionResponse.body,
+          headerResponse.body,
+          pullResponse.body,
+        ],
         requestLogs,
         auditLogs,
         persistedLogs: persistedLogs.map((log) => log.toJSON()),

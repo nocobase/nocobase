@@ -11,6 +11,7 @@ import type { Database } from '@nocobase/database';
 
 import type {
   RemoteSyncErrorCode,
+  VscFileActiveRemoteRecord,
   VscFileRemoteRecord,
   VscFileSyncJobRecord,
   VscRemoteSnapshot,
@@ -124,6 +125,14 @@ export class RemoteReconcileService {
     }
     const claimToken = requireClaimToken(claimed);
     const remote = await this.remoteStore.get(claimed.remoteId);
+    if (remote.status !== 'active') {
+      const disabledError = new RemoteSyncError('CONFIG_INVALID', 'Remote is disabled', {
+        details: { reasonCode: remote.status === 'unsupported' ? 'legacy-ssh-unsupported' : 'remote-disabled' },
+      });
+      const failed = await this.jobStore.fail(claimed.id, claimToken, disabledError.code);
+      await ctx.onRecoveryResult?.({ job: failed, errorCode: disabledError.code });
+      throw disabledError;
+    }
     const snapshot = await loadVscSnapshot(
       this.db,
       this.commitService,
@@ -443,7 +452,7 @@ export class RemoteReconcileService {
   }
 }
 
-function remoteTarget(remote: VscFileRemoteRecord) {
+function remoteTarget(remote: VscFileActiveRemoteRecord) {
   return { config: remote.config, authRef: remote.authRef };
 }
 

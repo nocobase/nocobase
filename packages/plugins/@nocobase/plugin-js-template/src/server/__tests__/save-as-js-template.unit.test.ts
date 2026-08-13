@@ -15,7 +15,7 @@ import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspa
 
 // Old case -> new owner:
 // detach-to-inline / copies the entry descriptor together with runtime-reachable entry and shared modules -> this suite.
-// detach-to-inline / rewrites JS Page SDK and settings types without touching other kind imports or source text -> this suite.
+// detach-to-inline / rewrites JS Block SDK and settings types without touching other kind imports or source text -> this suite.
 
 const entryPath = 'src/client/js-blocks/sales/index.tsx';
 const descriptorPath = 'src/client/js-blocks/sales/entry.json';
@@ -26,7 +26,7 @@ describe('Save as JS Template source relocation', () => {
       projectId: 'jtp_sales',
       templateId: 'jtt_sales',
       operation: 'runtimeCompile',
-      kind: 'js-page',
+      kind: 'js-block',
       templateName: 'sales',
       entryPath: 'src/client/index.tsx',
       runtimeVersion: 'v2',
@@ -35,7 +35,7 @@ describe('Save as JS Template source relocation', () => {
           path: 'src/client/index.tsx',
           content:
             'import { defineSettings } from "@nocobase/runjs/js-template/client";\n' +
-            'import type { Settings } from "js-template:settings/client/js-page/sales";\n' +
+            'import type { Settings } from "js-template:settings/client/js-block/sales";\n' +
             'const settings = defineSettings({ enabled: true });\n' +
             'ctx.render(<div>{settings.enabled as Settings}</div>);\n',
         },
@@ -52,9 +52,9 @@ describe('Save as JS Template source relocation', () => {
         target: 'client',
         projectId: 'jtp_sales',
         templateId: 'jtt_sales',
-        kind: 'js-page',
+        kind: 'js-block',
         templateName: 'sales',
-        modelUse: 'JSPageModel',
+        modelUse: 'JSBlockModel',
         surface: 'js-model.render',
         surfaceStyle: 'render',
         compilerSurfaceStyle: 'render',
@@ -215,43 +215,43 @@ describe('Save as JS Template source relocation', () => {
     expect(files.some((file) => file.path.includes('/other/'))).toBe(false);
   });
 
-  it('preserves JS Page SDK and settings authoring imports for compiler preparation', () => {
-    const pageEntryPath = 'src/client/js-pages/orders/index.tsx';
+  it('preserves JS Block SDK and settings authoring imports for compiler preparation', () => {
+    const pageEntryPath = 'src/client/js-blocks/orders/index.tsx';
     const files = collectAndRelocateInlineFiles({
       entryPath: pageEntryPath,
       files: [
         {
           path: pageEntryPath,
           content:
-            'import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";\n' +
+            'import { type JSBlockContext, defineSettings } from "@nocobase/runjs/js-template/client";\n' +
             'import type * as SDK from "@nocobase/runjs/js-template/client";\n' +
-            'import type { Settings } from "js-template:settings/client/js-page/orders";\n' +
+            'import type { Settings } from "js-template:settings/client/js-block/orders";\n' +
             'import type { Settings as BlockSettings } from "js-template:settings/client/js-block/sales";\n' +
-            'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;\n' +
-            'type ImportedContext = import("@nocobase/runjs/js-template/client").JSPageContext<ImportedSettings>;\n' +
-            'const untouched = "js-template:settings/client/js-page/orders";\n' +
-            '// js-template:settings/client/js-page/orders\n' +
+            'type ImportedSettings = import("js-template:settings/client/js-block/orders").Settings;\n' +
+            'type ImportedContext = import("@nocobase/runjs/js-template/client").JSBlockContext<ImportedSettings>;\n' +
+            'const untouched = "js-template:settings/client/js-block/orders";\n' +
+            '// js-template:settings/client/js-block/orders\n' +
             'const settings = defineSettings({ enabled: true });\n' +
-            'export default function render(context: JSPageContext<Settings>, shared: SDK.JSPageContext<ImportedSettings>, imported: ImportedContext, block: BlockSettings) { ctx.render([context.page, shared.page, imported.page, block, untouched]); }\n',
+            'export default function render(context: JSBlockContext<Settings>, shared: SDK.JSBlockContext<ImportedSettings>, imported: ImportedContext, block: BlockSettings) { ctx.render([context.record, shared.record, imported.record, block, untouched]); }\n',
         },
       ],
     });
 
     const code = files[0]?.content || '';
-    expect(code).toContain('import { type JSPageContext, defineSettings } from "@nocobase/runjs/js-template/client";');
+    expect(code).toContain('import { type JSBlockContext, defineSettings } from "@nocobase/runjs/js-template/client";');
     expect(code).toContain('import type * as SDK from "@nocobase/runjs/js-template/client";');
-    expect(code).toContain('import type { Settings } from "js-template:settings/client/js-page/orders";');
+    expect(code).toContain('import type { Settings } from "js-template:settings/client/js-block/orders";');
     expect(code).toContain(
       'import type { Settings as BlockSettings } from "js-template:settings/client/js-block/sales";',
     );
-    expect(code).toContain('type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;');
+    expect(code).toContain('type ImportedSettings = import("js-template:settings/client/js-block/orders").Settings;');
     expect(code).toContain(
-      'type ImportedContext = import("@nocobase/runjs/js-template/client").JSPageContext<ImportedSettings>;',
+      'type ImportedContext = import("@nocobase/runjs/js-template/client").JSBlockContext<ImportedSettings>;',
     );
-    expect(code).toContain('const untouched = "js-template:settings/client/js-page/orders";');
-    expect(code).toContain('// js-template:settings/client/js-page/orders');
+    expect(code).toContain('const untouched = "js-template:settings/client/js-block/orders";');
+    expect(code).toContain('// js-template:settings/client/js-block/orders');
     expect(code).not.toContain('function defineSettings<TSettings>(settings: TSettings): TSettings');
-    expect(code).not.toContain('type __jsTemplateAuthoring_SDK_JSPageContext<TSettings = unknown>');
+    expect(code).not.toContain('type __jsTemplateAuthoring_SDK_JSBlockContext<TSettings = unknown>');
   });
 
   it('relocates the current multi-file workspace and rewrites relative imports', () => {
@@ -300,7 +300,6 @@ describe('Save as JS Template source relocation', () => {
 
   it.each([
     ['js-block', 'src/client/js-blocks', null],
-    ['js-page', 'src/client/js-pages', null],
     ['js-field', 'src/client/js-fields', 'js-field'],
     ['js-action', 'src/client/js-actions', null],
     ['js-item', 'src/client/js-items', null],

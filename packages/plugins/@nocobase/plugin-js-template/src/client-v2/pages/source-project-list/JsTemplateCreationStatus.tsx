@@ -22,6 +22,7 @@ interface JsTemplateCreationStatusProps {
   jobs: JsTemplateCreateJobSummary[];
   marginBottom: number;
   onDismiss: (jobId: string) => void;
+  onRetry: (jobId: string) => void;
   t: JsTemplateListTranslate;
 }
 
@@ -30,6 +31,7 @@ export function JsTemplateCreationStatus({
   jobs,
   marginBottom,
   onDismiss,
+  onRetry,
   t,
 }: JsTemplateCreationStatusProps) {
   const headingId = useId();
@@ -67,7 +69,12 @@ export function JsTemplateCreationStatus({
                       {creationStatusLabel(job.status, t)}
                     </Tag>
                     {job.status === 'failed' ? (
-                      <Typography.Text type="danger">{creationFailureMessage(job, t)}</Typography.Text>
+                      <>
+                        <Typography.Text type="danger">{creationFailureMessage(job, t)}</Typography.Text>
+                        <Button onClick={() => onRetry(job.id)} size="small" type="link">
+                          {t('Retry')}
+                        </Button>
+                      </>
                     ) : null}
                     {terminal ? (
                       <Button
@@ -98,6 +105,8 @@ function creationStatusLabel(status: JsTemplateCreateJobStatus, t: JsTemplateLis
       return t('Creation pending');
     case 'running':
       return t('Creation running');
+    case 'finalize-pending':
+      return t('Creation finalizing');
     case 'succeeded':
       return t('Creation succeeded');
     case 'failed':

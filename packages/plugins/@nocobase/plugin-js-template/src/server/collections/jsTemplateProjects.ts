@@ -23,11 +23,6 @@ export default defineCollection({
       fields: ['applicationName', 'normalizedName'],
     },
     {
-      name: 'jst_project_vsc_uq',
-      unique: true,
-      fields: ['vscRepoId'],
-    },
-    {
       name: 'jst_project_health_idx',
       fields: ['lifecycleStatus', 'healthStatus'],
     },
@@ -38,11 +33,6 @@ export default defineCollection({
     {
       name: 'jst_project_head_idx',
       fields: ['headCommitId'],
-    },
-    {
-      name: 'jst_project_creation_job_uq',
-      unique: true,
-      fields: ['creationJobId'],
     },
   ],
   fields: [
@@ -57,6 +47,7 @@ export default defineCollection({
       name: 'vscRepoId',
       length: 64,
       allowNull: false,
+      unique: true,
     },
     {
       type: 'string',
@@ -108,6 +99,7 @@ export default defineCollection({
       type: 'string',
       name: 'creationJobId',
       length: 64,
+      unique: true,
     },
   ],
 });

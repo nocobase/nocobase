@@ -13,7 +13,7 @@ import { RemoteSyncError } from '../../RemoteSyncAdapter';
 export type GitCommandTerminationReason = 'aborted' | 'stdout-limit' | 'stderr-limit' | 'timeout';
 
 export interface GitCommandErrorContext {
-  binary: 'git' | 'ssh';
+  binary: 'git';
   operation?: string;
   transport?: VscGitRemoteTransport;
   exitCode?: number | null;
@@ -30,11 +30,7 @@ export function mapGitCommandError(context: GitCommandErrorContext): RemoteSyncE
   };
 
   if (context.errorCode === 'ENOENT') {
-    return unavailable(
-      context.binary === 'git' ? 'Git executable is unavailable' : 'SSH executable is unavailable',
-      `${context.binary}-binary-unavailable`,
-      details,
-    );
+    return unavailable('Git executable is unavailable', 'git-binary-unavailable', details);
   }
   if (context.terminationReason === 'timeout') {
     return unavailable('Git command timed out', 'command-timeout', details);
@@ -47,26 +43,6 @@ export function mapGitCommandError(context: GitCommandErrorContext): RemoteSyncE
   }
 
   const stderr = decodeForClassification(context.stderr).toLowerCase();
-  if (
-    stderr.includes('remote host identification has changed') ||
-    stderr.includes('offending ') ||
-    stderr.includes('host key verification failed')
-  ) {
-    return unavailable('SSH host key verification failed', 'ssh-host-key-mismatch', details);
-  }
-  if (stderr.includes('no hostkey for host') || stderr.includes('no host key is known')) {
-    return unavailable('SSH host key verification failed', 'ssh-known-host-unavailable', details);
-  }
-  if (
-    stderr.includes('invalid format') ||
-    stderr.includes('error in libcrypto') ||
-    (stderr.includes('load key') && stderr.includes('error'))
-  ) {
-    return authFailed('SSH private key is invalid', 'ssh-private-key-invalid', details);
-  }
-  if (stderr.includes('permission denied (publickey')) {
-    return authFailed('SSH authentication failed', 'ssh-permission-denied', details);
-  }
   if (
     stderr.includes('authentication failed') ||
     stderr.includes('invalid username or password') ||

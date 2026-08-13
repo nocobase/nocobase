@@ -70,9 +70,9 @@ export function createJsTemplateUsageServiceFixture(
           healthStatus: 'ready',
         },
         {
-          id: 'jtt_sales_page',
+          id: 'jtt_phone_link',
           projectId: 'jtp_sales',
-          kind: 'js-page',
+          kind: 'js-field',
           healthStatus: 'ready',
         },
       ],
@@ -266,17 +266,6 @@ export function createJsFieldSourceBinding(
   });
 }
 
-export function createJsPageSourceBinding(
-  input: Partial<JsTemplateRuntimeSourceBinding> = {},
-): JsTemplateRuntimeSourceBinding {
-  return createSourceBinding({
-    projectId: 'jtp_pages',
-    templateId: 'jtt_sales_page',
-    kind: 'js-page',
-    ...input,
-  });
-}
-
 export function createJsActionSourceBinding(
   input: Partial<JsTemplateRuntimeSourceBinding> = {},
 ): JsTemplateRuntimeSourceBinding {
@@ -315,29 +304,6 @@ export function createJsBlockNode(
         runJs: {
           sourceMode: input.sourceMode || 'js-template',
           sourceBinding: input.sourceBinding || createSourceBinding(),
-          settings: input.settings || {},
-        },
-      },
-    },
-  };
-}
-
-export function createJsPageNode(
-  input: {
-    uid?: string;
-    sourceMode?: string;
-    sourceBinding?: JsTemplateRuntimeSourceBinding;
-    settings?: Record<string, unknown>;
-  } = {},
-): FlowModelNode {
-  return {
-    uid: input.uid || 'flow_js_page',
-    use: 'JSPageModel',
-    stepParams: {
-      jsSettings: {
-        runJs: {
-          sourceMode: input.sourceMode || 'js-template',
-          sourceBinding: input.sourceBinding || createJsPageSourceBinding(),
           settings: input.settings || {},
         },
       },
@@ -436,16 +402,6 @@ export function createJsFieldTemplateRecord(input: Record<string, unknown> = {})
     id: 'jtt_phone_link',
     projectId: 'jtp_fields',
     kind: 'js-field',
-    healthStatus: 'ready',
-    ...input,
-  });
-}
-
-export function createJsPageTemplateRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  return createTemplateRecord({
-    id: 'jtt_sales_page',
-    projectId: 'jtp_pages',
-    kind: 'js-page',
     healthStatus: 'ready',
     ...input,
   });
@@ -564,23 +520,6 @@ export function createUsageRecord(input: Record<string, unknown> = {}): Record<s
   };
 }
 
-export function createJsPageUsageRecord(input: Record<string, unknown> = {}): Record<string, unknown> {
-  const modelUid = typeof input.modelUid === 'string' ? input.modelUid : 'flow_js_page';
-  const ownerLocator = isPlainRecord(input.ownerLocator)
-    ? (input.ownerLocator as JsTemplateUsageOwnerLocator)
-    : createJsPageOwnerLocator(modelUid);
-  return createUsageRecord({
-    id: `jtu_${modelUid}`,
-    projectId: 'jtp_pages',
-    templateId: 'jtt_sales_page',
-    kind: 'js-page',
-    ownerKind: 'flowModel.pageSettings',
-    ownerLocator,
-    ownerLocatorHash: hashOwnerLocator(ownerLocator),
-    ...input,
-  });
-}
-
 function kindToFolder(kind: string): string {
   if (kind === 'js-field') {
     return 'js-fields';
@@ -591,20 +530,7 @@ function kindToFolder(kind: string): string {
   if (kind === 'js-item') {
     return 'js-items';
   }
-  if (kind === 'js-page') {
-    return 'js-pages';
-  }
   return 'js-blocks';
-}
-
-export function createJsPageOwnerLocator(modelUid: string): JsTemplateUsageOwnerLocator {
-  return {
-    kind: 'flowModel.pageSettings',
-    modelUid,
-    use: 'JSPageModel',
-    stepPath: ['stepParams', 'jsSettings', 'runJs'],
-    descriptor: 'FlowModel JSPageModel page settings locator',
-  };
 }
 
 export function createOwnerLocator(

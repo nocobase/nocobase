@@ -92,40 +92,40 @@ describe('path', () => {
     expect(result.diagnostics).toEqual([]);
   });
 
-  it('accepts JS Page entry modules without allowing page-specific assets', () => {
+  it('accepts JS Block entry modules without allowing page-specific assets', () => {
     const validator = new JsTemplateValidator();
     const accepted = validator.validateWorkspace({
       files: [
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content: 'import { title } from "./title";\nctx.render(<div>{title}</div>);\n',
         },
-        { path: 'src/client/js-pages/orders/title.ts', content: 'export const title = "Orders";\n' },
+        { path: 'src/client/js-blocks/orders/title.ts', content: 'export const title = "Orders";\n' },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
         },
       ],
     });
     const rejected = validator.validateWorkspace({
-      files: [{ path: 'src/client/js-pages/orders/style.css', content: '.page { min-height: 100vh; }\n' }],
+      files: [{ path: 'src/client/js-blocks/orders/style.css', content: '.page { min-height: 100vh; }\n' }],
     });
 
     expect(accepted).toMatchObject({
       accepted: true,
       templates: [
         expect.objectContaining({
-          kind: 'js-page',
+          kind: 'js-block',
           templateName: 'orders',
-          entryPath: 'src/client/js-pages/orders/index.tsx',
+          entryPath: 'src/client/js-blocks/orders/index.tsx',
         }),
       ],
     });
     expect(rejected.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'path_extension_not_allowed',
-        kind: 'js-page',
-        path: 'src/client/js-pages/orders/style.css',
+        kind: 'js-block',
+        path: 'src/client/js-blocks/orders/style.css',
       }),
     );
   });
@@ -490,18 +490,18 @@ describe('module import', () => {
     const result = new JsTemplateValidator().validateWorkspace({
       files: [
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content: [
             'import type * as SDK from "@nocobase/runjs/js-template/client";',
-            'import type * as Template from "js-template:settings/client/js-page/orders";',
-            'type Page = SDK.JSPageContext<Template.Settings>;',
-            'type ImportedPage = import("@nocobase/runjs/js-template/client").JSPageContext<Template.Settings>;',
-            'type ImportedSettings = import("js-template:settings/client/js-page/orders").Settings;',
+            'import type * as Template from "js-template:settings/client/js-block/orders";',
+            'type Page = SDK.JSBlockContext<Template.Settings>;',
+            'type ImportedPage = import("@nocobase/runjs/js-template/client").JSBlockContext<Template.Settings>;',
+            'type ImportedSettings = import("js-template:settings/client/js-block/orders").Settings;',
             'ctx.render(<div />);',
           ].join('\n'),
         },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
         },
       ],
@@ -534,7 +534,7 @@ describe('module import', () => {
     },
     {
       label: 'client host type from shared SDK',
-      source: 'import type { JSPageContext } from "@nocobase/runjs/js-template/shared";',
+      source: 'import type { JSBlockContext } from "@nocobase/runjs/js-template/shared";',
       code: 'import_not_allowed',
     },
     {
@@ -550,28 +550,28 @@ describe('module import', () => {
     },
     {
       label: 'settings runtime import',
-      source: 'import { Settings } from "js-template:settings/client/js-page/orders";',
+      source: 'import { Settings } from "js-template:settings/client/js-block/orders";',
       code: 'settings_type_import_runtime_not_allowed',
     },
     {
       label: 'unknown settings type',
-      source: 'import type { SettingsContext } from "js-template:settings/client/js-page/orders";',
+      source: 'import type { SettingsContext } from "js-template:settings/client/js-block/orders";',
       code: 'settings_type_import_invalid',
     },
     {
       label: 'unknown settings namespace type',
       source:
-        'import type * as Template from "js-template:settings/client/js-page/orders";\ntype Missing = Template.SettingsContext;',
+        'import type * as Template from "js-template:settings/client/js-block/orders";\ntype Missing = Template.SettingsContext;',
       code: 'settings_type_import_invalid',
       line: 2,
     },
   ])('rejects unsupported authoring import form: $label', ({ source, code, line = 1 }) => {
-    const path = 'src/client/js-pages/orders/index.tsx';
+    const path = 'src/client/js-blocks/orders/index.tsx';
     const result = new JsTemplateValidator().validateWorkspace({
       files: [
         { path, content: `${source}\nctx.render(<div />);\n` },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
         },
       ],
@@ -672,7 +672,7 @@ describe('module import', () => {
     }
   });
 
-  it('allows JS Page entry and shared imports but rejects another JS Page root', () => {
+  it('allows JS Block entry and shared imports but rejects another JS Block root', () => {
     const validator = new JsTemplateValidator();
     const accepted = validator.validateWorkspace({
       files: [
@@ -681,16 +681,16 @@ describe('module import', () => {
           content: 'export const format = (value: string) => value.toUpperCase();\n',
         },
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content:
             'import { title } from "./title";\nimport { format } from "../../../shared/format";\nctx.render(<div>{format(title)}</div>);\n',
         },
         {
-          path: 'src/client/js-pages/orders/title.ts',
+          path: 'src/client/js-blocks/orders/title.ts',
           content: 'export const title = "Orders";\n',
         },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
         },
       ],
@@ -698,11 +698,11 @@ describe('module import', () => {
     const rejected = validator.validateWorkspace({
       files: [
         {
-          path: 'src/client/js-pages/orders/index.tsx',
+          path: 'src/client/js-blocks/orders/index.tsx',
           content: 'import { title } from "../other/title";\nctx.render(<div>{title}</div>);\n',
         },
         {
-          path: 'src/client/js-pages/orders/entry.json',
+          path: 'src/client/js-blocks/orders/entry.json',
           content: JSON.stringify({ schemaVersion: 1, key: 'orders' }),
         },
       ],
@@ -714,8 +714,8 @@ describe('module import', () => {
     expect(rejected.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'import_not_allowed',
-        kind: 'js-page',
-        path: 'src/client/js-pages/orders/index.tsx',
+        kind: 'js-block',
+        path: 'src/client/js-blocks/orders/index.tsx',
       }),
     );
   });

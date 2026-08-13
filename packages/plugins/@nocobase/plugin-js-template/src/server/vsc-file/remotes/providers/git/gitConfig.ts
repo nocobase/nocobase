@@ -33,7 +33,7 @@ export function normalizeGitRemoteConfigDraft(input: unknown): NormalizedVscGitR
   const config = requireConfigObject(input, false);
   const normalizedUrl = normalizeGitRemoteUrl(config.url);
   const suppliedTransport = config.transport;
-  if (suppliedTransport !== undefined && suppliedTransport !== 'https' && suppliedTransport !== 'ssh') {
+  if (suppliedTransport !== undefined && suppliedTransport !== 'http' && suppliedTransport !== 'https') {
     throw invalidConfig('Git remote transport is invalid', 'invalid-transport');
   }
   if (suppliedTransport !== undefined && suppliedTransport !== normalizedUrl.transport) {
@@ -61,6 +61,9 @@ export function normalizeGitRemoteConfig(input: unknown): VscGitRemoteConfig {
 }
 
 export function parseGitRemoteCredential(input: unknown, transport: VscGitRemoteTransport): GitRemoteCredential {
+  if (transport === 'http') {
+    throw credentialInvalid('HTTP Git remotes do not support credentials; use HTTPS', 'http-auth-forbidden');
+  }
   const value = parseCredentialValue(input);
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw credentialInvalid('Git remote credential must be a JSON object', 'invalid-credential-shape');
@@ -76,30 +79,6 @@ export function parseGitRemoteCredential(input: unknown, transport: VscGitRemote
       kind: 'https',
       username: requireCredentialString(credential.username, 'username'),
       password: requireCredentialString(credential.password, 'password'),
-    };
-  }
-
-  if (credential.kind === 'ssh') {
-    assertExactKeys(credential, ['kind', 'privateKey', 'passphrase', 'knownHosts'], ['passphrase']);
-    if (transport !== 'ssh') {
-      throw credentialInvalid('Git remote credential does not match the transport', 'credential-kind-mismatch');
-    }
-    const passphrase = credential.passphrase;
-    if (passphrase === undefined) {
-      return {
-        kind: 'ssh',
-        privateKey: requireCredentialString(credential.privateKey, 'private-key'),
-        knownHosts: requireCredentialString(credential.knownHosts, 'known-hosts'),
-      };
-    }
-    if (typeof passphrase !== 'string') {
-      throw credentialInvalid('Git remote credential passphrase must be a string', 'invalid-passphrase');
-    }
-    return {
-      kind: 'ssh',
-      privateKey: requireCredentialString(credential.privateKey, 'private-key'),
-      passphrase,
-      knownHosts: requireCredentialString(credential.knownHosts, 'known-hosts'),
     };
   }
 
@@ -133,11 +112,7 @@ function normalizeGitRemoteUrl(value: unknown): { url: string; transport: VscGit
     throw invalidConfig('Git remote URL protocol is not supported', result.reason);
   }
   if (result.reason === 'url-credentials-forbidden') {
-    const message =
-      result.transport === 'https'
-        ? 'HTTPS Git remote URLs must not contain credentials'
-        : 'SSH Git remote URLs must not contain a password';
-    throw invalidConfig(message, result.reason);
+    throw invalidConfig('Git remote URLs must not contain credentials', result.reason);
   }
   throw invalidConfig('Git remote URL is invalid', result.reason);
 }

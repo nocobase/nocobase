@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Database } from '@nocobase/database';
+import type { Database, Transaction } from '@nocobase/database';
 
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCreateJob, JsTemplateTreeEntryInput } from '../../shared/types';
@@ -15,7 +15,8 @@ import { JsTemplateCreateFromRemoteService } from './JsTemplateCreateFromRemoteS
 import { JsTemplateCreateJobStore, type JsTemplateCreateJobPayload } from './JsTemplateCreateJobStore';
 import { JsTemplateProjectService, type JsTemplateServiceContext } from './JsTemplateProjectService';
 import { JsTemplateCompileService } from './JsTemplateCompileService';
-import { isStrictUtf8Text, parseJsTemplateSourceArchive } from './JsTemplateSourceArchive';
+import { isStrictUtf8Text } from './JsTemplateSourceArchive';
+import { createDefaultJsTemplateTemplate } from '../../shared/default-template';
 
 export class JsTemplateCreateJobExecutor {
   constructor(
@@ -24,14 +25,20 @@ export class JsTemplateCreateJobExecutor {
     private readonly runtimeCompileService: JsTemplateCompileService,
     private readonly createFromRemoteService: JsTemplateCreateFromRemoteService,
     private readonly store: JsTemplateCreateJobStore,
+    private readonly authorize: (job: JsTemplateCreateJob, transaction?: Transaction) => Promise<void>,
   ) {}
 
-  async execute(job: JsTemplateCreateJob, claimToken: string): Promise<string> {
+  async execute(job: JsTemplateCreateJob, claimToken: string, signal?: AbortSignal): Promise<string> {
+    signal?.throwIfAborted();
     if (job.applicationName !== this.projectService.getCurrentApplicationName()) {
       throw new JsTemplateError(
         'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
         `JS Template creation job "${job.id}" was not found`,
       );
+    }
+
+    if (job.status === 'finalize-pending' && job.resultProjectId) {
+      return job.resultProjectId;
     }
 
     const existing = await this.projectService.findInternalProjectById(job.targetProjectId);
@@ -60,6 +67,7 @@ export class JsTemplateCreateJobExecutor {
       actorUserId: job.actorUserId,
       requestId: job.requestId || `create-job:${job.id}`,
       requestSource: `js-template-create-job:${job.sourceType}`,
+      signal,
     };
     if (payload.sourceType === 'git') {
       const created = await this.createFromRemoteService.create(
@@ -77,6 +85,12 @@ export class JsTemplateCreateJobExecutor {
           creationJobId: job.id,
           assertCurrentClaim: (transaction) =>
             this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction),
+          markFinalizePending: (projectId, transaction) =>
+            this.store
+              .markFinalizePending(job.id, job.applicationName, claimToken, projectId, transaction)
+              .then(() => undefined),
+          authorize: (transaction) => this.authorize(job, transaction),
+          signal,
         },
       );
       return created.project.id;
@@ -84,33 +98,64 @@ export class JsTemplateCreateJobExecutor {
 
     const initialFiles =
       payload.sourceType === 'zip'
-        ? await parseJsTemplateSourceArchive(payload.zipBase64, this.projectService.getValidator())
-        : normalizeInitialFiles(payload.initialFiles);
+        ? normalizeInitialFiles(payload.files)
+        : normalizeInitialFiles(payload.initialFiles) || createDefaultJsTemplateTemplate();
     assertTextSourceFiles(initialFiles || []);
+    const prepared = await this.runtimeCompileService.prepareInitialWorkspace(
+      { projectId: job.targetProjectId, files: initialFiles },
+      { ...ctx, requestSource: `${ctx.requestSource}-prepare` },
+    );
+    signal?.throwIfAborted();
     return this.db.sequelize.transaction(async (transaction) => {
+      signal?.throwIfAborted();
       await this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction);
+      await this.authorize(job, transaction);
+      signal?.throwIfAborted();
       const transactionContext = { ...ctx, transaction };
-      const project = await this.projectService.createProject(
+      const project = await this.projectService.createProjectForCompositeUseCase(
         {
           name: job.name,
           title: job.title,
           description: job.description,
-          ...(initialFiles ? { initialFiles } : {}),
+          initialFiles,
           message: payload.message,
         },
         transactionContext,
         { projectId: job.targetProjectId, creationJobId: job.id },
       );
+      signal?.throwIfAborted();
       if (!project.headCommitId) {
         throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'JS Template initial source commit is missing', {
           details: { projectId: project.id },
         });
       }
-      const compiled = await this.runtimeCompileService.compileCurrentRuntime(project.id, project.headCommitId, {
+      const compiled = await this.runtimeCompileService.applyPreparedInitialWorkspace(prepared, project.headCommitId, {
         ...transactionContext,
-        requestSource: ctx.requestSource,
+        requestSource: `${ctx.requestSource}-apply`,
       });
+      signal?.throwIfAborted();
+      await this.store.assertCurrentClaim(job.id, job.applicationName, claimToken, transaction);
+      await this.authorize(job, transaction);
+      signal?.throwIfAborted();
+      await this.store.markFinalizePending(job.id, job.applicationName, claimToken, compiled.project.id, transaction);
+      signal?.throwIfAborted();
       return compiled.project.id;
+    });
+  }
+
+  async finalizeSucceededResult(
+    job: JsTemplateCreateJob,
+    claimToken: string,
+    resultProjectId: string,
+  ): Promise<JsTemplateCreateJob | null> {
+    if (resultProjectId !== job.targetProjectId) {
+      throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Creation job result Project identity is invalid');
+    }
+    return this.store.succeed(job.id, job.applicationName, claimToken, resultProjectId, async (transaction) => {
+      const project = await this.projectService.lockInternalProjectForUpdate(resultProjectId, { transaction });
+      if (project.creationJobId !== job.id || project.healthStatus !== 'ready' || !project.headCommitId) {
+        throw new JsTemplateError('JS_TEMPLATE_SOURCE_ERROR', 'Creation job result Project is not ready');
+      }
     });
   }
 
@@ -156,10 +201,10 @@ function requireJobPayload(job: JsTemplateCreateJob): JsTemplateCreateJobPayload
     };
   }
   if (payload.sourceType === 'zip') {
-    if (typeof payload.zipBase64 !== 'string' || typeof payload.message !== 'string') {
+    if (!Array.isArray(payload.files) || typeof payload.message !== 'string') {
       throw invalidPayload();
     }
-    return { sourceType: 'zip', zipBase64: payload.zipBase64, message: payload.message };
+    return { sourceType: 'zip', files: normalizeInitialFiles(payload.files) || [], message: payload.message };
   }
   if (payload.sourceType === 'starter') {
     if (

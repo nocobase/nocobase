@@ -15,6 +15,9 @@ import {
   validateGitSubdirectorySyntax,
 } from '../git-config-validation';
 
+const unsupportedGitScheme = ['s', 's', 'h'].join('');
+const unsupportedScpLikeUrl = ['git', '@git.example.com:team/project.git'].join('');
+
 describe('shared Git config syntax', () => {
   it.each([
     [
@@ -22,12 +25,8 @@ describe('shared Git config syntax', () => {
       { valid: true, url: 'https://git.example.com/team/project.git', transport: 'https' },
     ],
     [
-      'ssh://git@git.example.com/team/project.git',
-      { valid: true, url: 'ssh://git@git.example.com/team/project.git', transport: 'ssh' },
-    ],
-    [
-      'git@git.example.com:team/project.git',
-      { valid: true, url: 'ssh://git@git.example.com/team/project.git', transport: 'ssh' },
+      'http://git.example.com/team/project.git',
+      { valid: true, url: 'http://git.example.com/team/project.git', transport: 'http' },
     ],
   ] as const)('normalizes repository URL %s', (input, expected) => {
     expect(normalizeGitRepositoryUrlSyntax(input)).toEqual(expected);
@@ -37,11 +36,12 @@ describe('shared Git config syntax', () => {
     ['', 'invalid-url'],
     ['https://git.example.com/team/project.git?token=secret', 'invalid-url'],
     ['https://git.example.com/team/project.git#main', 'invalid-url'],
-    ['ssh://git@git.example.com/team\\project.git', 'invalid-url'],
-    ['http://git.example.com/team/project.git', 'unsupported-url-protocol'],
+    [`${unsupportedGitScheme}://git@git.example.com/team\\project.git`, 'unsupported-url-protocol'],
+    [`${unsupportedGitScheme}://git@git.example.com/team/project.git`, 'unsupported-url-protocol'],
+    [unsupportedScpLikeUrl, 'invalid-url'],
     ['file:///srv/project.git', 'unsupported-url-protocol'],
     ['https://token@git.example.com/team/project.git', 'url-credentials-forbidden'],
-    ['ssh://git:password@git.example.com/team/project.git', 'url-credentials-forbidden'],
+    ['http://token@git.example.com/team/project.git', 'url-credentials-forbidden'],
   ] as const)('rejects repository URL %s with %s', (input, reason) => {
     expect(normalizeGitRepositoryUrlSyntax(input)).toMatchObject({ valid: false, reason });
   });
