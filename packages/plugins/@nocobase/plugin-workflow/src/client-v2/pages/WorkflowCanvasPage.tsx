@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useApp } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Button, Result, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { WorkflowCanvasHeader } from '../components/WorkflowCanvasHeader';
 import { normalizeRecordResponse, type WorkflowRevision } from '../components/workflowCanvas';
 import { FlowContext } from '../canvas/contexts';
@@ -25,8 +26,8 @@ import { useT } from '../locale';
 
 export default function WorkflowCanvasPage() {
   const ctx = useFlowEngineContext();
+  const app = useApp();
   const t = useT();
-  const navigate = useNavigate();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
   const workflowId = params.id;
@@ -96,7 +97,7 @@ export default function WorkflowCanvasPage() {
         status="404"
         title={t('Workflow does not exist')}
         extra={
-          <Button type="primary" onClick={() => navigate('/admin/settings/workflow')}>
+          <Button type="primary" href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>
             {t('Workflow list')}
           </Button>
         }

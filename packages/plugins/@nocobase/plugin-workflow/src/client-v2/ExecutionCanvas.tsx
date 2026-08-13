@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useApp } from '@nocobase/client-v2';
 import { Button, Result } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { CanvasContent } from './canvas/CanvasContent';
 import { FlowContext } from './canvas/contexts';
 import { linkNodes } from './canvas/nodeTree';
@@ -43,7 +43,7 @@ function attachJobs(nodes: any[], jobs: any[] = []) {
 
 export function ExecutionCanvas({ record, resource, refresh }: { record: any; resource: any; refresh: () => void }) {
   const { t } = useWorkflowTranslation();
-  const navigate = useNavigate();
+  const app = useApp();
   const [viewJob, setViewJob] = useState<any>(null);
 
   const { jobs = [], workflow, ...execution } = record ?? {};
@@ -72,7 +72,9 @@ export function ExecutionCanvas({ record, resource, refresh }: { record: any; re
         status="404"
         title={t('Not found')}
         subTitle={t('Workflow of execution is not existed')}
-        extra={<Button onClick={() => navigate('/admin/settings/workflow')}>{t('Workflow list')}</Button>}
+        extra={
+          <Button href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>{t('Workflow list')}</Button>
+        }
       />
     );
   }

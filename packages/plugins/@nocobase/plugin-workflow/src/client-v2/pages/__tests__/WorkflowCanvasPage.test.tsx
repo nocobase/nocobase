@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,7 +16,6 @@ import WorkflowCanvasPage from '../WorkflowCanvasPage';
 const holder = vi.hoisted(() => ({
   getWorkflow: vi.fn(),
   listRevisions: vi.fn(),
-  navigate: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -24,7 +23,6 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return {
     ...actual,
     useParams: () => ({ id: '363644683878400' }),
-    useNavigate: () => holder.navigate,
   };
 });
 
@@ -44,6 +42,17 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
           };
         },
       },
+    }),
+  };
+});
+
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  return {
+    ...actual,
+    useApp: () => ({
+      getHref: (path: string) => `/v${path}`,
+      pluginSettingsManager: { getRoutePath: () => '/admin/settings/workflow' },
     }),
   };
 });
@@ -112,9 +121,7 @@ describe('WorkflowCanvasPage', () => {
     render(<WorkflowCanvasPage />);
 
     expect(await screen.findByText('Workflow does not exist')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Workflow list' }));
-
-    expect(holder.navigate).toHaveBeenCalledWith('/admin/settings/workflow');
+    expect(screen.getByRole('link', { name: 'Workflow list' })).toHaveAttribute('href', '/v/admin/settings/workflow');
     expect(holder.listRevisions).not.toHaveBeenCalled();
   });
 });
