@@ -20,17 +20,6 @@ export interface JSBlockContext<TSettings = unknown> extends JsTemplateDataConte
   };
 }
 
-export interface JSPageRuntimeFacade {
-  readonly uid: string;
-  readonly active: boolean;
-  refresh(): Promise<void>;
-  setDocumentTitle(title: string): void;
-}
-
-export interface JSPageContext<TSettings = unknown> extends JSBlockContext<TSettings> {
-  page: JSPageRuntimeFacade;
-}
-
 export interface JSFieldContext<TSettings = unknown, TValue = unknown> extends JsTemplateDataContext<TSettings> {
   value?: TValue;
 }

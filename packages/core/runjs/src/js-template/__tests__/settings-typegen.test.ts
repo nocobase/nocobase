@@ -154,8 +154,8 @@ describe('JS Template settings typegen', () => {
       },
       {
         name: 'summary literal',
-        source: `import type { SettingsSchemaSummary } from "${virtualImport}"; const kind: "js-page" = null as unknown as SettingsSchemaSummary["kind"];`,
-        message: /js-block.*js-page|js-page.*js-block/u,
+        source: `import type { SettingsSchemaSummary } from "${virtualImport}"; const kind: "unsupported" = null as unknown as SettingsSchemaSummary["kind"];`,
+        message: /js-block.*unsupported|unsupported.*js-block/u,
       },
     ];
     for (const invalid of invalidCases) {
@@ -206,7 +206,6 @@ describe('JS Template settings typegen', () => {
       files: [
         descriptor('js-blocks', 'sales-dir', 'sales', 'mode', 'number'),
         descriptor('js-actions', 'order-dir', 'orders', 'confirm', 'boolean'),
-        descriptor('js-pages', 'page-dir', 'page', 'title', 'string'),
         descriptor('js-fields', 'field-dir', 'field', 'color', 'string'),
         descriptor('js-items', 'item-dir', 'item', 'label', 'string'),
       ],
@@ -225,16 +224,13 @@ describe('JS Template settings typegen', () => {
     expect(orders.file?.content).toContain('client/js-action/orders');
     expect(orders.file?.content).not.toContain('client/js-block/sales');
     expect(result.templates.map((entry) => entry.kind).sort()).toEqual(
-      ['js-action', 'js-block', 'js-field', 'js-item', 'js-page'].sort(),
+      ['js-action', 'js-block', 'js-field', 'js-item'].sort(),
     );
     expect(result.files.find((file) => file.path.endsWith('/js-block/sales.d.ts'))?.content).toContain(
       'export type Context = JSBlockContext<Settings>;',
     );
     expect(result.files.find((file) => file.path.endsWith('/js-action/orders.d.ts'))?.content).toContain(
       'export type Context = JSActionContext<Settings>;',
-    );
-    expect(result.files.find((file) => file.path.endsWith('/js-page/page.d.ts'))?.content).toContain(
-      'export type Context = JSPageContext<Settings>;',
     );
     expect(result.files.find((file) => file.path.endsWith('/js-field/field.d.ts'))?.content).toContain(
       'export type Context = JSFieldContext<Settings>;',
@@ -318,32 +314,6 @@ describe('JS Template settings typegen', () => {
     ]);
     expect(diagnostics.some((message) => /columns/.test(message))).toBe(false);
     expect(diagnostics.some((message) => /missing/.test(message))).toBe(true);
-  });
-
-  it('generates JS Page settings with the page-specific context', () => {
-    const result = generateClientSettingsTypes({
-      files: [descriptor('js-pages', 'orders-dir', 'orders', 'title', 'string')],
-    });
-    const template = result.templates[0];
-    const active = createActiveTemplateContextType({
-      activePath: 'src/client/js-pages/orders-dir/index.tsx',
-      templates: result.templates,
-    });
-
-    expect(result.diagnostics).toEqual([]);
-    expect(template).toMatchObject({
-      kind: 'js-page',
-      sourceRoot: 'src/client/js-pages/orders-dir',
-      virtualImport: 'js-template:settings/client/js-page/orders',
-    });
-    expect(result.files.find((file) => file.path.endsWith('/js-page/orders.d.ts'))?.content).toContain(
-      'export type Context = JSPageContext<Settings>;',
-    );
-    expect(active.file?.content).toContain('type JsTemplateActiveTemplateContext = RunJSContext & Context;');
-    const sdkDeclarations = result.files.find((file) => file.path.endsWith('/sdk.d.ts'))?.content || '';
-    expect(sdkDeclarations).toContain('export type JSPageContext');
-    expect(sdkDeclarations.match(/declare module "@nocobase\/runjs\/js-template\/client"/gu)).toHaveLength(1);
-    expect(sdkDeclarations.match(/declare module "@nocobase\/runjs\/js-template\/shared"/gu)).toHaveLength(1);
   });
 });
 

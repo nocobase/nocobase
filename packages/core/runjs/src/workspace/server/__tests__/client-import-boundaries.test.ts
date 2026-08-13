@@ -131,7 +131,6 @@ describe('RunJS and JS Template package boundaries', () => {
         clientV2BoundaryEslint.lintFiles([
           'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
           'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
-          'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
       ])
     ).flat();

@@ -38,9 +38,7 @@ export type RunJSSourceLocator =
       flowKey: string;
       stepKey: string;
       sourcePath: string[];
-    }
-  | { kind: 'chart.option'; modelUid: string }
-  | { kind: 'chart.events'; modelUid: string };
+    };
 
 export type RunJSSourceKind = RunJSSourceLocator['kind'];
 export type RunJSSurfaceStyle = 'render' | 'action' | 'value';

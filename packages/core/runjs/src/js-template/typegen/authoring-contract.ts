@@ -10,15 +10,13 @@
 export const JS_TEMPLATE_SDK_CLIENT_IMPORT = '@nocobase/runjs/js-template/client';
 export const JS_TEMPLATE_SDK_SHARED_IMPORT = '@nocobase/runjs/js-template/shared';
 
-export type JsTemplateClientTypegenKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+export type JsTemplateClientTypegenKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 
 const authoringTypeNames = [
   'JsTemplateSettingsContext',
   'JsTemplateContextRecord',
   'JsTemplateDataContext',
   'JSBlockContext',
-  'JSPageRuntimeFacade',
-  'JSPageContext',
   'JSFieldContext',
   'JSActionContext',
   'JSItemContext',
@@ -28,7 +26,7 @@ const authoringTypeNames = [
 export type JsTemplateAuthoringTypeName = (typeof authoringTypeNames)[number];
 export type JsTemplateSettingsContextTypeName = Extract<
   JsTemplateAuthoringTypeName,
-  'JSBlockContext' | 'JSPageContext' | 'JSFieldContext' | 'JSActionContext' | 'JSItemContext'
+  'JSBlockContext' | 'JSFieldContext' | 'JSActionContext' | 'JSItemContext'
 >;
 
 export interface JsTemplateAuthoringTypeParameterContract {
@@ -55,9 +53,6 @@ export interface JsTemplateSdkAuthoringModuleContract {
 }
 
 const contextRecordType = 'Record<string, unknown>';
-const pageRuntimeFacadeType =
-  '{ readonly uid: string; readonly active: boolean; refresh(): Promise<void>; setDocumentTitle(title: string): void }';
-
 const settingsParameter = Object.freeze({ name: 'TSettings', defaultType: 'unknown' });
 const valueParameter = Object.freeze({ name: 'TValue', defaultType: 'unknown' });
 const inputParameter = Object.freeze({ name: 'TInput', defaultType: 'unknown' });
@@ -115,23 +110,6 @@ const authoringTypes = new Map<JsTemplateAuthoringTypeName, JsTemplateAuthoringT
       name: 'JSBlockContext',
       parameters: [settingsParameter],
       buildTypeExpression: ([settingsType]) => blockContextBody(settingsType),
-    },
-  ],
-  [
-    'JSPageRuntimeFacade',
-    {
-      name: 'JSPageRuntimeFacade',
-      parameters: [],
-      buildTypeExpression: () => pageRuntimeFacadeType,
-    },
-  ],
-  [
-    'JSPageContext',
-    {
-      name: 'JSPageContext',
-      parameters: [settingsParameter],
-      buildTypeExpression: ([settingsType]) =>
-        `(${blockContextBody(settingsType)} & { page: ${pageRuntimeFacadeType} })`,
     },
   ],
   [
@@ -198,8 +176,6 @@ const sharedTypeNames = ['JsTemplateSettingsContext', 'JsTemplateContextRecord',
 const clientTypeNames = [
   ...sharedTypeNames,
   'JSBlockContext',
-  'JSPageRuntimeFacade',
-  'JSPageContext',
   'JSFieldContext',
   'JSActionContext',
   'JSItemContext',
@@ -227,7 +203,6 @@ export const JS_TEMPLATE_SDK_AUTHORING_MODULES: ReadonlyMap<string, JsTemplateSd
 
 const settingsContextTypeNames: Record<JsTemplateClientTypegenKind, JsTemplateSettingsContextTypeName> = {
   'js-block': 'JSBlockContext',
-  'js-page': 'JSPageContext',
   'js-field': 'JSFieldContext',
   'js-action': 'JSActionContext',
   'js-item': 'JSItemContext',

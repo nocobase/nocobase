@@ -75,7 +75,6 @@ const emptySettingsSchema: Record<string, unknown> = { type: 'object', propertie
 
 const clientKindRoots: Array<{ kind: JsTemplateClientTypegenKind; root: string }> = [
   { kind: 'js-block', root: 'src/client/js-blocks' },
-  { kind: 'js-page', root: 'src/client/js-pages' },
   { kind: 'js-field', root: 'src/client/js-fields' },
   { kind: 'js-action', root: 'src/client/js-actions' },
   { kind: 'js-item', root: 'src/client/js-items' },

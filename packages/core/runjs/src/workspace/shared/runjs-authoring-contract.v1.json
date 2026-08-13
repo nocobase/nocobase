@@ -4,9 +4,8 @@
     "available": true,
     "saveMode": "delta",
     "supportsMaterialize": true,
-    "ownerKinds": ["js-block", "js-page", "js-field", "js-column", "js-action", "js-item"],
+    "ownerKinds": ["js-block", "js-field", "js-column", "js-action", "js-item"],
     "modelUses": [
-      "JSPageModel",
       "JSBlockModel",
       "JSFieldModel",
       "JSEditableFieldModel",
@@ -22,7 +21,7 @@
   },
   "externalization": {
     "available": true,
-    "entryKinds": ["js-block", "js-page", "js-field", "js-action", "js-item"],
+    "entryKinds": ["js-block", "js-field", "js-action", "js-item"],
     "destinationTypes": ["existing", "new"],
     "supportsIdempotency": true,
     "supportsDetachToInline": true

@@ -587,7 +587,7 @@ describe('@nocobase/runjs compiler golden contracts', () => {
     );
   });
 
-  it('accepts local, imported, and chart event globals while rejecting missing type names', async () => {
+  it('accepts local and imported globals while rejecting missing type names', async () => {
     const localBindings = await compileRunJSSourceWorkspace({
       files: [
         {
@@ -604,13 +604,6 @@ describe('@nocobase/runjs compiler golden contracts', () => {
       entry: 'index.tsx',
       surfaceStyle: 'render',
     });
-    const chartEvents = await compileRunJSSourceWorkspace({
-      files: [{ path: 'index.ts', content: "if (params?.name) { chart.off('click'); }" }],
-      entry: 'index.ts',
-      locator: { kind: 'chart.events', modelUid: 'chart-model' },
-      surfaceStyle: 'action',
-    });
-
     expect(localBindings.artifact.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -619,8 +612,6 @@ describe('@nocobase/runjs compiler golden contracts', () => {
         }),
       ]),
     );
-    expect(chartEvents.failureCode).toBeUndefined();
-    expect(chartEvents.artifact.diagnostics).toEqual([]);
   });
 
   it('uses TypeScript semantic diagnostics as a backend compile gate', async () => {

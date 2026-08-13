@@ -116,7 +116,6 @@ export const RUNJS_COMPILER_ALLOWED_GLOBALS = new Set([
   'Infinity',
 ]);
 
-const chartEventGlobals = new Set(['chart', 'params']);
 const sourceExtensions = new Set(['.ts', '.tsx', '.js', '.jsx', '.json']);
 const unknownNameDiagnosticCodes = new Set([2304, 2448, 2552, 2580, 2591]);
 let cachedTypeScriptEnvironmentFiles: RunJSTypeScriptEnvironmentFile[] | undefined;
@@ -327,10 +326,6 @@ function collectSourceFiles(files: InspectRunJSSourceWorkspaceInput['files']): M
 
 function resolveAllowedGlobals(input: InspectRunJSSourceWorkspaceInput): Set<string> {
   const allowedGlobals = new Set(RUNJS_COMPILER_ALLOWED_GLOBALS);
-  const modelUse = input.legacy?.metadata?.modelUse;
-  if (input.locator?.kind === 'chart.events' || modelUse === 'ChartEventsModel') {
-    chartEventGlobals.forEach((name) => allowedGlobals.add(name));
-  }
   for (const name of input.additionalAllowedGlobals || []) {
     if (name) {
       allowedGlobals.add(name);

@@ -12,8 +12,6 @@ import type {
   JSBlockContext,
   JSFieldContext,
   JSItemContext,
-  JSPageContext,
-  JSPageRuntimeFacade,
   RunJSContext,
 } from '@nocobase/runjs/js-template/client';
 import { assertSettings, defineSettings } from '@nocobase/runjs/js-template/shared';
@@ -36,8 +34,6 @@ const expectedTypes = [
   { name: 'JsTemplateContextRecord', parameters: [] },
   { name: 'JsTemplateDataContext', parameters: ['TSettings=unknown'] },
   { name: 'JSBlockContext', parameters: ['TSettings=unknown'] },
-  { name: 'JSPageRuntimeFacade', parameters: [] },
-  { name: 'JSPageContext', parameters: ['TSettings=unknown'] },
   { name: 'JSFieldContext', parameters: ['TSettings=unknown', 'TValue=unknown'] },
   { name: 'JSActionContext', parameters: ['TSettings=unknown'] },
   { name: 'JSItemContext', parameters: ['TSettings=unknown', 'TValue=unknown'] },
@@ -67,11 +63,6 @@ describe('JS Template SDK authoring contract', () => {
     >();
     expectTypeOf<keyof JSBlockContext<Settings>>().toEqualTypeOf<DataContextKeys | 'element' | 'render' | 'i18n'>();
     expectTypeOf<JSBlockContext<Settings>['settings']>().toEqualTypeOf<Settings>();
-    expectTypeOf<keyof JSPageRuntimeFacade>().toEqualTypeOf<'uid' | 'active' | 'refresh' | 'setDocumentTitle'>();
-    expectTypeOf<keyof JSPageContext<Settings>>().toEqualTypeOf<
-      DataContextKeys | 'element' | 'render' | 'i18n' | 'page'
-    >();
-    expectTypeOf<JSPageContext<Settings>['page']>().toEqualTypeOf<JSPageRuntimeFacade>();
     expectTypeOf<keyof JSFieldContext<Settings, Value>>().toEqualTypeOf<DataContextKeys | 'value'>();
     expectTypeOf<JSFieldContext<Settings, Value>['value']>().toEqualTypeOf<Value | undefined>();
     expectTypeOf<keyof JSActionContext<Settings>>().toEqualTypeOf<DataContextKeys | 'event' | 'formValues'>();
@@ -95,7 +86,7 @@ describe('JS Template SDK authoring contract', () => {
     expect(declarations).toContain('export function assertSettings<TSettings>(settings: TSettings): TSettings;');
 
     const source = [
-      `import type { JSActionContext, JSBlockContext, JSFieldContext, JSItemContext, JSPageContext, JSPageRuntimeFacade, RunJSContext } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
+      `import type { JSActionContext, JSBlockContext, JSFieldContext, JSItemContext, RunJSContext } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
       `import type { JsTemplateContextRecord, JsTemplateDataContext, JsTemplateSettingsContext } from "${JS_TEMPLATE_SDK_SHARED_IMPORT}";`,
       `import { assertSettings, defineSettings } from "${JS_TEMPLATE_SDK_CLIENT_IMPORT}";`,
       'type Settings = { title: string };',
@@ -105,8 +96,6 @@ describe('JS Template SDK authoring contract', () => {
       'type SettingsContextContract = Assert<Equal<keyof JsTemplateSettingsContext<Settings>, "settings">>;',
       'type DataContextContract = Assert<Equal<keyof JsTemplateDataContext<Settings>, DataContextKeys>>;',
       'type BlockContextContract = Assert<Equal<keyof JSBlockContext<Settings>, DataContextKeys | "element" | "render" | "i18n">>;',
-      'type PageFacadeContract = Assert<Equal<keyof JSPageRuntimeFacade, "uid" | "active" | "refresh" | "setDocumentTitle">>;',
-      'type PageContextContract = Assert<Equal<keyof JSPageContext<Settings>, DataContextKeys | "element" | "render" | "i18n" | "page">>;',
       'type FieldContextContract = Assert<Equal<keyof JSFieldContext<Settings, number>, DataContextKeys | "value">>;',
       'type ActionContextContract = Assert<Equal<keyof JSActionContext<Settings>, DataContextKeys | "event" | "formValues">>;',
       'type ItemContextContract = Assert<Equal<keyof JSItemContext<Settings, string>, DataContextKeys | "value">>;',
@@ -115,14 +104,12 @@ describe('JS Template SDK authoring contract', () => {
       'declare const record: JsTemplateContextRecord;',
       'declare const data: JsTemplateDataContext<Settings>;',
       'declare const block: JSBlockContext<Settings>;',
-      'declare const pageFacade: JSPageRuntimeFacade;',
-      'declare const page: JSPageContext<Settings>;',
       'declare const field: JSFieldContext<Settings, number>;',
       'declare const action: JSActionContext<Settings>;',
       'declare const item: JSItemContext<Settings, string>;',
       'declare const runjs: RunJSContext<Settings, boolean>;',
       'const title: string = settingsContext.settings.title;',
-      'const values = [record, data.record, block.element, pageFacade.uid, page.page.uid, field.value, action.event, item.value, runjs.input, title];',
+      'const values = [record, data.record, block.element, field.value, action.event, item.value, runjs.input, title];',
       'const exact: Settings = assertSettings(defineSettings({ title: "Orders" }));',
       'export { exact, values };',
       '',

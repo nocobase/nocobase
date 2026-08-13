@@ -33,12 +33,17 @@ describe('@nocobase/runjs workspace boundary', () => {
     expect(violations).toEqual([]);
   });
 
-  it('keeps lifecycle ownership on the Flow Engine plugin through the canonical package', () => {
-    const flowEnginePluginPackage = JSON.parse(
-      fs.readFileSync(path.resolve(packageRoot, '../../plugins/@nocobase/plugin-flow-engine/package.json'), 'utf8'),
-    ) as { dependencies?: Record<string, string> };
+  it('publishes explicit workspace subpath exports', () => {
+    const manifest = JSON.parse(fs.readFileSync(path.resolve(packageRoot, 'package.json'), 'utf8')) as {
+      exports?: Record<string, unknown>;
+    };
 
-    expect(flowEnginePluginPackage.dependencies).toHaveProperty('@nocobase/runjs');
+    expect(manifest.exports).toMatchObject({
+      './workspace/client': expect.any(Object),
+      './workspace/client-v2': expect.any(Object),
+      './workspace/server': expect.any(Object),
+      './workspace/shared': expect.any(Object),
+    });
   });
 });
 

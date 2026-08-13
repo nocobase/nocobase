@@ -525,8 +525,6 @@ describe('runJSStudioProvider', () => {
         stepKey: 'runjs',
         sourcePath: ['params', 'code'],
       },
-      { kind: 'chart.option' as const, modelUid: 'chart-1' },
-      { kind: 'chart.events' as const, modelUid: 'chart-1' },
     ];
     for (const nonStepLocator of nonStepLocators) {
       expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator: nonStepLocator })).toBe(
@@ -538,13 +536,13 @@ describe('runJSStudioProvider', () => {
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
         locator,
-        sourceLocator: { kind: 'chart.option', modelUid: 'chart-1' },
+        sourceLocator: nonStepLocators[0],
       }),
     ).toBe(false);
     expect(
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
-        locator: { kind: 'chart.option', modelUid: 'chart-1' },
+        locator: nonStepLocators[0],
         sourceLocator: locator,
       }),
     ).toBe(true);

@@ -123,22 +123,8 @@ describe('vsc-file shared utilities', () => {
         sourcePath: ['defaultParams', 'code'],
       }),
     );
-    const chartOptionPath = buildRunJSSourceRepositoryIdentity(
-      normalizeRunJSSourceLocator({
-        kind: 'chart.option',
-        modelUid: 'chart_1',
-      }),
-    );
-    const chartEventsPath = buildRunJSSourceRepositoryIdentity(
-      normalizeRunJSSourceLocator({
-        kind: 'chart.events',
-        modelUid: 'chart_1',
-      }),
-    );
-
     expect(dottedA.ownerId).not.toBe(dottedB.ownerId);
     expect(flowRegistryPath.ownerId).toMatch(/^runjs:flowModel\.flowRegistry\.runjs:fm_1:[a-f0-9]{16}$/);
-    expect(chartOptionPath.ownerId).not.toBe(chartEventsPath.ownerId);
   });
 
   it('rejects malformed RunJS source locators', () => {

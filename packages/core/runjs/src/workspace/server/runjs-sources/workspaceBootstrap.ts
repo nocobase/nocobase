@@ -49,7 +49,6 @@ const emptyRunJSRenderSource = 'ctx.render(null);';
 const emptyRunJSActionSource = 'return;';
 
 export const RUNJS_WORKSPACE_HOSTS = {
-  JSPageModel: 'js-page',
   JSBlockModel: 'js-block',
   JSFieldModel: 'js-field',
   JSEditableFieldModel: 'js-editable-field',

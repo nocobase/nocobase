@@ -9,9 +9,8 @@
 
 import manifest from './runjs-authoring-contract.v1.json';
 
-export type RunJSInlineWorkspaceOwnerKind = 'js-block' | 'js-page' | 'js-field' | 'js-column' | 'js-action' | 'js-item';
+export type RunJSInlineWorkspaceOwnerKind = 'js-block' | 'js-field' | 'js-column' | 'js-action' | 'js-item';
 export type RunJSInlineWorkspaceModelUse =
-  | 'JSPageModel'
   | 'JSBlockModel'
   | 'JSFieldModel'
   | 'JSEditableFieldModel'
@@ -23,7 +22,7 @@ export type RunJSInlineWorkspaceModelUse =
   | 'JSCollectionActionModel'
   | 'JSFormActionModel'
   | 'FilterFormJSActionModel';
-export type RunJSExternalizationEntryKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+export type RunJSExternalizationEntryKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 export type RunJSExternalizationDestinationType = 'existing' | 'new';
 
 export const RUNJS_AUTHORING_CONTRACT_VERSION = manifest.authoringContractVersion as '1';

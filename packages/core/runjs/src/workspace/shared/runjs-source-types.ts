@@ -83,13 +83,6 @@ export function normalizeRunJSSourceLocator(value: unknown): RunJSSourceLocator 
     };
   }
 
-  if (kind === 'chart.option' || kind === 'chart.events') {
-    return {
-      kind,
-      modelUid: requireString(input.modelUid, 'modelUid'),
-    };
-  }
-
   if (typeof kind === 'string' && kind.trim()) {
     const unsupportedKind = kind.trim();
     throw new VscError('RUNJS_SOURCE_KIND_UNSUPPORTED', `RunJS source kind "${unsupportedKind}" is not supported`, {
@@ -137,8 +130,6 @@ function getSourcePathSegments(
   if (locator.kind === 'flowModel.flowRegistry.runjs') {
     return toTypedPathSegments([locator.flowKey, locator.stepKey, ...locator.sourcePath]);
   }
-
-  return toTypedPathSegments([locator.kind]);
 }
 
 function toTypedPathSegments(

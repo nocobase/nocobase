@@ -30,14 +30,14 @@ The root entry stays dependency-light. Import compiler, settings, or server beha
 
 The `js-template` entries are the canonical source for JS Template authoring types, schema contracts, and settings type generation. Schema URIs, generated paths, and `js-template:settings/*` imports remain protocol identifiers; package imports use `@nocobase/runjs/js-template/*`.
 
-For example, a JS Page template can type its runtime context with:
+For example, a JS Block template can type its runtime context with:
 
 ```ts
-import type { JSPageContext, RunJSContext } from '@nocobase/runjs/js-template/client';
-import type { Settings } from 'js-template:settings/client/js-page/hello-page';
+import type { JSBlockContext, RunJSContext } from '@nocobase/runjs/js-template/client';
+import type { Settings } from 'js-template:settings/client/js-block/hello-block';
 
-const pageContext: RunJSContext & JSPageContext<Settings> = ctx;
-await pageContext.page.refresh();
+const blockContext: RunJSContext & JSBlockContext<Settings> = ctx;
+blockContext.render?.(null);
 ```
 
 The generated settings import is authoring-only and is not stored with runtime artifacts.
