@@ -244,12 +244,6 @@ vi.mock('../../../client-v2/repositories/hooks/useAIConfigRepository', () => ({
   }),
 }));
 
-vi.mock('../../../client-v2/debug-logger', () => ({
-  aiDebugLogger: {
-    log: vi.fn(),
-  },
-}));
-
 const atlas: AIEmployee = {
   username: 'atlas',
   nickname: 'Atlas',
@@ -328,7 +322,6 @@ const resetStores = () => {
     senderRef: { current: null },
     showCodeHistory: false,
     model: null,
-    showDebugPanel: false,
     readonly: false,
     isShowSenderHint: false,
   });
