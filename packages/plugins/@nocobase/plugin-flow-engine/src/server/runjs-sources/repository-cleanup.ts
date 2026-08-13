@@ -71,7 +71,11 @@ async function collectRunJSRepositoriesForNodeTree(
     collectRunJSSourceLocatorsForNodeTree(node).map(async (locator) => {
       const identity = buildRunJSSourceRepositoryIdentity(locator);
       return db.getRepository('vscFileRepositories').findOne({
-        filter: identity,
+        filter: {
+          ownerType: identity.ownerType,
+          ownerId: identity.ownerId,
+          name: identity.name,
+        },
         fields: ['id', 'status'],
         transaction,
       });
@@ -102,11 +106,12 @@ function collectRunJSSourceLocatorsForNodeTree(node: unknown): RunJSSourceLocato
     if (typeof current.uid !== 'string' || !current.uid) {
       return;
     }
+    const modelUid = current.uid;
     const runJSHost = resolveFlowSurfaceRunJSHost(current.use);
     if (runJSHost) {
       locators.push({
         kind: 'flowModel.step',
-        modelUid: current.uid,
+        modelUid,
         flowKey: runJSHost.flowKey,
         stepKey: 'runJs',
         paramPath: ['code'],
@@ -133,7 +138,7 @@ function collectRunJSSourceLocatorsForNodeTree(node: unknown): RunJSSourceLocato
         if (typeof params.code === 'string' || typeof defaultParams.code === 'string') {
           locators.push({
             kind: 'flowModel.flowRegistry.runjs',
-            modelUid: current.uid,
+            modelUid,
             flowKey,
             stepKey,
             sourcePath,
@@ -142,7 +147,7 @@ function collectRunJSSourceLocatorsForNodeTree(node: unknown): RunJSSourceLocato
       });
     });
     if (current.use === 'ChartBlockModel') {
-      locators.push({ kind: 'chart.option', modelUid: current.uid }, { kind: 'chart.events', modelUid: current.uid });
+      locators.push({ kind: 'chart.option', modelUid }, { kind: 'chart.events', modelUid });
     }
     const subModels = _.isPlainObject(current.subModels) ? (current.subModels as Record<string, unknown>) : {};
     Object.values(subModels).forEach((children) => {
