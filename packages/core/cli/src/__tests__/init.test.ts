@@ -224,28 +224,7 @@ test('nb init continues from the browser UI result and runs env:add for an exist
   expect(webUiOptions?.stages[3]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.downloadAppFiles.title',
   });
-  expect(webUiOptions?.stages[3]?.catalog).toMatchObject({
-    appClientEntryMode: {
-      type: 'select',
-      options: [
-        expect.objectContaining({
-          value: 'modern-only',
-          label: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyLabel' },
-          hint: { key: 'commands.init.prompts.appClientEntryMode.modernOnlyHint' },
-        }),
-        expect.objectContaining({
-          value: 'modern-default',
-          label: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultLabel' },
-          hint: { key: 'commands.init.prompts.appClientEntryMode.modernDefaultHint' },
-        }),
-        expect.objectContaining({
-          value: 'legacy-default',
-          label: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultLabel' },
-          hint: { key: 'commands.init.prompts.appClientEntryMode.legacyDefaultHint' },
-        }),
-      ],
-    },
-  });
+  expect(webUiOptions?.stages[3]?.catalog.appClientEntryMode).toBeUndefined();
   expect(webUiOptions?.stages[4]?.sectionTitle).toEqual({
     key: 'commands.init.webUi.configureDatabase.title',
   });
@@ -2544,6 +2523,7 @@ test('nb init forwards --skip-auth to env add for an existing app flow', async (
 
   expect(mocks.runPromptCatalog).toHaveBeenCalledTimes(1);
   const promptCatalog = mocks.runPromptCatalog.mock.calls[0]?.[0];
+  expect(promptCatalog?.appClientEntryMode).toBeUndefined();
   expect(
     promptCatalog?.accessToken?.hidden?.({
       hasNocobase: 'yes',

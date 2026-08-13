@@ -8,6 +8,7 @@
  */
 
 import {
+  ACLContext,
   BaseLayoutModel,
   BasePageMenuModel,
   ChildPageModel,
@@ -124,9 +125,23 @@ describe('plugin-ui-layout mobile models', () => {
     window.localStorage.removeItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY);
   });
 
+  function createACLContextValue(allowConfigUI = true) {
+    return {
+      loading: false,
+      data: {
+        data: {
+          snippets: allowConfigUI ? ['ui.*'] : [],
+        },
+        meta: {},
+      },
+      refresh: vi.fn(async () => {}),
+    };
+  }
+
   function renderMobileLayoutWithRouteRepository(
     routeRepository: MobileRouteRepositoryForTest,
     options: {
+      allowConfigUI?: boolean;
       beforeRender?: (model: MobileLayoutModel) => void;
       api?: {
         request: (options: Record<string, unknown>) => Promise<{ data?: { data?: NocoBaseDesktopRoute[] } }>;
@@ -196,40 +211,46 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          ConfigProvider,
+          ACLContext.Provider,
           {
-            theme: options.theme,
+            value: createACLContextValue(options.allowConfigUI !== false),
           },
           React.createElement(
-            AntdApp,
-            null,
+            ConfigProvider,
+            {
+              theme: options.theme,
+            },
             React.createElement(
-              MemoryRouter,
-              {
-                initialEntries: options.initialEntries || [
-                  options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
-                ],
-                basename: options.memoryRouterBasename,
-              },
+              AntdApp,
+              null,
               React.createElement(
-                Routes,
-                null,
-                options.outletElement
-                  ? React.createElement(
-                      Route,
-                      {
-                        path: routerRoutePath,
+                MemoryRouter,
+                {
+                  initialEntries: options.initialEntries || [
+                    options.memoryRouterBasename ? `${options.memoryRouterBasename}/mobile` : '/v/mobile',
+                  ],
+                  basename: options.memoryRouterBasename,
+                },
+                React.createElement(
+                  Routes,
+                  null,
+                  options.outletElement
+                    ? React.createElement(
+                        Route,
+                        {
+                          path: routerRoutePath,
+                          element: model.render(),
+                        },
+                        React.createElement(Route, {
+                          path: ':name',
+                          element: options.outletElement,
+                        }),
+                      )
+                    : React.createElement(Route, {
+                        path: `${routerRoutePath}/*`,
                         element: model.render(),
-                      },
-                      React.createElement(Route, {
-                        path: ':name',
-                        element: options.outletElement,
                       }),
-                    )
-                  : React.createElement(Route, {
-                      path: `${routerRoutePath}/*`,
-                      element: model.render(),
-                    }),
+                ),
               ),
             ),
           ),
@@ -1245,18 +1266,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createACLContextValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
@@ -1428,18 +1453,22 @@ describe('plugin-ui-layout mobile models', () => {
         FlowEngineProvider,
         { engine },
         React.createElement(
-          AntdApp,
-          null,
+          ACLContext.Provider,
+          { value: createACLContextValue() },
           React.createElement(
-            MemoryRouter,
-            { initialEntries: ['/v/mobile'] },
+            AntdApp,
+            null,
             React.createElement(
-              Routes,
-              null,
-              React.createElement(Route, {
-                path: '/v/mobile/*',
-                element: model.render(),
-              }),
+              MemoryRouter,
+              { initialEntries: ['/v/mobile'] },
+              React.createElement(
+                Routes,
+                null,
+                React.createElement(Route, {
+                  path: '/v/mobile/*',
+                  element: model.render(),
+                }),
+              ),
             ),
           ),
         ),
@@ -2643,6 +2672,44 @@ describe('plugin-ui-layout mobile models', () => {
       });
       expect(screen.getByRole('button', { name: 'Add mobile tab' })).toBeInTheDocument();
       expect(screen.queryByText('Add block')).not.toBeInTheDocument();
+    } finally {
+      restoreBreakpoint();
+    }
+  });
+
+  it.each([
+    { title: 'without a stored preference', storedPreference: undefined },
+    { title: 'with an enabled stored preference', storedPreference: '1' },
+  ])('should hide the UI editor when the role cannot configure the interface $title', async ({ storedPreference }) => {
+    const restoreBreakpoint = mockDesktopBreakpoint();
+    const routeRepository: MobileRouteRepositoryForTest = {
+      listAccessible: () => [],
+      ensureAccessibleLoaded: vi.fn(async () => []),
+    };
+
+    try {
+      if (storedPreference) {
+        window.localStorage.setItem(FLOW_SETTINGS_PREFERENCE_STORAGE_KEY, storedPreference);
+      }
+      const { engine } = renderMobileLayoutWithRouteRepository(routeRepository, {
+        allowConfigUI: false,
+        beforeRender: (model) => {
+          // Start enabled so the assertion below proves the permission-sync effect actively disables Flow Settings.
+          model.flowEngine.flowSettings.enabled = true;
+        },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('No mobile pages yet')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('ui-editor-button')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Add mobile tab' })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Pad preview' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mobile preview' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'QR code' })).toBeInTheDocument();
+      await waitFor(() => {
+        expect(engine.context.flowSettingsEnabled).toBe(false);
+      });
     } finally {
       restoreBreakpoint();
     }

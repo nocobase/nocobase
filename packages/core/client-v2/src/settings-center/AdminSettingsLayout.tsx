@@ -13,9 +13,11 @@ import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { Layout, Result, Tabs, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { generatePath, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { getModernClientPrefix } from '../authRedirect';
 import type { PluginSettingsPageType } from '../PluginSettingsManager';
 import { useApp } from '../hooks/useApp';
+import { resolveSettingsAppScopeWithinPublicPath } from '../settings-app/settingsDocumentPath';
 import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
 import { useSettingsGroups } from './useSettingsGroups';
 import {
@@ -33,6 +35,19 @@ import {
  * tiring to read and leaves the actions on the right far from the title on the left.
  */
 const SETTINGS_CONTENT_MAX_WIDTH = 1280;
+
+function AdminDocumentRedirect() {
+  const app = useApp();
+  const rootPublicPath = app.getPublicPath().replace(/\/+$/, '');
+  const appScope = resolveSettingsAppScopeWithinPublicPath(app.getPublicPath(), app.router.getBasename?.());
+  const targetPath = `${rootPublicPath}/${getModernClientPrefix()}${appScope}/admin`;
+
+  useEffect(() => {
+    window.location.replace(targetPath);
+  }, [targetPath]);
+
+  return app.renderComponent('AppSpin');
+}
 
 function SettingsEmpty(props: { type: 'forbidden' | 'home' | 'not-found' }) {
   const { type } = props;
@@ -83,6 +98,10 @@ export const InternalAdminSettingsLayout = () => {
   const app = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams();
+  const routeParams = Object.fromEntries(
+    Object.entries(params).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+  );
   const { token } = theme.useToken();
   const {
     allSettings,
@@ -173,8 +192,24 @@ export const InternalAdminSettingsLayout = () => {
   }
 
   if (currentSetting.isAllow === false) {
-    if (nextVisibleChildPath && nextVisibleChildPath !== location.pathname) {
-      return <Navigate replace to={nextVisibleChildPath} />;
+    const firstVisibleTabPath = (currentVisibleTopLevelSetting?.children || [])
+      .map((tab) => getDefaultSettingsPath([tab]))
+      .filter((path): path is string => typeof path === 'string')
+      .map((path) => {
+        try {
+          return generatePath(path, routeParams);
+        } catch {
+          return null;
+        }
+      })
+      .find((path): path is string => typeof path === 'string');
+
+    if (firstVisibleTabPath) {
+      return <Navigate replace to={firstVisibleTabPath} />;
+    }
+
+    if (!defaultSettingsPath) {
+      return <AdminDocumentRedirect />;
     }
 
     return <SettingsEmpty type="forbidden" />;

@@ -12,7 +12,7 @@ Berikut adalah masalah yang lebih mudah dijumpai saat mengembangkan plugin clien
 
 ### Plugin tidak terlihat di manajer setelah dibuat
 
-Pastikan menjalankan `yarn pm create` bukan membuat direktori secara manual. `yarn pm create` selain menggenerate file, juga akan mendaftarkan plugin ke tabel `applicationPlugins` di database. Jika sudah membuat direktori secara manual, dapat menjalankan `yarn nocobase upgrade` untuk memindai ulang.
+Pastikan menjalankan `yarn pm create` bukan membuat direktori secara manual. Selain menggenerate file, `yarn pm create` juga memperbarui `tsconfig.paths.json` dan menjalankan `yarn postinstall` — yang terakhir ini me-link plugin ke `node_modules` dan menggenerate ulang index plugin client, sehingga plugin dapat ditemukan oleh aplikasi. Direktori yang dibuat secara manual melewatkan langkah tersebut; jalankan `yarn nocobase upgrade` untuk memindai ulang dan mendaftarkannya ke tabel `applicationPlugins`.
 
 ### Halaman tidak berubah setelah plugin diaktifkan
 

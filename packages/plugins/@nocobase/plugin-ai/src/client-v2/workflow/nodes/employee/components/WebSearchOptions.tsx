@@ -11,6 +11,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Form, Space, Switch, Typography } from 'antd';
 import { observer } from '@nocobase/flow-engine';
 import type { AIEmployeeModelOverride } from '../../../types';
+import { supportsWebSearchForModel, type LLMServiceItem } from '../../../../repositories/AIConfigRepository';
 import { useAIConfigRepository } from '../../../../repositories/hooks/useAIConfigRepository';
 import { useT } from '../../../../locale';
 
@@ -19,10 +20,7 @@ type WebSearchSwitchProps = {
   onChange?: (value: boolean) => void;
 };
 
-function getServiceByOverride(
-  services: Array<{ llmService: string; supportWebSearch?: boolean }>,
-  override?: AIEmployeeModelOverride | null,
-) {
+function getServiceByOverride(services: LLMServiceItem[], override?: AIEmployeeModelOverride | null) {
   if (!override?.llmService) {
     return undefined;
   }
@@ -38,7 +36,7 @@ export const WebSearchSwitch: React.FC<WebSearchSwitchProps> = observer(({ value
     () => getServiceByOverride(aiConfigRepository.llmServices, model),
     [aiConfigRepository.llmServices, model],
   );
-  const isDisabled = !!model && selectedService?.supportWebSearch === false;
+  const isDisabled = !!model && !supportsWebSearchForModel(selectedService, model.model);
 
   useEffect(() => {
     aiConfigRepository.getLLMServices();

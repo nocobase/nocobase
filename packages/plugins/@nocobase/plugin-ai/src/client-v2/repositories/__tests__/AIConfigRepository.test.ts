@@ -9,7 +9,7 @@
 
 import type { APIClient, ToolsEntry } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
-import { AIConfigRepository, type LLMServiceItem } from '../AIConfigRepository';
+import { AIConfigRepository, supportsWebSearchForModel, type LLMServiceItem } from '../AIConfigRepository';
 
 type ResourceAction = (params?: Record<string, unknown>) => Promise<unknown>;
 type ResourceActions = Record<string, ResourceAction>;
@@ -110,5 +110,33 @@ describe('AIConfigRepository', () => {
     await expect(repo.getAITools('session-1')).resolves.toEqual([tool]);
     expect(listTools).toHaveBeenCalledWith({ sessionId: 'session-1' });
     expect(listToolsFromApi).not.toHaveBeenCalled();
+  });
+
+  it('prefers model-level web search capability when a provider publishes a model list', () => {
+    const service: LLMServiceItem = {
+      llmService: 'deepseek',
+      llmServiceTitle: 'DeepSeek',
+      enabledModels: [
+        { label: 'V4 Flash', value: 'deepseek-v4-flash' },
+        { label: 'V4 Pro', value: 'deepseek-v4-pro' },
+      ],
+      supportWebSearch: true,
+      webSearchModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+    };
+
+    expect(supportsWebSearchForModel(service, 'deepseek-v4-flash')).toBe(true);
+    expect(supportsWebSearchForModel(service, 'deepseek-v4-pro')).toBe(true);
+    expect(supportsWebSearchForModel(service, 'deepseek-chat')).toBe(false);
+  });
+
+  it('keeps provider-level web search compatibility when no model list is present', () => {
+    const service: LLMServiceItem = {
+      llmService: 'openai',
+      llmServiceTitle: 'OpenAI',
+      enabledModels: [{ label: 'GPT', value: 'gpt-4o' }],
+      supportWebSearch: true,
+    };
+
+    expect(supportsWebSearchForModel(service, 'gpt-4o')).toBe(true);
   });
 });

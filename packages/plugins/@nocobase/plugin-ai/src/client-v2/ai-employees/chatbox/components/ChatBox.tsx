@@ -10,7 +10,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Button, Divider, Layout, theme, Tooltip } from 'antd';
 import {
-  BugOutlined,
   CloseOutlined,
   CompressOutlined,
   FullscreenExitOutlined,
@@ -43,7 +42,6 @@ export const ChatBox: React.FC<{
   const expanded = chatBoxModel.expanded;
   const showConversations = chatBoxModel.showConversations;
   const currentEmployee = chatBoxModel.currentEmployee;
-  const showDebugPanel = chatBoxModel.showDebugPanel;
   const { startNewConversation } = useChatBoxActions();
   const { isMobileLayout } = useMobileLayout();
   useChatBoxEffect();
@@ -152,16 +150,6 @@ export const ChatBox: React.FC<{
                   />
                 </Tooltip>
                 <UserPrompt />
-                {!expanded ? (
-                  <Tooltip arrow={false} title={t('Debug Panel')}>
-                    <Button
-                      aria-label={t('Debug Panel')}
-                      icon={<BugOutlined />}
-                      type="text"
-                      onClick={() => chatBoxModel.setShowDebugPanel(!showDebugPanel)}
-                    />
-                  </Tooltip>
-                ) : null}
                 <Divider type="vertical" />
               </>
             ) : null}
@@ -183,9 +171,6 @@ export const ChatBox: React.FC<{
                   icon={expanded ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
                   type="text"
                   onClick={() => {
-                    if (!expanded) {
-                      chatBoxModel.setShowDebugPanel(false);
-                    }
                     chatBoxModel.setExpanded(!expanded);
                   }}
                 />

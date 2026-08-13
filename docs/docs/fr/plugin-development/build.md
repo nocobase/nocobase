@@ -6,7 +6,7 @@ keywords: "construction de plugin,packaging de plugin,yarn build,tar,build.confi
 
 # Construction et packaging
 
-Une fois le développement du plugin terminé, vous devez passer par deux étapes — construction (compilation du code source) et packaging (génération d'un `.tar.gz`) — avant de pouvoir le distribuer à d'autres applications NocoBase.
+Une fois le développement du plugin terminé, vous devez passer par deux étapes — construction (compilation du code source) et packaging (génération d'un `.tgz`) — avant de pouvoir le distribuer à d'autres applications NocoBase.
 
 ## Construire le plugin
 
@@ -26,13 +26,13 @@ Si le plugin a été créé dans le dépôt source, la première construction d�
 
 ## Packager le plugin
 
-Le packaging compresse les artefacts de build en un fichier `.tar.gz`, pratique pour les téléverser dans d'autres environnements :
+Le packaging compresse les artefacts de build en un fichier `.tgz`, pratique pour les téléverser dans d'autres environnements :
 
 ```bash
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-Par défaut, le fichier de package est produit dans `storage/tar/@my-project/plugin-hello.tar.gz`.
+Par défaut, le fichier de package est produit dans `storage/tar/`, nommé `<nom-du-paquet>-<version>.tgz` — par exemple `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 Vous pouvez également utiliser le paramètre `--tar` pour combiner construction et packaging en une seule étape :
 
@@ -42,7 +42,13 @@ yarn build @my-project/plugin-hello --tar
 
 ## Téléverser dans une autre application NocoBase
 
-Téléversez et décompressez le fichier `.tar.gz` dans le répertoire `./storage/plugins` de l'application cible. Voir [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) pour les détails.
+Téléversez et décompressez le fichier `.tgz` dans le répertoire `./storage/plugins` de l'application cible. Voir [Installer et mettre à niveau les plugins](../get-started/install-upgrade-plugins.mdx) pour les détails.
+
+Si l'application cible a été créée avec la CLI NocoBase (`nb init`), vous pouvez aussi l'importer directement avec `nb plugin import`, sans décompression manuelle :
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ### Activer le plugin par défaut
 

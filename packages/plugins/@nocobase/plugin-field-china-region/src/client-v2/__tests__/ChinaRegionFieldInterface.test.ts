@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { ChinaRegionFieldInterface } from '../chinaRegion';
-import { ChinaRegionFieldModel, DisplayChinaRegionFieldModel } from '../models';
+import { ChinaRegionFieldModel, ChinaRegionFilterFieldModel, DisplayChinaRegionFieldModel } from '../models';
 import PluginFieldChinaRegionClient from '../plugin';
 
 const uidMock = vi.hoisted(() => {
@@ -51,6 +51,9 @@ describe('ChinaRegionFieldInterface', () => {
       ChinaRegionFieldModel: {
         loader: expect.any(Function),
       },
+      ChinaRegionFilterFieldModel: {
+        loader: expect.any(Function),
+      },
       DisplayChinaRegionFieldModel: {
         loader: expect.any(Function),
       },
@@ -60,6 +63,10 @@ describe('ChinaRegionFieldInterface', () => {
     await expect(loaders.ChinaRegionFieldModel.loader()).resolves.toHaveProperty(
       'ChinaRegionFieldModel',
       ChinaRegionFieldModel,
+    );
+    await expect(loaders.ChinaRegionFilterFieldModel.loader()).resolves.toHaveProperty(
+      'ChinaRegionFilterFieldModel',
+      ChinaRegionFilterFieldModel,
     );
     await expect(loaders.DisplayChinaRegionFieldModel.loader()).resolves.toHaveProperty(
       'DisplayChinaRegionFieldModel',

@@ -278,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Сборка",
+        "label": "Сборка и упаковка",
         "link": "/plugin-development/build"
       }
     ]

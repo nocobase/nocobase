@@ -53,7 +53,6 @@ export class ChatBoxModel {
 
   model: ModelRef | null | undefined = null;
 
-  showDebugPanel = false;
   readonly = false;
 
   constructor() {
@@ -74,7 +73,6 @@ export class ChatBoxModel {
       legacySenderRef: observable.ref,
       showCodeHistory: observable.ref,
       model: observable.ref,
-      showDebugPanel: observable.ref,
       readonly: observable.ref,
       legacyIsShowSenderHint: observable.ref,
       attachSenderModel: action,
@@ -95,7 +93,6 @@ export class ChatBoxModel {
       setSenderRef: action,
       setShowCodeHistory: action,
       setModel: action,
-      setShowDebugPanel: action,
       setReadonly: action,
       setShowSenderHint: action,
     });
@@ -254,10 +251,6 @@ export class ChatBoxModel {
 
   setModel = (model: ModelRef | null | undefined) => {
     this.model = model;
-  };
-
-  setShowDebugPanel = (show: boolean) => {
-    this.showDebugPanel = show;
   };
 
   setReadonly = (readonly: boolean) => {

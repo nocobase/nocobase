@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、以降はコードを修正するだけでホットリロードされます。`nb init` で作成したプロジェクトはプロジェクトのルートディレクトリ（`<app-path>`）で `nb source dev` を、自分で clone したソースリポジトリはソースコードのルートディレクトリで `yarn dev` を実行してください。
+
 ## ステップ2：データテーブルの定義（サーバーサイド）
 
 `src/server/collections/todoItems.ts` を新規作成します。NocoBase はこのディレクトリ配下の collection 定義を自動的に読み込みます：

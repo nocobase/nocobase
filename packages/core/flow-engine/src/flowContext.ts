@@ -165,6 +165,10 @@ function inferSelectsFromUsage(paths: string[] = []): { generatedAppends?: strin
 
 type Getter<T = any> = (ctx: FlowContext) => T | Promise<T>;
 
+export type ResolveJsonTemplateOptions = {
+  contractModelUid?: string | number | null;
+};
+
 export type FlowContextDocRef = string | { url: string; title?: string };
 
 export type FlowDeprecationDoc =
@@ -3046,7 +3050,7 @@ class BaseFlowEngineContext extends FlowContext {
    * @deprecated use `resolveJsonTemplate` instead
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
-  declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
+  declare resolveJsonTemplate: (template: JSONValue, options?: ResolveJsonTemplateOptions) => Promise<any>;
   declare getVar: (path: string) => Promise<any>;
   declare request: (options: RequestOptions) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
@@ -3229,7 +3233,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
-    this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+    const resolveJsonTemplate = async function (
+      this: BaseFlowEngineContext,
+      template: any,
+      options?: ResolveJsonTemplateOptions,
+    ) {
       // 提取模板使用到的变量及其子路径
       const used = extractUsedVariablePaths(template);
       const usedVarNames = Object.keys(used || {});
@@ -3398,7 +3406,12 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
+            const contractRd = buildFlowModelResolveDescriptor(
+              this as FlowRuntimeContext<FlowModel>,
+              options?.contractModelUid,
+            );
             serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
+              ...(contractRd ? { contractRd } : {}),
               rd: buildFlowModelResolveDescriptor(this as FlowRuntimeContext<FlowModel>, this.model?.uid),
               template,
               contextParams: autoContextParams || {},
@@ -3411,7 +3424,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       }
 
       return resolveExpressions(serverResolved, this);
-    });
+    };
+    this.defineMethod('resolveJsonTemplate', resolveJsonTemplate);
 
     // Helper: resolve a single ctx expression value via resolveJsonTemplate behavior.
     // Example: await ctx.getVar('ctx.record.id')
@@ -4597,6 +4611,10 @@ export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
+    const submit = delegate.blockModel?.submitFromRunJs?.bind(delegate.blockModel);
+    if (delegate.form && submit) {
+      this.defineProperty('form', { value: { ...delegate.form, submit } });
+    }
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
     this.defineProperty('dayjs', {

@@ -445,6 +445,8 @@ jobs:
   push-docker:
     if: ${{ always() && needs.prepare-release.result == 'success' && needs.prepare-release.outputs.run_docker_release == 'true' && (needs.publish-packages.result == 'success' || needs.publish-packages.result == 'skipped') }}
     runs-on: ubuntu-latest
+    env:
+      BUILDX_NO_DEFAULT_ATTESTATIONS: 1
     needs:
       - prepare-release
       - publish-packages

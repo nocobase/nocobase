@@ -129,7 +129,7 @@ describe('variables:resolve persisted Form provider tree', () => {
         user: childNickname,
       });
       expect(rolesFindOne).toHaveBeenCalledTimes(1);
-      expect(rolesFindOne).toHaveBeenCalledWith({ filterByTk: 'root' });
+      expect(rolesFindOne).toHaveBeenCalledWith({ filterByTk: 'root', context: expect.anything() });
       expect(usersFindOne).toHaveBeenCalledTimes(1);
     } finally {
       rolesFindOne.mockRestore();

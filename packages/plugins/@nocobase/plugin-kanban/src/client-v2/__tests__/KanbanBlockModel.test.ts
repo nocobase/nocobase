@@ -2363,6 +2363,32 @@ describe('KanbanBlockModel.filterCollection', () => {
     );
   });
 
+  test('card click persists the popup host before opening it in configuration mode', async () => {
+    const dispatchEvent = vi.fn().mockResolvedValue(undefined);
+    const ensureCardViewAction = vi.fn().mockResolvedValue({ uid: 'u_card_view_popup', dispatchEvent });
+
+    await KanbanBlockModel.prototype.openCard.call(
+      {
+        context: {
+          flowSettingsEnabled: true,
+          layoutContentElement: { id: 'layout-root' },
+        },
+        collection: {
+          name: 'tasks',
+          dataSourceKey: 'main',
+          getFilterByTK: (record: { id: number }) => record.id,
+        },
+        getCardOpenMode: () => 'drawer',
+        isCardClickable: () => true,
+        ensureCardViewAction,
+      },
+      { id: 1 },
+    );
+
+    expect(ensureCardViewAction).toHaveBeenCalledWith({ persist: true });
+    expect(dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
   test('page size settings use the fixed dropdown options', () => {
     const flow: any = (KanbanBlockModel as any).globalFlowRegistry.getFlow('kanbanSettings');
     const step: any = flow?.steps?.pageSize;

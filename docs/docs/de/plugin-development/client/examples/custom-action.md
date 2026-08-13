@@ -49,6 +49,8 @@ yarn pm create @my-project/plugin-simple-action
 
 Detaillierte Erläuterungen siehe [Erstes Plugin schreiben](../../write-your-first-plugin).
 
+Starten Sie anschließend den Entwicklungsmodus, damit Codeänderungen per Hot-Reload übernommen werden: Bei einem mit `nb init` erstellten Projekt führen Sie `nb source dev` im Projektstammverzeichnis (`<app-path>`) aus, bei einem selbst geklonten NocoBase-Quellcode-Repository `yarn dev` im Stammverzeichnis des Quellcodes.
+
 ## Schritt 2: Aktionsmodelle erstellen
 
 Jede Aktion muss das Szenario deklarieren, in dem sie erscheint, indem sie über die Eigenschaft `static scene` angegeben wird:

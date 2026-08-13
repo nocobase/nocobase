@@ -198,7 +198,7 @@ describe('backup hooks', () => {
       params: { task: 'task-1' },
     });
     expect(taskRef.current).toBeNull();
-    expect(hideCheckBackupMessage).toHaveBeenCalledTimes(1);
+    expect(hideCheckBackupMessage).not.toHaveBeenCalled();
     expect(mocks.notification.error).toHaveBeenCalledWith({ message: 'Restore failed', role: 'alert' });
   });
 
@@ -241,6 +241,51 @@ describe('backup hooks', () => {
     });
 
     expect(taskRef.current).toBe('task-1');
+    expect(mocks.notification.error).not.toHaveBeenCalled();
+  });
+
+  it('serializes polling and ignores a response for a replaced restore task', async () => {
+    vi.useFakeTimers();
+    const hideCheckBackupMessage = vi.fn();
+    mocks.engineContext[BACKUP_RESTORE_RUNTIME_KEY] = {
+      showCheckBackupMessage: vi.fn(),
+      hideCheckBackupMessage,
+    };
+    let resolveStatus: ((value: { data: { data: { inProgress: boolean; message: string } } }) => void) | undefined;
+    mocks.flowContext.api.request.mockReturnValue(
+      new Promise((resolve) => {
+        resolveStatus = resolve;
+      }),
+    );
+    let taskRef: React.MutableRefObject<string | null> | undefined;
+
+    render(<RestoreTaskProbe onReady={(ref) => (taskRef = ref)} />);
+    if (!taskRef) {
+      throw new Error('restore task ref is missing');
+    }
+    taskRef.current = 'task-1';
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6000);
+    });
+
+    expect(mocks.flowContext.api.request).toHaveBeenCalledTimes(1);
+    taskRef.current = 'task-2';
+
+    await act(async () => {
+      resolveStatus?.({
+        data: {
+          data: {
+            inProgress: false,
+            message: 'stale restore error',
+          },
+        },
+      });
+      await Promise.resolve();
+    });
+
+    expect(taskRef.current).toBe('task-2');
+    expect(hideCheckBackupMessage).not.toHaveBeenCalled();
     expect(mocks.notification.error).not.toHaveBeenCalled();
   });
 });

@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 Die KI generiert unter `packages/plugins/@my-project/plugin-watermark/` die Standard-Verzeichnisstruktur des Plugins.
 
+Starten Sie nach dem Erstellen des Gerüsts den Entwicklungsmodus, damit Codeänderungen per Hot-Reload übernommen werden: Bei einem mit `nb init` erstellten Projekt führen Sie `nb source dev` im Projektstammverzeichnis (`<app-path>`) aus, bei einem selbst geklonten NocoBase-Quellcode-Repository `yarn dev` im Stammverzeichnis des Quellcodes.
+
 ### 3. Serverseitigen Code schreiben
 
 Die KI generiert folgende Dateien:
