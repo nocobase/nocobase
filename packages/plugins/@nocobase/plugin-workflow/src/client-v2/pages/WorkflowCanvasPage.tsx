@@ -98,7 +98,7 @@ export default function WorkflowCanvasPage() {
         title={t('Workflow does not exist')}
         extra={
           <Button type="primary" href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>
-            {t('Workflow list')}
+            {t('Back to Workflow List')}
           </Button>
         }
       />

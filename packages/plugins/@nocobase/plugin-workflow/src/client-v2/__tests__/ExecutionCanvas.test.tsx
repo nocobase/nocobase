@@ -40,6 +40,9 @@ describe('ExecutionCanvas', () => {
   it('links to the workflow list when the execution workflow does not exist', () => {
     render(<ExecutionCanvas record={{ id: 1, jobs: [] }} resource={{}} refresh={vi.fn()} />);
 
-    expect(screen.getByRole('link', { name: 'Workflow list' })).toHaveAttribute('href', '/v/admin/settings/workflow');
+    expect(screen.getByRole('link', { name: 'Back to Workflow List' })).toHaveAttribute(
+      'href',
+      '/v/admin/settings/workflow',
+    );
   });
 });

@@ -254,7 +254,7 @@
   "When no condition matches": "When no condition matches",
   "Will be executed in the background as a queued task.": "Will be executed in the background as a queued task.",
   "Workflow": "Flujo de trabajo",
-  "Workflow list": "Lista de flujos de trabajo",
+  "Back to Workflow List": "Volver a la lista de flujos de trabajo",
   "Workflow does not exist": "El flujo de trabajo no existe",
   "Workflow not executed": "Flujo de trabajo no ejecutado",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",

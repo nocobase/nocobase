@@ -121,7 +121,10 @@ describe('WorkflowCanvasPage', () => {
     render(<WorkflowCanvasPage />);
 
     expect(await screen.findByText('Workflow does not exist')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Workflow list' })).toHaveAttribute('href', '/v/admin/settings/workflow');
+    expect(screen.getByRole('link', { name: 'Back to Workflow List' })).toHaveAttribute(
+      'href',
+      '/v/admin/settings/workflow',
+    );
     expect(holder.listRevisions).not.toHaveBeenCalled();
   });
 });

@@ -73,7 +73,9 @@ export function ExecutionCanvas({ record, resource, refresh }: { record: any; re
         title={t('Not found')}
         subTitle={t('Workflow of execution is not existed')}
         extra={
-          <Button href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>{t('Workflow list')}</Button>
+          <Button href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>
+            {t('Back to Workflow List')}
+          </Button>
         }
       />
     );
