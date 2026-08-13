@@ -87,6 +87,18 @@ type StreamData = {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
+const getPersistedWorkspaceSurfaceId = (item: ContextItem): string | undefined => {
+  if (item.type !== 'code-workspace') {
+    return undefined;
+  }
+  const content = isRecord(item.content) ? item.content : undefined;
+  const contentSurfaceId = typeof content?.surfaceId === 'string' ? content.surfaceId : undefined;
+  if (contentSurfaceId && contentSurfaceId !== item.uid) {
+    return undefined;
+  }
+  return contentSurfaceId || item.uid || undefined;
+};
+
 const getStreamBody = (data: StreamData): StreamBody | undefined => (isRecord(data.body) ? data.body : undefined);
 
 const getStreamToolCallChunks = (data: StreamData): Partial<ToolCall<string>>[] =>
@@ -284,6 +296,20 @@ export const useChatMessageActions = (runtime?: ChatBoxRuntime) => {
           }
           return result;
         });
+        if (!cursor) {
+          const persistedContexts = newMessages.flatMap((message) => message.content?.workContext ?? []);
+          const reversedContexts = [...persistedContexts].reverse();
+          const latestWorkspaceContext = reversedContexts.find((item) => item.type === 'code-workspace');
+          const workspaceSurfaceId = latestWorkspaceContext
+            ? getPersistedWorkspaceSurfaceId(latestWorkspaceContext)
+            : undefined;
+          const editorContext = reversedContexts.find((item) => item.type === 'code-editor');
+          const restoredContext = latestWorkspaceContext ?? editorContext;
+          sessionChat.setContextItems(restoredContext ? [restoredContext] : []);
+          sessionChat.setWorkspaceSurfaceId(workspaceSurfaceId);
+          sessionChat.setCurrentEditorRefUid(latestWorkspaceContext ? undefined : editorContext?.uid);
+          sessionChat.setFlowContext(undefined);
+        }
         sessionChat.setMessagesMeta(data.meta || {});
       } catch (error) {
         sessionChat.setMessagesError(error);

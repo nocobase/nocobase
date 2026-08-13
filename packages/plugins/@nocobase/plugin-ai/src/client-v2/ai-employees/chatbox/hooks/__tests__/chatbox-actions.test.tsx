@@ -425,4 +425,189 @@ describe('chatbox action integration', () => {
     expect(runtime.chatConversationModel.conversations[0].read).toBe(true);
     expect(runtime.chatConversationModel.unreadCount).toBe(0);
   });
+
+  it('restores the workspace binding when reopening a persisted conversation', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'global' });
+    runtime.chatConversationModel.setCurrentConversation('workspace-session');
+    const workspaceContext: ContextItem = {
+      type: 'code-workspace',
+      uid: 'workspace-restored',
+      content: { surfaceId: 'workspace-restored' },
+    };
+    const getMessages = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...textMessage('workspace-message', 'Continue editing'),
+            content: {
+              ...textMessage('workspace-message', 'Continue editing').content,
+              workContext: [workspaceContext],
+            },
+          },
+        ],
+        meta: {},
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return { getMessages };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+
+    const { result } = renderHook(() => useChatMessageActions(runtime));
+    await act(async () => {
+      await result.current.loadMessages('workspace-session');
+    });
+
+    expect(runtime.chatMessageModel.getSessionState('workspace-session')).toMatchObject({
+      workspaceSurfaceId: 'workspace-restored',
+      contextItems: [workspaceContext],
+      currentEditorRefUid: undefined,
+    });
+  });
+
+  it('restores the latest valid workspace binding from persisted history', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'global' });
+    runtime.chatConversationModel.setCurrentConversation('workspace-history-session');
+    const firstWorkspaceContext: ContextItem = {
+      type: 'code-workspace',
+      uid: 'workspace-first',
+      content: { surfaceId: 'workspace-first' },
+    };
+    const latestWorkspaceContext: ContextItem = {
+      type: 'code-workspace',
+      uid: 'workspace-latest',
+      content: { surfaceId: 'workspace-latest' },
+    };
+    const getMessages = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...textMessage('latest-workspace-message', 'Continue latest workspace'),
+            content: {
+              ...textMessage('latest-workspace-message', 'Continue latest workspace').content,
+              workContext: [latestWorkspaceContext],
+            },
+          },
+          {
+            ...textMessage('first-workspace-message', 'Start first workspace'),
+            content: {
+              ...textMessage('first-workspace-message', 'Start first workspace').content,
+              workContext: [firstWorkspaceContext],
+            },
+          },
+        ],
+        meta: {},
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return { getMessages };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+
+    const { result } = renderHook(() => useChatMessageActions(runtime));
+    await act(async () => {
+      await result.current.loadMessages('workspace-history-session');
+    });
+
+    expect(runtime.chatMessageModel.getSessionState('workspace-history-session')).toMatchObject({
+      workspaceSurfaceId: 'workspace-latest',
+      contextItems: [latestWorkspaceContext],
+      currentEditorRefUid: undefined,
+    });
+  });
+
+  it('does not bind a persisted workspace whose context identity is inconsistent', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'global' });
+    runtime.chatConversationModel.setCurrentConversation('workspace-mismatch-session');
+    runtime.chatMessageModel.setCurrentEditorRefUid('other-session', 'editor-other');
+    const mismatchedWorkspaceContext: ContextItem = {
+      type: 'code-workspace',
+      uid: 'workspace-a',
+      content: { surfaceId: 'workspace-b' },
+    };
+    const editorContext: ContextItem = { type: 'code-editor', uid: 'editor-stale' };
+    const getMessages = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...textMessage('mismatched-workspace-message', 'Continue workspace'),
+            content: {
+              ...textMessage('mismatched-workspace-message', 'Continue workspace').content,
+              workContext: [mismatchedWorkspaceContext, editorContext],
+            },
+          },
+        ],
+        meta: {},
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return { getMessages };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+
+    const { result } = renderHook(() => useChatMessageActions(runtime));
+    await act(async () => {
+      await result.current.loadMessages('workspace-mismatch-session');
+    });
+
+    expect(runtime.chatMessageModel.getSessionState('workspace-mismatch-session')).toMatchObject({
+      workspaceSurfaceId: undefined,
+      contextItems: [mismatchedWorkspaceContext],
+      currentEditorRefUid: undefined,
+    });
+    expect(runtime.chatMessageModel.getSessionState('other-session').currentEditorRefUid).toBe('editor-other');
+  });
+
+  it('restores the last legacy editor target without leaking it into another conversation', async () => {
+    const runtime = createChatBoxRuntime({ mode: 'global' });
+    runtime.chatConversationModel.setCurrentConversation('legacy-session');
+    runtime.chatMessageModel.setCurrentEditorRefUid('other-session', 'editor-other');
+    const firstEditorContext: ContextItem = { type: 'code-editor', uid: 'editor-first' };
+    const latestEditorContext: ContextItem = { type: 'code-editor', uid: 'editor-latest' };
+    const getMessages = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            ...textMessage('latest-message', 'Continue latest editor'),
+            content: {
+              ...textMessage('latest-message', 'Continue latest editor').content,
+              workContext: [latestEditorContext],
+            },
+          },
+          {
+            ...textMessage('first-message', 'Start first editor'),
+            content: {
+              ...textMessage('first-message', 'Start first editor').content,
+              workContext: [firstEditorContext],
+            },
+          },
+        ],
+        meta: {},
+      },
+    });
+    mocks.resource.mockImplementation((name: string) => {
+      if (name === 'aiConversations') {
+        return { getMessages };
+      }
+      throw new Error(`Unexpected resource: ${name}`);
+    });
+
+    const { result } = renderHook(() => useChatMessageActions(runtime));
+    await act(async () => {
+      await result.current.loadMessages('legacy-session');
+    });
+
+    expect(runtime.chatMessageModel.getSessionState('legacy-session')).toMatchObject({
+      workspaceSurfaceId: undefined,
+      currentEditorRefUid: 'editor-latest',
+      contextItems: [latestEditorContext],
+    });
+    expect(runtime.chatMessageModel.getSessionState('other-session').currentEditorRefUid).toBe('editor-other');
+  });
 });

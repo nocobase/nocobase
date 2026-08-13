@@ -26,7 +26,7 @@ import type { ChatEditorRef } from '../../../client-v2/ai-employees/types';
 const createEditorToolState = (uid: string, editorRef: ChatEditorRef) => {
   const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
   chatBoxRuntime.chatMessageModel.setEditorRef(uid, editorRef);
-  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(uid);
+  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(undefined, uid);
   return { chatBoxRuntime };
 };
 
@@ -218,12 +218,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     chatMessageModel.unregisterEditorRef('editor-cleanup', oldEditorRef);
 
     expect(chatMessageModel.editorRef['editor-cleanup']).toBe(newEditorRef);
-    expect(chatMessageModel.currentEditorRefUid).toBe('editor-cleanup');
+    expect(chatMessageModel.getSessionState().currentEditorRefUid).toBe('editor-cleanup');
 
     chatMessageModel.unregisterEditorRef('editor-cleanup', newEditorRef);
 
     expect(chatMessageModel.editorRef['editor-cleanup']).toBeNull();
-    expect(chatMessageModel.currentEditorRefUid).toBeNull();
+    expect(chatMessageModel.getSessionState().currentEditorRefUid).toBeNull();
   });
 
   it('rejects a patch with a bare hunk header without mutating the editor', async () => {
@@ -313,6 +313,44 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     expect(result.content.success).toBe(true);
     expect(result.content.code).toBe(code);
     expect(result.content.lineCount).toBe(3);
+  });
+
+  it('keeps legacy editor reads and writes isolated by conversation', async () => {
+    const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
+    let firstCode = 'const owner = "first";';
+    let secondCode = 'const owner = "second";';
+    chatBoxRuntime.chatMessageModel.setEditorRef('editor-first', {
+      read: () => firstCode,
+      write: (code: string) => {
+        firstCode = code;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    chatBoxRuntime.chatMessageModel.setEditorRef('editor-second', {
+      read: () => secondCode,
+      write: (code: string) => {
+        secondCode = code;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid('session-first', 'editor-first');
+    chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid('session-second', 'editor-second');
+
+    chatBoxRuntime.chatConversationModel.setCurrentConversation('session-first');
+    const firstRead = await readJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {});
+    const firstWrite = await writeJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {
+      code: 'const owner = "first-updated";',
+    });
+    chatBoxRuntime.chatConversationModel.setCurrentConversation('session-second');
+    const secondRead = await readJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {});
+
+    expect(firstRead.content.code).toBe('const owner = "first";');
+    expect(firstWrite.status).toBe('success');
+    expect(secondRead.content.code).toBe('const owner = "second";');
+    expect(firstCode).toBe('const owner = "first-updated";');
+    expect(secondCode).toBe('const owner = "second";');
   });
 
   it('does not mutate editor code when a patch fails', async () => {

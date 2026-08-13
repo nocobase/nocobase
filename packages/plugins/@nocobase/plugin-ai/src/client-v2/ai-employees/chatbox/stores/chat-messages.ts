@@ -31,6 +31,8 @@ export type ChatSessionState = {
   webSearching?: WebSearching | null;
   backgroundWorking: boolean;
   resumeStreamFailed: boolean;
+  currentEditorRefUid?: string | null;
+  flowContext?: unknown;
   workspaceSurfaceId?: string;
 };
 
@@ -48,6 +50,8 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
   webSearching: null,
   backgroundWorking: false,
   resumeStreamFailed: false,
+  currentEditorRefUid: undefined,
+  flowContext: undefined,
   workspaceSurfaceId: undefined,
 };
 
@@ -76,15 +80,11 @@ export class ChatMessageModel {
     [CHAT_DEFAULT_SESSION_KEY]: createObservableSessionState(),
   });
   editorRef: Record<string, ChatEditorRef | null> = observable.shallow({});
-  currentEditorRefUid: string | null | undefined = null;
-  flowContext: unknown = null;
 
   constructor() {
     define(this, {
       sessions: observable.shallow,
       editorRef: observable.shallow,
-      currentEditorRefUid: observable.ref,
-      flowContext: observable.ref,
       setEditorRef: action,
       unregisterEditorRef: action,
       setCurrentEditorRefUid: action,
@@ -154,17 +154,29 @@ export class ChatMessageModel {
       return;
     }
     this.editorRef = { ...this.editorRef, [uid]: null };
-    if (this.currentEditorRefUid === uid) {
-      this.currentEditorRefUid = null;
+    for (const [sessionId, session] of Object.entries(this.sessions)) {
+      if (session.currentEditorRefUid === uid) {
+        this.updateSessionState(sessionId, (current) => ({
+          ...current,
+          currentEditorRefUid: null,
+          flowContext: undefined,
+        }));
+      }
     }
   };
 
-  setCurrentEditorRefUid = (uid: string | null | undefined) => {
-    this.currentEditorRefUid = uid;
+  setCurrentEditorRefUid = (sessionId: string | undefined, uid: string | null | undefined) => {
+    this.updateSessionState(sessionId, (session) => ({
+      ...session,
+      currentEditorRefUid: uid,
+    }));
   };
 
-  setFlowContext = (flowContext: unknown) => {
-    this.flowContext = flowContext;
+  setFlowContext = (sessionId: string | undefined, flowContext: unknown) => {
+    this.updateSessionState(sessionId, (session) => ({
+      ...session,
+      flowContext,
+    }));
   };
 
   getSessionState = (sessionId?: string) => cloneSessionState(this.resolveSessionState(sessionId));
@@ -374,6 +386,7 @@ export class ChatMessageModel {
     this.updateSessionState(sessionId, (session) => ({
       ...session,
       workspaceSurfaceId,
+      ...(workspaceSurfaceId ? { currentEditorRefUid: undefined, flowContext: undefined } : {}),
     }));
   };
 

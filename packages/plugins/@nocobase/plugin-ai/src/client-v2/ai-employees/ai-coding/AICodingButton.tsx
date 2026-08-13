@@ -71,28 +71,10 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
         return;
       }
       setEditorRef(uid, editorRef);
-      setCurrentEditorRefUid(uid);
-      chat.setFlowContext(ctx);
       return () => {
-        const ownedCurrentEditor =
-          chatMessageModel.currentEditorRefUid === uid && chatMessageModel.editorRef[uid] === editorRef;
         unregisterEditorRef(uid, editorRef);
-        if (ownedCurrentEditor && chatMessageModel.flowContext === ctx) {
-          chat.setFlowContext(undefined);
-        }
       };
-    }, [
-      authoringSurfaceId,
-      chat,
-      chatMessageModel,
-      ctx,
-      editorRef,
-      readonly,
-      setCurrentEditorRefUid,
-      setEditorRef,
-      uid,
-      unregisterEditorRef,
-    ]);
+    }, [authoringSurfaceId, chat, editorRef, readonly, setEditorRef, uid, unregisterEditorRef]);
 
     useEffect(() => {
       setActive('AICodingButton', !readonly && !!aiEmployee);
@@ -223,6 +205,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = observer(
 
     const addCodeEditorContext = () => {
       setCurrentEditorRefUid(uid);
+      chat.setFlowContext(ctx);
       addContextItems({
         type: 'code-editor',
         uid,

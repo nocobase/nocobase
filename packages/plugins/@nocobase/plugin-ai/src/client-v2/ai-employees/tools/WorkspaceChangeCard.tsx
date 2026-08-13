@@ -30,6 +30,7 @@ import { WORKSPACE_AUTHORING_TOOL_NAMES } from './workspace-authoring';
 
 type WorkspaceToolContent = {
   changedPaths?: unknown;
+  code?: unknown;
   diffs?: unknown;
   diagnostics?: unknown;
   error?: unknown;

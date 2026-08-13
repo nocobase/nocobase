@@ -209,6 +209,8 @@ describe('chatbox runtime models', () => {
 
     model.addSessionMessage(undefined, textMessage('draft-message'));
     model.setSessionContextItems(undefined, [contextItem('code-workspace', 'workspace-a')]);
+    model.setCurrentEditorRefUid(undefined, 'editor-a');
+    model.setFlowContext(undefined, { flow: 'draft' });
     model.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
 
     expect(model.sessions).toBe(initialSessions);
@@ -222,14 +224,24 @@ describe('chatbox runtime models', () => {
     expect(model.getSessionState('created-session').messages.map((message) => message.key)).toEqual(['draft-message']);
     expect(model.getSessionState('created-session')).toMatchObject({
       contextItems: [contextItem('code-workspace', 'workspace-a')],
+      currentEditorRefUid: undefined,
+      flowContext: undefined,
       workspaceSurfaceId: 'workspace-a',
     });
     expect(model.getSessionState().messages).toEqual([]);
     expect(model.getSessionState().contextItems).toEqual([]);
+    expect(model.getSessionState().currentEditorRefUid).toBeUndefined();
+    expect(model.getSessionState().flowContext).toBeUndefined();
     expect(model.getSessionState().workspaceSurfaceId).toBeUndefined();
 
+    model.setCurrentEditorRefUid('created-session', 'editor-b');
+    model.setFlowContext('created-session', { flow: 'created' });
     model.resetSessionState('created-session');
-    expect(model.getSessionState('created-session').workspaceSurfaceId).toBeUndefined();
+    expect(model.getSessionState('created-session')).toMatchObject({
+      currentEditorRefUid: undefined,
+      flowContext: undefined,
+      workspaceSurfaceId: undefined,
+    });
   });
 
   it('does not replace other ChatMessageModel sessions when one session field changes', () => {

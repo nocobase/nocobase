@@ -69,8 +69,9 @@ const createChatFacade = (chatMessageModel: ChatMessageModel, sessionId?: string
     setEditorRef: (uid: string, editorRef: ChatEditorRef | null) => chatMessageModel.setEditorRef(uid, editorRef),
     unregisterEditorRef: (uid: string, editorRef: ChatEditorRef) =>
       chatMessageModel.unregisterEditorRef(uid, editorRef),
-    setCurrentEditorRefUid: (uid: string) => chatMessageModel.setCurrentEditorRefUid(uid),
-    setFlowContext: (flowContext: unknown) => chatMessageModel.setFlowContext(flowContext),
+    setCurrentEditorRefUid: (uid: string | null | undefined) =>
+      chatMessageModel.setCurrentEditorRefUid(sessionKey, uid),
+    setFlowContext: (flowContext: unknown) => chatMessageModel.setFlowContext(sessionKey, flowContext),
     setWorkspaceSurfaceId: (surfaceId?: string) => chatMessageModel.setSessionWorkspaceSurfaceId(sessionKey, surfaceId),
     migrateSessionState: (toSessionId: string) => chatMessageModel.migrateSessionState(sessionKey, toSessionId),
     resetSessionState: (patch?: Partial<ChatSessionState>) => chatMessageModel.resetSessionState(sessionKey, patch),
@@ -124,10 +125,10 @@ const createChatFacade = (chatMessageModel: ChatMessageModel, sessionId?: string
         return chatMessageModel.editorRef;
       },
       currentEditorRefUid: function useCurrentEditorRefUid() {
-        return chatMessageModel.currentEditorRefUid;
+        return selectSessionState(chatMessageModel, sessionKey).currentEditorRefUid;
       },
       flowContext: function useFlowContext() {
-        return chatMessageModel.flowContext;
+        return selectSessionState(chatMessageModel, sessionKey).flowContext;
       },
       workspaceSurfaceId: function useWorkspaceSurfaceId() {
         return selectSessionState(chatMessageModel, sessionKey).workspaceSurfaceId;
@@ -138,8 +139,6 @@ const createChatFacade = (chatMessageModel: ChatMessageModel, sessionId?: string
       return {
         ...sessionState,
         editorRef: chatMessageModel.editorRef,
-        currentEditorRefUid: chatMessageModel.currentEditorRefUid,
-        flowContext: chatMessageModel.flowContext,
         ...actions,
       };
     },

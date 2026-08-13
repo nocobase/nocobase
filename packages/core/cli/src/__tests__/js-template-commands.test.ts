@@ -62,12 +62,28 @@ const JS_TEMPLATE_KIND_FIXTURES: readonly JsTemplateKindFixture[] = [
     source: 'ctx.render(<div>{ctx.t("你好")}</div>);\n',
   },
   {
+    kind: 'js-field',
+    root: 'src/client/js-fields/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo field',
+    tag: 'JS Field',
+    source: 'ctx.render(<span>{ctx.value}</span>);\n',
+  },
+  {
     kind: 'js-action',
     root: 'src/client/js-actions/demo',
     entryFileName: 'index.ts',
     title: 'Demo action',
     tag: 'JS Action',
     source: 'ctx.message.success(ctx.t("Demo action"));\n',
+  },
+  {
+    kind: 'js-item',
+    root: 'src/client/js-items/demo',
+    entryFileName: 'index.tsx',
+    title: 'Demo item',
+    tag: 'JS Item',
+    source: 'ctx.render(<span>{ctx.t("Demo item")}</span>);\n',
   },
 ];
 const VALID_JS_TEMPLATE_LIFECYCLE_STATUSES: Array<'enabled' | 'disabled'> = ['enabled', 'disabled'];
@@ -317,7 +333,7 @@ describe('nb js-template pull/check/save', () => {
     expect(JsTemplateSave.summary).toContain('JS Template');
   });
 
-  test.each(['js-block', 'js-page', 'js-field', 'js-action', 'js-item'] as const)(
+  test.each(['js-block', 'js-field', 'js-action', 'js-item'] as const)(
     'accepts the public %s kind',
     (kind) => {
       expect(
@@ -334,6 +350,21 @@ describe('nb js-template pull/check/save', () => {
     },
   );
 
+  test('rejects the retired page template kind', () => {
+    const retiredKind = ['js', 'page'].join('-');
+    expect(() =>
+      extractTemplateRecord({
+        id: 'jtt_demo',
+        projectId: 'jtp_demo',
+        target: 'client',
+        kind: retiredKind,
+        templateName: 'demo',
+        entryPath: 'src/client/index.tsx',
+        descriptorPath: 'src/client/entry.json',
+      }),
+    ).toThrow(`received "${retiredKind}"`);
+  });
+
   test.each(VALID_JS_TEMPLATE_LIFECYCLE_STATUSES)('accepts the %s project lifecycle status', (lifecycleStatus) => {
     const result = extractPullResult(pullResultWithProjectFields({ lifecycleStatus }));
 
@@ -349,7 +380,7 @@ describe('nb js-template pull/check/save', () => {
     },
   );
 
-  test.each([['js-block'], ['js-action']] as const)('pulls a supported %s workspace', async (kind) => {
+  test.each(JS_TEMPLATE_KIND_FIXTURES)('pulls a supported $kind workspace', async ({ kind }) => {
     const workspace = await createTempWorkspace();
     const fixture = getKindFixture(kind);
     await runPull(workspace, null, kind);
@@ -369,6 +400,57 @@ describe('nb js-template pull/check/save', () => {
     );
     expect(await readFile(join(workspace, ...getEntryPath(fixture).split('/')), 'utf8')).toBe(fixture.source);
   });
+
+  test.each(JS_TEMPLATE_KIND_FIXTURES)(
+    'pulls, checks, and saves the complete $kind workflow',
+    async (fixture) => {
+      const workspace = await createTempWorkspace();
+      const entryPath = getEntryPath(fixture);
+      const modifiedSource = `${fixture.source.trim()}\n// updated locally\n`;
+      await runPull(workspace, `commit_${fixture.kind}_base`, fixture.kind);
+      await writeFile(join(workspace, ...entryPath.split('/')), modifiedSource, 'utf8');
+      await runAcceptedCheck(workspace, fixture.kind);
+
+      fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
+        body: {
+          data: {
+            project: {
+              id: 'jtp_demo',
+              name: 'demo',
+              lifecycleStatus: 'enabled',
+              headCommitId: `commit_${fixture.kind}_new`,
+            },
+            commit: { id: `commit_${fixture.kind}_new`, treeHash: `tree_${fixture.kind}_new` },
+            tree: { hash: `tree_${fixture.kind}_new`, entryCount: 2, byteSize: 180 },
+            compile: { status: 'success', templates: [] },
+            diagnostics: [],
+          },
+        },
+      });
+      const saveCommand = createCommandHarness({
+        ...commandFlags(workspace),
+        message: `Update ${fixture.kind}`,
+        yes: true,
+      });
+      await JsTemplateSave.prototype.run.call(saveCommand as never);
+
+      expect(requests.map((request) => request.path)).toEqual([
+        '/api/jsTemplates:get',
+        '/api/jsTemplateFiles:pull',
+        '/api/jsTemplates:compileWorkspacePreview',
+        '/api/jsTemplateFiles:saveSource',
+      ]);
+      expect(requests.at(-1)?.body).toMatchObject({
+        projectId: 'jtp_demo',
+        expectedHeadCommitId: `commit_${fixture.kind}_base`,
+        files: [expect.objectContaining({ path: entryPath, content: modifiedSource })],
+      });
+      const state = JSON.parse(
+        await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
+      ) as JsTemplateWorkspaceState;
+      expect(state.baseHeadCommitId).toBe(`commit_${fixture.kind}_new`);
+    },
+  );
 
   test('uses the canonical JS Template HTTP resources', async () => {
     const workspace = await createTempWorkspace();
@@ -645,6 +727,67 @@ describe('nb js-template pull/check/save', () => {
     expect(failure.check.diagnostics[0].line).toBe(2);
   });
 
+  test('maps a stale-Head check response to the conflict exit code', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, 'commit_check_base');
+    fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
+      status: 409,
+      body: { errors: [{ code: 'STALE_HEAD', message: 'Head changed before validation' }] },
+    });
+    const command = createCommandHarness(commandFlags(workspace));
+    await expect(JsTemplateCheck.prototype.run.call(command as never)).rejects.toMatchObject({
+      exitCode: JS_TEMPLATE_EXIT_CODES.conflict,
+    });
+    expect(JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]))).toMatchObject({
+      ok: false,
+      httpStatus: 409,
+      exitCode: JS_TEMPLATE_EXIT_CODES.conflict,
+      error: {
+        details: { errors: [{ code: 'STALE_HEAD', message: 'Head changed before validation' }] },
+      },
+    });
+  });
+
+  test('maps a rejected save response to the validation exit code without changing files or baseline', async () => {
+    const workspace = await createTempWorkspace();
+    await runPull(workspace, 'commit_save_base');
+    const sourcePath = join(workspace, 'src/client/js-blocks/demo/index.tsx');
+    await writeFile(sourcePath, 'export default missingValue;\n', 'utf8');
+    await runAcceptedCheck(workspace);
+    const baselinePath = join(
+      workspace,
+      ...JS_TEMPLATE_BASELINE_PATH.split('/'),
+      'src/client/js-blocks/demo/index.tsx',
+    );
+    const baselineBefore = await readFile(baselinePath, 'utf8');
+    const diagnostics = [
+      {
+        code: 'typescript_error',
+        severity: 'error',
+        message: 'Cannot find name missingValue',
+        path: 'src/client/js-blocks/demo/index.tsx',
+        line: 1,
+        column: 16,
+      },
+    ];
+    fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
+      status: 422,
+      body: { errors: [{ code: 'WORKSPACE_REJECTED', message: 'Workspace rejected', details: { diagnostics } }] },
+    });
+    const command = createCommandHarness({ ...commandFlags(workspace), message: 'Invalid update', yes: true });
+    await expect(JsTemplateSave.prototype.run.call(command as never)).rejects.toMatchObject({
+      exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
+    });
+    expect(JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]))).toMatchObject({
+      ok: false,
+      httpStatus: 422,
+      exitCode: JS_TEMPLATE_EXIT_CODES.rejected,
+      error: { details: { errors: [{ code: 'WORKSPACE_REJECTED', details: { diagnostics } }] } },
+    });
+    expect(await readFile(sourcePath, 'utf8')).toBe('export default missingValue;\n');
+    expect(await readFile(baselinePath, 'utf8')).toBe(baselineBefore);
+  });
+
   test('keeps local files and baseline unchanged after a stale-Head save conflict', async () => {
     const workspace = await createTempWorkspace();
     await runPull(workspace, 'commit_base');
@@ -664,8 +807,62 @@ describe('nb js-template pull/check/save', () => {
     await expect(JsTemplateSave.prototype.run.call(command as never)).rejects.toMatchObject({
       exitCode: JS_TEMPLATE_EXIT_CODES.conflict,
     });
+    const failure = JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]));
+    expect(failure).toMatchObject({
+      ok: false,
+      httpStatus: 409,
+      exitCode: JS_TEMPLATE_EXIT_CODES.conflict,
+    });
     expect(await readFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'utf8')).toBe('export default 2;\n');
     expect(await readFile(baselinePath, 'utf8')).toBe(baselineBefore);
+  });
+
+  test('prints stable human output for pull, check, and save', async () => {
+    const workspace = await createTempWorkspace();
+    const humanFlags = {
+      ...commandFlags(workspace),
+      'json-output': false,
+    };
+    fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope() });
+    fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope('commit_human_base') });
+    const pullCommand = createCommandHarness({
+      ...humanFlags,
+      project: 'jtp_demo',
+      template: 'jtt_demo',
+    });
+    await JsTemplatePull.prototype.run.call(pullCommand as never);
+    expect(pullCommand.log.mock.calls.map(([message]) => message)).toEqual([
+      expect.stringContaining('Pulled 2 files'),
+      'Base Head: commit_human_base',
+    ]);
+
+    await writeFile(join(workspace, 'src/client/js-blocks/demo/index.tsx'), 'export default "human";\n', 'utf8');
+    fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
+      body: { data: { accepted: true, httpStatus: 200, diagnostics: [], templates: [] } },
+    });
+    const checkCommand = createCommandHarness(humanFlags);
+    await JsTemplateCheck.prototype.run.call(checkCommand as never);
+    expect(checkCommand.log.mock.calls.map(([message]) => message)).toEqual([
+      expect.stringContaining('Workspace check accepted snapshot'),
+      'Base Head: commit_human_base',
+      '0 templates accepted.',
+    ]);
+
+    fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
+      body: {
+        data: {
+          project: { id: 'jtp_demo', name: 'demo', lifecycleStatus: 'enabled', headCommitId: 'commit_human_new' },
+          commit: { id: 'commit_human_new', treeHash: 'tree_human_new' },
+          tree: { hash: 'tree_human_new', entryCount: 2, byteSize: 140 },
+          compile: { status: 'success', templates: [] },
+          diagnostics: [],
+        },
+      },
+    });
+    const saveCommand = createCommandHarness({ ...humanFlags, message: 'Update human output', yes: true });
+    await JsTemplateSave.prototype.run.call(saveCommand as never);
+    expect(saveCommand.log.mock.calls.at(0)?.[0]).toContain('Delta: 1 files');
+    expect(saveCommand.log.mock.calls.at(-1)?.[0]).toBe('Saved 1 files at Head commit_human_new.');
   });
 
   test('refuses to pull over local changes', async () => {
@@ -678,6 +875,10 @@ describe('nb js-template pull/check/save', () => {
       template: 'jtt_demo',
     });
     await expect(JsTemplatePull.prototype.run.call(command as never)).rejects.toMatchObject({ exitCode: 1 });
+    expect(JSON.parse(String(command.logToStderr.mock.calls.at(-1)?.[0]))).toMatchObject({
+      ok: false,
+      exitCode: JS_TEMPLATE_EXIT_CODES.general,
+    });
     expect(requests).toHaveLength(0);
     expect(await readFile(join(workspace, 'local.ts'), 'utf8')).toBe('keep me\n');
   });

@@ -93,8 +93,8 @@ beforeEach(() => {
   runtime.chatMessageModel.resetSessionState(undefined);
   runtime.chatMessageModel.resetSessionState('session-a');
   runtime.chatMessageModel.editorRef = {};
-  runtime.chatMessageModel.setCurrentEditorRefUid(undefined);
-  runtime.chatMessageModel.setFlowContext(undefined);
+  runtime.chatMessageModel.setCurrentEditorRefUid('session-a', undefined);
+  runtime.chatMessageModel.setFlowContext('session-a', undefined);
 });
 
 afterEach(() => cleanup());
@@ -119,8 +119,8 @@ describe('AICodingButton authoring target', () => {
 
     expect(screen.queryByRole('button', { name: 'AI coding assistant' })).not.toBeInTheDocument();
     expect(chatMessageModel.editorRef['editor-readonly']).toBeUndefined();
-    expect(chatMessageModel.currentEditorRefUid).toBeUndefined();
-    expect(chatMessageModel.flowContext).toBeUndefined();
+    expect(chatMessageModel.getSessionState('session-a').currentEditorRefUid).toBeUndefined();
+    expect(chatMessageModel.getSessionState('session-a').flowContext).toBeUndefined();
     expect(read).not.toHaveBeenCalled();
     expect(setActive).toHaveBeenCalledWith('AICodingButton', false);
   });

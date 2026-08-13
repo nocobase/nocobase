@@ -30,7 +30,7 @@ export default class JsTemplatePull extends Command {
   protected apiPaths: JsTemplateWorkspaceApiPaths = JS_TEMPLATE_WORKSPACE_API_PATHS;
 
   static override summary = translateCli('commands.jsTemplate.pull.summary', undefined, {
-    fallback: 'Pull a JS Template (JS Block or JS Page) into a local source workspace',
+    fallback: 'Pull a JS Template into a local source workspace',
   });
 
   static override examples = [
@@ -44,7 +44,7 @@ export default class JsTemplatePull extends Command {
       required: true,
     }),
     template: Flags.string({
-      description: translateCli('commands.jsTemplate.flags.template', undefined, { fallback: 'JS Block or JS Page template id' }),
+      description: translateCli('commands.jsTemplate.flags.template', undefined, { fallback: 'JS Template id' }),
       required: true,
     }),
     dir: Flags.string({

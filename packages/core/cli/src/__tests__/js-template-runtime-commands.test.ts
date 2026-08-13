@@ -11,10 +11,10 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import swaggerDocument from '../../../../plugins/@nocobase/plugin-js-template/src/swagger/index.js';
-import flowEngineSwaggerDocument from '../../../../plugins/@nocobase/plugin-flow-engine/src/swagger/index.js';
 import { createGeneratedFlags, type GeneratedOperation } from '../lib/generated-command.js';
 import type { OpenApiDocument } from '../lib/openapi.js';
 import { generateRuntime } from '../lib/runtime-generator.js';
+import { JS_TEMPLATE_WORKSPACE_API_PATHS } from '../lib/js-template-command-contract.js';
 
 const configFile = resolve('packages/core/cli/nocobase-ctl.config.json');
 
@@ -24,7 +24,7 @@ async function generateJsTemplateCommands() {
 }
 
 async function generateRunJSCommands() {
-  const runtime = await generateRuntime(flowEngineSwaggerDocument as unknown as OpenApiDocument, configFile);
+  const runtime = await generateRuntime(swaggerDocument as unknown as OpenApiDocument, configFile);
   return runtime.commands.filter((command) => command.moduleName === 'run-js');
 }
 
@@ -37,11 +37,24 @@ function findCommand(commands: GeneratedOperation[], commandId: string): Generat
 }
 
 describe('JS Template runtime commands', () => {
+  it('keeps the local workspace commands aligned with the public Swagger POST paths', () => {
+    for (const path of Object.values(JS_TEMPLATE_WORKSPACE_API_PATHS)) {
+      expect(swaggerDocument.paths[path]).toHaveProperty('post');
+    }
+  });
+
   it('generates the always-on RunJS authoring capability command', async () => {
     const commands = await generateRunJSCommands();
 
-    expect(commands.map((command) => command.commandId)).toEqual(['run-js-sources capabilities']);
-    expect(commands[0]).toMatchObject({
+    expect(commands.map((command) => command.commandId)).toEqual([
+      'run-js-sources capabilities',
+      'run-js-sources compile-preview',
+      'run-js-sources open',
+      'run-js-sources open-latest',
+      'run-js-sources save',
+      'run-js-sources save-changes',
+    ]);
+    expect(findCommand(commands, 'run-js-sources capabilities')).toMatchObject({
       method: 'post',
       pathTemplate: '/runJSSources:capabilities',
       responseType: 'json',

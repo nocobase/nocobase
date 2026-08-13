@@ -60,7 +60,8 @@ function assertLegacyToolAvailable(state: EditorToolState) {
 
 function getCurrentEditorRef(state: EditorToolState) {
   const chatMessageModel = state.chatBoxRuntime?.chatMessageModel;
-  const uid = chatMessageModel?.currentEditorRefUid;
+  const sessionId = state.chatBoxRuntime?.chatConversationModel.currentConversation;
+  const uid = chatMessageModel?.getSessionState(sessionId).currentEditorRefUid;
   const editorRef = uid ? chatMessageModel?.editorRef[uid] : null;
   return { uid, editorRef };
 }
@@ -176,6 +177,7 @@ export const listCodeSnippetTool: [string, ToolsOptions] = [
   'listCodeSnippet',
   {
     invoke(this: EditorToolState) {
+      assertLegacyToolAvailable(this);
       const { editorRef } = getCurrentEditorRef(this);
       return (editorRef?.snippetEntries ?? []).map(({ body: _body, ...item }) => item);
     },

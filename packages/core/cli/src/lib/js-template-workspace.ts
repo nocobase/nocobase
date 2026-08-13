@@ -24,15 +24,9 @@ export const JS_TEMPLATE_EXIT_CODES = {
   forbidden: 4,
 } as const;
 
-export type JsTemplateKind = 'js-block' | 'js-page' | 'js-field' | 'js-action' | 'js-item';
+export type JsTemplateKind = 'js-block' | 'js-field' | 'js-action' | 'js-item';
 
-const SUPPORTED_KINDS = new Set<JsTemplateKind>([
-  'js-block',
-  'js-page',
-  'js-field',
-  'js-action',
-  'js-item',
-]);
+const SUPPORTED_KINDS = new Set<JsTemplateKind>(['js-block', 'js-field', 'js-action', 'js-item']);
 const TOP_LEVEL_GENERATED_DIRECTORIES = new Set([
   '.cache',
   '.next',
@@ -219,6 +213,7 @@ export class JsTemplateCliError extends Error {
     if (this.jsonOutput) return this.jsonOutput;
     return {
       ok: false,
+      exitCode: this.exitCode,
       ...(this.httpStatus === undefined ? {} : { httpStatus: this.httpStatus }),
       error: {
         message: this.message,
@@ -410,8 +405,7 @@ export function extractTemplateRecord(value: unknown): JsTemplateRecord {
         'commands.jsTemplate.errors.unsupportedTemplateKind',
         { kind },
         {
-          fallback:
-            'The local JS Template workflow supports js-block, js-page, js-field, js-action, and js-item templates; received "{{kind}}".',
+          fallback: 'The local JS Template workflow supports js-block, js-field, js-action, and js-item templates; received "{{kind}}".',
         },
       ),
     );
