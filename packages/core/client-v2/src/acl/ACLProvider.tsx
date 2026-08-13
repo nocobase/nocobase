@@ -11,6 +11,7 @@ import { observable } from '@formily/reactive';
 import React, { useRef } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FC } from 'react';
 import { useLocation } from 'react-router-dom';
+import { writeFlowSettingsPreference } from '../flow/admin-shell/admin-layout/flowSettingsPreference';
 import { useApp } from '../hooks/useApp';
 import { getACLCheckReady, setACLCheckReady } from './aclCheckReadiness';
 import { createAclSnippetAllow } from './createAclSnippetAllow';
@@ -133,6 +134,7 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
       setACLCheckReady(app, true);
 
       if (!createAclSnippetAllow(nextData?.snippets || [], !!nextData?.allowAll)('ui.*')) {
+        writeFlowSettingsPreference(false);
         await app.flowEngine.flowSettings.disable();
       }
     } catch (error) {
