@@ -21,6 +21,12 @@ import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
 import {
+  getCurrentRoleNames,
+  KNOWLEDGE_BASE_ON_DEMAND_PROMPT,
+  KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT,
+  normalizeKnowledgeBaseRetrievalStrategy,
+} from './ai-knowledge-base';
+import {
   conversationMiddleware,
   skillToolBindingMiddleware,
   toolCallSanitizerMiddleware,
@@ -166,6 +172,18 @@ export class AIEmployee {
 
   private areToolsEnabled() {
     return this.chatSettings.enableTools !== false;
+  }
+
+  private getAIEmployeeRecord(): AIEmployeeType {
+    return this.employee.toJSON() as AIEmployeeType;
+  }
+
+  private async isOnDemandKnowledgeBaseEnabled(): Promise<boolean> {
+    const employee = this.getAIEmployeeRecord();
+    return (
+      (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
+      normalizeKnowledgeBaseRetrievalStrategy(employee.knowledgeBase?.retrievalStrategy) === 'onDemand'
+    );
   }
 
   async getFormatMessages(userMessages: AIMessageInput[]) {
@@ -855,10 +873,10 @@ export class AIEmployee {
     }
 
     const about = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
+    const knowledgeBaseOnDemand = await this.isOnDemandKnowledgeBaseEnabled();
     if (this.systemPromptMode === 'raw') {
       return about;
     }
-
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
@@ -884,13 +902,16 @@ export class AIEmployee {
     if (addSystemPrompt.length) {
       background = `${background}\n${addSystemPrompt.map((it) => it.content).join('\n')}`;
     }
+    if (knowledgeBaseOnDemand) {
+      background = `${background}\n${KNOWLEDGE_BASE_ON_DEMAND_PROMPT}`;
+    }
 
     let knowledgeBase: string | undefined;
     const { knowledgeBaseManager } = this.plugin;
-    const employee: AIEmployeeType = this.employee.toJSON();
+    const employee = this.getAIEmployeeRecord();
     if (
+      !knowledgeBaseOnDemand &&
       (await knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
-      employee.knowledgeBasePrompt &&
       userMessages?.length
     ) {
       const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
@@ -898,10 +919,13 @@ export class AIEmployee {
         knowledgeBase = await knowledgeBaseManager.retrievePrompt({
           employee,
           query: lastUserMessage.content.content as string,
+          roleNames: getCurrentRoleNames(this.ctx.state),
         });
       }
     }
-
+    if (!knowledgeBaseOnDemand && knowledgeBase) {
+      background = `${background}\n${KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT}`;
+    }
     const availableSkills = await this.getAvailableSkills();
     const availableAIEmployees = await this.getAvailableAIEmployees();
 
@@ -1433,6 +1457,13 @@ If information is missing, clearly state it in the summary.</Important>`;
     return result;
   }
 
+  private async getKnowledgeBaseRetrieveTool(): Promise<ToolsEntry | undefined> {
+    if (!(await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.getAIEmployeeRecord()))) {
+      return undefined;
+    }
+    return await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, { ctx: this.ctx });
+  }
+
   private async getAIEmployeeTools() {
     if (!this.areToolsEnabled()) {
       return [];
@@ -1451,13 +1482,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     const toolMap = await this.getToolsMap();
     const settingsTools = this.employee.skillSettings?.tools ?? [];
     const employeeTools = [...settingsTools, ...this.tools];
-    if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
-      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, {
-        ctx: this.ctx,
-      });
-      if (knowledgeBaseRetrieveTool) {
-        employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
-      }
+    const knowledgeBaseRetrieveTool = await this.getKnowledgeBaseRetrieveTool();
+    if (knowledgeBaseRetrieveTool) {
+      employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
     }
     for (const toolSetting of employeeTools) {
       if (generalToolsNameSet.has(toolSetting.name)) {

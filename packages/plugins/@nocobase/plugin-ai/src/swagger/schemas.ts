@@ -126,6 +126,12 @@ const knowledgeBaseSettings = {
         type: 'string',
       },
     },
+    retrievalStrategy: {
+      type: 'string',
+      enum: ['always', 'onDemand'],
+      description:
+        'Knowledge-base retrieval mode. Defaults to onDemand for new employees; omitted or invalid legacy values run as always.',
+    },
   },
 };
 

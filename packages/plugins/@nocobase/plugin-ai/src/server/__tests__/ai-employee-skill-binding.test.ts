@@ -134,6 +134,7 @@ describe('AIEmployee skill tool binding', () => {
       },
     ]);
 
+    Reflect.set(employee, 'areToolsEnabled', () => true);
     const result = await (employee as any).getAgentTools();
 
     expect(result.baseToolNames).toEqual(new Set(['getSkill']));
