@@ -899,10 +899,13 @@ FilterFormItemModel.registerFlow({
           type: 'select',
           key: 'use',
           props: {
-            options: classes.map((model) => ({
-              label: t(model.modelName),
-              value: model.modelName,
-            })),
+            options: classes.map((model) => {
+              const ModelClass = ctx.engine.getModelClass(model.modelName);
+              return {
+                label: t(ModelClass?.meta?.label || model.modelName),
+                value: model.modelName,
+              };
+            }),
           },
         };
       },
