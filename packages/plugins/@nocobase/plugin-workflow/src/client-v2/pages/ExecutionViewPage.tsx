@@ -10,14 +10,14 @@
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import { Spin, theme } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ExecutionCanvas from '../ExecutionCanvas';
 import { normalizeRecordResponse } from '../components/workflowCanvas';
 import { useWorkflowTranslation } from '../locale';
 
 export default function ExecutionViewPage() {
-  useWorkflowTranslation();
+  const { t } = useWorkflowTranslation();
   const ctx = useFlowContext();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
@@ -40,6 +40,15 @@ export default function ExecutionViewPage() {
   );
 
   const record = data?.id != null && String(data.id) === String(executionId) ? data : null;
+
+  useEffect(() => {
+    if (!record) {
+      return;
+    }
+
+    const workflowTitle = record.workflow?.title;
+    document.title = `${workflowTitle ? `${workflowTitle} - ` : ''}${t('Execution history')} - NocoBase`;
+  }, [record, t]);
 
   if (!executionId) {
     return null;

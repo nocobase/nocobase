@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +16,7 @@ import WorkflowCanvasPage from '../WorkflowCanvasPage';
 const holder = vi.hoisted(() => ({
   getWorkflow: vi.fn(),
   listRevisions: vi.fn(),
+  navigate: vi.fn(),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => {
@@ -23,6 +24,7 @@ vi.mock('react-router-dom', async (importOriginal) => {
   return {
     ...actual,
     useParams: () => ({ id: '363644683878400' }),
+    useNavigate: () => holder.navigate,
   };
 });
 
@@ -102,5 +104,17 @@ describe('WorkflowCanvasPage', () => {
     await waitFor(() => {
       expect(document.title).toBe('Workflow: 审批 - NocoBase');
     });
+  });
+
+  it('shows a not-found result with a link back to the workflow list', async () => {
+    holder.getWorkflow.mockResolvedValue({ data: { data: null } });
+
+    render(<WorkflowCanvasPage />);
+
+    expect(await screen.findByText('Workflow does not exist')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to workflow list' }));
+
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/settings/workflow');
+    expect(holder.listRevisions).not.toHaveBeenCalled();
   });
 });
