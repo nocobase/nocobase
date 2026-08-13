@@ -27,6 +27,7 @@ import {
   ModelRenderMode,
   useFlowModel,
 } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { TableColumnProps, Tooltip, Space, InputNumber, Button, Divider } from 'antd';
 import { get, omit, capitalize } from 'lodash';
@@ -61,19 +62,28 @@ export function FieldDeletePlaceholder(props: any) {
   );
 }
 
-function FieldWithoutPermissionPlaceholder() {
+type FieldPermissionPlaceholderModel = FlowModel & {
+  fieldPath?: string;
+  forbidden?: { actionName?: string } | null;
+};
+
+export function FieldWithoutPermissionPlaceholder({
+  targetModel,
+}: {
+  targetModel?: FieldPermissionPlaceholderModel;
+} = {}) {
   const { t } = useTranslation();
-  const model: any = useFlowModel();
-  const blockModel = model.context.blockModel;
-  const collection = model.context.collectionField?.collection || blockModel.collection;
-  const dataSource = collection.dataSource;
+  const contextModel = useFlowModel<FieldPermissionPlaceholderModel>();
+  const model = targetModel || contextModel;
+  const collection = model.context.collectionField?.collection || model.context.blockModel?.collection;
+  const dataSource = collection?.dataSource;
   const name = model.context.collectionField?.name || model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
-  }, [collection, dataSource.displayName, dataSource.key, name, t]);
-  const { actionName } = model.forbidden;
+  }, [collection, dataSource, name, t]);
+  const actionName = model.forbidden?.actionName || 'view';
   const messageValue = useMemo(() => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
