@@ -148,7 +148,9 @@ export class PresetNocoBase extends Plugin {
 
   async getPluginToBeUpgraded() {
     const repository = this.app.db.getRepository<any>('applicationPlugins');
-    const items = (await repository.find()).map((item) => item.name);
+    const records = await repository.find();
+    const items = records.map((item) => item.name);
+    const jsTemplateRecord = records.find((item) => item.name === JS_TEMPLATE_NAME);
     const builtInPlugins = await this.getBuiltInPlugins();
     const localPlugins = await this.getLocalPlugins();
     const plugins = await Promise.all(
@@ -158,7 +160,7 @@ export class PresetNocoBase extends Plugin {
         return {
           name,
           packageName: packageJson.name,
-          enabled: true,
+          enabled: name === JS_TEMPLATE_NAME && jsTemplateRecord ? Boolean(jsTemplateRecord.enabled) : true,
           builtIn: true,
           version: packageJson.version,
         } as any;

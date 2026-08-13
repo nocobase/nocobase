@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type Application, registerRunJSRegistryHost, registerRunJSRuntimeHost } from '@nocobase/client-v2';
+import { registerRunJSRegistryHost, registerRunJSRuntimeHost } from '@nocobase/client-v2';
 
 import {
   createInlineRunJSWorkspaceSettingsDescriptorProvider,
@@ -17,7 +17,9 @@ import { runJSStudioProvider } from './runjs-studio';
 import { runJSRegistryHost, RunJSEditorRegistry, RunJSSettingsDescriptorProviderRegistry } from './runJSRegistryHost';
 import { runJSRuntimeHost } from './runJSRuntimeHost';
 
-export type RunJSWorkspaceClientApplication = Pick<Application, 'apiClient'>;
+export type RunJSWorkspaceClientApplication = {
+  apiClient: RunJSWorkspaceApiClientLike;
+};
 
 export function installRunJSStudioClientV2(): () => void {
   return RunJSEditorRegistry.registerProvider({ ...runJSStudioProvider });
@@ -35,7 +37,7 @@ export function installRunJSWorkspaceAuthoringClientV2(app: RunJSWorkspaceClient
     installRunJSStudioClientV2,
     () =>
       RunJSSettingsDescriptorProviderRegistry.registerProvider(
-        createInlineRunJSWorkspaceSettingsDescriptorProvider(app.apiClient as RunJSWorkspaceApiClientLike),
+        createInlineRunJSWorkspaceSettingsDescriptorProvider(app.apiClient),
       ),
   ]);
 }

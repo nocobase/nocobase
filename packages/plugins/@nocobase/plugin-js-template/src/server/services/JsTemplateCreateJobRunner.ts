@@ -19,7 +19,11 @@ import type { JsTemplateAuditService } from './JsTemplateAuditService';
 interface JsTemplateCreateJobEventQueue {
   subscribe(
     channel: string,
-    options: { concurrency: number; idle: () => boolean; process: (message: unknown) => Promise<void> },
+    options: {
+      concurrency: number;
+      idle: () => boolean;
+      process: (message: unknown, options?: { signal?: AbortSignal }) => Promise<void>;
+    },
   ): void;
   unsubscribe(channel: string): void;
   publish(channel: string, message: unknown): Promise<void>;
@@ -44,6 +48,8 @@ export interface JsTemplateCreateJobRunnerOptions {
 
 const queueChannel = 'js-template.create-jobs';
 
+const shutdownGraceMs = 5_000;
+
 export class JsTemplateCreateJobRunner {
   private readonly scanIntervalMs: number;
 
@@ -57,11 +63,19 @@ export class JsTemplateCreateJobRunner {
 
   private started = false;
 
+  private stopping = false;
+
   private scanTimer?: ReturnType<typeof setInterval>;
 
   private scanPromise?: Promise<void>;
 
   private readonly activeRuns = new Set<Promise<void>>();
+
+  private readonly heartbeatStops = new Set<() => Promise<void>>();
+
+  private stopSignal?: Promise<void>;
+
+  private resolveStopSignal?: () => void;
 
   constructor(
     private readonly store: JsTemplateCreateJobStore,
@@ -87,16 +101,19 @@ export class JsTemplateCreateJobRunner {
     if (this.started) {
       return;
     }
+    this.stopSignal = undefined;
+    this.resolveStopSignal = undefined;
+    this.stopping = false;
     this.started = true;
     this.options.eventQueue.subscribe(queueChannel, {
       concurrency: 1,
       idle: () => this.started,
-      process: async (message) => {
+      process: async (message, options) => {
         const jobId = getJobId(message);
         if (jobId) {
-          await this.run(jobId);
+          await waitForExecutionOrStop(this.run(jobId), this.getStopSignal(), options?.signal);
         } else {
-          await this.scanClaimable();
+          await waitForExecutionOrStop(this.scanClaimable(), this.getStopSignal(), options?.signal);
         }
       },
     });
@@ -112,12 +129,16 @@ export class JsTemplateCreateJobRunner {
       this.started = false;
       this.options.eventQueue.unsubscribe(queueChannel);
     }
+    this.stopping = true;
+    this.resolveStopSignal?.();
     if (this.scanTimer) {
       clearInterval(this.scanTimer);
       this.scanTimer = undefined;
     }
-    await this.scanPromise;
-    await Promise.all([...this.activeRuns]);
+    await waitForSettled(
+      [...this.heartbeatStops].map((stop) => stop()).concat([this.scanPromise, ...this.activeRuns]),
+      shutdownGraceMs,
+    );
   }
 
   async publish(jobId: string): Promise<void> {
@@ -149,16 +170,21 @@ export class JsTemplateCreateJobRunner {
     const claimToken = job.claimToken;
     const startedAt = Date.now();
     await this.recordAuditBestEffort(job, 'createJobStart', 'success');
+    if (this.stopping) {
+      return;
+    }
     const heartbeat = this.startHeartbeat(job, claimToken);
+    this.heartbeatStops.add(heartbeat.stop);
     let resultProjectId: string;
     try {
       resultProjectId = await this.executor.execute(job, claimToken);
     } catch (error) {
-      await heartbeat.stop();
       await this.handleExecutionFailure(job, claimToken, error, startedAt);
       return;
+    } finally {
+      await heartbeat.stop();
+      this.heartbeatStops.delete(heartbeat.stop);
     }
-    await heartbeat.stop();
 
     let succeeded: JsTemplateCreateJob | null;
     try {
@@ -180,6 +206,15 @@ export class JsTemplateCreateJobRunner {
       sourceType: job.sourceType,
       resultProjectId,
     });
+  }
+
+  private getStopSignal(): Promise<void> {
+    if (!this.stopSignal) {
+      this.stopSignal = new Promise<void>((resolve) => {
+        this.resolveStopSignal = resolve;
+      });
+    }
+    return this.stopSignal;
   }
 
   private async handleExecutionFailure(
@@ -406,6 +441,49 @@ function isSqliteBusyError(error: unknown): boolean {
 function validatePositiveInteger(value: number, label: string): void {
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new TypeError(`Creation job ${label} must be a positive integer`);
+  }
+}
+
+async function waitForSettled(promises: Array<Promise<void> | undefined>, timeoutMs: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      Promise.allSettled(promises.filter((promise): promise is Promise<void> => Boolean(promise))),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
+}
+
+async function waitForExecutionOrStop(
+  execution: Promise<void>,
+  stopSignal: Promise<void>,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (signal?.aborted) {
+    return;
+  }
+  let onAbort: (() => void) | undefined;
+  try {
+    await Promise.race([
+      execution,
+      stopSignal,
+      new Promise<void>((resolve) => {
+        if (signal) {
+          onAbort = () => resolve();
+          signal.addEventListener('abort', onAbort, { once: true });
+        }
+      }),
+    ]);
+  } finally {
+    if (signal && onAbort) {
+      signal.removeEventListener('abort', onAbort);
+    }
   }
 }
 

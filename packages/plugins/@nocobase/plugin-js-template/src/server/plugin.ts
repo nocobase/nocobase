@@ -8,7 +8,6 @@
  */
 
 import { JS_TEMPLATE_SCHEMA_LOCAL_PATH } from '@nocobase/runjs/js-template/schema';
-import type PluginFlowEngineServer from '@nocobase/plugin-flow-engine';
 import {
   getOrCreateRunJSWorkspaceServerModule,
   type RunJSSourceAdapter,
@@ -94,13 +93,22 @@ type AppWithPluginEvents = {
     ) => void;
     registerSnippet?: (snippet: { name: string; actions: string[] }) => void;
   };
-  on?: (eventName: 'afterStart' | 'beforeStop', listener: () => Promise<void>) => unknown;
-  off?: (eventName: 'afterStart' | 'beforeStop', listener: () => Promise<void>) => unknown;
-  removeListener?: (eventName: 'afterStart' | 'beforeStop', listener: () => Promise<void>) => unknown;
+  on?: (eventName: PluginLifecycleEvent, listener: PluginLifecycleListener) => unknown;
+  off?: (eventName: PluginLifecycleEvent, listener: PluginLifecycleListener) => unknown;
+  removeListener?: (eventName: PluginLifecycleEvent, listener: PluginLifecycleListener) => unknown;
   use?: (
     middleware: (ctx: JsTemplateRouteContext, next: () => Promise<void>) => Promise<void>,
     options?: unknown,
   ) => void;
+};
+
+type PluginLifecycleEvent = 'afterStart' | 'beforeStop' | 'afterEnablePlugin' | 'afterDisablePlugin';
+
+type PluginLifecycleListener = (pluginName?: string) => void | Promise<void>;
+
+type FlowEngineRunJSWorkspaceHost = {
+  enabled?: boolean;
+  installRunJSWorkspaceIntegration?: (workspaceModule: RunJSWorkspaceServerModule) => () => void;
 };
 
 type JsTemplateRouteContext = {
@@ -131,6 +139,10 @@ export class PluginJsTemplateServer extends Plugin {
   private runJSWorkspaceServerModule?: RunJSWorkspaceServerModule;
 
   private unregisterFlowEngineRunJSWorkspaceIntegration?: () => void;
+
+  private flowEngineEnableListener?: PluginLifecycleListener;
+
+  private flowEngineDisableListener?: PluginLifecycleListener;
 
   private remoteSyncModule?: JsTemplateRemoteSyncModule;
 
@@ -279,6 +291,7 @@ export class PluginJsTemplateServer extends Plugin {
     const workspaceModule = this.requireRunJSWorkspaceServerModule();
     await workspaceModule.load();
     this.registerFlowEngineRunJSWorkspaceIntegration(workspaceModule);
+    this.registerFlowEngineRunJSWorkspaceIntegrationListeners();
     this.registerExternalizationCapability(workspaceModule);
     const remoteSyncModule = this.requireRemoteSyncModule();
     await remoteSyncModule.load();
@@ -460,13 +473,14 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   async afterDisable() {
-    await this.shutdownCreateJobRunner();
     this.domainAvailable = false;
+    await this.shutdownCreateJobRunner();
     this.unregisterExternalizationCapabilityWhenNeeded();
     await this.shutdownCompileInfrastructure();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
+    this.removeFlowEngineRunJSWorkspaceIntegrationListeners();
     await this.remoteSyncModule?.afterDisable();
     await this.runJSWorkspaceServerModule?.afterDisable();
     this.removeJsTemplateResources();
@@ -483,12 +497,13 @@ export class PluginJsTemplateServer extends Plugin {
   }
 
   async remove() {
-    await this.shutdownCreateJobRunner();
     this.domainAvailable = false;
+    await this.shutdownCreateJobRunner();
     this.unregisterExternalizationCapabilityWhenNeeded();
     this.unregisterVscPermissionHookWhenNeeded();
     this.removeRemotePullRecoveryListener();
     this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
+    this.removeFlowEngineRunJSWorkspaceIntegrationListeners();
     await this.remoteSyncModule?.remove();
     await this.shutdownCompileInfrastructure();
     await this.runJSWorkspaceServerModule?.remove();
@@ -528,8 +543,8 @@ export class PluginJsTemplateServer extends Plugin {
 
   private registerFlowEngineRunJSWorkspaceIntegration(workspaceModule: RunJSWorkspaceServerModule) {
     this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
-    const flowEnginePlugin = this.app.pm?.get('flow-engine') as PluginFlowEngineServer | undefined;
-    if (!flowEnginePlugin?.installRunJSWorkspaceIntegration) {
+    const flowEnginePlugin = this.app.pm?.get('flow-engine') as FlowEngineRunJSWorkspaceHost | undefined;
+    if (!flowEnginePlugin || flowEnginePlugin.enabled === false || !flowEnginePlugin.installRunJSWorkspaceIntegration) {
       return;
     }
     this.unregisterFlowEngineRunJSWorkspaceIntegration =
@@ -539,6 +554,45 @@ export class PluginJsTemplateServer extends Plugin {
   private unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded() {
     this.unregisterFlowEngineRunJSWorkspaceIntegration?.();
     this.unregisterFlowEngineRunJSWorkspaceIntegration = undefined;
+  }
+
+  private registerFlowEngineRunJSWorkspaceIntegrationListeners() {
+    this.removeFlowEngineRunJSWorkspaceIntegrationListeners();
+    const app = this.app as unknown as AppWithPluginEvents;
+    if (!app.on) {
+      return;
+    }
+    this.flowEngineEnableListener = (pluginName) => {
+      if (pluginName === 'flow-engine' && this.domainAvailable) {
+        this.registerFlowEngineRunJSWorkspaceIntegration(this.requireRunJSWorkspaceServerModule());
+      }
+    };
+    this.flowEngineDisableListener = (pluginName) => {
+      if (pluginName === 'flow-engine') {
+        this.unregisterFlowEngineRunJSWorkspaceIntegrationWhenNeeded();
+      }
+    };
+    app.on('afterEnablePlugin', this.flowEngineEnableListener);
+    app.on('afterDisablePlugin', this.flowEngineDisableListener);
+  }
+
+  private removeFlowEngineRunJSWorkspaceIntegrationListeners() {
+    const app = this.app as unknown as AppWithPluginEvents;
+    for (const [eventName, listener] of [
+      ['afterEnablePlugin', this.flowEngineEnableListener],
+      ['afterDisablePlugin', this.flowEngineDisableListener],
+    ] as const) {
+      if (!listener) {
+        continue;
+      }
+      if (app.off) {
+        app.off(eventName, listener);
+      } else {
+        app.removeListener?.(eventName, listener);
+      }
+    }
+    this.flowEngineEnableListener = undefined;
+    this.flowEngineDisableListener = undefined;
   }
 
   private unregisterExternalizationCapabilityWhenNeeded() {
@@ -610,6 +664,7 @@ export class PluginJsTemplateServer extends Plugin {
       await this.startCreateJobRunner();
     };
     this.createJobStopListener = async () => {
+      this.domainAvailable = false;
       await this.shutdownCreateJobRunner();
     };
     app.on('afterStart', this.createJobStartListener);
