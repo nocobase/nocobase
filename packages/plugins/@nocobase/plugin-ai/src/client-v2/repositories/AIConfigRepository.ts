@@ -26,7 +26,18 @@ export interface LLMServiceItem {
   providerTitle?: string;
   enabledModels: { label: string; value: string }[];
   supportWebSearch?: boolean;
+  webSearchModels?: string[];
   isToolConflict?: boolean;
+}
+
+export function supportsWebSearchForModel(service?: LLMServiceItem | null, model?: string | null): boolean {
+  if (!service?.supportWebSearch) {
+    return false;
+  }
+  if (!service.webSearchModels?.length) {
+    return true;
+  }
+  return typeof model === 'string' && service.webSearchModels.includes(model);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

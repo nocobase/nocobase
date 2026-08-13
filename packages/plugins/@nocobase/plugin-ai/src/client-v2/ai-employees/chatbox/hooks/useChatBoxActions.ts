@@ -17,6 +17,7 @@ import { useChatMessageActions } from './useChatMessageActions';
 import { useT } from '../../../locale';
 import { parseTask } from '../utils';
 import { aiEmployeeRole } from '../roles';
+import { supportsWebSearchForModel } from '../../../repositories/AIConfigRepository';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 import { resolveChatBoxScope, type ChatBoxRuntime, useResolvedChatBoxRuntime } from '../stores/runtime';
@@ -254,7 +255,9 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
           (s) => s.llmService === resolvedModel?.llmService,
         );
         const resolvedWebSearch =
-          service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
+          supportsWebSearchForModel(service, resolvedModel?.model) && typeof webSearch === 'boolean'
+            ? webSearch
+            : false;
         chatConversationModel.setWebSearch(resolvedWebSearch);
         if (userMessage && userMessage.type === 'text') {
           chatSenderModel.setSenderValue(userMessage.content);

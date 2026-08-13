@@ -27,6 +27,7 @@ export type LLMProviderMeta = {
   provider: new (opts: LLMProviderOptions) => LLMProvider;
   embedding?: new (opts: EmbeddingProviderOptions) => EmbeddingProvider;
   supportWebSearch?: boolean;
+  webSearchModels?: string[];
 };
 
 export enum SupportedModel {
@@ -53,6 +54,7 @@ export type EnabledLLMService = {
   providerTitle?: string;
   enabledModels: EnabledLLMModel[];
   supportWebSearch: boolean;
+  webSearchModels?: string[];
   isToolConflict: boolean;
 };
 
@@ -67,11 +69,12 @@ export class AIManager {
 
   listLLMProviders() {
     const providers = this.llmProviders.entries();
-    return Array.from(providers).map(([name, { title, supportedModel, supportWebSearch }]) => ({
+    return Array.from(providers).map(([name, { title, supportedModel, supportWebSearch, webSearchModels }]) => ({
       name,
       title,
       supportedModel: supportedModel ?? [SupportedModel.LLM],
       supportWebSearch: supportWebSearch ?? false,
+      webSearchModels,
     }));
   }
 
@@ -128,6 +131,7 @@ export class AIManager {
       providerTitle: providerMeta.title,
       enabledModels,
       supportWebSearch: providerMeta.supportWebSearch ?? false,
+      webSearchModels: providerMeta.webSearchModels,
       isToolConflict: providerClient.isToolConflict(),
     };
   }
@@ -193,6 +197,10 @@ export class AIManager {
     const providerOptions = this.llmProviders.get(service.provider);
     if (!providerOptions) {
       throw new Error('LLM service provider not found');
+    }
+
+    if (webSearch === true && providerOptions.webSearchModels && !providerOptions.webSearchModels.includes(model)) {
+      throw new Error(`Web search is not supported by model "${model}"`);
     }
 
     const Provider = providerOptions.provider;

@@ -16,6 +16,7 @@ import {
   AIEmployeeButtonModel,
   AIEmployeeShortcutListModel,
   AIEmployeeShortcutModel,
+  getShortcutTaskIndexFromFieldPath,
   normalizeShortcutTasksSkillSettings,
 } from '../models/ai-employees';
 import { dialogController } from '../ai-employees/stores/dialog-controller';
@@ -234,5 +235,11 @@ describe('AI employee v2 action models', () => {
         },
       },
     });
+  });
+
+  it('resolves the current shortcut task from the Formily field path', () => {
+    expect(getShortcutTaskIndexFromFieldPath(['shortcutSettings', 'editTasks', 'tasks', 2, 'webSearch'])).toBe(2);
+    expect(getShortcutTaskIndexFromFieldPath(['tasks', '3', 'webSearch'])).toBe(3);
+    expect(getShortcutTaskIndexFromFieldPath(['webSearch'])).toBeNull();
   });
 });
