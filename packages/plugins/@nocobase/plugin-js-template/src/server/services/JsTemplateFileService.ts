@@ -257,6 +257,7 @@ export class JsTemplateFileService {
         'Source candidates must be prepared outside a database transaction',
       );
     }
+    await this.permissionService.assertActionAllowed({ action: 'writeSource', ctx });
     const requestId = getRequestId(ctx);
     try {
       const project = await this.projectService.getInternalProject(input.projectId, ctx);

@@ -266,7 +266,7 @@ describe('plugin-js-template file service resource bridge', () => {
           projectId: repo.id,
           expectedHeadCommitId,
           message: `Permission matrix ${entry.roleName}`,
-          files: [{ path: `${entry.roleName}.md`, content: `# ${entry.roleName}\n` }],
+          files: [{ path: `src/shared/${entry.roleName}.ts`, content: `export const role = '${entry.roleName}';\n` }],
         },
       });
       expect(response.status, JSON.stringify(response.body)).toBe(entry.expectedStatus);
