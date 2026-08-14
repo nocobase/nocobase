@@ -572,15 +572,33 @@ function progressMessage(
 }
 
 const DOCS_AI_SESSION_KEY = 'nocobase-docs-ai-session';
+const DOCS_AI_SESSION_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function docsAiSessionId(): string {
   const existing = window.sessionStorage.getItem(DOCS_AI_SESSION_KEY);
-  if (existing) {
+  if (existing && DOCS_AI_SESSION_ID_PATTERN.test(existing)) {
     return existing;
   }
-  const sessionId = window.crypto.randomUUID();
+  const sessionId = window.crypto?.randomUUID?.() ?? fallbackSessionId();
   window.sessionStorage.setItem(DOCS_AI_SESSION_KEY, sessionId);
   return sessionId;
+}
+
+function fallbackSessionId(): string {
+  const bytes = Array.from({ length: 16 }, () =>
+    Math.floor(Math.random() * 256),
+  );
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-');
 }
 
 class DocsAssistantRequestError extends Error {

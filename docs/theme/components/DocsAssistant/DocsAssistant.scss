@@ -12,7 +12,7 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
-  background: var(--rp-c-brand);
+  background: #2f55d4;
   border: 0;
   border-radius: 999px;
   box-shadow: 0 12px 30px rgb(49 94 251 / 28%);
@@ -43,7 +43,7 @@ html.docs-ai-workspace-open #__rspress_root {
 
 .docs-ai-launcher:hover,
 .docs-ai-launcher:focus-visible {
-  filter: brightness(0.92);
+  background: #2443b8;
   outline: 3px solid var(--rp-c-brand-tint);
   outline-offset: 2px;
 }
