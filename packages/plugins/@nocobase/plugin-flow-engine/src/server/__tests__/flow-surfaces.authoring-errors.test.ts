@@ -20,9 +20,11 @@ import {
 } from './flow-surfaces.contract.helpers';
 import './runjs-source-inspector.setup';
 import { uid } from '@nocobase/utils';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { collectFlowRegistryRunJsAuthoringErrors, inspectRunJsAuthoringCode } from '../flow-surfaces/runjs-authoring';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 const LARGE_GENERATED_POPUP_COLLECTION = 'flow_surface_large_generated_popup_records';
 const LARGE_GENERATED_POPUP_FIELDS = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
@@ -65,7 +67,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+      plugins: [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+    });
     ({ rootAgent } = context);
     await rootAgent.resource('collections').create({
       values: {
