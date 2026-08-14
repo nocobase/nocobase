@@ -7,6 +7,7 @@
   "types": "lib/index.d.ts",
   "dependencies": {
     "@babel/parser": "^7.23.6",
+    "@babel/types": "^7.23.6",
     "@formily/antd-v5": "1.x",
     "@formily/reactive": "2.x",
     "@nocobase/sdk": "3.0.0-alpha.9",
