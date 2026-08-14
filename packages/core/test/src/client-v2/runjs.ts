@@ -145,9 +145,9 @@ const runtimeHost: RunJSRuntimeHost = {
     };
   },
   async resolveRuntime(input, registry = registryHost.sourceResolvers) {
-    const runJs = isRecord(input.runJs) ? input.runJs : {};
+    const runJs: Record<string, unknown> = isRecord(input.runJs) ? input.runJs : {};
     const sourceMode = normalizeSourceMode(input.sourceMode ?? runJs.sourceMode);
-    const sourceBinding = input.sourceBinding ?? runJs.sourceBinding;
+    const sourceBinding = input.sourceBinding ?? getRecord(runJs, 'sourceBinding');
     const settings = toRecord(input.settings ?? runJs.settings);
     if (sourceMode !== INLINE_RUNJS_SOURCE_MODE) {
       return runtimeHost.resolveSourceBinding(
@@ -187,7 +187,7 @@ const runtimeHost: RunJSRuntimeHost = {
     return result.value;
   },
   evaluateInlineValue({ ctx, runJs }) {
-    const value = isRecord(runJs) ? runJs : {};
+    const value: Record<string, unknown> = isRecord(runJs) ? runJs : {};
     const code = typeof value.code === 'string' ? value.code : '';
     const resolved: ResolvedRuntimeRunJS = {
       code,
@@ -308,7 +308,11 @@ function isRunJSExecutionContext(value: unknown): value is RunJSExecutionContext
 }
 
 function getRecord(value: unknown, key: string): Record<string, unknown> | undefined {
-  return isRecord(value) && isRecord(value[key]) ? value[key] : undefined;
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const candidate = value[key];
+  return isRecord(candidate) ? candidate : undefined;
 }
 
 function getString(value: unknown, key: string): string | undefined {
@@ -316,7 +320,11 @@ function getString(value: unknown, key: string): string | undefined {
 }
 
 function getNumber(value: unknown, key: string): number | undefined {
-  return isRecord(value) && typeof value[key] === 'number' ? value[key] : undefined;
+  if (!isRecord(value)) {
+    return undefined;
+  }
+  const candidate = value[key];
+  return typeof candidate === 'number' ? candidate : undefined;
 }
 
 function toString(value: unknown): string | undefined {
