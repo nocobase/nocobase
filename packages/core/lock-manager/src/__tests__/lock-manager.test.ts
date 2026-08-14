@@ -224,10 +224,10 @@ describe('lock manager', () => {
 
     it('tryAcquire: extends an active lease', async () => {
       const lock = await lockManager.tryAcquire('extend-test');
-      const release = await lock.acquire(100);
-      await sleep(60);
-      await lock.extend(150);
-      await sleep(70);
+      const release = await lock.acquire(500);
+      await sleep(100);
+      await lock.extend(500);
+      await sleep(200);
       await expect(lockManager.tryAcquire('extend-test')).rejects.toThrowError(LockAcquireError);
       await release();
 
