@@ -174,9 +174,9 @@ function registerCompileKeyTests() {
       expect(reordered).toEqual(first);
       expect(first.compileKey).toMatch(/^[a-f0-9]{64}$/u);
       expect(first.inputManifest.files).toEqual([
+        expect.objectContaining({ path: 'src/client/js-blocks/orders/entry.json', blobHash: 'blob_orders_descriptor' }),
         expect.objectContaining({ path: template.descriptorPath, blobHash: 'blob_descriptor' }),
         expect.objectContaining({ path: 'src/client/js-blocks/sales/index.tsx', blobHash: 'blob_entry' }),
-        expect.objectContaining({ path: 'src/client/js-blocks/orders/entry.json', blobHash: 'blob_orders_descriptor' }),
         expect.objectContaining({ path: 'src/shared/format.ts', blobHash: 'blob_shared' }),
       ]);
       expect(JSON.stringify(first.inputManifest)).not.toContain('source body');
