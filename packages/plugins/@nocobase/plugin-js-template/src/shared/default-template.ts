@@ -35,13 +35,21 @@ export const DEFAULT_JS_TEMPLATE_TEMPLATE_FILES: readonly JsTemplateTreeEntryInp
   ...BASE_JS_TEMPLATE_TEMPLATE_FILES,
   {
     path: 'src/client/js-blocks/welcome-card/index.tsx',
-    content: `const { Card } = ctx.libs.antd;
+    content: `import { DEFAULT_WELCOME_MESSAGE } from './message';
+
+const { Card } = ctx.libs.antd;
 
 ctx.render(
   <Card title={ctx.t(String(ctx.settings?.title || 'Welcome'))}>
-    {ctx.t(String(ctx.settings?.message || 'Build reusable UI with JS Templates.'))}
+    {ctx.t(String(ctx.settings?.message || DEFAULT_WELCOME_MESSAGE))}
   </Card>,
 );
+`,
+    language: 'typescript',
+  },
+  {
+    path: 'src/client/js-blocks/welcome-card/message.ts',
+    content: `export const DEFAULT_WELCOME_MESSAGE = 'Build reusable UI with JS Templates.';
 `,
     language: 'typescript',
   },

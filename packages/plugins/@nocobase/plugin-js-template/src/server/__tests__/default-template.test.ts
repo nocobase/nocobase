@@ -15,10 +15,6 @@ import { JsTemplateWorkspaceCompilerBridge } from '../services/JsTemplateWorkspa
 
 const ENTRY_CASES: Array<{ entryPath: string; kind: JsTemplateKind }> = [
   {
-    entryPath: 'src/client/js-blocks/hello-page/index.tsx',
-    kind: 'js-block',
-  },
-  {
     entryPath: 'src/client/js-blocks/welcome-card/index.tsx',
     kind: 'js-block',
   },
