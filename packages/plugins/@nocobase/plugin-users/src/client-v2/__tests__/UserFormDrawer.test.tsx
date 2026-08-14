@@ -15,7 +15,7 @@ import {
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
 } from '../shared/adminProfileFormModels';
 
-const { create, update, save, findOne, createModelAsync, submit, close, success } = vi.hoisted(() => ({
+const { create, update, save, findOne, createModelAsync, submit, close, success, toErrMessages } = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   save: vi.fn(),
@@ -24,6 +24,7 @@ const { create, update, save, findOne, createModelAsync, submit, close, success 
   submit: vi.fn(),
   close: vi.fn(),
   success: vi.fn(),
+  toErrMessages: vi.fn(),
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
@@ -107,6 +108,7 @@ vi.mock('@nocobase/flow-engine', () => {
   };
   const flowContext = {
     api: {
+      toErrMessages,
       resource: (name: string) =>
         name === 'users'
           ? {
@@ -205,6 +207,7 @@ describe('UserFormDrawer', () => {
     save.mockReset();
     close.mockReset();
     success.mockReset();
+    toErrMessages.mockReset();
   });
 
   afterEach(() => {
@@ -308,6 +311,30 @@ describe('UserFormDrawer', () => {
 
     expect(create).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+    expect(success).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+  });
+
+  it('should show the API error and keep the drawer open when creating a user fails', async () => {
+    const error = new Error('Request failed');
+    create.mockRejectedValue(error);
+    toErrMessages.mockReturnValue([{ message: 'No permission to create users' }]);
+    submit.mockImplementation(async (_params, cb) => {
+      await cb?.({ username: 'alice' });
+    });
+    const onSubmitted = vi.fn();
+
+    render(<UserFormDrawer onSubmitted={onSubmitted} />);
+
+    await waitFor(() => {
+      expect(createModelAsync).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No permission to create users');
+    expect(toErrMessages).toHaveBeenCalledWith(error);
     expect(success).not.toHaveBeenCalled();
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
