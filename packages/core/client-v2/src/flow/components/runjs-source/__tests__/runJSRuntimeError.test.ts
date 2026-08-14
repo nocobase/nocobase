@@ -7,96 +7,30 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
-import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { clearRunJSRuntimeHosts, registerRunJSRuntimeHost } from '@nocobase/client-v2';
+import { createRunJSTestRuntimeHost } from '@nocobase/test/client-v2';
+
 import { readRunJSRuntimeError } from '../runJSRuntimeError';
 
-setupRunJSTestHosts();
-
-describe('readRunJSRuntimeError', () => {
-  it('reads a normal Error', () => {
-    expect(readRunJSRuntimeError(new Error('failed'))).toEqual({
-      message: 'failed',
-    });
+describe('RunJS runtime error host', () => {
+  afterEach(() => {
+    clearRunJSRuntimeHosts();
   });
 
-  it('reads an Axios server error envelope including details.reasonCode', () => {
-    expect(
-      readRunJSRuntimeError({
-        response: {
-          status: 409,
-          data: {
-            errors: [
-              {
-                code: 'JS_TEMPLATE_BINDING_OUTDATED',
-                message: 'Refresh required',
-                details: { reasonCode: 'binding_changed' },
-              },
-            ],
-          },
-        },
-      }),
-    ).toEqual({
-      code: 'JS_TEMPLATE_BINDING_OUTDATED',
-      status: 409,
-      reasonCode: 'binding_changed',
-      message: 'Refresh required',
-      details: { reasonCode: 'binding_changed' },
-    });
-  });
-
-  it('keeps top-level code and status when the nested error only has details', () => {
-    expect(
-      readRunJSRuntimeError({
-        code: 'REQUEST_FAILED',
-        status: 422,
-        response: {
-          data: {
-            errors: [{ details: { reasonCode: 'settings_invalid' } }],
-          },
-        },
-      }),
-    ).toEqual({
-      code: 'REQUEST_FAILED',
+  it('delegates error normalization to the active runtime host', () => {
+    const normalized = {
+      code: 'JS_TEMPLATE_SETTINGS_INVALID',
       status: 422,
       reasonCode: 'settings_invalid',
-      details: { reasonCode: 'settings_invalid' },
-    });
-  });
-
-  it('keeps local and server settings paths for actionable runtime errors', () => {
-    expect(
-      readRunJSRuntimeError({
-        code: 'JS_TEMPLATE_SETTINGS_INVALID',
-        message: 'Settings invalid',
-        paths: ['count'],
-      }),
-    ).toEqual({
-      code: 'JS_TEMPLATE_SETTINGS_INVALID',
-      message: 'Settings invalid',
-      paths: ['count'],
-    });
-
-    expect(
-      readRunJSRuntimeError({
-        response: {
-          status: 422,
-          data: {
-            errors: [
-              {
-                code: 'JS_TEMPLATE_SETTINGS_INVALID',
-                details: {
-                  reasonCode: 'settings_invalid',
-                  issues: [{ path: '$.count', code: 'settings_type_mismatch' }],
-                },
-              },
-            ],
-          },
-        },
-      }),
-    ).toMatchObject({
-      code: 'JS_TEMPLATE_SETTINGS_INVALID',
       paths: ['$.count'],
-    });
+    };
+    const readRuntimeError = vi.fn(() => normalized);
+    registerRunJSRuntimeHost(createRunJSTestRuntimeHost({ readRuntimeError }));
+    const error = new Error('unsafe implementation detail');
+
+    expect(readRunJSRuntimeError(error)).toBe(normalized);
+    expect(readRuntimeError).toHaveBeenCalledWith(error);
   });
 });

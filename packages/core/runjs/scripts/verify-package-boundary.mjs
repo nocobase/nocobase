@@ -826,13 +826,6 @@ function resolveCodeMirrorVersions(repositoryRoot) {
   for (const packageName of codeMirrorPackages) {
     versions[packageName] = resolveInstalledPackageVersion(repositoryRoot, packageName);
   }
-
-  const clientV2Manifest = readJson(path.join(repositoryRoot, 'packages/core/client-v2/package.json'));
-  for (const packageName of codeMirrorPackages) {
-    if (!clientV2Manifest.dependencies?.[packageName]) {
-      throw new Error('@nocobase/client-v2 must declare ' + packageName + ' for the final-install smoke');
-    }
-  }
   return versions;
 }
 

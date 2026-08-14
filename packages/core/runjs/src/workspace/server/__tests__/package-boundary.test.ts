@@ -17,7 +17,15 @@ const clientEntryRoots = [
   path.resolve(runjsSourceRoot, 'workspace/client'),
   path.resolve(runjsSourceRoot, 'workspace/client-v2'),
 ];
-const prohibitedNeutralPackages = ['@nocobase/client', '@nocobase/client-v2', '@nocobase/flow-engine'];
+const prohibitedNeutralPackages = [
+  '@nocobase/client',
+  '@nocobase/client-v2',
+  '@nocobase/flow-engine',
+  '@ant-design/icons',
+  'antd',
+  'react',
+  'react-dom',
+];
 
 describe('@nocobase/runjs workspace boundary', () => {
   it('does not depend on plugin lifecycle or JS Template domain implementations', () => {
@@ -53,13 +61,10 @@ describe('@nocobase/runjs workspace boundary', () => {
     expect(manifest.exports).not.toHaveProperty('./workspace/client-v2');
   });
 
-  it('keeps root, compiler, shared workspace, and server workspace independent from client hosts', () => {
-    const neutralFiles = [
-      path.resolve(runjsSourceRoot, 'index.ts'),
-      ...collectSourceFiles(path.resolve(runjsSourceRoot, 'compiler')),
-      ...collectSourceFiles(path.resolve(runjsSourceRoot, 'workspace/shared')),
-      ...collectSourceFiles(path.resolve(runjsSourceRoot, 'workspace/server')),
-    ].filter((file) => !file.includes(`${path.sep}__tests__${path.sep}`));
+  it('keeps every retained RunJS entry independent from client and UI hosts', () => {
+    const neutralFiles = collectSourceFiles(runjsSourceRoot).filter(
+      (file) => !file.includes(`${path.sep}__tests__${path.sep}`),
+    );
     const violations = neutralFiles.flatMap((file) => {
       const source = fs.readFileSync(file, 'utf8');
       return collectModuleSpecifiers(source)
@@ -86,6 +91,7 @@ function collectModuleSpecifiers(source: string): string[] {
 
 function isClientHostSpecifier(file: string, specifier: string): boolean {
   if (
+    specifier.startsWith('@nocobase/plugin-') ||
     prohibitedNeutralPackages.some(
       (packageName) => specifier === packageName || specifier.startsWith(`${packageName}/`),
     )

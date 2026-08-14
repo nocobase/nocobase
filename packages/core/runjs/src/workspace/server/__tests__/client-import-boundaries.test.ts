@@ -77,6 +77,15 @@ const neutralBoundaryEslint = new ESLint({
             '@nocobase/client-v2/*',
             '@nocobase/flow-engine',
             '@nocobase/flow-engine/*',
+            '@nocobase/plugin-*',
+            '@ant-design/icons',
+            '@ant-design/icons/*',
+            'antd',
+            'antd/*',
+            'react',
+            'react/*',
+            'react-dom',
+            'react-dom/*',
             '**/workspace/client',
             '**/workspace/client/*',
             '**/workspace/client-v2',
@@ -146,6 +155,16 @@ const neutralImportFixtures = [
     filePath: 'packages/core/runjs/src/workspace/server/boundary-violation.ts',
     source: "import type { Application } from '@nocobase/client-v2';\nexport type { Application };\n",
   },
+  {
+    label: 'the settings entry importing React',
+    filePath: 'packages/core/runjs/src/settings/boundary-violation.ts',
+    source: "import type { ReactNode } from 'react';\nexport type { ReactNode };\n",
+  },
+  {
+    label: 'the JS Template shared entry importing a plugin',
+    filePath: 'packages/core/runjs/src/js-template/shared/boundary-violation.ts',
+    source: "import type Plugin from '@nocobase/plugin-js-template';\nexport type { Plugin };\n",
+  },
 ] as const;
 
 describe('RunJS and JS Template package boundaries', () => {
@@ -168,13 +187,8 @@ describe('RunJS and JS Template package boundaries', () => {
     expect(violations[0]).toMatchObject({ ruleId: '@typescript-eslint/no-restricted-imports', severity: 2 });
   });
 
-  it('keeps root, compiler, shared workspace, and server workspace independent from client hosts', async () => {
-    const results = await neutralBoundaryEslint.lintFiles([
-      'packages/core/runjs/src/index.ts',
-      'packages/core/runjs/src/compiler/**/*.{ts,tsx}',
-      'packages/core/runjs/src/workspace/shared/**/*.{ts,tsx}',
-      'packages/core/runjs/src/workspace/server/**/*.{ts,tsx}',
-    ]);
+  it('keeps every retained RunJS entry independent from client and UI hosts', async () => {
+    const results = await neutralBoundaryEslint.lintFiles(['packages/core/runjs/src/**/*.{ts,tsx}']);
     const violations = results.flatMap((result) =>
       result.messages
         .filter((message) => message.ruleId === '@typescript-eslint/no-restricted-imports')
