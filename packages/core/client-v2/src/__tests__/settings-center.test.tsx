@@ -327,6 +327,7 @@ describe('settings center', () => {
 
     expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
     expect(app.router.state.location.pathname).toBe('/admin/settings/unknown');
+    expect(screen.queryByText('No permissions')).not.toBeInTheDocument();
   });
 
   it('should allow direct access to hidden page without showing menu entry', async () => {
@@ -400,6 +401,7 @@ describe('settings center', () => {
     await waitForGetRequests(app, ['/auth:check', 'roles:check']);
 
     expect(await screen.findByText('Current settings page is unavailable')).toBeInTheDocument();
+    expect(await screen.findAllByText('No permissions')).toHaveLength(1);
     expect(screen.queryByText('Secure settings page')).not.toBeInTheDocument();
     expect(app.router.state.location.pathname).toBe('/admin/settings/secure-demo');
   });
@@ -453,6 +455,7 @@ describe('settings center', () => {
     });
     expect(app.router.router.state.historyAction).toBe('REPLACE');
     expect(await screen.findByText('First accessible tab content')).toBeInTheDocument();
+    expect(await screen.findAllByText('No permissions')).toHaveLength(1);
     expect(screen.queryByText('Denied tab content')).not.toBeInTheDocument();
     expect(renderDeniedTab).not.toHaveBeenCalled();
 

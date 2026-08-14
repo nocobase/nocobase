@@ -11,7 +11,7 @@ import { ApiOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { Layout, Menu, Result, theme } from 'antd';
+import { App, Layout, Menu, Result, theme } from 'antd';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generatePath, Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -73,6 +73,7 @@ export const InternalAdminSettingsLayout = () => {
   );
   const { token } = theme.useToken();
   const { t } = useTranslation();
+  const { notification } = App.useApp();
   const { snippets = [] } = useACLRoleContext();
 
   const allSettings = useMemo(
@@ -104,6 +105,7 @@ export const InternalAdminSettingsLayout = () => {
     () => matchSettingsRoute(registeredSettingsMapByPath, location.pathname),
     [location.pathname, registeredSettingsMapByPath],
   );
+  const permissionDenied = currentSetting?.isAllow === false;
   const currentVisibleSetting = useMemo(
     () => matchSettingsRoute(visibleSettingsMapByPath, location.pathname),
     [location.pathname, visibleSettingsMapByPath],
@@ -125,6 +127,18 @@ export const InternalAdminSettingsLayout = () => {
     return (currentVisibleTopLevelSetting?.children || []).filter((item) => !item.hidden) as PluginSettingsPageType[];
   }, [currentVisibleTopLevelSetting?.children]);
   const shouldShowTabs = currentVisibleTabs.length > 1 && currentVisibleTopLevelSetting?.showTabs !== false;
+
+  useEffect(() => {
+    if (!permissionDenied) {
+      return;
+    }
+
+    notification.error({
+      key: 'admin-settings-no-permission',
+      message: t('No permissions'),
+      role: 'alert',
+    });
+  }, [location.pathname, notification, permissionDenied, t]);
 
   useEffect(() => {
     const nextTitle =
@@ -177,7 +191,7 @@ export const InternalAdminSettingsLayout = () => {
     return <SettingsEmpty type="route" />;
   }
 
-  if (currentSetting.isAllow === false) {
+  if (permissionDenied) {
     const firstVisibleTabPath = currentVisibleTabs
       .map((tab) => getDefaultSettingsPath([tab]))
       .filter((path): path is string => typeof path === 'string')
