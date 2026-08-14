@@ -14,8 +14,12 @@ import { NAMESPACE } from './locale';
 import {
   WORKFLOW_CANVAS_ROUTE_NAME,
   WORKFLOW_CANVAS_ROUTE_PATH,
+  WORKFLOW_CANVAS_SETTINGS_ROUTE_NAME,
+  WORKFLOW_CANVAS_SETTINGS_ROUTE_PATH,
   WORKFLOW_EXECUTION_ROUTE_NAME,
   WORKFLOW_EXECUTION_ROUTE_PATH,
+  WORKFLOW_EXECUTION_SETTINGS_ROUTE_NAME,
+  WORKFLOW_EXECUTION_SETTINGS_ROUTE_PATH,
   WORKFLOW_TASKS_MOBILE_ROUTE_NAME,
   WORKFLOW_TASKS_MOBILE_ROUTE_PATH,
   WORKFLOW_TASKS_ROUTE_NAME,
@@ -333,6 +337,10 @@ export class PluginWorkflowClientV2 extends Plugin {
       path: WORKFLOW_CANVAS_ROUTE_PATH,
       componentLoader: () => import('./pages/WorkflowCanvasPage'),
     });
+    this.app.router.add(WORKFLOW_CANVAS_SETTINGS_ROUTE_NAME, {
+      path: WORKFLOW_CANVAS_SETTINGS_ROUTE_PATH,
+      componentLoader: () => import('./pages/WorkflowCanvasPage'),
+    });
   }
 
   // The execution detail page, a sibling of the canvas under the same `admin.workflow` namespace — mirrors v1's
@@ -340,6 +348,10 @@ export class PluginWorkflowClientV2 extends Plugin {
   private registerExecutionRoute() {
     this.app.router.add(WORKFLOW_EXECUTION_ROUTE_NAME, {
       path: WORKFLOW_EXECUTION_ROUTE_PATH,
+      componentLoader: () => import('./pages/ExecutionViewPage'),
+    });
+    this.app.router.add(WORKFLOW_EXECUTION_SETTINGS_ROUTE_NAME, {
+      path: WORKFLOW_EXECUTION_SETTINGS_ROUTE_PATH,
       componentLoader: () => import('./pages/ExecutionViewPage'),
     });
   }

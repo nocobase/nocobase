@@ -13,6 +13,8 @@
 // route.
 export const WORKFLOW_CANVAS_ROUTE_NAME = 'admin.workflow.workflows.id';
 export const WORKFLOW_CANVAS_ROUTE_PATH = '/admin/workflow/workflows/:id';
+export const WORKFLOW_CANVAS_SETTINGS_ROUTE_NAME = 'admin.workflow.settings.workflows.id';
+export const WORKFLOW_CANVAS_SETTINGS_ROUTE_PATH = '/admin/settings/workflow/workflows/:id';
 
 export function getWorkflowCanvasPath(id: string | number) {
   return `/admin/workflow/workflows/${id}`;
@@ -22,6 +24,8 @@ export function getWorkflowCanvasPath(id: string | number) {
 // `admin.workflow.executions.id` route.
 export const WORKFLOW_EXECUTION_ROUTE_NAME = 'admin.workflow.executions.id';
 export const WORKFLOW_EXECUTION_ROUTE_PATH = '/admin/workflow/executions/:id';
+export const WORKFLOW_EXECUTION_SETTINGS_ROUTE_NAME = 'admin.workflow.settings.executions.id';
+export const WORKFLOW_EXECUTION_SETTINGS_ROUTE_PATH = '/admin/settings/workflow/executions/:id';
 
 export function getWorkflowExecutionPath(id: string | number) {
   return `/admin/workflow/executions/${id}`;
