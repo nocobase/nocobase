@@ -10,6 +10,7 @@
 import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   createFlowSurfacesContractContext,
   destroyFlowSurfacesContractContext,
@@ -246,8 +247,8 @@ describe('flowSurfaces exportBlueprint', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
-      plugins: FLOW_SURFACES_RECORD_HISTORY_TEST_PLUGIN_INSTALLS,
-      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'record-history'],
+      plugins: [...FLOW_SURFACES_RECORD_HISTORY_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'record-history', 'js-template'],
     });
     rootAgent = context.rootAgent;
   });
