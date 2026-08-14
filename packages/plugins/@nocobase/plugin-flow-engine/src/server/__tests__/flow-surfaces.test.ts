@@ -1388,10 +1388,9 @@ describe('flowSurfaces resource', () => {
     expect(panelReadback.tree.props?.title).toBe('Run panel code');
     expect(panelReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Run panel code');
     expect(panelReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
+      code: "return 'panel';",
       version: '1.0.0',
-      sourceRef: { type: 'vsc-file' },
     });
-    expect(panelReadback.tree.stepParams?.clickSettings?.runJs?.code).toContain('return "panel";');
     expect(panelReadback.tree.props?.type).not.toBe('primary');
     expect(panelReadback.tree.stepParams?.buttonSettings?.general?.type).not.toBe('primary');
 
