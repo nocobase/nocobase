@@ -229,6 +229,10 @@ export const CardUpload = (props) => {
   );
 };
 
+type SelectExistingRecordHandler = (event?: unknown) => void;
+
+const defaultSelectExistingRecordHandlers = new WeakSet<SelectExistingRecordHandler>();
+
 @largeField()
 export class UploadFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
@@ -240,11 +244,13 @@ export class UploadFieldModel extends FieldModel {
   onInit(options: any): void {
     super.onInit(options);
 
-    this.onSelectExitRecordClick = (e) => {
+    const onSelectExitRecordClick: SelectExistingRecordHandler = (e) => {
       this.dispatchEvent('openView', {
         event: e,
       });
     };
+    defaultSelectExistingRecordHandlers.add(onSelectExitRecordClick);
+    this.onSelectExitRecordClick = onSelectExitRecordClick;
   }
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
@@ -253,7 +259,17 @@ export class UploadFieldModel extends FieldModel {
     this.props.onChange(this.selectedRows.value);
   }
   render() {
-    return <CardUpload {...this.props} />;
+    const configuredHandler = this.props.onSelectExitRecordClick as SelectExistingRecordHandler | undefined;
+    const onSelectExitRecordClick =
+      configuredHandler && defaultSelectExistingRecordHandlers.has(configuredHandler)
+        ? (e?: unknown) => {
+            this.dispatchEvent('openView', {
+              event: e,
+            });
+          }
+        : configuredHandler;
+
+    return <CardUpload {...this.props} onSelectExitRecordClick={onSelectExitRecordClick} />;
   }
 }
 
@@ -549,7 +565,7 @@ UploadFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
           styles: {
             content: {
               padding: 0,
