@@ -223,12 +223,23 @@ const runtimeHost: RunJSRuntimeHost = {
     const message = getString(serverError, 'message') || getString(error, 'message');
     const status = getNumber(serverError, 'status') ?? getNumber(response, 'status') ?? getNumber(error, 'status');
     const reasonCode = getString(details, 'reasonCode');
+    const paths = [
+      ...getStringArray(error, 'paths'),
+      ...getStringArray(details, 'paths'),
+      ...(Array.isArray(details?.issues)
+        ? details.issues.flatMap((issue) => {
+            const path = getString(issue, 'path');
+            return path ? [path] : [];
+          })
+        : []),
+    ];
     return {
       ...(code ? { code } : {}),
       ...(message ? { message } : {}),
       ...(status === undefined ? {} : { status }),
       ...(reasonCode ? { reasonCode } : {}),
       ...(details ? { details } : {}),
+      ...(paths.length ? { paths: Array.from(new Set(paths)) } : {}),
     };
   },
 };
@@ -325,6 +336,16 @@ function getNumber(value: unknown, key: string): number | undefined {
   }
   const candidate = value[key];
   return typeof candidate === 'number' ? candidate : undefined;
+}
+
+function getStringArray(value: unknown, key: string): string[] {
+  if (!isRecord(value) || !Array.isArray(value[key])) {
+    return [];
+  }
+  return value[key].flatMap((item) => {
+    const candidate = toString(item);
+    return candidate ? [candidate] : [];
+  });
 }
 
 function toString(value: unknown): string | undefined {
