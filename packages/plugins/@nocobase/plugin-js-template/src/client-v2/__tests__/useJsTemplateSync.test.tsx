@@ -233,12 +233,12 @@ describe('useJsTemplateSync', () => {
     await expect(listSelectableJsTemplates(mocks.api)).resolves.toMatchObject([{ id: 'jtt-1' }]);
     await act(async () => {
       await result.current.createFromGit({
+        idempotencyKey: 'create-sales-from-git',
         provider: 'git',
         config: {
           url: 'https://git.example.com/nocobase/extensions.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'https',
         },
         name: 'sales',
       });

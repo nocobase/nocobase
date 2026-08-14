@@ -76,7 +76,7 @@ const actionFields: Record<JsTemplateSyncActionName, ReadonlySet<string>> = {
   ]),
   createFromGit: new Set(['idempotencyKey', 'provider', 'config', 'name', 'title', 'description', 'authRef']),
 };
-const configFields = new Set(['url', 'branch', 'subdirectory', 'transport']);
+const configFields = new Set(['url', 'branch', 'subdirectory']);
 
 export class JsTemplateSyncRequestInputError extends Error {
   readonly code = 'JS_TEMPLATE_SYNC_INVALID_CLIENT_INPUT';
@@ -246,9 +246,6 @@ function validateConfig(value: unknown): void {
   }
   if (config.subdirectory !== undefined && config.subdirectory !== null) {
     requireTrimmedString(config.subdirectory, true);
-  }
-  if (config.transport !== undefined && config.transport !== 'http' && config.transport !== 'https') {
-    throw new JsTemplateSyncRequestInputError();
   }
 }
 

@@ -65,7 +65,21 @@ describe('GitRemoteAdapter', () => {
       revision: expect.stringMatching(/^[0-9a-f]{40}$/u),
       metadata: { branch: 'main', defaultBranch: null, transport: 'https', host: 'git.test' },
     });
+    expect(runner.requests.find((request) => request.operation === 'probe-default-branch')?.args).toEqual([
+      'ls-remote',
+      '--symref',
+      '--',
+      remoteUrl,
+      'HEAD',
+    ]);
     await expect(adapter.probe(target({ ...config, branch: 'missing' }))).resolves.toMatchObject({ revision: null });
+    expect(runner.requests.find((request) => request.operation === 'probe-branch')?.args).toEqual([
+      'ls-remote',
+      '--exit-code',
+      '--',
+      remoteUrl,
+      'refs/heads/main',
+    ]);
 
     const emptyDirectory = path.join(temporaryDirectory, 'empty.git');
     await git(['init', '--bare', emptyDirectory]);

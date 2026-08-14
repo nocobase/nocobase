@@ -159,6 +159,22 @@ describe('git remote config', () => {
       ),
     ).toMatchObject({ code: 'CONFIG_INVALID', details: { reasonCode: 'transport-mismatch' } });
   });
+
+  it.each([
+    ['https://git.example.com/team/project.git', 'https'],
+    ['http://git.example.com/team/project.git', 'http'],
+  ] as const)('accepts and ignores a matching legacy %s transport', (url, transport) => {
+    expect(normalizeGitRemoteConfigDraft({ url, transport })).toMatchObject({ url, transport });
+  });
+
+  it.each(['ssh', 'unsupported', 'git'])('rejects unsupported legacy transport %s', (transport) => {
+    expect(
+      captureRemoteSyncError(() => normalizeGitRemoteConfigDraft({ url: 'https://git.example.com/a.git', transport })),
+    ).toMatchObject({
+      code: 'CONFIG_INVALID',
+      details: { reasonCode: 'invalid-transport' },
+    });
+  });
 });
 
 describe('git remote credential contract', () => {

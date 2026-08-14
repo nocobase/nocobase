@@ -55,9 +55,13 @@ describe('js-template swagger', () => {
   it('documents the complete HTTP/HTTPS Git synchronization contract', () => {
     const schemas = swaggerDocument.components.schemas;
     const config = schemas.JsTemplateGitRemoteConfigDraft;
+    const outputConfig = schemas.JsTemplateGitRemoteConfigOutput;
+    const unsupportedOutputConfig = schemas.JsTemplateUnsupportedGitRemoteConfigOutput;
     const createRequest = schemas.JsTemplateSyncCreateFromGitRequest;
 
-    expect(config.properties.transport.enum).toEqual(['http', 'https']);
+    expect(config.properties).not.toHaveProperty('transport');
+    expect(outputConfig.properties.transport).toMatchObject({ enum: ['http', 'https'], readOnly: true });
+    expect(unsupportedOutputConfig.properties.transport).toMatchObject({ enum: ['unsupported'], readOnly: true });
     expect(config.properties.url.pattern).toBe('^https?://');
     expect(createRequest).toMatchObject({
       type: 'object',

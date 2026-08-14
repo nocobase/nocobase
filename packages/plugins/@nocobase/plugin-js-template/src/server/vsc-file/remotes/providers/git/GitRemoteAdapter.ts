@@ -311,7 +311,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
     signal?: AbortSignal,
   ): Promise<ProbedBranch> {
     const result = await this.runRemote(
-      ['ls-remote', '--symref', url, 'HEAD'],
+      ['ls-remote', '--symref', '--', url, 'HEAD'],
       url,
       transport,
       credential,
@@ -353,7 +353,7 @@ export class GitRemoteAdapter implements RemoteSyncAdapter {
   ): Promise<ProbedBranch> {
     const ref = `refs/heads/${branch}`;
     const result = await this.runRemote(
-      ['ls-remote', '--exit-code', url, ref],
+      ['ls-remote', '--exit-code', '--', url, ref],
       url,
       transport,
       credential,

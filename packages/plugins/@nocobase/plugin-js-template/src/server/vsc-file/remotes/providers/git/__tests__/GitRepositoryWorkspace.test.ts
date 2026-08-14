@@ -69,6 +69,15 @@ describe('GitRepositoryWorkspace', () => {
     ]);
     expect(snapshot.treeOid).toMatch(/^[0-9a-f]{40}$/u);
     expect(runner.requests.filter((request) => request.args[0] === 'cat-file')).toHaveLength(1);
+    expect(runner.requests.find((request) => request.args[0] === 'fetch')?.args).toEqual([
+      'fetch',
+      '--no-tags',
+      '--depth=1',
+      `--filter=blob:limit=${normalizeGitSnapshotLimits().maxFileBytes + 1}`,
+      '--',
+      remoteUrl,
+      'refs/heads/main',
+    ]);
     expect(runner.requests.some((request) => request.args.includes('checkout'))).toBe(false);
     expect(runner.requests.some((request) => request.args.includes('clone'))).toBe(false);
 
@@ -175,7 +184,14 @@ describe('GitRepositoryWorkspace', () => {
       created.commitOid,
     );
     const push = emptyRunner.requests.find((request) => request.args[0] === 'push');
-    expect(push?.args).toContain('--force-with-lease=refs/heads/created:');
+    expect(push?.args).toEqual([
+      'push',
+      '--porcelain',
+      '--force-with-lease=refs/heads/created:',
+      '--',
+      emptyUrl,
+      `${created.commitOid}:refs/heads/created`,
+    ]);
     await workspace.cleanup();
   });
 

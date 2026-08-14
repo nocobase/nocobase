@@ -35,11 +35,39 @@ export const jsTemplateSchemas = {
       },
       branch: nullableString,
       subdirectory: nullableString,
+    },
+    additionalProperties: false,
+  },
+  JsTemplateGitRemoteConfigOutput: {
+    type: 'object',
+    required: ['url', 'branch', 'subdirectory', 'transport'],
+    properties: {
+      url: {
+        type: 'string',
+        format: 'uri',
+        pattern: '^https?://',
+        description: 'Normalized HTTP or HTTPS Git repository URL.',
+      },
+      branch: { type: 'string', minLength: 1 },
+      subdirectory: nullableString,
       transport: {
         type: 'string',
         enum: ['http', 'https'],
-        description: 'Must match the repository URL. HTTP only supports public repositories without authRef.',
+        readOnly: true,
+        description: 'Derived from the normalized repository URL and returned only in responses.',
       },
+    },
+    additionalProperties: false,
+  },
+  JsTemplateUnsupportedGitRemoteConfigOutput: {
+    type: 'object',
+    required: ['url', 'branch', 'subdirectory', 'transport', 'legacyTransport'],
+    properties: {
+      url: { type: 'string' },
+      branch: { type: 'string', minLength: 1 },
+      subdirectory: nullableString,
+      transport: { type: 'string', enum: ['unsupported'], readOnly: true },
+      legacyTransport: { type: 'string', enum: ['ssh'], readOnly: true },
     },
     additionalProperties: false,
   },
@@ -147,6 +175,22 @@ export const jsTemplateSchemas = {
         type: 'object',
         description:
           'Safe JS Template synchronization result without Secret values, source text, or internal VSC handles.',
+        properties: {
+          config: { $ref: '#/components/schemas/JsTemplateGitRemoteConfigOutput' },
+          source: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              config: {
+                oneOf: [
+                  { $ref: '#/components/schemas/JsTemplateGitRemoteConfigOutput' },
+                  { $ref: '#/components/schemas/JsTemplateUnsupportedGitRemoteConfigOutput' },
+                ],
+              },
+            },
+            additionalProperties: true,
+          },
+        },
         additionalProperties: true,
       },
     },

@@ -481,6 +481,7 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     await waitFor(() => expect(mocks.sync.createFromGit).toHaveBeenCalledTimes(1));
     expect(mocks.sync.createFromGit).toHaveBeenCalledWith({
+      idempotencyKey: expect.stringMatching(/^create-source-project-/u),
       name: expect.stringMatching(/^jt_[a-z0-9]+$/),
       title: 'Git smoke',
       description: null,
@@ -489,7 +490,6 @@ describe('JsTemplateSourceProjectsPage', () => {
         url: 'https://git.example.com/nocobase/example.git',
         branch: 'main',
         subdirectory: null,
-        transport: 'https',
       },
     });
     expect(mocks.sync.createFromGit.mock.calls[0][0]).not.toHaveProperty('zipBase64');
@@ -1088,11 +1088,11 @@ describe('JsTemplateSourceProjectsPage', () => {
       expect(mocks.sync.testConnection).toHaveBeenCalledWith({
         projectId: 'jtp_browser_smoke',
         provider: 'git',
+        authRef: null,
         config: {
           url: 'https://git.example.com/nocobase/example.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'https',
         },
       }),
     );

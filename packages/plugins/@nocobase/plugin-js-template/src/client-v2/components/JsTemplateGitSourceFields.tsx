@@ -130,7 +130,6 @@ export function JsTemplateGitSourceFields(props: JsTemplateGitSourceFieldsProps)
         url: urlResult.url,
         branch: branchValidation.branch,
         subdirectory: subdirectoryValidation.subdirectory,
-        transport: urlResult.transport,
       },
       authRef: authValidation.authRef || null,
     };

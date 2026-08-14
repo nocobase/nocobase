@@ -115,7 +115,6 @@ describe('JsTemplateGitSourceFields', () => {
           url: 'https://git.example.com/a/b.git',
           branch: 'feature/sync',
           subdirectory: 'packages/light',
-          transport: 'https',
         },
       }),
     );
@@ -134,7 +133,6 @@ describe('JsTemplateGitSourceFields', () => {
           url: 'https://git.example.com/a/b.git',
           branch: null,
           subdirectory: null,
-          transport: 'https',
         },
       }),
     );
@@ -154,7 +152,6 @@ describe('JsTemplateGitSourceFields', () => {
           url: 'http://git.example.com/team/app.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'http',
         },
       }),
     );
@@ -181,7 +178,6 @@ describe('JsTemplateGitSourceFields', () => {
           url: 'https://git.example.com/team/app.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'https',
         },
         authRef: '{{ $env.SYNC_SECRET }}',
       }),
@@ -205,7 +201,6 @@ describe('JsTemplateGitSourceFields', () => {
           url: 'http://git.example.com/team/app.git',
           branch: null,
           subdirectory: null,
-          transport: 'http',
         },
         authRef: null,
       }),

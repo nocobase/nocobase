@@ -66,11 +66,11 @@ describe('JsTemplateCreateSourceSelector', () => {
       expect(onChange).toHaveBeenLastCalledWith({
         mode: 'git',
         provider: 'git',
+        authRef: null,
         config: {
           url: 'https://git.example.com/nocobase/example.git',
           branch: 'main',
           subdirectory: null,
-          transport: 'https',
         },
       }),
     );

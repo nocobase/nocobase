@@ -17,7 +17,6 @@ export interface VscGitRemoteConfigDraft {
   url: string;
   branch?: string | null;
   subdirectory?: string | null;
-  transport?: VscGitRemoteTransport;
 }
 
 export interface VscGitRemoteConfig {

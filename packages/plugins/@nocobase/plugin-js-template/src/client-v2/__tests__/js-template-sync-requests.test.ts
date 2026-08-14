@@ -62,6 +62,7 @@ describe('js-template sync requests', () => {
     [
       'createFromGit',
       {
+        idempotencyKey: 'create-sales-from-git',
         name: 'sales',
         provider: 'git',
         config: { ...gitConfig(), subdirectory: 'sales' },
@@ -168,6 +169,13 @@ describe('js-template sync requests', () => {
         jobId: 'job-internal',
       } as unknown as JsTemplateSyncPullInput),
     ).rejects.toBeInstanceOf(JsTemplateSyncRequestInputError);
+    await expect(
+      requestJsTemplateSync(api, 'configure', {
+        projectId: 'jtp-1',
+        provider: 'git',
+        config: { ...gitConfig(), transport: 'https' },
+      } as unknown as JsTemplateSyncConfigureInput),
+    ).rejects.toBeInstanceOf(JsTemplateSyncRequestInputError);
     expect(request).not.toHaveBeenCalled();
   });
 
@@ -175,6 +183,7 @@ describe('js-template sync requests', () => {
     const request = vi.fn().mockResolvedValue({ data: { data: { ok: true } } });
     const api: ApiClientLike = { request };
     const input = {
+      idempotencyKey: 'create-sales-from-git-unresolved-branch',
       name: 'sales',
       provider: 'git',
       config: { ...gitConfig(), branch: null },
@@ -191,6 +200,5 @@ function gitConfig() {
     url: 'https://git.example.com/nocobase/extensions.git',
     branch: 'main',
     subdirectory: null,
-    transport: 'https',
   } satisfies JsTemplateSyncConfigureInput['config'];
 }

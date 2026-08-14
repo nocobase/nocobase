@@ -155,6 +155,7 @@ export class GitRepositoryWorkspace {
         '--no-tags',
         '--depth=1',
         `--filter=blob:limit=${this.limits.maxFileBytes + 1}`,
+        '--',
         this.config.url,
         `refs/heads/${branch}`,
       ],
@@ -271,7 +272,7 @@ export class GitRepositoryWorkspace {
     }
     const ref = `refs/heads/${this.config.branch}`;
     const lease = `--force-with-lease=${ref}:${expectedRevision || ''}`;
-    await this.runRemote(['push', '--porcelain', lease, this.config.url, `${commitOid}:${ref}`], 'push-branch');
+    await this.runRemote(['push', '--porcelain', lease, '--', this.config.url, `${commitOid}:${ref}`], 'push-branch');
   }
 
   async cleanup(): Promise<void> {
