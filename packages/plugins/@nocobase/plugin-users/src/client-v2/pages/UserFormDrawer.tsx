@@ -76,6 +76,11 @@ const userFormErrorClassName = css`
   margin: 24px 24px 0;
 `;
 
+const userFormFlowSettings = {
+  showBackground: false,
+  showBorder: false,
+} as const;
+
 type PersistedFlowModelTree = CreateModelOptions & Record<string, unknown>;
 
 const privateUserFormModels = {
@@ -284,10 +289,7 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
       ) : null}
       <div className={userFormBlockClassName}>
         {model ? (
-          <FlowModelRenderer
-            model={model}
-            showFlowSettings={ctx.flowSettingsEnabled ? { showBackground: false, showBorder: false } : false}
-          />
+          <FlowModelRenderer model={model} showFlowSettings={ctx.flowSettingsEnabled ? userFormFlowSettings : false} />
         ) : (
           <SkeletonFallback style={{ margin: 0 }} />
         )}
