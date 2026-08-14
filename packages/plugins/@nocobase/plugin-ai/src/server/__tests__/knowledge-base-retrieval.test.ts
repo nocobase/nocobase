@@ -67,6 +67,12 @@ describe('knowledge base retrieval settings', () => {
     expect(getKnowledgeBaseBackgroundPrompt({ accessDenied: false, onDemand: false, preRetrieved: true })).toBe(
       KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT,
     );
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain("First answer the user's question");
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('Only after completing the answer');
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain("brief notice in the user's language");
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('did not use knowledge-base content');
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('visually prominent Markdown reminder');
+    expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('blockquote with a bold');
     expect(KNOWLEDGE_BASE_NO_ACCESS_PROMPT).toContain('contact an administrator');
     expect(KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT).toContain('<knowledgeBase>');
     expect(KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT).toContain('do not call the knowledge base retrieval tool again');

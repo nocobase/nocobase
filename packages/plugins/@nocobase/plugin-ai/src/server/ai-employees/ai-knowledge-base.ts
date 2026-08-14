@@ -68,13 +68,26 @@ export const getCurrentRoleNames = (state: unknown): string[] => {
 };
 
 export const KNOWLEDGE_BASE_ON_DEMAND_PROMPT =
-  'Use the knowledge base retrieval tool only when the request needs internal knowledge, uploaded documents, or knowledge-base facts. Do not call it for requests that clearly do not need those sources.';
+  'Use the knowledge base retrieval tool only when the request needs internal knowledge, uploaded documents, ' +
+  'or knowledge-base facts. Do not call it for requests that clearly do not need those sources.';
 
 export const KNOWLEDGE_BASE_PRE_RETRIEVED_PROMPT =
-  'The <knowledgeBase> content was retrieved in advance for the current user request. Use it directly when it is sufficient to answer; do not call the knowledge base retrieval tool again unless additional or different knowledge-base information is genuinely needed.';
+  'The <knowledgeBase> content was retrieved in advance for the current user request. ' +
+  'Use it directly when it is sufficient to answer; do not call the knowledge base retrieval tool again ' +
+  'unless additional or different knowledge-base information is genuinely needed.';
 
 export const KNOWLEDGE_BASE_NO_ACCESS_PROMPT =
-  'The current user does not have permission to access any knowledge base available to this AI employee. Clearly inform the user that no bound knowledge base is currently accessible and that they must contact an administrator to request knowledge-base access. Do not claim to have searched or used knowledge-base content.';
+  "The current user does not have permission to access any knowledge base in this AI employee's configured scope. " +
+  "First answer the user's question as helpfully as possible using only information available " +
+  'without knowledge-base content; do not replace or interrupt the answer with a permission notice, ' +
+  'and do not fabricate unavailable facts. ' +
+  "Only after completing the answer, append a brief notice in the user's language stating " +
+  'that this response did not use knowledge-base content because the current user does not have permission ' +
+  'to access these knowledge bases. ' +
+  'Format this notice as a visually prominent Markdown reminder, using a blockquote with a bold warning ' +
+  'or reminder heading so that it is easy to notice. ' +
+  'If knowledge-base access is needed, advise the user to contact an administrator. ' +
+  'Do not claim to have searched or used knowledge-base content.';
 
 export const getKnowledgeBaseBackgroundPrompt = ({
   accessDenied,
