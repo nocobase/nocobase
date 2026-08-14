@@ -8,14 +8,26 @@
  */
 
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import UserFormDrawer from '../pages/UserFormDrawer';
 import {
   ADMIN_PROFILE_CREATE_FORM_MODEL_UID,
   ADMIN_PROFILE_EDIT_FORM_MODEL_UID,
 } from '../shared/adminProfileFormModels';
 
-const { create, update, save, findOne, createModelAsync, submit, close, success, toErrMessages } = vi.hoisted(() => ({
+const {
+  create,
+  update,
+  save,
+  findOne,
+  createModelAsync,
+  submit,
+  close,
+  success,
+  toErrMessages,
+  flowModelRenderer,
+  flowSettingsEnabled,
+} = vi.hoisted(() => ({
   create: vi.fn(),
   update: vi.fn(),
   save: vi.fn(),
@@ -25,6 +37,8 @@ const { create, update, save, findOne, createModelAsync, submit, close, success,
   close: vi.fn(),
   success: vi.fn(),
   toErrMessages: vi.fn(),
+  flowModelRenderer: vi.fn(),
+  flowSettingsEnabled: { value: false },
 }));
 
 vi.mock('@nocobase/client-v2', async () => {
@@ -132,12 +146,17 @@ vi.mock('@nocobase/flow-engine', () => {
       paddingLG: 24,
       colorBorderSecondary: '#f0f0f0',
     },
-    flowSettingsEnabled: false,
+    get flowSettingsEnabled() {
+      return flowSettingsEnabled.value;
+    },
   };
   const flowViewContext = {};
 
   return {
-    FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
+    FlowModelRenderer: React.memo((props: { showFlowSettings?: unknown }) => {
+      flowModelRenderer(props);
+      return <div data-testid="flow-model-renderer" />;
+    }),
     MultiRecordResource: class MultiRecordResource {},
     useFlowEngine: () => flowEngine,
     useFlowContext: () => flowContext,
@@ -208,6 +227,8 @@ describe('UserFormDrawer', () => {
     close.mockReset();
     success.mockReset();
     toErrMessages.mockReset();
+    flowModelRenderer.mockReset();
+    flowSettingsEnabled.value = false;
   });
 
   afterEach(() => {
@@ -314,6 +335,34 @@ describe('UserFormDrawer', () => {
     expect(success).not.toHaveBeenCalled();
     expect(onSubmitted).not.toHaveBeenCalled();
     expect(close).not.toHaveBeenCalled();
+  });
+
+  it('should keep the form renderer stable while submitting in UI editor mode', async () => {
+    flowSettingsEnabled.value = true;
+    let finishSubmit: (() => void) | undefined;
+    submit.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+
+    render(<UserFormDrawer onSubmitted={() => undefined} />);
+
+    await waitFor(() => {
+      expect(flowModelRenderer).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(submit).toHaveBeenCalledTimes(1);
+    });
+    expect(flowModelRenderer).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishSubmit?.();
+    });
   });
 
   it('should show the API error and keep the drawer open when creating a user fails', async () => {
