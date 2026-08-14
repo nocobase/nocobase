@@ -786,20 +786,60 @@ function WorkflowTaskDetailModal(props: WorkflowTaskDetailModalProps) {
   );
 }
 
+function useMobileBackButtonClassName() {
+  const { token } = theme.useToken();
+  return useMemo(
+    () => css`
+      &.ant-btn {
+        width: ${token.controlHeightLG}px;
+        min-width: ${token.controlHeightLG}px;
+        height: ${token.controlHeightLG}px;
+        padding: 0;
+        color: ${token.colorTextSecondary};
+        border-radius: ${token.borderRadiusLG}px;
+        font-size: ${token.fontSizeHeading5}px;
+        line-height: 1;
+      }
+
+      &.ant-btn .anticon {
+        font-size: ${token.fontSizeHeading5}px;
+      }
+
+      &.ant-btn:hover,
+      &.ant-btn:focus-visible,
+      &.ant-btn:active {
+        color: ${token.colorText};
+        background: ${token.colorFillTertiary};
+      }
+    `,
+    [
+      token.borderRadiusLG,
+      token.colorFillTertiary,
+      token.colorText,
+      token.colorTextSecondary,
+      token.controlHeightLG,
+      token.fontSizeHeading5,
+    ],
+  );
+}
+
 function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClose: () => void }) {
   const { children, onClose } = props;
   const { token } = theme.useToken();
   const t = useT();
+  const mobileBackButtonClassName = useMobileBackButtonClassName();
+  const mobileTaskDetailTabsHeight = token.controlHeightLG + token.paddingXS;
   const contentClassName = css`
     > div > .ant-tabs > .ant-tabs-nav {
       background: ${token.colorBgContainer};
       margin: 0;
+      min-height: ${mobileTaskDetailTabsHeight}px;
       padding-inline: ${token.padding}px ${token.padding}px;
       padding-left: ${token.controlHeight + token.paddingSM}px;
     }
 
     > div > .ant-tabs > .ant-tabs-content-holder {
-      padding: ${token.padding}px;
+      padding: ${token.paddingXS}px;
     }
   `;
 
@@ -814,18 +854,26 @@ function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClos
         position: 'relative',
       }}
     >
-      <Button
-        aria-label={t('Back')}
-        icon={<LeftOutlined />}
-        onClick={onClose}
+      <Flex
+        align="center"
+        data-testid="workflow-task-mobile-detail-back"
         style={{
+          height: mobileTaskDetailTabsHeight,
           left: token.paddingXS,
           position: 'absolute',
-          top: token.paddingSM,
+          top: 0,
           zIndex: 1,
         }}
-        type="text"
-      />
+      >
+        <Button
+          aria-label={t('Back')}
+          className={mobileBackButtonClassName}
+          icon={<LeftOutlined />}
+          onClick={onClose}
+          size="large"
+          type="text"
+        />
+      </Flex>
       <div data-testid="workflow-task-mobile-detail-content" className={contentClassName} style={{ minWidth: 0 }}>
         {children}
       </div>
@@ -854,32 +902,7 @@ export function WorkflowTasksContent({
   const { message } = App.useApp();
   const t = useT();
   const { token } = theme.useToken();
-  const mobileBackButtonClassName = useMemo(
-    () => css`
-      &.ant-btn {
-        width: 40px;
-        min-width: 40px;
-        height: 40px;
-        padding: 0;
-        color: ${token.colorTextSecondary};
-        border-radius: ${token.borderRadiusLG}px;
-        font-size: 20px;
-        line-height: 1;
-      }
-
-      &.ant-btn .anticon {
-        font-size: 20px;
-      }
-
-      &.ant-btn:hover,
-      &.ant-btn:focus-visible,
-      &.ant-btn:active {
-        color: ${token.colorText};
-        background: ${token.colorFillTertiary};
-      }
-    `,
-    [token.borderRadiusLG, token.colorFillTertiary, token.colorText, token.colorTextSecondary],
-  );
+  const mobileBackButtonClassName = useMobileBackButtonClassName();
   const [records, setRecords] = useState<WorkflowTaskRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<WorkflowTaskRecord | null>(() =>
     getPendingWorkflowTaskPopupRecord(currentTaskTypeKey, route.popupId),

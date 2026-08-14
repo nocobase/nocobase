@@ -8,7 +8,7 @@
  */
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { App } from 'antd';
+import { App, Tabs } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -76,6 +76,15 @@ function DemoItem() {
 function DemoDetail() {
   const { record } = useWorkflowTaskRecord();
   return <div>detail:{String(record.title)}</div>;
+}
+
+function DemoTabbedDetail() {
+  const { record } = useWorkflowTaskRecord();
+  return (
+    <div>
+      <Tabs items={[{ key: 'detail', label: 'Detail', children: <div>detail:{String(record.title)}</div> }]} />
+    </div>
+  );
 }
 
 function createTaskTypes(options: Partial<TaskTypeOptions> = {}) {
@@ -503,15 +512,37 @@ describe('WorkflowTasksPage', () => {
       position: 'relative',
     });
     expect(screen.getByTestId('workflow-task-mobile-detail-content')).toBeInTheDocument();
+    const backButtonContainer = screen.getByTestId('workflow-task-mobile-detail-back');
+    const backButton = within(backButtonContainer).getByRole('button', { name: 'Back' });
+    expect(backButtonContainer).toHaveStyle({ alignItems: 'center', display: 'flex', height: '48px' });
+    expect(backButton).toHaveClass('ant-btn-lg');
     expect(screen.getByText('detail:Open me')).toBeInTheDocument();
     expect(screen.queryByTestId('workflow-task-list-region')).not.toBeInTheDocument();
     expect(document.body.querySelector('.ant-modal')).not.toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      fireEvent.click(backButton);
     });
 
     expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending', { replace: true });
+  });
+
+  it('uses compact list spacing for mobile detail tabs', async () => {
+    const getPopupRecord = vi.fn().mockResolvedValue({ data: { data: { id: 7, title: 'Popup task' } } });
+    const { registry } = createTaskTypes({ Detail: DemoTabbedDetail, getPopupRecord });
+    const demoTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '7' };
+    holder.location = { pathname: '/mobile/page/workflow-tasks/demo/pending/7', search: '', hash: '' };
+    holder.isMobileLayout = true;
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByText('detail:Popup task');
+    expect(document.querySelector('.ant-tabs-content-holder')).toHaveStyle({ padding: '8px' });
   });
 
   it('reuses the mobile task content in embedded view routes', async () => {
