@@ -13,11 +13,14 @@ const jsTemplateGitRoutePattern = /\/(?:jsTemplateSync:|jsTemplateProjects:creat
 const sensitiveKeyPattern =
   /(?:authorization|token|password|secret|credential|privatekey|authref|stderr|stdout)|^(?:source(?:map|text|code)?|content)$/iu;
 const sensitiveHeaderKeyPattern = /(authorization|token|password|secret|credential|privatekey|authref)/iu;
+const credentialBearingUrlPattern = /^[a-z][a-z0-9+.-]*:\/\/[^/?#\s]+@/iu;
 const redactedCredential = '[REDACTED]';
+const redactedActionLogView = Object.freeze({ params: redactedCredential });
 
 type PreLogContext = {
   action?: {
     params?: unknown;
+    toJSON?: () => unknown;
   };
   body?: unknown;
   method?: string;
@@ -34,6 +37,12 @@ type PreLogContext = {
   state?: {
     pendingAuthTokenSource?: string;
   };
+};
+
+const restoreActionLogView = Symbol('restoreActionLogView');
+
+type GuardedPreLogContext = PreLogContext & {
+  [restoreActionLogView]?: () => void;
 };
 
 export function registerJsTemplateGitPreLogGuard(app: Application): void {
@@ -55,7 +64,11 @@ export async function jsTemplateGitPreLogGuard(ctx: PreLogContext, next: () => P
   const rejectedHeaders = sanitizeHeaders(ctx);
   const rejected = rejectedUrl || rejectedHeaders;
   if (!rejected) {
-    await next();
+    try {
+      await next();
+    } finally {
+      restoreSanitizedActionLogView(ctx);
+    }
     return;
   }
 
@@ -80,10 +93,57 @@ export async function jsTemplateGitPostBodyLogGuard(ctx: PreLogContext, next: ()
   try {
     await next();
   } finally {
-    if (ctx.action?.params !== undefined) {
-      ctx.action.params = redactLoggedValue(ctx.action.params);
+    installSanitizedActionLogView(ctx);
+  }
+}
+
+function installSanitizedActionLogView(ctx: PreLogContext): void {
+  const action = ctx.action;
+  if (!action || typeof action.toJSON !== 'function') {
+    return;
+  }
+  const guardedCtx = ctx as GuardedPreLogContext;
+  if (guardedCtx[restoreActionLogView]) {
+    return;
+  }
+  const originalDescriptor = Object.getOwnPropertyDescriptor(action, 'toJSON');
+  const originalToJSON = action.toJSON;
+  let loggedAction: unknown = redactedActionLogView;
+  try {
+    loggedAction = redactLoggedValue(originalToJSON.call(action));
+  } catch {
+    // Logging must never replace the response or downstream error; use a minimal view when serialization fails.
+  }
+  try {
+    Object.defineProperty(action, 'toJSON', {
+      configurable: true,
+      value: () => loggedAction,
+      writable: true,
+    });
+  } catch {
+    return;
+  }
+  guardedCtx[restoreActionLogView] = () => {
+    if (originalDescriptor) {
+      Object.defineProperty(action, 'toJSON', originalDescriptor);
+      return;
     }
-    ctx.body = redactLoggedValue(ctx.body);
+    delete action.toJSON;
+  };
+}
+
+function restoreSanitizedActionLogView(ctx: PreLogContext): void {
+  const guardedCtx = ctx as GuardedPreLogContext;
+  const restore = guardedCtx[restoreActionLogView];
+  if (!restore) {
+    return;
+  }
+  try {
+    restore();
+  } catch {
+    // Restoring a log-only view must never replace the response or downstream error.
+  } finally {
+    delete guardedCtx[restoreActionLogView];
   }
 }
 
@@ -179,6 +239,9 @@ function normalizeKey(value: string): string {
 }
 
 function redactLoggedValue(value: unknown, sanitizedValues = new WeakMap<object, unknown>()): unknown {
+  if (typeof value === 'string' && credentialBearingUrlPattern.test(value.trim())) {
+    return redactedCredential;
+  }
   if (!value || typeof value !== 'object') {
     return value;
   }

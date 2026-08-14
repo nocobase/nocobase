@@ -9,6 +9,8 @@
 
 export * from './constants';
 export * from './authoring-contract';
+export * from './authoring-surface-contracts';
+export * from './client-ports';
 export * from './errors';
 export * from './hash';
 export * from './path-normalize';
@@ -18,3 +20,4 @@ export * from './runjs-source-types';
 export * from './runjs-workspace-path';
 export * from './text';
 export * from './types';
+export * from './workspace-authoring';

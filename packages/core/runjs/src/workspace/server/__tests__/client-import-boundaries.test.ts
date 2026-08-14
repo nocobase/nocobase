@@ -61,6 +61,36 @@ const clientV2BoundaryEslint = new ESLint({
     },
   },
 });
+const neutralBoundaryEslint = new ESLint({
+  cwd: repositoryRoot,
+  useEslintrc: true,
+  overrideConfig: {
+    ignorePatterns: ['**/__tests__/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '@nocobase/client',
+            '@nocobase/client/*',
+            '@nocobase/client-v2',
+            '@nocobase/client-v2/*',
+            '@nocobase/flow-engine',
+            '@nocobase/flow-engine/*',
+            '**/workspace/client',
+            '**/workspace/client/*',
+            '**/workspace/client-v2',
+            '**/workspace/client-v2/*',
+            '../client',
+            '../client/*',
+            '../client-v2',
+            '../client-v2/*',
+          ],
+        },
+      ],
+    },
+  },
+});
 
 const prohibitedImportFixtures = [
   {
@@ -107,6 +137,29 @@ const prohibitedImportFixtures = [
   },
 ] as const;
 
+const neutralImportFixtures = [
+  {
+    label: 'the root neutral entry importing a client-v2 type',
+    filePath: 'packages/core/runjs/src/index.ts',
+    source: "import type { Application } from '@nocobase/client-v2';\nexport type { Application };\n",
+  },
+  {
+    label: 'the compiler re-exporting a legacy client type',
+    filePath: 'packages/core/runjs/src/compiler/boundary-violation.ts',
+    source: "export type { Application } from '@nocobase/client';\n",
+  },
+  {
+    label: 'the shared workspace importing a Flow Engine type',
+    filePath: 'packages/core/runjs/src/workspace/shared/boundary-violation.ts',
+    source: "import type { RunJSValue } from '@nocobase/flow-engine';\nexport type { RunJSValue };\n",
+  },
+  {
+    label: 'the server workspace importing a client-v2 type',
+    filePath: 'packages/core/runjs/src/workspace/server/boundary-violation.ts',
+    source: "import type { Application } from '@nocobase/client-v2';\nexport type { Application };\n",
+  },
+] as const;
+
 describe('RunJS and JS Template package boundaries', () => {
   it.each(prohibitedImportFixtures)('rejects $label', async ({ filePath, ruleId, source }) => {
     const eslint = ruleId === 'no-restricted-imports' ? browserBoundaryEslint : clientV2BoundaryEslint;
@@ -115,6 +168,32 @@ describe('RunJS and JS Template package boundaries', () => {
 
     expect(violations).toHaveLength(1);
     expect(violations[0]).toMatchObject({ ruleId, severity: 2 });
+  });
+
+  it.each(neutralImportFixtures)('rejects $label, including type-only imports', async ({ filePath, source }) => {
+    const [result] = await neutralBoundaryEslint.lintText(source, { filePath: path.join(repositoryRoot, filePath) });
+    const violations = result.messages.filter(
+      (message) => message.ruleId === '@typescript-eslint/no-restricted-imports',
+    );
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toMatchObject({ ruleId: '@typescript-eslint/no-restricted-imports', severity: 2 });
+  });
+
+  it('keeps root, compiler, shared workspace, and server workspace independent from client hosts', async () => {
+    const results = await neutralBoundaryEslint.lintFiles([
+      'packages/core/runjs/src/index.ts',
+      'packages/core/runjs/src/compiler/**/*.{ts,tsx}',
+      'packages/core/runjs/src/workspace/shared/**/*.{ts,tsx}',
+      'packages/core/runjs/src/workspace/server/**/*.{ts,tsx}',
+    ]);
+    const violations = results.flatMap((result) =>
+      result.messages
+        .filter((message) => message.ruleId === '@typescript-eslint/no-restricted-imports')
+        .map((message) => `${path.relative(repositoryRoot, result.filePath)}:${message.line}:${message.column}`),
+    );
+
+    expect(violations).toEqual([]);
   });
 
   it('accepts the current production browser and client-v2 entry files', async () => {

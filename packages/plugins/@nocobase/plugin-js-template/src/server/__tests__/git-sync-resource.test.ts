@@ -81,13 +81,19 @@ const createJob = {
 const unsupportedGitScheme = ['s', 's', 'h'].join('');
 
 describe('jsTemplateSync resource', () => {
-  it('returns a deeply frozen safe DTO and masks the saved auth reference', async () => {
+  it.each([
+    ['get', { projectId: repo.id }, 'pullFromSyncSource'],
+    ['configure', { projectId: repo.id, provider: 'git', config: remote.config }, 'manageSyncSource'],
+    ['plan', { projectId: repo.id }, 'pullFromSyncSource'],
+    ['pull', executionInput(), 'pullFromSyncSource'],
+    ['push', executionInput(), 'pushToSyncSource'],
+  ] as const)('returns the deeply frozen public source DTO unchanged from %s', async (action, values, permission) => {
     const fixture = createFixture();
-    const ctx = await runAction(fixture, 'get', { projectId: repo.id }, ['pullFromSyncSource']);
+    const ctx = await runAction(fixture, action, values, [permission]);
+    const body = ctx.body as { source: object };
 
     expect(ctx.status).toBeUndefined();
-    expect(ctx.body).toEqual({
-      projectId: repo.id,
+    expect(body).toMatchObject({
       source: {
         provider: 'git',
         config: remote.config,
@@ -99,9 +105,10 @@ describe('jsTemplateSync resource', () => {
         lastSyncedAt: null,
       },
     });
-    expect(Object.isFrozen(ctx.body)).toBe(true);
-    expect(Object.isFrozen((ctx.body as { source: object }).source)).toBe(true);
-    const serialized = JSON.stringify(ctx.body);
+    expect(body.source).not.toBe('[REDACTED]');
+    expect(Object.isFrozen(body)).toBe(true);
+    expect(Object.isFrozen(body.source)).toBe(true);
+    const serialized = JSON.stringify(body);
     expect(serialized).not.toContain('vscrmt_demo');
     expect(serialized).not.toContain('vscr_demo');
     expect(serialized).not.toContain('GITHUB_TOKEN');

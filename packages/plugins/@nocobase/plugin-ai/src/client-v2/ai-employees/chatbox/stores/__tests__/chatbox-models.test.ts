@@ -9,7 +9,7 @@
 
 import { autorun } from '@nocobase/flow-engine';
 import { describe, expect, it } from 'vitest';
-import type { AIEmployee, ContextItem, Conversation, Message, ToolCall } from '../../../types';
+import type { AIEmployee, ChatEditorRef, ContextItem, Conversation, Message, ToolCall } from '../../../types';
 import { ChatBoxModel } from '../chat-box';
 import { ChatConversationModel } from '../chat-conversations';
 import { ChatMessageModel, CHAT_DEFAULT_SESSION_KEY } from '../chat-messages';
@@ -196,6 +196,76 @@ describe('chatbox runtime models', () => {
     expect(model.getSessionState('session-a').attachments).toEqual([{ filename: 'a.txt' }]);
     expect(model.getSessionState('session-a').contextItems).toEqual([contextItem('record', '1')]);
     expect(model.getSessionState('session-b').messages.map((message) => message.key)).toEqual(['message-b']);
+  });
+
+  it('preserves legacy ChatMessageModel editor APIs through the default session', () => {
+    const model = new ChatMessageModel();
+    const legacyEditorRef: ChatEditorRef = {
+      write: () => undefined,
+      read: () => '',
+      snippetEntries: [],
+      logs: [],
+    };
+    const legacyFlowContext = { flow: 'legacy' };
+
+    model.setEditorRef('legacy-editor', legacyEditorRef);
+    model.setCurrentEditorRefUid('legacy-editor');
+    model.setFlowContext(legacyFlowContext);
+
+    expect(model.currentEditorRefUid).toBe('legacy-editor');
+    expect(model.flowContext).toBe(legacyFlowContext);
+    expect(model.getSessionState()).toMatchObject({
+      currentEditorRefUid: 'legacy-editor',
+      flowContext: legacyFlowContext,
+    });
+
+    model.setCurrentEditorRefUid('session-a', 'session-editor');
+    model.setFlowContext('session-a', { flow: 'session' });
+
+    expect(model.currentEditorRefUid).toBe('legacy-editor');
+    expect(model.flowContext).toBe(legacyFlowContext);
+    expect(model.getSessionState('session-a')).toMatchObject({
+      currentEditorRefUid: 'session-editor',
+      flowContext: { flow: 'session' },
+    });
+
+    model.unregisterEditorRef('legacy-editor', legacyEditorRef);
+
+    expect(model.currentEditorRefUid).toBeNull();
+    expect(model.flowContext).toBeUndefined();
+    expect(model.getSessionState('session-a')).toMatchObject({
+      currentEditorRefUid: 'session-editor',
+      flowContext: { flow: 'session' },
+    });
+  });
+
+  it('clears the legacy ChatMessageModel view with default-session lifecycle changes', () => {
+    const model = new ChatMessageModel();
+
+    model.setCurrentEditorRefUid('legacy-editor');
+    model.setFlowContext({ flow: 'legacy' });
+    model.resetSessionState();
+
+    expect(model.currentEditorRefUid).toBeUndefined();
+    expect(model.flowContext).toBeUndefined();
+
+    model.setCurrentEditorRefUid('legacy-editor');
+    model.setFlowContext({ flow: 'legacy' });
+    model.migrateSessionState(undefined, 'created-session');
+
+    expect(model.currentEditorRefUid).toBeUndefined();
+    expect(model.flowContext).toBeUndefined();
+    expect(model.getSessionState('created-session')).toMatchObject({
+      currentEditorRefUid: 'legacy-editor',
+      flowContext: { flow: 'legacy' },
+    });
+
+    model.setCurrentEditorRefUid('next-editor');
+    model.setFlowContext({ flow: 'next' });
+    model.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
+
+    expect(model.currentEditorRefUid).toBeUndefined();
+    expect(model.flowContext).toBeUndefined();
   });
 
   it('keeps ChatMessageModel session objects reactive and isolated while migrating draft state', () => {

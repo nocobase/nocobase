@@ -57,6 +57,18 @@ export const CHAT_EMPTY_SESSION_STATE: ChatSessionState = {
 
 type SessionStateUpdater<T> = T | ((prev: T) => T);
 
+type SetCurrentEditorRefUid = {
+  /** @deprecated Pass a session ID as the first argument to keep editor state isolated per session. */
+  (uid: string | null | undefined): void;
+  (sessionId: string | undefined, uid: string | null | undefined): void;
+};
+
+type SetFlowContext = {
+  /** @deprecated Pass a session ID as the first argument to keep flow context isolated per session. */
+  (flowContext: unknown): void;
+  (sessionId: string | undefined, flowContext: unknown): void;
+};
+
 const createInitialSessionState = (): ChatSessionState => ({
   ...CHAT_EMPTY_SESSION_STATE,
 });
@@ -145,6 +157,16 @@ export class ChatMessageModel {
     Object.assign(session, updater(session));
   }
 
+  /** @deprecated Read the editor UID from getSessionState(sessionId) for session-isolated state. */
+  get currentEditorRefUid() {
+    return this.resolveSessionState().currentEditorRefUid;
+  }
+
+  /** @deprecated Read the flow context from getSessionState(sessionId) for session-isolated state. */
+  get flowContext() {
+    return this.resolveSessionState().flowContext;
+  }
+
   setEditorRef = (uid: string, editorRef: ChatEditorRef | null) => {
     this.editorRef = { ...this.editorRef, [uid]: editorRef };
   };
@@ -165,14 +187,20 @@ export class ChatMessageModel {
     }
   };
 
-  setCurrentEditorRefUid = (sessionId: string | undefined, uid: string | null | undefined) => {
+  setCurrentEditorRefUid: SetCurrentEditorRefUid = (
+    ...args: [uid: string | null | undefined] | [sessionId: string | undefined, uid: string | null | undefined]
+  ) => {
+    const [sessionId, uid] = args.length === 1 ? [undefined, args[0]] : args;
     this.updateSessionState(sessionId, (session) => ({
       ...session,
       currentEditorRefUid: uid,
     }));
   };
 
-  setFlowContext = (sessionId: string | undefined, flowContext: unknown) => {
+  setFlowContext: SetFlowContext = (
+    ...args: [flowContext: unknown] | [sessionId: string | undefined, flowContext: unknown]
+  ) => {
+    const [sessionId, flowContext] = args.length === 1 ? [undefined, args[0]] : args;
     this.updateSessionState(sessionId, (session) => ({
       ...session,
       flowContext,

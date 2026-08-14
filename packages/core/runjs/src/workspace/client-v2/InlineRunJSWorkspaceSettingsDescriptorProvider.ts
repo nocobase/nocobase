@@ -9,7 +9,10 @@
 
 import type { RunJSSettingsDescriptorProvider, RunJSSettingsDescriptorProviderInput } from '@nocobase/client-v2';
 
+import type { RunJSWorkspaceApiClientPort } from '../shared/client-ports';
 import type { RunJSSourceOpenResult, RunJSWorkspaceDiagnostic } from '../shared/runjs-source-contracts';
+
+export type { RunJSWorkspaceApiRequestOptions } from '../shared/client-ports';
 
 const INLINE_SOURCE_MODE = 'inline';
 
@@ -25,15 +28,7 @@ type ResourceResponse<T> = {
   };
 };
 
-export type RunJSWorkspaceApiRequestOptions = {
-  url: string;
-  method?: string;
-  data?: unknown;
-};
-
-export type RunJSWorkspaceApiClientLike = {
-  request: <TResponse>(options: RunJSWorkspaceApiRequestOptions) => Promise<TResponse>;
-};
+export type RunJSWorkspaceApiClientLike = RunJSWorkspaceApiClientPort;
 
 export function createInlineRunJSWorkspaceSettingsDescriptorProvider(
   api: RunJSWorkspaceApiClientLike,

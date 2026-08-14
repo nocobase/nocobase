@@ -7,4 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../../../shared/workspace-authoring/workspaceChanges';
+export * from './createWorkspaceAuthoringSurface';
+export * from './workspaceChanges';
+export * from './workspaceSnapshot';
