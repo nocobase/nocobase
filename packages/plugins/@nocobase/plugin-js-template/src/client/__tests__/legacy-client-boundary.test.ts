@@ -12,13 +12,6 @@ import path from 'path';
 import type React from 'react';
 import { LegacyRunJSEditorRegistry } from '@nocobase/client';
 import {
-  RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
-  RunJSSourceResolverRegistry,
-  runJSStudioToolbarRegistry,
-} from '@nocobase/runjs/workspace/client-v2';
-
-import {
   JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ACTION_JS_TEMPLATE_SETTINGS_STEP_FIELD,
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
@@ -32,8 +25,11 @@ import {
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
-import { installRunJSWorkspaceRuntimeLegacyClient } from '@nocobase/runjs/workspace/client';
+import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
 
 import {
   JS_TEMPLATE_EDITOR_PROVIDER_KEY,
@@ -42,6 +38,7 @@ import {
 import { JS_TEMPLATE_SETTINGS_KEY } from '../../constants';
 import PluginJsTemplateClient from '..';
 import JsTemplateSourceProjectsPage from '../../client-v2/pages/JsTemplateSourceProjectsPage';
+import { runJSStudioToolbarRegistry } from '../../client-v2/runjs-studio';
 
 interface LegacySettingsRouteOptions {
   icon?: string;
@@ -106,7 +103,8 @@ describe('plugin-js-template legacy client boundary', () => {
 
     expect(plugin.options.name).toBe('js-template');
 
-    const disposeRuntime = installRunJSWorkspaceRuntimeLegacyClient();
+    const flowEnginePlugin = new PluginFlowEngineClient({}, {} as never);
+    await flowEnginePlugin.beforeLoad();
     await expect(plugin.afterAdd()).resolves.toBeUndefined();
     await expect(plugin.beforeLoad()).resolves.toBeUndefined();
     await expect(plugin.load()).resolves.toBeUndefined();
@@ -156,6 +154,65 @@ describe('plugin-js-template legacy client boundary', () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../index.ts'), 'utf8');
 
     expect(source).not.toMatch(/from\s+['"]@nocobase\/client['"]|require\(['"]@nocobase\/client['"]\)/);
-    disposeRuntime();
+    flowEnginePlugin.dispose();
+  });
+
+  it('rolls back legacy authoring contributions when a later lifecycle registration fails', async () => {
+    const flowEnginePlugin = new PluginFlowEngineClient({}, {} as never);
+    await flowEnginePlugin.beforeLoad();
+    const disposalOrder: string[] = [];
+    const registerEditorProvider = RunJSEditorRegistry.registerProvider.bind(RunJSEditorRegistry);
+    vi.spyOn(RunJSEditorRegistry, 'registerProvider').mockImplementation((provider) => {
+      const dispose = registerEditorProvider(provider);
+      return () => {
+        disposalOrder.push('editor');
+        dispose();
+      };
+    });
+    const registerSettingsProvider = RunJSSettingsDescriptorProviderRegistry.registerProvider.bind(
+      RunJSSettingsDescriptorProviderRegistry,
+    );
+    vi.spyOn(RunJSSettingsDescriptorProviderRegistry, 'registerProvider').mockImplementation((provider) => {
+      const dispose = registerSettingsProvider(provider);
+      return () => {
+        disposalOrder.push('settings');
+        dispose();
+      };
+    });
+    const registerLegacyProvider = LegacyRunJSEditorRegistry.registerProvider.bind(LegacyRunJSEditorRegistry);
+    vi.spyOn(LegacyRunJSEditorRegistry, 'registerProvider').mockImplementation((provider) => {
+      const dispose = registerLegacyProvider(provider);
+      return () => {
+        disposalOrder.push('legacy');
+        dispose();
+      };
+    });
+    const plugin = new PluginJsTemplateClient(
+      { name: 'js-template' },
+      {
+        apiClient: { request: vi.fn() },
+        pluginSettingsManager: {
+          add: () => {
+            throw new Error('settings registration failed');
+          },
+        },
+        flowEngine: {
+          flowSettings: {
+            components: {},
+            registerComponents: vi.fn(),
+          },
+        },
+      },
+    );
+
+    await plugin.beforeLoad();
+    await expect(plugin.load()).rejects.toThrow('settings registration failed');
+    expect(disposalOrder.slice(-3)).toEqual(['legacy', 'settings', 'editor']);
+    expect(RunJSSourceResolverRegistry.getResolvers()).toHaveLength(0);
+    expect(RunJSSettingsDescriptorProviderRegistry.getProviders()).toHaveLength(0);
+    expect(RunJSEditorRegistry.getProviders()).toHaveLength(0);
+    expect(LegacyRunJSEditorRegistry.getProviders()).toHaveLength(0);
+
+    flowEnginePlugin.dispose();
   });
 });

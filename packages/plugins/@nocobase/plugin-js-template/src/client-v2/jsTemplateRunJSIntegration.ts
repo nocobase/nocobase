@@ -16,12 +16,9 @@ import {
   JS_TEMPLATE_FIELD_SETTINGS_STEP_FIELD,
   JS_TEMPLATE_ITEM_FULL_SOURCE_FIELD,
   JS_TEMPLATE_ITEM_SETTINGS_STEP_FIELD,
-} from '@nocobase/client-v2';
-import {
   RunJSEditorRegistry,
   RunJSSourceResolverRegistry,
-  runJSStudioToolbarRegistry,
-} from '@nocobase/runjs/workspace/client-v2';
+} from '@nocobase/client-v2';
 import type React from 'react';
 
 import type { ApiClientLike } from './api/jsTemplatesRequests';
@@ -36,6 +33,7 @@ import { createSaveAsJsTemplateContribution } from './components/SaveAsJsTemplat
 import { SettingsSingleField } from './components/SettingsAutoForm';
 import { registerJsTemplateModelMenus } from './modelMenu/registerJsTemplateModelMenus';
 import { createJsTemplateRunJSResolver } from './resolvers/JsTemplateRunJSResolver';
+import { runJSStudioToolbarRegistry } from './runjs-studio';
 
 export type JsTemplateFlowSettingsRegistry = {
   components?: Record<string, React.ElementType | undefined>;

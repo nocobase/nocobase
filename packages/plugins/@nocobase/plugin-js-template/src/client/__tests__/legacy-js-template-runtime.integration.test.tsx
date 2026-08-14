@@ -16,25 +16,22 @@ import {
   type LegacyRunJSEditorProviderRenderProps,
 } from '@nocobase/client';
 import React from 'react';
-import { legacyRunJSStudioProvider } from '@nocobase/runjs/workspace/client';
-import {
-  RunJSEditorRegistry,
-  RunJSSettingsDescriptorProviderRegistry,
-  RunJSSourceResolverRegistry,
-  runJSStudioProvider,
-} from '@nocobase/runjs/workspace/client-v2';
 import {
   JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_BLOCK_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
   PluginFlowEngine,
+  RunJSEditorRegistry,
+  RunJSSettingsDescriptorProviderRegistry,
+  RunJSSourceResolverRegistry,
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
   clearRunJSRegistryHosts,
   clearRunJSRuntimeHosts,
 } from '@nocobase/client-v2';
+import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
@@ -44,7 +41,8 @@ import {
   JSItemJsTemplateSourceField,
 } from '../../client-v2/components/JSBlockJsTemplateSourceField';
 import PluginJsTemplateClient from '..';
-import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
+import { legacyRunJSStudioProvider } from '../runjs-studio';
+import { runJSStudioProvider } from '../../client-v2/runjs-studio';
 
 function createLegacyApplication() {
   return new Application({

@@ -23,16 +23,12 @@ import {
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
   PluginFlowEngine,
   RunJSEditorField,
-} from '@nocobase/client-v2';
-import { FlowEngineProvider } from '@nocobase/flow-engine';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
-  runJSStudioToolbarRegistry,
-  type RunJSStudioToolbarContext,
-} from '@nocobase/runjs/workspace/client-v2';
+} from '@nocobase/client-v2';
+import { FlowEngineProvider } from '@nocobase/flow-engine';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import PluginFlowEngineClientV2 from '@nocobase/plugin-flow-engine/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
@@ -48,6 +44,7 @@ import {
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../jsTemplateRunJSIntegrationContract';
 import PluginJsTemplateClientV2 from '../plugin';
+import { runJSStudioToolbarRegistry, type RunJSStudioToolbarContext } from '../runjs-studio';
 
 vi.mock('@nocobase/client-v2', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
@@ -238,6 +235,50 @@ describe('PluginJsTemplateClientV2', () => {
       (appA.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
       (appB.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
     }
+  });
+
+  it('releases authoring contributions in reverse order when loading fails', async () => {
+    const app = createMockClient({
+      plugins: [
+        [PluginFlowEngine, { name: 'flow-engine' }],
+        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
+        [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
+      ],
+    });
+
+    await app.load();
+    const plugin = app.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2;
+    plugin.dispose();
+    const disposalOrder: string[] = [];
+    const registerEditorProvider = RunJSEditorRegistry.registerProvider.bind(RunJSEditorRegistry);
+    vi.spyOn(RunJSEditorRegistry, 'registerProvider').mockImplementation((provider) => {
+      const dispose = registerEditorProvider(provider);
+      return () => {
+        disposalOrder.push('editor');
+        dispose();
+      };
+    });
+    const registerSettingsProvider = RunJSSettingsDescriptorProviderRegistry.registerProvider.bind(
+      RunJSSettingsDescriptorProviderRegistry,
+    );
+    vi.spyOn(RunJSSettingsDescriptorProviderRegistry, 'registerProvider').mockImplementation((provider) => {
+      const dispose = registerSettingsProvider(provider);
+      return () => {
+        disposalOrder.push('settings');
+        dispose();
+      };
+    });
+    vi.spyOn(RunJSSourceResolverRegistry, 'registerResolver').mockImplementation(() => {
+      throw new Error('resolver registration failed');
+    });
+
+    await expect(plugin.load()).rejects.toThrow('resolver registration failed');
+    expect(disposalOrder).toEqual(['settings', 'editor']);
+    expect(app.pluginSettingsManager.has(JS_TEMPLATE_SETTINGS_KEY)).toBe(false);
+    expectWorkspaceAuthoringRegistrations(0);
+    expectJsTemplateRegistrations(0);
+
+    (app.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
   });
 
   it('renders an Inline JS block through the modern multi-file Studio with its Save as JS Template action', async () => {

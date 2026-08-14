@@ -8,7 +8,6 @@
  */
 
 import type React from 'react';
-import { installRunJSWorkspaceAuthoringLegacyClient } from '@nocobase/runjs/workspace/client';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../constants';
 import {
@@ -17,6 +16,7 @@ import {
 } from '../client-v2/jsTemplateRunJSIntegration';
 import JsTemplateSourceProjectsPage from '../client-v2/pages/JsTemplateSourceProjectsPage';
 import { registerJsTemplateRuntimeAuthSession } from '../client-v2/resolvers/JsTemplateRuntimeCacheRegistry';
+import { installRunJSWorkspaceAuthoringLegacyClient } from './runjs-studio';
 
 interface JsTemplateClientOptions {
   name?: string;
@@ -88,38 +88,39 @@ export class PluginJsTemplateClient {
 
   async load() {
     this.dispose();
-    if (this.app?.apiClient) {
-      this.disposers.push(
-        installRunJSWorkspaceAuthoringLegacyClient({
-          apiClient: this.app.apiClient,
-        }),
-      );
-    }
+    try {
+      if (this.app?.apiClient) {
+        this.disposers.push(installRunJSWorkspaceAuthoringLegacyClient(this.app.apiClient));
+      }
 
-    const flowSettings = this.app?.flowEngine?.flowSettings;
-    if (flowSettings?.registerComponents) {
-      this.disposers.push(
-        registerJsTemplateRunJSFlowSettingsComponents({
-          components: flowSettings.components,
-          registerComponents: flowSettings.registerComponents.bind(flowSettings),
-        }),
-      );
-    }
+      const flowSettings = this.app?.flowEngine?.flowSettings;
+      if (flowSettings?.registerComponents) {
+        this.disposers.push(
+          registerJsTemplateRunJSFlowSettingsComponents({
+            components: flowSettings.components,
+            registerComponents: flowSettings.registerComponents.bind(flowSettings),
+          }),
+        );
+      }
 
-    if (this.app?.apiClient) {
-      this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
-    }
-    this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient));
+      if (this.app?.apiClient) {
+        this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
+      }
+      this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient));
 
-    const settingsOptions: ClientV1SettingsOptions = {
-      icon: 'CodeOutlined',
-      title: translate(this.app, 'JS Templates'),
-      Component: JsTemplateSourceProjectsPage,
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-    };
-    this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
-    this.disposers.push(() => this.app?.pluginSettingsManager?.remove?.(JS_TEMPLATE_SETTINGS_KEY));
-    activeJsTemplateClientV1Instance = this;
+      const settingsOptions: ClientV1SettingsOptions = {
+        icon: 'CodeOutlined',
+        title: translate(this.app, 'JS Templates'),
+        Component: JsTemplateSourceProjectsPage,
+        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+      };
+      this.app?.pluginSettingsManager?.add(JS_TEMPLATE_SETTINGS_KEY, settingsOptions);
+      this.disposers.push(() => this.app?.pluginSettingsManager?.remove?.(JS_TEMPLATE_SETTINGS_KEY));
+      activeJsTemplateClientV1Instance = this;
+    } catch (error) {
+      this.dispose();
+      throw error;
+    }
   }
 }
 

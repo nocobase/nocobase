@@ -8,7 +8,6 @@
  */
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { RunJSStudioToolbarContext } from '@nocobase/runjs/workspace/client-v2';
 import { message } from 'antd';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -19,6 +18,7 @@ import {
   SaveAsJsTemplate,
 } from '../components/SaveAsJsTemplate';
 import { JS_TEMPLATE_KIND_BY_MODEL_USE } from '../jsTemplateRunJSIntegrationContract';
+import type { RunJSStudioToolbarContext } from '../runjs-studio';
 
 const KIND_NAME_LABELS = {
   'js-block': 'JS Block name',

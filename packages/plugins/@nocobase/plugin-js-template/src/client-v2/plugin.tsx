@@ -9,7 +9,6 @@
 
 import type { Application } from '@nocobase/client-v2';
 import { Plugin } from '@nocobase/client-v2';
-import { installRunJSWorkspaceAuthoringClientV2 } from '@nocobase/runjs/workspace/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY } from '../constants';
 import {
@@ -17,6 +16,7 @@ import {
   registerJsTemplateRunJSFlowSettingsComponents,
 } from './jsTemplateRunJSIntegration';
 import { registerJsTemplateRuntimeAuthSession } from './resolvers/JsTemplateRuntimeCacheRegistry';
+import { installRunJSWorkspaceAuthoringClientV2 } from './runjs-studio';
 
 // Owns this module's active contributions during hot reload or instance handoff; it is not an Application singleton.
 let activeJsTemplateClientV2Instance: PluginJsTemplateClientV2 | null = null;
@@ -33,31 +33,36 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
 
   async load() {
     this.dispose();
-    this.disposers.push(installRunJSWorkspaceAuthoringClientV2(this.app));
-    this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
+    try {
+      this.disposers.push(installRunJSWorkspaceAuthoringClientV2(this.app.apiClient));
+      this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
 
-    this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
-    this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient));
-    activeJsTemplateClientV2Instance = this;
+      this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
+      this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient));
+      activeJsTemplateClientV2Instance = this;
 
-    const title = this.t('JS Templates');
+      const title = this.t('JS Templates');
 
-    this.pluginSettingsManager.addMenuItem({
-      key: JS_TEMPLATE_SETTINGS_KEY,
-      title,
-      icon: 'CodeOutlined',
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      showTabs: false,
-    });
+      this.pluginSettingsManager.addMenuItem({
+        key: JS_TEMPLATE_SETTINGS_KEY,
+        title,
+        icon: 'CodeOutlined',
+        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+        showTabs: false,
+      });
+      this.disposers.push(() => this.pluginSettingsManager.remove(JS_TEMPLATE_SETTINGS_KEY));
 
-    this.pluginSettingsManager.addPageTabItem({
-      menuKey: JS_TEMPLATE_SETTINGS_KEY,
-      key: 'index',
-      title,
-      aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
-      componentLoader: loadJsTemplateSourceProjectsPage,
-    });
-    this.disposers.push(() => this.pluginSettingsManager.remove(JS_TEMPLATE_SETTINGS_KEY));
+      this.pluginSettingsManager.addPageTabItem({
+        menuKey: JS_TEMPLATE_SETTINGS_KEY,
+        key: 'index',
+        title,
+        aclSnippet: JS_TEMPLATE_ACL_SNIPPET,
+        componentLoader: loadJsTemplateSourceProjectsPage,
+      });
+    } catch (error) {
+      this.dispose();
+      throw error;
+    }
   }
 
   dispose() {

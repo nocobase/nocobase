@@ -8,8 +8,11 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import { installRunJSWorkspaceRuntimeLegacyClient } from '@nocobase/runjs/workspace/client';
 import _ from 'lodash';
+
+import { installRunJSRuntimeLegacyClient } from './runjs';
+
+let activeFlowEngineLegacyClientInstance: PluginFlowEngineClient | null = null;
 
 export class PluginFlowEngineClient extends Plugin {
   private runJSRuntimeDisposer?: () => void;
@@ -17,16 +20,18 @@ export class PluginFlowEngineClient extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {
-    this.disposeRunJSRuntimeClient();
-    this.installRunJSRuntimeClient();
+    this.activateRunJSRuntimeClient();
   }
 
   async load() {
-    this.installRunJSRuntimeClient();
+    this.activateRunJSRuntimeClient();
   }
 
   dispose() {
     this.disposeRunJSRuntimeClient();
+    if (activeFlowEngineLegacyClientInstance === this) {
+      activeFlowEngineLegacyClientInstance = null;
+    }
   }
 
   private disposeRunJSRuntimeClient(): void {
@@ -35,7 +40,15 @@ export class PluginFlowEngineClient extends Plugin {
   }
 
   private installRunJSRuntimeClient(): void {
-    this.runJSRuntimeDisposer ||= installRunJSWorkspaceRuntimeLegacyClient();
+    this.runJSRuntimeDisposer ||= installRunJSRuntimeLegacyClient();
+  }
+
+  private activateRunJSRuntimeClient(): void {
+    if (activeFlowEngineLegacyClientInstance !== this) {
+      activeFlowEngineLegacyClientInstance?.dispose();
+    }
+    this.installRunJSRuntimeClient();
+    activeFlowEngineLegacyClientInstance = this;
   }
 }
 

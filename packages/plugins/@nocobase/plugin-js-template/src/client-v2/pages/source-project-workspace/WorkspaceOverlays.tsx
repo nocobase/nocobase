@@ -10,12 +10,7 @@
 import { Flex, Modal, Space, Spin, Typography } from 'antd';
 import React from 'react';
 
-import {
-  CloseConfirmModal,
-  CommitDiffModal,
-  RestoreVersionModal,
-  SaveVersionModal,
-} from '@nocobase/runjs/workspace/client-v2';
+import { CloseConfirmModal, CommitDiffModal, RestoreVersionModal, SaveVersionModal } from '../../runjs-studio';
 
 export interface WorkspaceOverlaysProps {
   closeConfirmProps: React.ComponentProps<typeof CloseConfirmModal>;

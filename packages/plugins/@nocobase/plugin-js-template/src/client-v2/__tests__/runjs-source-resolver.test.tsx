@@ -14,8 +14,7 @@ import { createJsTemplateRunJSResolver } from '../resolvers/JsTemplateRunJSResol
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
-import { JSBlockModel } from '@nocobase/client-v2';
-import { RunJSSourceResolverRegistry } from '@nocobase/runjs/workspace/client-v2';
+import { JSBlockModel, RunJSSourceResolverRegistry } from '@nocobase/client-v2';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { render as nbRender, screen as nbScreen, waitFor as nbWaitFor } from '@nocobase/test/client';
 import { setupRunJSTestHosts } from '@nocobase/test/client-v2';

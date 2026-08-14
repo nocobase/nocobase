@@ -82,8 +82,8 @@ vi.mock('../workspace/jsTemplateWorkspaceArchive', () => ({
   readJsTemplateWorkspaceArchive: mocks.archive.readJsTemplateWorkspaceArchive,
 }));
 
-vi.mock('@nocobase/runjs/workspace/client-v2', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@nocobase/runjs/workspace/client-v2')>();
+vi.mock('../runjs-studio', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../runjs-studio')>();
   return {
     ...actual,
     inferLanguageFromPath: (path: string) => {

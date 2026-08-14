@@ -8,7 +8,6 @@
  */
 
 import { ExportOutlined } from '@ant-design/icons';
-import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '@nocobase/runjs/workspace/client-v2';
 import { Button, Form, Input, Modal, Radio, Select, Tooltip, message } from 'antd';
 import React from 'react';
 
@@ -26,6 +25,7 @@ import {
   JS_TEMPLATE_TOOLBAR_CONTRIBUTION_KEY,
 } from '../jsTemplateRunJSIntegrationContract';
 import { useT } from '../locale';
+import type { RunJSStudioToolbarContext, RunJSStudioToolbarContribution } from '../runjs-studio';
 
 type SourceProjectDestinationType = 'existing' | 'new';
 

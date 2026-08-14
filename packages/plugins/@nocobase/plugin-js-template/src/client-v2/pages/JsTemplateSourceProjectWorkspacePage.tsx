@@ -27,8 +27,7 @@ import {
   type RunJSWorkspacePathAccess,
   type RunJSWorkspacePathType,
   type RunJSWorkspaceFile,
-  useRunJSWorkspaceT,
-} from '@nocobase/runjs/workspace/client-v2';
+} from '../runjs-studio';
 import { Flex, Modal, Space, Typography, message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -64,7 +63,7 @@ import {
   normalizeWorkspacePath,
   type JsTemplateWorkspaceScope,
 } from '../workspace/jsTemplateWorkspaceAccess';
-import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '@nocobase/runjs/workspace/client-v2';
+import { createWorkspaceAuthoringSurface, type WorkspaceAuthoringFile } from '../workspace/authoring';
 import {
   buildJsTemplateWorkspaceArchiveFileName,
   createJsTemplateWorkspaceArchive,
@@ -141,7 +140,7 @@ function JsTemplateSourceProjectWorkspacePage({
 }: JsTemplateSourceProjectWorkspacePageProps) {
   const { t } = useTranslation(NAMESPACE);
   const app = useApp();
-  const studioT = useRunJSWorkspaceT();
+  const studioT = t;
   const [searchParams] = useSearchParams();
   const projectId = projectIdProp || searchParams.get('projectId') || '';
   const {
