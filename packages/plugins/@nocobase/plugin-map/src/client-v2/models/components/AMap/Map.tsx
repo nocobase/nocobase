@@ -104,6 +104,8 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     type,
   } = props;
   const t = useT();
+  const tRef = useRef(t);
+  tRef.current = t;
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
   const mouseTool = useRef<any>();
@@ -114,6 +116,8 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
   const { navigate } = ctx.router;
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
@@ -131,7 +135,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         map.current?.setZoom(zoom);
       }, 500);
     }
-  }, [zoom, map.current, block]);
+  }, [zoom, block]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
@@ -139,25 +143,25 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     }
   });
 
-  const setTarget = useMemoizedFn(() => {
-    if ((!disabled || block) && type !== 'point' && editor.current) {
+  const setTarget = useMemoizedFn((curType = type) => {
+    if ((!disabled || block) && curType !== 'point' && editor.current) {
       editor.current.setTarget(overlay.current);
       editor.current.open();
     }
   });
 
-  const onMapChange = useMemoizedFn((target, onlyChange = false) => {
+  const onMapChange = useMemoizedFn((target, onlyChange = false, curType = type) => {
     let nextValue = null;
 
-    if (type === 'point') {
+    if (curType === 'point') {
       const { lat, lng } = (target as AMap.Marker).getPosition();
       nextValue = [lng, lat];
-    } else if (type === 'polygon' || type === 'lineString') {
+    } else if (curType === 'polygon' || curType === 'lineString') {
       nextValue = (target as AMap.Polygon).getPath().map((item) => [item.lng, item.lat]);
       if (nextValue.length < 2) {
         return;
       }
-    } else if (type === 'circle') {
+    } else if (curType === 'circle') {
       const center = target.getCenter();
       const radius = target.getRadius();
       nextValue = [center.lng, center.lat, radius];
@@ -166,7 +170,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     if (!onlyChange) {
       toRemoveOverlay();
       overlay.current = target;
-      setTarget();
+      setTarget(curType);
     }
     onChange?.(nextValue);
   });
@@ -188,10 +192,10 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         },
       });
       editor.current.on('adjust', function ({ target }) {
-        onMapChange(target, true);
+        onMapChange(target, true, curType);
       });
       editor.current.on('move', function ({ target }) {
-        onMapChange(target, true);
+        onMapChange(target, true, curType);
       });
       return editor.current;
     }
@@ -212,7 +216,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     if (mouseTool.current) return;
     mouseTool.current = new aMap.current.MouseTool(map.current);
     mouseTool.current.on('draw', function ({ obj }) {
-      onMapChange(obj);
+      onMapChange(obj, false, curType);
     });
     executeMouseTool(curType);
   });
@@ -265,10 +269,10 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
       return new aMap.current[mapping.overlay](options);
     },
-    [commonOptions],
+    [commonOptions, type, value],
   );
 
-  const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
+  const setOverlay = useMemoizedFn((t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
     const nextOverlay = getOverlay(t, v, o);
     if (!nextOverlay) {
@@ -276,7 +280,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     }
     nextOverlay.setMap(map.current);
     return nextOverlay;
-  };
+  });
 
   // 编辑时
   useEffect(() => {
@@ -293,7 +297,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
       createEditor();
       setTarget();
     }
-  }, [value, needUpdateFlag, type, commonOptions, disabled, readonly]);
+  }, [value, needUpdateFlag, type, commonOptions, disabled, readonly, createEditor, setOverlay, setTarget]);
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -306,14 +310,14 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
       executeMouseTool();
       editor.current?.open();
     }
-  }, [disabled]);
+  }, [disabled, executeMouseTool]);
 
   // AMap.MouseTool & AMap.XXXEditor
   useEffect(() => {
     if (!aMap.current || !type || disabled) return;
     createMouseTool();
     createEditor();
-  }, [disabled, needUpdateFlag, type]);
+  }, [createEditor, createMouseTool, disabled, needUpdateFlag, type]);
 
   // 当值变更时，toggle mouseTool
   useEffect(() => {
@@ -332,7 +336,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     } else {
       executeMouseTool();
     }
-  }, [type, value]);
+  }, [executeMouseTool, onChange, toRemoveOverlay, type, value]);
 
   useEffect(() => {
     if (!accessKey || map.current) return;
@@ -351,7 +355,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         try {
           map.current = new window.AMap.Map(id.current, {
             resizeEnable: true,
-            zoom,
+            zoom: zoomRef.current,
           } as AMap.MapOptions);
           aMap.current = AMap;
           setErrMessage('');
@@ -379,7 +383,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           try {
             map.current = new amap.Map(id.current, {
               resizeEnable: true,
-              zoom,
+              zoom: zoomRef.current,
             } as AMap.MapOptions);
             aMap.current = amap;
             setErrMessage('');
@@ -393,7 +397,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         (window as any).define = _define;
         const errorMessage = normalizeErrorMessage(err, defaultErrorMessage);
         if (errorMessage.includes('多个不一致的 key')) {
-          setErrMessage(t('The AccessKey is incorrect, please check it'));
+          setErrMessage(tRef.current('The AccessKey is incorrect, please check it'));
           return;
         }
         if (err && typeof err === 'object' && 'type' in err && err.type === 'error') {
@@ -412,7 +416,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
       // @ts-ignore
       AMapLoader.reset();
     };
-  }, [accessKey, type, securityJsCode]);
+  }, [accessKey, securityJsCode, type]);
 
   useImperativeHandle(ref, () => ({
     setOverlay,
