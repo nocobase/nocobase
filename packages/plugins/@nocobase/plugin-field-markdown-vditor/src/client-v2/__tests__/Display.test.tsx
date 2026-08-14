@@ -30,24 +30,29 @@ vi.mock('@nocobase/client-v2', () => ({
   stripMarkdownIframes: (value: string) => value,
 }));
 
-vi.mock('antd', () => ({
-  Popover: ({
-    children,
-    content,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode;
-    content: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (visible: boolean) => void;
-  }) => (
-    <div data-testid="popover" onMouseEnter={() => onOpenChange?.(true)}>
-      {children}
-      {open ? content : null}
-    </div>
-  ),
-}));
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+
+  return {
+    ...actual,
+    Popover: ({
+      children,
+      content,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      content: React.ReactNode;
+      open?: boolean;
+      onOpenChange?: (visible: boolean) => void;
+    }) => (
+      <div data-testid="popover" onMouseEnter={() => onOpenChange?.(true)}>
+        {children}
+        {open ? content : null}
+      </div>
+    ),
+  };
+});
 
 vi.mock('../components/const', () => ({
   useCDN: () => 'https://cdn.example/vditor',
