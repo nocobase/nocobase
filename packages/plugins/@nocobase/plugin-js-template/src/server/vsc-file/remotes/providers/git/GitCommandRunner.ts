@@ -585,8 +585,7 @@ function isBlockedGitTarget(host: string): boolean {
   if (!ipaddr.isValid(host)) {
     return false;
   }
-  const range = normalizeIpAddress(ipaddr.parse(host)).range();
-  return new Set(['loopback', 'private', 'linkLocal', 'uniqueLocal', 'unspecified']).has(range);
+  return normalizeIpAddress(ipaddr.parse(host)).range() !== 'unicast';
 }
 
 function normalizeIpAddress(address: ipaddr.IPv4 | ipaddr.IPv6): ipaddr.IPv4 | ipaddr.IPv6 {

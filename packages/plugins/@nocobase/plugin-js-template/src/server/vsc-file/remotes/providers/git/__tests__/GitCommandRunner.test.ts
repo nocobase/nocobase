@@ -212,7 +212,7 @@ describe('GitCommandRunner', () => {
       materializer,
       resolveHost: async () => {
         resolveCount += 1;
-        return [{ address: '203.0.113.42', family: 4 }];
+        return [{ address: '93.184.216.34', family: 4 }];
       },
       spawnProcess: spawnNodeScript,
     });
@@ -225,8 +225,30 @@ describe('GitCommandRunner', () => {
 
     const args = JSON.parse(await readFile(capturePath, 'utf8')) as string[];
     expect(resolveCount).toBe(1);
-    expect(args).toContain('http.curloptResolve=git.example.com:443:203.0.113.42');
+    expect(args).toContain('http.curloptResolve=git.example.com:443:93.184.216.34');
     expect(args).toContain('http.followRedirects=false');
+  });
+
+  it('blocks carrier-grade NAT targets before Git starts', async () => {
+    let spawnCount = 0;
+    const fakeGit = await createFakeGit('process.exit(0);');
+    const runner = new GitCommandRunner({
+      gitBinary: fakeGit,
+      materializer,
+      spawnProcess: (command, args, options) => {
+        spawnCount += 1;
+        return spawnNodeScript(command, args, options);
+      },
+    });
+
+    await expect(
+      runner.run({
+        args: ['ls-remote', 'http://100.64.0.1/project.git'],
+        remoteUrl: 'http://100.64.0.1/project.git',
+        transport: 'http',
+      }),
+    ).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE', details: { reasonCode: 'network-policy-blocked' } });
+    expect(spawnCount).toBe(0);
   });
 
   it('blocks a DNS answer that changes to a private address before Git starts', async () => {
