@@ -102,11 +102,6 @@ function createRunWithPrefixLabel(prefix, color) {
   return colorize(`[${prefix}]`);
 }
 
-function generatePluginManifests(devtools) {
-  devtools.generatePlugins?.();
-  devtools.generateV2Plugins?.();
-}
-
 exports.runWithPrefix = (command, args, options = {}) => {
   if (command === 'tsx') {
     command = 'node';
@@ -145,7 +140,6 @@ exports.runWithPrefix = (command, args, options = {}) => {
 exports._test = {
   createRunWithPrefixLabel,
   colorizedDevLogEnv,
-  generatePluginManifests,
 };
 
 exports.colorizedDevLogEnv = colorizedDevLogEnv;
@@ -327,7 +321,6 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   const packages = fg.sync(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
     absolute: true,
     onlyFiles: true,
-    ignore: ['**/node_modules/**'],
   });
   packages.forEach((packageFile) => {
     const packageJsonName = require(packageFile).name;
@@ -350,32 +343,6 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
     }
     if (packageJsonName === '@nocobase/plugin-workflow-test') {
       paths[`${packageJsonName}/e2e`] = [`${relativePath}/src/e2e`];
-    }
-    if (packageJsonName === '@nocobase/runjs') {
-      paths[`${packageJsonName}/compiler`] = [`${relativePath}/src/compiler`];
-      paths[`${packageJsonName}/compiler/build-identity`] = [`${relativePath}/src/compiler/build-identity`];
-      paths[`${packageJsonName}/compiler/loader`] = [`${relativePath}/src/compiler/loader`];
-      paths[`${packageJsonName}/compiler/portable`] = [`${relativePath}/src/compiler/portable`];
-      paths[`${packageJsonName}/compiler/static-module-references`] = [
-        `${relativePath}/src/compiler/static-module-references`,
-      ];
-      paths[`${packageJsonName}/js-template`] = [`${relativePath}/src/js-template`];
-      paths[`${packageJsonName}/js-template/client`] = [`${relativePath}/src/js-template/client`];
-      paths[`${packageJsonName}/js-template/schema`] = [`${relativePath}/src/js-template/schema`];
-      paths[`${packageJsonName}/js-template/schema/server`] = [`${relativePath}/src/js-template/schema/server`];
-      paths[`${packageJsonName}/js-template/schema/entry-v1.schema.json`] = [
-        `${relativePath}/src/js-template/schema/entry-v1.schema.json`,
-      ];
-      paths[`${packageJsonName}/js-template/shared`] = [`${relativePath}/src/js-template/shared`];
-      paths[`${packageJsonName}/js-template/typegen`] = [`${relativePath}/src/js-template/typegen`];
-      paths[`${packageJsonName}/server`] = [`${relativePath}/src/server`];
-      paths[`${packageJsonName}/settings`] = [`${relativePath}/src/settings`];
-      paths[`${packageJsonName}/workspace`] = [`${relativePath}/src/workspace`];
-      paths[`${packageJsonName}/workspace/client`] = [`${relativePath}/src/workspace/client`];
-      paths[`${packageJsonName}/workspace/client-v2`] = [`${relativePath}/src/workspace/client-v2`];
-      paths[`${packageJsonName}/workspace/server`] = [`${relativePath}/src/workspace/server`];
-      paths[`${packageJsonName}/workspace/shared`] = [`${relativePath}/src/workspace/shared`];
-      paths[`${packageJsonName}/workspace/swagger`] = [`${relativePath}/src/workspace/swagger`];
     }
   });
 
@@ -816,7 +783,13 @@ exports.checkDBDialect = function () {
 exports.generatePlugins = function () {
   try {
     require.resolve('@nocobase/devtools/common');
-    generatePluginManifests(require('@nocobase/devtools/common'));
+    const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');
+    if (typeof generateAllPlugins === 'function') {
+      generateAllPlugins();
+      return;
+    }
+    generatePlugins?.();
+    generateV2Plugins?.();
   } catch (error) {
     return;
   }

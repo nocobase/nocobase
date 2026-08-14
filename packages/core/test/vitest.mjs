@@ -10,19 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'client-v2', 'flow-engine'];
-const MIXED_CORE_CLIENT_PACKAGES = ['runjs'];
 const PLUGIN_CLIENT_PACKAGES = ['client', 'client-v2'];
-const RUNJS_CLIENT_PATHS = [
-  'packages/core/runjs/src/js-template/client/**/*',
-  'packages/core/runjs/src/workspace/client/**/*',
-  'packages/core/runjs/src/workspace/client-v2/**/*',
-];
-const RUNJS_SERVER_PATHS = [
-  'packages/core/runjs/src/compiler/**/*',
-  'packages/core/runjs/src/js-template/schema/server/**/*',
-  'packages/core/runjs/src/workspace/server/**/*',
-  'packages/core/runjs/src/workspace/swagger/**/*',
-];
 // 按路径填写要跳过服务端测试的插件目录（相对仓库根目录）
 const skipPluginPaths = [
   'packages/plugins/@nocobase/plugin-audit-logs',
@@ -125,11 +113,9 @@ const defineCommonConfig = () => {
 };
 
 function getExclude(isServer) {
-  const coreClientPackages = isServer ? CORE_CLIENT_PACKAGES : [...CORE_CLIENT_PACKAGES, ...MIXED_CORE_CLIENT_PACKAGES];
   return [
-    `packages/core/${isServer ? '' : '!'}(${coreClientPackages.join('|')})/**/*`,
+    `packages/core/${isServer ? '' : '!'}(${CORE_CLIENT_PACKAGES.join('|')})/**/*`,
     ...(isServer ? PLUGIN_CLIENT_PACKAGES : ['server']).map((dir) => `packages/**/src/${dir}/**/*`),
-    ...(isServer ? RUNJS_CLIENT_PATHS : RUNJS_SERVER_PATHS),
   ];
 }
 

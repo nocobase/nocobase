@@ -9,14 +9,17 @@
 
 /// <reference types="vitest/globals" />
 
+import { registerRunJSRegistryHost, registerRunJSRuntimeHost } from '@nocobase/client-v2';
+
+import { runJSRegistryHost } from './runjs/runJSRegistryHost';
+import { runJSRuntimeHost } from './runjs/runJSRuntimeHost';
+
 export function setupRunJSTestHosts(): void {
   let disposeHosts: (() => void) | undefined;
 
-  beforeAll(async () => {
-    const [{ registerRunJSRegistryHost, registerRunJSRuntimeHost }, { runJSRegistryHost, runJSRuntimeHost }] =
-      await Promise.all([import('@nocobase/client-v2'), import('@nocobase/runjs/workspace/client-v2')]);
-    const disposeRegistryHost = registerRunJSRegistryHost(runJSRegistryHost);
-    const disposeRuntimeHost = registerRunJSRuntimeHost(runJSRuntimeHost);
+  beforeAll(() => {
+    const disposeRegistryHost = registerRunJSRegistryHost({ ...runJSRegistryHost });
+    const disposeRuntimeHost = registerRunJSRuntimeHost({ ...runJSRuntimeHost });
     disposeHosts = () => {
       disposeRuntimeHost();
       disposeRegistryHost();

@@ -18,8 +18,6 @@
 | `@nocobase/runjs/js-template/typegen` | Pure `entry.json.settings` type generation |
 | `@nocobase/runjs/settings` | Settings defaults, conditions, pruning, and Entry selection normalization |
 | `@nocobase/runjs/server` | SHA-256 helpers for files, runtime code, and immutable artifacts |
-| `@nocobase/runjs/workspace/client` | Transitional legacy-client compatibility entry |
-| `@nocobase/runjs/workspace/client-v2` | Transitional client-v2 compatibility entry |
 | `@nocobase/runjs/workspace/server` | Workspace persistence, compilation, permissions, and services |
 | `@nocobase/runjs/workspace/shared` | Runtime-neutral Workspace contracts, client ports, and authoring algorithms |
 | `@nocobase/runjs/workspace/swagger` | Workspace API schemas |
@@ -50,7 +48,7 @@ The Workspace implementation has three explicit layers:
 - `workspace/server` owns Database/Server-backed persistence, compilation materialization, permissions, diagnostics, ZIP handling, and Workspace services. It may depend on NocoBase Database and Server, but never on a browser client.
 - Plugins own browser host adapters. The Flow Engine plugin owns the resident inline RunJS registry and runtime, while the JS Template plugin owns the multi-file and TypeScript authoring providers, Studio, and Workspace API lifecycle.
 
-`workspace/client` and `workspace/client-v2` remain available only as migration-window compatibility entries. Pure Workspace authoring exports are forwarding wrappers over `workspace/shared`; new runtime or authoring host responsibilities must be implemented by the owning plugin.
+The package does not publish browser client entries. Consumers use the plugin-owned runtime and authoring adapters, while reusable contracts and algorithms remain under `workspace/shared`.
 
 ## Virtual-workspace compiler
 
@@ -86,7 +84,7 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 - Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
 - JS Template consumers import only `@nocobase/runjs/js-template/*`
-- Workspace consumers import only the lane-specific `@nocobase/runjs/workspace/*` entry
+- Workspace consumers import neutral contracts from `@nocobase/runjs/workspace/shared` and server behavior from the explicit server or Swagger entry
 - `compiler/build-identity` remains safe for startup paths that must not initialize the compiler
 - `compiler/loader` is server-only and resolves the compiler adjacent to its source or built module
 - Runtime values come from the host context; compile-time support never grants a capability

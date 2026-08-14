@@ -39,17 +39,18 @@ describe('@nocobase/runjs workspace boundary', () => {
     expect(violations).toEqual([]);
   });
 
-  it('publishes explicit workspace subpath exports', () => {
+  it('publishes only neutral and server workspace subpath exports', () => {
     const manifest = JSON.parse(fs.readFileSync(path.resolve(packageRoot, 'package.json'), 'utf8')) as {
       exports?: Record<string, unknown>;
     };
 
     expect(manifest.exports).toMatchObject({
-      './workspace/client': expect.any(Object),
-      './workspace/client-v2': expect.any(Object),
       './workspace/server': expect.any(Object),
       './workspace/shared': expect.any(Object),
+      './workspace/swagger': expect.any(Object),
     });
+    expect(manifest.exports).not.toHaveProperty('./workspace/client');
+    expect(manifest.exports).not.toHaveProperty('./workspace/client-v2');
   });
 
   it('keeps root, compiler, shared workspace, and server workspace independent from client hosts', () => {
@@ -69,21 +70,8 @@ describe('@nocobase/runjs workspace boundary', () => {
     expect(violations).toEqual([]);
   });
 
-  it('keeps the client-v2 Workspace authoring compatibility files as forwarding wrappers', () => {
-    const compatibilityRoot = path.resolve(runjsSourceRoot, 'workspace/client-v2/workspace/authoring');
-    const violations = collectSourceFiles(compatibilityRoot).flatMap((file) => {
-      const statements = fs
-        .readFileSync(file, 'utf8')
-        .replace(/\/\*[\s\S]*?\*\//gu, '')
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean);
-      return statements.every((statement) => /^export \* from ['"][^'"]+['"];$/.test(statement))
-        ? []
-        : [path.relative(runjsSourceRoot, file)];
-    });
-
-    expect(violations).toEqual([]);
+  it('does not retain client workspace implementation directories', () => {
+    expect(clientEntryRoots.map((clientRoot) => fs.existsSync(clientRoot))).toEqual([false, false]);
   });
 });
 

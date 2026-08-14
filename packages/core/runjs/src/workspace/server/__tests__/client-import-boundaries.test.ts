@@ -112,22 +112,10 @@ const prohibitedImportFixtures = [
     source: "export * from './workspace/server';\n",
   },
   {
-    label: 'the RunJS client-v2 workspace importing a Node built-in',
-    filePath: 'packages/core/runjs/src/workspace/client-v2/boundary-violation.ts',
-    ruleId: 'no-restricted-imports',
-    source: "import fs from 'node:fs';\nexport { fs };\n",
-  },
-  {
     label: 'the core client-v2 flow implementation importing client-v1',
     filePath: 'packages/core/client-v2/src/flow/boundary-violation.ts',
     ruleId: '@typescript-eslint/no-restricted-imports',
     source: "import type { Application } from '@nocobase/client';\nexport type { Application };\n",
-  },
-  {
-    label: 'the RunJS client-v2 workspace importing client-v1',
-    filePath: 'packages/core/runjs/src/workspace/client-v2/boundary-violation.ts',
-    ruleId: '@typescript-eslint/no-restricted-imports',
-    source: "import { Application } from '@nocobase/client';\nexport { Application };\n",
   },
   {
     label: 'the JS Template client-v2 implementation importing client-v1',
@@ -196,7 +184,7 @@ describe('RunJS and JS Template package boundaries', () => {
     expect(violations).toEqual([]);
   });
 
-  it('accepts the current production browser and client-v2 entry files', async () => {
+  it('accepts the current neutral browser and plugin-owned client entry files', async () => {
     const results = (
       await Promise.all([
         browserBoundaryEslint.lintFiles([
@@ -204,12 +192,15 @@ describe('RunJS and JS Template package boundaries', () => {
           'packages/core/runjs/src/compiler/portable.ts',
           'packages/core/runjs/src/settings/**/*.{ts,tsx}',
           'packages/core/runjs/src/js-template/client/**/*.{ts,tsx}',
-          'packages/core/runjs/src/workspace/client/**/*.{ts,tsx}',
-          'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-flow-engine/src/client/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-flow-engine/src/client-v2/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-js-template/src/client/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
         clientV2BoundaryEslint.lintFiles([
           'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
-          'packages/core/runjs/src/workspace/client-v2/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-flow-engine/src/client-v2/**/*.{ts,tsx}',
+          'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
       ])
     ).flat();

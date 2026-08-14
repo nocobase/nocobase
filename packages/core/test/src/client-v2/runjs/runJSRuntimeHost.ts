@@ -27,7 +27,7 @@ import {
   validateRunJSSettingsValue,
   type RunJSSettingsCondition,
   type RunJSSettingsValidationIssue as SharedRunJSSettingsValidationIssue,
-} from '../../settings';
+} from '@nocobase/runjs/settings';
 import {
   createRunJSRuntimeContext,
   evaluateInlineRunJSValue,

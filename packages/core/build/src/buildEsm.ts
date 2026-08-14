@@ -34,12 +34,6 @@ export async function buildEsm(cwd: string, userConfig: UserConfig, sourcemap: b
 
   const pkg = require(path.join(cwd, 'package.json'));
   if (pkg.name === '@nocobase/test') {
-    const clientV2Entry = getSingleEntry('src/client-v2/index', cwd) || getSingleEntry('src/client-v2', cwd);
-    const clientV2OutDir = path.resolve(cwd, 'es/client-v2');
-    if (clientV2Entry) {
-      await build(cwd, clientV2Entry, clientV2OutDir, userConfig, sourcemap, log);
-    }
-
     const e2eEntry = getSingleEntry('src/e2e/index', cwd);
     const e2eOutDir = path.resolve(cwd, 'es/e2e');
     await build(cwd, e2eEntry, e2eOutDir, userConfig, sourcemap, log);
@@ -67,17 +61,15 @@ function build(
     return true;
   };
 
-  const compiler = rspack({
+  return rspack({
     entry: {
       index: entry,
     },
     output: {
       path: outDir,
-      filename: 'index.mjs',
       library: {
         type: 'module',
       },
-      module: true,
       clean: true,
     },
     target: ['node16'],
@@ -195,22 +187,6 @@ function build(
       },
     ],
     plugins: [new rspack.DefinePlugin(getEnvDefine())],
-    experiments: {
-      outputModule: true,
-    },
     stats: 'errors-warnings',
-  });
-
-  return new Promise<void>((resolve, reject) => {
-    compiler.run((error, stats) => {
-      const compilationErrors = stats?.compilation.errors;
-      compiler.close((closeError) => {
-        if (error || compilationErrors?.length || closeError) {
-          reject(error || (compilationErrors?.length ? stats?.toString({ colors: true }) : closeError));
-          return;
-        }
-        resolve();
-      });
-    });
   });
 }

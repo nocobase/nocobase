@@ -8,10 +8,9 @@
  */
 
 /* eslint-env jest */
-/* global vi */
 
 const { normalizeModernClientPrefix } = require('../util');
-const { colorizedDevLogEnv, createRunWithPrefixLabel, generatePluginManifests } = require('../util')._test;
+const { colorizedDevLogEnv, createRunWithPrefixLabel } = require('../util')._test;
 
 describe('cli-v1 util helpers', () => {
   test('normalizeModernClientPrefix reserves the Settings SPA path', () => {
@@ -35,18 +34,5 @@ describe('cli-v1 util helpers', () => {
 
   test('createRunWithPrefixLabel colorizes prefixed output even when the parent disables colors', () => {
     expect(createRunWithPrefixLabel('client', 'cyan')).toBe('\u001b[36m[client]\u001b[39m');
-  });
-
-  test('generates legacy and client-v2 manifests through their explicit generators', () => {
-    const devtools = {
-      generateAllPlugins: vi.fn(),
-      generatePlugins: vi.fn(),
-      generateV2Plugins: vi.fn(),
-    };
-    generatePluginManifests(devtools);
-
-    expect(devtools.generatePlugins).toHaveBeenCalledTimes(1);
-    expect(devtools.generateV2Plugins).toHaveBeenCalledTimes(1);
-    expect(devtools.generateAllPlugins).not.toHaveBeenCalled();
   });
 });

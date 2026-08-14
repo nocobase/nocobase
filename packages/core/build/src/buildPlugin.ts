@@ -61,19 +61,6 @@ const pluginClientLaneConfig: Record<
   },
 };
 
-const runJSExternalSubpaths = [
-  'js-template',
-  'js-template/client',
-  'js-template/schema',
-  'js-template/shared',
-  'js-template/typegen',
-  'settings',
-  'workspace',
-  'workspace/client',
-  'workspace/client-v2',
-  'workspace/shared',
-] as const;
-
 function getClientGlobalFiles(lane: PluginClientLane) {
   const entryDir = pluginClientLaneConfig[lane].entryDir;
   const excludedClientDirs = Object.values(pluginClientLaneConfig)
@@ -106,7 +93,6 @@ const external = [
   '@nocobase/flow-engine',
   '@nocobase/client-v2',
   '@nocobase/shared',
-  '@nocobase/runjs',
   // @nocobase/auth
   'jsonwebtoken',
 
@@ -622,11 +608,6 @@ export async function buildPluginClient(
   const globals = browserExternalPackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
       laneConfig.externalSubpaths.forEach((subpath) => {
-        prev[`${curr}/${subpath}`] = `${curr}/${subpath}`;
-      });
-    }
-    if (curr === '@nocobase/runjs') {
-      runJSExternalSubpaths.forEach((subpath) => {
         prev[`${curr}/${subpath}`] = `${curr}/${subpath}`;
       });
     }

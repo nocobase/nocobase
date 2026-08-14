@@ -433,6 +433,8 @@ function createPeerStubs(stubRoot, options) {
     ].join('\n'),
   );
   for (const [directoryName, packageName] of [
+    ['ant-design-icons', '@ant-design/icons'],
+    ['antd', 'antd'],
     ['acl', '@nocobase/acl'],
     ['actions', '@nocobase/actions'],
     ['client', '@nocobase/client'],

@@ -7,14 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/* eslint-env jest */
-
-const path = require('path');
 const testCommandModule = require('../commands/test');
 
 const {
   buildVitestNodeArgs,
-  inferTestEnvironment,
   requiresNoNodeSnapshot,
   stripDelegatedWorkspaceArgs,
   resolveWorkspaceTestDelegation,
@@ -44,12 +40,6 @@ describe('cli-v1 test command helpers', () => {
     ]);
   });
 
-  test('inferTestEnvironment recognizes client directories at the end of a path', () => {
-    expect(inferTestEnvironment('packages/core/runjs/src/workspace/client-v2')).toBe('client-side');
-    expect(inferTestEnvironment('packages/core/runjs/src/workspace/client')).toBe('client-side');
-    expect(inferTestEnvironment('packages/core/runjs/src/workspace/server')).toBe('server-side');
-  });
-
   test('stripDelegatedWorkspaceArgs removes workspace-only routing flags while preserving extra test args', () => {
     expect(
       stripDelegatedWorkspaceArgs(
@@ -66,11 +56,14 @@ describe('cli-v1 test command helpers', () => {
   });
 
   test('resolveWorkspaceTestDelegation forwards workspace package roots that define a test script', () => {
-    const cwd = process.cwd();
-    const delegation = resolveWorkspaceTestDelegation(['packages/core/cli'], ['packages/core/cli', '--server'], cwd);
+    const delegation = resolveWorkspaceTestDelegation(
+      ['packages/core/cli'],
+      ['packages/core/cli', '--server'],
+      '/Users/chen/t300/app5/source',
+    );
 
     expect(delegation).toEqual({
-      packageDir: path.join(cwd, 'packages/core/cli'),
+      packageDir: '/Users/chen/t300/app5/source/packages/core/cli',
       forwardedArgv: [],
     });
   });

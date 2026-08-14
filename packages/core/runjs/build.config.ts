@@ -21,8 +21,6 @@ const runtimeArtifacts = [
   'lib/js-template/schema/entry-v1.schema.json',
   'lib/js-template/shared/index.js',
   'lib/js-template/typegen/index.js',
-  'lib/workspace/client/index.js',
-  'lib/workspace/client-v2/index.js',
   'lib/workspace/server/index.js',
   'lib/workspace/shared/index.js',
   'lib/workspace/swagger/index.js',
