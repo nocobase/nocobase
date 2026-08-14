@@ -269,8 +269,6 @@ const resetStores = () => {
       [CHAT_DEFAULT_SESSION_KEY]: { ...CHAT_EMPTY_SESSION_STATE, messages: [], attachments: [], contextItems: [] },
     },
     editorRef: {},
-    currentEditorRefUid: null,
-    flowContext: null,
   });
   useChatToolCallStore.setState({ sessions: {} });
   useChatToolsStore.setState({
