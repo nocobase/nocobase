@@ -68,6 +68,8 @@ const methodMapping = {
   },
 };
 
+type AMapEditableOverlay = AMap.Marker | AMap.Polygon | AMap.Polyline | AMap.Circle;
+
 export interface AMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
   getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
@@ -150,7 +152,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     }
   });
 
-  const onMapChange = useMemoizedFn((target, onlyChange = false, curType = type) => {
+  const onMapChange = useMemoizedFn((target: AMapEditableOverlay, onlyChange = false, curType = type) => {
     let nextValue = null;
 
     if (curType === 'point') {
@@ -162,8 +164,9 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         return;
       }
     } else if (curType === 'circle') {
-      const center = target.getCenter();
-      const radius = target.getRadius();
+      const circle = target as AMap.Circle;
+      const center = circle.getCenter();
+      const radius = circle.getRadius();
       nextValue = [center.lng, center.lat, radius];
     }
 
