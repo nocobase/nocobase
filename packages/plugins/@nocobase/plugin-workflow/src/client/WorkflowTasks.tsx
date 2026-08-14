@@ -15,6 +15,7 @@ import {
   Button,
   Drawer,
   Flex,
+  Grid,
   Input,
   Layout,
   Menu,
@@ -72,6 +73,7 @@ import {
   WorkflowTasksPageMenuRouteProvider,
   type WorkflowTasksPageMenuRouteTarget,
 } from './workflowTasksPageMenuRoute';
+import { shouldUseWorkflowTasksMobilePresentation } from './workflowTasksResponsive';
 
 export { WorkflowTasksPageMenuRouteProvider };
 
@@ -196,6 +198,19 @@ function useWorkflowTasksPathBuilder() {
     },
     [adapter, mobilePage, popupId, status, taskType],
   );
+}
+
+function useWorkflowTasksMobilePresentation() {
+  const { isMobileLayout } = useMobileLayout();
+  const mobilePage = Boolean(useMobilePage());
+  const screens = Grid.useBreakpoint();
+
+  return shouldUseWorkflowTasksMobilePresentation({
+    isMobileLayout,
+    md: screens.md,
+    mobilePage,
+    viewportWidth: typeof window === 'undefined' ? undefined : window.innerWidth,
+  });
 }
 
 const WorkflowTaskFilterContext = createContext<WorkflowTaskFilterContextValue>({
@@ -420,8 +435,7 @@ function StatusTabs() {
   const { status } = useWorkflowTasksRouteState();
   const buildPath = useWorkflowTasksPathBuilder();
   const type = useCurrentTaskType();
-  const { isMobileLayout } = useMobileLayout();
-  const mobilePage = useMobilePage();
+  const mobile = useWorkflowTasksMobilePresentation();
   const onSwitchTab = useCallback(
     (key: string) => {
       if (!type?.key) {
@@ -431,9 +445,8 @@ function StatusTabs() {
     },
     [buildPath, navigate, type],
   );
-  const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
-  return isMobile ? (
+  return mobile ? (
     <Flex justify="space-between">
       <Segmented
         defaultValue={status}
@@ -453,7 +466,7 @@ function StatusTabs() {
         ]}
         onChange={onSwitchTab}
       />
-      <Actions onlyIcon={isMobile} />
+      <Actions onlyIcon />
     </Flex>
   ) : (
     <Tabs
@@ -1089,7 +1102,6 @@ function WorkflowTaskItem() {
 function TaskPageContent() {
   const apiClient = useAPIClient();
   const { taskType, status, popupId } = useWorkflowTasksRouteState();
-  const mobilePage = useMobilePage();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const { token } = theme.useToken();
@@ -1131,9 +1143,7 @@ function TaskPageContent() {
 
   // const typeKey = taskType ?? items[0].key;
 
-  const { isMobileLayout } = useMobileLayout();
-
-  const isMobile = mobilePage || isMobileLayout;
+  const mobile = useWorkflowTasksMobilePresentation();
 
   const contentClass = css`
     height: 100%;
@@ -1165,7 +1175,7 @@ function TaskPageContent() {
               .ant-spin-container {
                 height: 100%;
                 overflow: auto;
-                padding: ${isMobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
+                padding: ${mobile ? '0.5em' : `${token.paddingContentHorizontalLG}px`};
               }
             }
 
@@ -1176,9 +1186,7 @@ function TaskPageContent() {
 
           .ant-list-pagination {
             margin-top: 0;
-            padding: ${isMobile
-              ? '0.5em'
-              : `${token.paddingContentHorizontal}px ${token.paddingContentHorizontalLG}px`};
+            padding: ${mobile ? '0.5em' : `${token.paddingContentHorizontal}px ${token.paddingContentHorizontalLG}px`};
             border-top: 1px solid ${token.colorBorderSecondary};
 
             .ant-pagination {
@@ -1233,12 +1241,12 @@ function TaskPageContent() {
                   style: {
                     position: 'sticky',
                     background: token.colorBgContainer,
-                    padding: isMobile
+                    padding: mobile
                       ? '8px'
                       : `${token.paddingContentVertical}px ${token.paddingContentHorizontalLG}px 0 ${token.paddingContentHorizontalLG}px`,
-                    borderBottom: isMobile ? `1px solid ${token.colorBorderSecondary}` : null,
+                    borderBottom: mobile ? `1px solid ${token.colorBorderSecondary}` : null,
                   },
-                  title: isMobile ? null : title,
+                  title: mobile ? null : title,
                 },
                 properties: {
                   tabs: {
@@ -1297,7 +1305,7 @@ function TaskMenu(props: { navigation?: TaskTypeNavigation }) {
   const taskTypeKeys = useAvailableTaskTypeKeys();
   const typeKey = taskType ?? taskTypeKeys[0];
 
-  const { isMobileLayout } = useMobileLayout();
+  const mobile = useWorkflowTasksMobilePresentation();
   const navigate = useNavigate();
   const buildPath = useWorkflowTasksPathBuilder();
 
@@ -1317,7 +1325,7 @@ function TaskMenu(props: { navigation?: TaskTypeNavigation }) {
           background: token.colorBgContainer,
           height: 'auto',
           lineHeight: 'normal',
-          padding: `0 ${token.paddingContentHorizontalLG}px`,
+          padding: mobile ? `0 ${token.padding}px` : `0 ${token.paddingContentHorizontalLG}px`,
         }}
       >
         <Tabs
@@ -1339,7 +1347,7 @@ function TaskMenu(props: { navigation?: TaskTypeNavigation }) {
     );
   }
 
-  return isMobileLayout ? (
+  return mobile ? (
     <Layout.Header
       style={{
         background: token.colorBgContainer,
