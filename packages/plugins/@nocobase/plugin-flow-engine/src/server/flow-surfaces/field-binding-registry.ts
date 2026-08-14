@@ -70,13 +70,7 @@ function isNumericFormulaDataType(dataType: any) {
 }
 
 function resolveTargetCollection(input: FlowSurfaceResolvedFieldBindingInput) {
-  if (input.field?.targetCollection) {
-    return input.field.targetCollection;
-  }
-  if (!input.getCollection || !input.dataSourceKey) {
-    return null;
-  }
-  return resolveFieldTargetCollection(input.field, input.dataSourceKey, input.getCollection);
+  return resolveFieldTargetCollection(input.field, input.dataSourceKey || 'main', input.getCollection || (() => null));
 }
 
 function normalizeBindingContainerUse(containerUse?: string) {
