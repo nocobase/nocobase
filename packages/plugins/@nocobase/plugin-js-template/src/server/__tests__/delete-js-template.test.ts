@@ -18,9 +18,15 @@ import { DeleteJsTemplateService } from '../services/DeleteJsTemplateService';
 
 describe('template-level JS Template deletion protection', () => {
   let app: MockServer;
+  let agent: ReturnType<MockServer['agent']>;
 
   beforeEach(async () => {
-    app = await createMockServer({ plugins: [PluginJsTemplateServer] });
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: ['field-sort', 'users', 'auth', 'acl', 'data-source-manager', 'system-settings', PluginJsTemplateServer],
+    });
+    agent = await app.agent().login(await app.db.getRepository('users').findOne());
   });
 
   afterEach(async () => {
@@ -28,26 +34,24 @@ describe('template-level JS Template deletion protection', () => {
   });
 
   it('blocks an effective usage and deletes only the selected entry after that usage is detached', async () => {
-    const createResponse = await app
-      .agent()
-      .post('/jsTemplateProjects:create')
-      .send({
-        name: 'delete-entry-source',
-        title: 'Delete entry source',
-        initialFiles: [
-          ...createJsTemplateEntryStarter({
-            kind: 'js-block',
-            templateName: 'sales-card',
-            title: 'Sales card',
-          }),
-          ...createJsTemplateEntryStarter({
-            kind: 'js-action',
-            templateName: 'mark-won',
-            title: 'Mark won',
-          }),
-        ],
-        message: 'Create deletion test Source Project',
-      });
+    const createResponse = await agent.post('/jsTemplateProjects:create').send({
+      idempotencyKey: 'delete-entry-source-create',
+      name: 'delete-entry-source',
+      title: 'Delete entry source',
+      initialFiles: [
+        ...createJsTemplateEntryStarter({
+          kind: 'js-block',
+          templateName: 'sales-card',
+          title: 'Sales card',
+        }),
+        ...createJsTemplateEntryStarter({
+          kind: 'js-action',
+          templateName: 'mark-won',
+          title: 'Mark won',
+        }),
+      ],
+      message: 'Create deletion test Source Project',
+    });
 
     expect(createResponse.status).toBe(202);
     const projectId = String(createResponse.body.data.targetProjectId);
@@ -83,7 +87,7 @@ describe('template-level JS Template deletion protection', () => {
       },
     });
 
-    const blocked = await app.agent().post('/jsTemplates:delete').send({ templateId: selectedTemplateId });
+    const blocked = await agent.post('/jsTemplates:delete').send({ templateId: selectedTemplateId });
 
     expect(blocked.status).toBe(409);
     expect(blocked.body.errors?.[0]).toMatchObject({
@@ -99,7 +103,7 @@ describe('template-level JS Template deletion protection', () => {
       filterByTk: 'jtu_delete_entry_usage',
       values: { resolvedStatus: 'owner_missing' },
     });
-    const deleted = await app.agent().post('/jsTemplates:delete').send({ templateId: selectedTemplateId });
+    const deleted = await agent.post('/jsTemplates:delete').send({ templateId: selectedTemplateId });
 
     expect(deleted.status).toBe(200);
     expect(deleted.body.data).toMatchObject({
@@ -111,7 +115,7 @@ describe('template-level JS Template deletion protection', () => {
     expect(await app.db.getRepository('jsTemplateUsages').findOne({ filterByTk: 'jtu_delete_entry_usage' })).toBeNull();
     expect(await app.db.getRepository('jsTemplateArtifacts').findOne({ filterByTk: selectedArtifactHash })).toBeNull();
 
-    const source = await app.agent().post('/jsTemplateFiles:pull').send({ projectId, includeContent: 'none' });
+    const source = await agent.post('/jsTemplateFiles:pull').send({ projectId, includeContent: 'none' });
     expect(source.status).toBe(200);
     expect(source.body.data.files.map((file: { path: string }) => file.path)).not.toContain(
       'src/client/js-blocks/sales-card/entry.json',
@@ -120,7 +124,7 @@ describe('template-level JS Template deletion protection', () => {
       'src/client/js-actions/mark-won/entry.json',
     );
 
-    const remainingTemplates = await app.agent().post('/jsTemplates:list').send({ projectId });
+    const remainingTemplates = await agent.post('/jsTemplates:list').send({ projectId });
     expect(remainingTemplates.status).toBe(200);
     expect(remainingTemplates.body.data).toEqual([
       expect.objectContaining({ id: String(remaining.get('id')), templateName: 'mark-won' }),
@@ -138,19 +142,17 @@ describe('template-level JS Template deletion protection', () => {
   });
 
   it('allows an unused Template Entry to be deleted while its Source Project is disabled', async () => {
-    const createResponse = await app
-      .agent()
-      .post('/jsTemplateProjects:create')
-      .send({
-        name: 'disabled-delete-source',
-        title: 'Disabled delete source',
-        initialFiles: createJsTemplateEntryStarter({
-          kind: 'js-block',
-          templateName: 'disabled-card',
-          title: 'Disabled card',
-        }),
-        message: 'Create disabled deletion test Source Project',
-      });
+    const createResponse = await agent.post('/jsTemplateProjects:create').send({
+      idempotencyKey: 'disabled-delete-source-create',
+      name: 'disabled-delete-source',
+      title: 'Disabled delete source',
+      initialFiles: createJsTemplateEntryStarter({
+        kind: 'js-block',
+        templateName: 'disabled-card',
+        title: 'Disabled card',
+      }),
+      message: 'Create disabled deletion test Source Project',
+    });
     const projectId = String(createResponse.body.data.targetProjectId);
     await waitForSuccessfulCreate(app, String(createResponse.body.data.id), projectId);
     const template = await app.db.getRepository('jsTemplates').findOne({
@@ -165,7 +167,7 @@ describe('template-level JS Template deletion protection', () => {
       values: { lifecycleStatus: 'disabled' },
     });
 
-    const response = await app.agent().post('/jsTemplates:delete').send({ templateId });
+    const response = await agent.post('/jsTemplates:delete').send({ templateId });
 
     expect(response.status).toBe(200);
     expect(response.body.data).toMatchObject({ templateId, project: { id: projectId, lifecycleStatus: 'disabled' } });
