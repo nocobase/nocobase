@@ -50,7 +50,7 @@ const TASK_LIST_APPENDS = [
 const TASK_LIST_EXCEPT = ['node.config', 'workflow.config', 'workflow.options'];
 const MANUAL_TASK_FILTER_QUERY_KEY = 'workflowManualTasksFilter';
 const DEFAULT_MANUAL_TASK_FILTER = {
-  $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+  $and: [{ title: { $includes: '' } }],
 };
 
 const STATUS_FILTER_MAP: Partial<Record<WorkflowTaskStatus, WorkflowTaskRequestParams>> = {
@@ -230,7 +230,7 @@ function WorkflowManualTaskFilterAction({ onlyIcon }: { onlyIcon?: boolean }) {
       initialValue={readTaskFilter() ?? DEFAULT_MANUAL_TASK_FILTER}
       onChange={handleFilterChange}
       t={t}
-      filterableFieldNames={['title', 'workflow']}
+      filterableFieldNames={['title']}
       buttonText={onlyIcon ? '' : undefined}
       showCount={false}
       buttonProps={{ 'aria-label': onlyIcon ? filterText : undefined }}
@@ -362,9 +362,13 @@ function WorkflowManualTaskDetail() {
   );
 }
 
-export function useManualTaskActionParams(status: WorkflowTaskStatus) {
+export function useManualTaskActionParams(status: WorkflowTaskStatus, workflowKey?: string) {
   const statusParams = STATUS_FILTER_MAP[status] ?? {};
-  const filter = mergeFilters(statusParams.filter as RecordObject | undefined, readTaskFilter());
+  const workflowFilter = workflowKey ? { 'workflow.key': workflowKey } : undefined;
+  const filter = mergeFilters(
+    mergeFilters(statusParams.filter as RecordObject | undefined, workflowFilter),
+    readTaskFilter(),
+  );
   return {
     ...statusParams,
     filter,
