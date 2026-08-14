@@ -43,9 +43,11 @@ describe('flowSurfaces JS block JS Template public contract', () => {
         [PluginJsTemplateServer, { name: 'js-template', packageName: '@nocobase/plugin-js-template' }],
       ],
     });
+    const projectName = `flow-surface-contract-${Date.now()}`;
     const createResponse = await context.rootAgent.resource('jsTemplateProjects').create({
       values: {
-        name: `flow-surface-contract-${Date.now()}`,
+        idempotencyKey: `flow-surfaces:${projectName}`,
+        name: projectName,
         title: 'Flow Surface JS Block contract',
         initialFiles: TEMPLATE_NAMES.flatMap((templateName) => createTemplateFiles(templateName)),
         message: 'Create Flow Surface contract templates',

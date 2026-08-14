@@ -1018,20 +1018,16 @@ describe('plugin-js-template file service resource bridge', () => {
   it('rejects invalid initial source before creating the backing vsc repository', async () => {
     const response = await agent.resource('jsTemplateProjects').create({
       values: {
+        idempotencyKey: 'file-service:invalid-initial-validation',
         name: 'Invalid Initial Validation',
         initialFiles: [
           {
-            path: '../escape.ts',
-            content: 'export default null;\n',
+            path: 'src/client/runjs/invalid-initial/index.ts',
+            content: 'return 1;\n',
           },
           {
-            path: 'src/client/js-blocks/invalid-initial/index.tsx',
-            content: 'import fs from "fs";\nctx.render(<div>{String(fs)}</div>);\n',
-          },
-          {
-            path: 'src/client/js-blocks/blob-hash-initial/index.tsx',
-            blobHash: 'caller-supplied-blob',
-            size: 1,
+            path: 'src/client/runjs/invalid-initial/entry.json',
+            content: '{"schemaVersion":1,"key":"invalid-initial"}\n',
           },
         ],
       },
@@ -1074,6 +1070,7 @@ describe('plugin-js-template file service resource bridge', () => {
     });
     const invalidRepoResponse = await agent.resource('jsTemplateProjects').create({
       values: {
+        idempotencyKey: 'file-service:missing-name',
         title: 'Missing name',
       },
     });
@@ -1091,6 +1088,7 @@ describe('plugin-js-template file service resource bridge', () => {
     });
     const invalidInitialFileResponse = await agent.resource('jsTemplateProjects').create({
       values: {
+        idempotencyKey: 'file-service:invalid-initial-source',
         name: 'Invalid Initial Source',
         initialFiles: [
           {
@@ -1129,7 +1127,12 @@ async function createRepoAndWait(
   agent: ReturnType<MockServer['agent']>,
   values: JsTemplateCreateProjectInput,
 ): Promise<JsTemplateProject> {
-  const response = await agent.resource('jsTemplateProjects').create({ values });
+  const response = await agent.resource('jsTemplateProjects').create({
+    values: {
+      ...values,
+      idempotencyKey: values.idempotencyKey || `file-service:${values.name}`,
+    },
+  });
   expect(response.status).toBe(202);
   const accepted = response.body.data as JsTemplateCreateJob;
   await waitForSuccessfulCreate(app, accepted.id, accepted.targetProjectId);

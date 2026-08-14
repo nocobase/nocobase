@@ -31,6 +31,8 @@ JS Template supports four Template kinds:
 
 JS Column reuses `js-field`; `category: "js-column"` provides column-specific presentation. Generic JavaScript in defaults, assignment rules, linkage rules, custom variables, workflow nodes, charts, and similar nested settings remains inline-only.
 
+JS Page is not supported. Page composition remains a Flow Engine concern; JS Templates provide only the four Host kinds listed above.
+
 Selecting a Template creates the standard JS model shape with a source binding. The plugin does not add parallel JS Template model classes. Direct-create menus cover blocks, supported actions, form/details fields, and table columns.
 
 `entry.json.key` is the stable source identity. It must be a lowercase slug and unique within the project and kind. Renaming a directory while keeping the key preserves `templateId`, runtime bindings, and usages; changing the key creates a new identity.
@@ -115,6 +117,8 @@ Push and Pull require the exact local Head, remote revision, target version, and
 
 Git credentials are optional. Private HTTPS requires a complete `{{ $env.NAME }}` reference to a Secret JSON value containing `kind: "https"`, `username`, and `password`; literal credentials are rejected and only the Secret reference is stored in the remote record. HTTP is restricted to public repositories and rejects every authentication reference or credential input.
 
+New requests do not send a `transport` field; the server derives `http` or `https` from the repository URL. For compatibility, a legacy matching HTTP/HTTPS `transport` value is accepted and ignored, while a mismatching or unknown value is rejected. SSH URLs and SSH execution are not supported. Existing legacy SSH records remain readable so administrators can inspect, disconnect, or delete them, but they cannot be tested, planned, pulled, pushed, or executed. Removal of that persisted compatibility shape requires verified inventory across every supported environment.
+
 Branch is optional while configuring or creating from a non-empty Git repository. When omitted, the remote symbolic `HEAD` is resolved and the resulting branch is persisted. An empty repository has no default branch, so its branch must be supplied explicitly; NocoBase does not guess `main` or another branch name.
 
 Git Remote reuses `SERVER_REQUEST_WHITELIST` for outbound host policy. It rejects local paths, `file://`, `git://`, custom remote helpers, symlinks, gitlinks/submodules, Git LFS pointers, binary files, and invalid UTF-8. Repository content is handled as source snapshots and is never checked out or executed.
@@ -124,6 +128,8 @@ Official runtime images include Git and CA certificates. Non-Docker deployments 
 ## Asynchronous project creation
 
 Starter, ZIP, and Git creation are accepted as durable background jobs. `jsTemplateProjects:create` handles starter or ZIP input, and `jsTemplateSync:createFromGit` handles Git input; both return HTTP 202 with a safe creation-job summary.
+
+Every creation request requires a stable `idempotencyKey`. Repeating the same request with the same key returns the existing job/result; reusing the key with different input is rejected. Clients must retain the key across retries rather than generate a new value for each attempt.
 
 `jsTemplateCreateJobs:list` and `jsTemplateCreateJobs:dismiss` are the public job API. A visible job is `pending`, `running`, `succeeded`, or `failed`. Acceptance only confirms persistence. The list returns every active (`pending` or `running`) job for the current application and user, plus at most the newest 20 terminal (`succeeded` or `failed`) jobs in stable newest-first order. Successful jobs retain their safe `resultProjectId`. A user can dismiss a terminal job explicitly; active jobs cannot be dismissed.
 

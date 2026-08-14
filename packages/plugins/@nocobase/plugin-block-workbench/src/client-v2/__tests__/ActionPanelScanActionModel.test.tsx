@@ -110,7 +110,7 @@ describe('ActionPanelScanActionModel', () => {
 
   it('dispatches click events with debounce enabled', () => {
     const action = createActionModel();
-    const dispatchEvent = vi.spyOn(action, 'dispatchEvent');
+    const dispatchEvent = vi.spyOn(action, 'dispatchEvent').mockResolvedValue([]);
     vi.spyOn(action, 'getInputArgs').mockReturnValue({ record: { id: 1 } });
     const event = new MouseEvent('click');
 
