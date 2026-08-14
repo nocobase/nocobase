@@ -69,6 +69,10 @@ interface Props {
    * @deprecated Date 已作为独立一级变量提供，此参数仅为调用兼容保留。
    */
   enableDateVariableAsConstant?: boolean;
+  /**
+   * @deprecated RunJS is no longer offered by this input. This parameter is retained for caller compatibility.
+   */
+  allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
   disabled?: boolean;
   variableConverters?: VariableInputProps['converters'];
