@@ -59,7 +59,7 @@ JSFormActionModel.registerFlow({
         return {
           version: 'v2',
           code: `
-const values = ctx.form?.getFieldsValue?.(true) || {};
+const values = ctx.form?.getFieldsValue?.() || {};
 ctx.message.success('Current form values: ' + JSON.stringify(values));
 `,
         };
