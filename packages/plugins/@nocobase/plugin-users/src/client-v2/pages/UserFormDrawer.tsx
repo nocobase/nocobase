@@ -19,6 +19,7 @@ import {
   type FlowModel,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
+import { Alert } from 'antd';
 import React from 'react';
 import { useT } from '../locale';
 import type { User } from './types';
@@ -69,6 +70,10 @@ const userFormBlockClassName = css`
     box-shadow: none !important;
     background: transparent !important;
   }
+`;
+
+const userFormErrorClassName = css`
+  margin: 24px 24px 0;
 `;
 
 type PersistedFlowModelTree = CreateModelOptions & Record<string, unknown>;
@@ -198,6 +203,7 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
   const t = useT();
   const isEdit = !!user;
   const [submitting, setSubmitting] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState('');
   const [model, setModel] = React.useState<LoadedUserFormModel | null>(null);
   const title = isEdit ? t('Edit profile') : t('Add user');
 
@@ -230,21 +236,30 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
     if (!model) {
       return;
     }
+    setErrorMessage('');
     setSubmitting(true);
     try {
       let submitted = false;
       await model.submit({}, async (values) => {
         const nextValues = normalizeSubmitValues(values || {});
-        if (isEdit && user?.id != null) {
-          await ctx.api.resource('users').update({
-            filterByTk: user.id,
-            values: nextValues,
-          });
+        try {
+          if (isEdit && user?.id != null) {
+            await ctx.api.resource('users').update({
+              filterByTk: user.id,
+              values: nextValues,
+            });
+            submitted = true;
+            return;
+          }
+          await ctx.api.resource('users').create({ values: nextValues });
           submitted = true;
-          return;
+        } catch (error: unknown) {
+          const responseError = ctx.api.toErrMessages(error)?.[0];
+          setErrorMessage(
+            (typeof responseError === 'string' ? responseError : responseError?.message) || t('Save failed'),
+          );
+          throw error;
         }
-        await ctx.api.resource('users').create({ values: nextValues });
-        submitted = true;
       });
       if (!submitted) {
         throw new UserFormSubmitInterruptedError();
@@ -264,6 +279,9 @@ export default function UserFormDrawer(props: UserFormDrawerProps) {
       submitText={t('Submit')}
       cancelText={t('Cancel')}
     >
+      {errorMessage ? (
+        <Alert className={userFormErrorClassName} type="error" showIcon message={errorMessage} role="alert" />
+      ) : null}
       <div className={userFormBlockClassName}>
         {model ? (
           <FlowModelRenderer
