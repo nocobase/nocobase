@@ -52,7 +52,7 @@ export default defineCollection({
     { type: 'string', name: 'errorReasonCode', length: 128 },
     { type: 'text', name: 'errorMessage' },
     { type: 'string', name: 'reservationKey', length: 80 },
-    { type: 'string', name: 'actorUserId', allowNull: false },
+    { type: 'string', name: 'actorUserId', length: 64, allowNull: false },
     { type: 'string', name: 'sessionId', length: 128, allowNull: false },
     { type: 'string', name: 'authorizationRole', length: 128, allowNull: false },
     { type: 'json', name: 'authorizationRoles', allowNull: false },

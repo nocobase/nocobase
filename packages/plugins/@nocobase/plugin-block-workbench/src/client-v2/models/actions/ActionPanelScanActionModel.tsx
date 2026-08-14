@@ -106,10 +106,9 @@ ActionPanelScanActionModel.registerFlow({
   steps: {
     scanClick: {
       async handler(ctx, params) {
-        for (const child of Array.from(document.body.children)) {
-          if (child.id === 'qr-scanner-container') {
-            child.remove();
-          }
+        const existing = document.getElementById('qr-scanner-container');
+        if (existing) {
+          existing.remove();
         }
 
         const container = document.createElement('div');

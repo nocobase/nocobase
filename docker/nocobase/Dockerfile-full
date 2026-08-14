@@ -122,7 +122,6 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   apt-get update; \
   apt-get install -y --no-install-recommends \
     git \
-    openssh-client \
     libaio1 \
     postgresql-client-16 \
     postgresql-client-17 \
@@ -188,8 +187,7 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   chmod +x /usr/bin/soffice && \
   echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf && \
   ldconfig && \
-  git --version && \
-  ssh -V
+  git --version
 
 FROM runtime-base
 

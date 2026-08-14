@@ -9,6 +9,7 @@ const {
 
 const DEFAULT_PLUGIN_PACKAGE_PREFIXES = ['@nocobase/plugin-', '@nocobase/preset-'];
 const PRESET_PACKAGE_NAME = '@nocobase/preset-nocobase';
+
 function uniqStrings(values) {
   return [...new Set(values.filter(Boolean))];
 }

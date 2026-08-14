@@ -64,11 +64,6 @@ export interface GatewayRequestContext {
   res: ServerResponse;
   appName: string;
 }
-export type GatewayRequestHandler = (
-  req: IncomingMessage,
-  res: ServerResponse,
-  app: Application,
-) => boolean | void | Promise<boolean | void>;
 type GatewayMiddleware = (ctx: GatewayRequestContext, next: () => Promise<void>) => Promise<void> | void;
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
@@ -1179,7 +1174,7 @@ export class Gateway extends EventEmitter {
       const appInstance = await AppSupervisor.getInstance().getApp('main');
       for (const handler of Gateway.requestHandlers) {
         try {
-          const result = await handler(req, res, appInstance);
+          const result = await handler(req as IncomingRequest, res as ServerResponse, appInstance);
           if (result !== false) {
             return;
           }
@@ -1241,13 +1236,18 @@ export class Gateway extends EventEmitter {
     this.wsServer?.close();
   }
 
-  private static requestHandlers: GatewayRequestHandler[] = [];
+  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
+    [];
 
-  static registerRequestHandler(handler: GatewayRequestHandler) {
+  static registerRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
     Gateway.requestHandlers.push(handler);
   }
 
-  static unregisterRequestHandler(handler: GatewayRequestHandler) {
+  static unregisterRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
     Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
   }
 

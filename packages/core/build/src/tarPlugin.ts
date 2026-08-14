@@ -12,17 +12,8 @@ import { create } from 'tar';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 
-import { TAR_OUTPUT_DIR, tarIncludesFiles } from './constant';
-import { PkgLog } from './utils';
-
-type PluginPackageIdentity = {
-  name: string;
-  version: string;
-};
-
-export function getPluginTarballPath(pkg: PluginPackageIdentity, outputDir = TAR_OUTPUT_DIR) {
-  return path.join(outputDir, `${pkg.name}-${pkg.version}.tgz`);
-}
+import { PkgLog } from "./utils";
+import { TAR_OUTPUT_DIR, tarIncludesFiles } from './constant'
 
 export function tarPlugin(cwd: string, log: PkgLog) {
   log('tar package');
@@ -30,26 +21,19 @@ export function tarPlugin(cwd: string, log: PkgLog) {
   const npmIgnore = path.join(cwd, '.npmignore');
   let files = pkg.files || [];
   if (fs.existsSync(npmIgnore)) {
-    files = fs
-      .readFileSync(npmIgnore, 'utf-8')
+    files = fs.readFileSync(npmIgnore, 'utf-8')
       .split('\n')
       .filter((item) => item.trim())
-      .map((item) => (item.startsWith('/') ? `.${item}` : item))
-      .map((item) => `!${item}`);
+      .map(item => item.startsWith('/') ? `.${item}` : item)
+      .map(item => `!${item}`);
     files.push('**/*');
   }
 
   // 必须包含的文件
   files.push(...tarIncludesFiles);
-  files = files.map((item: string) =>
-    item !== '**/*' &&
-    fs.existsSync(path.join(cwd, item.replace('!', ''))) &&
-    fs.statSync(path.join(cwd, item.replace('!', ''))).isDirectory()
-      ? `${item}/**/*`
-      : item,
-  );
+  files = files.map((item: string) => item !== '**/*' && fs.existsSync(path.join(cwd, item.replace('!', ''))) && fs.statSync(path.join(cwd, item.replace('!', ''))).isDirectory() ? `${item}/**/*` : item);
 
-  const tarball = getPluginTarballPath(pkg);
+  const tarball = path.join(TAR_OUTPUT_DIR, `${pkg.name}-${pkg.version}.tgz`);
   const tarFiles = fg.sync(files, { cwd });
 
   fs.mkdirpSync(path.dirname(tarball));

@@ -12,9 +12,7 @@ import { Button, Radio } from 'antd';
 import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined } from '@ant-design/icons';
-import { observer, useFlowSettingsContext, type RunJSValue } from '@nocobase/flow-engine';
-import type { RunJSSourceLocator } from '@nocobase/client-v2';
-import { cloneFormValues } from './cloneFormValues';
+import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 
 const DEFAULT_EVENTS_RAW = `// const handler = function() {
 //   ctx.openView(ctx.model.uid + '-1', {
@@ -67,12 +65,6 @@ export const EventsPanel: React.FC = observer(() => {
   const formValues = getFormValues(ctx);
   const mode = formValues?.chart?.events?.mode || 'custom';
   const rawValue = formValues?.chart?.events?.raw ?? DEFAULT_EVENTS_RAW;
-  const sourceLocator: RunJSSourceLocator | undefined = ctx?.model?.uid
-    ? {
-        kind: 'chart.events',
-        modelUid: ctx.model.uid,
-      }
-    : undefined;
 
   React.useEffect(() => {
     const values = getFormValues(ctx);
@@ -88,13 +80,6 @@ export const EventsPanel: React.FC = observer(() => {
     const values = getFormValues(ctx);
     setIn(values, path, value);
     forceUpdate((v) => v + 1);
-  };
-
-  const handleRawPreview = async (next: RunJSValue) => {
-    const values = cloneFormValues(getFormValues(ctx));
-    setIn(values, ['chart', 'events', 'mode'], 'custom');
-    setIn(values, ['chart', 'events', 'raw'], next.code);
-    await ctx.model.onPreview(values);
   };
 
   return (
@@ -121,13 +106,7 @@ export const EventsPanel: React.FC = observer(() => {
         ) : null}
       </div>
 
-      <EventsEditor
-        value={rawValue}
-        onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)}
-        sourceLocator={sourceLocator}
-        sourceLabel={t('Chart events')}
-        onPreview={handleRawPreview}
-      />
+      <EventsEditor value={rawValue} onChange={(value) => updateEventValue(['chart', 'events', 'raw'], value)} />
     </>
   );
 });

@@ -102,6 +102,11 @@ function createRunWithPrefixLabel(prefix, color) {
   return colorize(`[${prefix}]`);
 }
 
+function generatePluginManifests(devtools) {
+  devtools.generatePlugins?.();
+  devtools.generateV2Plugins?.();
+}
+
 exports.runWithPrefix = (command, args, options = {}) => {
   if (command === 'tsx') {
     command = 'node';
@@ -140,6 +145,7 @@ exports.runWithPrefix = (command, args, options = {}) => {
 exports._test = {
   createRunWithPrefixLabel,
   colorizedDevLogEnv,
+  generatePluginManifests,
 };
 
 exports.colorizedDevLogEnv = colorizedDevLogEnv;
@@ -321,6 +327,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
   const packages = fg.sync(['packages/*/*/package.json', 'packages/*/*/*/package.json'], {
     absolute: true,
     onlyFiles: true,
+    ignore: ['**/node_modules/**'],
   });
   packages.forEach((packageFile) => {
     const packageJsonName = require(packageFile).name;
@@ -809,13 +816,7 @@ exports.checkDBDialect = function () {
 exports.generatePlugins = function () {
   try {
     require.resolve('@nocobase/devtools/common');
-    const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');
-    if (typeof generateAllPlugins === 'function') {
-      generateAllPlugins();
-      return;
-    }
-    generatePlugins?.();
-    generateV2Plugins?.();
+    generatePluginManifests(require('@nocobase/devtools/common'));
   } catch (error) {
     return;
   }

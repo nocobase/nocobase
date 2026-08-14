@@ -267,11 +267,6 @@ export class SyncRunner {
       const isSingleField = existUniqueIndex.fields.length == 1;
       if (!isSingleField) continue;
 
-      const isDeclaredModelIndex = this.model['_indexes']?.some(
-        (modelIndex) => modelIndex.unique && this.indexExists(modelIndex, [existUniqueIndex]),
-      );
-      if (isDeclaredModelIndex) continue;
-
       const columnName = existUniqueIndex.fields[0].attribute;
 
       const currentAttribute = this.findAttributeByColumnName(columnName);

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { afterAll, beforeAll } from 'vitest';
+/// <reference types="vitest/globals" />
 
 export function setupRunJSTestHosts(): void {
   let disposeHosts: (() => void) | undefined;

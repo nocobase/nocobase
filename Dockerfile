@@ -110,7 +110,6 @@ RUN set -eux; \
   apt-get install -y --no-install-recommends \
     "nginx=${NGINX_VERSION}" \
     git \
-    openssh-client \
     libaio1 \
     postgresql-client-17 \
     libfreetype6 \
@@ -135,8 +134,7 @@ RUN set -eux; \
     /var/lib/apt/lists/* \
     /usr/share/doc/* \
     /usr/share/man/*; \
-  git --version; \
-  ssh -V
+  git --version
 
 RUN rm -rf /etc/nginx/conf.d/default.conf
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/conf.d/nocobase-docs.conf

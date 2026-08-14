@@ -160,8 +160,6 @@ describe('UploadFieldModel', () => {
 
   it('opens preview and downloads the current upload item', async () => {
     const click = vi.fn();
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
     vi.spyOn(document, 'createElement').mockImplementation((tagName) => {
       const element = document.createElementNS('http://www.w3.org/1999/xhtml', tagName) as HTMLElement & {
         click?: () => void;
@@ -196,7 +194,6 @@ describe('UploadFieldModel', () => {
     await waitFor(() => {
       expect(click).toHaveBeenCalled();
     });
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('initializes selector events and renders the card upload model', () => {

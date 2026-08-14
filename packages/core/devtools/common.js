@@ -207,8 +207,12 @@ function generateV2Plugins() {
 }
 
 function generateAllPlugins() {
-  generatePlugins();
-  generateV2Plugins();
+  [
+    join(process.env.APP_PACKAGE_ROOT, 'client', 'src', '.plugins'),
+    join(process.env.APP_PACKAGE_ROOT, 'client-v2', 'src', '.plugins'),
+  ].forEach((outputPluginPath) => {
+    generatePluginsByOutputPath(outputPluginPath);
+  });
 }
 
 exports.getPackagePaths = getPackagePaths;

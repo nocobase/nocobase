@@ -6,6 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { Plugin } from '@nocobase/server';
 import WorkflowPlugin, { JOB_STATUS, type JobModel } from '@nocobase/plugin-workflow';
 import type { UpdateOptions } from 'sequelize';

@@ -236,6 +236,66 @@ describe('plugin-js-template collections', () => {
     ).rejects.toThrow();
   });
 
+  it('preserves critical indexes across repeated sync and an installed application upgrade', async () => {
+    const projects = app.db.getRepository('jsTemplateProjects');
+    const sourceOperations = app.db.getRepository('jsTemplateSourceOperations');
+    const createJobs = app.db.getRepository('jsTemplateCreateJobs');
+    await projects.create({
+      values: {
+        vscRepoId: 'vscr_schema_upgrade',
+        applicationName: 'main',
+        name: 'Schema upgrade',
+        normalizedName: 'schema-upgrade',
+        creationJobId: 'job_schema_upgrade',
+      },
+    });
+    await sourceOperations.create({
+      values: {
+        identityHash: '1'.repeat(64),
+        applicationName: 'main',
+        idempotencyKey: 'schema-upgrade',
+        requestHash: '2'.repeat(64),
+        attemptId: 'schema-upgrade-attempt',
+        status: 'completed',
+      },
+    });
+    await createJobs.create({
+      values: {
+        applicationName: 'main',
+        targetProjectId: 'jtp_schema_upgrade',
+        name: 'Schema upgrade',
+        normalizedName: 'schema-upgrade-job',
+        sourceType: 'starter',
+        idempotencyKey: 'schema-upgrade',
+        requestHash: '3'.repeat(64),
+        actorUserId: '7',
+        sessionId: 'schema-upgrade-session',
+        authorizationRole: 'member',
+        authorizationRoles: ['member'],
+      },
+    });
+
+    await app.db.sync();
+    await app.db.sync();
+    await app.upgrade();
+
+    await expect(app.db.getRepository('jsTemplateProjects').count()).resolves.toBe(1);
+    await expect(app.db.getRepository('jsTemplateSourceOperations').count()).resolves.toBe(1);
+    await expect(app.db.getRepository('jsTemplateCreateJobs').count()).resolves.toBe(1);
+    await expectDatabaseIndex(app, 'jsTemplateProjects', ['vscRepoId'], true);
+    await expectDatabaseIndex(app, 'jsTemplateProjects', ['creationJobId'], true);
+    await expectDatabaseIndex(app, 'jsTemplateSourceOperations', ['identityHash'], true);
+    await expectDatabaseIndex(app, 'jsTemplateCreateJobs', ['targetProjectId'], true);
+    await expectDatabaseIndex(app, 'jsTemplateProjects', ['applicationName', 'normalizedName'], true);
+    await expectDatabaseIndex(app, 'jsTemplateCreateJobs', ['applicationName', 'reservationKey'], true);
+    await expectDatabaseIndex(
+      app,
+      'jsTemplateCreateJobs',
+      ['applicationName', 'actorUserId', 'sessionId', 'idempotencyKey'],
+      true,
+    );
+  }, 120000);
+
   it('creates the project usage foreign key from the final collection schema', async () => {
     const projectConstraint = await findUsageProjectForeignKey(app);
 
@@ -309,4 +369,24 @@ function expectNamedCriticalIndex(definition: CollectionOptions, name: string, f
 
 function getFieldOptions(definition: CollectionOptions, fieldName: string) {
   return definition.fields?.find((field) => field.name === fieldName);
+}
+
+async function expectDatabaseIndex(app: MockServer, collectionName: string, fields: string[], unique: boolean) {
+  const collection = app.db.getCollection(collectionName) as Collection;
+  const expectedColumns = fields.map((field) => collection.getField(field).columnName());
+  const indexes = (await app.db.sequelize.getQueryInterface().showIndex(collection.getTableNameWithSchema())) as Array<{
+    unique?: boolean;
+    fields?: Array<{ attribute?: string; name?: string } | string>;
+  }>;
+  const hasIndex = indexes.some((index) => {
+    const columns = (index.fields || []).map((field) => {
+      if (typeof field === 'string') {
+        return field;
+      }
+      return field.attribute || field.name;
+    });
+    return Boolean(index.unique) === unique && columns.join('\0') === expectedColumns.join('\0');
+  });
+
+  expect(hasIndex, `${collectionName} database index for ${fields.join(', ')}`).toBe(true);
 }

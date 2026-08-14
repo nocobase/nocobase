@@ -12,22 +12,17 @@ import { merge } from './merge';
 
 export const loadSwagger = (packageName: string) => {
   const prefixes = ['src', 'lib', 'dist'];
-  const targets = ['swagger.json', 'swagger/index.json'];
-  if (typeof require.extensions['.ts'] === 'function') {
-    targets.push('swagger/index.ts');
-  }
-  targets.push('swagger/index.js', 'swagger');
+  const targets = ['swagger.json', 'swagger/index.json', 'swagger'];
   for (const prefix of prefixes) {
     for (const dict of targets) {
-      const file = `${packageName}/${prefix}/${dict}`;
-      let filePath: string;
       try {
-        filePath = require.resolve(file);
-      } catch {
-        continue;
+        const file = `${packageName}/${prefix}/${dict}`;
+        const filePath = require.resolve(file);
+        delete require.cache[filePath];
+        return requireModule(file);
+      } catch (error) {
+        //
       }
-      delete require.cache[filePath];
-      return requireModule(file);
     }
   }
   return {};

@@ -38,7 +38,9 @@
       "import": "./server.js",
       "require": "./server.js"
     },
+    "./src/swagger": "./src/swagger/index.ts",
     "./src/swagger/index.ts": "./src/swagger/index.ts",
+    "./dist/swagger": "./dist/swagger/index.js",
     "./dist/swagger/index.js": "./dist/swagger/index.js",
     "./package.json": "./package.json"
   },

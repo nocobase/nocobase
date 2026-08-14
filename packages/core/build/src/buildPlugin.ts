@@ -33,9 +33,6 @@ import { obfuscate } from './utils/obfuscationResult';
 import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
-const pluginRspackCommercialLoader = fs.existsSync(path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.js'))
-  ? path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.js')
-  : path.resolve(__dirname, 'plugins/pluginRspackCommercialLoader.ts');
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', '!src/client-v2/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
 
@@ -317,21 +314,6 @@ export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   fs.writeFileSync(externalVersionPath, `module.exports = ${JSON.stringify(data, null, 2)};`);
 }
 
-function normalizePackageJsonForDepCache(pkg: Record<string, unknown>) {
-  const { _lastModified: _ignoredLastModified, ...rest } = pkg;
-  return rest;
-}
-
-function isBundledDepCacheFresh(outputPackage: Record<string, unknown>, sourcePackage: Record<string, unknown>) {
-  if (outputPackage.version !== sourcePackage.version) {
-    return false;
-  }
-  return (
-    JSON.stringify(normalizePackageJsonForDepCache(outputPackage)) ===
-    JSON.stringify(normalizePackageJsonForDepCache(sourcePackage))
-  );
-}
-
 export async function buildServerDeps(cwd: string, serverFiles: string[], log: PkgLog) {
   log('build plugin server dependencies');
   const outDir = path.join(cwd, target_dir, 'node_modules');
@@ -367,10 +349,10 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     const { outputDir, mainFile, pkg, nccConfig, depDir } = deps[dep];
     const outputPackageJson = path.join(outputDir, 'package.json');
 
-    // cache check: version alone is not enough when package exports/files change in-place
+    // cache check
     if (fs.existsSync(outputPackageJson)) {
       const outputPackage = require(outputPackageJson);
-      if (isBundledDepCacheFresh(outputPackage, pkg)) {
+      if (outputPackage.version === pkg.version) {
         continue;
       }
     }
@@ -773,7 +755,7 @@ export async function buildPluginClient(
               },
             },
             {
-              loader: pluginRspackCommercialLoader,
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
                 isCommercial,
               },
@@ -801,7 +783,7 @@ export async function buildPluginClient(
               },
             },
             {
-              loader: pluginRspackCommercialLoader,
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
               options: {
                 isCommercial,
               },
