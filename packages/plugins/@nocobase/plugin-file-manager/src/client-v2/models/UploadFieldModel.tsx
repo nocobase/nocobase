@@ -246,6 +246,10 @@ export const CardUpload = (props) => {
   );
 };
 
+type SelectExistingRecordHandler = (event?: unknown) => void;
+
+const defaultSelectExistingRecordHandlers = new WeakSet<SelectExistingRecordHandler>();
+
 @largeField()
 export class UploadFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
@@ -257,11 +261,13 @@ export class UploadFieldModel extends FieldModel {
   onInit(options: any): void {
     super.onInit(options);
 
-    this.onSelectExitRecordClick = (e) => {
+    const onSelectExitRecordClick: SelectExistingRecordHandler = (e) => {
       this.dispatchEvent('openView', {
         event: e,
       });
     };
+    defaultSelectExistingRecordHandlers.add(onSelectExitRecordClick);
+    this.onSelectExitRecordClick = onSelectExitRecordClick;
   }
   set onSelectExitRecordClick(fn) {
     this.setProps({ onSelectExitRecordClick: fn });
@@ -276,7 +282,23 @@ export class UploadFieldModel extends FieldModel {
     const fileCollectionReference = fileCollection
       ? { dataSourceKey: fileCollection.dataSourceKey, collectionName: fileCollection.name }
       : undefined;
-    return <CardUpload {...this.props} fileCollection={fileCollectionReference} />;
+    const configuredHandler = this.props.onSelectExitRecordClick as SelectExistingRecordHandler | undefined;
+    const onSelectExitRecordClick =
+      configuredHandler && defaultSelectExistingRecordHandlers.has(configuredHandler)
+        ? (e?: unknown) => {
+            this.dispatchEvent('openView', {
+              event: e,
+            });
+          }
+        : configuredHandler;
+
+    return (
+      <CardUpload
+        {...this.props}
+        fileCollection={fileCollectionReference}
+        onSelectExitRecordClick={onSelectExitRecordClick}
+      />
+    );
   }
 }
 
@@ -573,7 +595,7 @@ UploadFieldModel.registerFlow({
               },
             },
           },
-          content: () => <RecordPickerContent model={ctx.model} />,
+          content: () => <RecordPickerContent model={ctx.model} toOne={toOne} />,
           styles: {
             content: {
               padding: 0,
