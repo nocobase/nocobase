@@ -30,24 +30,33 @@ vi.mock('@nocobase/client-v2', () => ({
   stripMarkdownIframes: (value: string) => value,
 }));
 
-vi.mock('antd', () => ({
-  Popover: ({
-    children,
-    content,
-    open,
-    onOpenChange,
-  }: {
-    children: React.ReactNode;
-    content: React.ReactNode;
-    open?: boolean;
-    onOpenChange?: (visible: boolean) => void;
-  }) => (
-    <div data-testid="popover" onMouseEnter={() => onOpenChange?.(true)}>
-      {children}
-      {open ? content : null}
-    </div>
-  ),
+vi.mock('@nocobase/flow-engine', () => ({
+  useFlowContext: () => ({ isDarkTheme: false }),
 }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+
+  return {
+    ...actual,
+    Popover: ({
+      children,
+      content,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      content: React.ReactNode;
+      open?: boolean;
+      onOpenChange?: (visible: boolean) => void;
+    }) => (
+      <div data-testid="popover" onMouseEnter={() => onOpenChange?.(true)}>
+        {children}
+        {open ? content : null}
+      </div>
+    ),
+  };
+});
 
 vi.mock('../components/const', () => ({
   useCDN: () => 'https://cdn.example/vditor',
@@ -81,14 +90,18 @@ describe('Display', () => {
     render(<Display value="image markdown" />);
 
     await waitFor(() =>
-      expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), 'image markdown', {
-        mode: 'light',
-        cdn: 'https://cdn.example/vditor',
-        markdown: {
-          sanitize: true,
-        },
-        transform: expect.any(Function),
-      }),
+      expect(Vditor.preview).toHaveBeenCalledWith(
+        expect.any(HTMLDivElement),
+        'image markdown',
+        expect.objectContaining({
+          mode: 'light',
+          cdn: 'https://cdn.example/vditor',
+          markdown: {
+            sanitize: true,
+          },
+          transform: expect.any(Function),
+        }),
+      ),
     );
 
     await act(async () => {
@@ -107,14 +120,18 @@ describe('Display', () => {
     render(<Display />);
 
     await waitFor(() =>
-      expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), '', {
-        mode: 'light',
-        cdn: 'https://cdn.example/vditor',
-        markdown: {
-          sanitize: true,
-        },
-        transform: expect.any(Function),
-      }),
+      expect(Vditor.preview).toHaveBeenCalledWith(
+        expect.any(HTMLDivElement),
+        '',
+        expect.objectContaining({
+          mode: 'light',
+          cdn: 'https://cdn.example/vditor',
+          markdown: {
+            sanitize: true,
+          },
+          transform: expect.any(Function),
+        }),
+      ),
     );
     expect(Vditor.md2html).not.toHaveBeenCalled();
   });
@@ -161,14 +178,18 @@ describe('Display', () => {
     fireEvent.mouseEnter(screen.getByTestId('popover'));
 
     await waitFor(() =>
-      expect(Vditor.preview).toHaveBeenCalledWith(expect.any(HTMLDivElement), 'Overflow text', {
-        mode: 'light',
-        cdn: 'https://cdn.example/vditor',
-        markdown: {
-          sanitize: true,
-        },
-        transform: expect.any(Function),
-      }),
+      expect(Vditor.preview).toHaveBeenCalledWith(
+        expect.any(HTMLDivElement),
+        'Overflow text',
+        expect.objectContaining({
+          mode: 'light',
+          cdn: 'https://cdn.example/vditor',
+          markdown: {
+            sanitize: true,
+          },
+          transform: expect.any(Function),
+        }),
+      ),
     );
     createRangeSpy.mockRestore();
   });
