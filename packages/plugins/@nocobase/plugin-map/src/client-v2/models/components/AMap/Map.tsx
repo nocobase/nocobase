@@ -88,7 +88,7 @@ export interface AMapForwardedRefProps {
   mouseTool: () => {
     close: (clear?: boolean) => void;
   };
-  overlay: AMap.Polygon;
+  overlay: AMapEditableOverlay;
   errMessage?: string;
 }
 
@@ -116,7 +116,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
   const defaultErrorMessage = 'Something went wrong, please refresh the page and try again';
   const ctx = useFlowContext();
 
-  const overlay = useRef<AMap.Polygon>();
+  const overlay = useRef<AMapEditableOverlay>();
   const editor = useRef(null);
   const zoomRef = useRef(zoom);
   zoomRef.current = zoom;
