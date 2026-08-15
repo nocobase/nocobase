@@ -161,7 +161,6 @@
     "@nocobase/plugin-kanban",
     "@nocobase/plugin-file-previewer-office",
     "@nocobase/plugin-flow-engine",
-    "@nocobase/plugin-js-template",
     "@nocobase/plugin-logger",
     "@nocobase/plugin-notification-manager",
     "@nocobase/plugin-notification-in-app-message",
