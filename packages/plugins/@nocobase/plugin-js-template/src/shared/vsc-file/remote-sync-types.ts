@@ -26,17 +26,9 @@ export interface VscGitRemoteConfig {
   transport: VscGitRemoteTransport;
 }
 
-export interface VscUnsupportedGitRemoteConfig {
-  url: string;
-  branch: string;
-  subdirectory: string | null;
-  transport: 'unsupported';
-  legacyTransport: 'ssh';
-}
-
 export type VscRemoteNormalizedConfig = VscGitRemoteConfig;
 
-export type VscFileRemoteConfig = VscRemoteNormalizedConfig | VscUnsupportedGitRemoteConfig;
+export type VscFileRemoteConfig = VscRemoteNormalizedConfig;
 
 export type GitRemoteCredential = {
   kind: 'https';
@@ -152,7 +144,7 @@ export const remoteSyncErrorCodes = [
 
 export type RemoteSyncErrorCode = (typeof remoteSyncErrorCodes)[number];
 
-export type VscFileRemoteStatus = 'active' | 'disabled' | 'unsupported';
+export type VscFileRemoteStatus = 'active' | 'disabled';
 
 interface VscFileRemoteRecordBase {
   id: string;
@@ -169,11 +161,7 @@ interface VscFileRemoteRecordBase {
 }
 
 export type VscFileRemoteRecord = VscFileRemoteRecordBase &
-  (
-    | { config: VscRemoteNormalizedConfig; status: 'active' }
-    | { config: VscRemoteNormalizedConfig; status: 'disabled' }
-    | { config: VscUnsupportedGitRemoteConfig; status: 'unsupported' }
-  );
+  ({ config: VscRemoteNormalizedConfig; status: 'active' } | { config: VscRemoteNormalizedConfig; status: 'disabled' });
 
 export type VscFileActiveRemoteRecord = VscFileRemoteRecordBase & {
   config: VscRemoteNormalizedConfig;
@@ -182,12 +170,6 @@ export type VscFileActiveRemoteRecord = VscFileRemoteRecordBase & {
 
 export function isActiveVscRemote(remote: VscFileRemoteRecord): remote is VscFileActiveRemoteRecord {
   return remote.status === 'active';
-}
-
-export function isUnsupportedVscRemote(
-  remote: Pick<VscFileRemoteRecord, 'config' | 'status'>,
-): remote is Pick<VscFileRemoteRecord, 'status'> & { config: VscUnsupportedGitRemoteConfig } {
-  return remote.config.transport === 'unsupported';
 }
 
 export type VscFileSyncOperation = 'probe' | 'push' | 'pull';

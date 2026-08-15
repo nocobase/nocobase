@@ -21,7 +21,6 @@ import type { RunJSSourceLocator, VscCommitRecord } from '@nocobase/runjs/worksp
 import type {
   VscGitRemoteConfig,
   VscGitRemoteConfigDraft,
-  VscUnsupportedGitRemoteConfig,
   VscRemotePlannerAction,
   VscRemotePlannerLocalSummary,
   VscRemotePlannerRemoteSummary,
@@ -712,11 +711,11 @@ export type JsTemplateSyncState = VscRemotePlannerState;
 
 export type JsTemplateSyncAction = VscRemotePlannerAction;
 
-export type JsTemplateSyncSourceStatus = 'active' | 'disabled' | 'unsupported';
+export type JsTemplateSyncSourceStatus = 'active' | 'disabled';
 
 export interface JsTemplateSyncRemoteTarget {
   provider: JsTemplateSyncProvider;
-  config: VscGitRemoteConfig | VscUnsupportedGitRemoteConfig;
+  config: VscGitRemoteConfig;
 }
 
 export interface JsTemplateSyncRemoteTargetDraft {

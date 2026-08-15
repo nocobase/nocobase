@@ -78,8 +78,6 @@ const createJob = {
   updatedAt: '2026-07-27T00:00:00.000Z',
 };
 
-const unsupportedGitScheme = ['s', 's', 'h'].join('');
-
 describe('jsTemplateSync resource', () => {
   it.each([
     ['get', { projectId: repo.id }, 'pullFromSyncSource'],
@@ -194,47 +192,6 @@ describe('jsTemplateSync resource', () => {
     expect(planned.body).toMatchObject({ projectId: repo.id, source: null, plan: { state: 'unconfigured' } });
     expect(fixture.runtime.planRemote).not.toHaveBeenCalled();
     expect(fixture.runtime.planUnconfigured).toHaveBeenCalledWith(repo.vscRepoId);
-  });
-
-  it('exposes legacy SSH metadata as unsupported while allowing disconnect only', async () => {
-    const unsupportedRemote: VscFileRemoteRecord = {
-      ...remote,
-      status: 'unsupported',
-      config: {
-        url: `${unsupportedGitScheme}://git@example.com/project.git`,
-        branch: 'main',
-        subdirectory: null,
-        transport: 'unsupported',
-        legacyTransport: 'ssh',
-      },
-    };
-    const fixture = createFixture({ remote: unsupportedRemote });
-
-    const get = await runAction(fixture, 'get', { projectId: repo.id }, ['manageSyncSource']);
-    const planned = await runAction(fixture, 'plan', { projectId: repo.id }, ['manageSyncSource']);
-    const tested = await runAction(fixture, 'testConnection', { projectId: repo.id }, ['manageSyncSource']);
-    const disconnected = await runAction(fixture, 'disconnect', { projectId: repo.id }, ['manageSyncSource']);
-
-    expect(get.body).toMatchObject({
-      source: {
-        status: 'unsupported',
-        config: { transport: 'unsupported', legacyTransport: 'ssh' },
-        credentialConfigured: false,
-        authRefDisplay: null,
-      },
-    });
-    expect(JSON.stringify(get.body)).not.toContain('LEGACY_SSH');
-    expect(planned.body).toMatchObject({
-      source: { status: 'unsupported' },
-      plan: { state: 'error', reasonCode: 'legacy-ssh-unsupported', canPull: false, canPush: false },
-    });
-    expect(tested).toMatchObject({
-      status: 422,
-      body: { errors: [{ code: 'JS_TEMPLATE_SYNC_CONFIG_INVALID' }] },
-    });
-    expect(fixture.runtime.testTarget).not.toHaveBeenCalled();
-    expect(disconnected.status).toBeUndefined();
-    expect(fixture.runtime.disconnectRemote).toHaveBeenCalledWith(unsupportedRemote.id);
   });
 
   it('enforces strict input allowlists before calling the runtime', async () => {

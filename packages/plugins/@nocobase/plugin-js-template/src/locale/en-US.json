@@ -70,8 +70,6 @@
   "The sync plan could not be loaded safely.": "The sync plan could not be loaded safely.",
   "The sync provider is unavailable": "The sync provider is unavailable",
   "The sync provider is unsupported": "The sync provider is unsupported",
-  "Legacy SSH sync source is unsupported": "Legacy SSH sync source is unsupported",
-  "Legacy SSH sync sources can only be disconnected or replaced with HTTP/HTTPS.": "Legacy SSH sync sources can only be disconnected or replaced with HTTP/HTTPS.",
   "This will update the remote branch only if its revision has not changed.": "This will update the remote branch only if its revision has not changed.",
   "The Git remote is temporarily unavailable. Try again later.": "The Git remote is temporarily unavailable. Try again later.",
   "Transport": "Transport",

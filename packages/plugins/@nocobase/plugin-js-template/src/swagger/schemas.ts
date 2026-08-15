@@ -59,18 +59,6 @@ export const jsTemplateSchemas = {
     },
     additionalProperties: false,
   },
-  JsTemplateUnsupportedGitRemoteConfigOutput: {
-    type: 'object',
-    required: ['url', 'branch', 'subdirectory', 'transport', 'legacyTransport'],
-    properties: {
-      url: { type: 'string' },
-      branch: { type: 'string', minLength: 1 },
-      subdirectory: nullableString,
-      transport: { type: 'string', enum: ['unsupported'], readOnly: true },
-      legacyTransport: { type: 'string', enum: ['ssh'], readOnly: true },
-    },
-    additionalProperties: false,
-  },
   JsTemplateSyncProjectRequest: {
     type: 'object',
     required: ['projectId'],
@@ -182,10 +170,7 @@ export const jsTemplateSchemas = {
             nullable: true,
             properties: {
               config: {
-                oneOf: [
-                  { $ref: '#/components/schemas/JsTemplateGitRemoteConfigOutput' },
-                  { $ref: '#/components/schemas/JsTemplateUnsupportedGitRemoteConfigOutput' },
-                ],
+                $ref: '#/components/schemas/JsTemplateGitRemoteConfigOutput',
               },
             },
             additionalProperties: true,

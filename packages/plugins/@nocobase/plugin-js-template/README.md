@@ -117,7 +117,7 @@ Push and Pull require the exact local Head, remote revision, target version, and
 
 Git credentials are optional. Private HTTPS requires a complete `{{ $env.NAME }}` reference to a Secret JSON value containing `kind: "https"`, `username`, and `password`; literal credentials are rejected and only the Secret reference is stored in the remote record. HTTP is restricted to public repositories and rejects every authentication reference or credential input.
 
-New requests do not send a `transport` field; the server derives `http` or `https` from the repository URL. For compatibility, a legacy matching HTTP/HTTPS `transport` value is accepted and ignored, while a mismatching or unknown value is rejected. SSH URLs and SSH execution are not supported. Existing legacy SSH records remain readable so administrators can inspect, disconnect, or delete them, but they cannot be tested, planned, pulled, pushed, or executed. Removal of that persisted compatibility shape requires verified inventory across every supported environment.
+New requests do not send a `transport` field; the server derives `http` or `https` from the repository URL. For compatibility, a legacy matching HTTP/HTTPS `transport` value is accepted and ignored, while a mismatching or unknown value is rejected. SSH URLs, SSH execution, and persisted SSH remote compatibility are not supported.
 
 Branch is optional while configuring or creating from a non-empty Git repository. When omitted, the remote symbolic `HEAD` is resolved and the resulting branch is persisted. An empty repository has no default branch, so its branch must be supplied explicitly; NocoBase does not guess `main` or another branch name.
 

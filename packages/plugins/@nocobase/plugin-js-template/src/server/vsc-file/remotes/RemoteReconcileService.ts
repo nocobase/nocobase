@@ -127,7 +127,7 @@ export class RemoteReconcileService {
     const remote = await this.remoteStore.get(claimed.remoteId);
     if (remote.status !== 'active') {
       const disabledError = new RemoteSyncError('CONFIG_INVALID', 'Remote is disabled', {
-        details: { reasonCode: remote.status === 'unsupported' ? 'legacy-ssh-unsupported' : 'remote-disabled' },
+        details: { reasonCode: 'remote-disabled' },
       });
       const failed = await this.jobStore.fail(claimed.id, claimToken, disabledError.code);
       await ctx.onRecoveryResult?.({ job: failed, errorCode: disabledError.code });

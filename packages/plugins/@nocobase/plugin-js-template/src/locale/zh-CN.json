@@ -70,8 +70,6 @@
   "The sync plan could not be loaded safely.": "无法安全加载同步计划。",
   "The sync provider is unavailable": "同步提供方不可用",
   "The sync provider is unsupported": "不支持此同步提供方",
-  "Legacy SSH sync source is unsupported": "旧版 SSH 同步源已不受支持",
-  "Legacy SSH sync sources can only be disconnected or replaced with HTTP/HTTPS.": "旧版 SSH 同步源只能断开连接或替换为 HTTP/HTTPS。",
   "This will update the remote branch only if its revision has not changed.": "仅当远端版本未变化时才会更新远端分支。",
   "The Git remote is temporarily unavailable. Try again later.": "Git 远端暂时不可用，请稍后重试。",
   "Transport": "传输协议",

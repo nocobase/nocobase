@@ -17,7 +17,7 @@ import type {
   VscRemoteProvider,
   VscRemoteSyncPlan,
 } from '../../shared/vsc-file/remote-sync-types';
-import { isActiveVscRemote, isUnsupportedVscRemote } from '../../shared/vsc-file/remote-sync-types';
+import { isActiveVscRemote } from '../../shared/vsc-file/remote-sync-types';
 import { uid } from '@nocobase/utils';
 
 import { JS_TEMPLATE_COLLECTIONS, type JsTemplateAclAction } from '../../constants';
@@ -355,9 +355,6 @@ async function getSyncSource(
 ): Promise<JsTemplateSyncGetResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
   const remote = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
-  if (remote && isUnsupportedVscRemote(remote)) {
-    return { projectId: project.id, source: toSourceSummary(remote, null) };
-  }
   const activeRemote = remote?.status === 'active' ? remote : null;
   const revision = activeRemote ? await services.getRemoteSyncRuntime().getLatestMappedRevision(activeRemote.id) : null;
   return {
@@ -374,9 +371,6 @@ async function configureSyncSource(
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
   const provider = requireProvider(input.provider);
   const saved = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
-  if (saved && isUnsupportedVscRemote(saved) && typeof input.authRef === 'undefined') {
-    throw unsupportedLegacyRemote();
-  }
   const authRef = typeof input.authRef === 'undefined' ? saved?.authRef ?? null : requireNullableAuthRef(input.authRef);
   return runSyncAudit(services, ctx, project.id, 'syncConfigure', async () => {
     const runtime = services.getRemoteSyncRuntime();
@@ -424,9 +418,6 @@ async function testConnection(
 ): Promise<JsTemplateSyncTestConnectionResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
   const saved = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
-  if (saved && isUnsupportedVscRemote(saved)) {
-    throw unsupportedLegacyRemote();
-  }
   const provider = typeof input.provider === 'undefined' ? saved?.provider : requireProvider(input.provider);
   const config = typeof input.config === 'undefined' ? saved?.config : requireRecord(input.config, 'config');
   const authRef = typeof input.authRef === 'undefined' ? saved?.authRef ?? null : requireNullableAuthRef(input.authRef);
@@ -460,13 +451,6 @@ async function planSync(
 ): Promise<JsTemplateSyncPlanResult> {
   const project = await services.projectService.getInternalProject(requireProjectId(input), ctx);
   const remote = await services.getRemoteSyncRuntime().getRemote(project.vscRepoId, remoteName);
-  if (remote && isUnsupportedVscRemote(remote)) {
-    return {
-      projectId: project.id,
-      source: toSourceSummary(remote, null),
-      plan: unsupportedLegacyPlan(remote),
-    };
-  }
   const activeRemote = remote?.status === 'active' ? remote : null;
   return runSyncAudit(services, ctx, project.id, 'syncPlan', async () => {
     const plan = activeRemote
@@ -481,21 +465,6 @@ async function planSync(
       audit: planAudit(activeRemote, plan),
     };
   });
-}
-
-function unsupportedLegacyPlan(remote: VscFileRemoteRecord): VscRemoteSyncPlan {
-  return {
-    state: 'error',
-    action: 'conflict',
-    reasonCode: 'legacy-ssh-unsupported',
-    canPull: false,
-    canPush: false,
-    fingerprint: `unsupported:${remote.id}:${remote.version}`,
-    remoteTargetVersion: remote.version,
-    local: { headCommitId: null, contentHash: null },
-    remote: { revision: null, contentHash: null, contentHashKnown: false },
-    baseline: null,
-  };
 }
 
 async function pullSync(
@@ -592,21 +561,12 @@ async function pushSync(
 
 async function requireSavedRemote(services: SyncActionServices, vscRepoId: string): Promise<VscFileActiveRemoteRecord> {
   const remote = await services.getRemoteSyncRuntime().getRemote(vscRepoId, remoteName);
-  if (remote && isUnsupportedVscRemote(remote)) {
-    throw unsupportedLegacyRemote();
-  }
   if (!remote || !isActiveVscRemote(remote)) {
     throw new JsTemplateError('JS_TEMPLATE_SYNC_CONFIG_INVALID', 'An active sync source is required', {
       details: { reasonCode: 'sync-source-not-configured' },
     });
   }
   return remote;
-}
-
-function unsupportedLegacyRemote(): JsTemplateError {
-  return new JsTemplateError('JS_TEMPLATE_SYNC_CONFIG_INVALID', 'Legacy SSH sync sources are unsupported', {
-    details: { reasonCode: 'legacy-ssh-unsupported' },
-  });
 }
 
 async function assertScopedPermission(
@@ -739,15 +699,14 @@ function normalizeSyncError(error: unknown): unknown {
 }
 
 function toSourceSummary(remote: VscFileRemoteRecord, revision: string | null = null): JsTemplateSyncSourceSummary {
-  const unsupported = isUnsupportedVscRemote(remote);
   return {
     provider: remote.provider,
     config: { ...remote.config },
-    status: unsupported ? 'unsupported' : remote.status,
+    status: remote.status,
     remoteTargetVersion: remote.version,
     revision,
-    credentialConfigured: unsupported ? false : remote.authRef !== null,
-    authRefDisplay: unsupported ? null : toAuthRefDisplay(remote.authRef),
+    credentialConfigured: remote.authRef !== null,
+    authRefDisplay: toAuthRefDisplay(remote.authRef),
     lastSyncedAt: remote.lastSyncedAt,
   };
 }
