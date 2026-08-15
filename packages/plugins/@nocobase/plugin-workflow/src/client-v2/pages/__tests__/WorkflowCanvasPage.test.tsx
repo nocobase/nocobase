@@ -46,6 +46,17 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
+vi.mock('@nocobase/client-v2', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@nocobase/client-v2')>();
+  return {
+    ...actual,
+    useApp: () => ({
+      getHref: (path: string) => `/v${path}`,
+      pluginSettingsManager: { getRoutePath: () => '/admin/settings/workflow' },
+    }),
+  };
+});
+
 vi.mock('../../components/WorkflowCanvasHeader', () => ({
   WorkflowCanvasHeader: ({ record }: { record: { title?: string } }) => (
     <div data-testid="workflow-header">{record.title}</div>
@@ -102,5 +113,18 @@ describe('WorkflowCanvasPage', () => {
     await waitFor(() => {
       expect(document.title).toBe('Workflow: 审批 - NocoBase');
     });
+  });
+
+  it('shows a not-found result with a link back to the workflow list', async () => {
+    holder.getWorkflow.mockResolvedValue({ data: { data: null } });
+
+    render(<WorkflowCanvasPage />);
+
+    expect(await screen.findByText('Workflow does not exist')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Back to Workflow List' })).toHaveAttribute(
+      'href',
+      '/v/admin/settings/workflow',
+    );
+    expect(holder.listRevisions).not.toHaveBeenCalled();
   });
 });

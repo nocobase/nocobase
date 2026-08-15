@@ -254,6 +254,8 @@
   "When no condition matches": "When no condition matches",
   "Will be executed in the background as a queued task.": "Will be executed in the background as a queued task.",
   "Workflow": "Fluxo de trabalho",
+  "Back to Workflow List": "Voltar para a lista de fluxos de trabalho",
+  "Workflow does not exist": "O fluxo de trabalho não existe",
   "Workflow not executed": "Fluxo de trabalho não executado",
   "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>": "Workflow executed, the result status is <1>{{statusText}}</1><2>View the execution</2>",
   "Workflow was not triggered because the current request did not meet the trigger requirements.": "O workflow não foi acionado porque a solicitação atual não atende aos requisitos do gatilho.",
