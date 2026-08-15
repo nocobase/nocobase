@@ -339,12 +339,16 @@ function getNumber(value: unknown, key: string): number | undefined {
 }
 
 function getStringArray(value: unknown, key: string): string[] {
-  if (!isRecord(value) || !Array.isArray(value[key])) {
+  if (!isRecord(value)) {
     return [];
   }
-  return value[key].flatMap((item) => {
-    const candidate = toString(item);
-    return candidate ? [candidate] : [];
+  const candidate = value[key];
+  if (!Array.isArray(candidate)) {
+    return [];
+  }
+  return candidate.flatMap((item) => {
+    const itemValue = toString(item);
+    return itemValue ? [itemValue] : [];
   });
 }
 
