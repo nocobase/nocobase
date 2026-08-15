@@ -161,6 +161,8 @@
   },
   "devDependencies": {
     "ajv": "^6.12.6",
-    "cross-spawn": "^7.0.6"
+    "cross-spawn": "^7.0.6",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.0"
   }
 }

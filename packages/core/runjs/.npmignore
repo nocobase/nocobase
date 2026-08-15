@@ -5,3 +5,4 @@
 !/es/**
 /src/completion-catalog/generated.ts
 /src/generated/
+/register-source.cjs

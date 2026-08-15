@@ -137,7 +137,8 @@ function registerCompileContractTests() {
   });
 
   function readCompilerBuildId(script: string): string {
-    return execFileSync(process.execPath, ['--import', 'tsx', '--eval', script], {
+    const runJSSourceRegisterPath = path.resolve(__dirname, '../../../../../../core/runjs/register-source.cjs');
+    return execFileSync(process.execPath, ['--require', runJSSourceRegisterPath, '--import', 'tsx', '--eval', script], {
       cwd: process.cwd(),
       encoding: 'utf8',
     }).trim();

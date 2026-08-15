@@ -8,6 +8,7 @@
  */
 
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { performance } from 'node:perf_hooks';
 import { deserialize, serialize } from 'node:v8';
 import { Worker } from 'node:worker_threads';
@@ -798,9 +799,18 @@ function assertIntegerLimit(label: string, value: number, minimum: number, maxim
 function createDefaultWorker(): JsTemplateCompileWorkerHandle {
   const isTypeScriptRuntime = __filename.endsWith('.ts');
   const workerPath = path.join(__dirname, `JsTemplateCompileWorker.${isTypeScriptRuntime ? 'ts' : 'js'}`);
+  const sourceRuntimeExecArgv = isTypeScriptRuntime
+    ? [
+        '--require',
+        path.join(
+          path.dirname(createRequire(__filename).resolve('@nocobase/runjs/package.json')),
+          'register-source.cjs',
+        ),
+      ]
+    : undefined;
   return new NodeCompileWorkerHandle(
     new Worker(workerPath, {
-      execArgv: isTypeScriptRuntime ? ['--require', 'tsx/cjs'] : undefined,
+      execArgv: sourceRuntimeExecArgv,
     }),
   );
 }

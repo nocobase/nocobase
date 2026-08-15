@@ -30,10 +30,13 @@ import PluginJsTemplateServer from '../plugin';
 describe('plugin-js-template bootstrap', () => {
   it('keeps the RunJS compiler unloaded until the first compile', () => {
     const serverEntryUrl = pathToFileURL(path.resolve(__dirname, '../index.ts')).href;
+    const runJSSourceRegisterPath = path.resolve(__dirname, '../../../../../../core/runjs/register-source.cjs');
     expect(() =>
       execFileSync(
         process.execPath,
         [
+          '--require',
+          runJSSourceRegisterPath,
           '--import',
           'tsx',
           '--input-type=module',
