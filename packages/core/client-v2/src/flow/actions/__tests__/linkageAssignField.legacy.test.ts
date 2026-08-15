@@ -7,12 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext } from '@nocobase/flow-engine';
-import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { linkageAssignField, setFieldsDefaultValue, subFormLinkageAssignField } from '../linkageRules';
-
-setupRunJSTestHosts();
 
 describe('linkage assign actions - legacy params', () => {
   it('linkageAssignField should apply legacy object params at runtime', () => {

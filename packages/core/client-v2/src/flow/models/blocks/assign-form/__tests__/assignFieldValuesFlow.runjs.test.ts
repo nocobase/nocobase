@@ -8,21 +8,33 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowContext } from '@nocobase/flow-engine';
-import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 
 import { resolveAssignFieldValues } from '../assignFieldValuesFlow';
 
-setupRunJSTestHosts();
-
 describe('assignFieldValuesFlow RunJS values', () => {
+  it('assigns successful RunJS results', async () => {
+    const runjs = vi.fn(async () => ({ success: true, value: 42 }));
+    const ctx = { message: undefined, runjs };
+
+    await expect(
+      resolveAssignFieldValues(ctx, {
+        amount: {
+          code: 'return 42;',
+          version: 'v2',
+        },
+      }),
+    ).resolves.toEqual({ amount: 42 });
+
+    expect(runjs).toHaveBeenCalledWith('return 42;', undefined, { version: 'v2' });
+  });
+
   it('shows an error and aborts assignment when RunJS fails', async () => {
-    const ctx: any = new FlowContext();
-    ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
-    ctx.defineMethod('runjs', async () => ({ success: false, error: new Error('boom') }));
     const message = { error: vi.fn() };
-    ctx.defineProperty('message', { value: message });
-    ctx.defineProperty('t', { value: (messageText: string) => messageText });
+    const ctx = {
+      message,
+      runjs: async () => ({ success: false, error: new Error('boom') }),
+      t: (messageText: string) => messageText,
+    };
 
     await expect(
       resolveAssignFieldValues(
@@ -31,7 +43,6 @@ describe('assignFieldValuesFlow RunJS values', () => {
           amountText: {
             code: 'throw new Error("boom")',
             version: 'v2',
-            settings: { currency: 'USD' },
           },
         },
         'UpdateRecordAction',
@@ -42,11 +53,7 @@ describe('assignFieldValuesFlow RunJS values', () => {
   });
 
   it('skips assignment fields when RunJS returns undefined', async () => {
-    const ctx: any = new FlowContext();
-    ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
-    ctx.defineMethod('runjs', async function (_code: string) {
-      return { success: true, value: undefined };
-    });
+    const ctx = { message: undefined, runjs: async () => ({ success: true, value: undefined }) };
 
     await expect(
       resolveAssignFieldValues(ctx, {
@@ -63,27 +70,5 @@ describe('assignFieldValuesFlow RunJS values', () => {
     ).resolves.toEqual({
       preserved: 'ok',
     });
-  });
-
-  it('preserves nested JSON constants that look like RunJSValue objects', async () => {
-    const ctx: any = new FlowContext();
-    ctx.defineProperty('model', { value: { uid: 'assign_action_1', use: 'UpdateRecordActionModel' } });
-    const runjs = vi.fn();
-    ctx.defineMethod('runjs', runjs);
-
-    await expect(
-      resolveAssignFieldValues(ctx, {
-        metadata: {
-          nested: { code: 'literal' },
-          list: [{ code: 'item-literal' }],
-        },
-      }),
-    ).resolves.toEqual({
-      metadata: {
-        nested: { code: 'literal' },
-        list: [{ code: 'item-literal' }],
-      },
-    });
-    expect(runjs).not.toHaveBeenCalled();
   });
 });

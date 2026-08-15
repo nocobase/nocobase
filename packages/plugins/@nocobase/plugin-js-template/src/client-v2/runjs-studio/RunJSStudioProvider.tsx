@@ -15,7 +15,10 @@ import { useRunJSStudioController } from './useRunJSStudioController';
 
 export const runJSStudioProvider: RunJSEditorProvider = {
   key: '@nocobase/runjs/workspace/runjs-studio',
-  canHandle: (props) => (props.sourceLocator ?? props.locator)?.kind === 'flowModel.step',
+  canHandle: (props) => {
+    const kind = (props.sourceLocator ?? props.locator)?.kind;
+    return kind === 'flowModel.step' || kind === 'flowModel.flowRegistry.runjs';
+  },
   renderEditor: (props) => <RunJSStudioEditorEntry {...props} />,
 };
 
@@ -30,12 +33,16 @@ function cloneRunJSSourceLocator(locator: RunJSEditorProviderRenderProps['locato
   if (!locator) {
     return undefined;
   }
-  if (locator.kind !== 'flowModel.step') {
-    return undefined;
+  if (locator.kind === 'flowModel.step') {
+    return {
+      ...locator,
+      paramPath: [...locator.paramPath],
+      versionPath: locator.versionPath ? [...locator.versionPath] : undefined,
+    };
   }
+
   return {
     ...locator,
-    paramPath: [...locator.paramPath],
-    versionPath: locator.versionPath ? [...locator.versionPath] : undefined,
+    sourcePath: [...locator.sourcePath],
   };
 }

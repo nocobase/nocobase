@@ -9,7 +9,6 @@
 
 import React from 'react';
 import { act, render, screen, userEvent, waitFor, sleep } from '@nocobase/test/client';
-import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ConfigProvider, App } from 'antd';
@@ -22,8 +21,6 @@ import { VariableFieldFormModel } from '../../models/fields/VariableFieldFormMod
 import { RecordSelectFieldModel } from '../../models/fields/AssociationFieldModel';
 import { SelectFieldModel } from '../../models/fields/SelectFieldModel';
 import { RichTextFieldModel } from '../../models/fields/RichTextFieldModel';
-
-setupRunJSTestHosts();
 
 // 简易 Form stub（非 Formily 分支），用于验证写回逻辑
 function createFormStub(initial: any = {}) {

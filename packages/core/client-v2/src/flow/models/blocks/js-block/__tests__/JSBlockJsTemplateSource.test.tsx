@@ -657,52 +657,6 @@ describe('JSBlockModel JS Template source', () => {
     expect(() => optionsStep?.beforeParamsSave?.(settingsContext, { value: { limit: 10 } })).not.toThrow();
   });
 
-  it('keeps step identity stable when the schema changes for the same entry', async () => {
-    let descriptor: RunJSSourceSettingsDescriptor = SETTINGS_DESCRIPTOR;
-    RunJSSourceResolverRegistry.registerResolver({
-      sourceMode: 'js-template',
-      getSettingsDescriptor: vi.fn(async () => descriptor),
-      resolve: () => ({
-        code: 'ctx.render("sales");',
-      }),
-    });
-
-    const engine = new FlowEngine();
-    engine.registerModels({ JSBlockModel });
-    const model = engine.createModel<JSBlockModel>({
-      use: 'JSBlockModel',
-      uid: 'js-block-runtime-settings-schema-change',
-      stepParams: {
-        jsSettings: {
-          runJs: {
-            sourceMode: 'js-template',
-            sourceBinding: SOURCE_BINDING,
-          },
-        },
-      },
-    });
-
-    const oldSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
-    descriptor = {
-      ...SETTINGS_DESCRIPTOR,
-      settingsSchemaHash: 'schema_next',
-      schema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            title: 'Updated message',
-          },
-        },
-      },
-    };
-
-    const nextSteps = await model.getRuntimeFlowSettingSteps('jsSettings');
-
-    expect(Object.values(nextSteps || {}).map((step) => step.title)).toEqual(['Updated message']);
-    expect(Object.keys(nextSteps || {})[0]).toBe(Object.keys(oldSteps || {})[0]);
-  });
-
   it('passes runtime settings step values to the JS Template resolver', async () => {
     const resolve = vi.fn((input) => ({
       code: 'ctx.render(<span data-testid="settings-js-block">{ctx.settings.message}:{ctx.settings.pageSize}:{String(ctx.settings.enabled)}</span>);',

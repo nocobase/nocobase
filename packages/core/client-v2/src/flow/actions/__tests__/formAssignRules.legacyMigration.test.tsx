@@ -62,7 +62,6 @@ function createModel(legacyFlowKey: string, fields = [{ fieldPath: 'description'
   engine.translate = vi.fn((key: string) => key) as any;
   const model = new FlowModel({ uid: `model-${legacyFlowKey}`, flowEngine: engine }) as any;
   model.subModels.grid = {
-    uid: `grid-${legacyFlowKey}`,
     subModels: {
       items: fields.map((field) => createLegacyField(field.fieldPath, field.value, legacyFlowKey)),
     },
@@ -127,18 +126,6 @@ describe('Field values legacy default migration', () => {
         value: 'Legacy description',
       }),
     ]);
-  });
-
-  it('always uses the inline editor for RunJS field values', async () => {
-    const model = createModel('editItemSettings');
-    const rule = { key: 'rule-1', targetPath: 'title', value: { code: 'return "title";', version: 'v2' } };
-    renderAction(formAssignRules, model, [rule]);
-
-    await waitFor(() => {
-      expect(mockState.editorProps.length).toBeGreaterThan(0);
-    });
-
-    expect(mockState.editorProps.at(-1)?.getValueInputProps(rule, 0)?.sourceLocator).toBeUndefined();
   });
 
   it('does not re-import form legacy defaults after an empty form-level value is persisted', async () => {

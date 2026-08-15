@@ -202,6 +202,10 @@ const surfaces: SurfaceSpec[] = [
   },
 ];
 
+const settingsHosts = surfaces.filter((surface) =>
+  ['JSBlockModel', 'JSFieldModel', 'JSItemModel', 'JSActionModel'].includes(surface.name),
+);
+
 function getRunJsCodeSchema(spec: SurfaceSpec): CodeSchema {
   const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
   const step = flow?.getStep('runJs');
@@ -398,14 +402,13 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it('runs the complete JS Template settings host contract once', async () => {
-    const spec = surfaces.find((surface) => surface.name === 'JSBlockModel') as SurfaceSpec;
+  it.each(settingsHosts)('$name runs the complete JS Template settings host contract', async (spec) => {
     const model = createSurfaceModel(spec);
     const sourceBinding = {
       type: 'js-template-entry',
-      projectId: 'jtp_settings_contract',
-      templateId: 'jtt_settings_contract',
-      kind: 'js-block',
+      projectId: `jtp_settings_contract_${spec.jsTemplateKind}`,
+      templateId: `jtt_settings_contract_${spec.jsTemplateKind}`,
+      kind: spec.jsTemplateKind,
     };
 
     await assertJsTemplateSettingsHostContract({
@@ -415,7 +418,7 @@ describe('RunJS FlowModel surfaces', () => {
       sourceBinding,
       nextSourceBinding: {
         ...sourceBinding,
-        templateId: 'jtt_settings_contract_next',
+        templateId: `jtt_settings_contract_${spec.jsTemplateKind}_next`,
       },
     });
   });

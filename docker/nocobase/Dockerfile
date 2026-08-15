@@ -46,9 +46,7 @@ RUN set -eux; \
     /etc/apt/sources.list.d/nginx.list \
     /tmp/nginx_signing.key \
     /usr/share/keyrings/nginx-archive-keyring.gpg \
-    /var/lib/apt/lists/* \
-    /usr/share/doc/* \
-    /usr/share/man/*; \
+    /var/lib/apt/lists/*; \
   git --version
 
 WORKDIR /app/nocobase

@@ -16,7 +16,6 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   normalizeSettingsForSchema,
   serializeDatePickerValue,
-  SettingsAutoForm,
   SettingsSingleField,
 } from '../components/SettingsAutoForm';
 
@@ -31,7 +30,7 @@ vi.mock('@nocobase/client-v2', async (importOriginal) => ({
   ApplicationContext: (await import('react')).createContext(null),
 }));
 
-describe('SettingsAutoForm', () => {
+describe('SettingsSingleField', () => {
   it('uses the complete candidate root for object draft visibility without rendering the object title twice', async () => {
     const onChange = vi.fn();
     const schema = {
@@ -291,64 +290,6 @@ describe('SettingsAutoForm', () => {
     });
   });
 
-  it('reports validation changes when the selected entry schema changes without changing settings', async () => {
-    const onChange = vi.fn();
-    const value = {
-      plan: 'pro',
-    };
-    const { rerender } = render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            plan: {
-              type: 'string',
-            },
-          },
-        }}
-        value={value}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalled();
-    });
-    onChange.mockClear();
-
-    rerender(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            plan: {
-              type: 'string',
-              enum: ['basic'],
-            },
-          },
-        }}
-        value={value}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        {
-          plan: 'pro',
-        },
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'plan',
-              message: 'Must be one of the allowed values',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
   it('serializes date values as YYYY-MM-DD and date-time values as ISO timestamps', () => {
     const value = dayjs('2026-07-05T01:30:00.000Z');
 
@@ -356,11 +297,12 @@ describe('SettingsAutoForm', () => {
     expect(serializeDatePickerValue({ format: 'date-time' }, value)).toBe('2026-07-05T01:30:00.000Z');
   });
 
-  it('disables radio group fields when the form is disabled', () => {
+  it('disables radio group fields when the field is disabled', () => {
     const { container } = render(
-      <SettingsAutoForm
+      <SettingsSingleField
+        fieldName="settings"
         disabled
-        schema={{
+        fieldSchema={{
           type: 'object',
           properties: {
             plan: {
@@ -412,8 +354,9 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm
-          schema={{
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={{
             type: 'object',
             properties: {
               collection: {
@@ -493,7 +436,7 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm schema={schema} value={{ displayField: 'products.name' }} />
+        <SettingsSingleField fieldName="settings" fieldSchema={schema} value={{ displayField: 'products.name' }} />
       </ApplicationContext.Provider>,
     );
 
@@ -556,7 +499,11 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm schema={schema} value={{ advanced: { collection: 'products', displayField: 'name' } }} />
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={schema}
+          value={{ advanced: { collection: 'products', displayField: 'name' } }}
+        />
       </ApplicationContext.Provider>,
     );
 
@@ -623,7 +570,11 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm schema={schema} value={{ collection: 'products', advanced: { displayField: 'name' } }} />
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={schema}
+          value={{ collection: 'products', advanced: { displayField: 'name' } }}
+        />
       </ApplicationContext.Provider>,
     );
 
@@ -695,8 +646,9 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm
-          schema={schema}
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={schema}
           value={{ advanced: { collection: 'products', filters: { displayField: 'name' } } }}
         />
       </ApplicationContext.Provider>,
@@ -785,7 +737,11 @@ describe('SettingsAutoForm', () => {
 
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm schema={schema} value={{ advanced: { dataSource: 'main', filters: {} } }} />
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={schema}
+          value={{ advanced: { dataSource: 'main', filters: {} } }}
+        />
       </ApplicationContext.Provider>,
     );
 
@@ -821,8 +777,9 @@ describe('SettingsAutoForm', () => {
     };
     const { container } = render(
       <ApplicationContext.Provider value={app as never}>
-        <SettingsAutoForm
-          schema={{
+        <SettingsSingleField
+          fieldName="settings"
+          fieldSchema={{
             type: 'object',
             properties: {
               visibleForRole: {
@@ -844,26 +801,20 @@ describe('SettingsAutoForm', () => {
   it('validates supported string formats', async () => {
     const onChange = vi.fn();
     render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            contact: {
-              type: 'string',
-              format: 'email',
-            },
-          },
+      <SettingsSingleField
+        fieldName="contact"
+        fieldSchema={{
+          type: 'string',
+          format: 'email',
         }}
-        value={{ contact: 'not-an-email' }}
+        value="not-an-email"
         onChange={onChange}
       />,
     );
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith(
-        {
-          contact: 'not-an-email',
-        },
+        'not-an-email',
         expect.objectContaining({
           errors: [
             expect.objectContaining({
@@ -879,26 +830,20 @@ describe('SettingsAutoForm', () => {
   it('treats required empty strings as present values like runtime validation', async () => {
     const onChange = vi.fn();
     render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          required: ['title'],
-          properties: {
-            title: {
-              type: 'string',
-            },
-          },
+      <SettingsSingleField
+        fieldName="title"
+        required
+        fieldSchema={{
+          type: 'string',
         }}
-        value={{ title: '' }}
+        value=""
         onChange={onChange}
       />,
     );
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith(
-        {
-          title: '',
-        },
+        '',
         expect.objectContaining({
           errors: [],
         }),
@@ -909,26 +854,20 @@ describe('SettingsAutoForm', () => {
   it('validates required null values against their schema type like runtime validation', async () => {
     const onChange = vi.fn();
     render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          required: ['title'],
-          properties: {
-            title: {
-              type: 'string',
-            },
-          },
+      <SettingsSingleField
+        fieldName="title"
+        required
+        fieldSchema={{
+          type: 'string',
         }}
-        value={{ title: null }}
+        value={null}
         onChange={onChange}
       />,
     );
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith(
-        {
-          title: null,
-        },
+        null,
         expect.objectContaining({
           errors: [
             expect.objectContaining({
@@ -944,29 +883,23 @@ describe('SettingsAutoForm', () => {
   it('validates array items against the item schema', async () => {
     const onChange = vi.fn();
     render(
-      <SettingsAutoForm
-        schema={{
-          type: 'object',
-          properties: {
-            tags: {
-              type: 'array',
-              items: {
-                type: 'string',
-                minLength: 2,
-              },
-            },
+      <SettingsSingleField
+        fieldName="tags"
+        fieldSchema={{
+          type: 'array',
+          items: {
+            type: 'string',
+            minLength: 2,
           },
         }}
-        value={{ tags: ['a'] }}
+        value={['a']}
         onChange={onChange}
       />,
     );
 
     await waitFor(() => {
       expect(onChange).toHaveBeenCalledWith(
-        {
-          tags: ['a'],
-        },
+        ['a'],
         expect.objectContaining({
           errors: [
             expect.objectContaining({

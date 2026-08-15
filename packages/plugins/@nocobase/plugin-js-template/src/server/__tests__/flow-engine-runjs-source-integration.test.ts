@@ -113,6 +113,87 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     });
   });
 
+  it('opens and saves a multi-file Dynamic Flow source back to the Flow Registry', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'dynamic-flow-runjs-source',
+      title: 'Dynamic Flow RunJS source',
+      use: 'FormModel',
+      flowRegistry: {
+        eventFlow: {
+          on: 'submit',
+          steps: {
+            runjs: {
+              use: 'runjs',
+              defaultParams: {
+                code: 'return "before";',
+              },
+            },
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const agent = await app.agent().login(user);
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-source',
+      flowKey: 'eventFlow',
+      stepKey: 'runjs',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+
+    expect(opened.status).toBe(200);
+    expect(opened.body.data).toMatchObject({
+      locator,
+      locatorKind: 'flowModel.flowRegistry.runjs',
+      legacy: {
+        code: 'return "before";',
+        version: 'v2',
+      },
+    });
+
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.repoId,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Update Dynamic Flow source',
+        entryPath: 'src/main.ts',
+        files: [
+          {
+            path: 'src/main.ts',
+            operation: 'upsert',
+            content: 'import { result } from "./result";\nreturn result;',
+            language: 'typescript',
+          },
+          {
+            path: 'src/result.ts',
+            operation: 'upsert',
+            content: 'export const result = "after from helper";',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(saved.status).toBe(200);
+    const model = await repository.findModelById('dynamic-flow-runjs-source');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams.code).toContain('after from helper');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams).not.toHaveProperty('sourceRef');
+
+    const reopened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(reopened.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/main.ts', content: expect.stringContaining('return result') }),
+        expect.objectContaining({ path: 'src/result.ts', content: expect.stringContaining('after from helper') }),
+      ]),
+    );
+  });
+
   it('bootstraps a complete ordinary workspace in the Host transaction without creating a JS Template repo', async () => {
     const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     await repository.insertModel({

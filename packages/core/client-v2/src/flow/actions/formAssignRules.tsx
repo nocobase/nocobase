@@ -23,9 +23,9 @@ import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefa
 
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
-    const { value: propValue, onChange } = props;
     const ctx = useFlowContext();
-    const t = ctx.model.translate.bind(ctx.model);
+    const { onChange, value: propsValue } = props;
+    const t = React.useMemo(() => ctx.model.translate.bind(ctx.model), [ctx.model]);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
     const canEdit = typeof onChange === 'function';
 
@@ -52,16 +52,16 @@ const FormAssignRulesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      const base = Array.isArray(propValue) ? propValue : [];
+      const base = Array.isArray(propsValue) ? propsValue : [];
       return base;
-    }, [propValue]);
+    }, [propsValue]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(propValue, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, propValue]);
+      return mergeAssignRulesWithLegacyDefaults(propsValue, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, propsValue]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
@@ -78,8 +78,6 @@ const FormAssignRulesUI = observer(
       },
       [canEdit, markInitialized, onChange],
     );
-
-    const getValueInputProps = React.useCallback(() => ({}), []);
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并（以免重复添加）。
     React.useEffect(() => {
@@ -105,7 +103,6 @@ const FormAssignRulesUI = observer(
         value={value}
         onChange={handleChange}
         showValueEditorWhenNoField
-        getValueInputProps={getValueInputProps}
         isTitleFieldCandidate={isTitleFieldCandidate}
         onSyncAssociationTitleField={onSyncAssociationTitleField}
         enableDateVariableAsConstant

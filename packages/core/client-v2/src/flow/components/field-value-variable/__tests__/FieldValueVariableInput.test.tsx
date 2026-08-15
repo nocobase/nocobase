@@ -50,7 +50,7 @@ function renderInput(options?: {
   value?: unknown;
   isDateLikeField?: boolean;
   dateComponentProps?: DateVariableComponentProps;
-  includeRunJS?: boolean;
+  allowRunJS?: boolean;
 }) {
   const onChange = vi.fn();
   render(
@@ -60,9 +60,10 @@ function renderInput(options?: {
       baseMetaTree={[{ name: 'currentUser', title: 'Current user', type: 'object', paths: ['currentUser'] }]}
       constantComponent={ConstantComponent}
       nullComponent={NullComponent}
-      runJSComponent={options?.includeRunJS === false ? undefined : RunJSComponent}
+      runJSComponent={RunJSComponent}
       isDateLikeField={options?.isDateLikeField ?? false}
       dateComponentProps={options?.dateComponentProps ?? DEFAULT_DATE_VARIABLE_COMPONENT_PROPS}
+      allowRunJS={options?.allowRunJS}
     />,
   );
   return onChange;
@@ -111,13 +112,39 @@ describe('FieldValueVariableInput', () => {
     expect(tree[4].name).toBe('currentUser');
   });
 
-  it('omits RunJS when the host does not provide an editor', async () => {
+  it('edits RunJS as a single-file code and version value', async () => {
     const runJSValue = { code: 'return 1;', version: 'v2' };
-    renderInput({ value: runJSValue, includeRunJS: false });
+    const onChange = renderInput({ value: runJSValue });
+
+    expect(mocks.variableInputProps?.converters?.resolvePathFromValue?.(runJSValue)).toEqual(['runjs']);
+    expect(
+      mocks.variableInputProps?.converters?.resolveValueFromPath?.({
+        name: 'runjs',
+        title: 'RunJS',
+        type: 'object',
+        paths: ['runjs'],
+      }),
+    ).toEqual({ code: '', version: 'v2' });
+    expect(
+      mocks.variableInputProps?.converters?.renderInputComponent?.({
+        name: 'runjs',
+        title: 'RunJS',
+        type: 'object',
+        paths: ['runjs'],
+      }),
+    ).toBe(RunJSComponent);
+
+    const edited = { code: 'return 2;', version: 'v2' };
+    mocks.variableInputProps?.onChange?.(edited);
+    expect(onChange).toHaveBeenCalledWith(edited);
+    expect(onChange.mock.calls.at(-1)?.[0]).not.toHaveProperty('sourceRef');
+  });
+
+  it('hides RunJS when explicitly disabled', async () => {
+    renderInput({ allowRunJS: false });
 
     const tree = await resolveMetaTree();
-    expect(tree.map((node) => node.name)).toEqual(['constant', 'null', 'date', 'currentUser']);
-    expect(mocks.variableInputProps?.converters?.resolvePathFromValue?.(runJSValue)).toEqual(['constant']);
+    expect(tree.map((node) => node.name)).not.toContain('runjs');
     expect(
       mocks.variableInputProps?.converters?.resolveValueFromPath?.({
         name: 'runjs',

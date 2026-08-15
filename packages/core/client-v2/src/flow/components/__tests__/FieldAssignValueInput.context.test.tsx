@@ -126,12 +126,32 @@ describe('FieldAssignValueInput context', () => {
       getPropertyMetaTree: vi.fn(async () => []),
     });
 
-    render(<FieldAssignValueInput targetPath="status" value="" onChange={vi.fn()} />);
+    const onChange = vi.fn();
+    const view = render(<FieldAssignValueInput targetPath="status" value="" onChange={onChange} />);
 
     await waitFor(() => {
       expect(engine.createModel).toHaveBeenCalled();
     });
     expect(engine.createModel).toHaveBeenCalledWith(expect.any(Object), { delegate: sourceContext });
+
+    const enabledProps = mockVariableInput.mock.calls.at(-1)?.[0];
+    const enabledTree =
+      typeof enabledProps.metaTree === 'function' ? await enabledProps.metaTree() : enabledProps.metaTree;
+    expect(enabledTree.map((node: { name?: string }) => node.name)).toContain('runjs');
+
+    const initialRunJSValue = enabledProps.converters.resolveValueFromPath({ paths: ['runjs'] });
+    expect(initialRunJSValue).toEqual({ code: '', version: 'v2' });
+    expect(initialRunJSValue).not.toHaveProperty('sourceRef');
+    const savedRunJSValue = { code: 'return 42;', version: 'v2' };
+    enabledProps.onChange(savedRunJSValue);
+    expect(onChange).toHaveBeenCalledWith(savedRunJSValue);
+    expect(onChange.mock.calls.at(-1)?.[0]).not.toHaveProperty('sourceRef');
+
+    view.rerender(<FieldAssignValueInput targetPath="status" value="" onChange={onChange} allowRunJS={false} />);
+    const disabledProps = mockVariableInput.mock.calls.at(-1)?.[0];
+    const disabledTree =
+      typeof disabledProps.metaTree === 'function' ? await disabledProps.metaTree() : disabledProps.metaTree;
+    expect(disabledTree.map((node: { name?: string }) => node.name)).not.toContain('runjs');
   });
 
   it('uses the flow model context when a configured item model has no context', async () => {

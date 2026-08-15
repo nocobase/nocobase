@@ -172,9 +172,7 @@ RUN --mount=from=assets,source=/tmp/libreoffice.tar.gz,target=/tmp/libreoffice.t
   /tmp/libreoffice-debs.list \
   /tmp/LibreOffice*_Linux_*_deb \
   /usr/share/keyrings/nginx-archive-keyring.gpg \
-  /var/lib/apt/lists/* \
-  /usr/share/doc/* \
-  /usr/share/man/* && \
+  /var/lib/apt/lists/* && \
   printf '%s\n' \
   '#!/bin/sh' \
   'exec /opt/libreoffice24.8/program/oosplash "$@"' \

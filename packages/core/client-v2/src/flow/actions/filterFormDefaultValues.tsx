@@ -25,9 +25,9 @@ import { operators } from '../../flow-compat';
 
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
-    const { value: propValue, onChange } = props;
     const ctx = useFlowContext();
-    const t = ctx.model.translate.bind(ctx.model);
+    const { onChange, value: propsValue } = props;
+    const t = React.useMemo(() => ctx.model.translate.bind(ctx.model), [ctx.model]);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
     const canEdit = typeof onChange === 'function';
 
@@ -74,15 +74,15 @@ const FilterFormDefaultValuesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      return Array.isArray(propValue) ? propValue : [];
-    }, [propValue]);
+      return Array.isArray(propsValue) ? propsValue : [];
+    }, [propsValue]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(propValue, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, propValue]);
+      return mergeAssignRulesWithLegacyDefaults(propsValue, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, propsValue]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {

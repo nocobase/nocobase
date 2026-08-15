@@ -168,6 +168,14 @@ const locator = {
   paramPath: ['code'],
 } satisfies RunJSSourceLocator;
 
+const registryLocator = {
+  kind: 'flowModel.flowRegistry.runjs',
+  modelUid: 'fm_1',
+  flowKey: 'eventFlow',
+  stepKey: 'runjs',
+  sourcePath: ['defaultParams', 'code'],
+} satisfies RunJSSourceLocator;
+
 const repository = {
   id: 'repo-1',
   repoId: 'repo-1',
@@ -510,38 +518,67 @@ describe('runJSStudioProvider', () => {
     expect(screen.getByText('Modified · +2 · -1')).toBeTruthy();
   });
 
-  it('handles only flow model step locators and prefers sourceLocator', () => {
+  it('handles flow model step and registry locators and prefers sourceLocator', () => {
     expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator })).toBe(true);
-
-    const nonStepLocators = [
-      {
-        kind: 'flowModel.flowRegistry.runjs' as const,
-        modelUid: 'fm_1',
-        flowKey: 'eventFlow',
-        stepKey: 'runjs',
-        sourcePath: ['params', 'code'],
-      },
-    ];
-    for (const nonStepLocator of nonStepLocators) {
-      expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator: nonStepLocator })).toBe(
-        false,
-      );
-    }
+    expect(runJSStudioProvider.canHandle?.({ value: { code: '', version: 'v2' }, locator: registryLocator })).toBe(
+      true,
+    );
 
     expect(
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
         locator,
-        sourceLocator: nonStepLocators[0],
+        sourceLocator: registryLocator,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       runJSStudioProvider.canHandle?.({
         value: { code: '', version: 'v2' },
-        locator: nonStepLocators[0],
+        locator: registryLocator,
         sourceLocator: locator,
       }),
     ).toBe(true);
+  });
+
+  it('clones the locator-specific path arrays before opening the workspace', async () => {
+    const stepLocator = {
+      ...locator,
+      versionPath: ['version'],
+    } satisfies RunJSSourceLocator;
+    const stepView = renderEditor(vi.fn(), { sourceLocator: stepLocator });
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:open',
+          data: expect.objectContaining({ locator: expect.objectContaining({ kind: 'flowModel.step' }) }),
+        }),
+      );
+    });
+    const stepRequest = mocks.request.mock.calls.find(([request]) => request.url === 'runJSSources:open')?.[0] as {
+      data: { locator: Extract<RunJSSourceLocator, { kind: 'flowModel.step' }> };
+    };
+    expect(stepRequest.data.locator).toEqual(stepLocator);
+    expect(stepRequest.data.locator.paramPath).not.toBe(stepLocator.paramPath);
+    expect(stepRequest.data.locator.versionPath).not.toBe(stepLocator.versionPath);
+
+    stepView.unmount();
+    mocks.request.mockClear();
+    renderEditor(vi.fn(), { sourceLocator: registryLocator });
+
+    await waitFor(() => {
+      expect(mocks.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'runJSSources:open',
+          data: expect.objectContaining({ locator: expect.objectContaining({ kind: 'flowModel.flowRegistry.runjs' }) }),
+        }),
+      );
+    });
+    const registryRequest = mocks.request.mock.calls.find(([request]) => request.url === 'runJSSources:open')?.[0] as {
+      data: { locator: Extract<RunJSSourceLocator, { kind: 'flowModel.flowRegistry.runjs' }> };
+    };
+    expect(registryRequest.data.locator).toEqual(registryLocator);
+    expect(registryRequest.data.locator.sourcePath).not.toBe(registryLocator.sourcePath);
   });
 
   it('passes host source metadata to shared toolbar contributions', async () => {

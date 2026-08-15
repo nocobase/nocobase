@@ -69,13 +69,6 @@ export type SettingsValidationResult = {
   errors: SettingsValidationError[];
 };
 
-export interface SettingsAutoFormProps {
-  schema?: Record<string, unknown> | null;
-  value?: Record<string, unknown> | null;
-  onChange?: (value: Record<string, unknown>, validation: SettingsValidationResult) => void;
-  disabled?: boolean;
-}
-
 export interface SettingsSingleFieldProps {
   fieldName?: string;
   fieldPath?: string[] | string;
@@ -335,66 +328,6 @@ export function serializeDatePickerValue(schema: JsonSchema, value: Dayjs | null
   }
   return schema.format === 'date' ? value.format('YYYY-MM-DD') : value.toISOString();
 }
-
-export const SettingsAutoForm: React.FC<SettingsAutoFormProps> = ({ schema, value, onChange, disabled }) => {
-  const { t } = useTranslation(NAMESPACE);
-  const rootSchema = React.useMemo(() => asSchema(schema), [schema]);
-  const current = React.useMemo(() => normalizeSettingsForSchema(rootSchema, value).value, [rootSchema, value]);
-  const validation = React.useMemo(() => normalizeSettingsForSchema(rootSchema, current), [rootSchema, current]);
-  const lastReportedRef = React.useRef<string>();
-  const validationErrors = React.useMemo(
-    () => formatSettingsValidationErrors(validation.errors, t),
-    [t, validation.errors],
-  );
-
-  React.useEffect(() => {
-    const normalizedValue = isRecord(value) ? value : {};
-    const valueChanged = JSON.stringify(current) !== JSON.stringify(normalizedValue);
-    const reportKey = JSON.stringify({
-      value: current,
-      errors: validation.errors,
-    });
-    if (!valueChanged && lastReportedRef.current === reportKey) {
-      return;
-    }
-    lastReportedRef.current = reportKey;
-    onChange?.(current, validation);
-  }, [current, onChange, validation, value]);
-
-  if (!rootSchema.properties || Object.keys(rootSchema.properties).length === 0) {
-    return <Alert type="info" showIcon message={t('No settings')} />;
-  }
-
-  const handleChange = (path: string[], nextValue: unknown) => {
-    const next = updateAtPath(current, path, nextValue);
-    onChange?.(next, normalizeSettingsForSchema(rootSchema, next));
-  };
-
-  return (
-    <Space direction="vertical" style={{ width: '100%' }} size={12}>
-      {validation.errors.length > 0 ? (
-        <Alert
-          type="error"
-          showIcon
-          message={t('Settings validation failed')}
-          description={validationErrors.join('\n')}
-        />
-      ) : null}
-      {Object.entries(rootSchema.properties).map(([key, childSchema]) => (
-        <SettingsField
-          key={key}
-          path={[key]}
-          rootValue={current}
-          scopeValues={[current]}
-          schema={childSchema}
-          value={getOwnValue(current, key)}
-          onChange={handleChange}
-          disabled={disabled}
-        />
-      ))}
-    </Space>
-  );
-};
 
 export const SettingsSingleField: React.FC<SettingsSingleFieldProps> = ({
   fieldName = 'value',
@@ -1110,5 +1043,3 @@ function getFields(collection: SettingsCollection): SettingsCollectionField[] {
 function toNonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
-
-export default SettingsAutoForm;
