@@ -7,10 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { act, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import React from 'react';
 import '../../../../index';
-import { DetailsBlockModel } from '../DetailsBlockModel';
+import { DetailsBlockModel, DetailsPagination } from '../DetailsBlockModel';
 import { DetailsGridModel } from '../DetailsGridModel';
 
 function setupDetailsBlockModel(options?: { filterByTk?: string | number }) {
@@ -91,6 +93,35 @@ describe('DetailsBlockModel initial pagination refresh', () => {
     await model.dispatchEvent('beforeRender', undefined, { useCache: false });
 
     expect(dispatchSpy.mock.calls.filter(([eventName]) => eventName === 'paginationChange')).toHaveLength(1);
+  });
+
+  it('renders pagination from the current count and page after filtering', () => {
+    const { model, resource } = setupDetailsBlockModel();
+    resource.setData([{ id: 3, name: 'CC', title: 'filtered' }] as any);
+    resource.setMeta({ count: 7, page: 3, pageSize: 1, totalPage: 20 });
+
+    const paginationContainer = model.renderPagination() as any;
+    const pagination = paginationContainer.props.children;
+
+    expect(pagination.props.total).toBe(7);
+    expect(pagination.props.current).toBe(3);
+    expect(pagination.props.defaultCurrent).toBeUndefined();
+  });
+
+  it('updates the rendered pagination when filtering changes only resource metadata', () => {
+    const { model, resource } = setupDetailsBlockModel();
+    resource.setData([{ id: 1, name: 'AA', title: 'foo' }] as any);
+    resource.setMeta({ count: 7, page: 1, pageSize: 1, totalPage: 7 });
+
+    render(React.createElement(DetailsPagination, { model }));
+
+    expect(screen.getByRole('list')).toBeInTheDocument();
+
+    act(() => {
+      resource.setMeta({ count: 1, page: 1, pageSize: 1, totalPage: 1 });
+    });
+
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
   });
 
   it('uses a real single-record details model and does not emit root paginationChange on initial render', async () => {

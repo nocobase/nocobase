@@ -50,7 +50,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  await ctx.cache.set('key', 'value', 60); // Кэш на 60 секунд
+  await ctx.cache.set('key', 'value', 60 * 1000); // Кэш на 60 секунд (TTL указывается в миллисекундах)
   const val = await ctx.cache.get('key');
   ctx.body = val;
 });
@@ -107,7 +107,7 @@ resourceManager.use(async (ctx) => {
 
 ```ts
 resourceManager.use(async (ctx) => {
-  const canEdit = await ctx.can('edit', 'posts');
+  const canEdit = ctx.can({ resource: 'posts', action: 'edit' });
   if (!canEdit) {
     ctx.throw(403, 'Forbidden');
   }

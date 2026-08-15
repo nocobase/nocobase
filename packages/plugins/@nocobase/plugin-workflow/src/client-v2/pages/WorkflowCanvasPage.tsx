@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useApp } from '@nocobase/client-v2';
 import { useFlowContext as useFlowEngineContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Spin, theme } from 'antd';
+import { Button, Result, Spin, theme } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { WorkflowCanvasHeader } from '../components/WorkflowCanvasHeader';
@@ -25,13 +26,14 @@ import { useT } from '../locale';
 
 export default function WorkflowCanvasPage() {
   const ctx = useFlowEngineContext();
+  const app = useApp();
   const t = useT();
   const { token } = theme.useToken();
   const params = useParams<{ id?: string }>();
   const workflowId = params.id;
   const resource = ctx.api.resource('workflows');
 
-  const { data, refresh } = useRequest(
+  const { data, loading, refresh } = useRequest(
     async () => {
       if (!workflowId) {
         return null;
@@ -86,7 +88,21 @@ export default function WorkflowCanvasPage() {
   }
 
   if (!record) {
-    return <Spin />;
+    if (loading) {
+      return <Spin />;
+    }
+
+    return (
+      <Result
+        status="404"
+        title={t('Workflow does not exist')}
+        extra={
+          <Button type="primary" href={app.getHref(app.pluginSettingsManager.getRoutePath('workflow'))}>
+            {t('Back to Workflow List')}
+          </Button>
+        }
+      />
+    );
   }
 
   return (

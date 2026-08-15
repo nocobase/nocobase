@@ -12,9 +12,9 @@ import { App, Button, Form, Input, Modal } from 'antd';
 import React from 'react';
 import { useBackupAppInfo } from '../hooks/useBackupAppInfo';
 import { useCheckBackupMessage } from '../hooks/useCheckBackupMessage';
-import { useRestoreTask } from '../hooks/useRestoreTask';
 import { useT } from '../locale';
 import type { BackupFile } from './BackupsTable';
+import { useRestoreLoading } from './RestoreLoadingProvider';
 
 type RestoreTaskBody = {
   task?: string;
@@ -35,7 +35,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
   const [progressing, setProgressing] = React.useState(false);
   const [dbSchema, setDbSchema] = React.useState('');
   const submittingRef = React.useRef(false);
-  const restoreTaskId = useRestoreTask();
+  const { restoring, startRestoring } = useRestoreLoading();
   const { showCheckBackupMessage } = useCheckBackupMessage();
   const {
     database: { schema: currentDbSchema, dialect },
@@ -70,7 +70,10 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
           dbSchema,
         },
       });
-      restoreTaskId.current = response.data?.data?.task ?? null;
+      const taskId = response.data?.data?.task ?? null;
+      if (taskId) {
+        startRestoring(taskId);
+      }
       showCheckBackupMessage();
       setIsModalVisible(false);
       resetFields();
@@ -103,7 +106,7 @@ export const RestoreFromBackup = ({ backup }: { backup: BackupFile }) => {
 
   return (
     <>
-      <Button type="link" size="small" onClick={showModal}>
+      <Button type="link" size="small" disabled={restoring} onClick={showModal}>
         {t('Restore')}
       </Button>
       <Modal

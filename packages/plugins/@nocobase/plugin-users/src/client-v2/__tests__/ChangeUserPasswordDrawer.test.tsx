@@ -11,18 +11,21 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import ChangeUserPasswordDrawer from '../pages/ChangeUserPasswordDrawer';
 
-const { formItems, setFieldsValue, update, success, onSubmitted } = vi.hoisted(() => ({
+const { formItems, setFieldsValue, update, success, onSubmitted, toErrMessages } = vi.hoisted(() => ({
   formItems: [] as Array<Record<string, any>>,
   setFieldsValue: vi.fn(),
   update: vi.fn(),
   success: vi.fn(),
   onSubmitted: vi.fn(),
+  toErrMessages: vi.fn(),
 }));
 
 vi.mock('antd', async () => {
   const React = await import('react');
 
   return {
+    Alert: ({ message, role }: { message?: React.ReactNode; role?: string }) =>
+      React.createElement('div', { role }, message),
     Button: ({ children, onClick }: { children?: React.ReactNode; onClick?: () => void }) =>
       React.createElement('button', { onClick }, children),
     Col: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
@@ -66,6 +69,7 @@ vi.mock('@nocobase/flow-engine', () => ({
       },
     },
     api: {
+      toErrMessages,
       resource: () => ({
         update,
       }),
@@ -97,8 +101,12 @@ vi.mock('../components/resource', async () => {
           'button',
           {
             onClick: async () => {
-              await onSubmit({ password: 'New-password-1' });
-              await handleSubmitted();
+              try {
+                await onSubmit({ password: 'New-password-1' });
+                await handleSubmitted();
+              } catch {
+                // Keep the drawer open when submission fails.
+              }
             },
           },
           'Submit drawer',
@@ -122,6 +130,7 @@ describe('ChangeUserPasswordDrawer', () => {
     update.mockReset();
     success.mockReset();
     onSubmitted.mockReset();
+    toErrMessages.mockReset();
   });
 
   it('generates a password into the form', () => {
@@ -181,5 +190,28 @@ describe('ChangeUserPasswordDrawer', () => {
     });
     expect(success).toHaveBeenCalledWith('Saved successfully');
     expect(onSubmitted).toHaveBeenCalled();
+  });
+
+  it('shows the API error and skips submitted side effects when changing the password fails', async () => {
+    const error = new Error('Request failed');
+    update.mockRejectedValue(error);
+    toErrMessages.mockReturnValue([{ message: 'Password does not meet the policy' }]);
+
+    render(
+      <ChangeUserPasswordDrawer
+        user={{
+          id: 18,
+          username: 'alice',
+        }}
+        onSubmitted={onSubmitted}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit drawer' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Password does not meet the policy');
+    expect(toErrMessages).toHaveBeenCalledWith(error);
+    expect(success).not.toHaveBeenCalled();
+    expect(onSubmitted).not.toHaveBeenCalled();
   });
 });

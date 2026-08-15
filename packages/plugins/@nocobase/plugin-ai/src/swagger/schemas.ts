@@ -203,6 +203,12 @@ export const schemas = {
       supportWebSearch: {
         type: 'boolean',
       },
+      webSearchModels: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
     },
     additionalProperties: false,
   },

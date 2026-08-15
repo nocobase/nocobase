@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 AI đã sinh cấu trúc thư mục plugin chuẩn dưới `packages/plugins/@my-project/plugin-watermark/`.
 
+Sau khi tạo xong scaffold, hãy khởi động chế độ phát triển để những thay đổi code sau đó được hot-reload — với dự án tạo bằng `nb init`, chạy `nb source dev` tại thư mục gốc dự án (`<app-path>`); với repo source code NocoBase bạn tự clone, chạy `yarn dev` tại thư mục gốc source code.
+
 ### 3. Viết code phía server
 
 AI sẽ sinh các file sau:

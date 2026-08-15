@@ -424,8 +424,13 @@ export abstract class LLMProvider {
     return err?.message ?? 'Unexpected LLM service error';
   }
 
-  reshapeAIMessage(_options: { aiMessage: AIMessage; values: AIMessageInput }) {}
+  prepareStoredAssistantAdditionalKwargs(
+    additionalKwargs?: Record<string, unknown>,
+  ): Record<string, unknown> | undefined {
+    return additionalKwargs;
+  }
 
+  reshapeAIMessage(_options: { aiMessage: AIMessage; values: AIMessageInput }) {}
   protected get documentLoader(): CachedDocumentLoader {
     return this.aiPlugin.documentLoaders.cached;
   }

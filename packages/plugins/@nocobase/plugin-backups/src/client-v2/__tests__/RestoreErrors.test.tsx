@@ -8,11 +8,12 @@
  */
 
 import { createMockClient, Plugin } from '@nocobase/client-v2';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { RestoreFromBackup } from '../components/RestoreFromBackup';
 import { RestoreFromLocal } from '../components/RestoreFromLocal';
 import type { BackupFile } from '../components/BackupsTable';
+import { RestoreLoadingProvider } from '../components/RestoreLoadingProvider';
 
 const backup: BackupFile = {
   name: 'backup.nbdata',
@@ -30,6 +31,7 @@ const RestoreTestPage = () => (
 
 class RestoreTestPlugin extends Plugin {
   async load() {
+    this.app.use(RestoreLoadingProvider);
     this.router.add('root', {
       path: '/',
       Component: RestoreTestPage,
@@ -116,15 +118,27 @@ describe('backup restore errors', () => {
     expect(passwordInput).toHaveValue('wrong-password');
   });
 
-  it('closes the local restore dialog after the restore task starts successfully', async () => {
+  it('keeps restore loading visible after a background failure and through the upgrade state', async () => {
     const app = renderRestorePage();
+    type RestoreStatusMockResponse = [number, { data: { inProgress: boolean; message: string } }];
+    let resolveRestoreStatus: ((response: RestoreStatusMockResponse) => void) | undefined;
     app.apiMock.onPost('backups:upload').reply(200, {
       data: {
         task: 'restore-task',
       },
     });
+    app.apiMock.onGet('backups:restoreStatus').reply(
+      () =>
+        new Promise<RestoreStatusMockResponse>((resolve) => {
+          resolveRestoreStatus = resolve;
+        }),
+    );
 
-    fireEvent.click(await screen.findByText('Restore backup from local'));
+    const restoreFromLocal = await screen.findByText('Restore backup from local');
+    act(() => {
+      app.maintained = true;
+    });
+    fireEvent.click(restoreFromLocal);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     fireEvent.change(fileInput, {
       target: {
@@ -135,7 +149,39 @@ describe('backup restore errors', () => {
 
     await waitFor(() => {
       expect(app.apiMock.history.post).toHaveLength(1);
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Restore backup from local' })).not.toBeInTheDocument();
     });
+
+    expect(await screen.findByText('Restoring backup')).toBeInTheDocument();
+    await waitFor(() => expect(resolveRestoreStatus).toBeTypeOf('function'), { timeout: 5000 });
+    await act(async () => {
+      resolveRestoreStatus?.([
+        200,
+        {
+          data: {
+            inProgress: false,
+            message: 'Restore failed',
+          },
+        },
+      ]);
+      await Promise.resolve();
+    });
+
+    expect(await screen.findByText('Restore failed')).toBeInTheDocument();
+    expect(app.maintaining).toBe(true);
+    expect(app.maintained).toBe(true);
+    expect(screen.getByText('Restoring backup')).toBeInTheDocument();
+
+    act(() => {
+      app.maintained = true;
+      app.maintaining = true;
+      app.error = Object.assign(new Error('Loading data sources...'), {
+        code: 'APP_COMMANDING',
+        command: { name: 'upgrade' },
+      });
+    });
+
+    expect(screen.getByText('Restoring backup')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

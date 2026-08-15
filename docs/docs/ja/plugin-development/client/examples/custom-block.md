@@ -51,6 +51,8 @@ yarn pm create @my-project/plugin-simple-block
 
 `packages/plugins/@my-project/plugin-simple-block` 配下に基本的なファイル構成が生成されます。詳しくは[はじめてのプラグインを書く](../../write-your-first-plugin)をご覧ください。
 
+続いて開発モードを起動すると、以降はコードを修正するだけでホットリロードされます。`nb init` で作成したプロジェクトはプロジェクトのルートディレクトリ（`<app-path>`）で `nb source dev` を、自分で clone したソースリポジトリはソースコードのルートディレクトリで `yarn dev` を実行してください。
+
 ## ステップ2：ブロックモデルの作成
 
 `src/client-v2/models/SimpleBlockModel.tsx` を新規作成します。これがプラグインの中核で、ブロックのレンダリング方法と設定方法を定義します。

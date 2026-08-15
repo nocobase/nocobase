@@ -325,4 +325,76 @@ describe('flowSurfaces field binding registry', () => {
       ),
     ).toEqual(['DisplayTextFieldModel', 'DisplaySubListFieldModel', 'DisplaySubTableFieldModel']);
   });
+
+  it('should use Cascader for tree to-one filter fields without changing other relation defaults', () => {
+    const treeToOneField = {
+      interface: 'm2o',
+      targetCollection: {
+        template: 'tree',
+      },
+    };
+    const runtimeTreeToOneField = {
+      interface: 'm2o',
+      targetCollection: () => ({
+        options: {
+          template: 'tree',
+        },
+      }),
+    };
+    const generalToOneField = {
+      interface: 'm2o',
+      targetCollection: {
+        template: 'general',
+      },
+    };
+    const treeToManyField = {
+      interface: 'm2m',
+      targetCollection: {
+        template: 'tree',
+      },
+    };
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: treeToOneField,
+      }),
+    ).toMatchObject({
+      wrapperUse: 'FilterFormItemModel',
+      fieldUse: 'CascadeSelectFieldModel',
+      inferredFieldUse: 'CascadeSelectFieldModel',
+    });
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: treeToOneField,
+        requestedFieldUse: 'CascadeSelectFieldModel',
+      }).fieldUse,
+    ).toBe('CascadeSelectFieldModel');
+    expect(
+      getSupportedFieldComponentUseSet({
+        containerUse: 'FilterFormBlockModel',
+        field: treeToOneField,
+      })?.has('CascadeSelectFieldModel'),
+    ).toBe(true);
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: runtimeTreeToOneField,
+      }).fieldUse,
+    ).toBe('CascadeSelectFieldModel');
+
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: generalToOneField,
+      }).fieldUse,
+    ).toBe('FilterFormRecordSelectFieldModel');
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: treeToManyField,
+      }).fieldUse,
+    ).toBe('FilterFormRecordSelectFieldModel');
+  });
 });

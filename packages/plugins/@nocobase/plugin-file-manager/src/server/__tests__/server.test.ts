@@ -869,6 +869,22 @@ describe('file manager > server', () => {
         expect(response.headers.location).toBe(storageUrl);
       });
 
+      it('preserves the sub-application when redirecting to local storage', async () => {
+        await app.destroy();
+        app = await getApp({ name: 'sub-app' });
+        agent = app.agent();
+        db = app.db;
+        plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+
+        const { body } = await agent.resource('attachments').create({
+          [FILE_FIELD_NAME]: path.resolve(__dirname, './files/text.txt'),
+        });
+        const response = await agent.get(body.data.url);
+
+        expect(response.status).toBe(302);
+        expect(response.headers.location).toBe(`${await plugin.getFileURL(body.data)}?__appName=sub-app`);
+      });
+
       it('keeps permanent URLs without extname compatible', async () => {
         const admin = await db.getRepository('users').findOne();
         const loggedAgent = await app.agent().login(admin);
@@ -1133,7 +1149,7 @@ describe('file manager > server', () => {
 
           const response = await loggedAgent.get(body.data.url);
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getFileURL(body.data));
+          expect(response.headers.location).toBe(`${await plugin.getFileURL(body.data)}?__appName=subapp`);
 
           const wrongAppResponse = await loggedAgent.get(`/files/main/main/attachments/${body.data.id}`);
           expect(wrongAppResponse.status).toBe(404);
@@ -1476,7 +1492,7 @@ describe('file manager > server', () => {
             .get(file.get('url') as string)
             .set('Cookie', cookieHeader);
           expect(response.status).toBe(302);
-          expect(response.headers.location).toBe(await plugin.getFileURL(file));
+          expect(response.headers.location).toBe(`${await plugin.getFileURL(file)}?__appName=subapp`);
 
           const fileTemplateRecord = await plugin.createFileRecord({
             collectionName: 'files',
@@ -1491,7 +1507,9 @@ describe('file manager > server', () => {
             .get(fileTemplateRecord.get('url') as string)
             .set('Cookie', cookieHeader);
           expect(fileTemplateResponse.status).toBe(302);
-          expect(fileTemplateResponse.headers.location).toBe(await plugin.getFileURL(fileTemplateRecord));
+          expect(fileTemplateResponse.headers.location).toBe(
+            `${await plugin.getFileURL(fileTemplateRecord)}?__appName=subapp`,
+          );
 
           const dynamicCollectionName = 't_8jbl7u3wx4j';
           await createFileTemplateCollection(db, dynamicCollectionName);
@@ -1508,7 +1526,9 @@ describe('file manager > server', () => {
             .get(dynamicFileTemplateRecord.get('url') as string)
             .set('Cookie', cookieHeader);
           expect(dynamicFileTemplateResponse.status).toBe(302);
-          expect(dynamicFileTemplateResponse.headers.location).toBe(await plugin.getFileURL(dynamicFileTemplateRecord));
+          expect(dynamicFileTemplateResponse.headers.location).toBe(
+            `${await plugin.getFileURL(dynamicFileTemplateRecord)}?__appName=subapp`,
+          );
         } finally {
           app.options.name = originalName;
           restoreEnv('APP_PUBLIC_PATH', originalPath);

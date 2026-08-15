@@ -70,6 +70,7 @@ import {
   installMobileLayoutRouteRepository,
   refreshMobileLayoutAccessibleRoutes,
 } from '../mobileRouteRepository';
+import { installMobileDesktopRouteWriteScope } from '../mobileDesktopRouteWriteScope';
 import {
   Icon,
   IconPicker,
@@ -784,7 +785,13 @@ const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel
     ],
   );
   useLayoutEffect(() => {
-    return installMobileLayoutRouteRepository(model);
+    const uninstallRouteRepository = installMobileLayoutRouteRepository(model);
+    const uninstallDesktopRouteWriteScope = installMobileDesktopRouteWriteScope(model);
+
+    return () => {
+      uninstallDesktopRouteWriteScope();
+      uninstallRouteRepository();
+    };
   }, [model]);
 
   useEffect(() => {

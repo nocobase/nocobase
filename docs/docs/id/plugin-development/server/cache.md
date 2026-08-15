@@ -212,7 +212,7 @@ export default class PluginCacheDemo extends Plugin {
     });
 
     // Membuat cache menggunakan store yang baru terdaftar
-    const redisCache = await this.app.createCache({
+    const redisCache = await this.app.cacheManager.createCache({
       name: 'redisCache',
       store: 'redis',
       prefix: 'app:',

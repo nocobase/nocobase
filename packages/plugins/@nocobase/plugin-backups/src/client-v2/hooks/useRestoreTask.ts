@@ -7,12 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useApp } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { App } from 'antd';
 import React, { useEffect } from 'react';
 import { NAMESPACE } from '../constants';
-import { useCheckBackupMessage } from './useCheckBackupMessage';
 
 type RestoreStatus = {
   inProgress: boolean;
@@ -23,30 +21,31 @@ type ResourceResponse<T> = {
   data?: T;
 };
 
-type BackupRuntimeApp = {
-  maintaining?: boolean;
-};
-
 export function useRestoreTask() {
   const ctx = useFlowContext();
-  const app = useApp() as BackupRuntimeApp;
   const restoreTaskId = React.useRef<string | null>(null);
   const { notification } = App.useApp();
-  const { hideCheckBackupMessage } = useCheckBackupMessage();
 
   useEffect(() => {
+    let checking = false;
+    let disposed = false;
     const checkRestoreTask = async () => {
-      if (!restoreTaskId.current) {
+      const taskId = restoreTaskId.current;
+      if (!taskId || checking) {
         return;
       }
+      checking = true;
       try {
         const response = await ctx.api.request<ResourceResponse<RestoreStatus>>({
           url: `${NAMESPACE}:restoreStatus`,
           method: 'get',
           params: {
-            task: restoreTaskId.current,
+            task: taskId,
           },
         });
+        if (disposed || restoreTaskId.current !== taskId) {
+          return;
+        }
         const status = response.data?.data;
         if (!status) {
           return;
@@ -55,16 +54,22 @@ export function useRestoreTask() {
           restoreTaskId.current = null;
         }
         if (status.message) {
-          hideCheckBackupMessage();
           notification.error({ message: status.message, role: 'alert' });
         }
       } catch (error) {
-        console.error(error);
+        if (!disposed) {
+          console.error(error);
+        }
+      } finally {
+        checking = false;
       }
     };
     const interval = setInterval(checkRestoreTask, 3000);
-    return () => clearInterval(interval);
-  }, [app.maintaining, ctx.api, hideCheckBackupMessage, notification]);
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+    };
+  }, [ctx.api, notification]);
 
   return restoreTaskId;
 }

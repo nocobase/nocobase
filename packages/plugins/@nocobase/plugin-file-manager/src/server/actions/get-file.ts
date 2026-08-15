@@ -27,6 +27,15 @@ type StorageFileURLResolver = {
   }) => Promise<string | undefined>;
 };
 
+function preserveSubAppInLocalURL(url: string, appName?: string) {
+  if (!appName || appName === 'main' || !url.startsWith('/') || url.startsWith('//')) {
+    return url;
+  }
+  const [urlWithoutHash, hash] = url.split('#', 2);
+  const separator = urlWithoutHash.includes('?') ? '&' : '?';
+  return `${urlWithoutHash}${separator}__appName=${encodeURIComponent(appName)}${hash ? `#${hash}` : ''}`;
+}
+
 export async function getFile(ctx: Context, next: Next) {
   const collection = ctx.dataSource.collectionManager.getCollection(ctx.action.resourceName);
   if (!collection || (collection.name !== 'attachments' && collection.options?.template !== 'file')) {
@@ -125,13 +134,14 @@ export async function getFile(ctx: Context, next: Next) {
   const download = !temporaryAccess && ctx.method === 'GET' && ctx.query.download === '1';
   const preview = download ? false : temporaryAccess ? false : Boolean(ctx.state.fileAccess?.preview);
   const dataSource = ctx.dataSource as DataSource & StorageFileURLResolver;
-  const finalUrl =
+  const storageUrl =
     (await dataSource.resolveStorageFileURL?.({
       collectionName: collection.name,
       file: getFilePlainObject(file as AttachmentModel) as Record<string, unknown>,
       preview,
       download,
     })) || (await plugin.getFileURL(file, preview, { download }));
+  const finalUrl = preserveSubAppInLocalURL(storageUrl, ctx.state.fileAccess?.appName);
   ctx.status = 302;
   ctx.redirect(finalUrl);
   await next();

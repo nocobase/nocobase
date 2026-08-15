@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 AI menghasilkan struktur direktori Plugin standar di `packages/plugins/@my-project/plugin-watermark/`.
 
+Setelah scaffold selesai dibuat, jalankan mode development agar perubahan kode langsung ter-hot update: untuk proyek yang dibuat dengan `nb init`, jalankan `nb source dev` di direktori root proyek (`<app-path>`); untuk repository source code NocoBase yang Anda clone sendiri, jalankan `yarn dev` di direktori root source code.
+
 ### 3. Menulis Kode Sisi Server
 
 AI akan menghasilkan file berikut:

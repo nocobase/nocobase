@@ -91,6 +91,7 @@ function createBlock(
   options: {
     selectedRows?: { id: number }[];
     filterTargetKey?: string | string[];
+    filter?: Record<string, unknown>;
     runAction?: ReturnType<typeof vi.fn>;
   } = {},
 ) {
@@ -130,7 +131,7 @@ function createBlock(
     },
     resource: {
       getSelectedRows: vi.fn(() => selectedRows),
-      getFilter: vi.fn(() => ({ status: 'draft' })),
+      getFilter: vi.fn(() => options.filter ?? { status: 'draft' }),
       getAppends: vi.fn(() => ['author']),
       getSort: vi.fn(() => ['-createdAt']),
       runAction,
@@ -247,9 +248,9 @@ describe('ExportActionModel', () => {
         title: 't:Posts',
         appends: ['author'],
         sort: ['-createdAt'],
-        filter: {
+        filter: JSON.stringify({
           id: ['tk-1', 'tk-2'],
-        },
+        }),
       },
     });
     expect(fileSaverMocks.saveAs).toHaveBeenCalledWith(expect.any(Blob), 't:Posts.xlsx');
@@ -268,9 +269,35 @@ describe('ExportActionModel', () => {
       'export',
       expect.objectContaining({
         params: expect.objectContaining({
-          filter: {
+          filter: JSON.stringify({
             status: 'draft',
-          },
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('serializes a nested resource filter before exporting', async () => {
+    const filter = {
+      $and: [
+        {
+          $or: [{ 'org_oho.uuid': { $eq: '1' } }, { 'org_o2m.company': { $eq: 'NocoBase' } }],
+        },
+      ],
+    };
+    const block = createBlock({
+      filter,
+    });
+    const model = createModel('export-action-nested-filter');
+    const step = getExportStep(model);
+
+    await step.handler?.(createCtx(block, []));
+
+    expect(block.resource.runAction).toHaveBeenCalledWith(
+      'export',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          filter: JSON.stringify(filter),
         }),
       }),
     );
@@ -290,9 +317,9 @@ describe('ExportActionModel', () => {
       'export',
       expect.objectContaining({
         params: expect.objectContaining({
-          filter: {
+          filter: JSON.stringify({
             $or: ['tk-3'],
-          },
+          }),
         }),
       }),
     );

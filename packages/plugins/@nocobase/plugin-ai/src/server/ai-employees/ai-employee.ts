@@ -56,6 +56,7 @@ import {
   prepareToolsForFrontendConversation,
   shouldAutoExecuteFrontendTool,
 } from '../frontend-tools';
+import { isReasoningFinishChunk, ReasoningStreamState, StreamConversation } from './reasoning-stream-state';
 
 export interface ModelRef {
   llmService: string;
@@ -526,10 +527,21 @@ export class AIEmployee {
     const aiMessageIdMap = new Map<string, string>();
     const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
-    let isReasoning = false;
+    const reasoningState = new ReasoningStreamState();
+    const stopReasoning = async (conversation: StreamConversation) => {
+      if (reasoningState.stop(conversation)) {
+        await this.protocol.with(conversation).stopReasoning();
+      }
+    };
+    const stopAllReasoning = async () => {
+      for (const conversation of reasoningState.drain()) {
+        await this.protocol.with(conversation).stopReasoning();
+      }
+    };
     let gathered: any;
     signal.addEventListener('abort', async () => {
       try {
+        await stopAllReasoning();
         if (gathered?.type === 'ai') {
           const values = convertAIMessage({
             aiEmployee: this,
@@ -573,30 +585,32 @@ export class AIEmployee {
           const { currentConversation } = metadata;
           if (chunk.type === 'ai') {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
-            if (chunk.content) {
-              if (isReasoning) {
-                isReasoning = false;
-                await this.protocol.with(currentConversation).stopReasoning();
-              }
-              const parsedContent = provider.parseResponseChunk(chunk.content);
-              if (parsedContent) {
-                await this.protocol.with(currentConversation).content(parsedContent);
-              }
+
+            const reasoningContent = provider.parseReasoningContent(chunk);
+            if (reasoningContent) {
+              reasoningState.start(currentConversation);
+              await this.protocol.with(currentConversation).reasoning(reasoningContent);
+            }
+
+            const parsedContent = chunk.content ? provider.parseResponseChunk(chunk.content) : null;
+            if (parsedContent) {
+              await stopReasoning(currentConversation);
+              await this.protocol.with(currentConversation).content(parsedContent);
             }
 
             if (chunk.tool_call_chunks?.length) {
+              await stopReasoning(currentConversation);
               await this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
+              await stopReasoning(currentConversation);
               await this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
-            const reasoningContent = provider.parseReasoningContent(chunk);
-            if (reasoningContent) {
-              isReasoning = true;
-              await this.protocol.with(currentConversation).reasoning(reasoningContent);
+            if (isReasoningFinishChunk(chunk)) {
+              await stopReasoning(currentConversation);
             }
           }
         } else if (mode === 'updates') {
@@ -653,6 +667,7 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
+            await stopReasoning(currentConversation);
             await this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
@@ -716,6 +731,7 @@ export class AIEmployee {
         }
       }
 
+      await stopAllReasoning();
       if (this.protocol.statistics.sent === 0 && !signal.aborted && !allowEmpty) {
         this.sendErrorResponse('Empty message');
         return;
@@ -723,6 +739,7 @@ export class AIEmployee {
 
       await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
+      await stopAllReasoning();
       this.ctx.log.error(err);
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
@@ -1347,19 +1364,20 @@ If information is missing, clearly state it in the summary.</Important>`;
         });
         continue;
       }
+      const additionalKwargs = sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
+        onDiscard: (info) => {
+          this.logger.warn('Discard malformed raw tool calls from AI message', {
+            phase: 'formatMessages',
+            messageId: msg.metadata?.id,
+            ...info,
+          });
+        },
+      }).additionalKwargs;
       formattedMessages.push({
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
-        additional_kwargs: sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
-          onDiscard: (info) => {
-            this.logger.warn('Discard malformed raw tool calls from AI message', {
-              phase: 'formatMessages',
-              messageId: msg.metadata?.id,
-              ...info,
-            });
-          },
-        }).additionalKwargs,
+        additional_kwargs: provider.prepareStoredAssistantAdditionalKwargs(additionalKwargs),
       });
     }
 

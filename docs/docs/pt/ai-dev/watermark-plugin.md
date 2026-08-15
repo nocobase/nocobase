@@ -85,6 +85,8 @@ yarn pm create @my-project/plugin-watermark
 
 A IA gera a estrutura padrão de diretórios do plugin em `packages/plugins/@my-project/plugin-watermark/`.
 
+Depois que o scaffold for criado, inicie o modo de desenvolvimento para que as alterações de código tenham hot reload: em projetos criados com `nb init`, execute `nb source dev` no diretório raiz do projeto (`<app-path>`); se você mesmo clonou o repositório de código-fonte do NocoBase, execute `yarn dev` no diretório raiz do código-fonte.
+
 ### 3. Escrever o código do servidor
 
 A IA gera os seguintes arquivos:

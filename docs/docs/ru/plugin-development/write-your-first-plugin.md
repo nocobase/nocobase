@@ -22,50 +22,83 @@ yarn pm create @my-project/plugin-hello
 После успешного выполнения команды в каталоге `packages/plugins/@my-project/plugin-hello` будут созданы базовые файлы. Структура по умолчанию:
 
 ```bash
-├─ /packages/plugins/@my-project/plugin-hello
-  ├─ package.json
-  ├─ README.md
-  ├─ client.d.ts
-  ├─ client.js
-  ├─ server.d.ts
-  ├─ server.js
-  └─ src
-     ├─ index.ts                 # Экспорт серверного плагина по умолчанию
-     ├─ client                   # Расположение клиентского кода
-     │  ├─ index.tsx             # Класс клиентского плагина, экспортируемый по умолчанию
-     │  ├─ plugin.tsx            # Точка входа плагина (расширяет @nocobase/client Plugin)
-     │  ├─ models                # Необязательно: модели клиентской части (например, узлы потока)
-     │  │  └─ index.ts
-     │  └─ utils
-     │     ├─ index.ts
-     │     └─ useT.ts
-     ├─ server                   # Расположение серверного кода
-     │  ├─ index.ts              # Класс серверного плагина, экспортируемый по умолчанию
-     │  ├─ plugin.ts             # Точка входа плагина (расширяет @nocobase/server Plugin)
-     │  ├─ collections           # Необязательно: серверные коллекции
-     │  ├─ migrations            # Необязательно: миграции данных
-     │  └─ utils
-     │     └─ index.ts
-     ├─ utils
-     │  ├─ index.ts
-     │  └─ tExpr.ts
-     └─ locale                   # Необязательно: мультиязычность
-        ├─ en-US.json
-        └─ zh-CN.json
+packages/plugins/@my-project/plugin-hello/
+├─ package.json
+├─ README.md
+├─ .npmignore
+├─ client-v2.d.ts            # Объявление типов точки входа клиента v2
+├─ client-v2.js              # Точка входа клиента v2
+├─ client.d.ts               # Объявление типов точки входа клиента v1
+├─ client.js                 # Точка входа клиента v1
+├─ server.d.ts               # Объявление типов серверной точки входа
+├─ server.js                 # Серверная точка входа
+└─ src
+   ├─ index.ts               # Экспорт серверного плагина по умолчанию
+   ├─ client-v2              # Расположение клиентского кода v2
+   │  ├─ index.tsx           # Класс клиентского плагина, экспортируемый по умолчанию
+   │  ├─ plugin.tsx          # Точка входа плагина (расширяет @nocobase/client-v2 Plugin)
+   │  └─ client.d.ts
+   ├─ client                 # Расположение клиентского кода v1
+   │  ├─ index.tsx
+   │  ├─ plugin.tsx
+   │  ├─ locale.ts
+   │  ├─ models
+   │  │  └─ index.ts
+   │  └─ client.d.ts
+   ├─ server                 # Расположение серверного кода
+   │  ├─ index.ts            # Класс серверного плагина, экспортируемый по умолчанию
+   │  ├─ plugin.ts           # Точка входа плагина (расширяет @nocobase/server Plugin)
+   │  └─ collections         # Серверные коллекции (изначально пустой каталог)
+   └─ locale                 # Ресурсы локализации
+      ├─ en-US.json
+      └─ zh-CN.json
 ```
 
-После создания откройте в браузере страницу менеджера плагинов (URL по умолчанию: http://localhost:13000/admin/settings/plugin-manager), чтобы проверить, появился ли плагин в списке.
+Каркас генерирует минимальный скелет — в `src/client-v2/` есть только файлы точки входа. Каталог `models/` и файл `locale.ts`, используемые в следующих шагах, вы создаёте самостоятельно.
+
+Затем запустите режим разработки, чтобы изменения кода подхватывались горячей перезагрузкой:
+
+- Если проект создан с помощью NocoBase CLI (`nb init`), выполните в корне проекта (`<app-path>`):
+
+  ```bash
+  nb source dev
+  ```
+
+- Если вы самостоятельно склонировали репозиторий с исходным кодом NocoBase, выполните в корне исходников:
+
+  ```bash
+  yarn dev
+  ```
+
+После запуска откройте в браузере страницу менеджера плагинов (URL по умолчанию: http://localhost:13000/admin/settings/plugin-manager), чтобы проверить, появился ли плагин в списке.
 
 ## Шаг 2: реализуйте простой клиентский блок
 
 Далее добавим в плагин пользовательскую модель блока для отображения приветственного сообщения.
 
-1. **Создайте новый файл модели блока** `client/models/HelloBlockModel.tsx`:
+1. **Создайте файл со вспомогательными функциями перевода** `src/client-v2/locale.ts`. `tExpr` объявляет выражение перевода с пространством имён, а `useT` даёт функцию перевода внутри компонентов:
+
+```ts
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (str: string) => engine.context.t(str, { ns: [pkg.name, 'client'] });
+}
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [pkg.name, 'client'] });
+}
+```
+
+2. **Создайте новый файл модели блока** `src/client-v2/models/HelloBlockModel.tsx`:
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client';
 import React from 'react';
-import { tExpr } from '../utils';
+import { BlockModel } from '@nocobase/client-v2';
+import { tExpr } from '../locale';
 
 export class HelloBlockModel extends BlockModel {
   renderComponent() {
@@ -83,18 +116,27 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Зарегистрируйте модель блока**. Отредактируйте `client/models/index.ts`, чтобы экспортировать новую модель для загрузки клиентской части во время выполнения:
+3. **Зарегистрируйте модель блока**. Создать файл модели недостаточно — клиентская среда выполнения не сканирует каталог `models/` автоматически, поэтому модель нужно явно зарегистрировать в точке входа плагина. Отредактируйте `src/client-v2/plugin.tsx` и объявите способ загрузки модели через `registerModelLoaders` внутри `load()`:
 
-```ts
-import { ModelConstructor } from '@nocobase/flow-engine';
-import { HelloBlockModel } from './HelloBlockModel';
+```tsx pure
+import { Plugin } from '@nocobase/client-v2';
 
-export default {
-  HelloBlockModel,
-} as Record<string, ModelConstructor>;
+export class PluginHelloClientV2 extends Plugin {
+  async load() {
+    this.flowEngine.registerModelLoaders({
+      HelloBlockModel: {
+        loader: () => import('./models/HelloBlockModel'),
+      },
+    });
+  }
+}
+
+export default PluginHelloClientV2;
 ```
 
-После сохранения кода, если у вас запущен скрипт разработки, в терминале должны появиться логи горячей перезагрузки.
+`registerModelLoaders` принимает функции отложенной загрузки, поэтому модель загружается только тогда, когда она действительно используется. Ключ (`HelloBlockModel`) должен совпадать с именем класса модели — по нему среда выполнения извлекает класс модели из именованных экспортов модуля.
+
+После сохранения кода, если у вас запущен режим разработки, в терминале должны появиться логи горячей перезагрузки.
 
 ## Шаг 3: активируйте и протестируйте плагин
 
@@ -152,11 +194,17 @@ yarn nocobase tar @my-project/plugin-hello
 
 > Примечание: если плагин создан в исходном репозитории, первая сборка запустит полную проверку типов всего репозитория, что может занять время. Рекомендуется убедиться, что зависимости установлены, а репозиторий находится в собираемом состоянии.
 
-После завершения сборки файл пакета по умолчанию находится по пути `storage/tar/@my-project/plugin-hello.tar.gz`.
+После завершения сборки файл пакета по умолчанию находится в каталоге `storage/tar/` с именем `<имя-пакета>-<версия>.tgz` — например, `storage/tar/@my-project/plugin-hello-0.1.0.tgz`.
 
 ## Шаг 5: загрузка в другое приложение NocoBase
 
 Загрузите архив и распакуйте его в каталог `./storage/plugins` целевого приложения. Подробнее см. [Установка и обновление плагинов](../get-started/install-upgrade-plugins.mdx).
+
+Если целевое приложение создано с помощью NocoBase CLI (`nb init`), плагин можно импортировать напрямую командой `nb plugin import`, не распаковывая архив вручную:
+
+```bash
+nb plugin import /your/path/plugin-hello-0.1.0.tgz
+```
 
 ## Связанные ссылки
 

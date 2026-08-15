@@ -36,7 +36,15 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import {
+  extractIndex,
+  adjustColumnOrder,
+  setNestedValue,
+  extractIds,
+  extractRowKeys,
+  getRowKey,
+  useBlockHeight,
+} from './utils';
 import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
@@ -222,6 +230,22 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   get resource() {
     return super.resource as MultiRecordResource;
+  }
+
+  resetAfterFilterChange() {
+    if (!this.props.treeTable) {
+      return;
+    }
+
+    const expandAll = !!this.props.defaultExpandAllRows;
+    const expandedRowKeys = expandAll ? extractRowKeys(this.resource.getData(), this.collection.filterTargetKey) : [];
+
+    this.setProps('expandedRowKeys', expandedRowKeys);
+    this.mapSubModels('actions', (action) => {
+      if ('setExpandFlag' in action && typeof action.setExpandFlag === 'function') {
+        action.setExpandFlag(expandAll);
+      }
+    });
   }
 
   private readonly columns = observable.ref([]);

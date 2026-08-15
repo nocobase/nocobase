@@ -55,6 +55,8 @@ yarn pm create @my-project/plugin-custom-table-block-resource
 
 Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
 
+Em seguida, inicie o modo de desenvolvimento para que as alterações de código tenham hot reload: em projetos criados com `nb init`, execute `nb source dev` no diretório raiz do projeto (`<app-path>`); se você mesmo clonou o repositório de código-fonte do NocoBase, execute `yarn dev` no diretório raiz do código-fonte.
+
 ## Passo 2: definir a data table (server)
 
 Crie `src/server/collections/todoItems.ts`. O NocoBase carrega automaticamente as definições de collection desse diretório:

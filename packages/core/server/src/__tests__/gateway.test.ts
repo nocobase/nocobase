@@ -167,6 +167,21 @@ describe('gateway', () => {
       expect((req as any).originalUrl).toBe('/api/__app/demo/.well-known/oauth-authorization-server');
     });
 
+    it('should proxy local storage requests to the selected sub app', async () => {
+      const req = {
+        url: '/storage/uploads/logo.png?__appName=demo',
+        headers: {},
+      } as any;
+      const res = {} as any;
+
+      const supervisor = AppSupervisor.getInstance();
+      const proxyWeb = vi.spyOn(supervisor, 'proxyWeb').mockResolvedValue(true);
+
+      await gateway.requestHandler(req, res);
+
+      expect(proxyWeb).toHaveBeenCalledWith('demo', req, res);
+    });
+
     it('should add same middleware into app selector once', async () => {
       const fn = async (ctx, next) => {
         ctx.resolvedAppName = 'test';

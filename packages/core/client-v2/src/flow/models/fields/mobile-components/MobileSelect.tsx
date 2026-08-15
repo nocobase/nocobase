@@ -9,7 +9,7 @@
 
 import { useFlowModelContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
-import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
+import { Button, CheckList, ConfigProvider, Popup, SearchBar, useConfig } from 'antd-mobile';
 import React, { useEffect, useMemo, useState } from 'react';
 
 const mobileSelectSafeAreaPaddingBottom = 'calc(12px + env(safe-area-inset-bottom, 0px))';
@@ -26,11 +26,28 @@ function getMobileSelectListStyle(hasConfirmFooter: boolean): React.CSSPropertie
   };
 }
 
+function normalizeMobileLocale(locale?: string) {
+  return locale === 'zh-CH' ? 'zh-CN' : locale;
+}
+
 export function MobileSelect(props) {
   const { value, displayValue, onChange, onChangeComplete, disabled, options = [], mode } = props;
   const isMultiple = ['multiple', 'tags'].includes(mode);
   const ctx = useFlowModelContext();
   const t = ctx.t;
+  const { locale: mobileLocale } = useConfig();
+  const searchBarLocale = useMemo(() => {
+    const currentLocale = normalizeMobileLocale(ctx.locale);
+    const inheritedLocale = normalizeMobileLocale(mobileLocale.locale);
+
+    return {
+      ...mobileLocale,
+      SearchBar: {
+        ...mobileLocale.SearchBar,
+        name: currentLocale === inheritedLocale ? mobileLocale.SearchBar.name : t('Search'),
+      },
+    };
+  }, [ctx.locale, mobileLocale, t]);
   const [visible, setVisible] = useState(false);
   const [selected, setSelected] = useState(value || []);
   const [searchText, setSearchText] = useState(null);
@@ -77,7 +94,15 @@ export function MobileSelect(props) {
         destroyOnClose
       >
         <div style={{ margin: '10px' }}>
-          <SearchBar placeholder={t('search')} value={searchText} onChange={(v) => setSearchText(v)} showCancelButton />
+          <ConfigProvider locale={searchBarLocale}>
+            <SearchBar
+              placeholder={t('search')}
+              value={searchText}
+              onChange={(v) => setSearchText(v)}
+              cancelText={t('Cancel')}
+              showCancelButton
+            />
+          </ConfigProvider>
         </div>
         <div style={getMobileSelectListStyle(isMultiple)}>
           <CheckList
