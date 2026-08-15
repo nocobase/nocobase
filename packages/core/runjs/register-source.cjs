@@ -1,6 +1,7 @@
 const path = require('node:path');
 
 require('tsx/cjs');
+require('tsconfig-paths/register');
 
 const { register } = require('tsconfig-paths');
 

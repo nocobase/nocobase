@@ -68,6 +68,14 @@ function registerCompileContractTests() {
       expect(diagnostics).toEqual([]);
     });
 
+    it('resolves workspace peer packages from source in compile subprocesses', () => {
+      const databaseEntry = readCompilerBuildId(
+        `require('@nocobase/runjs/workspace/server'); console.log(require.resolve('@nocobase/database'));`,
+      );
+
+      expect(databaseEntry.replace(/\\/g, '/')).toMatch(/\/packages\/core\/database\/src\/index\.ts$/u);
+    });
+
     it('orders a complete batch by ordinal', () => {
       const jobs = [createCompileJob(0), createCompileJob(1), createCompileJob(2)];
       const results = [jobs[2], jobs[0], jobs[1]].map((job) =>
