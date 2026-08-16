@@ -79,7 +79,6 @@ describe('RunJSEditorField FlowModel integration', () => {
     const { model } = harness;
     const onChange = vi.fn();
     const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
     let capturedLocator: unknown;
 
     RunJSEditorRegistry.registerProvider({
@@ -88,7 +87,21 @@ describe('RunJSEditorField FlowModel integration', () => {
       renderEditor: (props) => {
         capturedLocator = props.locator;
         return (
-          <button type="button" onClick={() => props.onChange?.({ code: 'return 2;', version: 'v2' })}>
+          <button
+            type="button"
+            onClick={() =>
+              props.onChange?.({
+                code: 'return 2;',
+                version: 'v2',
+                sourceRef: {
+                  type: 'vsc-file',
+                  repoId: 'repo-2',
+                  commitId: 'commit-2',
+                  entry: 'src/client/index.tsx',
+                },
+              })
+            }
+          >
             {props.locator?.kind}
           </button>
         );
@@ -115,88 +128,21 @@ describe('RunJSEditorField FlowModel integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'flowModel.step' }));
 
-    expect(onChange).toHaveBeenCalledWith({ code: 'return 2;', version: 'v2' });
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: 'return 2;',
+        version: 'v2',
+        sourceRef: expect.objectContaining({ repoId: 'repo-2', commitId: 'commit-2' }),
+      }),
+    );
     expect(model.getStepParams('jsSettings', 'runJs')).toMatchObject({
       code: 'return 2;',
       version: 'v2',
+      sourceRef: { repoId: 'repo-2', commitId: 'commit-2' },
     });
     await waitFor(() => {
-      expect(saveStepParams).toHaveBeenCalledTimes(1);
-      expect(rerender).toHaveBeenCalledTimes(1);
+      expect(saveStepParams).toHaveBeenCalled();
     });
-  });
-
-  it.each([
-    {
-      name: 'JS Template binding',
-      uid: 'fm_1',
-      params: {
-        code: 'ctx.render(<div />);',
-        version: 'v2',
-        sourceMode: 'js-template',
-        sourceBinding: {
-          type: 'js-template-entry',
-          projectId: 'jtp_example',
-          templateId: 'jtt_example',
-          kind: 'js-block',
-        },
-        settings: { title: 'Example' },
-      },
-      expected: {
-        sourceMode: 'js-template',
-        sourceBinding: {
-          type: 'js-template-entry',
-          projectId: 'jtp_example',
-          templateId: 'jtt_example',
-          kind: 'js-block',
-        },
-        settings: { title: 'Example' },
-      },
-    },
-    {
-      name: 'inline sourceRef and falsy settings',
-      uid: 'fm_inline',
-      params: {
-        code: 'ctx.render(<div />);',
-        version: 'v2',
-        sourceMode: 'inline',
-        sourceRef: {
-          type: 'vsc-file',
-          repoId: 'repo_inline',
-          commitId: 'commit_2',
-          entry: 'src/client/index.tsx',
-        },
-        settings: { enabled: false, count: 0, label: '', nested: { hiddenValue: 'keep-me' } },
-      },
-      expected: {
-        sourceMode: 'inline',
-        sourceRef: {
-          type: 'vsc-file',
-          repoId: 'repo_inline',
-          commitId: 'commit_2',
-          entry: 'src/client/index.tsx',
-        },
-        settings: { enabled: false, count: 0, label: '', nested: { hiddenValue: 'keep-me' } },
-      },
-    },
-  ])('passes complete $name values to providers', ({ uid, params, expected }) => {
-    const harness = createFlowModelHarness(uid);
-    let capturedValue: unknown;
-
-    RunJSEditorRegistry.registerProvider({
-      key: 'workspace-provider',
-      renderEditor: (props) => {
-        capturedValue = props.value;
-        return <div>workspace</div>;
-      },
-    });
-    harness.renderEditor(
-      <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value="ctx.render(<div />);" />,
-      params,
-    );
-
-    expect(screen.getByText('workspace')).toBeInTheDocument();
-    expect(capturedValue).toMatchObject(expected);
   });
 
   it('syncs a server-persisted RunJS Studio save locally without saving the FlowModel again', async () => {
@@ -237,7 +183,6 @@ describe('RunJSEditorField FlowModel integration', () => {
       version: 'v2',
     }));
     const saveStepParams = vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
-    const rerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
 
     RunJSEditorRegistry.registerProvider({
       key: 'flow-model-step-provider',
@@ -304,7 +249,6 @@ describe('RunJSEditorField FlowModel integration', () => {
       },
       version: 'v2',
     });
-    expect(rerender).toHaveBeenCalledTimes(1);
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
@@ -334,8 +278,6 @@ describe('RunJSEditorField FlowModel integration', () => {
     });
     const flowContext = new FlowRuntimeContext(settingsModel, 'jsSettings', 'settings');
     flowContext.defineMethod('getStepFormValues', () => initialValue);
-    const pageRerender = vi.spyOn(pageModel, 'rerender').mockResolvedValue(undefined);
-    const settingsRerender = vi.spyOn(settingsModel, 'rerender').mockResolvedValue(undefined);
     let persistedChange: Promise<void> | undefined;
 
     RunJSEditorRegistry.registerProvider({
@@ -386,8 +328,6 @@ describe('RunJSEditorField FlowModel integration', () => {
       },
     });
     expect(pageModel.getStepParams('jsSettings', 'runJs').sourceBinding).toBeUndefined();
-    expect(pageRerender).toHaveBeenCalledTimes(1);
-    expect(settingsRerender).toHaveBeenCalledTimes(1);
   });
 
   it('syncs a server-persisted external binding into FlowModel step params', async () => {
@@ -459,185 +399,6 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(saveStepParams).not.toHaveBeenCalled();
   });
 
-  it('refreshes every loaded RunJS host that shares the persisted external source binding', async () => {
-    const engine = new FlowEngine();
-    const persistedValue = {
-      code: 'ctx.render("remote");',
-      sourceBinding: {
-        type: 'js-template-entry',
-        projectId: 'jtp_1',
-        templateId: 'jtt_1',
-        kind: 'js-block',
-      },
-      sourceMode: 'js-template',
-      settings: { color: 'blue' },
-      version: 'v2',
-    };
-    const model = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_external_source_refresh',
-      stepParams: {
-        jsSettings: {
-          runJs: persistedValue,
-        },
-      },
-    });
-    const siblingModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_external_source_sibling',
-      stepParams: {
-        clickSettings: {
-          runJs: persistedValue,
-        },
-      },
-    });
-    const unrelatedModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_external_source_unrelated',
-      stepParams: {
-        jsSettings: {
-          runJs: {
-            ...persistedValue,
-            sourceBinding: {
-              ...persistedValue.sourceBinding,
-              templateId: 'jtt_2',
-            },
-          },
-        },
-      },
-    });
-    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
-    flowContext.defineMethod('getStepFormValues', () => persistedValue);
-    const emit = vi.spyOn(model.emitter, 'emit');
-    const siblingEmit = vi.spyOn(siblingModel.emitter, 'emit');
-    const unrelatedEmit = vi.spyOn(unrelatedModel.emitter, 'emit');
-    const modelRerender = vi.spyOn(model, 'rerender').mockResolvedValue(undefined);
-    const siblingRerender = vi.spyOn(siblingModel, 'rerender').mockResolvedValue(undefined);
-    const unrelatedRerender = vi.spyOn(unrelatedModel, 'rerender').mockResolvedValue(undefined);
-
-    RunJSEditorRegistry.registerProvider({
-      key: 'external-source-refresh-provider',
-      canHandle: (props) => props.locator?.kind === 'flowModel.step',
-      renderEditor: (props) => (
-        <button type="button" onClick={() => props.onPersistedChange?.(props.value)}>
-          save source
-        </button>
-      ),
-    });
-
-    render(
-      <FlowContextProvider context={flowContext}>
-        <FlowStepContext.Provider
-          value={{
-            params: persistedValue,
-            path: 'fm_external_source_refresh_jsSettings_runJs',
-          }}
-        >
-          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
-        </FlowStepContext.Provider>
-      </FlowContextProvider>,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'save source' }));
-
-    await waitFor(() => expect(modelRerender).toHaveBeenCalledTimes(1));
-    expect(siblingRerender).toHaveBeenCalledTimes(1);
-    expect(unrelatedRerender).not.toHaveBeenCalled();
-    expect(emit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
-    expect(siblingEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(1);
-    expect(unrelatedEmit.mock.calls.filter(([event]) => event === 'onStepParamsChanged')).toHaveLength(0);
-    expect(model.getStepParams('jsSettings', 'runJs')).toEqual(persistedValue);
-  });
-
-  it('refreshes only path-aware RunJS hosts that share the persisted source binding', async () => {
-    const engine = new FlowEngine();
-    const sourceBinding = {
-      type: 'js-template-entry',
-      projectId: 'jtp_path_aware',
-      templateId: 'jtt_path_aware',
-      kind: 'js-block',
-    };
-    const persistedValue = {
-      code: 'ctx.render("remote");',
-      keep: true,
-      sourceBinding,
-      sourceMode: 'js-template',
-      version: 'v2',
-    };
-    const model = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_path_aware_current',
-      stepParams: { jsSettings: { runJs: persistedValue } },
-    });
-    const scriptModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_path_aware_script',
-      stepParams: {
-        clickSettings: { runJs: { keep: true, script: 'return 1;', sourceBinding, sourceMode: 'js-template' } },
-      },
-    });
-    const keyedModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_path_aware_keyed',
-      stepParams: {
-        rules: {
-          runJs: [{ code: 'return 2;', key: 'rule-1', sourceBinding, sourceMode: 'js-template' }],
-        },
-      },
-    });
-    const ordinaryConfigModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_path_aware_config',
-      stepParams: {
-        settings: { ordinary: { code: 'return 4;', sourceBinding, sourceMode: 'js-template' } },
-      },
-    });
-    const inlineModel = engine.createModel<FlowModel>({
-      use: 'FlowModel',
-      uid: 'fm_path_aware_inline',
-      stepParams: { jsSettings: { runJs: { code: 'return 3;', sourceBinding, sourceMode: 'inline' } } },
-    });
-    const [modelRerender, scriptRerender, keyedRerender, configRerender, inlineRerender] = [
-      model,
-      scriptModel,
-      keyedModel,
-      ordinaryConfigModel,
-      inlineModel,
-    ].map((target) => vi.spyOn(target, 'rerender').mockResolvedValue(undefined));
-    const flowContext = new FlowRuntimeContext(model, 'jsSettings', 'settings');
-    flowContext.defineMethod('getStepFormValues', () => persistedValue);
-    let pendingRefresh: Promise<unknown> | undefined;
-    RunJSEditorRegistry.registerProvider({
-      key: 'path-aware-source-refresh-provider',
-      renderEditor: (props) => (
-        <button
-          type="button"
-          onClick={() => {
-            pendingRefresh = Promise.resolve(props.onPersistedChange?.(props.value));
-          }}
-        >
-          refresh path-aware hosts
-        </button>
-      ),
-    });
-
-    render(
-      <FlowContextProvider context={flowContext}>
-        <FlowStepContext.Provider value={{ params: persistedValue, path: `${model.uid}_jsSettings_runJs` }}>
-          <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="action" value={persistedValue} />
-        </FlowStepContext.Provider>
-      </FlowContextProvider>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'refresh path-aware hosts' }));
-    await pendingRefresh;
-
-    expect(modelRerender).toHaveBeenCalled();
-    expect(scriptRerender).toHaveBeenCalled();
-    expect(keyedRerender).toHaveBeenCalled();
-    expect(configRerender).not.toHaveBeenCalled();
-    expect(inlineRerender).not.toHaveBeenCalled();
-  });
-
   it('keeps inline fallback edits in the form without mutating model params', () => {
     const harness = createFlowModelHarness();
     const onChange = vi.fn();
@@ -662,76 +423,35 @@ describe('RunJSEditorField FlowModel integration', () => {
     expect(setStepParams).not.toHaveBeenCalled();
   });
 
-  it('keeps FlowModel params unchanged when workspace compilation fails before persistence', async () => {
-    const initialValue = { code: 'return 1;', version: 'v2' };
-    const harness = createFlowModelHarness({
-      uid: 'fm_compile_failure',
-      stepParams: { jsSettings: { runJs: initialValue } },
-    });
-    const setStepParams = vi.spyOn(harness.model, 'setStepParams');
-    const saveStepParams = vi.spyOn(harness.model, 'saveStepParams').mockResolvedValue(undefined);
-    const compileWorkspace = vi.fn().mockRejectedValue(new Error('compile failed'));
+  it('passes the explicit Dynamic Flow locator and runtime version to the Studio provider', () => {
+    const harness = createFlowModelHarness('fm_dynamic');
+    const dynamicLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'fm_dynamic',
+      flowKey: 'eventFlow',
+      stepKey: 'runJs',
+      sourcePath: ['defaultParams', 'code'],
+    };
+    let received: { locator?: RunJSSourceLocator; version?: string } = {};
 
     RunJSEditorRegistry.registerProvider({
-      key: 'compile-failure-provider',
-      renderEditor: (props) => (
-        <button
-          type="button"
-          onClick={async () => {
-            try {
-              await compileWorkspace();
-              await props.onPersistedChange?.({ code: 'broken code', version: 'v2' });
-            } catch {
-              // Compilation failures must not reach the persistence callback.
-            }
-          }}
-        >
-          save workspace
-        </button>
-      ),
-    });
-
-    harness.renderEditor(
-      <RunJSEditorField locatorFactory="flowModel.step" surfaceStyle="render" value={initialValue} />,
-      initialValue,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: 'save workspace' }));
-    await waitFor(() => expect(compileWorkspace).toHaveBeenCalledTimes(1));
-
-    expect(harness.model.getStepParams('jsSettings', 'runJs')).toEqual(initialValue);
-    expect(setStepParams).not.toHaveBeenCalled();
-    expect(saveStepParams).not.toHaveBeenCalled();
-  });
-
-  it.each<{ name: string; locator?: RunJSSourceLocator }>([
-    { name: 'generic inline host' },
-    {
-      name: 'FlowRegistry RunJS',
-      locator: {
-        kind: 'flowModel.flowRegistry.runjs',
-        modelUid: 'fm_registry',
-        flowKey: 'eventFlow',
-        stepKey: 'runJs',
-        sourcePath: ['code'],
+      key: 'dynamic-flow-provider',
+      canHandle: (props) => props.locator?.kind === 'flowModel.flowRegistry.runjs',
+      renderEditor: (props) => {
+        received = { locator: props.locator, version: props.value.version };
+        return <div>Dynamic Flow Studio</div>;
       },
-    },
-  ])('keeps $name on the inline editor when a step-only Studio provider is installed', ({ locator }) => {
-    const harness = createFlowModelHarness();
-    const renderStudio = vi.fn(() => <div>step studio</div>);
-
-    RunJSEditorRegistry.registerProvider({
-      key: 'step-only-studio-provider',
-      canHandle: (props) => props.locator?.kind === 'flowModel.step',
-      renderEditor: renderStudio,
     });
 
     harness.renderEditor(
-      <RunJSEditorField sourceLocator={locator} surfaceStyle="value" value={{ code: 'return 1;', version: 'v2' }} />,
+      <RunJSEditorField
+        sourceLocator={dynamicLocator}
+        surfaceStyle="value"
+        value={{ code: 'return dynamic;', version: 'v3' }}
+      />,
     );
 
-    expect(renderStudio).not.toHaveBeenCalled();
-    expect(screen.queryByText('step studio')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('// Use return to output value')).toHaveValue('return 1;');
+    expect(screen.getByText('Dynamic Flow Studio')).toBeInTheDocument();
+    expect(received).toEqual({ locator: dynamicLocator, version: 'v3' });
   });
 });

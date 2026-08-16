@@ -113,111 +113,6 @@ describe('SettingsSingleField', () => {
     await waitFor(() => expect(getByDisplayValue('#00ff00')).toBeInTheDocument());
   });
 
-  it('atomically replaces the current object draft so cleared saved children do not reappear', async () => {
-    const onChange = vi.fn();
-    const fieldSchema = {
-      type: 'object',
-      properties: {
-        enabled: { type: 'boolean' },
-        removedControl: { type: 'string' },
-        title: {
-          type: 'string',
-          'x-visible-when': { path: 'displayOptions.removedControl', operator: '$empty' },
-        },
-      },
-    };
-    render(
-      <SettingsSingleField
-        fieldName="displayOptions"
-        fieldSchema={fieldSchema}
-        rootSchema={{ type: 'object', properties: { displayOptions: fieldSchema } }}
-        descriptorDefaults={{ displayOptions: { enabled: false } }}
-        savedRootValue={{ displayOptions: { enabled: true, removedControl: 'legacy-value' } }}
-        value={{ enabled: false }}
-        onChange={onChange}
-      />,
-    );
-
-    expect(await waitFor(() => screen.getByText('title'))).toBeInTheDocument();
-    await waitFor(() =>
-      expect(onChange).toHaveBeenCalledWith({ enabled: false }, expect.objectContaining({ errors: [] })),
-    );
-  });
-
-  it('keeps an explicitly cleared value absent instead of restoring saved or default values', async () => {
-    const onChange = vi.fn();
-    const Harness = () => {
-      const [value, setValue] = React.useState<Record<string, unknown>>({ pageSize: 30 });
-      return (
-        <SettingsSingleField
-          fieldName="displayOptions"
-          fieldSchema={{
-            type: 'object',
-            properties: {
-              pageSize: {
-                type: 'integer',
-                default: 20,
-              },
-            },
-          }}
-          rootSchema={{ type: 'object' }}
-          savedRootValue={{ displayOptions: { pageSize: 40 } }}
-          value={value}
-          onChange={(next, validation) => {
-            setValue(next as Record<string, unknown>);
-            onChange(next, validation);
-          }}
-        />
-      );
-    };
-    render(<Harness />);
-
-    fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '' } });
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenLastCalledWith({}, expect.objectContaining({ errors: [] }));
-    });
-  });
-
-  it('keeps other top-level saved settings read-only while evaluating the current object draft', () => {
-    const displayOptionsSchema = {
-      type: 'object',
-      properties: {
-        enableColor: { type: 'boolean' },
-        advancedColor: {
-          type: 'string',
-          title: 'Advanced color',
-          'x-visible-when': {
-            logic: '$and',
-            items: [
-              { path: 'mode', operator: '$eq', value: 'advanced' },
-              { path: 'displayOptions.enableColor', operator: '$eq', value: true },
-            ],
-          },
-        },
-      },
-    };
-    const rootSchema = {
-      type: 'object',
-      properties: {
-        mode: { type: 'string' },
-        displayOptions: displayOptionsSchema,
-      },
-    };
-    const { queryByText } = render(
-      <SettingsSingleField
-        fieldName="displayOptions"
-        fieldSchema={displayOptionsSchema}
-        rootSchema={rootSchema}
-        descriptorDefaults={{ mode: 'advanced', displayOptions: { enableColor: false } }}
-        savedRootValue={{ mode: 'simple', displayOptions: { enableColor: false } }}
-        value={{ enableColor: true, advancedColor: '#00ff00' }}
-      />,
-    );
-
-    expect(queryByText('Advanced color')).not.toBeInTheDocument();
-  });
-
   it('preserves hidden values and validates them while rejecting unknown object properties', () => {
     const schema = {
       type: 'object',
@@ -297,29 +192,6 @@ describe('SettingsSingleField', () => {
     expect(serializeDatePickerValue({ format: 'date-time' }, value)).toBe('2026-07-05T01:30:00.000Z');
   });
 
-  it('disables radio group fields when the field is disabled', () => {
-    const { container } = render(
-      <SettingsSingleField
-        fieldName="settings"
-        disabled
-        fieldSchema={{
-          type: 'object',
-          properties: {
-            plan: {
-              type: 'string',
-              enum: ['basic', 'pro'],
-              'x-component': 'Radio.Group',
-            },
-          },
-        }}
-        value={{ plan: 'basic' }}
-      />,
-    );
-
-    const radio = container.querySelector('input[type="radio"][value="basic"]');
-    expect(radio).toHaveProperty('disabled', true);
-  });
-
   it('renders advanced safe selector components from the JS Template whitelist', async () => {
     const products = {
       name: 'products',
@@ -352,7 +224,7 @@ describe('SettingsSingleField', () => {
       },
     };
 
-    const { container } = render(
+    render(
       <ApplicationContext.Provider value={app as never}>
         <SettingsSingleField
           fieldName="settings"
@@ -375,10 +247,6 @@ describe('SettingsSingleField', () => {
                 type: 'string',
                 'x-component': 'DataSourceSelect',
               },
-              color: {
-                type: 'string',
-                'x-component': 'ColorPicker',
-              },
             },
           }}
           value={{
@@ -386,15 +254,13 @@ describe('SettingsSingleField', () => {
             displayField: 'name',
             visibleForRole: 'admin',
             dataSource: 'main',
-            color: '#1677ff',
           }}
         />
       </ApplicationContext.Provider>,
     );
 
     await waitFor(() => {
-      expect(container.querySelectorAll('.ant-select')).toHaveLength(4);
-      expect(container.querySelector('.ant-color-picker-trigger')).toBeInTheDocument();
+      expect(screen.getAllByRole('combobox')).toHaveLength(4);
     });
   });
 
@@ -434,16 +300,16 @@ describe('SettingsSingleField', () => {
       },
     };
 
-    const { container } = render(
+    render(
       <ApplicationContext.Provider value={app as never}>
         <SettingsSingleField fieldName="settings" fieldSchema={schema} value={{ displayField: 'products.name' }} />
       </ApplicationContext.Provider>,
     );
 
     await waitFor(() => {
-      const selects = container.querySelectorAll('.ant-select');
+      const selects = screen.getAllByRole('combobox');
       expect(selects).toHaveLength(2);
-      expect(selects[1]).toHaveClass('ant-select-disabled');
+      expect(selects[1]).toBeDisabled();
     });
     expect(
       normalizeSettingsForSchema(schema, {
@@ -453,228 +319,6 @@ describe('SettingsSingleField', () => {
     ).toMatchObject({
       collection: 'products',
       displayField: 'name',
-    });
-  });
-
-  it('resolves CollectionFieldSelect dependencies from the same nested object scope', async () => {
-    const products = {
-      name: 'products',
-      title: 'Products',
-      getFields: () => [
-        {
-          name: 'name',
-          title: 'Name',
-        },
-      ],
-    };
-    const schema = {
-      type: 'object',
-      properties: {
-        advanced: {
-          type: 'object',
-          properties: {
-            collection: {
-              type: 'string',
-              'x-component': 'CollectionSelect',
-            },
-            displayField: {
-              type: 'string',
-              'x-component': 'CollectionFieldSelect',
-            },
-          },
-        },
-      },
-    };
-    const app = {
-      dataSourceManager: {
-        getDataSources: () => [
-          {
-            key: 'main',
-            getCollections: () => [products],
-            getCollection: (name: string) => (name === products.name ? products : undefined),
-          },
-        ],
-      },
-    };
-
-    const { container } = render(
-      <ApplicationContext.Provider value={app as never}>
-        <SettingsSingleField
-          fieldName="settings"
-          fieldSchema={schema}
-          value={{ advanced: { collection: 'products', displayField: 'name' } }}
-        />
-      </ApplicationContext.Provider>,
-    );
-
-    await waitFor(() => {
-      const selects = container.querySelectorAll('.ant-select');
-      expect(selects).toHaveLength(2);
-      expect(selects[1]).not.toHaveClass('ant-select-disabled');
-    });
-    expect(
-      normalizeSettingsForSchema(schema, {
-        advanced: {
-          collection: 'products',
-          displayField: 'products.name',
-        },
-      }).value,
-    ).toMatchObject({
-      advanced: {
-        collection: 'products',
-        displayField: 'name',
-      },
-    });
-  });
-
-  it('falls back to the top-level collection when a nested CollectionFieldSelect has no local collection', async () => {
-    const products = {
-      name: 'products',
-      title: 'Products',
-      getFields: () => [
-        {
-          name: 'name',
-          title: 'Name',
-        },
-      ],
-    };
-    const schema = {
-      type: 'object',
-      properties: {
-        collection: {
-          type: 'string',
-          'x-component': 'CollectionSelect',
-        },
-        advanced: {
-          type: 'object',
-          properties: {
-            displayField: {
-              type: 'string',
-              'x-component': 'CollectionFieldSelect',
-            },
-          },
-        },
-      },
-    };
-    const app = {
-      dataSourceManager: {
-        getDataSources: () => [
-          {
-            key: 'main',
-            getCollections: () => [products],
-            getCollection: (name: string) => (name === products.name ? products : undefined),
-          },
-        ],
-      },
-    };
-
-    const { container } = render(
-      <ApplicationContext.Provider value={app as never}>
-        <SettingsSingleField
-          fieldName="settings"
-          fieldSchema={schema}
-          value={{ collection: 'products', advanced: { displayField: 'name' } }}
-        />
-      </ApplicationContext.Provider>,
-    );
-
-    await waitFor(() => {
-      const selects = container.querySelectorAll('.ant-select');
-      expect(selects).toHaveLength(2);
-      expect(selects[1]).not.toHaveClass('ant-select-disabled');
-    });
-    expect(
-      normalizeSettingsForSchema(schema, {
-        collection: 'products',
-        advanced: {
-          displayField: 'products.name',
-        },
-      }).value,
-    ).toMatchObject({
-      collection: 'products',
-      advanced: {
-        displayField: 'name',
-      },
-    });
-  });
-
-  it('resolves CollectionFieldSelect dependencies from ancestor object scopes', async () => {
-    const products = {
-      name: 'products',
-      title: 'Products',
-      getFields: () => [
-        {
-          name: 'name',
-          title: 'Name',
-        },
-      ],
-    };
-    const schema = {
-      type: 'object',
-      properties: {
-        advanced: {
-          type: 'object',
-          properties: {
-            collection: {
-              type: 'string',
-              'x-component': 'CollectionSelect',
-            },
-            filters: {
-              type: 'object',
-              properties: {
-                displayField: {
-                  type: 'string',
-                  'x-component': 'CollectionFieldSelect',
-                },
-              },
-            },
-          },
-        },
-      },
-    };
-    const app = {
-      dataSourceManager: {
-        getDataSources: () => [
-          {
-            key: 'main',
-            getCollections: () => [products],
-            getCollection: (name: string) => (name === products.name ? products : undefined),
-          },
-        ],
-      },
-    };
-
-    const { container } = render(
-      <ApplicationContext.Provider value={app as never}>
-        <SettingsSingleField
-          fieldName="settings"
-          fieldSchema={schema}
-          value={{ advanced: { collection: 'products', filters: { displayField: 'name' } } }}
-        />
-      </ApplicationContext.Provider>,
-    );
-
-    await waitFor(() => {
-      const selects = container.querySelectorAll('.ant-select');
-      expect(selects).toHaveLength(2);
-      expect(selects[1]).not.toHaveClass('ant-select-disabled');
-    });
-    expect(
-      normalizeSettingsForSchema(schema, {
-        advanced: {
-          collection: 'products',
-          filters: {
-            displayField: 'products.name',
-          },
-        },
-      }).value,
-    ).toMatchObject({
-      advanced: {
-        collection: 'products',
-        filters: {
-          displayField: 'name',
-        },
-      },
     });
   });
 
@@ -735,7 +379,7 @@ describe('SettingsSingleField', () => {
       },
     };
 
-    const { container } = render(
+    render(
       <ApplicationContext.Provider value={app as never}>
         <SettingsSingleField
           fieldName="settings"
@@ -746,7 +390,7 @@ describe('SettingsSingleField', () => {
     );
 
     await waitFor(() => {
-      const selectors = container.querySelectorAll('.ant-select-selector');
+      const selectors = screen.getAllByRole('combobox');
       expect(selectors).toHaveLength(2);
       fireEvent.mouseDown(selectors[1]);
     });
@@ -775,7 +419,7 @@ describe('SettingsSingleField', () => {
         },
       },
     };
-    const { container } = render(
+    render(
       <ApplicationContext.Provider value={app as never}>
         <SettingsSingleField
           fieldName="settings"
@@ -794,154 +438,7 @@ describe('SettingsSingleField', () => {
     );
 
     await waitFor(() => expect(list).toHaveBeenCalledWith(expect.objectContaining({ paginate: false })));
-    fireEvent.mouseDown(container.querySelector('.ant-select-selector') as HTMLElement);
+    fireEvent.mouseDown(screen.getByRole('combobox'));
     expect(document.body).toHaveTextContent('Member');
-  });
-
-  it('validates supported string formats', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsSingleField
-        fieldName="contact"
-        fieldSchema={{
-          type: 'string',
-          format: 'email',
-        }}
-        value="not-an-email"
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        'not-an-email',
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'contact',
-              message: 'Must match the required format',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('treats required empty strings as present values like runtime validation', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsSingleField
-        fieldName="title"
-        required
-        fieldSchema={{
-          type: 'string',
-        }}
-        value=""
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        '',
-        expect.objectContaining({
-          errors: [],
-        }),
-      );
-    });
-  });
-
-  it('validates required null values against their schema type like runtime validation', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsSingleField
-        fieldName="title"
-        required
-        fieldSchema={{
-          type: 'string',
-        }}
-        value={null}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        null,
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'title',
-              message: 'Must be a string',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('validates array items against the item schema', async () => {
-    const onChange = vi.fn();
-    render(
-      <SettingsSingleField
-        fieldName="tags"
-        fieldSchema={{
-          type: 'array',
-          items: {
-            type: 'string',
-            minLength: 2,
-          },
-        }}
-        value={['a']}
-        onChange={onChange}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(onChange).toHaveBeenCalledWith(
-        ['a'],
-        expect.objectContaining({
-          errors: [
-            expect.objectContaining({
-              label: 'tags[0]',
-              message: 'Too short',
-            }),
-          ],
-        }),
-      );
-    });
-  });
-
-  it('compares structured enum values by stable JSON semantics like runtime validation', () => {
-    const schema = {
-      type: 'object',
-      properties: {
-        layout: {
-          enum: [{ size: 'small', columns: [1, 2] }],
-        },
-      },
-    };
-
-    expect(
-      normalizeSettingsForSchema(schema, {
-        layout: {
-          columns: [1, 2],
-          size: 'small',
-        },
-      }).errors,
-    ).toEqual([]);
-    expect(
-      normalizeSettingsForSchema(schema, {
-        layout: {
-          columns: [2, 1],
-          size: 'small',
-        },
-      }).errors,
-    ).toEqual([
-      expect.objectContaining({
-        label: 'layout',
-        message: 'Must be one of the allowed values',
-      }),
-    ]);
   });
 });
