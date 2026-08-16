@@ -625,8 +625,19 @@ export const computeDiagnosticsFromText = (
       normalizedLanguage === 'typescriptreact'
         ? tsxLanguage.parser
         : typescriptLanguage.parser;
+    // Lezer does not recognize TypeScript's legal `catch (error: any)` and `catch (error: unknown)` annotations, so mask
+    // only those annotations for syntax linting while preserving source offsets.
+    const parserText = text.replace(
+      /(^|[^$\w.])catch\s*\(\s*[$A-Z_a-z][$\w]*\s*:\s*(?:any|unknown)(?=\s*\))/gm,
+      (catchBinding) => {
+        const annotationStart = catchBinding.lastIndexOf(':');
+        return `${catchBinding.slice(0, annotationStart)}${catchBinding
+          .slice(annotationStart)
+          .replace(/[^\r\n]/g, ' ')}`;
+      },
+    );
     const reportedSyntaxErrors = new Set<string>();
-    parser.parse(text).iterate({
+    parser.parse(parserText).iterate({
       enter(node) {
         if (!node.type.isError) {
           return;
