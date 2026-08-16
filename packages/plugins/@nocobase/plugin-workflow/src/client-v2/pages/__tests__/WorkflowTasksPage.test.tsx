@@ -142,10 +142,13 @@ function createMultiTaskTypes(taskTypeMap: Record<string, TaskTypeOptions>) {
 }
 
 function makeCtx(taskTypes: WorkflowTaskRegistry, resourceMap: Record<string, WorkflowTaskResource>) {
+  const workflowTaskStats = {
+    listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { hasNext: false } } }),
+  };
   return {
     api: {
       resource: (name: string) => {
-        const resource = resourceMap[name];
+        const resource = resourceMap[name] ?? (name === 'userWorkflowTaskStats' ? workflowTaskStats : undefined);
         if (!resource) {
           throw new Error(`Missing resource mock: ${name}`);
         }
@@ -192,13 +195,106 @@ describe('WorkflowTasksPage', () => {
 
     await screen.findByText('Task A');
 
-    expect(taskType.useActionParams).toHaveBeenCalledWith('pending');
+    expect(taskType.useActionParams).toHaveBeenCalledWith('pending', undefined);
     expect(demoTasks.listMine).toHaveBeenCalledWith({
       page: 1,
       pageSize: 20,
       sort: ['-id'],
       filter: { status: 'pending' },
     });
+  });
+
+  it('loads workflow groups and filters the task list by the selected workflow', async () => {
+    const useActionParams = vi.fn((status: string, workflowKey?: string) => ({
+      filter: workflowKey ? { $and: [{ status }, { 'workflow.key': workflowKey }] } : { status },
+    }));
+    const { registry } = createTaskTypes({ useActionParams });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 1, title: 'Task A' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    const userWorkflowTaskStats = {
+      listMine: vi.fn().mockResolvedValue({
+        data: {
+          data: [{ workflowKey: 'workflow-a', title: 'Workflow A', stats: { pending: 1, all: 1 } }],
+          meta: { hasNext: false },
+        },
+      }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks, userWorkflowTaskStats });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Workflow A'));
+
+    await waitFor(() => {
+      expect(useActionParams).toHaveBeenLastCalledWith('pending', 'workflow-a');
+      expect(demoTasks.listMine).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          filter: { $and: [{ status: 'pending' }, { 'workflow.key': 'workflow-a' }] },
+          page: 1,
+        }),
+      );
+    });
+    expect(userWorkflowTaskStats.listMine).toHaveBeenCalledWith({
+      type: 'demo',
+      page: 1,
+      pageSize: 200,
+    });
+  });
+
+  it('searches and incrementally loads workflow groups', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    const userWorkflowTaskStats = {
+      listMine: vi.fn().mockImplementation((params: { page: number; search?: string }) =>
+        Promise.resolve({
+          data: {
+            data: [
+              {
+                workflowKey: params.search ? 'searched' : `workflow-${params.page}`,
+                title: params.search ? 'Searched workflow' : `Workflow ${params.page}`,
+                stats: { pending: 1, all: 1 },
+              },
+            ],
+            meta: { hasNext: !params.search && params.page === 1 },
+          },
+        }),
+      ),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks, userWorkflowTaskStats });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    fireEvent.click(await screen.findByText('Load more'));
+    await waitFor(() =>
+      expect(userWorkflowTaskStats.listMine).toHaveBeenCalledWith({ type: 'demo', page: 2, pageSize: 200 }),
+    );
+    expect(await screen.findByText('Workflow 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Search workflows' }));
+    const searchInput = screen.getByRole('textbox', { name: 'Search workflows' });
+    fireEvent.change(searchInput, { target: { value: 'Searched' } });
+    fireEvent.submit(searchInput.closest('form') as HTMLFormElement);
+
+    await waitFor(() =>
+      expect(userWorkflowTaskStats.listMine).toHaveBeenCalledWith({
+        type: 'demo',
+        page: 1,
+        pageSize: 200,
+        search: 'Searched',
+      }),
+    );
+    expect(await screen.findByText('Searched workflow')).toBeInTheDocument();
   });
 
   it('loads popup records through getPopupRecord for direct detail routes', async () => {
@@ -345,110 +441,11 @@ describe('WorkflowTasksPage', () => {
     renderWithApp(<WorkflowTasksPage />);
 
     await screen.findByTestId('workflow-tasks-mobile');
-    fireEvent.click(screen.getByText('Other tasks'));
+    fireEvent.click(screen.getByRole('button', { name: 'Select workflow' }));
+    fireEvent.click(await screen.findByText('Other tasks'));
 
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow/tasks/other/pending');
     expect(holder.navigate).not.toHaveBeenCalledWith('/mobile/page/workflow-tasks/other/pending');
-  });
-
-  it('renders mobile task type tabs without an overflow menu', async () => {
-    const demoTaskType = createTaskTypes({ title: 'CC to me' }).taskType;
-    const otherTaskType: TaskTypeOptions = {
-      ...createTaskTypes().taskType,
-      key: 'other',
-      title: 'My applications',
-      collection: 'otherTasks',
-    };
-    const thirdTaskType: TaskTypeOptions = {
-      ...createTaskTypes().taskType,
-      key: 'third',
-      title: 'Third tasks',
-      collection: 'thirdTasks',
-    };
-    const registry = createMultiTaskTypes({ demo: demoTaskType, other: otherTaskType, third: thirdTaskType });
-    const demoTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const otherTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const thirdTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const userWorkflowTasks = {
-      listMine: vi.fn().mockResolvedValue({
-        data: [
-          { type: 'demo', stats: { pending: 9, all: 9 } },
-          { type: 'other', stats: { pending: 65, all: 65 } },
-          { type: 'third', stats: { pending: 1, all: 1 } },
-        ],
-      }),
-    };
-    holder.location = { pathname: '/mobile/page/workflow-tasks/demo/pending', search: '', hash: '' };
-    holder.isMobileLayout = true;
-    holder.ctx = makeCtx(registry, { demoTasks, otherTasks, thirdTasks, userWorkflowTasks });
-
-    renderWithApp(<WorkflowTasksPage />);
-
-    const taskTypeMenu = await screen.findByTestId('workflow-task-type-menu');
-    await screen.findByText('CC to me');
-
-    expect(within(taskTypeMenu).getAllByRole('tab')).toHaveLength(3);
-    expect(taskTypeMenu.querySelector('.ant-menu-overflow-item-rest')).not.toBeInTheDocument();
-    expect(within(taskTypeMenu).queryByText('...')).not.toBeInTheDocument();
-  });
-
-  it('scrolls the selected mobile task type tab into view', async () => {
-    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
-    let scrollTarget: HTMLElement | undefined;
-    const scrollIntoView = vi.fn(function (this: HTMLElement) {
-      scrollTarget = this;
-    });
-    Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-      configurable: true,
-      value: scrollIntoView,
-    });
-    const demoTaskType = createTaskTypes({ title: 'CC to me' }).taskType;
-    const otherTaskType: TaskTypeOptions = {
-      ...createTaskTypes().taskType,
-      key: 'other',
-      title: 'My applications',
-      collection: 'otherTasks',
-    };
-    const thirdTaskType: TaskTypeOptions = {
-      ...createTaskTypes().taskType,
-      key: 'third',
-      title: 'Third tasks',
-      collection: 'thirdTasks',
-    };
-    const registry = createMultiTaskTypes({ demo: demoTaskType, other: otherTaskType, third: thirdTaskType });
-    const demoTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const otherTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const thirdTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
-    const userWorkflowTasks = {
-      listMine: vi.fn().mockResolvedValue({
-        data: [
-          { type: 'demo', stats: { pending: 9, all: 9 } },
-          { type: 'other', stats: { pending: 65, all: 65 } },
-          { type: 'third', stats: { pending: 1, all: 1 } },
-        ],
-      }),
-    };
-    holder.params = { taskType: 'third', status: 'pending', popupId: undefined };
-    holder.location = { pathname: '/mobile/page/workflow-tasks/third/pending', search: '', hash: '' };
-    holder.isMobileLayout = true;
-    holder.ctx = makeCtx(registry, { demoTasks, otherTasks, thirdTasks, userWorkflowTasks });
-
-    try {
-      renderWithApp(<WorkflowTasksPage />);
-
-      await screen.findByText('Third tasks');
-      await waitFor(() => expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' }));
-      expect(scrollTarget).toHaveTextContent('Third tasks');
-    } finally {
-      if (originalScrollIntoView) {
-        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
-          configurable: true,
-          value: originalScrollIntoView,
-        });
-      } else {
-        delete (HTMLElement.prototype as { scrollIntoView?: Element['scrollIntoView'] }).scrollIntoView;
-      }
-    }
   });
 
   it('opens a clicked item by updating the workflow tasks route', async () => {
@@ -629,7 +626,7 @@ describe('WorkflowTasksPage', () => {
       within(screen.getByTestId('workflow-task-type-menu')).getByRole('tab', { name: /Demo tasks/ }),
     ).toBeVisible();
     expect(container.querySelector('.ant-layout-sider')).not.toBeInTheDocument();
-    expect(demoTaskType.useActionParams).toHaveBeenCalledWith('completed');
+    expect(demoTaskType.useActionParams).toHaveBeenCalledWith('completed', undefined);
 
     fireEvent.click(screen.getByRole('tab', { name: /Other tasks/ }));
     expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow-menu/tasktype/other/status/pending');
@@ -658,7 +655,7 @@ describe('WorkflowTasksPage', () => {
 
     await screen.findByText('detail:Completed task');
 
-    expect(taskType.useActionParams).toHaveBeenCalledWith('completed');
+    expect(taskType.useActionParams).toHaveBeenCalledWith('completed', undefined);
     expect(getPopupRecord).toHaveBeenCalledWith(holder.ctx.api, { params: { filterByTk: '7' } });
     expect(holder.navigate).not.toHaveBeenCalled();
   });
@@ -1320,7 +1317,7 @@ describe('WorkflowTasksPage', () => {
       minHeight: '0',
     });
     expect(screen.queryByText('Workflow tasks')).not.toBeInTheDocument();
-    expect(screen.getByTestId('workflow-task-type-menu')).toHaveStyle({ height: '42px', minHeight: '42px' });
+    expect(screen.getByRole('button', { name: 'Select workflow' })).toBeInTheDocument();
     expect(screen.getByTestId('workflow-task-list-region')).toHaveStyle({
       background: '#f5f5f5',
       display: 'flex',

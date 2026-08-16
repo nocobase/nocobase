@@ -73,6 +73,7 @@ import {
   installMobileLayoutRouteRepository,
   refreshMobileLayoutAccessibleRoutes,
 } from '../mobileRouteRepository';
+import { installMobileDesktopRouteWriteScope } from '../mobileDesktopRouteWriteScope';
 import {
   Icon,
   IconPicker,
@@ -812,6 +813,10 @@ const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel
       token.paddingXL,
     ],
   );
+  useLayoutEffect(() => {
+    return installMobileDesktopRouteWriteScope(model);
+  }, [model]);
+
   useEffect(() => {
     const routeRepository = model.flowEngine.context.routeRepository;
     const syncMobileMenuEmptyState = () => {
