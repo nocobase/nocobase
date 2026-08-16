@@ -35,6 +35,8 @@ export type WorkflowTaskCounts = Record<string, WorkflowTaskStats>;
 export interface WorkflowTaskActionsProps {
   onlyIcon?: boolean;
   reload?: () => Promise<void>;
+  workflowKey?: string;
+  workflowPendingCount?: number;
 }
 
 export interface WorkflowTaskDetailModalProps {
@@ -99,7 +101,7 @@ export interface TaskTypeOptions {
   title: string;
   collection: string;
   action?: string;
-  useActionParams?: (status: WorkflowTaskStatus) => WorkflowTaskRequestParams | undefined;
+  useActionParams?: (status: WorkflowTaskStatus, workflowKey?: string) => WorkflowTaskRequestParams | undefined;
   Actions?: ComponentType<WorkflowTaskActionsProps>;
   DetailModal?: ComponentType<WorkflowTaskDetailModalProps>;
   Item: ComponentType;
