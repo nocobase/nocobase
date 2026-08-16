@@ -625,21 +625,20 @@ export const computeDiagnosticsFromText = (
       normalizedLanguage === 'typescriptreact'
         ? tsxLanguage.parser
         : typescriptLanguage.parser;
-    // Lezer does not recognize TypeScript's legal `catch (error: any)` and `catch (error: unknown)` annotations, so mask
-    // only those annotations for syntax linting while preserving source offsets.
-    const parserText = text.replace(
-      /(^|[^$\w.])catch\s*\(\s*[$A-Z_a-z][$\w]*\s*:\s*(?:any|unknown)(?=\s*\))/gm,
-      (catchBinding) => {
-        const annotationStart = catchBinding.lastIndexOf(':');
-        return `${catchBinding.slice(0, annotationStart)}${catchBinding
-          .slice(annotationStart)
-          .replace(/[^\r\n]/g, ' ')}`;
-      },
-    );
     const reportedSyntaxErrors = new Set<string>();
-    parser.parse(parserText).iterate({
+    parser.parse(text).iterate({
       enter(node) {
         if (!node.type.isError) {
+          return;
+        }
+        // Lezer represents a legal catch type annotation as `:` and `any`/`unknown` error children of CatchClause.
+        const catchClause = node.node.parent;
+        const catchClauseErrors = catchClause?.name === 'CatchClause' ? catchClause.getChildren(node.name) : [];
+        const isCatchTypeAnnotation =
+          catchClauseErrors.length === 2 &&
+          text.slice(catchClauseErrors[0].from, catchClauseErrors[0].to) === ':' &&
+          ['any', 'unknown'].includes(text.slice(catchClauseErrors[1].from, catchClauseErrors[1].to));
+        if (isCatchTypeAnnotation) {
           return;
         }
         const from = Math.min(node.from, text.length);
