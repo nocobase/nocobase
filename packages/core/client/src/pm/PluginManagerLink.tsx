@@ -91,7 +91,7 @@ export const SettingsCenterDropdown = () => {
       },
       ...othersSettings,
     ].filter(Boolean) as any[];
-  }, [app, compile, snippets, t]);
+  }, [app, t]);
 
   useEffect(() => {
     return () => {
@@ -107,7 +107,6 @@ export const SettingsCenterDropdown = () => {
 
   return (
     <Dropdown
-      trigger={['click', 'hover']}
       menu={{
         style: {
           maxHeight: '70vh',
