@@ -12,11 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { JsTemplateCreateJobSummary } from '../../shared/types';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
-import {
-  dismissJsTemplateCreateJob,
-  listJsTemplateCreateJobs,
-  retryJsTemplateCreateJob,
-} from '../api/jsTemplateCreateJobRequests';
+import { dismissJsTemplateCreateJob, listJsTemplateCreateJobs } from '../api/jsTemplateCreateJobRequests';
 
 type FlowContextWithApi = {
   api: ApiClientLike;
@@ -29,7 +25,6 @@ export interface UseJsTemplateCreateJobsResult {
   addAcceptedJob(job: JsTemplateCreateJobSummary): void;
   refresh(): Promise<void>;
   dismiss(jobId: string): Promise<void>;
-  retry(jobId: string): Promise<void>;
 }
 
 const POLL_INTERVAL_MS = 2500;
@@ -88,15 +83,16 @@ export function useJsTemplateCreateJobs(): UseJsTemplateCreateJobsResult {
   const hasActiveJobs = jobs.some(
     (job) => job.status === 'pending' || job.status === 'running' || job.status === 'finalize-pending',
   );
+  const hasFailedJobs = jobs.some((job) => job.status === 'failed');
   useEffect(() => {
-    if (!hasActiveJobs && !error) {
+    if (!hasActiveJobs && !hasFailedJobs && !error) {
       return;
     }
     const timer = setInterval(() => {
       refresh().catch(() => undefined);
     }, POLL_INTERVAL_MS);
     return () => clearInterval(timer);
-  }, [error, hasActiveJobs, refresh]);
+  }, [error, hasActiveJobs, hasFailedJobs, refresh]);
 
   const addAcceptedJob = useCallback((job: JsTemplateCreateJobSummary) => {
     requestControllerRef.current?.abort();
@@ -116,18 +112,8 @@ export function useJsTemplateCreateJobs(): UseJsTemplateCreateJobsResult {
     [ctx.api],
   );
 
-  const retry = useCallback(
-    async (jobId: string) => {
-      const job = await retryJsTemplateCreateJob(ctx.api, jobId);
-      if (mountedRef.current) {
-        setJobs((current) => [job, ...current.filter((candidate) => candidate.id !== job.id)]);
-      }
-    },
-    [ctx.api],
-  );
-
   return useMemo(
-    () => ({ jobs, loading, error, addAcceptedJob, refresh, dismiss, retry }),
-    [addAcceptedJob, dismiss, error, jobs, loading, refresh, retry],
+    () => ({ jobs, loading, error, addAcceptedJob, refresh, dismiss }),
+    [addAcceptedJob, dismiss, error, jobs, loading, refresh],
   );
 }

@@ -9,8 +9,9 @@
 
 import { FlowEngine, FlowModel, type FlowSettingsContext, type StepDefinition } from '@nocobase/flow-engine';
 import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveDynamicFlowRunJSVersion, runjs as dynamicFlowRunJS } from '../../actions/runjs';
 import { RunJSSourceResolverRegistry } from '../../components/runjs-source';
 import { RunJSEditorField, RunJSEditorRegistry, type RunJSSurfaceStyle } from '../../components/runjs-studio';
 import { JSActionModel } from '../actions/JSActionModel';
@@ -248,6 +249,21 @@ describe('RunJS FlowModel surfaces', () => {
   afterEach(() => {
     RunJSEditorRegistry.clear();
     RunJSSourceResolverRegistry.clear();
+  });
+
+  it('keeps Dynamic Flow editor and runtime version resolution aligned', async () => {
+    expect(resolveDynamicFlowRunJSVersion('return {{ ctx.user.id }};', undefined)).toBe('v1');
+    expect(resolveDynamicFlowRunJSVersion('', undefined)).toBe('v2');
+    expect(resolveDynamicFlowRunJSVersion('return 1;', 'v2')).toBe('v2');
+
+    const execute = vi.fn();
+    const ctx = { inputArgs: {}, runjs: execute };
+
+    await dynamicFlowRunJS.handler(ctx as never, { code: 'return {{ ctx.user.id }};' });
+    await dynamicFlowRunJS.handler(ctx as never, { code: '', version: 'v2' });
+
+    expect(execute).toHaveBeenNthCalledWith(1, 'return {{ ctx.user.id }};', undefined, { version: 'v1' });
+    expect(execute).toHaveBeenNthCalledWith(2, '', undefined, { version: 'v2' });
   });
 
   it.each(surfaces)('$name keeps canonical source, locator, and storage wiring', (spec) => {

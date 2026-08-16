@@ -19,7 +19,7 @@ export function isTerminalCreateJobStatus(status: JsTemplateCreateJobStatus): bo
 }
 
 export function selectVisibleCreationJobs(jobs: JsTemplateCreateJobSummary[]): JsTemplateCreateJobSummary[] {
-  return jobs.filter((job) => job.status !== 'succeeded');
+  return jobs.filter((job) => isActiveCreateJobStatus(job.status));
 }
 
 export function getCreateJobRowKey(job: JsTemplateCreateJobSummary): string {

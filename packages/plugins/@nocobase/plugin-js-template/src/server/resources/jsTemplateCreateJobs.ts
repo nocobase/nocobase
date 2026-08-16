@@ -27,7 +27,7 @@ import {
   type ResourceActionInput,
 } from './resourceAction';
 
-export const jsTemplateCreateJobActionNames = ['list', 'get', 'retry', 'dismiss'] as const;
+export const jsTemplateCreateJobActionNames = ['list', 'get', 'dismiss'] as const;
 
 type JsTemplateCreateJobActionName = (typeof jsTemplateCreateJobActionNames)[number];
 
@@ -80,31 +80,6 @@ export function createJsTemplateCreateJobsResource(services: JsTemplateCreateJob
         return toCreateJobSummary(job);
       },
     }),
-    retry: createTypedResourceAction({
-      services,
-      getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
-      run: async (currentServices, input, ctx): Promise<JsTemplateCreateJobAcceptedResult> => {
-        assertOnlyJobId(input);
-        const actorUserId = requireActorUserId(ctx.actorUserId);
-        const sessionId = requireSessionId(ctx.sessionId);
-        const current = await currentServices.store.getOwn(
-          requireJobId(input),
-          currentServices.applicationName,
-          actorUserId,
-          sessionId,
-        );
-        await assertSourcePermissions(currentServices.permissionService, current.sourceType, ctx);
-        const job = await currentServices.store.retry(
-          current.id,
-          currentServices.applicationName,
-          actorUserId,
-          sessionId,
-        );
-        await currentServices.runner.publish(job.id);
-        await recordMutationAudit(currentServices.auditService, job, 'createJobRetry');
-        return toCreateJobSummary(job);
-      },
-    }),
     dismiss: createTypedResourceAction({
       services,
       getServiceContext: (ctx) => ({ ...getServiceContext(ctx), can: ctx.can }),
@@ -138,7 +113,7 @@ async function recordMutationAudit(
     requestId: string | null;
     actorUserId: string | null;
   },
-  action: 'createJobRetry' | 'createJobDismiss',
+  action: 'createJobDismiss',
 ): Promise<void> {
   try {
     await auditService.recordCreateJobEvent({

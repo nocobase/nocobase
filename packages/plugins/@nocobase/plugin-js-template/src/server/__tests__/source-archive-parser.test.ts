@@ -9,17 +9,50 @@
 
 import JSZip from 'jszip';
 
+import { createJsTemplateWorkspaceArchive } from '../../client-v2/workspace/jsTemplateWorkspaceArchive';
 import { parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 
 describe('plugin-js-template source ZIP archive', () => {
+  it('roundtrips exported files, entry descriptor, and dynamic settings through the source parser', async () => {
+    const descriptor = '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n';
+    const source = 'ctx.render(<div>{ctx.settings.region}</div>);\n';
+    const archive = await createJsTemplateWorkspaceArchive([
+      { path: 'README.md', content: '# Orders\n' },
+      { path: 'src/client/js-blocks/orders/entry.json', content: descriptor },
+      { path: 'src/client/js-blocks/orders/index.tsx', content: source },
+    ]);
+
+    const zipBase64 = Buffer.from(await archive.arrayBuffer()).toString('base64');
+    const files = await parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator());
+
+    expect(files).toEqual([
+      { path: 'README.md', content: '# Orders\n', language: 'markdown', mode: '100644', size: 9 },
+      {
+        path: 'src/client/js-blocks/orders/entry.json',
+        content: descriptor,
+        language: 'json',
+        mode: '100644',
+        size: Buffer.byteLength(descriptor),
+      },
+      {
+        path: 'src/client/js-blocks/orders/index.tsx',
+        content: source,
+        language: 'typescript',
+        mode: '100644',
+        size: Buffer.byteLength(source),
+      },
+    ]);
+  });
+
   it('reads a normal source ZIP', async () => {
     const zipBase64 = await createZipBase64({
       'README.md': '# Imported\n',
       'src/shared/title.ts': 'export const title = "Orders";\n',
       'src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
       'src/client/js-blocks/example/index.jsx': 'ctx.render(<div>Imported</div>);\n',
-      'src/client/js-blocks/orders/entry.json': '{"schemaVersion":1,"key":"orders"}\n',
+      'src/client/js-blocks/orders/entry.json':
+        '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
       'src/client/js-blocks/orders/index.tsx':
         'import { title } from "../../../shared/title";\nctx.render(<div>{title}</div>);\n',
     });
@@ -30,7 +63,10 @@ describe('plugin-js-template source ZIP archive', () => {
       expect.arrayContaining([
         expect.objectContaining({ path: 'README.md', content: '# Imported\n' }),
         expect.objectContaining({ path: 'src/client/js-blocks/example/entry.json' }),
-        expect.objectContaining({ path: 'src/client/js-blocks/orders/entry.json' }),
+        expect.objectContaining({
+          path: 'src/client/js-blocks/orders/entry.json',
+          content: '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
+        }),
         expect.objectContaining({
           path: 'src/client/js-blocks/example/index.jsx',
           content: 'ctx.render(<div>Imported</div>);\n',
@@ -62,77 +98,39 @@ describe('plugin-js-template source ZIP archive', () => {
     ]);
   });
 
-  it('rejects non-UTF-8 source files', async () => {
-    const zipBase64 = await createZipBase64({
-      'src/shared/binary.bin': Buffer.from([0, 255, 1]),
-    });
-
-    await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_file_not_utf8' })]),
+  it.each([
+    ['path traversal', () => createZipBase64({ '../escape.js': 'export default true;\n' }), 'zip_path_invalid'],
+    ['absolute path', () => createZipBase64({ '/escape.ts': 'export default true;\n' }), 'zip_path_invalid'],
+    ['backslash path', () => createZipBase64({ 'src\\escape.ts': 'export default true;\n' }), 'zip_path_invalid'],
+    [
+      'case-insensitive collision',
+      () => createZipBase64({ 'README.md': '# One\n', 'readme.md': '# Two\n' }),
+      'zip_duplicate_path',
+    ],
+    [
+      'invalid UTF-8/binary file',
+      () => createZipBase64({ 'src/shared/binary.bin': Buffer.from([0, 255, 1]) }),
+      'zip_file_not_utf8',
+    ],
+    [
+      'NUL byte',
+      () => createZipBase64({ 'src/shared/value.ts': Buffer.from('export\0const value = 1;') }),
+      'zip_file_not_utf8',
+    ],
+    [
+      'symbolic link',
+      async () => {
+        const zip = new JSZip();
+        zip.file('src/client/link.ts', '../shared/target.ts', { unixPermissions: 0o120777 });
+        return zip.generateAsync({ type: 'base64', platform: 'UNIX' });
       },
-    });
-  });
-
-  it('rejects NUL bytes in source files', async () => {
-    const zipBase64 = await createZipBase64({
-      'src/shared/value.ts': Buffer.from('export\0const value = 1;'),
-    });
-
-    await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
+      'zip_symlink_not_allowed',
+    ],
+  ] as const)('rejects %s', async (_label, createArchive, diagnosticCode) => {
+    await expect(parseJsTemplateSourceArchive(await createArchive(), new JsTemplateValidator())).rejects.toMatchObject({
       code: 'JS_TEMPLATE_VALIDATION_FAILED',
       details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_file_not_utf8' })]),
-      },
-    });
-  });
-
-  it('rejects path traversal and case-insensitive duplicate paths', async () => {
-    const traversalZip = await createZipBase64({
-      '../escape.js': 'export default true;\n',
-    });
-    const duplicateZip = await createZipBase64({
-      'README.md': '# One\n',
-      'readme.md': '# Two\n',
-    });
-
-    await expect(parseJsTemplateSourceArchive(traversalZip, new JsTemplateValidator())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_path_invalid' })]),
-      },
-    });
-    await expect(parseJsTemplateSourceArchive(duplicateZip, new JsTemplateValidator())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_duplicate_path' })]),
-      },
-    });
-  });
-
-  it('rejects absolute paths', async () => {
-    const zipBase64 = await createZipBase64({
-      '/escape.ts': 'export default true;\n',
-    });
-
-    await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_path_invalid' })]),
-      },
-    });
-  });
-
-  it('rejects symbolic links before extracting source files', async () => {
-    const zip = new JSZip();
-    zip.file('src/client/link.ts', '../shared/target.ts', { unixPermissions: 0o120777 });
-    const zipBase64 = await zip.generateAsync({ type: 'base64', platform: 'UNIX' });
-
-    await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_VALIDATION_FAILED',
-      details: {
-        diagnostics: expect.arrayContaining([expect.objectContaining({ code: 'zip_symlink_not_allowed' })]),
+        diagnostics: expect.arrayContaining([expect.objectContaining({ code: diagnosticCode })]),
       },
     });
   });

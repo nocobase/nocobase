@@ -84,6 +84,8 @@ export async function readRunJSWorkspaceZip(
     });
   }
 
+  assertUniqueRunJSZipCentralDirectoryEntries(buffer);
+
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(buffer);
@@ -360,6 +362,57 @@ function assertUniqueRunJSZipPaths(paths: string[]): void {
     }
     seen.add(key);
   }
+}
+
+function assertUniqueRunJSZipCentralDirectoryEntries(buffer: Buffer): void {
+  const endOffset = findRunJSZipEndOfCentralDirectory(buffer);
+  if (endOffset === null) {
+    return;
+  }
+  const entryCount = buffer.readUInt16LE(endOffset + 10);
+  const directorySize = buffer.readUInt32LE(endOffset + 12);
+  const directoryOffset = buffer.readUInt32LE(endOffset + 16);
+  const directoryEnd = directoryOffset + directorySize;
+  if (directoryEnd > endOffset || directoryEnd > buffer.length) {
+    return;
+  }
+
+  const names = new Set<string>();
+  let offset = directoryOffset;
+  for (let index = 0; index < entryCount; index += 1) {
+    if (offset + 46 > directoryEnd || buffer.readUInt32LE(offset) !== 0x02014b50) {
+      return;
+    }
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const nextOffset = offset + 46 + nameLength + extraLength + commentLength;
+    if (nextOffset > directoryEnd) {
+      return;
+    }
+    const nameKey = buffer.subarray(offset + 46, offset + 46 + nameLength).toString('hex');
+    if (names.has(nameKey)) {
+      throw new VscError('PATH_INVALID', 'Duplicate file path in ZIP central directory');
+    }
+    names.add(nameKey);
+    offset = nextOffset;
+  }
+}
+
+function findRunJSZipEndOfCentralDirectory(buffer: Buffer): number | null {
+  const minimumLength = 22;
+  const maximumCommentLength = 0xffff;
+  const minimumOffset = Math.max(0, buffer.length - minimumLength - maximumCommentLength);
+  for (let offset = buffer.length - minimumLength; offset >= minimumOffset; offset -= 1) {
+    if (buffer.readUInt32LE(offset) !== 0x06054b50) {
+      continue;
+    }
+    const commentLength = buffer.readUInt16LE(offset + 20);
+    if (offset + minimumLength + commentLength === buffer.length) {
+      return offset;
+    }
+  }
+  return null;
 }
 
 function normalizeRunJSZipStructuralPath(path: string, directory: boolean): string {

@@ -395,6 +395,7 @@ export class JsTemplateCreateJobStore {
         {
           status: 'failed',
           resultProjectId: null,
+          payload: null,
           errorCode,
           errorReasonCode,
           errorMessage,
@@ -442,52 +443,6 @@ export class JsTemplateCreateJobStore {
         throw invalidJobState('Only terminal creation jobs can be dismissed');
       }
       await record.update({ dismissed: true }, { transaction });
-    });
-  }
-
-  async retry(
-    jobId: string,
-    applicationName: string,
-    actorUserId: string,
-    sessionId: string,
-  ): Promise<JsTemplateCreateJob> {
-    return this.withLockedJob(jobId, async (record, transaction) => {
-      if (!record) {
-        throw jobNotFound(jobId);
-      }
-      assertJobOwner(record, applicationName, actorUserId, sessionId);
-      const status = String(record.get('status'));
-      if (status !== 'failed') {
-        throw invalidJobState('Only failed creation jobs can be retried');
-      }
-      if (!record.get('payload')) {
-        throw invalidJobState('Creation job no longer has retryable source input');
-      }
-      try {
-        await record.update(
-          {
-            status: 'pending',
-            resultProjectId: null,
-            reservationKey: createReservationKey(applicationName, String(record.get('normalizedName'))),
-            errorCode: null,
-            errorReasonCode: null,
-            errorMessage: null,
-            claimToken: null,
-            claimOwner: null,
-            leaseExpiresAt: null,
-            heartbeatAt: null,
-            startedAt: null,
-            finishedAt: null,
-          },
-          { transaction },
-        );
-      } catch (error) {
-        if (error instanceof UniqueConstraintError && isCreateJobReservationConstraintError(error)) {
-          throw createNameConflict(String(record.get('name')), String(record.get('normalizedName')));
-        }
-        throw error;
-      }
-      return createJobFromModel(record);
     });
   }
 

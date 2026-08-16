@@ -76,6 +76,14 @@ function setStepSettingsParams(step: FlowStep, value: Record<string, unknown>) {
   step.defaultParams = value;
 }
 
+function getDynamicStepRunJSSourcePath(step: FlowStep): ['params' | 'defaultParams', 'code'] {
+  const serialized = step.serialize();
+  if (isStepParamsRecord(serialized.params) && typeof serialized.params.code === 'string') {
+    return ['params', 'code'];
+  }
+  return ['defaultParams', 'code'];
+}
+
 function withDynamicStepRunJSSource(
   uiSchema: StepDefinition['uiSchema'],
   model: FlowModel,
@@ -106,7 +114,7 @@ function withDynamicStepRunJSSource(
         modelUid: model.uid,
         flowKey: flow.key,
         stepKey: step.key,
-        sourcePath: ['defaultParams', 'code'],
+        sourcePath: getDynamicStepRunJSSourcePath(persistedStep),
       },
       sourceLabel: label,
     });

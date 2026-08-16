@@ -19,7 +19,6 @@ import type {
   JsTemplateProject,
   JsTemplateProjectLifecycleStatus,
 } from '../../../shared/types';
-import { getJsTemplateSyncErrorTranslationKey } from '../../hooks/useJsTemplateSync';
 import { getCreateJobRowKey, selectVisibleCreationJobs } from './logic';
 import type { JsTemplateListTranslate, ToggleLifecycleStatus } from './types';
 
@@ -41,13 +40,10 @@ type JsTemplateSourceProjectTableRow =
 interface JsTemplateSourceProjectTableProps {
   changingProjectIds: Set<string>;
   creationJobs: JsTemplateCreateJobSummary[];
-  dismissingCreateJobIds: Set<string>;
   loading: boolean;
   onChangeLifecycle: (project: JsTemplateProject, lifecycleStatus: ToggleLifecycleStatus) => void;
-  onDismissCreateJob: (jobId: string) => void;
   onEditProject: (project: JsTemplateProject) => void;
   onRemoveProject: (project: JsTemplateProject) => void;
-  onRetryCreateJob: (jobId: string) => void;
   onSelectProject: (projectId: string, panel: 'source' | 'sync') => void;
   onSelectedRowKeysChange: (selectedRowKeys: React.Key[]) => void;
   projects: JsTemplateProject[];
@@ -59,13 +55,10 @@ interface JsTemplateSourceProjectTableProps {
 export function JsTemplateSourceProjectTable({
   changingProjectIds,
   creationJobs,
-  dismissingCreateJobIds,
   loading,
   onChangeLifecycle,
-  onDismissCreateJob,
   onEditProject,
   onRemoveProject,
-  onRetryCreateJob,
   onSelectProject,
   onSelectedRowKeysChange,
   projects,
@@ -102,13 +95,7 @@ export function JsTemplateSourceProjectTable({
         onCell: (row) => (row.kind === 'creation' ? { colSpan: PROJECT_COLUMN_COUNT } : {}),
         render: (_value, row) =>
           row.kind === 'creation' ? (
-            <CreationJobCell
-              dismissing={dismissingCreateJobIds.has(row.job.id)}
-              job={row.job}
-              onDismiss={onDismissCreateJob}
-              onRetry={onRetryCreateJob}
-              t={t}
-            />
+            <CreationJobCell job={row.job} t={t} />
           ) : (
             <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
               <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
@@ -275,18 +262,7 @@ export function JsTemplateSourceProjectTable({
         },
       },
     ],
-    [
-      changingProjectIds,
-      dismissingCreateJobIds,
-      onChangeLifecycle,
-      onDismissCreateJob,
-      onEditProject,
-      onRemoveProject,
-      onRetryCreateJob,
-      onSelectProject,
-      removingProjectIds,
-      t,
-    ],
+    [changingProjectIds, onChangeLifecycle, onEditProject, onRemoveProject, onSelectProject, removingProjectIds, t],
   );
 
   return (
@@ -322,18 +298,14 @@ export function JsTemplateSourceProjectTable({
 }
 
 interface CreationJobCellProps {
-  dismissing: boolean;
   job: JsTemplateCreateJobSummary;
-  onDismiss: (jobId: string) => void;
-  onRetry: (jobId: string) => void;
   t: JsTemplateListTranslate;
 }
 
-function CreationJobCell({ dismissing, job, onDismiss, onRetry, t }: CreationJobCellProps) {
-  const failed = job.status === 'failed';
+function CreationJobCell({ job, t }: CreationJobCellProps) {
   return (
     <Space align="start" size="small" wrap>
-      {failed ? null : <Spin size="small" />}
+      <Spin size="small" />
       <Space direction="vertical" size={0}>
         <Typography.Text strong>{job.title || job.name}</Typography.Text>
         {job.title ? (
@@ -342,30 +314,7 @@ function CreationJobCell({ dismissing, job, onDismiss, onRetry, t }: CreationJob
           </Typography.Text>
         ) : null}
       </Space>
-      <Tag color={failed ? 'error' : 'processing'}>{creationStatusLabel(job.status, t)}</Tag>
-      {failed ? (
-        <>
-          <Typography.Text type="danger">{creationFailureMessage(job, t)}</Typography.Text>
-          <Button
-            aria-label={t('Retry') + ' ' + (job.title || job.name)}
-            onClick={() => onRetry(job.id)}
-            size="small"
-            type="link"
-          >
-            {t('Retry')}
-          </Button>
-          <Button
-            aria-label={t('Remove creation task') + ' ' + (job.title || job.name)}
-            loading={dismissing}
-            onClick={() => onDismiss(job.id)}
-            size="small"
-            style={TABLE_ACTION_BUTTON_STYLE}
-            type="link"
-          >
-            {t('Remove')}
-          </Button>
-        </>
-      ) : null}
+      <Tag color="processing">{creationStatusLabel(job.status, t)}</Tag>
     </Space>
   );
 }
@@ -383,11 +332,6 @@ function creationStatusLabel(status: JsTemplateCreateJobStatus, t: JsTemplateLis
     case 'succeeded':
       return '';
   }
-}
-
-function creationFailureMessage(job: JsTemplateCreateJobSummary, t: JsTemplateListTranslate): string {
-  const errorKey = getJsTemplateSyncErrorTranslationKey(job.errorCode, job.errorReasonCode);
-  return errorKey ? t(errorKey) : job.errorMessage || t('JS Template creation failed');
 }
 
 function hideCreationCell(row: JsTemplateSourceProjectTableRow) {

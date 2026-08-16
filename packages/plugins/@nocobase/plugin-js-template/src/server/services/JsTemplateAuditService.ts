@@ -130,13 +130,7 @@ export interface JsTemplateCreateJobAuditInput {
   jobId: string;
   targetProjectId: string;
   sourceType: JsTemplateCreateSourceType;
-  action:
-    | 'createJobEnqueue'
-    | 'createJobStart'
-    | 'createJobSucceed'
-    | 'createJobFail'
-    | 'createJobRetry'
-    | 'createJobDismiss';
+  action: 'createJobEnqueue' | 'createJobStart' | 'createJobSucceed' | 'createJobFail' | 'createJobDismiss';
   result: 'success' | 'blocked';
   requestId?: string | null;
   actorUserId?: string | null;

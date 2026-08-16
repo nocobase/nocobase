@@ -20,7 +20,7 @@ export default {
   },
   tags: [
     { name: 'jsTemplateProjects', description: 'Discover existing Source Projects.' },
-    { name: 'jsTemplateCreateJobs', description: 'Inspect, retry, and dismiss Source Project creation jobs.' },
+    { name: 'jsTemplateCreateJobs', description: 'Inspect and dismiss Source Project creation jobs.' },
     { name: 'jsTemplates', description: 'Inspect, compile, save, detach, and delete reusable JS Templates.' },
     { name: 'jsTemplateUsages', description: 'Inspect paginated visible usage locations for one JS Template.' },
     { name: 'jsTemplateFiles', description: 'Read and save JS Template source files.' },

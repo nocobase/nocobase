@@ -95,19 +95,21 @@ describe('useJsTemplateCreateJobs', () => {
     expect(mocks.api.request).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps newest-first terminal results and stops polling after every active job finishes', async () => {
+  it('keeps polling while a failed job awaits dismissal', async () => {
     vi.useFakeTimers();
     const newest = createJob({ id: 'jtcj_newest', title: 'Newest', status: 'pending' });
     const older = createJob({ id: 'jtcj_older', title: 'Older', status: 'running' });
-    mocks.api.request.mockResolvedValueOnce({ data: { data: { jobs: [newest, older] } } }).mockResolvedValueOnce({
-      data: {
-        data: {
-          jobs: [
-            { ...newest, status: 'failed', errorMessage: 'Safe failure' },
-            { ...older, status: 'succeeded', resultProjectId: older.targetProjectId },
-          ],
-        },
-      },
+    const terminalJobs = [
+      { ...newest, status: 'failed' as const, errorMessage: 'Safe failure' },
+      { ...older, status: 'succeeded' as const, resultProjectId: older.targetProjectId },
+    ];
+    let listCount = 0;
+    mocks.api.request.mockImplementation((options: { url: string }) => {
+      if (options.url.endsWith(':dismiss')) {
+        return Promise.resolve({ data: { data: { id: newest.id } } });
+      }
+      listCount += 1;
+      return Promise.resolve({ data: { data: { jobs: listCount === 1 ? [newest, older] : terminalJobs } } });
     });
     const { result } = renderHook(() => useJsTemplateCreateJobs());
 
@@ -126,9 +128,19 @@ describe('useJsTemplateCreateJobs', () => {
     ]);
 
     await act(async () => {
+      await vi.advanceTimersByTimeAsync(2500);
+    });
+    expect(mocks.api.request).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      await result.current.dismiss(newest.id);
+    });
+    expect(result.current.jobs).toEqual([expect.objectContaining({ id: older.id, status: 'succeeded' })]);
+
+    await act(async () => {
       await vi.advanceTimersByTimeAsync(7500);
     });
-    expect(mocks.api.request).toHaveBeenCalledTimes(2);
+    expect(mocks.api.request).toHaveBeenCalledTimes(4);
   });
 
   it('observes another hook dismissal only after an explicit refresh', async () => {

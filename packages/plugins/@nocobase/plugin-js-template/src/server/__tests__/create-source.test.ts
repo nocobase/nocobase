@@ -128,6 +128,10 @@ describe('plugin-js-template initial source creation', () => {
   });
 
   it('rejects directly supplied source that uses the removed generic RunJS root', async () => {
+    const projectCount = await app.db.getRepository('jsTemplateProjects').count();
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    const artifactCount = await app.db.getRepository('jsTemplateArtifacts').count();
     const initialFiles = [
       {
         path: 'src/client/runjs/example/index.ts',
@@ -160,10 +164,19 @@ describe('plugin-js-template initial source creation', () => {
     });
 
     expect(createResponse.status).toBe(202);
-    await expect(waitForFailedCreateJob(app, createResponse.body.data.id)).resolves.toMatchObject({
+    const failedJob = await waitForFailedCreateJob(app, createResponse.body.data.id);
+    expect(failedJob).toMatchObject({
       status: 'failed',
       errorCode: 'JS_TEMPLATE_VALIDATION_FAILED',
+      payload: null,
+      actorUserId: expect.any(String),
+      requestHash: expect.any(String),
+      finishedAt: expect.any(Date),
     });
+    await expect(app.db.getRepository('jsTemplateProjects').count()).resolves.toBe(projectCount);
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+    await expect(app.db.getRepository('jsTemplateArtifacts').count()).resolves.toBe(artifactCount);
   });
 
   it('uses uploaded ZIP source for the first version and compiles it immediately', async () => {
@@ -647,7 +660,7 @@ describe('plugin-js-template initial source creation', () => {
     ).resolves.toMatchObject({ id: replayedId, dismissed: false });
   });
 
-  it('keeps list, get, retry and dismiss non-enumerating across sessions of the same actor', async () => {
+  it('keeps list, get and dismiss non-enumerating across sessions of the same actor', async () => {
     const store = new JsTemplateCreateJobStore(app.db);
     const firstSession = await store.enqueue(createJobInput('session-one'));
     const secondSession = await store.enqueue({
@@ -659,7 +672,6 @@ describe('plugin-js-template initial source creation', () => {
       expect.objectContaining({ id: firstSession.id }),
     ]);
     await expect(store.getOwn(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
-    await expect(store.retry(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
     await expect(store.dismiss(secondSession.id, 'main', '7', 'session-7')).rejects.toMatchObject({ status: 404 });
   });
 

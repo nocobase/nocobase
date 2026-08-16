@@ -19,7 +19,7 @@ import { jsTemplateSyncActionNames } from '../resources/jsTemplateSync';
 
 const publicActions = {
   jsTemplateProjects: ['create', 'list', 'get'],
-  jsTemplateCreateJobs: ['list', 'get', 'retry', 'dismiss'],
+  jsTemplateCreateJobs: ['list', 'get', 'dismiss'],
   jsTemplates: ['get', 'listSelectable', 'compileWorkspacePreview', 'saveAsJsTemplate', 'detachToInline', 'delete'],
   jsTemplateUsages: ['listUsages'],
   jsTemplateFiles: ['pull', 'getFile', 'saveSource'],
@@ -87,11 +87,10 @@ describe('js-template swagger', () => {
     );
   });
 
-  it('documents durable starter and ZIP creation plus distinct job mutation semantics', () => {
+  it('documents durable starter and ZIP creation plus job inspection and dismissal semantics', () => {
     const create = swaggerDocument.paths['/jsTemplateProjects:create'].post;
     const createRequest = swaggerDocument.components.schemas.JsTemplateCreateProjectRequest;
     const getJob = swaggerDocument.paths['/jsTemplateCreateJobs:get'].post;
-    const retryJob = swaggerDocument.paths['/jsTemplateCreateJobs:retry'].post;
     const dismissJob = swaggerDocument.paths['/jsTemplateCreateJobs:dismiss'].post;
 
     expect(create.responses).toHaveProperty('202');
@@ -101,7 +100,11 @@ describe('js-template swagger', () => {
     expect(createRequest.required).toEqual(['idempotencyKey', 'name']);
     expect(createRequest.properties).toHaveProperty('zipBase64');
     expect(getJob.responses).not.toHaveProperty('409');
-    expect(retryJob.responses).toHaveProperty('409');
+    expect(Object.keys(swaggerDocument.paths).filter((path) => path.startsWith('/jsTemplateCreateJobs:'))).toEqual([
+      '/jsTemplateCreateJobs:list',
+      '/jsTemplateCreateJobs:dismiss',
+      '/jsTemplateCreateJobs:get',
+    ]);
     expect(dismissJob.description).toMatch(/soft-dismiss/iu);
   });
 

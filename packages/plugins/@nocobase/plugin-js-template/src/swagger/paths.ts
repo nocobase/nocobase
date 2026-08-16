@@ -239,12 +239,6 @@ export const jsTemplatePaths = {
   '/jsTemplateCreateJobs:get': createJobMutationOperation(
     'Get one Source Project creation job',
     'Return one creation job owned by the current user and application after rechecking its source permissions.',
-    false,
-  ),
-  '/jsTemplateCreateJobs:retry': createJobMutationOperation(
-    'Retry one failed Source Project creation job',
-    'Reset one retryable failed creation job to pending without creating a replacement job or project.',
-    true,
   ),
   '/jsTemplates:get': {
     post: {
@@ -700,7 +694,7 @@ export const jsTemplatePaths = {
   },
 };
 
-function createJobMutationOperation(summary: string, description: string, retry: boolean) {
+function createJobMutationOperation(summary: string, description: string) {
   return {
     post: {
       tags: ['jsTemplateCreateJobs'],
@@ -724,7 +718,6 @@ function createJobMutationOperation(summary: string, description: string, retry:
         400: errorResponse('jobId or the request payload is invalid.'),
         403: errorResponse('The current user can no longer access this creation source.'),
         404: errorResponse('The creation job is not visible to the current user and application.'),
-        ...(retry ? { 409: errorResponse('The creation job cannot be retried in its current state.') } : {}),
       },
     },
   };

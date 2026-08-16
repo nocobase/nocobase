@@ -182,10 +182,10 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
 
       return {
         code: source.code,
-        version: 'v2',
+        version: source.version,
         label: buildFlowModelLabel(model, `${locator.flowKey}.${locator.stepKey}`),
         surfaceStyle: 'action',
-        language: 'typescript',
+        language: inferLanguage(source.version),
         entryPath: 'src/main.tsx',
         entry: 'src/main.tsx',
         ownerFingerprint: buildFlowRegistryRunJSFingerprint(locator, model),
@@ -216,8 +216,10 @@ function createFlowRegistryRunJSAdapter(db: Database): RunJSSourceAdapter<FlowRe
         'steps',
         locator.stepKey,
       ]);
+      const versionPath = resolveFlowRegistryRunJSVersionPath(sourcePath);
 
       setAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey, ...sourcePath], artifact.code);
+      setAtPath(nextFlowRegistry, [locator.flowKey, 'steps', locator.stepKey, ...versionPath], artifact.version);
 
       await getFlowModelRepository(db).patch(
         { uid: locator.modelUid, flowRegistry: nextFlowRegistry },
@@ -541,9 +543,10 @@ function buildFlowRegistryRunJSFingerprint(locator: FlowRegistryRunJSLocator, mo
     ownerUpdatedAt: {
       ...getFlowModelFingerprintOwner(model),
       sourcePath: source.sourcePath,
+      versionPath: source.versionPath,
     },
     selectedLegacyValue: source.code,
-    selectedVersion: 'v2',
+    selectedVersion: source.version,
   });
 }
 
@@ -586,6 +589,7 @@ function readFlowRegistryRunJSSource(model: JsonRecord, locator: FlowRegistryRun
     throwNestedPathNotFound(stepPath);
   }
   const sourcePath = resolveFlowRegistryRunJSSourcePath(step, locator.sourcePath, stepPath);
+  const versionPath = resolveFlowRegistryRunJSVersionPath(sourcePath);
   const value = getAtPath(step, sourcePath);
   if (typeof value !== 'string') {
     throwNestedPathNotFound([...stepPath, ...sourcePath]);
@@ -593,8 +597,14 @@ function readFlowRegistryRunJSSource(model: JsonRecord, locator: FlowRegistryRun
 
   return {
     code: value,
+    version: resolveLegacyVersion(value, getAtPath(step, versionPath)),
     sourcePath,
+    versionPath,
   };
+}
+
+function resolveFlowRegistryRunJSVersionPath(sourcePath: string[]): string[] {
+  return [sourcePath[0], 'version'];
 }
 
 function resolveFlowRegistryRunJSSourcePath(step: JsonRecord, preferredPath: string[], stepPath: JsonPath): string[] {
@@ -672,7 +682,7 @@ function inferStepSurfaceStyle(model: JsonRecord): RunJSSurfaceStyle {
 }
 
 function inferLanguage(version: string): RunJSLanguage {
-  return version === 'jsx' ? 'jsx' : version === 'javascript' ? 'javascript' : 'typescript';
+  return version === 'jsx' ? 'jsx' : version === 'javascript' || version === 'v1' ? 'javascript' : 'typescript';
 }
 
 function buildFlowModelLabel(model: JsonRecord, fallback: string): string {

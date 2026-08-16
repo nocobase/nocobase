@@ -103,7 +103,7 @@ describe('Source Project list logic', () => {
     expect(result.nextStatuses.has('job_disappeared')).toBe(false);
   });
 
-  it('keeps active and failed creation rows while hiding succeeded history', () => {
+  it('keeps only active creation rows while hiding all terminal history', () => {
     const jobs = [
       createJobSummary({ id: 'active_pending', status: 'pending' }),
       createJobSummary({ id: 'terminal_1', status: 'succeeded' }),
@@ -113,12 +113,7 @@ describe('Source Project list logic', () => {
       createJobSummary({ id: 'terminal_4', status: 'failed' }),
     ];
 
-    expect(selectVisibleCreationJobs(jobs).map((job) => job.id)).toEqual([
-      'active_pending',
-      'active_running',
-      'terminal_2',
-      'terminal_4',
-    ]);
+    expect(selectVisibleCreationJobs(jobs).map((job) => job.id)).toEqual(['active_pending', 'active_running']);
   });
 
   it('uses the target project ID as the stable creation row key', () => {

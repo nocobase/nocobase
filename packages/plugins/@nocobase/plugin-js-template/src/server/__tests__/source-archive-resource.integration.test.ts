@@ -12,7 +12,6 @@ import type { Database } from '@nocobase/database';
 import JSZip from 'jszip';
 import { vi } from 'vitest';
 
-import { JsTemplateError } from '../../shared/errors';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
@@ -46,7 +45,10 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     const zip = new JSZip();
     zip.file('workspace/README.md', '# Inspected\n');
     zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
-    zip.file('workspace/src/client/js-blocks/orders/entry.json', '{"schemaVersion":1,"key":"orders"}\n');
+    zip.file(
+      'workspace/src/client/js-blocks/orders/entry.json',
+      '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
+    );
     zip.file('workspace/src/client/js-blocks/orders/index.tsx', 'ctx.render(String(ctx.record?.id ?? ""));\n');
     const ctx = createActionContext({
       projectId: 'jtp_inspect',
@@ -70,6 +72,7 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
         }),
         expect.objectContaining({
           path: 'src/client/js-blocks/orders/entry.json',
+          content: '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
           language: 'json',
         }),
         expect.objectContaining({
@@ -87,132 +90,115 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects NUL bytes in source files', async () => {
-    const projectService = {
-      getProject: vi.fn(async () => ({ id: 'jtp_inspect', lifecycleStatus: 'enabled' })),
-      getValidator: vi.fn(() => new JsTemplateValidator()),
-    } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource(
-      {} as Database,
-      projectService,
-      {} as JsTemplateCompileService,
-      {} as never,
-      {} as never,
-      'test',
-      {} as never,
-    );
-    const zip = new JSZip();
-    zip.file('src/shared/value.ts', Buffer.from('export\0const value = 1;'));
-    const ctx = createActionContext({
-      projectId: 'jtp_inspect',
-      zipBase64: await zip.generateAsync({ type: 'base64' }),
-    });
-
-    await resource.actions?.inspectSourceArchive?.(
-      ctx,
-      vi.fn(async () => {}),
-    );
-
-    expect((ctx as { status?: number }).status).toBe(422);
-    expect((ctx as { body?: unknown }).body).toMatchObject({
-      errors: [expect.objectContaining({ code: 'JS_TEMPLATE_VALIDATION_FAILED' })],
-    });
-  });
-
-  it('requires an existing project before parsing the ZIP', async () => {
-    const getValidator = vi.fn(() => new JsTemplateValidator());
-    const projectService = {
-      getProject: vi.fn(async () => {
-        throw new JsTemplateError('JS_TEMPLATE_PROJECT_NOT_FOUND', 'Project was not found');
-      }),
-      getValidator,
-    } as unknown as JsTemplateProjectService;
-    const resource = createJsTemplateProjectsResource(
-      {} as Database,
-      projectService,
-      {} as JsTemplateCompileService,
-      {} as never,
-      {} as never,
-      'test',
-      {} as never,
-    );
-    const ctx = createActionContext({
-      projectId: 'jtp_missing',
-      zipBase64: 'not-base64',
-    });
-
-    await resource.actions?.inspectSourceArchive?.(
-      ctx,
-      vi.fn(async () => {}),
-    );
-
-    expect((ctx as { status?: number }).status).toBe(404);
-    expect((ctx as { body?: unknown }).body).toMatchObject({
-      errors: [expect.objectContaining({ code: 'JS_TEMPLATE_PROJECT_NOT_FOUND' })],
-    });
-    expect(getValidator).not.toHaveBeenCalled();
-  });
-
   it.each([
-    ['path traversal', async () => createZipBase64({ '../escape.ts': 'export default true;\n' })],
-    ['absolute path', async () => createZipBase64({ '/escape.ts': 'export default true;\n' })],
-    ['case duplicate', async () => createZipBase64({ 'README.md': '# One\n', 'readme.md': '# Two\n' })],
-    ['invalid UTF-8', async () => createZipBase64({ 'src/shared/binary.bin': Buffer.from([0, 255, 1]) })],
-    ['NUL byte', async () => createZipBase64({ 'src/shared/value.ts': Buffer.from('export\0const value = 1;') })],
-    [
-      'symbolic link',
-      async () => {
+    {
+      label: 'path traversal',
+      createZip: () => createZipBase64({ '../escape.ts': 'export default true;\n' }),
+      limits: undefined,
+    },
+    {
+      label: 'absolute path',
+      createZip: () => createZipBase64({ '/escape.ts': 'export default true;\n' }),
+      limits: undefined,
+    },
+    {
+      label: 'backslash path',
+      createZip: () => createZipBase64({ 'src\\escape.ts': 'export default true;\n' }),
+      limits: undefined,
+    },
+    {
+      label: 'case duplicate',
+      createZip: () => createZipBase64({ 'README.md': '# One\n', 'readme.md': '# Two\n' }),
+      limits: undefined,
+    },
+    {
+      label: 'invalid UTF-8',
+      createZip: () => createZipBase64({ 'src/shared/binary.bin': Buffer.from([0, 255, 1]) }),
+      limits: undefined,
+    },
+    {
+      label: 'NUL byte',
+      createZip: () => createZipBase64({ 'src/shared/value.ts': Buffer.from('export\0const value = 1;') }),
+      limits: undefined,
+    },
+    {
+      label: 'symbolic link',
+      createZip: async () => {
         const zip = new JSZip();
         zip.file('src/shared/link.ts', '../target.ts', { unixPermissions: 0o120777 });
         return zip.generateAsync({ type: 'base64', platform: 'UNIX' });
       },
-    ],
-  ])('rejects a %s archive before enqueue, publish, audit, transaction, or compile', async (_label, createZip) => {
-    const enqueue = vi.fn();
-    const publish = vi.fn();
-    const recordCreateJobEvent = vi.fn();
-    const transaction = vi.fn();
-    const prepareInitialWorkspace = vi.fn();
-    const resource = createJsTemplateProjectsResource(
-      { sequelize: { transaction } } as unknown as Database,
-      {
-        normalizeCreateMetadata: vi.fn(),
-        getValidator: vi.fn(() => new JsTemplateValidator()),
-      } as unknown as JsTemplateProjectService,
-      { prepareInitialWorkspace } as unknown as JsTemplateCompileService,
-      { enqueue } as never,
-      { publish } as never,
-      'main',
-      { recordCreateJobEvent } as never,
-    );
-    const ctx = {
-      action: {
-        params: {
-          values: {
-            idempotencyKey: `attack-${_label}`,
-            name: `Attack ${_label}`,
-            zipBase64: await createZip(),
+      limits: undefined,
+    },
+    {
+      label: 'file count overrun',
+      createZip: () => createZipBase64({ 'one.ts': 'export {};', 'two.ts': 'export {};' }),
+      limits: { maxProjectFiles: 1 },
+    },
+    {
+      label: 'single-file byte overrun',
+      createZip: () => createZipBase64({ 'large.ts': 'export const value = 12345;' }),
+      limits: { maxFileBytes: 8 },
+    },
+    {
+      label: 'total byte overrun',
+      createZip: () => createZipBase64({ 'one.ts': '12345', 'two.ts': '67890' }),
+      limits: { maxProjectBytes: 8 },
+    },
+    {
+      label: 'compression ratio overrun',
+      createZip: () => createZipBase64({ 'compressed.ts': 'a'.repeat(1024) }),
+      limits: { maxZipCompressionRatio: 1 },
+    },
+  ])(
+    'rejects a $label archive before enqueue, publish, audit, transaction, or compile',
+    async ({ label, createZip, limits }) => {
+      const enqueue = vi.fn();
+      const publish = vi.fn();
+      const recordCreateJobEvent = vi.fn();
+      const transaction = vi.fn();
+      const prepareInitialWorkspace = vi.fn();
+      const resource = createJsTemplateProjectsResource(
+        { sequelize: { transaction } } as unknown as Database,
+        {
+          normalizeCreateMetadata: vi.fn(),
+          getValidator: vi.fn(() => new JsTemplateValidator({ limits })),
+        } as unknown as JsTemplateProjectService,
+        { prepareInitialWorkspace } as unknown as JsTemplateCompileService,
+        { enqueue } as never,
+        { publish } as never,
+        'main',
+        { recordCreateJobEvent } as never,
+      );
+      const ctx = {
+        action: {
+          params: {
+            values: {
+              idempotencyKey: `attack-${label}`,
+              name: `Attack ${label}`,
+              zipBase64: await createZip(),
+            },
           },
         },
-      },
-      auth: { user: { id: 7 } },
-      getBearerToken: () => createUnsignedSessionToken('session-attack'),
-      request: { headers: {} },
-      state: { currentRole: 'member', currentRoles: ['member'] },
-    };
+        auth: { user: { id: 7 } },
+        getBearerToken: () => createUnsignedSessionToken('session-attack'),
+        request: { headers: {} },
+        state: { currentRole: 'member', currentRoles: ['member'] },
+      };
 
-    await resource.actions?.create?.(
-      ctx as never,
-      vi.fn(async () => undefined),
-    );
+      await resource.actions?.create?.(
+        ctx as never,
+        vi.fn(async () => undefined),
+      );
 
-    expect((ctx as { status?: number }).status).toBe(422);
-    expect(enqueue).not.toHaveBeenCalled();
-    expect(publish).not.toHaveBeenCalled();
-    expect(recordCreateJobEvent).not.toHaveBeenCalled();
-    expect(transaction).not.toHaveBeenCalled();
-    expect(prepareInitialWorkspace).not.toHaveBeenCalled();
-  });
+      expect((ctx as { status?: number }).status).toBe(422);
+      expect(enqueue).not.toHaveBeenCalled();
+      expect(publish).not.toHaveBeenCalled();
+      expect(recordCreateJobEvent).not.toHaveBeenCalled();
+      expect(transaction).not.toHaveBeenCalled();
+      expect(prepareInitialWorkspace).not.toHaveBeenCalled();
+    },
+  );
 });
 
 async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {

@@ -80,6 +80,16 @@ describe('RunJS workspace ZIP limits', () => {
     });
   });
 
+  it('rejects exact duplicate central-directory entries before JSZip overwrites them', async () => {
+    const zipBase64 = await createExactDuplicateZipBase64();
+
+    await expect(readRunJSWorkspaceZip(zipBase64)).rejects.toMatchObject({
+      code: 'PATH_INVALID',
+      message: expect.stringContaining('Duplicate file path'),
+      status: 400,
+    });
+  });
+
   it('rejects unsafe compression ratios', async () => {
     const zip = new JSZip();
     zip.file('src/main.ts', 'a'.repeat(256 * 1024));
@@ -327,6 +337,26 @@ async function createZipBase64(files: Record<string, string | Buffer>): Promise<
     compressionOptions: { level: 9 },
     type: 'base64',
   });
+}
+
+async function createExactDuplicateZipBase64(): Promise<string> {
+  const zip = new JSZip();
+  zip.file('src/a.ts', 'export const value = "first";');
+  zip.file('src/b.ts', 'export const value = "last";');
+  const buffer = await zip.generateAsync({ compression: 'STORE', type: 'nodebuffer' });
+  const originalName = Buffer.from('src/b.ts');
+  const duplicateName = Buffer.from('src/a.ts');
+  let replacements = 0;
+  let offset = buffer.indexOf(originalName);
+  while (offset !== -1) {
+    duplicateName.copy(buffer, offset);
+    replacements += 1;
+    offset = buffer.indexOf(originalName, offset + originalName.length);
+  }
+  if (replacements !== 2) {
+    throw new Error(`Expected to replace two ZIP entry names, received ${replacements}`);
+  }
+  return buffer.toString('base64');
 }
 
 function randomText(length: number): string {

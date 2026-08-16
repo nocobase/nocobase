@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import JSZip from 'jszip';
-
 import {
-  buildJsTemplateWorkspaceArchiveFileName,
   createJsTemplateWorkspaceArchive,
+  readJsTemplateWorkspaceArchive,
 } from '../workspace/jsTemplateWorkspaceArchive';
 
 describe('workspace archive UI', () => {
@@ -24,45 +22,35 @@ describe('workspace archive UI', () => {
         content: 'ctx.render(<div>{String(ctx.record?.id ?? "")}</div>);\n',
       },
     ]);
-    const blob = await createJsTemplateWorkspaceArchive(files);
-    const zip = await JSZip.loadAsync(await readBlobAsArrayBuffer(blob));
-
-    expect(Object.keys(zip.files)).toEqual([
-      'src/',
-      'src/client/',
-      'src/client/js-blocks/',
-      'src/client/js-blocks/example/',
-      'src/client/js-blocks/example/index.tsx',
-      'src/client/js-blocks/orders/',
-      'src/client/js-blocks/orders/index.tsx',
-      'src/shared/',
-      'src/shared/value.ts',
-    ]);
+    await expect(createJsTemplateWorkspaceArchive(files)).resolves.toBeInstanceOf(Blob);
     expect(files.map((file) => file.path)).toEqual([
       'src/shared/value.ts',
       'src/client/js-blocks/example/index.tsx',
       'src/client/js-blocks/orders/index.tsx',
     ]);
-    await expect(zip.file('src/shared/value.ts')?.async('string')).resolves.toBe('export const value = 2;\n');
-    await expect(zip.file('src/client/js-blocks/example/index.tsx')?.async('string')).resolves.toBe(
-      'ctx.render(<div>Draft</div>);\n',
-    );
-    await expect(zip.file('src/client/js-blocks/orders/index.tsx')?.async('string')).resolves.toBe(
-      'ctx.render(<div>{String(ctx.record?.id ?? "")}</div>);\n',
-    );
   });
 
-  it('builds a filesystem-safe ZIP file name', () => {
-    expect(buildJsTemplateWorkspaceArchiveFileName('Sales Widgets / 2026')).toBe('sales-widgets-2026.zip');
-    expect(buildJsTemplateWorkspaceArchiveFileName(undefined)).toBe('js-template.zip');
+  it('reads an import and keeps file-reader failures visible to the caller', async () => {
+    const archive = new Blob(['archive bytes']);
+
+    await expect(readJsTemplateWorkspaceArchive(archive, 'Import failed')).resolves.toBe(
+      Buffer.from('archive bytes').toString('base64'),
+    );
+
+    const originalReader = globalThis.FileReader;
+    class FailingFileReader {
+      error = new Error('reader failed');
+      onerror: (() => void) | null = null;
+
+      readAsDataURL() {
+        this.onerror?.();
+      }
+    }
+    globalThis.FileReader = FailingFileReader as unknown as typeof FileReader;
+    try {
+      await expect(readJsTemplateWorkspaceArchive(archive, 'Import failed')).rejects.toThrow('Import failed');
+    } finally {
+      globalThis.FileReader = originalReader;
+    }
   });
 });
-
-function readBlobAsArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as ArrayBuffer);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsArrayBuffer(blob);
-  });
-}

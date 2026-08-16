@@ -48,7 +48,6 @@ const mocks = vi.hoisted(() => ({
     addAcceptedJob: vi.fn(),
     refresh: vi.fn(async () => undefined),
     dismiss: vi.fn(),
-    retry: vi.fn(),
     update: vi.fn(),
   },
   notification: {
@@ -138,10 +137,6 @@ vi.mock('../hooks/useJsTemplateCreateJobs', async () => {
         dismiss: async (jobId) => {
           await mocks.createJobs.dismiss(jobId);
           setJobs((current) => current.filter((job) => job.id !== jobId));
-        },
-        retry: async (jobId) => {
-          const job = await mocks.createJobs.retry(jobId);
-          setJobs((current) => [job, ...current.filter((candidate) => candidate.id !== job.id)]);
         },
       };
     },
@@ -275,7 +270,6 @@ describe('JsTemplateSourceProjectsPage', () => {
     mocks.cache.invalidateRuntime.mockReset();
     mocks.cache.invalidateSettings.mockReset();
     mocks.createJobs.dismiss.mockReset();
-    mocks.createJobs.retry.mockReset();
     mocks.notification.error.mockReset();
     mocks.notification.success.mockReset();
     mocks.notification.warning.mockReset();
@@ -602,9 +596,6 @@ describe('JsTemplateSourceProjectsPage', () => {
         }),
       ]);
     });
-    expect(
-      await screen.findByText('The remote repository has no default branch. Enter a branch explicitly.'),
-    ).toBeInTheDocument();
     expect(mocks.notification.error).toHaveBeenCalledWith({
       message:
         'Source Project creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
@@ -909,7 +900,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     },
   );
 
-  it('notifies the newest terminal transition and refreshes once when the same batch includes a success', async () => {
+  it('dismisses a failed transition while refreshing a success from the same batch once', async () => {
     const newestFailed = createJobSummary({
       id: 'jtcj_newest',
       name: 'newest',
@@ -938,7 +929,8 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText('Newest safe failure')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(newestFailed.id));
+    expect(screen.queryByText('Newest safe failure')).not.toBeInTheDocument();
     expect(mocks.notification.error).toHaveBeenCalledWith({
       message: 'Source Project creation failed: Newest failed: Newest safe failure',
       placement: 'topRight',
@@ -947,7 +939,11 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
     expect(screen.queryByText('Some JS Template caches could not be refreshed')).not.toBeInTheDocument();
     expect(mocks.notification.success).not.toHaveBeenCalled();
-    expect(mocks.notification.warning).not.toHaveBeenCalled();
+    expect(mocks.notification.warning).toHaveBeenCalledWith({
+      message: 'Some JS Template caches could not be refreshed',
+      placement: 'topRight',
+      role: 'alert',
+    });
 
     await act(async () => {
       mocks.createJobs.update(terminalJobs);
@@ -955,7 +951,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
-  it('prioritizes the newest creation failure when an older success reload fails', async () => {
+  it('reports a failed transition independently when an older success reload fails', async () => {
     const newestFailed = createJobSummary({
       id: 'jtcj_newest',
       name: 'newest',
@@ -980,49 +976,57 @@ describe('JsTemplateSourceProjectsPage', () => {
       ]);
     });
 
-    expect(await screen.findByText('Newest safe failure')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(newestFailed.id));
+    expect(screen.queryByText('Newest safe failure')).not.toBeInTheDocument();
     expect(mocks.notification.error).toHaveBeenCalledWith({
       message: 'Source Project creation failed: Newest failed: Newest safe failure',
       placement: 'topRight',
       role: 'alert',
     });
-    expect(screen.queryByText('Project refresh failed')).not.toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledWith({
+      message: 'Project refresh failed',
+      placement: 'topRight',
+      role: 'alert',
+    });
     expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
     expect(mocks.notification.success).not.toHaveBeenCalled();
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps a failed creation row with retry/remove actions and sends an error notification', async () => {
-    const pending = createJobSummary();
+  it('notifies an initially failed job once and retries its auto-dismiss without concurrent requests', async () => {
     const failed = createJobSummary({
       status: 'failed',
       errorCode: 'JS_TEMPLATE_CREATE_FAILED',
       errorMessage: 'Safe failure',
     });
-    mocks.createJobs.initialJobs = [pending];
-    mocks.createJobs.retry.mockResolvedValueOnce(failed);
+    const firstDismiss = createDeferred<void>();
+    mocks.createJobs.initialJobs = [failed];
+    mocks.createJobs.dismiss.mockReturnValueOnce(firstDismiss.promise).mockResolvedValueOnce(undefined);
     renderListPage();
 
-    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
-    await act(async () => {
-      mocks.createJobs.update([failed]);
-    });
-
-    expect(await screen.findByText('Safe failure')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledTimes(1);
     expect(mocks.notification.error).toHaveBeenCalledWith({
       message: 'Source Project creation failed: Demo: Safe failure',
       placement: 'topRight',
       role: 'alert',
     });
-    expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
-    expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Retry Demo' }));
-    await waitFor(() => expect(mocks.createJobs.retry).toHaveBeenCalledWith(failed.id));
-    const dismissButton = screen.getByRole('button', { name: 'Remove creation task Demo' });
-    dismissButton.focus();
-    await userEvent.keyboard('{Enter}');
-    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledWith(failed.id));
-    expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
+
+    await act(async () => {
+      mocks.createJobs.update([failed]);
+    });
+    expect(mocks.createJobs.dismiss).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      firstDismiss.reject(new Error('Temporary dismiss failure'));
+      await firstDismiss.promise.catch(() => undefined);
+    });
+    await act(async () => {
+      mocks.createJobs.update([{ ...failed }]);
+    });
+    await waitFor(() => expect(mocks.createJobs.dismiss).toHaveBeenCalledTimes(2));
+    expect(mocks.notification.error).toHaveBeenCalledTimes(1);
   });
 
   it('hides historical succeeded jobs without notifying or dismissing them', async () => {
@@ -1033,7 +1037,6 @@ describe('JsTemplateSourceProjectsPage', () => {
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(1));
     expect(screen.queryByText('Creation succeeded')).not.toBeInTheDocument();
     expect(screen.queryByText('Demo')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove creation task Demo' })).not.toBeInTheDocument();
     expect(mocks.notification.success).not.toHaveBeenCalled();
     expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
   });

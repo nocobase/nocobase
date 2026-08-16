@@ -151,7 +151,8 @@ describe('JS Template Flow Engine RunJS source integration', () => {
       locatorKind: 'flowModel.flowRegistry.runjs',
       legacy: {
         code: 'return "before";',
-        version: 'v2',
+        version: 'v1',
+        language: 'javascript',
       },
     });
 
@@ -183,6 +184,7 @@ describe('JS Template Flow Engine RunJS source integration', () => {
     expect(saved.status).toBe(200);
     const model = await repository.findModelById('dynamic-flow-runjs-source');
     expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams.code).toContain('after from helper');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams.version).toBe('v1');
     expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams).not.toHaveProperty('sourceRef');
 
     const reopened = await agent.resource('runJSSources').open({ values: { locator } });
@@ -192,6 +194,85 @@ describe('JS Template Flow Engine RunJS source integration', () => {
         expect.objectContaining({ path: 'src/result.ts', content: expect.stringContaining('after from helper') }),
       ]),
     );
+  });
+
+  it('resolves Dynamic Flow sibling versions for params and empty defaultParams and fingerprints version changes', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'dynamic-flow-runjs-version-source',
+      use: 'FormModel',
+      flowRegistry: {
+        paramsFlow: {
+          steps: {
+            runjs: {
+              use: 'runjs',
+              params: {
+                code: 'return "params";',
+                version: 'v2',
+              },
+            },
+          },
+        },
+        emptyFlow: {
+          steps: {
+            runjs: {
+              use: 'runjs',
+              defaultParams: {
+                code: '',
+              },
+            },
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const agent = await app.agent().login(user);
+    const paramsLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-version-source',
+      flowKey: 'paramsFlow',
+      stepKey: 'runjs',
+      sourcePath: ['params', 'code'],
+    };
+    const emptyLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-version-source',
+      flowKey: 'emptyFlow',
+      stepKey: 'runjs',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const paramsOpened = await agent.resource('runJSSources').open({ values: { locator: paramsLocator } });
+    const emptyOpened = await agent.resource('runJSSources').open({ values: { locator: emptyLocator } });
+
+    expect(paramsOpened.body.data.legacy).toMatchObject({
+      code: 'return "params";',
+      version: 'v2',
+      language: 'typescript',
+    });
+    expect(emptyOpened.body.data.legacy).toMatchObject({ code: '', version: 'v2', language: 'typescript' });
+
+    const model = await repository.findModelById('dynamic-flow-runjs-version-source');
+    model.flowRegistry.paramsFlow.steps.runjs.params.version = 'v1';
+    await repository.patch({ uid: model.uid, flowRegistry: model.flowRegistry });
+
+    const changedVersion = await agent.resource('runJSSources').open({ values: { locator: paramsLocator } });
+    expect(changedVersion.status).toBe(409);
+    expect(changedVersion.body.errors[0]).toMatchObject({ code: 'RUNJS_SOURCE_OWNER_OUTDATED' });
+
+    const staleSave = await agent.resource('runJSSources').save({
+      values: {
+        locator: paramsLocator,
+        repoId: paramsOpened.body.data.repository.repoId,
+        baseCommitId: paramsOpened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: paramsOpened.body.data.ownerFingerprint,
+        message: 'Reject stale Dynamic Flow version',
+        entryPath: 'src/main.tsx',
+        files: [{ path: 'src/main.tsx', operation: 'upsert', content: 'return "stale";', language: 'typescript' }],
+      },
+    });
+    expect(staleSave.status).toBe(409);
+    expect(staleSave.body.errors[0]).toMatchObject({ code: 'RUNJS_SOURCE_OWNER_OUTDATED' });
   });
 
   it('bootstraps a complete ordinary workspace in the Host transaction without creating a JS Template repo', async () => {

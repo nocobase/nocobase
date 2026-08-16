@@ -48,20 +48,8 @@ export async function dismissJsTemplateCreateJob(
 }
 
 export async function getJsTemplateCreateJob(api: ApiClientLike, jobId: string): Promise<JsTemplateCreateJobSummary> {
-  return requestJsTemplateCreateJob(api, 'get', jobId);
-}
-
-export async function retryJsTemplateCreateJob(api: ApiClientLike, jobId: string): Promise<JsTemplateCreateJobSummary> {
-  return requestJsTemplateCreateJob(api, 'retry', jobId);
-}
-
-async function requestJsTemplateCreateJob(
-  api: ApiClientLike,
-  action: 'get' | 'retry',
-  jobId: string,
-): Promise<JsTemplateCreateJobSummary> {
   const response = await api.request<ResourceResponse<JsTemplateCreateJobSummary>>({
-    url: `jsTemplateCreateJobs:${action}`,
+    url: 'jsTemplateCreateJobs:get',
     method: 'post',
     data: { jobId: requireJobId(jobId) },
     skipNotify: true,

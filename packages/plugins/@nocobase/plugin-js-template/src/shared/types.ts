@@ -167,10 +167,6 @@ export interface JsTemplateCreateJobActionContract {
     input: JsTemplateCreateJobMutationInput;
     result: JsTemplateCreateJobSummary;
   };
-  retry: {
-    input: JsTemplateCreateJobMutationInput;
-    result: JsTemplateCreateJobSummary;
-  };
   dismiss: {
     input: JsTemplateCreateJobDismissInput;
     result: JsTemplateCreateJobDismissResult;
