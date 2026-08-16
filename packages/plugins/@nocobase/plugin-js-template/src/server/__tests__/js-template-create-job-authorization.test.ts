@@ -14,10 +14,6 @@ import type { JsTemplateCreateJob } from '../../shared/types';
 import { authorizeJsTemplateCreateJob } from '../authorizeJsTemplateCreateJob';
 
 describe('JS Template create-job worker authorization', () => {
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('uses only the request-selected role instead of borrowing a newly assigned privileged role', async () => {
     const can = vi.fn(({ roles }: { roles: string[] }) => (roles.includes('admin') ? {} : null));
     const dependencies = createAuthorizationHarness({
@@ -79,7 +75,7 @@ describe('JS Template create-job worker authorization', () => {
     expect(can).toHaveBeenCalledWith({ roles: ['department-editor'], resource: 'jsTemplate', action: 'create' });
   });
 
-  it.each(['issuedTokens', 'users', 'rolesUsers'] as const)(
+  it.each(['users', 'rolesUsers'] as const)(
     'fails closed when the %s authorization collection is unavailable',
     async (missingCollection) => {
       const dependencies = createAuthorizationHarness({ missingCollections: [missingCollection] });
@@ -90,49 +86,11 @@ describe('JS Template create-job worker authorization', () => {
   );
 
   it.each([
-    ['missing or rotated session', { session: null }],
-    ['logout blacklist', { blacklisted: true }],
     ['deleted actor', { actorExists: false }],
     ['removed role membership', { roles: ['viewer'] }],
     ['revoked ACL', { can: vi.fn(() => null) }],
   ])('rejects %s before worker writes', async (_label, options) => {
     const dependencies = createAuthorizationHarness(options);
-    await expect(authorizeJsTemplateCreateJob(dependencies, createJob())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PERMISSION_DENIED',
-    });
-  });
-
-  it.each([
-    ['token expiry', 'issuedTime'],
-    ['session expiry', 'signInTime'],
-  ] as const)('rejects %s without renewing the worker session', async (_label, expiredField) => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-08-13T00:00:00.000Z'));
-    const now = Date.now();
-    const renew = vi.fn();
-    const dependencies = createAuthorizationHarness({
-      session: {
-        issuedTime: expiredField === 'issuedTime' ? now - 60_001 : now,
-        signInTime: expiredField === 'signInTime' ? now - 60_001 : now,
-      },
-      renew,
-    });
-
-    await expect(authorizeJsTemplateCreateJob(dependencies, createJob())).rejects.toMatchObject({
-      code: 'JS_TEMPLATE_PERMISSION_DENIED',
-    });
-    expect(renew).not.toHaveBeenCalled();
-  });
-
-  it('rejects a session issued before the actor changed their password', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-08-13T00:00:00.000Z'));
-    const issuedTime = Date.now() - 10_000;
-    const dependencies = createAuthorizationHarness({
-      session: { issuedTime, signInTime: issuedTime },
-      passwordChangeTz: issuedTime + 1,
-    });
-
     await expect(authorizeJsTemplateCreateJob(dependencies, createJob())).rejects.toMatchObject({
       code: 'JS_TEMPLATE_PERMISSION_DENIED',
     });
@@ -152,34 +110,22 @@ describe('JS Template create-job worker authorization', () => {
 });
 
 interface AuthorizationHarnessOptions {
-  session?: { issuedTime: number; signInTime: number } | null;
-  blacklisted?: boolean;
   actorExists?: boolean;
-  passwordChangeTz?: number | null;
   roles?: string[];
   departmentIds?: Array<string | number>;
   departmentRoles?: string[];
   roleMode?: string;
   missingCollections?: string[];
   can?: ReturnType<typeof vi.fn>;
-  renew?: ReturnType<typeof vi.fn>;
 }
 
 function createAuthorizationHarness(options: AuthorizationHarnessOptions = {}) {
-  const now = Date.now();
-  const session =
-    typeof options.session === 'undefined' ? { issuedTime: now - 1_000, signInTime: now - 1_000 } : options.session;
   const roles = options.roles ?? ['member'];
   const departmentIds = options.departmentIds ?? [];
   const departmentRoles = options.departmentRoles ?? [];
   const repositories = {
-    issuedTokens: {
-      findOne: vi.fn(async () => session),
-    },
     users: {
-      findOne: vi.fn(async () =>
-        options.actorExists === false ? null : { id: 7, passwordChangeTz: options.passwordChangeTz ?? null },
-      ),
+      findOne: vi.fn(async () => (options.actorExists === false ? null : { id: 7 })),
     },
     rolesUsers: {
       find: vi.fn(async () => roles.map((roleName) => ({ roleName }))),
@@ -200,13 +146,6 @@ function createAuthorizationHarness(options: AuthorizationHarnessOptions = {}) {
   } as unknown as Database;
   return {
     db,
-    authManager: {
-      jwt: { blacklist: { has: vi.fn(async () => options.blacklisted ?? false) } },
-      tokenController: {
-        getConfig: vi.fn(async () => ({ tokenExpirationTime: 60_000, sessionExpirationTime: 60_000 })),
-        renew: options.renew ?? vi.fn(),
-      },
-    },
     acl: { can: options.can ?? vi.fn(() => ({})) },
   };
 }

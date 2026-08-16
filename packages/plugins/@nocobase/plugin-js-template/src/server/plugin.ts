@@ -793,11 +793,7 @@ export class PluginJsTemplateServer extends Plugin {
     job: import('../shared/types').JsTemplateCreateJob,
     transaction?: Transaction,
   ): Promise<void> {
-    await authorizeJsTemplateCreateJob(
-      { db: this.db, authManager: this.app.authManager, acl: this.app.acl },
-      job,
-      transaction,
-    );
+    await authorizeJsTemplateCreateJob({ db: this.db, acl: this.app.acl }, job, transaction);
   }
 
   private registerSyncAcl(app: AppWithPluginEvents) {

@@ -14,12 +14,6 @@ import type { JsTemplateCreateJob } from '../shared/types';
 
 interface CreateJobAuthorizationDependencies {
   db: Database;
-  authManager: {
-    jwt: { blacklist: { has(value: string): Promise<boolean> } };
-    tokenController: {
-      getConfig(): Promise<{ tokenExpirationTime: number; sessionExpirationTime: number }>;
-    };
-  };
   acl: {
     can(input: { roles: string[]; resource: string; action: string }): unknown;
   };
@@ -30,46 +24,21 @@ export async function authorizeJsTemplateCreateJob(
   job: JsTemplateCreateJob,
   transaction?: Transaction,
 ): Promise<void> {
-  const { db, authManager, acl } = dependencies;
+  const { db, acl } = dependencies;
   if (!job.actorUserId) {
     throw permissionDenied('Creation job actor is no longer available');
   }
-  if (!db.hasCollection('issuedTokens') || !db.hasCollection('users') || !db.hasCollection('rolesUsers')) {
+  if (!db.hasCollection('users') || !db.hasCollection('rolesUsers')) {
     throw permissionDenied('Creation job authorization services are unavailable');
-  }
-  const session = await db.getRepository('issuedTokens').findOne({
-    filter: { jti: job.sessionId, userId: job.actorUserId },
-    transaction,
-    raw: true,
-  });
-  if (!session || (await authManager.jwt.blacklist.has(job.sessionId))) {
-    throw permissionDenied('Creation job session is no longer active');
-  }
-  const policy = await authManager.tokenController.getConfig();
-  const issuedTime = readFiniteTimestamp(session, 'issuedTime');
-  const signInTime = readFiniteTimestamp(session, 'signInTime');
-  const now = Date.now();
-  if (
-    !policy ||
-    !issuedTime ||
-    !signInTime ||
-    now - issuedTime > policy.tokenExpirationTime ||
-    now - signInTime > policy.sessionExpirationTime
-  ) {
-    throw permissionDenied('Creation job session is no longer active');
   }
   const actor = await db.getRepository('users').findOne({
     filterByTk: job.actorUserId,
     transaction,
-    fields: ['id', 'passwordChangeTz'],
+    fields: ['id'],
     raw: true,
   });
   if (!actor) {
     throw permissionDenied('Creation job actor is no longer available');
-  }
-  const passwordChangeTime = readOptionalFiniteTimestamp(actor, 'passwordChangeTz');
-  if (passwordChangeTime !== null && issuedTime < passwordChangeTime) {
-    throw permissionDenied('Creation job session is no longer active');
   }
   const roles = await db.getRepository('rolesUsers').find({
     filter: { userId: job.actorUserId },
@@ -146,27 +115,6 @@ async function getRoleMode(db: Database, transaction?: Transaction): Promise<str
 
 function permissionDenied(message: string): JsTemplateError {
   return new JsTemplateError('JS_TEMPLATE_PERMISSION_DENIED', message);
-}
-
-function readFiniteTimestamp(record: unknown, key: string): number | null {
-  if (!record || typeof record !== 'object') {
-    return null;
-  }
-  const value = (record as Record<string, unknown>)[key];
-  const timestamp = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
-}
-
-function readOptionalFiniteTimestamp(record: unknown, key: string): number | null {
-  if (!record || typeof record !== 'object') {
-    return null;
-  }
-  const value = (record as Record<string, unknown>)[key];
-  if (value === null || typeof value === 'undefined') {
-    return null;
-  }
-  const timestamp = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null;
 }
 
 function normalizeAuthorizationRoles(job: JsTemplateCreateJob): string[] {
