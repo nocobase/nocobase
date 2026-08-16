@@ -148,7 +148,45 @@ describe('JS Template workspace access', () => {
     });
   });
 
-  it('marks generated, blocked, read-only, and project-gated authoring paths explicitly', () => {
+  it('allows project authoring across source files while protecting descriptors and generated files', () => {
+    const scope: JsTemplateWorkspaceScope = { mode: 'project' };
+
+    expect(getJsTemplateWorkspaceAuthoringPathAccess(scope, 'src/client/js-actions/send-email/index.ts')).toEqual({
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    });
+    expect(getJsTemplateWorkspaceAuthoringPathAccess(scope, 'README.md')).toMatchObject({
+      canRead: true,
+      canUpdate: true,
+    });
+    expect(getJsTemplateWorkspaceAuthoringPathAccess(scope, 'src/client/js-blocks/current/entry.json')).toEqual({
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: false,
+    });
+    expect(
+      getJsTemplateWorkspaceAuthoringPathAccess(scope, 'src/client/js-fields/status/entry.json', {
+        workspaceWritable: false,
+      }),
+    ).toMatchObject({ canRead: true, canUpdate: false, reason: 'workspace_read_only' });
+    expect(getJsTemplateWorkspaceAuthoringPathAccess(scope, '.js-template/types/sdk.d.ts', { virtual: true })).toEqual({
+      canRead: true,
+      canCreate: false,
+      canUpdate: false,
+      canDelete: false,
+      reason: 'generated_file',
+    });
+    expect(getJsTemplateWorkspaceAuthoringPathAccess(scope, '../outside.ts')).toMatchObject({
+      canRead: false,
+      canUpdate: false,
+      reason: 'outside_project_scope',
+    });
+  });
+
+  it('marks generated, blocked, and read-only template authoring paths explicitly', () => {
     const scope: JsTemplateWorkspaceScope = {
       mode: 'template',
       entryPath: 'src/client/js-blocks/current/index.tsx',
@@ -178,13 +216,6 @@ describe('JS Template workspace access', () => {
         workspaceWritable: false,
       }),
     ).toMatchObject({ canRead: true, canCreate: false, canUpdate: false, reason: 'workspace_read_only' });
-    expect(getJsTemplateWorkspaceAuthoringPathAccess({ mode: 'project' }, scope.entryPath)).toEqual({
-      canRead: false,
-      canCreate: false,
-      canUpdate: false,
-      canDelete: false,
-      reason: 'project_authoring_gate',
-    });
   });
 
   it('recognizes only managed template root folders', () => {

@@ -313,10 +313,9 @@ function JsTemplateSourceProjectWorkspacePage({
   const canPreview = templateScoped && Boolean(onPreview);
   const canDetachJsTemplateToInline =
     templateScoped && canWrite && Boolean(onDetachJsTemplateToInline) && Boolean(baseHeadCommitId);
-  const authoringSurfaceId =
-    workspaceScope.mode === 'template' && canWrite
-      ? buildJsTemplateAuthoringSurfaceId(projectId, workspaceScope, templateId)
-      : undefined;
+  const authoringSurfaceId = canWrite
+    ? buildJsTemplateAuthoringSurfaceId(projectId, workspaceScope, templateId)
+    : undefined;
   const sourcePathSet = useMemo(() => new Set(files.map((file) => file.path)), [files]);
   const virtualAuthoringFiles = useMemo(
     () => authoringFiles.filter((file) => !sourcePathSet.has(file.path)),
@@ -849,9 +848,6 @@ function JsTemplateSourceProjectWorkspacePage({
     }
 
     const registeredWorkspaceScope = authoringWorkspaceScopeRef.current;
-    if (registeredWorkspaceScope.mode !== 'template') {
-      return;
-    }
     const surface = createWorkspaceAuthoringSurface({
       id: authoringSurfaceId,
       kind: 'source-project-workspace',
@@ -922,10 +918,14 @@ function JsTemplateSourceProjectWorkspacePage({
         const currentFiles = authoringSourceFilesRef.current;
         const result = await compileWorkspacePreview({
           projectId,
-          templateId,
-          kind: registeredWorkspaceScope.kind,
-          entryPath: registeredWorkspaceScope.entryPath,
-          runtimeVersion: 'v2',
+          ...(registeredWorkspaceScope.mode === 'template'
+            ? {
+                templateId,
+                kind: registeredWorkspaceScope.kind,
+                entryPath: registeredWorkspaceScope.entryPath,
+                runtimeVersion: 'v2',
+              }
+            : {}),
           files: currentFiles.map((file) => ({
             path: file.path,
             content: file.content,
@@ -935,7 +935,19 @@ function JsTemplateSourceProjectWorkspacePage({
         });
         return toCodeAuthoringDiagnostics(result.diagnostics, registeredWorkspaceScope);
       },
-      supportedLanguages: ['css', 'javascript', 'javascriptreact', 'json', 'typescript', 'typescriptreact'],
+      supportedLanguages: [
+        'css',
+        'html',
+        'javascript',
+        'javascriptreact',
+        'json',
+        'markdown',
+        'plaintext',
+        'text',
+        'typescript',
+        'typescriptreact',
+        'yaml',
+      ],
     });
     const unregister = app.aiManager.authoringSurfaces.register(surface);
     return unregister;
@@ -1329,10 +1341,13 @@ function JsTemplateSourceProjectWorkspacePage({
 
 function buildJsTemplateAuthoringSurfaceId(
   projectId: string,
-  workspaceScope: Extract<JsTemplateWorkspaceScope, { mode: 'template' }>,
+  workspaceScope: JsTemplateWorkspaceScope,
   templateId?: string | null,
 ): string {
   const projectSegment = encodeURIComponent(projectId || 'unknown');
+  if (workspaceScope.mode === 'project') {
+    return ['js-template', projectSegment, 'project'].join(':');
+  }
   return [
     'js-template',
     projectSegment,
@@ -1376,34 +1391,35 @@ function toCodeAuthoringDiagnostics(
   diagnostics: JsTemplateDiagnostic[],
   workspaceScope: JsTemplateWorkspaceScope,
 ): CodeAuthoringDiagnostic[] {
-  if (workspaceScope.mode !== 'template') {
-    return [];
-  }
-  const templateName = getTemplateName(workspaceScope);
-  return diagnostics
-    .filter((diagnostic) => {
-      if (diagnostic.path) {
-        return canReadJsTemplateWorkspacePathForAI(workspaceScope, diagnostic.path);
-      }
-      return diagnostic.kind === workspaceScope.kind && diagnostic.templateName === templateName;
-    })
-    .map((diagnostic) => ({
-      message: redactJsTemplateDiagnosticMessage(diagnostic.message, workspaceScope),
-      severity: diagnostic.severity,
-      ...(diagnostic.path ? { path: normalizeWorkspacePath(diagnostic.path) } : {}),
-      ...(diagnostic.line
-        ? {
-            range: {
-              start: {
-                line: diagnostic.line,
-                column: diagnostic.column || 1,
-              },
-            },
+  const filteredDiagnostics =
+    workspaceScope.mode === 'project'
+      ? diagnostics
+      : diagnostics.filter((diagnostic) => {
+          if (diagnostic.path) {
+            return canReadJsTemplateWorkspacePathForAI(workspaceScope, diagnostic.path);
           }
-        : {}),
-      ...(diagnostic.code ? { code: diagnostic.code } : {}),
-      source: diagnostic.kind || 'js-template',
-    }));
+          return diagnostic.kind === workspaceScope.kind && diagnostic.templateName === getTemplateName(workspaceScope);
+        });
+  return filteredDiagnostics.map((diagnostic) => ({
+    message:
+      workspaceScope.mode === 'project'
+        ? diagnostic.message
+        : redactJsTemplateDiagnosticMessage(diagnostic.message, workspaceScope),
+    severity: diagnostic.severity,
+    ...(diagnostic.path ? { path: normalizeWorkspacePath(diagnostic.path) } : {}),
+    ...(diagnostic.line
+      ? {
+          range: {
+            start: {
+              line: diagnostic.line,
+              column: diagnostic.column || 1,
+            },
+          },
+        }
+      : {}),
+    ...(diagnostic.code ? { code: diagnostic.code } : {}),
+    source: diagnostic.kind || 'js-template',
+  }));
 }
 
 function redactJsTemplateDiagnosticMessage(

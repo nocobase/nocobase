@@ -145,6 +145,14 @@ function renderTemplateWorkspace() {
   );
 }
 
+function renderProjectWorkspace() {
+  return render(
+    <MemoryRouter>
+      <JsTemplateSourceProjectWorkspacePage embedded projectId="jtp_sales" />
+    </MemoryRouter>,
+  );
+}
+
 describe('JsTemplateWorkspace authoring surface', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -178,6 +186,21 @@ describe('JsTemplateWorkspace authoring surface', () => {
           path: 'src/client/js-actions/secret/index.ts',
           content: 'export const secret = true;\n',
           language: 'typescript',
+        },
+        {
+          path: 'src/client/js-actions/secret/entry.json',
+          content: '{"schemaVersion":1,"key":"secret","title":"Secret"}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-fields/status-tag/entry.json',
+          content: '{"schemaVersion":1,"key":"status-tag","title":"Status tag"}',
+          language: 'json',
+        },
+        {
+          path: 'src/client/js-items/total-preview/entry.json',
+          content: '{"schemaVersion":1,"key":"total-preview","title":"Total preview"}',
+          language: 'json',
         },
         { path: 'src/shared/currency.ts', content: 'export const currency = "USD";\n', language: 'typescript' },
         { path: 'tsconfig.json', content: '{}\n', language: 'json' },
@@ -281,6 +304,98 @@ describe('JsTemplateWorkspace authoring surface', () => {
     expect(mocks.api.saveSource).not.toHaveBeenCalled();
   });
 
+  it('registers the whole project and applies multi-template descriptor changes without saving', async () => {
+    renderProjectWorkspace();
+    await screen.findByTestId('code-tab');
+    await waitFor(() => expect(mocks.authoring.register).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('code-tab')).toHaveAttribute(
+      'data-authoring-surface-id',
+      'js-template:jtp_sales:project',
+    );
+
+    const surface = getRegisteredSurface();
+    const snapshot = await surface.getSnapshot();
+    const descriptorPaths = [
+      'src/client/js-actions/secret/entry.json',
+      'src/client/js-blocks/sales-kpi/entry.json',
+      'src/client/js-fields/status-tag/entry.json',
+      'src/client/js-items/total-preview/entry.json',
+    ];
+
+    expect(surface.id).toBe('js-template:jtp_sales:project');
+    expect(snapshot.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining([
+        ...descriptorPaths,
+        'README.md',
+        'src/shared/currency.ts',
+        '.js-template/types/sdk.d.ts',
+      ]),
+    );
+    expect(snapshot.files.find((file) => file.path === 'README.md')).toMatchObject({ writable: true });
+    expect(snapshot.files.find((file) => file.path === '.js-template/types/sdk.d.ts')).toMatchObject({
+      kind: 'virtual',
+      writable: false,
+    });
+
+    const descriptorMetas = snapshot.files.filter((file) => descriptorPaths.includes(file.path));
+    expect(descriptorMetas).toHaveLength(descriptorPaths.length);
+    expect(descriptorMetas).toEqual(
+      expect.arrayContaining(descriptorPaths.map((path) => expect.objectContaining({ path, writable: true }))),
+    );
+
+    const plan = await surface.prepareChanges({
+      baseSnapshotId: snapshot.snapshotId,
+      changes: descriptorMetas.map((file) => {
+        const segments = file.path.split('/');
+        const key = segments[segments.length - 2];
+        return {
+          type: 'update' as const,
+          path: file.path,
+          baseHash: file.hash,
+          content: JSON.stringify({ schemaVersion: 1, key, title: `中文标题-${key}` }),
+        };
+      }),
+    });
+
+    await act(async () => {
+      await surface.applyPreparedChanges(plan.planId);
+    });
+
+    const updatedFiles = await surface.read(descriptorPaths);
+    expect(updatedFiles).toHaveLength(descriptorPaths.length);
+    expect(updatedFiles.every((file) => file.content.includes('中文标题-'))).toBe(true);
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+
+    const nextSnapshot = await surface.getSnapshot();
+    const protectedDescriptor = nextSnapshot.files.find((file) => file.path === descriptorPaths[0]);
+    if (!protectedDescriptor) {
+      throw new Error('Expected a protected project descriptor');
+    }
+    await expect(
+      surface.prepareChanges({
+        baseSnapshotId: nextSnapshot.snapshotId,
+        changes: [{ type: 'delete', path: protectedDescriptor.path, baseHash: protectedDescriptor.hash }],
+      }),
+    ).rejects.toMatchObject({ code: 'PATH_ACCESS_DENIED' });
+
+    await expect(surface.validateDraft()).resolves.toMatchObject({
+      stale: false,
+      diagnostics: [],
+      validationPassed: true,
+    });
+    const previewInput = mocks.api.compileWorkspacePreview.mock.calls.at(-1)?.[0];
+    expect(previewInput).toMatchObject({
+      projectId: 'jtp_sales',
+      files: expect.arrayContaining(
+        descriptorPaths.map((path) => expect.objectContaining({ path, content: expect.stringContaining('中文标题-') })),
+      ),
+    });
+    expect(previewInput).not.toHaveProperty('templateId');
+    expect(previewInput).not.toHaveProperty('kind');
+    expect(previewInput).not.toHaveProperty('entryPath');
+    expect(mocks.api.saveSource).not.toHaveBeenCalled();
+  });
+
   it('creates a missing entry descriptor but rejects deleting it', async () => {
     mocks.api.pull.mockResolvedValueOnce({
       project: { id: 'jtp_sales' },
@@ -336,7 +451,7 @@ describe('JsTemplateWorkspace authoring surface', () => {
       permissions: { canWriteSource: false },
     });
 
-    renderTemplateWorkspace();
+    renderProjectWorkspace();
 
     await screen.findByTestId('code-tab');
     expect(screen.getByLabelText('Edit file content')).toHaveAttribute('readonly');

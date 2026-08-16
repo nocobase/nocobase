@@ -33,7 +33,7 @@ export interface JsTemplateWorkspaceAuthoringPathAccess {
   canUpdate: boolean;
   canDelete: boolean;
   reason?:
-    | 'project_authoring_gate'
+    | 'outside_project_scope'
     | 'outside_template_scope'
     | 'generated_file'
     | 'blocked_dirty_change'
@@ -154,26 +154,58 @@ export function getJsTemplateWorkspaceAuthoringPathAccess(
   path: string,
   options: JsTemplateWorkspaceAuthoringPathOptions = {},
 ): JsTemplateWorkspaceAuthoringPathAccess {
-  if (scope.mode === 'project') {
-    return denyAuthoringAccess('project_authoring_gate');
-  }
-
-  if (!isSafeAuthoringWorkspacePath(path) || !isSafeAuthoringWorkspacePath(scope.entryPath)) {
-    return denyAuthoringAccess('outside_template_scope');
+  if (!isSafeAuthoringWorkspacePath(path)) {
+    return denyAuthoringAccess(scope.mode === 'project' ? 'outside_project_scope' : 'outside_template_scope');
   }
 
   const normalizedPath = normalizeWorkspacePath(path);
-  const templateRoot = getJsTemplateRoot(scope);
-  if (!normalizedPath || !templateRoot) {
-    return denyAuthoringAccess('outside_template_scope');
-  }
-
   const generated = options.virtual === true || isPathInside(normalizedPath, GENERATED_TYPES_ROOT);
   if (generated) {
     return {
       ...denyAuthoringAccess('generated_file'),
       canRead: isPathInside(normalizedPath, GENERATED_TYPES_ROOT),
     };
+  }
+
+  if (scope.mode === 'project') {
+    if (options.blockedDirtyChange) {
+      return {
+        ...denyAuthoringAccess('blocked_dirty_change'),
+        canRead: true,
+      };
+    }
+
+    if (options.workspaceWritable === false) {
+      return {
+        ...denyAuthoringAccess('workspace_read_only'),
+        canRead: true,
+      };
+    }
+
+    if (isManagedJsTemplateDescriptorPath(normalizedPath)) {
+      return {
+        canRead: true,
+        canCreate: true,
+        canUpdate: true,
+        canDelete: false,
+      };
+    }
+
+    return {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+  }
+
+  if (!isSafeAuthoringWorkspacePath(scope.entryPath)) {
+    return denyAuthoringAccess('outside_template_scope');
+  }
+
+  const templateRoot = getJsTemplateRoot(scope);
+  if (!normalizedPath || !templateRoot) {
+    return denyAuthoringAccess('outside_template_scope');
   }
 
   const insideTemplate = isPathInside(normalizedPath, templateRoot);
@@ -284,4 +316,12 @@ function isSafeAuthoringWorkspacePath(path: string): boolean {
     .replace(/\\/g, '/')
     .split('/')
     .some((segment) => segment === '.' || segment === '..');
+}
+
+function isManagedJsTemplateDescriptorPath(path: string): boolean {
+  if (!path.endsWith(`/${JS_TEMPLATE_DESCRIPTOR_FILE}`)) {
+    return false;
+  }
+  const templateRoot = path.slice(0, -(JS_TEMPLATE_DESCRIPTOR_FILE.length + 1));
+  return getManagedJsTemplateRoot(templateRoot) !== null;
 }
