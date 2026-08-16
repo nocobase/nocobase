@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { EllipsisOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { DEFAULT_PAGE_SIZE, Table } from '@nocobase/client-v2';
-import { Button, Empty, Space, Spin, Switch, Tag, Typography } from 'antd';
+import { Button, Dropdown, Empty, Space, Spin, Switch, Tag, theme, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useMemo } from 'react';
 
@@ -66,6 +68,21 @@ export function JsTemplateSourceProjectTable({
   selectedRowKeys,
   t,
 }: JsTemplateSourceProjectTableProps) {
+  const { token } = theme.useToken();
+  const creationRowClassName = useMemo(
+    () => css`
+      > td {
+        background: ${token.colorFillAlter};
+        padding-block: ${token.paddingSM}px;
+      }
+
+      &.ant-table-row:hover > td {
+        background: ${token.colorFillAlter} !important;
+        cursor: default;
+      }
+    `,
+    [token.colorFillAlter, token.paddingSM],
+  );
   const rows = useMemo<JsTemplateSourceProjectTableRow[]>(
     () => [
       ...selectVisibleCreationJobs(creationJobs).map((job) => ({
@@ -91,17 +108,35 @@ export function JsTemplateSourceProjectTable({
               compareText(leftProject.title || leftProject.name, rightProject.title || rightProject.name) ||
               compareText(leftProject.name, rightProject.name),
           ),
-        width: 220,
+        width: 240,
         onCell: (row) => (row.kind === 'creation' ? { colSpan: PROJECT_COLUMN_COUNT } : {}),
         render: (_value, row) =>
           row.kind === 'creation' ? (
             <CreationJobCell job={row.job} t={t} />
           ) : (
-            <Space direction="vertical" size={0} style={{ maxWidth: 200, minWidth: 0 }}>
-              <Typography.Text ellipsis strong style={{ maxWidth: 200 }}>
+            <Space direction="vertical" size={0} style={{ maxWidth: 220, minWidth: 0 }}>
+              <Typography.Link
+                aria-label={t('Edit code {{name}}').replace('{{name}}', row.project.title || row.project.name)}
+                ellipsis
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onSelectProject(row.project.id, 'source');
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === ' ') {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onSelectProject(row.project.id, 'source');
+                  }
+                }}
+                strong
+                style={{ maxWidth: 220 }}
+              >
                 {row.project.title || row.project.name}
-              </Typography.Text>
-              <Typography.Text code ellipsis style={{ maxWidth: 200 }} type="secondary">
+              </Typography.Link>
+              <Typography.Text code ellipsis style={{ maxWidth: 220 }} type="secondary">
                 {row.project.name}
               </Typography.Text>
             </Space>
@@ -110,6 +145,7 @@ export function JsTemplateSourceProjectTable({
       {
         title: t('Description'),
         key: 'description',
+        width: 300,
         sorter: (left, right) =>
           compareProjectRows(left, right, (leftProject, rightProject) =>
             compareText(leftProject.description, rightProject.description),
@@ -121,7 +157,7 @@ export function JsTemplateSourceProjectTable({
           }
           const description = row.project.description;
           return (
-            <Typography.Text ellipsis={{ tooltip: description || '-' }} style={{ maxWidth: 320 }} type="secondary">
+            <Typography.Text ellipsis={{ tooltip: description || '-' }} style={{ maxWidth: 280 }} type="secondary">
               {description || '-'}
             </Typography.Text>
           );
@@ -166,7 +202,7 @@ export function JsTemplateSourceProjectTable({
             (leftProject, rightProject) =>
               getDateTimestamp(leftProject.updatedAt) - getDateTimestamp(rightProject.updatedAt),
           ),
-        width: 180,
+        width: 200,
         onCell: hideCreationCell,
         render: (_value, row) =>
           row.kind === 'creation' ? null : (
@@ -210,13 +246,14 @@ export function JsTemplateSourceProjectTable({
       {
         title: t('Actions'),
         key: 'actions',
-        width: 350,
+        width: 160,
         onCell: hideCreationCell,
         render: (_value, row) => {
           if (row.kind === 'creation') {
             return null;
           }
           const projectLabel = row.project.title || row.project.name;
+          const removing = removingProjectIds.has(row.project.id);
           return (
             <Space size="small" onClick={(event) => event.stopPropagation()}>
               <Button
@@ -228,35 +265,50 @@ export function JsTemplateSourceProjectTable({
               >
                 {t('Edit code')}
               </Button>
-              <Button
-                aria-label={t('Sync code {{name}}').replace('{{name}}', projectLabel)}
-                onClick={() => onSelectProject(row.project.id, 'sync')}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'sync',
+                      label: (
+                        <span aria-label={t('Sync code {{name}}').replace('{{name}}', projectLabel)}>
+                          {t('Sync code')}
+                        </span>
+                      ),
+                      onClick: () => onSelectProject(row.project.id, 'sync'),
+                    },
+                    {
+                      key: 'edit',
+                      label: (
+                        <span aria-label={t('Edit details {{name}}').replace('{{name}}', projectLabel)}>
+                          {t('Edit details')}
+                        </span>
+                      ),
+                      onClick: () => onEditProject(row.project),
+                    },
+                    { type: 'divider' },
+                    {
+                      key: 'remove',
+                      danger: true,
+                      disabled: removing,
+                      label: (
+                        <span aria-label={t('Remove {{name}}').replace('{{name}}', projectLabel)}>{t('Remove')}</span>
+                      ),
+                      onClick: () => onRemoveProject(row.project),
+                    },
+                  ],
+                  onClick: ({ domEvent }) => domEvent.stopPropagation(),
+                }}
+                trigger={['click']}
               >
-                {t('Sync code')}
-              </Button>
-              <Button
-                aria-label={t('Edit details {{name}}').replace('{{name}}', projectLabel)}
-                onClick={() => onEditProject(row.project)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Edit details')}
-              </Button>
-              <Button
-                aria-label={t('Remove {{name}}').replace('{{name}}', projectLabel)}
-                danger
-                loading={removingProjectIds.has(row.project.id)}
-                onClick={() => onRemoveProject(row.project)}
-                size="small"
-                style={TABLE_ACTION_BUTTON_STYLE}
-                type="link"
-              >
-                {t('Remove')}
-              </Button>
+                <Button
+                  aria-label={t('More actions') + ' ' + projectLabel}
+                  icon={<EllipsisOutlined />}
+                  loading={removing}
+                  size="small"
+                  type="text"
+                />
+              </Dropdown>
             </Space>
           );
         },
@@ -274,6 +326,7 @@ export function JsTemplateSourceProjectTable({
         emptyText: <Empty description={t('No Source Projects yet')} image={Empty.PRESENTED_IMAGE_SIMPLE} />,
       }}
       pagination={{ pageSize: DEFAULT_PAGE_SIZE, showSizeChanger: true }}
+      rowClassName={(row) => (row.kind === 'creation' ? creationRowClassName : '')}
       rowKey="rowKey"
       rowSelection={{
         selectedRowKeys,
@@ -293,6 +346,8 @@ export function JsTemplateSourceProjectTable({
       }}
       scroll={{ x: 1250 }}
       showIndex={false}
+      size="middle"
+      tableLayout="fixed"
     />
   );
 }
@@ -304,7 +359,7 @@ interface CreationJobCellProps {
 
 function CreationJobCell({ job, t }: CreationJobCellProps) {
   return (
-    <Space align="start" size="small" wrap>
+    <Space align="start" aria-live="polite" role="status" size="small" wrap>
       <Spin size="small" />
       <Space direction="vertical" size={0}>
         <Typography.Text strong>{job.title || job.name}</Typography.Text>

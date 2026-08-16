@@ -406,12 +406,29 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Edit code Sales widgets' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit code ops-widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sync code Sales widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sync code ops-widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit details Sales widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit details ops-widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove Sales widgets' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Remove ops-widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit code Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit code ops-widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More actions Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'More actions ops-widgets' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'More actions Sales widgets' }));
+    expect(await screen.findByRole('menuitem', { name: 'Sync code Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Edit details Sales widgets' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Remove Sales widgets' })).toHaveClass('ant-dropdown-menu-item-danger');
+  });
+
+  it('opens Edit code from the keyboard-accessible project title link', async () => {
+    mocks.api.listProjects.mockResolvedValueOnce([createProjectSummary({ title: 'Keyboard project' })]);
+    renderListPage('/admin/settings/js-template?view=compact');
+
+    const projectLink = await screen.findByRole('link', { name: 'Edit code Keyboard project' });
+    projectLink.focus();
+    await userEvent.keyboard(' ');
+
+    expect(await screen.findByText('Mock source workspace')).toBeInTheDocument();
+    expect(screen.getByTestId('location-search')).toHaveTextContent('view=compact');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_demo');
+    expect(screen.getByTestId('location-search')).toHaveTextContent('panel=source');
   });
 
   it('opens the create dialog from the query parameter', async () => {
@@ -716,7 +733,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     await screen.findByText('Demo');
     await userEvent.click(screen.getByRole('button', { name: /Refresh/ }));
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    fireEvent.click(screen.getByRole('button', { name: 'Remove Demo' }));
+    await clickProjectAction('Demo', 'Remove', true);
     await userEvent.click(
       within(await screen.findByRole('dialog', { name: 'Remove this Source Project?' })).getByRole('button', {
         name: 'Remove',
@@ -744,7 +761,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     mocks.api.updateProject.mockResolvedValueOnce(updatedProject);
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Demo' }));
+    await clickProjectAction('Demo', 'Edit details');
     await userEvent.click(screen.getByRole('button', { name: /Refresh/ }));
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
     const drawer = screen.getByRole('dialog', { name: 'Edit Source Project' });
@@ -1112,7 +1129,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     ]);
     renderListPage('/admin/settings/js-template?view=compact');
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
+    await clickProjectAction('Browser smoke', 'Sync code');
     const drawer = await screen.findByRole('dialog', { name: 'Sync code' });
     expect(screen.getByTestId('location-search')).toHaveTextContent('view=compact');
     expect(screen.getByTestId('location-search')).toHaveTextContent('projectId=jtp_browser_smoke');
@@ -1169,7 +1186,7 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: /Refresh/ }));
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    fireEvent.click(await screen.findByRole('button', { name: 'Sync code Browser smoke' }));
+    await clickProjectAction('Browser smoke', 'Sync code', true);
     await userEvent.click(await screen.findByRole('button', { name: 'Mock Pull result' }));
 
     expect(await screen.findByText('js-block 3')).toBeInTheDocument();
@@ -1210,7 +1227,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
+    await clickProjectAction('Sales widgets', 'Edit details');
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     const titleInput = within(drawer).getByLabelText('Title');
@@ -1249,7 +1266,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     ]);
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
+    await clickProjectAction('Sales widgets', 'Edit details');
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     await userEvent.clear(within(drawer).getByLabelText('Title'));
@@ -1284,7 +1301,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Edit details Sales widgets' }));
+    await clickProjectAction('Sales widgets', 'Edit details');
 
     const drawer = await screen.findByRole('dialog', { name: 'Edit Source Project' });
     await userEvent.clear(within(drawer).getByLabelText('Description'));
@@ -1602,7 +1619,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     renderListPage();
 
     expect(await screen.findByText('Sales widgets')).toBeInTheDocument();
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove Sales widgets' }));
+    await clickProjectAction('Sales widgets', 'Remove');
     const dialog = await screen.findByRole('dialog', { name: 'Remove this Source Project?' });
     expect(dialog).toHaveTextContent('Source Project to remove');
     expect(within(dialog).getByText('Sales widgets')).toBeInTheDocument();
@@ -1615,6 +1632,20 @@ describe('JsTemplateSourceProjectsPage', () => {
     await waitFor(() => expect(screen.queryByText('sales-widgets')).not.toBeInTheDocument());
   });
 });
+
+async function clickProjectAction(
+  projectLabel: string,
+  actionLabel: 'Sync code' | 'Edit details' | 'Remove',
+  bypassLoadingOverlay = false,
+) {
+  const trigger = await screen.findByRole('button', { name: `More actions ${projectLabel}` });
+  if (bypassLoadingOverlay) {
+    fireEvent.click(trigger);
+  } else {
+    await userEvent.click(trigger);
+  }
+  await userEvent.click(await screen.findByRole('menuitem', { name: `${actionLabel} ${projectLabel}` }));
+}
 
 function createJobSummary(overrides: Partial<JsTemplateCreateJobSummary> = {}): JsTemplateCreateJobSummary {
   return {

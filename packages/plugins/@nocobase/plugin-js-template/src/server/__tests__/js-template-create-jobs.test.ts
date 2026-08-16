@@ -14,6 +14,8 @@ import { vi } from 'vitest';
 
 import { JsTemplateError } from '../../shared/errors';
 import type { JsTemplateCreateJob } from '../../shared/types';
+import { authorizeJsTemplateCreateJob } from '../authorizeJsTemplateCreateJob';
+import { createJsTemplateCreateJobsResource, jsTemplateCreateJobActionNames } from '../resources/jsTemplateCreateJobs';
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
 import type { JsTemplateCreateFromRemoteService } from '../services/JsTemplateCreateFromRemoteService';
 import { JsTemplateCreateJobExecutor } from '../services/JsTemplateCreateJobExecutor';
@@ -22,6 +24,7 @@ import { requireCreateJobAuthorizationContext } from '../resources/resourceActio
 import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemplateCreateJobStore';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
+import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
 
 describe('JS Template durable creation jobs', () => {
   it('canonicalizes the persisted union-role set before request hashing', () => {
@@ -428,7 +431,263 @@ describe('JS Template durable creation jobs', () => {
     ]);
     expect(repository.records).toHaveLength(1);
   });
+
+  it.each(['logout', 'expired session', 'blacklist', 'password rotation'])(
+    'continues authorization after accepted job session %s without consulting session state',
+    async (sessionState) => {
+      const dependencies = createAuthorizationHarness();
+      const job = createAuthorizationJob({ sessionId: `invalidated-by-${sessionState.replaceAll(' ', '-')}` });
+
+      await expect(authorizeJsTemplateCreateJob(dependencies, job)).resolves.toBeUndefined();
+
+      expect(dependencies.db.getRepository).toHaveBeenCalledTimes(4);
+      expect(dependencies.db.getRepository).toHaveBeenNthCalledWith(1, 'users');
+      expect(dependencies.db.getRepository).toHaveBeenNthCalledWith(2, 'rolesUsers');
+      expect(dependencies.db.getRepository).toHaveBeenNthCalledWith(3, 'departmentsUsers');
+      expect(dependencies.db.getRepository).toHaveBeenNthCalledWith(4, 'systemSettings');
+      expect(dependencies.repositories.users.findOne).toHaveBeenCalledWith(expect.objectContaining({ fields: ['id'] }));
+    },
+  );
+
+  it('uses only the request-selected role instead of borrowing a newly assigned privileged role', async () => {
+    const can = vi.fn(({ roles }: { roles: string[] }) => (roles.includes('admin') ? {} : null));
+    const dependencies = createAuthorizationHarness({ roles: ['member', 'admin'], can });
+
+    await expect(authorizeJsTemplateCreateJob(dependencies, createAuthorizationJob())).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+    });
+    expect(can).toHaveBeenCalledWith({ roles: ['member'], resource: 'jsTemplate', action: 'create' });
+    expect(can).not.toHaveBeenCalledWith(expect.objectContaining({ roles: ['member', 'admin'] }));
+  });
+
+  it('accepts only the persisted union-role set and ignores roles granted after enqueue', async () => {
+    const can = vi.fn(() => ({}));
+    const dependencies = createAuthorizationHarness({ roles: ['member', 'editor', 'admin'], can });
+    const job = createAuthorizationJob({
+      authorizationRole: '__union__',
+      authorizationRoles: ['member', 'editor'],
+    });
+
+    await expect(authorizeJsTemplateCreateJob(dependencies, job)).resolves.toBeUndefined();
+    expect(can).toHaveBeenCalledWith({
+      roles: ['editor', 'member'],
+      resource: 'jsTemplate',
+      action: 'create',
+    });
+  });
+
+  it.each([
+    ['persisted union role after the system returns to default role mode', { roleMode: 'default' }, true],
+    ['persisted single role after the system switches to union-only mode', { roleMode: 'only-use-union' }, false],
+    ['deleted actor', { actorExists: false }, false],
+    ['removed role membership', { roles: ['viewer'] }, false],
+    ['revoked ACL', { can: vi.fn(() => null) }, false],
+  ] as const)('rejects %s before worker writes', async (_label, options, useUnionRole) => {
+    const dependencies = createAuthorizationHarness(options);
+    const job = useUnionRole
+      ? createAuthorizationJob({ authorizationRole: '__union__', authorizationRoles: ['member', 'editor'] })
+      : createAuthorizationJob();
+
+    await expect(authorizeJsTemplateCreateJob(dependencies, job)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+    });
+  });
+
+  it('rejects a persisted union-role set when one requested role is no longer active', async () => {
+    const dependencies = createAuthorizationHarness({ roles: ['member'] });
+    const job = createAuthorizationJob({
+      authorizationRole: '__union__',
+      authorizationRoles: ['member', 'editor'],
+    });
+
+    await expect(authorizeJsTemplateCreateJob(dependencies, job)).rejects.toMatchObject({
+      code: 'JS_TEMPLATE_PERMISSION_DENIED',
+    });
+  });
+
+  it('accepts a persisted department role while the actor remains in the linked department', async () => {
+    const can = vi.fn(() => ({}));
+    const dependencies = createAuthorizationHarness({
+      roles: [],
+      departmentIds: [11],
+      departmentRoles: ['department-editor'],
+      can,
+    });
+    const job = createAuthorizationJob({
+      authorizationRole: 'department-editor',
+      authorizationRoles: ['department-editor'],
+    });
+
+    await expect(authorizeJsTemplateCreateJob(dependencies, job)).resolves.toBeUndefined();
+    expect(can).toHaveBeenCalledWith({ roles: ['department-editor'], resource: 'jsTemplate', action: 'create' });
+  });
+
+  it.each(['users', 'rolesUsers'] as const)(
+    'fails closed when the %s authorization collection is unavailable',
+    async (missingCollection) => {
+      const dependencies = createAuthorizationHarness({ missingCollections: [missingCollection] });
+      await expect(authorizeJsTemplateCreateJob(dependencies, createAuthorizationJob())).rejects.toMatchObject({
+        code: 'JS_TEMPLATE_PERMISSION_DENIED',
+      });
+    },
+  );
+
+  it('checks every Git-specific permission using the persisted request-selected role context', async () => {
+    const can = vi.fn(() => ({}));
+    const dependencies = createAuthorizationHarness({ roles: ['member', 'admin'], can });
+
+    await expect(
+      authorizeJsTemplateCreateJob(dependencies, createAuthorizationJob({ sourceType: 'git' })),
+    ).resolves.toBeUndefined();
+    expect(can.mock.calls.map(([input]) => input)).toEqual([
+      { roles: ['member'], resource: 'jsTemplate', action: 'create' },
+      { roles: ['member'], resource: 'jsTemplate', action: 'manageSyncSource' },
+      { roles: ['member'], resource: 'jsTemplate', action: 'pullFromSyncSource' },
+    ]);
+  });
+
+  it.each(['manageSyncSource', 'pullFromSyncSource'] as const)(
+    'fails closed before Git worker writes when %s is revoked',
+    async (revokedAction) => {
+      const can = vi.fn(({ action }: { action: string }) => (action === revokedAction ? null : {}));
+      const dependencies = createAuthorizationHarness({ can });
+
+      await expect(
+        authorizeJsTemplateCreateJob(dependencies, createAuthorizationJob({ sourceType: 'git' })),
+      ).rejects.toMatchObject({ code: 'JS_TEMPLATE_PERMISSION_DENIED' });
+      expect(can).toHaveBeenCalledWith({ roles: ['member'], resource: 'jsTemplate', action: revokedAction });
+    },
+  );
+
+  it('lists jobs when the resourcer includes routing metadata in action params', async () => {
+    const store = { listOwnVisibleJobs: vi.fn(async () => []) } as unknown as JsTemplateCreateJobStore;
+    const resource = createJsTemplateCreateJobsResource({
+      store,
+      permissionService: new JsTemplatePermissionService({} as never),
+      applicationName: 'main',
+      auditService: { recordCreateJobEvent: vi.fn(async () => undefined) } as never,
+    });
+    const ctx = {
+      action: {
+        params: { resourceName: 'jsTemplateCreateJobs', actionName: 'list', values: {} },
+      },
+      auth: { user: { id: 7 } },
+      getBearerToken: () => createUnsignedSessionToken('session-7'),
+    };
+
+    await (resource.actions?.list as HandlerType)(
+      ctx as never,
+      vi.fn(async () => undefined),
+    );
+
+    expect(store.listOwnVisibleJobs).toHaveBeenCalledWith('main', '7', 'session-7');
+    expect((ctx as { body?: unknown }).body).toEqual({ jobs: [] });
+  });
+
+  it.each(['create', 'manageSyncSource', 'pullFromSyncSource'] as const)(
+    'denies dismissing a Git failure when %s permission is missing',
+    async (missingPermission) => {
+      const job = { id: 'jtcj_git', applicationName: 'main', actorUserId: '7', sourceType: 'git' };
+      const store = {
+        getOwn: vi.fn(async () => job),
+        dismiss: vi.fn(),
+      } as unknown as JsTemplateCreateJobStore;
+      const resource = createJsTemplateCreateJobsResource({
+        store,
+        permissionService: new JsTemplatePermissionService({} as never),
+        applicationName: 'main',
+        auditService: { recordCreateJobEvent: vi.fn(async () => undefined) } as never,
+      });
+      const allowed = ['create', 'manageSyncSource', 'pullFromSyncSource'].filter(
+        (action) => action !== missingPermission,
+      );
+      const ctx = {
+        action: { params: { values: { jobId: job.id } } },
+        auth: { user: { id: 7 } },
+        getBearerToken: () => createUnsignedSessionToken('session-7'),
+        can: ({ action }: { action: string }) => (allowed.includes(action) ? {} : null),
+      };
+
+      await (resource.actions?.dismiss as HandlerType)(
+        ctx as never,
+        vi.fn(async () => undefined),
+      );
+
+      expect((ctx as { status?: number }).status).toBe(403);
+      expect(store.dismiss).not.toHaveBeenCalled();
+    },
+  );
+
+  it('exposes only list, get, and soft-dismiss actions without a server Retry API', () => {
+    expect(jsTemplateCreateJobActionNames).toEqual(['list', 'get', 'dismiss']);
+  });
 });
+
+interface AuthorizationHarnessOptions {
+  actorExists?: boolean;
+  roles?: readonly string[];
+  departmentIds?: ReadonlyArray<string | number>;
+  departmentRoles?: readonly string[];
+  roleMode?: string;
+  missingCollections?: readonly string[];
+  can?: ReturnType<typeof vi.fn>;
+}
+
+function createAuthorizationHarness(options: AuthorizationHarnessOptions = {}) {
+  const roles = options.roles ?? ['member'];
+  const departmentIds = options.departmentIds ?? [];
+  const departmentRoles = options.departmentRoles ?? [];
+  const repositories = {
+    users: {
+      findOne: vi.fn(async () => (options.actorExists === false ? null : { id: 7 })),
+    },
+    rolesUsers: {
+      find: vi.fn(async () => roles.map((roleName) => ({ roleName }))),
+    },
+    departmentsUsers: {
+      find: vi.fn(async () => departmentIds.map((departmentId) => ({ departmentId }))),
+    },
+    departmentsRoles: {
+      find: vi.fn(async () => departmentRoles.map((roleName) => ({ roleName }))),
+    },
+    systemSettings: {
+      findOne: vi.fn(async () => ({ roleMode: options.roleMode ?? 'allow-use-union' })),
+    },
+  };
+  const db = {
+    hasCollection: vi.fn((name: string) => name in repositories && !(options.missingCollections || []).includes(name)),
+    getRepository: vi.fn((name: keyof typeof repositories) => repositories[name]),
+  } as unknown as Database;
+  return {
+    db,
+    repositories,
+    acl: { can: options.can ?? vi.fn(() => ({})) },
+  };
+}
+
+function createAuthorizationJob(overrides: Partial<JsTemplateCreateJob> = {}): JsTemplateCreateJob {
+  return createJobRecord({
+    id: 'jtcj_authorize',
+    targetProjectId: 'jtp_authorize',
+    name: 'authorize',
+    normalizedName: 'authorize',
+    idempotencyKey: 'create-authorize',
+    requestHash: 'request-hash-authorize',
+    status: 'running',
+    reservationKey: 'sha256:authorize',
+    sessionId: 'session-authorize',
+    requestId: 'request-authorize',
+    claimToken: 'claim-authorize',
+    claimOwner: 'runner-authorize',
+    leaseExpiresAt: new Date(Date.now() + 60_000).toISOString(),
+    heartbeatAt: new Date().toISOString(),
+    attempt: 1,
+    startedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    ...overrides,
+  });
+}
 
 function createStoreInput() {
   return {

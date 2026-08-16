@@ -360,7 +360,13 @@
       "description": "Discover, author, and compile JS Template source workspaces.",
       "include": true,
       "resources": {
-        "includes": ["jsTemplateProjects", "jsTemplates", "jsTemplateUsages", "jsTemplateFiles"],
+        "includes": [
+          "jsTemplateProjects",
+          "jsTemplateCreateJobs",
+          "jsTemplates",
+          "jsTemplateUsages",
+          "jsTemplateFiles"
+        ],
         "excludes": [],
         "overrides": {
           "jsTemplateProjects": {
@@ -369,6 +375,14 @@
             "topLevel": true,
             "operations": {
               "includes": ["jsTemplateProjects:list", "jsTemplateProjects:get"]
+            }
+          },
+          "jsTemplateCreateJobs": {
+            "name": "js-template-create-jobs",
+            "description": "Inspect and dismiss Source Project creation jobs.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateCreateJobs:list", "jsTemplateCreateJobs:get", "jsTemplateCreateJobs:dismiss"]
             }
           },
           "jsTemplates": {

@@ -490,48 +490,27 @@ describe('jsTemplateSync resource', () => {
     expect(serialized).not.toContain('vscr_demo');
   });
 
-  it('rejects and sanitizes credentials supplied through query, headers, or paths', async () => {
+  it.each([
+    ['query', (token: string) => ({ actionParams: { authRef: token } })],
+    ['header', (token: string) => ({ request: { headers: { 'x-git-credential': token } } })],
+    ['path', (token: string) => ({ request: { path: `/api/jsTemplateSync:configure/credential/${token}` } })],
+  ] as const)('rejects and sanitizes credentials supplied through the %s', async (_surface, createTransport) => {
     const token = 'github_pat_transport_secret';
-    const queryFixture = createFixture();
-    const query = await runAction(
-      queryFixture,
+    const fixture = createFixture();
+    const transport = createTransport(token);
+    const ctx = await runAction(
+      fixture,
       'configure',
       { projectId: repo.id, provider: 'git', config: remote.config },
       ['manageSyncSource'],
       true,
-      { authRef: token },
+      'actionParams' in transport ? transport.actionParams : {},
+      'request' in transport ? transport.request : undefined,
     );
-    expect(query.status).toBe(400);
-    expect(JSON.stringify(query)).not.toContain(token);
-    expect(queryFixture.runtime.configureRemote).not.toHaveBeenCalled();
 
-    const headerFixture = createFixture();
-    const header = await runAction(
-      headerFixture,
-      'configure',
-      { projectId: repo.id, provider: 'git', config: remote.config },
-      ['manageSyncSource'],
-      true,
-      {},
-      { headers: { 'x-git-credential': token } },
-    );
-    expect(header.status).toBe(400);
-    expect(JSON.stringify(header)).not.toContain(token);
-    expect(headerFixture.runtime.configureRemote).not.toHaveBeenCalled();
-
-    const pathFixture = createFixture();
-    const path = await runAction(
-      pathFixture,
-      'configure',
-      { projectId: repo.id, provider: 'git', config: remote.config },
-      ['manageSyncSource'],
-      true,
-      {},
-      { path: `/api/jsTemplateSync:configure/credential/${token}` },
-    );
-    expect(path.status).toBe(400);
-    expect(JSON.stringify(path)).not.toContain(token);
-    expect(pathFixture.runtime.configureRemote).not.toHaveBeenCalled();
+    expect(ctx.status).toBe(400);
+    expect(JSON.stringify(ctx)).not.toContain(token);
+    expect(fixture.runtime.configureRemote).not.toHaveBeenCalled();
   });
 
   it('rejects and sanitizes credentials nested in request body arrays', async () => {

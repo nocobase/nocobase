@@ -7,8 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel, type FlowSettingsContext, type StepDefinition } from '@nocobase/flow-engine';
+import {
+  FlowEngine,
+  FlowEngineProvider,
+  FlowExitAllException,
+  FlowModel,
+  FlowModelRenderer,
+  type FlowSettingsContext,
+  type StepDefinition,
+} from '@nocobase/flow-engine';
+import { render, screen, waitFor } from '@nocobase/test/client';
 import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
+import { App, ConfigProvider } from 'antd';
+import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resolveDynamicFlowRunJSVersion, runjs as dynamicFlowRunJS } from '../../actions/runjs';
@@ -41,7 +52,6 @@ import {
   JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD,
   JS_ITEM_JS_TEMPLATE_SETTINGS_STEP_FIELD,
 } from '../fields/JSItemSourceModeField';
-import { assertJSItemJsTemplateSourceContract } from '../utils/__tests__/jsItemJsTemplateSourceContract';
 import { assertJsTemplateSettingsHostContract } from '../utils/__tests__/jsTemplateSettingsHostContract';
 
 type SurfaceSpec = {
@@ -204,8 +214,52 @@ const surfaces: SurfaceSpec[] = [
 ];
 
 const settingsHosts = surfaces.filter((surface) =>
-  ['JSBlockModel', 'JSFieldModel', 'JSItemModel', 'JSActionModel'].includes(surface.name),
+  ['JSBlockModel', 'JSFieldModel', 'JSColumnModel', 'JSItemModel', 'JSActionModel'].includes(surface.name),
 );
+
+const actionContextCases = [
+  {
+    name: 'form values',
+    modelClass: JSFormActionModel,
+    use: 'JSFormActionModel',
+    code: 'ctx.__testState.value = ctx.form.getFieldsValue().status;',
+    setup: (model: FlowModel) =>
+      model.context.defineProperty('form', { value: { getFieldsValue: () => ({ status: 'pending' }) } }),
+    expected: 'pending',
+  },
+  {
+    name: 'selected collection rows',
+    modelClass: JSCollectionActionModel,
+    use: 'JSCollectionActionModel',
+    code: 'ctx.__testState.value = ctx.resource.getSelectedRows().length + ctx.selectedRecords.length;',
+    setup: (model: FlowModel) => {
+      const rows = [{ id: 1 }, { id: 2 }];
+      model.context.defineProperty('resource', { value: { getSelectedRows: () => rows } });
+      model.context.defineProperty('selectedRecords', { value: rows });
+    },
+    expected: 4,
+  },
+  {
+    name: 'record identity',
+    modelClass: JSRecordActionModel,
+    use: 'JSRecordActionModel',
+    code: 'ctx.__testState.value = ctx.record.name + ":" + ctx.filterByTk;',
+    setup: (model: FlowModel) => {
+      model.context.defineProperty('record', { value: { id: 7, name: 'Ada' } });
+      model.context.defineProperty('filterByTk', { value: 7 });
+    },
+    expected: 'Ada:7',
+  },
+  {
+    name: 'filter form values',
+    modelClass: FilterFormJSActionModel,
+    use: 'FilterFormJSActionModel',
+    code: 'ctx.__testState.value = ctx.form.getFieldsValue().status;',
+    setup: (model: FlowModel) =>
+      model.context.defineProperty('form', { value: { getFieldsValue: () => ({ status: 'active' }) } }),
+    expected: 'active',
+  },
+];
 
 function getRunJsCodeSchema(spec: SurfaceSpec): CodeSchema {
   const flow = spec.modelClass.globalFlowRegistry.getFlow(spec.flowKey);
@@ -234,8 +288,43 @@ function createSurfaceModel(spec: SurfaceSpec, runJs: Record<string, unknown> = 
   });
 }
 
+function createRuntimeSurface(spec: SurfaceSpec, runJs: Record<string, unknown>) {
+  const engine = new FlowEngine();
+  engine.registerModels({ [spec.name]: spec.modelClass });
+  const model = engine.createModel({
+    use: spec.name,
+    uid: `${spec.name}-runtime-contract-${Math.random()}`,
+    stepParams: { [spec.flowKey]: { runJs } },
+  });
+  return { engine, model };
+}
+
 function getStepByTitle(steps: Record<string, StepDefinition> | undefined, title: string) {
   return Object.values(steps || {}).find((step) => step.title === title);
+}
+
+function renderSurface(engine: FlowEngine, model: FlowModel) {
+  return renderNode(engine, React.createElement(FlowModelRenderer, { model }));
+}
+
+function renderNode(engine: FlowEngine, node: React.ReactNode) {
+  return render(
+    React.createElement(
+      FlowEngineProvider,
+      { engine },
+      React.createElement(ConfigProvider, null, React.createElement(App, null, node)),
+    ),
+  );
+}
+
+function definePresentationContext(model: FlowModel, presentation: 'field' | 'item') {
+  model.context.defineProperty('record', { value: { name: 'Ada', level: 'VIP' } });
+  if (presentation === 'field') {
+    model.setProps({ value: '5551000' });
+    model.context.defineProperty('collectionField', { value: { name: 'phone' } });
+  } else {
+    model.context.defineProperty('item', { value: { index: 2, value: { level: 'VIP' } } });
+  }
 }
 
 setupRunJSTestHosts();
@@ -439,23 +528,309 @@ describe('RunJS FlowModel surfaces', () => {
     });
   });
 
-  it('runs the shared JS Item source/settings contract once', async () => {
-    const spec = surfaces.find((surface) => surface.name === 'JSItemModel') as SurfaceSpec;
-    const model = createSurfaceModel(spec);
-
-    await assertJSItemJsTemplateSourceContract({
-      model,
-      sourceBinding: {
-        type: 'js-template-entry',
-        projectId: 'jtp_item_contract',
-        templateId: 'jtt_item_contract',
-        kind: 'js-item',
-      },
-      settings: { color: 'red' },
-      settingsComponent: spec.settingsComponent,
-      settingKey: 'color',
-      settingTitle: 'Color',
-      updatedValue: 'blue',
+  it.each([
+    {
+      presentation: 'field' as const,
+      name: 'JSFieldModel',
+      errorTestId: 'js-field-runtime-error',
+    },
+    {
+      presentation: 'item' as const,
+      name: 'JSItemModel',
+      errorTestId: 'js-item-runtime-error',
+    },
+  ])('$name compiles, resolves, renders, reloads, falls back inline, and exposes runtime errors', async (testCase) => {
+    const spec = surfaces.find((surface) => surface.name === testCase.name) as SurfaceSpec;
+    const sourceBinding = {
+      type: 'js-template-entry',
+      projectId: `jtp_${testCase.presentation}_runtime`,
+      templateId: `jtt_${testCase.presentation}_runtime`,
+      kind: spec.jsTemplateKind,
+    };
+    const runJs = {
+      sourceMode: 'js-template',
+      sourceBinding,
+      settings: { label: 'persisted' },
+      code: `ctx.render(<span data-testid="${testCase.presentation}-inline">inline:{ctx.record.name}</span>);`,
+      version: 'v2',
+    };
+    const resolve = vi.fn(() => ({
+      code: `ctx.render(<span data-testid="${testCase.presentation}-template">{ctx.settings.label}:{ctx.record.name}</span>);`,
+      version: 'v2',
+      settings: { label: 'resolved' },
+    }));
+    const getSettingsDescriptor = vi.fn(async () => {
+      throw new Error('render must not fetch a settings descriptor');
     });
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'js-template', resolve, getSettingsDescriptor });
+
+    const first = createRuntimeSurface(spec, runJs);
+    definePresentationContext(first.model, testCase.presentation);
+    const firstView = renderSurface(first.engine, first.model);
+    await waitFor(() => {
+      expect(screen.getByTestId(`${testCase.presentation}-template`)).toHaveTextContent('resolved:Ada');
+    });
+    expect(screen.queryByTestId(`${testCase.presentation}-inline`)).toBeNull();
+    expect(resolve).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceMode: 'js-template',
+        sourceBinding,
+        settings: { label: 'persisted' },
+        context: expect.objectContaining({ modelUid: first.model.uid }),
+      }),
+    );
+    expect(getSettingsDescriptor).not.toHaveBeenCalled();
+    firstView.unmount();
+
+    const reloaded = createRuntimeSurface(spec, {
+      ...(first.model.getStepParams(spec.flowKey, 'runJs') as Record<string, unknown>),
+    });
+    definePresentationContext(reloaded.model, testCase.presentation);
+    const reloadedView = renderSurface(reloaded.engine, reloaded.model);
+    await waitFor(() => {
+      expect(screen.getByTestId(`${testCase.presentation}-template`)).toHaveTextContent('resolved:Ada');
+    });
+    reloadedView.unmount();
+
+    const inline = createRuntimeSurface(spec, { ...runJs, sourceMode: 'inline' });
+    definePresentationContext(inline.model, testCase.presentation);
+    const inlineView = renderSurface(inline.engine, inline.model);
+    await waitFor(() => {
+      expect(screen.getByTestId(`${testCase.presentation}-inline`)).toHaveTextContent('inline:Ada');
+    });
+    inlineView.unmount();
+
+    RunJSSourceResolverRegistry.clear();
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'js-template',
+      resolve: () => ({ code: 'throw new Error("adapter runtime failed");', version: 'v2' }),
+    });
+    const failing = createRuntimeSurface(spec, runJs);
+    definePresentationContext(failing.model, testCase.presentation);
+    renderSurface(failing.engine, failing.model);
+    await waitFor(() => {
+      expect(screen.getByTestId(testCase.errorTestId)).toHaveTextContent('adapter runtime failed');
+    });
+  });
+
+  it('runs the JS Column adapter per cell through resolve, render, reload, and isolated runtime errors', async () => {
+    const sourceBinding = {
+      type: 'js-template-entry',
+      projectId: 'jtp_column_runtime',
+      templateId: 'jtt_column_runtime',
+      kind: 'js-field',
+    };
+    const createColumn = () => {
+      const engine = new FlowEngine();
+      const collectionName = `contacts_${Math.random().toString(16).slice(2)}`;
+      engine.registerModels({ JSColumnModel });
+      const model = new JSColumnModel({
+        uid: `js-column-runtime-${Math.random()}`,
+        flowEngine: engine,
+        props: { width: 200, title: 'Phone' },
+        stepParams: {
+          jsSettings: {
+            runJs: {
+              sourceMode: 'js-template',
+              sourceBinding,
+              settings: { prefix: 'persisted:' },
+              code: 'ctx.render(<span data-testid={"column-inline-" + ctx.record.id}>{ctx.value}</span>);',
+              version: 'v2',
+            },
+          },
+        },
+      } as never);
+      engine.context.dataSourceManager.getDataSource('main').addCollection({
+        name: collectionName,
+        filterTargetKey: 'id',
+        fields: [{ name: 'phone', type: 'string', interface: 'input' }],
+      });
+      model.context.defineProperty('collection', {
+        value: engine.context.dataSourceManager.getCollection('main', collectionName),
+      });
+      model.context.defineProperty('collectionField', { value: { name: 'phone' } });
+      return { engine, model };
+    };
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'js-template',
+      resolve: () => ({
+        code: `ctx.render(<span data-testid={'column-' + ctx.record.id}>{ctx.settings.prefix}{ctx.record.name}:{ctx.value}</span>);`,
+        version: 'v2',
+        settings: { prefix: 'resolved:' },
+      }),
+    });
+
+    const first = createColumn();
+    const firstColumn = first.model.getColumnProps();
+    const firstView = renderNode(
+      first.engine,
+      React.createElement(
+        'div',
+        null,
+        firstColumn.render('5551000', { id: 1, name: 'Ada' }, 0),
+        firstColumn.render('5552000', { id: 2, name: 'Grace' }, 1),
+      ),
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('column-1')).toHaveTextContent('resolved:Ada:5551000');
+      expect(screen.getByTestId('column-2')).toHaveTextContent('resolved:Grace:5552000');
+    });
+    firstView.unmount();
+
+    const reloaded = createColumn();
+    const reloadedColumn = reloaded.model.getColumnProps();
+    const reloadedView = renderNode(
+      reloaded.engine,
+      React.createElement('div', null, reloadedColumn.render('5551000', { id: 1, name: 'Ada' }, 0)),
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('column-1')).toHaveTextContent('resolved:Ada:5551000');
+    });
+    reloadedView.unmount();
+
+    RunJSSourceResolverRegistry.clear();
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'js-template',
+      resolve: () => ({
+        code: `if (ctx.value === 'bad') throw new Error('bad cell'); ctx.render(<span data-testid={'column-ok-' + ctx.record.id}>{ctx.value}</span>);`,
+        version: 'v2',
+      }),
+    });
+    const failing = createColumn();
+    const failingColumn = failing.model.getColumnProps();
+    renderNode(
+      failing.engine,
+      React.createElement(
+        'div',
+        null,
+        failingColumn.render('bad', { id: 1, name: 'Ada' }, 0),
+        failingColumn.render('5552000', { id: 2, name: 'Grace' }, 1),
+      ),
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('js-column-runtime-error')).toHaveTextContent('bad cell');
+      expect(screen.getByTestId('column-ok-2')).toHaveTextContent('5552000');
+    });
+  });
+
+  it('runs the JS Action adapter through resolve, execute, reload, inline fallback, and visible errors', async () => {
+    const sourceBinding = {
+      type: 'js-template-entry',
+      projectId: 'jtp_action_runtime',
+      templateId: 'jtt_action_runtime',
+      kind: 'js-action',
+    };
+    const runJs = {
+      sourceMode: 'js-template',
+      sourceBinding,
+      settings: { label: 'persisted' },
+      code: 'ctx.message.info("inline action");',
+      version: 'v2',
+    };
+    const createAction = (params: Record<string, unknown>) => {
+      const engine = new FlowEngine();
+      engine.registerModels({ JSActionModel });
+      const model = engine.createModel<JSActionModel>({
+        use: 'JSActionModel',
+        uid: `js-action-runtime-${Math.random()}`,
+        props: { loading: false },
+        stepParams: { clickSettings: { runJs: params } },
+      });
+      const state: Record<string, unknown> = {};
+      const message = { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() };
+      model.context.defineProperty('__testState', { value: state });
+      model.context.defineProperty('message', { value: message });
+      return { model, state, message };
+    };
+    const resolve = vi.fn(() => ({
+      code: 'ctx.__testState.result = ctx.settings.label; ctx.message.success(ctx.settings.label);',
+      version: 'v2',
+      settings: { label: 'resolved' },
+    }));
+    RunJSSourceResolverRegistry.registerResolver({ sourceMode: 'js-template', resolve });
+
+    const first = createAction(runJs);
+    await first.model.applyFlow('clickSettings');
+    expect(first.state.result).toBe('resolved');
+    expect(first.message.success).toHaveBeenCalledWith('resolved');
+    expect(first.model.props.loading).toBe(false);
+
+    const reloaded = createAction({
+      ...(first.model.getStepParams('clickSettings', 'runJs') as Record<string, unknown>),
+    });
+    await reloaded.model.applyFlow('clickSettings');
+    expect(reloaded.state.result).toBe('resolved');
+
+    const inline = createAction({ ...runJs, sourceMode: 'inline' });
+    await inline.model.applyFlow('clickSettings');
+    expect(inline.message.info).toHaveBeenCalledWith('inline action');
+
+    RunJSSourceResolverRegistry.clear();
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'js-template',
+      resolve: async () => {
+        throw new Error('action entry missing');
+      },
+    });
+    const failing = createAction(runJs);
+    await expect(failing.model.applyFlow('clickSettings')).resolves.toBeTruthy();
+    expect(failing.message.error).toHaveBeenCalledWith('action entry missing');
+  });
+
+  it.each(actionContextCases)('keeps $name available to the $use JS Action adapter', async (testCase) => {
+    const engine = new FlowEngine();
+    engine.registerModels({ [testCase.use]: testCase.modelClass });
+    const model = engine.createModel({
+      use: testCase.use,
+      uid: `${testCase.use}-context-contract`,
+      props: { loading: false },
+      stepParams: {
+        clickSettings: {
+          runJs: {
+            sourceMode: 'js-template',
+            sourceBinding: {
+              type: 'js-template-entry',
+              projectId: 'jtp_action_context',
+              templateId: `jtt_${testCase.use}`,
+              kind: 'js-action',
+            },
+            settings: {},
+            code: 'ctx.__testState.value = "inline";',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const state: Record<string, unknown> = {};
+    model.context.defineProperty('__testState', { value: state });
+    model.context.defineProperty('message', {
+      value: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
+    });
+    testCase.setup(model);
+    RunJSSourceResolverRegistry.registerResolver({
+      sourceMode: 'js-template',
+      resolve: () => ({ code: testCase.code, version: 'v2' }),
+    });
+
+    await model.applyFlow('clickSettings');
+
+    expect(state.value).toEqual(testCase.expected);
+    expect(model.props.loading).toBe(false);
+  });
+
+  it('keeps ctx.exit() on the JS Action FlowExecutor normal-exit path', async () => {
+    const spec = surfaces.find((surface) => surface.name === 'JSActionModel') as SurfaceSpec;
+    const { model } = createRuntimeSurface(spec, {
+      sourceMode: 'inline',
+      code: 'ctx.exit();',
+      version: 'v2',
+    });
+    const error = vi.fn();
+    model.context.defineProperty('message', {
+      value: { success: vi.fn(), error, info: vi.fn(), warning: vi.fn() },
+    });
+
+    await expect(model.applyFlow('clickSettings')).resolves.toBeInstanceOf(FlowExitAllException);
+    expect(error).not.toHaveBeenCalled();
   });
 });

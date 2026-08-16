@@ -65,6 +65,9 @@ describe('JS Template runtime commands', () => {
     const commands = await generateJsTemplateCommands();
 
     expect(commands.map((command) => command.commandId)).toEqual([
+      'js-template-create-jobs dismiss',
+      'js-template-create-jobs get',
+      'js-template-create-jobs list',
       'js-template-files get-file',
       'js-template-files pull',
       'js-template-files save-source',
@@ -92,11 +95,20 @@ describe('JS Template runtime commands', () => {
 
   it('generates only canonical JS Template resources and actions', async () => {
     const commands = await generateJsTemplateCommands();
+    const commandIds = commands.map((command) => command.commandId);
 
     expect(commands).not.toHaveLength(0);
+    expect(commandIds).toEqual(
+      expect.arrayContaining([
+        'js-template-create-jobs list',
+        'js-template-create-jobs get',
+        'js-template-create-jobs dismiss',
+      ]),
+    );
+    expect(commandIds.join('\n')).not.toMatch(/retry|ssh|js-page/iu);
     for (const command of commands) {
-      expect(command.commandId).toMatch(/^js-template(?:s|-files|-projects|-usages) /u);
-      expect(command.pathTemplate).toMatch(/^\/jsTemplate(?:s|Files|Projects|Usages):/u);
+      expect(command.commandId).toMatch(/^js-template(?:s|-create-jobs|-files|-projects|-usages) /u);
+      expect(command.pathTemplate).toMatch(/^\/jsTemplate(?:s|CreateJobs|Files|Projects|Usages):/u);
       expect(command.summary).not.toMatch(/legacy|alias/iu);
       expect(command.description).not.toMatch(/legacy|alias/iu);
       expect(command.examples.every((example) => example.startsWith(`nb api ${command.commandId}`))).toBe(true);

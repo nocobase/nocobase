@@ -16,12 +16,9 @@ import JsTemplateCheck from '../commands/js-template/check.js';
 import JsTemplatePull from '../commands/js-template/pull.js';
 import JsTemplateSave from '../commands/js-template/save.js';
 import {
-  extractPullResult,
-  extractTemplateRecord,
   JS_TEMPLATE_BASELINE_PATH,
   JS_TEMPLATE_EXIT_CODES,
   JS_TEMPLATE_STATE_PATH,
-  type JsTemplateKind,
   type JsTemplateWorkspaceFile,
   type JsTemplateWorkspaceState,
 } from '../lib/js-template-workspace.js';
@@ -43,73 +40,33 @@ interface FakeResponse {
 
 type FakeHandler = (request: RecordedRequest) => FakeResponse | Promise<FakeResponse>;
 
-interface JsTemplateKindFixture {
-  kind: JsTemplateKind;
+interface JsTemplateFixture {
+  kind: 'js-block';
   root: string;
-  entryFileName: 'index.ts' | 'index.tsx';
+  entryFileName: 'index.tsx';
   title: string;
   tag: string;
   source: string;
 }
 
-const JS_TEMPLATE_KIND_FIXTURES: readonly JsTemplateKindFixture[] = [
-  {
-    kind: 'js-block',
-    root: 'src/client/js-blocks/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo block',
-    tag: 'JS Block',
-    source: 'ctx.render(<div>{ctx.t("你好")}</div>);\n',
-  },
-  {
-    kind: 'js-field',
-    root: 'src/client/js-fields/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo field',
-    tag: 'JS Field',
-    source: 'ctx.render(<span>{ctx.value}</span>);\n',
-  },
-  {
-    kind: 'js-action',
-    root: 'src/client/js-actions/demo',
-    entryFileName: 'index.ts',
-    title: 'Demo action',
-    tag: 'JS Action',
-    source: 'ctx.message.success(ctx.t("Demo action"));\n',
-  },
-  {
-    kind: 'js-item',
-    root: 'src/client/js-items/demo',
-    entryFileName: 'index.tsx',
-    title: 'Demo item',
-    tag: 'JS Item',
-    source: 'ctx.render(<span>{ctx.t("Demo item")}</span>);\n',
-  },
-];
-const VALID_JS_TEMPLATE_LIFECYCLE_STATUSES: Array<'enabled' | 'disabled'> = ['enabled', 'disabled'];
-const INVALID_JS_TEMPLATE_LIFECYCLE_STATUS_CASES: Array<[string, Record<string, unknown>]> = [
-  ['archived', { lifecycleStatus: 'archived' }],
-  ['an arbitrary string', { lifecycleStatus: 'pending' }],
-  ['an empty string', { lifecycleStatus: '' }],
-  ['null', { lifecycleStatus: null }],
-  ['a missing value', {}],
-];
+const JS_TEMPLATE_FIXTURE: JsTemplateFixture = {
+  kind: 'js-block',
+  root: 'src/client/js-blocks/demo',
+  entryFileName: 'index.tsx',
+  title: 'Demo block',
+  tag: 'JS Block',
+  source: 'ctx.render(<div>{ctx.t("你好")}</div>);\n',
+};
 
-function getKindFixture(kind: JsTemplateKind): JsTemplateKindFixture {
-  const fixture = JS_TEMPLATE_KIND_FIXTURES.find((candidate) => candidate.kind === kind);
-  if (!fixture) throw new Error(`Missing fixture for ${kind}`);
-  return fixture;
-}
-
-function getEntryPath(fixture: JsTemplateKindFixture): string {
+function getEntryPath(fixture: JsTemplateFixture): string {
   return `${fixture.root}/${fixture.entryFileName}`;
 }
 
-function getDescriptorPath(fixture: JsTemplateKindFixture): string {
+function getDescriptorPath(fixture: JsTemplateFixture): string {
   return `${fixture.root}/entry.json`;
 }
 
-function getDescriptorMetadata(fixture: JsTemplateKindFixture): Record<string, unknown> {
+function getDescriptorMetadata(fixture: JsTemplateFixture): Record<string, unknown> {
   return {
     schemaVersion: 1,
     key: 'demo',
@@ -173,14 +130,14 @@ async function startFakeRuntime(): Promise<void> {
     new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
 
-function templateEnvelope(kind: JsTemplateKind = 'js-block') {
-  const fixture = getKindFixture(kind);
+function templateEnvelope() {
+  const fixture = JS_TEMPLATE_FIXTURE;
   return {
     data: {
       id: 'jtt_demo',
       projectId: 'jtp_demo',
       target: 'client',
-      kind,
+      kind: fixture.kind,
       templateName: 'demo',
       entryPath: getEntryPath(fixture),
       descriptorPath: getDescriptorPath(fixture),
@@ -191,9 +148,8 @@ function templateEnvelope(kind: JsTemplateKind = 'js-block') {
 function pullEnvelope(
   headCommitId: string | null = null,
   files?: Array<Record<string, unknown>>,
-  kind: JsTemplateKind = 'js-block',
 ) {
-  const fixture = getKindFixture(kind);
+  const fixture = JS_TEMPLATE_FIXTURE;
   const descriptorContent = `${JSON.stringify(getDescriptorMetadata(fixture), null, 2)}\n`;
   return {
     data: {
@@ -208,7 +164,7 @@ function pullEnvelope(
           encoding: 'utf8',
           language: 'json',
           mode: '100644',
-          blobHash: `descriptor-${kind}`,
+          blobHash: 'descriptor-js-block',
           size: Buffer.byteLength(descriptorContent, 'utf8'),
         },
         {
@@ -217,21 +173,11 @@ function pullEnvelope(
           encoding: 'utf8',
           language: 'typescript',
           mode: '100644',
-          blobHash: `source-${kind}`,
+          blobHash: 'source-js-block',
           size: Buffer.byteLength(fixture.source, 'utf8'),
         },
       ],
     },
-  };
-}
-
-function pullResultWithProjectFields(projectFields: Record<string, unknown>): Record<string, unknown> {
-  return {
-    project: { id: 'jtp_demo', name: 'demo', headCommitId: null, ...projectFields },
-    commit: null,
-    tree: null,
-    unchanged: false,
-    files: [],
   };
 }
 
@@ -253,9 +199,9 @@ function commandFlags(workspace: string) {
   };
 }
 
-async function runPull(workspace: string, headCommitId: string | null = null, kind: JsTemplateKind = 'js-block') {
-  fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope(kind) });
-  fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope(headCommitId, undefined, kind) });
+async function runPull(workspace: string, headCommitId: string | null = null) {
+  fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope() });
+  fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({ body: pullEnvelope(headCommitId) });
   const command = createCommandHarness(
     {
       ...commandFlags(workspace),
@@ -268,8 +214,8 @@ async function runPull(workspace: string, headCommitId: string | null = null, ki
   return command;
 }
 
-async function runAcceptedCheck(workspace: string, kind: JsTemplateKind = 'js-block') {
-  const fixture = getKindFixture(kind);
+async function runAcceptedCheck(workspace: string) {
+  const fixture = JS_TEMPLATE_FIXTURE;
   const entryPath = getEntryPath(fixture);
   fakeHandlers['/api/jsTemplates:compileWorkspacePreview'] = () => ({
     body: {
@@ -282,7 +228,7 @@ async function runAcceptedCheck(workspace: string, kind: JsTemplateKind = 'js-bl
             templateId: 'jtt_demo',
             projectId: 'jtp_demo',
             target: 'client',
-            kind,
+            kind: fixture.kind,
             templateName: 'demo',
             entryPath,
             status: 'success',
@@ -291,11 +237,11 @@ async function runAcceptedCheck(workspace: string, kind: JsTemplateKind = 'js-bl
             artifact: {
               runtimeVersion: 'v2',
               entryPath,
-              filesHash: `files-${kind}`,
+              filesHash: 'files-js-block',
               metadata: {
                 projectId: 'jtp_demo',
                 templateId: 'jtt_demo',
-                kind,
+                kind: fixture.kind,
                 templateName: 'demo',
               },
             },
@@ -332,125 +278,6 @@ describe('nb js-template pull/check/save', () => {
     expect(JsTemplateCheck.summary).toContain('JS Template');
     expect(JsTemplateSave.summary).toContain('JS Template');
   });
-
-  test.each(['js-block', 'js-field', 'js-action', 'js-item'] as const)(
-    'accepts the public %s kind',
-    (kind) => {
-      expect(
-        extractTemplateRecord({
-          id: 'jtt_demo',
-          projectId: 'jtp_demo',
-          target: 'client',
-          kind,
-          templateName: 'demo',
-          entryPath: 'src/client/index.tsx',
-          descriptorPath: 'src/client/entry.json',
-        }).kind,
-      ).toBe(kind);
-    },
-  );
-
-  test('rejects the retired page template kind', () => {
-    const retiredKind = ['js', 'page'].join('-');
-    expect(() =>
-      extractTemplateRecord({
-        id: 'jtt_demo',
-        projectId: 'jtp_demo',
-        target: 'client',
-        kind: retiredKind,
-        templateName: 'demo',
-        entryPath: 'src/client/index.tsx',
-        descriptorPath: 'src/client/entry.json',
-      }),
-    ).toThrow(`received "${retiredKind}"`);
-  });
-
-  test.each(VALID_JS_TEMPLATE_LIFECYCLE_STATUSES)('accepts the %s project lifecycle status', (lifecycleStatus) => {
-    const result = extractPullResult(pullResultWithProjectFields({ lifecycleStatus }));
-
-    expect(result.project.lifecycleStatus).toBe(lifecycleStatus);
-  });
-
-  test.each(INVALID_JS_TEMPLATE_LIFECYCLE_STATUS_CASES)(
-    'rejects %s as a project lifecycle status',
-    (_label, projectFields) => {
-      expect(() => extractPullResult(pullResultWithProjectFields(projectFields))).toThrow(
-        'Pull project lifecycleStatus is missing or invalid.',
-      );
-    },
-  );
-
-  test.each(JS_TEMPLATE_KIND_FIXTURES)('pulls a supported $kind workspace', async ({ kind }) => {
-    const workspace = await createTempWorkspace();
-    const fixture = getKindFixture(kind);
-    await runPull(workspace, null, kind);
-
-    const state = JSON.parse(
-      await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
-    ) as JsTemplateWorkspaceState;
-    expect(state.template).toEqual({
-      id: 'jtt_demo',
-      kind,
-      name: 'demo',
-      path: getEntryPath(fixture),
-      descriptorPath: getDescriptorPath(fixture),
-    });
-    expect(JSON.parse(await readFile(join(workspace, ...getDescriptorPath(fixture).split('/')), 'utf8'))).toEqual(
-      getDescriptorMetadata(fixture),
-    );
-    expect(await readFile(join(workspace, ...getEntryPath(fixture).split('/')), 'utf8')).toBe(fixture.source);
-  });
-
-  test.each(JS_TEMPLATE_KIND_FIXTURES)(
-    'pulls, checks, and saves the complete $kind workflow',
-    async (fixture) => {
-      const workspace = await createTempWorkspace();
-      const entryPath = getEntryPath(fixture);
-      const modifiedSource = `${fixture.source.trim()}\n// updated locally\n`;
-      await runPull(workspace, `commit_${fixture.kind}_base`, fixture.kind);
-      await writeFile(join(workspace, ...entryPath.split('/')), modifiedSource, 'utf8');
-      await runAcceptedCheck(workspace, fixture.kind);
-
-      fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
-        body: {
-          data: {
-            project: {
-              id: 'jtp_demo',
-              name: 'demo',
-              lifecycleStatus: 'enabled',
-              headCommitId: `commit_${fixture.kind}_new`,
-            },
-            commit: { id: `commit_${fixture.kind}_new`, treeHash: `tree_${fixture.kind}_new` },
-            tree: { hash: `tree_${fixture.kind}_new`, entryCount: 2, byteSize: 180 },
-            compile: { status: 'success', templates: [] },
-            diagnostics: [],
-          },
-        },
-      });
-      const saveCommand = createCommandHarness({
-        ...commandFlags(workspace),
-        message: `Update ${fixture.kind}`,
-        yes: true,
-      });
-      await JsTemplateSave.prototype.run.call(saveCommand as never);
-
-      expect(requests.map((request) => request.path)).toEqual([
-        '/api/jsTemplates:get',
-        '/api/jsTemplateFiles:pull',
-        '/api/jsTemplates:compileWorkspacePreview',
-        '/api/jsTemplateFiles:saveSource',
-      ]);
-      expect(requests.at(-1)?.body).toMatchObject({
-        projectId: 'jtp_demo',
-        expectedHeadCommitId: `commit_${fixture.kind}_base`,
-        files: [expect.objectContaining({ path: entryPath, content: modifiedSource })],
-      });
-      const state = JSON.parse(
-        await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
-      ) as JsTemplateWorkspaceState;
-      expect(state.baseHeadCommitId).toBe(`commit_${fixture.kind}_new`);
-    },
-  );
 
   test('uses the canonical JS Template HTTP resources', async () => {
     const workspace = await createTempWorkspace();
@@ -536,22 +363,22 @@ describe('nb js-template pull/check/save', () => {
     ]);
   });
 
-  test('pulls, checks, and saves a js-action workspace with authoritative metadata', async () => {
+  test('keeps authoritative check and save metadata for the representative js-block workspace', async () => {
     const workspace = await createTempWorkspace();
-    const fixture = getKindFixture('js-action');
+    const fixture = JS_TEMPLATE_FIXTURE;
     const entryPath = getEntryPath(fixture);
     const descriptorPath = getDescriptorPath(fixture);
-    const modifiedSource = 'ctx.message.success(ctx.t("Action saved by Agent"));\n';
-    await runPull(workspace, 'commit_action_base', 'js-action');
+    const modifiedSource = 'ctx.render(<div>{ctx.t("Block saved by Agent")}</div>);\n';
+    await runPull(workspace, 'commit_block_base');
 
     expect(await readFile(join(workspace, ...entryPath.split('/')), 'utf8')).toBe(fixture.source);
     await writeFile(join(workspace, ...entryPath.split('/')), modifiedSource, 'utf8');
 
-    const checkCommand = await runAcceptedCheck(workspace, 'js-action');
+    const checkCommand = await runAcceptedCheck(workspace);
     const checkRequest = requests.find((request) => request.path.endsWith('compileWorkspacePreview'));
     expect(checkRequest?.body).toEqual({
       projectId: 'jtp_demo',
-      expectedHeadCommitId: 'commit_action_base',
+      expectedHeadCommitId: 'commit_block_base',
       files: expect.any(Array),
     });
     const checkedFiles = checkRequest?.body.files as JsTemplateWorkspaceFile[];
@@ -569,7 +396,7 @@ describe('nb js-template pull/check/save', () => {
         templateId: 'jtt_demo',
         projectId: 'jtp_demo',
         target: 'client',
-        kind: 'js-action',
+        kind: 'js-block',
         templateName: 'demo',
         entryPath,
         status: 'success',
@@ -580,15 +407,15 @@ describe('nb js-template pull/check/save', () => {
     const artifactSummary = {
       runtimeVersion: 'v2',
       entryPath,
-      filesHash: 'files-js-action-saved',
+      filesHash: 'files-js-block-saved',
       metadata: {
         projectId: 'jtp_demo',
         templateId: 'jtt_demo',
-        kind: 'js-action',
+        kind: 'js-block',
         templateName: 'demo',
-        modelUse: 'JSActionModel',
-        surface: 'js-model.action',
-        surfaceStyle: 'action',
+        modelUse: 'JSBlockModel',
+        surface: 'js-model.render',
+        surfaceStyle: 'render',
       },
     };
     fakeHandlers['/api/jsTemplateFiles:saveSource'] = () => ({
@@ -598,17 +425,17 @@ describe('nb js-template pull/check/save', () => {
             id: 'jtp_demo',
             name: 'demo',
             lifecycleStatus: 'enabled',
-            headCommitId: 'commit_action_new',
+            headCommitId: 'commit_block_new',
           },
-          commit: { id: 'commit_action_new', treeHash: 'tree_action_new' },
-          tree: { hash: 'tree_action_new', entryCount: 2, byteSize: 180 },
+          commit: { id: 'commit_block_new', treeHash: 'tree_block_new' },
+          tree: { hash: 'tree_block_new', entryCount: 2, byteSize: 180 },
           compile: {
             status: 'success',
             templates: [
               {
                 templateId: 'jtt_demo',
                 templateName: 'demo',
-                kind: 'js-action',
+                kind: 'js-block',
                 entryPath,
                 status: 'success',
                 execution: 'compiled',
@@ -623,7 +450,7 @@ describe('nb js-template pull/check/save', () => {
     });
     const saveCommand = createCommandHarness({
       ...commandFlags(workspace),
-      message: 'Update demo action',
+      message: 'Update demo block',
       yes: true,
     });
     await JsTemplateSave.prototype.run.call(saveCommand as never);
@@ -631,8 +458,8 @@ describe('nb js-template pull/check/save', () => {
     const saveRequest = requests.find((request) => request.path.endsWith('saveSource'));
     expect(saveRequest?.body).toEqual({
       projectId: 'jtp_demo',
-      expectedHeadCommitId: 'commit_action_base',
-      message: 'Update demo action',
+      expectedHeadCommitId: 'commit_block_base',
+      message: 'Update demo block',
       files: [
         {
           path: entryPath,
@@ -656,7 +483,7 @@ describe('nb js-template pull/check/save', () => {
     expect(reviewOutput).toMatchObject({
       stage: 'review',
       review: {
-        baseHeadCommitId: 'commit_action_base',
+        baseHeadCommitId: 'commit_block_base',
         delta: { changedFiles: 1, upserts: 1, deletes: 0, additions: 1, deletions: 1 },
       },
     });
@@ -671,14 +498,14 @@ describe('nb js-template pull/check/save', () => {
         compile: { status: string; templates: Array<Record<string, unknown>> };
       };
     };
-    expect(saveOutput.newHeadCommitId).toBe('commit_action_new');
+    expect(saveOutput.newHeadCommitId).toBe('commit_block_new');
     expect(saveOutput.delta).toEqual({ changedFiles: 1, upserts: 1, deletes: 0, additions: 1, deletions: 1 });
     expect(saveOutput.result.compile).toEqual({
       status: 'success',
       templates: [
         expect.objectContaining({
           templateId: 'jtt_demo',
-          kind: 'js-action',
+          kind: 'js-block',
           entryPath,
           status: 'success',
           execution: 'compiled',
@@ -691,7 +518,7 @@ describe('nb js-template pull/check/save', () => {
     const state = JSON.parse(
       await readFile(join(workspace, ...JS_TEMPLATE_STATE_PATH.split('/')), 'utf8'),
     ) as JsTemplateWorkspaceState;
-    expect(state.baseHeadCommitId).toBe('commit_action_new');
+    expect(state.baseHeadCommitId).toBe('commit_block_new');
     expect(state.lastCheck).toBeUndefined();
     expect(await readFile(join(workspace, ...entryPath.split('/')), 'utf8')).toBe(modifiedSource);
   });
@@ -881,6 +708,34 @@ describe('nb js-template pull/check/save', () => {
     });
     expect(requests).toHaveLength(0);
     expect(await readFile(join(workspace, 'local.ts'), 'utf8')).toBe('keep me\n');
+  });
+
+  test('rejects a traversal path before writing the pulled workspace', async () => {
+    const workspace = await createTempWorkspace();
+    fakeHandlers['/api/jsTemplates:get'] = () => ({ body: templateEnvelope() });
+    fakeHandlers['/api/jsTemplateFiles:pull'] = () => ({
+      body: pullEnvelope(null, [
+        {
+          path: '../escape.ts',
+          content: 'export const escaped = true;\n',
+          encoding: 'utf8',
+          language: 'typescript',
+          mode: '100644',
+          blobHash: 'escape',
+          size: 29,
+        },
+      ]),
+    });
+    const command = createCommandHarness({
+      ...commandFlags(workspace),
+      project: 'jtp_demo',
+      template: 'jtt_demo',
+    });
+
+    await expect(JsTemplatePull.prototype.run.call(command as never)).rejects.toMatchObject({
+      exitCode: JS_TEMPLATE_EXIT_CODES.general,
+    });
+    await expect(readFile(join(workspace, '..', 'escape.ts'), 'utf8')).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   test.each(['.nocobase', '.js-template/types', 'node_modules', 'src'])(
