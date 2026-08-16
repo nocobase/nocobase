@@ -99,6 +99,7 @@ export class JsTemplateCreateJobStore {
     if (existing) {
       return existing;
     }
+    const reservationKey = createReservationKey(input.applicationName, input.normalizedName);
     try {
       // Sequelize wraps findOrCreate in an internal transaction/savepoint. On PostgreSQL, this keeps the caller's
       // outer transaction usable after a competing insert wins the idempotency or name-reservation constraint.
@@ -108,6 +109,7 @@ export class JsTemplateCreateJobStore {
           actorUserId: input.actorUserId,
           sessionId: input.sessionId,
           idempotencyKey: input.idempotencyKey,
+          reservationKey,
         },
         defaults: {
           applicationName: input.applicationName,
@@ -125,7 +127,7 @@ export class JsTemplateCreateJobStore {
           errorCode: null,
           errorReasonCode: null,
           errorMessage: null,
-          reservationKey: createReservationKey(input.applicationName, input.normalizedName),
+          reservationKey,
           actorUserId: input.actorUserId,
           sessionId: input.sessionId,
           authorizationRole: input.authorizationRole,
@@ -797,7 +799,8 @@ function isCreateJobReservationConstraintError(error: UniqueConstraintError): bo
   }
   return (
     (fields.size === 1 && fields.has('jst_create_job_reservation_uq')) ||
-    (fields.size === 2 && fields.has('applicationName') && fields.has('reservationKey'))
+    (fields.size === 2 && fields.has('applicationName') && fields.has('reservationKey')) ||
+    (fields.size === 2 && fields.has('application_name') && fields.has('reservation_key'))
   );
 }
 
