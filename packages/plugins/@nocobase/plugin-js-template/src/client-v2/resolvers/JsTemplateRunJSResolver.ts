@@ -60,6 +60,7 @@ export type JsTemplateRunJSSourceResolver = RunJSSourceResolver & {
 };
 
 type SelectableTemplateLoader = typeof listSelectableJsTemplates;
+type Translate = (key: string) => string;
 
 type RuntimeTransport = {
   listSelectableTemplates: SelectableTemplateLoader;
@@ -77,16 +78,31 @@ const jsTemplateRuntimeTransport: RuntimeTransport = {
   requestRuntimeArtifact: requestJsTemplateArtifact,
 };
 
-export function createJsTemplateRunJSResolver(api: ApiClientLike): JsTemplateRunJSSourceResolver {
-  return createRunJSResolver(api, jsTemplateRuntimeTransport);
+export function createJsTemplateRunJSResolver(
+  api: ApiClientLike,
+  translate: Translate = (key) => key,
+): JsTemplateRunJSSourceResolver {
+  return createRunJSResolver(api, jsTemplateRuntimeTransport, translate);
 }
 
-function createRunJSResolver(api: ApiClientLike, transport: RuntimeTransport): JsTemplateRunJSSourceResolver {
+function createRunJSResolver(
+  api: ApiClientLike,
+  transport: RuntimeTransport,
+  translate: Translate,
+): JsTemplateRunJSSourceResolver {
   const runtimeCache = getOrCreateJsTemplateRuntimeCache(api, (generation) => new JsTemplateRuntimeCache(generation));
   const settingsDescriptorCache = getJsTemplateSettingsDescriptorCache(api);
 
   return {
     sourceMode: JS_TEMPLATE_SOURCE_MODE,
+    getSourceMenuLabels() {
+      return {
+        searchPlaceholder: translate('Search JS Templates'),
+        loadingLabel: translate('Loading JS Templates'),
+        emptyLabel: translate('No JS Templates'),
+        errorLabel: translate('Failed to load JS Templates'),
+      };
+    },
     invalidateCache(projectId) {
       invalidateJsTemplateRuntimeCache(api, projectId);
       if (projectId) {

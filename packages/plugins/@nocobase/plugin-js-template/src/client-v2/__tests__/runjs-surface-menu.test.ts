@@ -592,7 +592,14 @@ function registerSourceMenuItemTests() {
         };
       });
       const api = createMockApiClient(request);
-      const resolver = createJsTemplateRunJSResolver(api);
+      const resolver = createJsTemplateRunJSResolver(api, (key) => `plugin:${key}`);
+
+      expect(resolver.getSourceMenuLabels?.()).toEqual({
+        searchPlaceholder: 'plugin:Search JS Templates',
+        loadingLabel: 'plugin:Loading JS Templates',
+        emptyLabel: 'plugin:No JS Templates',
+        errorLabel: 'plugin:Failed to load JS Templates',
+      });
 
       const items = await resolver.listSourceMenuItems?.({
         kind: 'js-block',

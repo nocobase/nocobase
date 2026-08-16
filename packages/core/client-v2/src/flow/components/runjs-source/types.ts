@@ -71,6 +71,13 @@ export interface RunJSSourceMenuSelectInput extends RunJSSourceMenuInput {
   defaultParams: ParamObject;
 }
 
+export interface RunJSSourceMenuLabels {
+  searchPlaceholder: string;
+  loadingLabel: string;
+  emptyLabel: string;
+  errorLabel: string;
+}
+
 export interface ResolvedRuntimeRunJS {
   code: string;
   version: string;
@@ -83,6 +90,7 @@ export interface ResolvedRuntimeRunJS {
 
 export interface RunJSSourceResolver {
   sourceMode: RunJSSourceMode;
+  getSourceMenuLabels?: () => Partial<RunJSSourceMenuLabels>;
   resolve: (input: RunJSSourceResolverInput) => RunJSSourceResolverResult | Promise<RunJSSourceResolverResult>;
   getBindingTitle?: (input: RunJSSourceResolverInput) => string | undefined | Promise<string | undefined>;
   getSettingsDescriptor?: (

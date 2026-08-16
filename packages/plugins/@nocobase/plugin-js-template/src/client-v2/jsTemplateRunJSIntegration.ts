@@ -88,11 +88,14 @@ export function registerJsTemplateRunJSFlowSettingsComponents(
   };
 }
 
-export function installJsTemplateRunJSIntegrations(api?: ApiClientLike): () => void {
+export function installJsTemplateRunJSIntegrations(
+  api?: ApiClientLike,
+  translate?: (key: string) => string,
+): () => void {
   const disposers: Array<() => void> = [];
   try {
     if (api) {
-      disposers.push(RunJSSourceResolverRegistry.registerResolver(createJsTemplateRunJSResolver(api)));
+      disposers.push(RunJSSourceResolverRegistry.registerResolver(createJsTemplateRunJSResolver(api, translate)));
     }
     disposers.push(RunJSEditorRegistry.registerProvider(createJsTemplateRunJSEditorProvider()));
     if (api) {

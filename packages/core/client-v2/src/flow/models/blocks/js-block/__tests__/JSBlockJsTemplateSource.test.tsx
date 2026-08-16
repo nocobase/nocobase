@@ -165,7 +165,10 @@ describe('JSBlockModel JS Template source', () => {
       type: 'cascadeMenu',
       key: 'sourceMode',
       props: {
-        searchPlaceholder: 'Search JS Templates',
+        searchPlaceholder: 'Search code sources',
+        loadingLabel: 'Loading code sources',
+        emptyLabel: 'No code sources',
+        errorLabel: 'Failed to load code sources',
       },
     });
     expect(sourceModeStep?.uiMode?.props?.loadItems).toBeTypeOf('function');
@@ -257,6 +260,12 @@ describe('JSBlockModel JS Template source', () => {
     ]);
     RunJSSourceResolverRegistry.registerResolver({
       sourceMode: 'js-template',
+      getSourceMenuLabels: () => ({
+        searchPlaceholder: 'plugin search',
+        loadingLabel: 'plugin loading',
+        emptyLabel: 'plugin empty',
+        errorLabel: 'plugin error',
+      }),
       resolve: () => ({
         code: 'ctx.render("ok");',
       }),
@@ -271,6 +280,10 @@ describe('JSBlockModel JS Template source', () => {
     const sourceModeStep = model.getFlow('jsSettings')?.steps?.sourceMode as {
       uiMode?: {
         props?: {
+          searchPlaceholder?: string;
+          loadingLabel?: string;
+          emptyLabel?: string;
+          errorLabel?: string;
           loadItems?: (input: {
             params: Record<string, unknown>;
             defaultParams: Record<string, unknown>;
@@ -279,6 +292,13 @@ describe('JSBlockModel JS Template source', () => {
         };
       };
     };
+
+    expect(sourceModeStep.uiMode?.props).toMatchObject({
+      searchPlaceholder: 'plugin search',
+      loadingLabel: 'plugin loading',
+      emptyLabel: 'plugin empty',
+      errorLabel: 'plugin error',
+    });
 
     const items = await sourceModeStep.uiMode?.props?.loadItems?.({
       params: {

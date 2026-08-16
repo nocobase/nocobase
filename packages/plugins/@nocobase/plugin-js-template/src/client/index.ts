@@ -106,7 +106,7 @@ export class PluginJsTemplateClient {
       if (this.app?.apiClient) {
         this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
       }
-      this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient));
+      this.disposers.push(installJsTemplateRunJSIntegrations(this.app?.apiClient, (key) => translate(this.app, key)));
 
       const settingsOptions: ClientV1SettingsOptions = {
         icon: 'CodeOutlined',

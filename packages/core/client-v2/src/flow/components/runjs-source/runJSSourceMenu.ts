@@ -10,7 +10,13 @@
 import type { StepCascadeMenuUIMode } from '@nocobase/flow-engine';
 import React from 'react';
 
-import type { RunJSSourceBinding, RunJSSourceMenuInput, RunJSSourceMenuItem, RunJSSourceSettings } from './types';
+import type {
+  RunJSSourceBinding,
+  RunJSSourceMenuInput,
+  RunJSSourceMenuItem,
+  RunJSSourceMenuLabels,
+  RunJSSourceSettings,
+} from './types';
 import { INLINE_RUNJS_SOURCE_MODE } from './types';
 import { RunJSSourceResolverRegistry } from './RunJSSourceResolverRegistry';
 
@@ -139,15 +145,33 @@ export function shouldHideRunJSSourceMenu(): boolean {
   );
 }
 
+function getSourceMenuLabel(key: keyof RunJSSourceMenuLabels, fallback: string): string {
+  for (const resolver of RunJSSourceResolverRegistry.getResolvers()) {
+    const label = toNonEmptyString(resolver.getSourceMenuLabels?.()?.[key]);
+    if (label) {
+      return label;
+    }
+  }
+  return fallback;
+}
+
 export function createRunJSSourceCascadeMenuUIMode(options: RunJSSourceCascadeMenuOptions): StepCascadeMenuUIMode {
   return {
     type: 'cascadeMenu' as const,
     key: 'sourceMode',
     props: {
-      searchPlaceholder: 'Search JS Templates',
-      loadingLabel: 'Loading JS Templates',
-      emptyLabel: 'No JS Templates',
-      errorLabel: 'Failed to load JS Templates',
+      get searchPlaceholder() {
+        return getSourceMenuLabel('searchPlaceholder', 'Search code sources');
+      },
+      get loadingLabel() {
+        return getSourceMenuLabel('loadingLabel', 'Loading code sources');
+      },
+      get emptyLabel() {
+        return getSourceMenuLabel('emptyLabel', 'No code sources');
+      },
+      get errorLabel() {
+        return getSourceMenuLabel('errorLabel', 'Failed to load code sources');
+      },
       getDisplayLabel({ model, flowKey, params, t }) {
         const runJsParams = model?.getStepParams(options.sourceFlowKey || flowKey || '', 'runJs');
         const displayParams = params.sourceMode ? params : isRecord(runJsParams) ? runJsParams : params;
