@@ -25,6 +25,7 @@ import { JsTemplateCreateJobStore, toCreateJobSummary } from '../services/JsTemp
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplatePermissionService } from '../services/JsTemplatePermissionService';
+import { createUnsignedSessionToken } from './security-test-fixtures';
 
 describe('JS Template durable creation jobs', () => {
   it('canonicalizes the persisted union-role set before request hashing', () => {
@@ -796,9 +797,4 @@ function createJobRecord(overrides: Partial<JsTemplateCreateJob> = {}): JsTempla
     updatedAt: '2026-07-27T00:00:00.000Z',
     ...overrides,
   };
-}
-
-function createUnsignedSessionToken(jti: string): string {
-  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
-  return `header.${payload}.signature`;
 }

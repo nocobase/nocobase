@@ -108,12 +108,17 @@ describe('Source Project list logic', () => {
       createJobSummary({ id: 'active_pending', status: 'pending' }),
       createJobSummary({ id: 'terminal_1', status: 'succeeded' }),
       createJobSummary({ id: 'active_running', status: 'running' }),
+      createJobSummary({ id: 'active_finalizing', status: 'finalize-pending' }),
       createJobSummary({ id: 'terminal_2', status: 'failed' }),
       createJobSummary({ id: 'terminal_3', status: 'succeeded' }),
       createJobSummary({ id: 'terminal_4', status: 'failed' }),
     ];
 
-    expect(selectVisibleCreationJobs(jobs).map((job) => job.id)).toEqual(['active_pending', 'active_running']);
+    expect(selectVisibleCreationJobs(jobs).map((job) => job.id)).toEqual([
+      'active_pending',
+      'active_running',
+      'active_finalizing',
+    ]);
   });
 
   it('uses the target project ID as the stable creation row key', () => {

@@ -10,7 +10,6 @@
 import type { Transaction } from '@nocobase/database';
 import type { HandlerType } from '@nocobase/resourcer';
 import { MockServer, createMockServer } from '@nocobase/test';
-import JSZip from 'jszip';
 import { vi } from 'vitest';
 
 import { JS_TEMPLATE_ACL_SNIPPET } from '../../constants';
@@ -26,6 +25,7 @@ import type { JsTemplateProjectService } from '../services/JsTemplateProjectServ
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
 import { parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
+import { createUnsignedSessionToken, createZipBase64 } from './security-test-fixtures';
 
 describe('plugin-js-template initial source creation', () => {
   let app: MockServer;
@@ -95,10 +95,10 @@ describe('plugin-js-template initial source creation', () => {
   });
 
   it('rejects uploaded source that uses the removed generic RunJS root', async () => {
-    const zip = new JSZip();
-    zip.file('src/client/runjs/example/index.ts', 'return 1;\n');
-    zip.file('src/client/runjs/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
-    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+    const zipBase64 = await createZipBase64({
+      'src/client/runjs/example/index.ts': 'return 1;\n',
+      'src/client/runjs/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
+    });
 
     await expect(parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator())).rejects.toMatchObject({
       code: 'JS_TEMPLATE_VALIDATION_FAILED',
@@ -180,11 +180,11 @@ describe('plugin-js-template initial source creation', () => {
   });
 
   it('uses uploaded ZIP source for the first version and compiles it immediately', async () => {
-    const zip = new JSZip();
-    zip.file('uploaded/README.md', '# Uploaded\n');
-    zip.file('uploaded/src/client/js-blocks/example/index.jsx', 'ctx.render(<div>Uploaded</div>);\n');
-    zip.file('uploaded/src/client/js-blocks/example/entry.json', '{"schemaVersion":1,"key":"example"}\n');
-    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+    const zipBase64 = await createZipBase64({
+      'uploaded/README.md': '# Uploaded\n',
+      'uploaded/src/client/js-blocks/example/index.jsx': 'ctx.render(<div>Uploaded</div>);\n',
+      'uploaded/src/client/js-blocks/example/entry.json': '{"schemaVersion":1,"key":"example"}\n',
+    });
 
     const createResponse = await agent
       .post('/jsTemplateProjects:create')
@@ -226,10 +226,10 @@ describe('plugin-js-template initial source creation', () => {
   });
 
   it('rolls back repository creation when uploaded source cannot be compiled', async () => {
-    const zip = new JSZip();
-    zip.file('src/client/js-blocks/broken/index.tsx', "import Missing from './missing';\nctx.render(<Missing />);\n");
-    zip.file('src/client/js-blocks/broken/entry.json', '{"schemaVersion":1,"key":"broken"}\n');
-    const zipBase64 = await zip.generateAsync({ type: 'base64' });
+    const zipBase64 = await createZipBase64({
+      'src/client/js-blocks/broken/index.tsx': "import Missing from './missing';\nctx.render(<Missing />);\n",
+      'src/client/js-blocks/broken/entry.json': '{"schemaVersion":1,"key":"broken"}\n',
+    });
     const projectCount = await app.db.getRepository('jsTemplateProjects').count();
     const vscProjectCount = await app.db.getRepository('vscFileRepositories').count();
     const commitCount = await app.db.getRepository('vscFileCommits').count();
@@ -840,11 +840,6 @@ async function createRoleAgent(app: MockServer, roleName: string, snippets: stri
     },
   });
   return (await app.agent().login(user)).set('x-role', roleName);
-}
-
-function createUnsignedSessionToken(sessionId: string): string {
-  const encode = (value: Record<string, unknown>) => Buffer.from(JSON.stringify(value)).toString('base64url');
-  return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ jti: sessionId })}.signature`;
 }
 
 async function waitForSuccessfulCreate(app: MockServer, jobId: string, projectId: string): Promise<void> {

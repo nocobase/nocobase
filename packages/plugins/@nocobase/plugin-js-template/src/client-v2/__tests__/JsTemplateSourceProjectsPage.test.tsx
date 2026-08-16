@@ -514,7 +514,8 @@ describe('JsTemplateSourceProjectsPage', () => {
       },
     ]);
     renderListPage();
-    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+    const creationStatus = await screen.findByText('Creation pending');
+    expect(creationStatus.closest('[role="status"]')).toHaveTextContent(/Demo.*Creation pending/u);
 
     await act(async () => {
       mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
@@ -527,6 +528,7 @@ describe('JsTemplateSourceProjectsPage', () => {
       expect.objectContaining({ message: 'Source Project creation succeeded: Demo' }),
     );
     expect(screen.queryByText('Creation succeeded')).not.toBeInTheDocument();
+    expect(creationStatus).not.toBeInTheDocument();
     expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await act(async () => {

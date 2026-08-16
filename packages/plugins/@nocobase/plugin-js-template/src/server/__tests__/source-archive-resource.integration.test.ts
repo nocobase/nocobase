@@ -9,13 +9,13 @@
 
 import type { Context } from '@nocobase/actions';
 import type { Database } from '@nocobase/database';
-import JSZip from 'jszip';
 import { vi } from 'vitest';
 
 import { createJsTemplateProjectsResource } from '../resources/jsTemplateProjects';
 import type { JsTemplateProjectService } from '../services/JsTemplateProjectService';
 import type { JsTemplateCompileService } from '../services/JsTemplateCompileService';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
+import { createSymlinkZipBase64, createUnsignedSessionToken, createZipBase64 } from './security-test-fixtures';
 
 describe('jsTemplateProjects:inspectSourceArchive', () => {
   it('parses the ZIP without invoking persistence or compilation services', async () => {
@@ -42,17 +42,15 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
       'test',
       {} as never,
     );
-    const zip = new JSZip();
-    zip.file('workspace/README.md', '# Inspected\n');
-    zip.file('workspace/src/shared/value.ts', 'export const value = 1;\n');
-    zip.file(
-      'workspace/src/client/js-blocks/orders/entry.json',
-      '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
-    );
-    zip.file('workspace/src/client/js-blocks/orders/index.tsx', 'ctx.render(String(ctx.record?.id ?? ""));\n');
     const ctx = createActionContext({
       projectId: 'jtp_inspect',
-      zipBase64: await zip.generateAsync({ type: 'base64' }),
+      zipBase64: await createZipBase64({
+        'workspace/README.md': '# Inspected\n',
+        'workspace/src/shared/value.ts': 'export const value = 1;\n',
+        'workspace/src/client/js-blocks/orders/entry.json':
+          '{"schemaVersion":1,"key":"orders","settings":{"region":{"type":"string","default":"APAC"}}}\n',
+        'workspace/src/client/js-blocks/orders/index.tsx': 'ctx.render(String(ctx.record?.id ?? ""));\n',
+      }),
     });
     const next = vi.fn(async () => {});
 
@@ -123,11 +121,7 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     },
     {
       label: 'symbolic link',
-      createZip: async () => {
-        const zip = new JSZip();
-        zip.file('src/shared/link.ts', '../target.ts', { unixPermissions: 0o120777 });
-        return zip.generateAsync({ type: 'base64', platform: 'UNIX' });
-      },
+      createZip: () => createSymlinkZipBase64('src/shared/link.ts', '../target.ts'),
       limits: undefined,
     },
     {
@@ -200,19 +194,6 @@ describe('jsTemplateProjects:inspectSourceArchive', () => {
     },
   );
 });
-
-async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {
-  const zip = new JSZip();
-  for (const [path, content] of Object.entries(files)) {
-    zip.file(path, content);
-  }
-  return zip.generateAsync({ type: 'base64' });
-}
-
-function createUnsignedSessionToken(jti: string): string {
-  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
-  return `header.${payload}.signature`;
-}
 
 function createActionContext(values: Record<string, unknown>): Context {
   return {

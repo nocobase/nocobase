@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import JSZip from 'jszip';
-
 import { createJsTemplateWorkspaceArchive } from '../../client-v2/workspace/jsTemplateWorkspaceArchive';
 import { parseJsTemplateSourceArchive } from '../services/JsTemplateSourceArchive';
 import { JsTemplateValidator } from '../services/JsTemplateValidator';
+import { createSymlinkZipBase64, createZipBase64 } from './security-test-fixtures';
 
 describe('plugin-js-template source ZIP archive', () => {
   it('roundtrips exported files, entry descriptor, and dynamic settings through the source parser', async () => {
@@ -119,11 +118,7 @@ describe('plugin-js-template source ZIP archive', () => {
     ],
     [
       'symbolic link',
-      async () => {
-        const zip = new JSZip();
-        zip.file('src/client/link.ts', '../shared/target.ts', { unixPermissions: 0o120777 });
-        return zip.generateAsync({ type: 'base64', platform: 'UNIX' });
-      },
+      () => createSymlinkZipBase64('src/client/link.ts', '../shared/target.ts'),
       'zip_symlink_not_allowed',
     ],
   ] as const)('rejects %s', async (_label, createArchive, diagnosticCode) => {
@@ -136,9 +131,10 @@ describe('plugin-js-template source ZIP archive', () => {
   });
 
   it('rejects compressed, uncompressed, and per-file budget overruns before accepting source', async () => {
-    const zipBase64 = await createZipBase64({
-      'src/client/js-blocks/example/index.js': `export default ${JSON.stringify('a'.repeat(1024))};\n`,
-    });
+    const zipBase64 = await createZipBase64(
+      { 'src/client/js-blocks/example/index.js': `export default ${JSON.stringify('a'.repeat(1024))};\n` },
+      { compressed: true },
+    );
 
     await expect(
       parseJsTemplateSourceArchive(zipBase64, new JsTemplateValidator({ limits: { maxZipCompressionRatio: 1 } })),
@@ -208,16 +204,3 @@ describe('plugin-js-template source ZIP archive', () => {
     });
   });
 });
-
-async function createZipBase64(files: Record<string, string | Buffer>): Promise<string> {
-  const zip = new JSZip();
-  for (const [path, content] of Object.entries(files)) {
-    zip.file(path, content);
-  }
-
-  return zip.generateAsync({
-    type: 'base64',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 9 },
-  });
-}

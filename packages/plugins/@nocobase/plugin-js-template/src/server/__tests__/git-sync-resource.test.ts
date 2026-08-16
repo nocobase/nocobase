@@ -14,6 +14,7 @@ import { vi } from 'vitest';
 
 import { JsTemplateError } from '../../shared/errors';
 import { createJsTemplateSyncResource } from '../resources/jsTemplateSync';
+import { createUnsignedSessionToken } from './security-test-fixtures';
 
 import { JS_TEMPLATE_SYNC_ERROR_CODE_BY_REMOTE_CODE, mapRemoteSyncErrorToJsTemplate } from '../../shared/errors';
 
@@ -731,11 +732,6 @@ async function runAction(
     vi.fn(async () => undefined),
   );
   return ctx as typeof ctx & { body?: unknown; status?: number };
-}
-
-function createUnsignedSessionToken(jti: string): string {
-  const payload = Buffer.from(JSON.stringify({ jti })).toString('base64url');
-  return `header.${payload}.signature`;
 }
 
 function executionInput() {

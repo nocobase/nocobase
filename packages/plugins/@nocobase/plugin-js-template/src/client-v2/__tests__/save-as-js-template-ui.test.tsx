@@ -27,6 +27,8 @@ const KIND_NAME_LABELS = {
   'js-item': 'JS Item name',
 } as const;
 
+type NonWorkspaceCase = { name: string; modelUse: string } | { name: string; locator: 'nested-runjs' | 'non-step' };
+
 vi.mock('../locale', () => ({
   useT: () => (key: string) => key,
 }));
@@ -64,43 +66,36 @@ describe('SaveAsJsTemplate', () => {
     expect(await screen.findByLabelText(expectedLabel)).toBeTruthy();
   });
 
-  it('does not render Save as JS Template for legacy nested RunJS locators', () => {
+  it.each([
+    { name: 'Field Assignment', modelUse: 'FieldAssignmentModel' },
+    { name: 'Form Assignment', modelUse: 'FormAssignmentModel' },
+    { name: 'Linkage Rules', locator: 'nested-runjs' },
+    { name: 'Custom Variable', modelUse: 'CustomVariableModel' },
+    { name: 'non-step editor', locator: 'non-step' },
+    { name: 'generic flow step', modelUse: 'GenericRunJSModel' },
+  ] satisfies NonWorkspaceCase[])('does not expose a Workspace entry for $name', (testCase) => {
     const context = createContext(vi.fn());
-    const locator = {
-      kind: 'flowModel.nestedRunJS',
-      modelUid: 'fm_1',
-      containerFlowKey: 'settings',
-      containerStepKey: 'configure',
-      valuePath: ['runJs'],
-      scene: 'field-linkage',
-    } as unknown as RunJSStudioToolbarContext['locator'];
-    context.locator = locator;
-    context.workspace.locator = locator;
-    context.workspace.legacy.surfaceStyle = 'value';
-    context.workspace.source.surfaceStyle = 'value';
-
-    render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
-
-    expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
-  });
-
-  it('does not render Save as JS Template for non-step locators', () => {
-    const context = createContext(vi.fn());
-    const locator = {
-      kind: 'chart.option',
-      modelUid: 'chart-1',
-    } as const;
-    context.locator = locator;
-    context.workspace.locator = locator;
-
-    render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
-
-    expect(screen.queryByRole('button', { name: 'Save as JS Template' })).toBeNull();
-  });
-
-  it('does not render Save as JS Template for generic flow steps', () => {
-    const context = createContext(vi.fn());
-    context.workspace.source.metadata = { modelUse: 'GenericRunJSModel' };
+    if ('modelUse' in testCase) {
+      context.workspace.source.metadata = { modelUse: testCase.modelUse };
+    } else {
+      const locator =
+        testCase.locator === 'nested-runjs'
+          ? ({
+              kind: 'flowModel.nestedRunJS',
+              modelUid: 'fm_1',
+              containerFlowKey: 'settings',
+              containerStepKey: 'configure',
+              valuePath: ['runJs'],
+              scene: 'field-linkage',
+            } as unknown as RunJSStudioToolbarContext['locator'])
+          : ({ kind: 'chart.option', modelUid: 'chart-1' } as const);
+      context.locator = locator;
+      context.workspace.locator = locator;
+      if (testCase.locator === 'nested-runjs') {
+        context.workspace.legacy.surfaceStyle = 'value';
+        context.workspace.source.surfaceStyle = 'value';
+      }
+    }
 
     render(<SaveAsJsTemplate api={{ request: vi.fn() }} context={context} />);
 
