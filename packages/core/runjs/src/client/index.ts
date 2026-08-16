@@ -7,5 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { PluginFlowEngineClientV2 } from './plugin';
-export { default } from './plugin';
+export * from './install';
+export * from './runtime';
+export * from './runtimeError';
+export * from './runJSRegistryHost';

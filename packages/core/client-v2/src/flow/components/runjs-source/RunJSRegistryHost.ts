@@ -7,15 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSEditorRegistryHost } from '../runjs-studio/RunJSEditorRegistry';
-import type { RunJSSettingsDescriptorProviderRegistryHost } from './RunJSSettingsDescriptorProviderRegistry';
-import type { RunJSSourceResolverRegistryHost } from './RunJSSourceResolverRegistry';
+import type { RunJSRegistryHostPort } from '@nocobase/runjs/workspace/shared';
+import type { RunJSEditorProvider } from '../runjs-studio/types';
+import type { RunJSSettingsDescriptorProvider } from './RunJSSettingsDescriptorProviderRegistry';
+import type { RunJSSourceResolver } from './types';
 
-export interface RunJSRegistryHost {
-  editors: RunJSEditorRegistryHost;
-  settingsDescriptors: RunJSSettingsDescriptorProviderRegistryHost;
-  sourceResolvers: RunJSSourceResolverRegistryHost;
-}
+export type RunJSRegistryHost = RunJSRegistryHostPort<
+  RunJSEditorProvider,
+  RunJSSettingsDescriptorProvider,
+  RunJSSourceResolver
+>;
 
 const hosts: RunJSRegistryHost[] = [];
 

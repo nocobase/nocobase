@@ -5,6 +5,9 @@
   "types": "./lib/index.d.ts",
   "typesVersions": {
     "*": {
+      "client": [
+        "./lib/client/index.d.ts"
+      ],
       "compiler/build-identity": [
         "./lib/compiler/build-identity.d.ts"
       ],
@@ -58,6 +61,11 @@
       "types": "./lib/index.d.ts",
       "import": "./lib/index.js",
       "require": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "import": "./lib/client/index.js",
+      "require": "./lib/client/index.js"
     },
     "./compiler": {
       "types": "./lib/compiler/index.d.ts",

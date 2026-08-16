@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSRuntimeErrorInfo } from '@nocobase/runjs/workspace/shared';
+import type { RunJSRuntimeErrorInfo } from '../workspace/shared/client-ports';
 
 export function readRunJSRuntimeError(error: unknown): RunJSRuntimeErrorInfo {
   if (!isRecord(error)) {

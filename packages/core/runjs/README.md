@@ -7,6 +7,7 @@
 | Import | Contract |
 | --- | --- |
 | `@nocobase/runjs` | Source locators, diagnostics, runtime artifacts, path normalization, and stable serialization |
+| `@nocobase/runjs/client` | Dependency-light default RunJS runtime and registry hosts for browser clients |
 | `@nocobase/runjs/compiler` | Virtual-workspace compilation and source inspection |
 | `@nocobase/runjs/compiler/build-identity` | Compiler build identity without loading the compiler |
 | `@nocobase/runjs/compiler/loader` | Server-only lazy compiler loading that works from source and built packages |
@@ -42,13 +43,14 @@ The generated settings import is authoring-only and is not stored with runtime a
 
 ## Multi-file Workspace
 
-The Workspace implementation has three explicit layers:
+The Workspace implementation has explicit layers:
 
 - `compiler`, the root entry, and `workspace/shared` are runtime-neutral. Shared defines the API-client, registry, runtime, Flow-context, editor-provider, authoring-surface, diagnostics, and lifecycle-disposal ports used by host adapters. Snapshot, change-plan, path, and diagnostic helpers also live here and do not import a NocoBase client runtime.
 - `workspace/server` owns Database/Server-backed persistence, compilation materialization, permissions, diagnostics, ZIP handling, and Workspace services. It may depend on NocoBase Database and Server, but never on a browser client.
-- Plugins own browser host adapters. The Flow Engine plugin owns the resident inline RunJS registry and runtime, while the JS Template plugin owns the multi-file and TypeScript authoring providers, Studio, and Workspace API lifecycle.
+- `client` owns the default dependency-light RunJS registry and runtime implementation. Client V2 supplies the FlowContext adapter and installs those hosts from its built-in `PluginFlowEngine`.
+- The JS Template plugin owns the multi-file and TypeScript authoring providers, Studio, and Workspace API lifecycle.
 
-The package does not publish browser client entries. Consumers use the plugin-owned runtime and authoring adapters, while reusable contracts and algorithms remain under `workspace/shared`.
+The browser entry does not import Client V2, Flow Engine, React, compiler, or server modules. Client-specific lifecycle and FlowContext behavior stay in the consuming client runtime.
 
 ## Virtual-workspace compiler
 
@@ -81,7 +83,7 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 
 - Root, compiler, `workspace/shared`, and `workspace/server` do not import client packages, including through type-only imports
 - Runtime-neutral Workspace code does not import Flow Engine host types; adapters exchange data through `workspace/shared` ports
-- Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
+- Browser client code uses the dependency-light root, client, or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
 - JS Template consumers import only `@nocobase/runjs/js-template/*`
 - Workspace consumers import neutral contracts from `@nocobase/runjs/workspace/shared` and server behavior from the explicit server or Swagger entry

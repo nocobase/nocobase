@@ -12,6 +12,7 @@ import fs from 'fs';
 import path from 'path';
 
 const runtimeArtifacts = [
+  'lib/client/index.js',
   'lib/compiler/loader.js',
   'lib/compiler/build-identity.js',
   'lib/compiler/static-module-references.js',

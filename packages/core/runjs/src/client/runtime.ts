@@ -7,18 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { INLINE_RUNJS_SOURCE_MODE, RunJSSourceResolverError } from '@nocobase/client-v2';
-import { FlowContext, normalizeRunJSValue } from '@nocobase/flow-engine';
-import type {
-  ResolveRunJSSourceBindingInput,
-  ResolvedRuntimeRunJS,
-  RunJSSourceResolverRegistryPort,
-  RunJSSourceResolverResult,
-  RunJSValue,
-  RuntimeRunJSInput,
-} from '@nocobase/runjs/workspace/shared';
-
-import { RunJSSourceResolverRegistry } from './runJSRegistryHost';
+import {
+  formatRunJSSettingsDotPath,
+  getCanonicalRunJSSettings,
+  getJsTemplateId,
+  getJsTemplateSettingStepKey,
+  isSettingsFieldVisible,
+  normalizeJsTemplateSelection,
+  normalizeJsTemplateSettings,
+  normalizeRunJSSettingsSchemaType,
+  setJsTemplateTopLevelSetting,
+  validateRunJSSettings,
+  validateRunJSSettingsValue,
+  type RunJSSettingsCondition,
+  type RunJSSettingsValidationIssue as SharedRunJSSettingsValidationIssue,
+} from '../settings';
+import {
+  INLINE_RUNJS_SOURCE_MODE,
+  RunJSSourceResolverError,
+  type ResolveRunJSSourceBindingInput,
+  type ResolvedRuntimeRunJS,
+  type RunJSRuntimeHostPort,
+  type RunJSSettingsValidationIssue,
+  type RunJSSettingsValidationResult,
+  type RunJSSourceResolverRegistryPort,
+  type RunJSSourceResolverResult,
+  type RunJSValue,
+  type RuntimeRunJSInput,
+} from '../workspace/shared/client-ports';
+import { readRunJSRuntimeError } from './runtimeError';
 
 type RunJSExecutionResult = {
   success?: boolean;
@@ -34,9 +51,53 @@ type RunJSRuntimeExecutor = {
   ) => Promise<RunJSExecutionResult | undefined>;
 };
 
+export interface CreateRunJSRuntimeHostOptions {
+  createRuntimeContext: RunJSRuntimeHostPort['createRuntimeContext'];
+  sourceResolvers: RunJSSourceResolverRegistryPort;
+}
+
+export function createRunJSRuntimeHost(options: CreateRunJSRuntimeHostOptions): RunJSRuntimeHostPort {
+  return {
+    getCanonicalRunJSSettings,
+    getJsTemplateId,
+    getJsTemplateSettingStepKey,
+    isSettingsFieldVisible: (condition, input) =>
+      isSettingsFieldVisible(condition as RunJSSettingsCondition | undefined, input),
+    normalizeJsTemplateSelection,
+    normalizeJsTemplateSettings,
+    setJsTemplateTopLevelSetting,
+    normalizeSchemaType: normalizeRunJSSettingsSchemaType,
+    validateSettingValue(validationOptions) {
+      return toClientValidationResult(
+        validateRunJSSettingsValue({
+          schema: validationOptions.schema,
+          value: validationOptions.value,
+          required: validationOptions.required,
+          mode: validationOptions.mode,
+          objectIssueOrder: 'client',
+          scalarIssueMode: 'first',
+          path: validationOptions.path ? [validationOptions.path] : [],
+        }),
+      );
+    },
+    validateSettings(validationOptions) {
+      return toClientValidationResult(
+        validateRunJSSettings({ ...validationOptions, objectIssueOrder: 'client', scalarIssueMode: 'first' }),
+      );
+    },
+    resolveSourceBinding: (input, registry) => resolveRunJSSourceBinding(input, registry || options.sourceResolvers),
+    resolveRuntime: (input, registry) => resolveRuntimeRunJS(input, registry || options.sourceResolvers),
+    createRuntimeContext: options.createRuntimeContext,
+    evaluateResolvedValue: (input) => evaluateResolvedRunJSValue(input, options.createRuntimeContext),
+    evaluateInlineValue: (input) => evaluateInlineRunJSValue(input, options.createRuntimeContext),
+    getModelUse: getRunJSModelUse,
+    readRuntimeError: readRunJSRuntimeError,
+  };
+}
+
 export async function resolveRunJSSourceBinding(
   input: ResolveRunJSSourceBindingInput,
-  registry: RunJSSourceResolverRegistryPort = RunJSSourceResolverRegistry,
+  registry?: RunJSSourceResolverRegistryPort,
 ): Promise<ResolvedRuntimeRunJS> {
   const sourceMode = normalizeSourceMode(input.sourceMode);
   if (sourceMode === INLINE_RUNJS_SOURCE_MODE) {
@@ -52,7 +113,7 @@ export async function resolveRunJSSourceBinding(
     });
   }
 
-  const resolver = registry.getResolver(sourceMode);
+  const resolver = registry?.getResolver(sourceMode);
   if (!resolver) {
     throw new RunJSSourceResolverError(`RunJS source resolver is not registered for sourceMode '${sourceMode}'`, {
       code: 'RUNJS_SOURCE_RESOLVER_NOT_FOUND',
@@ -72,13 +133,13 @@ export async function resolveRunJSSourceBinding(
 
 export async function resolveRuntimeRunJS(
   input: RuntimeRunJSInput,
-  registry: RunJSSourceResolverRegistryPort = RunJSSourceResolverRegistry,
+  registry?: RunJSSourceResolverRegistryPort,
 ): Promise<ResolvedRuntimeRunJS> {
-  const runJs = normalizeRunJSValue(input.runJs);
-  const effectiveVersion = resolveEffectiveVersion(input.runJs?.code, input.runJs?.version);
-  const sourceMode = normalizeSourceMode(input.sourceMode ?? runJs.sourceMode);
-  const sourceBinding = input.sourceBinding ?? runJs.sourceBinding;
-  const settings = input.settings ?? runJs.settings;
+  const code = String(input.runJs?.code ?? '');
+  const effectiveVersion = resolveEffectiveVersion(code, input.runJs?.version);
+  const sourceMode = normalizeSourceMode(input.sourceMode ?? input.runJs?.sourceMode);
+  const sourceBinding = input.sourceBinding ?? normalizeOptionalRecord(input.runJs?.sourceBinding);
+  const settings = input.settings ?? input.runJs?.settings;
   if (sourceMode !== INLINE_RUNJS_SOURCE_MODE) {
     try {
       return await resolveRunJSSourceBinding(
@@ -91,11 +152,11 @@ export async function resolveRuntimeRunJS(
         registry,
       );
     } catch (error) {
-      if (!runJs.code.trim() || !canUseLastKnownGood(error)) {
+      if (!code.trim() || !canUseLastKnownGood(error)) {
         throw error;
       }
       return {
-        code: runJs.code,
+        code,
         version: effectiveVersion,
         sourceMode,
         ...(sourceBinding ? { sourceBinding } : {}),
@@ -106,7 +167,7 @@ export async function resolveRuntimeRunJS(
   }
 
   return {
-    code: runJs.code,
+    code,
     version: effectiveVersion,
     sourceMode: INLINE_RUNJS_SOURCE_MODE,
     settings: normalizeSettings(settings),
@@ -114,69 +175,40 @@ export async function resolveRuntimeRunJS(
   };
 }
 
-export function createRunJSRuntimeContext(baseCtx: unknown, resolved: ResolvedRuntimeRunJS): unknown {
-  if (baseCtx && typeof baseCtx === 'object' && !(baseCtx instanceof FlowContext)) {
-    const runtimeCtx: Record<string, unknown> = Object.create(baseCtx as object);
-    runtimeCtx.settings = resolved.settings;
-    runtimeCtx.runJsSource = {
-      sourceMode: resolved.sourceMode,
-      sourceBinding: resolved.sourceBinding,
-      sourceMap: resolved.sourceMap,
-      context: resolved.context,
-    };
-    return runtimeCtx;
-  }
-
-  const runtimeCtx = new FlowContext();
-  if (baseCtx instanceof FlowContext) {
-    try {
-      runtimeCtx.delegate(baseCtx);
-    } catch {
-      // Keep the runtime context usable in tests and degraded integrations.
-    }
-  }
-  runtimeCtx.defineProperty('settings', {
-    value: resolved.settings,
-  });
-  runtimeCtx.defineProperty('runJsSource', {
-    value: {
-      sourceMode: resolved.sourceMode,
-      sourceBinding: resolved.sourceBinding,
-      sourceMap: resolved.sourceMap,
-      context: resolved.context,
-    },
-  });
-  return runtimeCtx;
-}
-
-export async function evaluateResolvedRunJSValue(input: {
-  ctx: unknown;
-  resolved: ResolvedRuntimeRunJS;
-}): Promise<unknown> {
-  const runtimeCtx = createRunJSRuntimeContext(input.ctx, input.resolved);
+export async function evaluateResolvedRunJSValue(
+  input: { ctx: unknown; resolved: ResolvedRuntimeRunJS },
+  createRuntimeContext: RunJSRuntimeHostPort['createRuntimeContext'],
+): Promise<unknown> {
+  const runtimeCtx = createRuntimeContext(input.ctx, input.resolved);
   if (!hasRunJSRuntimeExecutor(runtimeCtx)) {
     throw new Error('RunJS runtime context does not provide ctx.runjs');
   }
-  const ret = await runtimeCtx.runjs(input.resolved.code, undefined, {
+  const result = await runtimeCtx.runjs(input.resolved.code, undefined, {
     version: input.resolved.version,
   });
-  if (!ret?.success) {
-    throw ret?.error || new Error('RunJS execution failed');
+  if (!result?.success) {
+    throw result?.error || new Error('RunJS execution failed');
   }
-  return ret.value;
+  return result.value;
 }
 
-export async function evaluateInlineRunJSValue(input: { ctx: unknown; runJs: RunJSValue }): Promise<unknown> {
-  const runJs = normalizeRunJSValue(input.runJs);
-  return evaluateResolvedRunJSValue({
-    ctx: input.ctx,
-    resolved: {
-      code: runJs.code,
-      version: runJs.version,
-      sourceMode: INLINE_RUNJS_SOURCE_MODE,
-      settings: runJs.settings || {},
+export async function evaluateInlineRunJSValue(
+  input: { ctx: unknown; runJs: RunJSValue },
+  createRuntimeContext: RunJSRuntimeHostPort['createRuntimeContext'],
+): Promise<unknown> {
+  const code = String(input.runJs?.code ?? '');
+  return evaluateResolvedRunJSValue(
+    {
+      ctx: input.ctx,
+      resolved: {
+        code,
+        version: String(input.runJs?.version ?? 'v1'),
+        sourceMode: INLINE_RUNJS_SOURCE_MODE,
+        settings: normalizeSettings(input.runJs?.settings),
+      },
     },
-  });
+    createRuntimeContext,
+  );
 }
 
 export function getRunJSModelUse(model: unknown): string | undefined {
@@ -189,6 +221,28 @@ export function getRunJSModelUse(model: unknown): string | undefined {
   );
 }
 
+function toClientValidationResult(
+  result: ReturnType<typeof validateRunJSSettingsValue>,
+): RunJSSettingsValidationResult {
+  return {
+    errors: result.issues.map((issue) => ({
+      code: toClientIssueCode(issue),
+      path: formatRunJSSettingsDotPath(issue.path),
+    })),
+    missingRequiredPaths: result.missingRequiredPaths.map(formatRunJSSettingsDotPath),
+  };
+}
+
+function toClientIssueCode(issue: SharedRunJSSettingsValidationIssue): RunJSSettingsValidationIssue['code'] {
+  if (issue.code === 'unknownProperty') {
+    return 'unknown';
+  }
+  if (issue.code === 'required' || issue.code === 'type' || issue.code === 'enum') {
+    return issue.code;
+  }
+  return 'constraint';
+}
+
 function normalizeSourceMode(sourceMode: unknown): string {
   return typeof sourceMode === 'string' && sourceMode.trim() ? sourceMode.trim() : INLINE_RUNJS_SOURCE_MODE;
 }
@@ -197,6 +251,10 @@ function normalizeSettings(settings: unknown): Record<string, unknown> {
   return settings && typeof settings === 'object' && !Array.isArray(settings)
     ? { ...(settings as Record<string, unknown>) }
     : {};
+}
+
+function normalizeOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+  return isRecord(value) ? { ...value } : undefined;
 }
 
 function normalizeVersion(version: unknown): string {

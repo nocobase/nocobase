@@ -30,6 +30,7 @@
     "@formily/shared": "^2.2.27",
     "@nocobase/evaluators": "3.0.0-alpha.9",
     "@nocobase/flow-engine": "3.0.0-alpha.9",
+    "@nocobase/runjs": "3.0.0-alpha.9",
     "@nocobase/sdk": "3.0.0-alpha.9",
     "@nocobase/shared": "3.0.0-alpha.9",
     "@nocobase/utils": "3.0.0-alpha.9",

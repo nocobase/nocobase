@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { createRunJSClientHosts, installRunJSClientHosts } from '@nocobase/runjs/client';
 import { IconPicker } from '../flow-compat';
 import { Plugin, type PluginOptions } from '..';
 import type { BaseApplication } from '../BaseApplication';
@@ -30,8 +31,26 @@ import {
 import { JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD, JSFieldSourceModeField } from './models/fields/JSFieldSourceModeField';
 import { JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD, JSItemSourceModeField } from './models/fields/JSItemSourceModeField';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
+import {
+  registerRunJSRegistryHost,
+  registerRunJSRuntimeHost,
+  type RunJSRegistryHost,
+  type RunJSRuntimeHost,
+  type RunJSSettingsDescriptorProvider,
+  type RunJSSourceResolver,
+} from './components/runjs-source';
+import type { RunJSEditorProvider } from './components/runjs-studio';
 
 const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
+const ACTIVE_FLOW_ENGINE_CLIENT = Symbol.for('nocobase.client-v2.plugin-flow-engine.runjs-client');
+
+interface RunJSRuntimeClientOwner {
+  dispose(): void;
+}
+
+const activeFlowEngineClientState = globalThis as typeof globalThis & {
+  [ACTIVE_FLOW_ENGINE_CLIENT]?: RunJSRuntimeClientOwner;
+};
 
 interface FlowEngineWithPluginFlowEngineState {
   [PLUGIN_FLOW_ENGINE_LOADED]?: true;
@@ -41,7 +60,14 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
   PluginOptions<any>,
   TApp
 > {
+  private runJSRuntimeDisposer?: () => void;
+
+  async beforeLoad() {
+    this.activateRunJSRuntimeClient();
+  }
+
   async load() {
+    this.activateRunJSRuntimeClient();
     const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
 
     if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
@@ -114,7 +140,80 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
     );
     flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
   }
+
+  dispose() {
+    this.disposeRunJSRuntimeClient();
+    if (activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] === this) {
+      delete activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT];
+    }
+  }
+
+  private disposeRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer?.();
+    this.runJSRuntimeDisposer = undefined;
+  }
+
+  private installRunJSRuntimeClient(): void {
+    if (this.runJSRuntimeDisposer) {
+      return;
+    }
+    const hosts: { registryHost: RunJSRegistryHost; runtimeHost: RunJSRuntimeHost } = createRunJSClientHosts<
+      RunJSEditorProvider,
+      RunJSSettingsDescriptorProvider,
+      RunJSSourceResolver
+    >(createRunJSRuntimeContext);
+    this.runJSRuntimeDisposer = installRunJSClientHosts(
+      {
+        registerRegistryHost: registerRunJSRegistryHost,
+        registerRuntimeHost: registerRunJSRuntimeHost,
+      },
+      hosts,
+    );
+  }
+
+  private activateRunJSRuntimeClient(): void {
+    if (activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] !== this) {
+      activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT]?.dispose();
+    }
+    this.installRunJSRuntimeClient();
+    activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] = this;
+  }
 }
+
+const createRunJSRuntimeContext: RunJSRuntimeHost['createRuntimeContext'] = (baseCtx, resolved) => {
+  if (baseCtx && typeof baseCtx === 'object' && !(baseCtx instanceof FlowContext)) {
+    const runtimeCtx: Record<string, unknown> = Object.create(baseCtx as object);
+    runtimeCtx.settings = resolved.settings;
+    runtimeCtx.runJsSource = {
+      sourceMode: resolved.sourceMode,
+      sourceBinding: resolved.sourceBinding,
+      sourceMap: resolved.sourceMap,
+      context: resolved.context,
+    };
+    return runtimeCtx;
+  }
+
+  const runtimeCtx = new FlowContext();
+  if (baseCtx instanceof FlowContext) {
+    try {
+      runtimeCtx.delegate(baseCtx);
+    } catch {
+      // Keep the runtime context usable in tests and degraded integrations.
+    }
+  }
+  runtimeCtx.defineProperty('settings', {
+    value: resolved.settings,
+  });
+  runtimeCtx.defineProperty('runJsSource', {
+    value: {
+      sourceMode: resolved.sourceMode,
+      sourceBinding: resolved.sourceBinding,
+      sourceMap: resolved.sourceMap,
+      context: resolved.context,
+    },
+  });
+  return runtimeCtx;
+};
 
 // Export all models for external use
 export * from './components/filter';

@@ -198,22 +198,21 @@ describe('RunJS and JS Template package boundaries', () => {
     expect(violations).toEqual([]);
   });
 
-  it('accepts the current neutral browser and plugin-owned client entry files', async () => {
+  it('accepts the current neutral browser and client entry files', async () => {
     const results = (
       await Promise.all([
         browserBoundaryEslint.lintFiles([
           'packages/core/runjs/src/index.ts',
+          'packages/core/runjs/src/client/**/*.{ts,tsx}',
           'packages/core/runjs/src/compiler/portable.ts',
           'packages/core/runjs/src/settings/**/*.{ts,tsx}',
           'packages/core/runjs/src/js-template/client/**/*.{ts,tsx}',
           'packages/plugins/@nocobase/plugin-flow-engine/src/client/**/*.{ts,tsx}',
-          'packages/plugins/@nocobase/plugin-flow-engine/src/client-v2/**/*.{ts,tsx}',
           'packages/plugins/@nocobase/plugin-js-template/src/client/**/*.{ts,tsx}',
           'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
         clientV2BoundaryEslint.lintFiles([
           'packages/core/client-v2/src/flow/**/*.{ts,tsx}',
-          'packages/plugins/@nocobase/plugin-flow-engine/src/client-v2/**/*.{ts,tsx}',
           'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
       ])

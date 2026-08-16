@@ -25,11 +25,11 @@ import {
   clearActionGroupMenuItemProviders,
   clearBlockGridSelectSceneAddBlockProviders,
   clearFieldMenuItemProviders,
+  PluginFlowEngine as PluginFlowEngineClient,
   RunJSEditorRegistry,
   RunJSSettingsDescriptorProviderRegistry,
   RunJSSourceResolverRegistry,
 } from '@nocobase/client-v2';
-import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
 
 import {
   JS_TEMPLATE_EDITOR_PROVIDER_KEY,

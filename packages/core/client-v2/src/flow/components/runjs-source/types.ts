@@ -8,10 +8,14 @@
  */
 
 import type { ParamObject, RunJSValue } from '@nocobase/flow-engine';
+import type { RunJSSourceMode } from '@nocobase/runjs/workspace/shared';
 
-export const INLINE_RUNJS_SOURCE_MODE = 'inline';
-
-export type RunJSSourceMode = typeof INLINE_RUNJS_SOURCE_MODE | (string & {});
+export {
+  INLINE_RUNJS_SOURCE_MODE,
+  RunJSSourceResolverError,
+  type RunJSSourceResolverErrorCode,
+} from '@nocobase/runjs/workspace/shared';
+export type { RunJSSourceMode };
 export type RunJSSourceBinding = Record<string, unknown>;
 export type RunJSSourceSettings = Record<string, unknown>;
 export type RunJSSourceContext = Record<string, unknown>;
@@ -88,23 +92,4 @@ export interface RunJSSourceResolver {
     input: RunJSSourceResolverInput,
   ) => RunJSSourceSettingsDescriptor | undefined | Promise<RunJSSourceSettingsDescriptor | undefined>;
   listSourceMenuItems?: (input: RunJSSourceMenuInput) => RunJSSourceMenuItem[] | Promise<RunJSSourceMenuItem[]>;
-}
-
-export type RunJSSourceResolverErrorCode =
-  | 'RUNJS_SOURCE_MODE_REQUIRED'
-  | 'RUNJS_SOURCE_RESOLVER_REQUIRED'
-  | 'RUNJS_SOURCE_RESOLVER_NOT_FOUND'
-  | 'RUNJS_SOURCE_BINDING_REQUIRED'
-  | 'RUNJS_SOURCE_CODE_REQUIRED';
-
-export class RunJSSourceResolverError extends Error {
-  readonly code: RunJSSourceResolverErrorCode;
-  readonly sourceMode?: string;
-
-  constructor(message: string, options: { code: RunJSSourceResolverErrorCode; sourceMode?: string }) {
-    super(message);
-    this.name = 'RunJSSourceResolverError';
-    this.code = options.code;
-    this.sourceMode = options.sourceMode;
-  }
 }

@@ -10,23 +10,24 @@
 import {
   INLINE_RUNJS_SOURCE_MODE,
   RunJSSourceResolverError,
-  type RunJSEditorProvider,
-  type RunJSSettingsDescriptorProvider,
-  type RunJSSourceResolver,
-} from '@nocobase/client-v2';
-import type {
-  RunJSEditorRegistryPort,
-  RunJSRegistryHostPort,
-  RunJSSettingsDescriptorProviderInput,
-  RunJSSettingsDescriptorProviderRegistryPort,
-  RunJSSourceResolverRegistryPort,
-  RunJSSourceSettingsDescriptor,
-} from '@nocobase/runjs/workspace/shared';
+  type RunJSContributionPort,
+  type RunJSEditorProviderPort,
+  type RunJSEditorRegistryPort,
+  type RunJSRegistryHostPort,
+  type RunJSSettingsDescriptorProviderInput,
+  type RunJSSettingsDescriptorProviderPort,
+  type RunJSSettingsDescriptorProviderRegistryPort,
+  type RunJSSourceResolverPort,
+  type RunJSSourceResolverRegistryPort,
+  type RunJSSourceSettingsDescriptor,
+} from '../workspace/shared/client-ports';
 
-export class RunJSEditorProviderRegistry implements RunJSEditorRegistryPort<RunJSEditorProvider> {
-  private readonly providers = new Map<string, RunJSEditorProvider>();
+export class RunJSEditorProviderRegistry<TProvider extends RunJSContributionPort = RunJSEditorProviderPort>
+  implements RunJSEditorRegistryPort<TProvider>
+{
+  private readonly providers = new Map<string, TProvider>();
 
-  registerProvider(provider: RunJSEditorProvider): () => void {
+  registerProvider(provider: TProvider): () => void {
     this.providers.set(provider.key, provider);
 
     return () => {
@@ -36,7 +37,7 @@ export class RunJSEditorProviderRegistry implements RunJSEditorRegistryPort<RunJ
     };
   }
 
-  getProviders(): RunJSEditorProvider[] {
+  getProviders(): TProvider[] {
     return Array.from(this.providers.values())
       .map((provider, registrationIndex) => ({ provider, registrationIndex }))
       .sort(
@@ -52,10 +53,12 @@ export class RunJSEditorProviderRegistry implements RunJSEditorRegistryPort<RunJ
   }
 }
 
-export class RunJSSourceResolverRegistryManager implements RunJSSourceResolverRegistryPort<RunJSSourceResolver> {
-  private readonly resolvers = new Map<string, RunJSSourceResolver>();
+export class RunJSSourceResolverRegistryManager<TResolver extends RunJSSourceResolverPort = RunJSSourceResolverPort>
+  implements RunJSSourceResolverRegistryPort<TResolver>
+{
+  private readonly resolvers = new Map<string, TResolver>();
 
-  registerResolver(resolver: RunJSSourceResolver): () => void {
+  registerResolver(resolver: TResolver): () => void {
     const sourceMode = normalizeSourceMode(resolver?.sourceMode);
     if (!sourceMode || sourceMode === INLINE_RUNJS_SOURCE_MODE || typeof resolver?.resolve !== 'function') {
       throw new RunJSSourceResolverError('RunJS source resolver requires a non-inline sourceMode and resolve()', {
@@ -77,12 +80,12 @@ export class RunJSSourceResolverRegistryManager implements RunJSSourceResolverRe
     };
   }
 
-  getResolver(sourceMode: unknown): RunJSSourceResolver | null {
+  getResolver(sourceMode: unknown): TResolver | null {
     const normalizedSourceMode = normalizeSourceMode(sourceMode);
     return normalizedSourceMode ? this.resolvers.get(normalizedSourceMode) || null : null;
   }
 
-  getResolvers(): RunJSSourceResolver[] {
+  getResolvers(): TResolver[] {
     return Array.from(this.resolvers.values());
   }
 
@@ -91,12 +94,13 @@ export class RunJSSourceResolverRegistryManager implements RunJSSourceResolverRe
   }
 }
 
-export class RunJSSettingsDescriptorProviderRegistryManager
-  implements RunJSSettingsDescriptorProviderRegistryPort<RunJSSettingsDescriptorProvider>
+export class RunJSSettingsDescriptorProviderRegistryManager<
+  TProvider extends RunJSSettingsDescriptorProviderPort = RunJSSettingsDescriptorProviderPort,
+> implements RunJSSettingsDescriptorProviderRegistryPort<TProvider>
 {
-  private readonly providers = new Map<string, RunJSSettingsDescriptorProvider>();
+  private readonly providers = new Map<string, TProvider>();
 
-  registerProvider(provider: RunJSSettingsDescriptorProvider): () => void {
+  registerProvider(provider: TProvider): () => void {
     const normalizedProvider = {
       ...provider,
       key: provider.key.trim(),
@@ -113,7 +117,7 @@ export class RunJSSettingsDescriptorProviderRegistryManager
     };
   }
 
-  getProviders(): RunJSSettingsDescriptorProvider[] {
+  getProviders(): TProvider[] {
     return Array.from(this.providers.values())
       .map((provider, registrationIndex) => ({ provider, registrationIndex }))
       .sort(
@@ -144,16 +148,18 @@ export class RunJSSettingsDescriptorProviderRegistryManager
   }
 }
 
+export function createRunJSRegistryHost<
+  TEditorProvider extends RunJSContributionPort = RunJSEditorProviderPort,
+  TSettingsProvider extends RunJSSettingsDescriptorProviderPort = RunJSSettingsDescriptorProviderPort,
+  TResolver extends RunJSSourceResolverPort = RunJSSourceResolverPort,
+>(): RunJSRegistryHostPort<TEditorProvider, TSettingsProvider, TResolver> {
+  return {
+    editors: new RunJSEditorProviderRegistry<TEditorProvider>(),
+    settingsDescriptors: new RunJSSettingsDescriptorProviderRegistryManager<TSettingsProvider>(),
+    sourceResolvers: new RunJSSourceResolverRegistryManager<TResolver>(),
+  };
+}
+
 function normalizeSourceMode(sourceMode: unknown): string {
   return typeof sourceMode === 'string' ? sourceMode.trim() : '';
 }
-
-export const RunJSEditorRegistry = new RunJSEditorProviderRegistry();
-export const RunJSSettingsDescriptorProviderRegistry = new RunJSSettingsDescriptorProviderRegistryManager();
-export const RunJSSourceResolverRegistry = new RunJSSourceResolverRegistryManager();
-
-export const runJSRegistryHost = {
-  editors: RunJSEditorRegistry,
-  settingsDescriptors: RunJSSettingsDescriptorProviderRegistry,
-  sourceResolvers: RunJSSourceResolverRegistry,
-} satisfies RunJSRegistryHostPort<RunJSEditorProvider, RunJSSettingsDescriptorProvider, RunJSSourceResolver>;

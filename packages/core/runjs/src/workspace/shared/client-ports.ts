@@ -19,6 +19,25 @@ export type RunJSSourceBinding = Record<string, unknown>;
 export type RunJSSourceSettings = Record<string, unknown>;
 export type RunJSSourceContext = Record<string, unknown>;
 export type RunJSSettingsRecord = Record<string, unknown>;
+
+export type RunJSSourceResolverErrorCode =
+  | 'RUNJS_SOURCE_MODE_REQUIRED'
+  | 'RUNJS_SOURCE_RESOLVER_REQUIRED'
+  | 'RUNJS_SOURCE_RESOLVER_NOT_FOUND'
+  | 'RUNJS_SOURCE_BINDING_REQUIRED'
+  | 'RUNJS_SOURCE_CODE_REQUIRED';
+
+export class RunJSSourceResolverError extends Error {
+  readonly code: RunJSSourceResolverErrorCode;
+  readonly sourceMode?: string;
+
+  constructor(message: string, options: { code: RunJSSourceResolverErrorCode; sourceMode?: string }) {
+    super(message);
+    this.name = 'RunJSSourceResolverError';
+    this.code = options.code;
+    this.sourceMode = options.sourceMode;
+  }
+}
 export type RunJSClientSourceLocator =
   | {
       kind: 'flowModel.step';
