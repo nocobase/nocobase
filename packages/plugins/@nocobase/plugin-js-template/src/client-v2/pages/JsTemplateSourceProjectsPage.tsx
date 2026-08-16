@@ -9,7 +9,7 @@
 
 import { useFlowContext } from '@nocobase/flow-engine';
 import { uid } from '@nocobase/utils/client';
-import { Alert, Button, Card, Form, Space, theme, Typography } from 'antd';
+import { Alert, App, Button, Card, Form, Space, theme, Typography } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +33,6 @@ import { useT } from '../locale';
 import type { ApiClientLike } from '../api/jsTemplatesRequests';
 import { invalidateJsTemplateRuntimeCache } from '../resolvers/JsTemplateRuntimeCacheRegistry';
 import { invalidateJsTemplateSettingsDescriptorCache } from '../resolvers/JsTemplateSettingsDescriptorCache';
-import { JsTemplateCreationStatus } from './source-project-list/JsTemplateCreationStatus';
 import { JsTemplateSourceProjectTable } from './source-project-list/JsTemplateSourceProjectTable';
 import { JsTemplateSourceProjectToolbar } from './source-project-list/JsTemplateSourceProjectToolbar';
 import { JsTemplateProjectOverlays } from './source-project-list/JsTemplateProjectOverlays';
@@ -57,7 +56,10 @@ type Notice = {
   message: string;
 };
 
-type LoadProjectsResult = { status: 'applied' } | { status: 'failed'; message: string } | { status: 'stale' };
+type LoadProjectsResult =
+  | { status: 'applied'; projects: JsTemplateProject[] }
+  | { status: 'failed'; message: string }
+  | { status: 'stale' };
 
 type LoadProjectsOptions = {
   reportFailure?: boolean;
@@ -77,6 +79,7 @@ function JsTemplateSourceProjectsPage() {
 
 function JsTemplateSourceProjectsPageInner() {
   const { t } = useTranslation(NAMESPACE);
+  const { notification } = App.useApp();
   const flowContext = useFlowContext() as FlowContextWithApi;
   const { token } = theme.useToken();
   const {
@@ -125,6 +128,7 @@ function JsTemplateSourceProjectsPageInner() {
   const lifecyclePendingProjectIdsRef = useRef<Set<string>>(new Set());
   const previousCreateJobStatusesRef = useRef<Map<string, JsTemplateCreateJobSummary['status']> | null>(null);
   const createJobTransitionBatchRef = useRef(0);
+  const notifiedSucceededCreateJobIdsRef = useRef<Set<string>>(new Set());
   const [dismissingCreateJobIds, setDismissingCreateJobIds] = useState<Set<string>>(() => new Set());
 
   const urlPanel = parseDetailPanel(searchParams.get('panel'));
@@ -177,7 +181,7 @@ function JsTemplateSourceProjectsPageInner() {
           return { status: 'stale' };
         }
         setProjects(nextProjects);
-        return { status: 'applied' };
+        return { status: 'applied', projects: nextProjects };
       } catch (error) {
         if (
           loadProjectsRequestSequenceRef.current !== requestSequence ||
@@ -237,40 +241,61 @@ function JsTemplateSourceProjectsPageInner() {
         const latestJob = jobs[0];
         if (latestJob.status === 'failed') {
           const errorKey = getJsTemplateSyncErrorTranslationKey(latestJob.errorCode, latestJob.errorReasonCode);
-          setNotice({
-            type: 'error',
+          notification.error({
             message: `${t('Source Project creation failed: {{name}}').replace(
               '{{name}}',
               latestJob.title || latestJob.name,
             )}: ${errorKey ? t(errorKey) : latestJob.errorMessage || t('Source Project creation failed')}`,
+            placement: 'topRight',
+            role: 'alert',
           });
           return;
         }
 
         if (reloadResult?.status === 'failed') {
-          setNotice({ type: 'error', message: reloadResult.message });
+          notification.error({ message: reloadResult.message, placement: 'topRight', role: 'alert' });
           return;
         }
 
         if (cacheInvalidationFailed) {
-          setNotice({ type: 'warning', message: t('Some JS Template caches could not be refreshed') });
+          notification.warning({
+            message: t('Some JS Template caches could not be refreshed'),
+            placement: 'topRight',
+            role: 'alert',
+          });
           return;
         }
 
-        setNotice({
-          type: 'success',
+        if (reloadResult?.status !== 'applied') {
+          return;
+        }
+        const succeededJob = succeededJobs.find((job) => {
+          const projectId = job.resultProjectId || job.targetProjectId;
+          return reloadResult.projects.some((project) => project.id === projectId);
+        });
+        if (!succeededJob || notifiedSucceededCreateJobIdsRef.current.has(succeededJob.id)) {
+          return;
+        }
+        notifiedSucceededCreateJobIdsRef.current.add(succeededJob.id);
+        notification.success({
           message: t('Source Project creation succeeded: {{name}}').replace(
             '{{name}}',
-            latestJob.title || latestJob.name,
+            succeededJob.title || succeededJob.name,
           ),
+          placement: 'topRight',
+          role: 'status',
         });
       } catch {
         if (createJobTransitionBatchRef.current === batch) {
-          setNotice({ type: 'error', message: t('Failed to process creation task update') });
+          notification.error({
+            message: t('Failed to process creation task update'),
+            placement: 'topRight',
+            role: 'alert',
+          });
         }
       }
     },
-    [flowContext.api, loadProjects, t],
+    [flowContext.api, loadProjects, notification, t],
   );
 
   useEffect(() => {
@@ -298,12 +323,13 @@ function JsTemplateSourceProjectsPageInner() {
       try {
         await dismissCreateJob(jobId);
       } catch (error) {
-        setNotice({
-          type: 'error',
+        notification.error({
           message:
             getServerErrorCode(error) === 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND'
               ? t('Creation task is no longer available')
               : t('Failed to remove creation task'),
+          placement: 'topRight',
+          role: 'alert',
         });
       } finally {
         setDismissingCreateJobIds((current) => {
@@ -313,7 +339,7 @@ function JsTemplateSourceProjectsPageInner() {
         });
       }
     },
-    [dismissCreateJob, t],
+    [dismissCreateJob, notification, t],
   );
 
   const retryFailedCreateJob = useCallback(
@@ -321,10 +347,14 @@ function JsTemplateSourceProjectsPageInner() {
       try {
         await retryCreateJob(jobId);
       } catch {
-        setNotice({ type: 'error', message: t('Failed to retry creation task') });
+        notification.error({
+          message: t('Failed to retry creation task'),
+          placement: 'topRight',
+          role: 'alert',
+        });
       }
     },
-    [retryCreateJob, t],
+    [notification, retryCreateJob, t],
   );
 
   useEffect(() => {
@@ -730,15 +760,6 @@ function JsTemplateSourceProjectsPageInner() {
         />
       ) : null}
 
-      <JsTemplateCreationStatus
-        dismissingJobIds={dismissingCreateJobIds}
-        jobs={createJobs}
-        marginBottom={token.margin}
-        onDismiss={dismissTerminalCreateJob}
-        onRetry={retryFailedCreateJob}
-        t={t}
-      />
-
       <JsTemplateSourceProjectToolbar
         batchChanging={Boolean(batchChanging) || selectedProjects.some((project) => changingProjectIds.has(project.id))}
         gap={token.marginSM}
@@ -757,10 +778,14 @@ function JsTemplateSourceProjectsPageInner() {
 
       <JsTemplateSourceProjectTable
         changingProjectIds={changingProjectIds}
-        loading={loading}
+        creationJobs={createJobs}
+        dismissingCreateJobIds={dismissingCreateJobIds}
+        loading={loading || createJobsLoading}
         onChangeLifecycle={changeProjectLifecycle}
+        onDismissCreateJob={dismissTerminalCreateJob}
         onEditProject={openEditDrawer}
         onRemoveProject={setRemoveTarget}
+        onRetryCreateJob={retryFailedCreateJob}
         onSelectProject={(projectId, panel) => selectProject(projectId, { panel })}
         onSelectedRowKeysChange={handleSelectedRowKeysChange}
         projects={filteredProjects}

@@ -14,6 +14,7 @@ import type {
 } from '../../../../shared/types';
 import {
   collectCreateJobTransitions,
+  getCreateJobRowKey,
   isActiveCreateJobStatus,
   isTerminalCreateJobStatus,
   matchesJsTemplateProjectSearch,
@@ -25,6 +26,7 @@ describe('Source Project list logic', () => {
   it.each([
     ['pending', true, false],
     ['running', true, false],
+    ['finalize-pending', true, false],
     ['succeeded', false, true],
     ['failed', false, true],
   ] satisfies [JsTemplateCreateJobStatus, boolean, boolean][])(
@@ -101,7 +103,7 @@ describe('Source Project list logic', () => {
     expect(result.nextStatuses.has('job_disappeared')).toBe(false);
   });
 
-  it('keeps every active job and only the newest terminal jobs within the limit', () => {
+  it('keeps active and failed creation rows while hiding succeeded history', () => {
     const jobs = [
       createJobSummary({ id: 'active_pending', status: 'pending' }),
       createJobSummary({ id: 'terminal_1', status: 'succeeded' }),
@@ -113,17 +115,16 @@ describe('Source Project list logic', () => {
 
     expect(selectVisibleCreationJobs(jobs).map((job) => job.id)).toEqual([
       'active_pending',
-      'terminal_1',
       'active_running',
       'terminal_2',
-      'terminal_3',
+      'terminal_4',
     ]);
-    expect(selectVisibleCreationJobs(jobs, 1).map((job) => job.id)).toEqual([
-      'active_pending',
-      'terminal_1',
-      'active_running',
-    ]);
-    expect(selectVisibleCreationJobs(jobs, 0).map((job) => job.id)).toEqual(['active_pending', 'active_running']);
+  });
+
+  it('uses the target project ID as the stable creation row key', () => {
+    expect(getCreateJobRowKey(createJobSummary({ id: 'job_retry', targetProjectId: 'project_target' }))).toBe(
+      'creation:project_target',
+    );
   });
 
   it('matches normalized search fields together with the lifecycle filter', () => {

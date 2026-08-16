@@ -48,7 +48,13 @@ const mocks = vi.hoisted(() => ({
     addAcceptedJob: vi.fn(),
     refresh: vi.fn(async () => undefined),
     dismiss: vi.fn(),
+    retry: vi.fn(),
     update: vi.fn(),
+  },
+  notification: {
+    error: vi.fn(),
+    success: vi.fn(),
+    warning: vi.fn(),
   },
   cache: {
     invalidateRuntime: vi.fn(),
@@ -58,6 +64,17 @@ const mocks = vi.hoisted(() => ({
     dirty: true,
   },
 }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  return {
+    ...actual,
+    App: {
+      ...actual.App,
+      useApp: () => ({ message: {}, modal: {}, notification: mocks.notification }),
+    },
+  };
+});
 
 vi.mock('../resolvers/JsTemplateRuntimeCacheRegistry', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../resolvers/JsTemplateRuntimeCacheRegistry')>();
@@ -121,6 +138,10 @@ vi.mock('../hooks/useJsTemplateCreateJobs', async () => {
         dismiss: async (jobId) => {
           await mocks.createJobs.dismiss(jobId);
           setJobs((current) => current.filter((job) => job.id !== jobId));
+        },
+        retry: async (jobId) => {
+          const job = await mocks.createJobs.retry(jobId);
+          setJobs((current) => [job, ...current.filter((candidate) => candidate.id !== job.id)]);
         },
       };
     },
@@ -254,6 +275,10 @@ describe('JsTemplateSourceProjectsPage', () => {
     mocks.cache.invalidateRuntime.mockReset();
     mocks.cache.invalidateSettings.mockReset();
     mocks.createJobs.dismiss.mockReset();
+    mocks.createJobs.retry.mockReset();
+    mocks.notification.error.mockReset();
+    mocks.notification.success.mockReset();
+    mocks.notification.warning.mockReset();
     mocks.createJobs.initialJobs = [];
     mocks.workspace.dirty = true;
     mocks.createJobs.error = null;
@@ -412,10 +437,10 @@ describe('JsTemplateSourceProjectsPage', () => {
       }),
     );
     expect(mocks.api.createProject.mock.calls[0][0]).not.toHaveProperty('zipBase64');
-    const creationStatus = await screen.findByRole('status', { name: 'Creation status' });
-    expect(within(creationStatus).getByText('Browser smoke')).toBeInTheDocument();
-    expect(within(creationStatus).getByText('Creation pending')).toBeInTheDocument();
-    expect(within(screen.getByRole('table')).getByText('No Source Projects yet')).toBeInTheDocument();
+    const table = screen.getByRole('table');
+    const creationRow = await within(table).findByRole('row', { name: /Browser smoke browser-smoke Creation pending/ });
+    expect(within(table).getAllByRole('row')[1]).toBe(creationRow);
+    expect(screen.queryByText('Creation status')).not.toBeInTheDocument();
     expect(screen.queryByRole('checkbox', { name: 'Creation task Browser smoke' })).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Create Source Project' })).not.toBeInTheDocument();
     expect(mocks.createJobs.addAcceptedJob).toHaveBeenCalledTimes(1);
@@ -578,10 +603,14 @@ describe('JsTemplateSourceProjectsPage', () => {
       ]);
     });
     expect(
-      await screen.findByText(
-        'Source Project creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
-      ),
+      await screen.findByText('The remote repository has no default branch. Enter a branch explicitly.'),
     ).toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledWith({
+      message:
+        'Source Project creation failed: Empty Git remote: The remote repository has no default branch. Enter a branch explicitly.',
+      placement: 'topRight',
+      role: 'alert',
+    });
     expect(screen.queryByText('JS_TEMPLATE_SYNC_CONFIG_INVALID')).not.toBeInTheDocument();
   });
 
@@ -777,6 +806,7 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.getByText('Latest project')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+    expect(mocks.notification.success).not.toHaveBeenCalled();
   });
 
   it('refreshes the ready project and notifies once after an observed creation succeeds', async () => {
@@ -802,13 +832,21 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText('Source Project creation succeeded: Demo')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
-    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
+    expect(mocks.notification.success).toHaveBeenCalledTimes(1);
+    expect(mocks.notification.success).toHaveBeenCalledWith({
+      message: 'Source Project creation succeeded: Demo',
+      placement: 'topRight',
+      role: 'status',
+    });
+    expect(screen.queryByText('Creation succeeded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await act(async () => {
       mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
     });
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
+    expect(mocks.notification.success).toHaveBeenCalledTimes(1);
   });
 
   it('preserves the project reload error instead of replacing it with a creation success notice', async () => {
@@ -825,9 +863,16 @@ describe('JsTemplateSourceProjectsPage', () => {
       mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
     });
 
-    expect(await screen.findByText('Project refresh failed')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(mocks.notification.error).toHaveBeenCalledWith({
+        message: 'Project refresh failed',
+        placement: 'topRight',
+        role: 'alert',
+      }),
+    );
     expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
     expect(screen.queryByText('Some JS Template caches could not be refreshed')).not.toBeInTheDocument();
+    expect(mocks.notification.success).not.toHaveBeenCalled();
     expect(mocks.cache.invalidateSettings).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
     expect(mocks.cache.invalidateRuntime).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
@@ -850,9 +895,14 @@ describe('JsTemplateSourceProjectsPage', () => {
         mocks.createJobs.update([createJobSummary({ status: 'succeeded', resultProjectId: pending.targetProjectId })]);
       });
 
-      expect(await screen.findByText('Some JS Template caches could not be refreshed')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Edit code Demo' })).toBeInTheDocument();
+      expect(mocks.notification.warning).toHaveBeenCalledWith({
+        message: 'Some JS Template caches could not be refreshed',
+        placement: 'topRight',
+        role: 'alert',
+      });
       expect(screen.queryByText('Source Project creation succeeded: Demo')).not.toBeInTheDocument();
+      expect(mocks.notification.success).not.toHaveBeenCalled();
       expect(mocks.cache.invalidateSettings).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
       expect(mocks.cache.invalidateRuntime).toHaveBeenCalledWith(expect.anything(), pending.targetProjectId);
       expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
@@ -888,11 +938,16 @@ describe('JsTemplateSourceProjectsPage', () => {
     });
 
     await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(2));
-    expect(
-      await screen.findByText('Source Project creation failed: Newest failed: Newest safe failure'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Newest safe failure')).toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledWith({
+      message: 'Source Project creation failed: Newest failed: Newest safe failure',
+      placement: 'topRight',
+      role: 'alert',
+    });
     expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
     expect(screen.queryByText('Some JS Template caches could not be refreshed')).not.toBeInTheDocument();
+    expect(mocks.notification.success).not.toHaveBeenCalled();
+    expect(mocks.notification.warning).not.toHaveBeenCalled();
 
     await act(async () => {
       mocks.createJobs.update(terminalJobs);
@@ -925,27 +980,44 @@ describe('JsTemplateSourceProjectsPage', () => {
       ]);
     });
 
-    expect(
-      await screen.findByText('Source Project creation failed: Newest failed: Newest safe failure'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Newest safe failure')).toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledWith({
+      message: 'Source Project creation failed: Newest failed: Newest safe failure',
+      placement: 'topRight',
+      role: 'alert',
+    });
     expect(screen.queryByText('Project refresh failed')).not.toBeInTheDocument();
     expect(screen.queryByText('Source Project creation succeeded: Older succeeded')).not.toBeInTheDocument();
+    expect(mocks.notification.success).not.toHaveBeenCalled();
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(2);
   });
 
-  it('keeps an initially failed creation until the user explicitly removes it', async () => {
+  it('keeps a failed creation row with retry/remove actions and sends an error notification', async () => {
+    const pending = createJobSummary();
     const failed = createJobSummary({
       status: 'failed',
       errorCode: 'JS_TEMPLATE_CREATE_FAILED',
       errorMessage: 'Safe failure',
     });
-    mocks.createJobs.initialJobs = [failed];
+    mocks.createJobs.initialJobs = [pending];
+    mocks.createJobs.retry.mockResolvedValueOnce(failed);
     renderListPage();
 
+    expect(await screen.findByText('Creation pending')).toBeInTheDocument();
+    await act(async () => {
+      mocks.createJobs.update([failed]);
+    });
+
     expect(await screen.findByText('Safe failure')).toBeInTheDocument();
-    expect(screen.queryByText('Source Project creation failed: Demo: Safe failure')).not.toBeInTheDocument();
+    expect(mocks.notification.error).toHaveBeenCalledWith({
+      message: 'Source Project creation failed: Demo: Safe failure',
+      placement: 'topRight',
+      role: 'alert',
+    });
     expect(mocks.api.listProjects).toHaveBeenCalledTimes(1);
     expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Retry Demo' }));
+    await waitFor(() => expect(mocks.createJobs.retry).toHaveBeenCalledWith(failed.id));
     const dismissButton = screen.getByRole('button', { name: 'Remove creation task Demo' });
     dismissButton.focus();
     await userEvent.keyboard('{Enter}');
@@ -953,52 +1025,17 @@ describe('JsTemplateSourceProjectsPage', () => {
     expect(screen.queryByText('Safe failure')).not.toBeInTheDocument();
   });
 
-  it('maps a missing creation task dismissal to localized safe text', async () => {
+  it('hides historical succeeded jobs without notifying or dismissing them', async () => {
     const succeeded = createJobSummary({ status: 'succeeded', resultProjectId: 'jtp_demo' });
     mocks.createJobs.initialJobs = [succeeded];
-    mocks.createJobs.dismiss.mockRejectedValueOnce({
-      response: {
-        data: {
-          errors: [
-            {
-              code: 'JS_TEMPLATE_CREATE_JOB_NOT_FOUND',
-              message: 'Sensitive missing job detail',
-            },
-          ],
-        },
-      },
-    });
     renderListPage();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove creation task Demo' }));
-
-    expect(await screen.findByText('Creation task is no longer available')).toBeInTheDocument();
-    expect(screen.queryByText('Sensitive missing job detail')).not.toBeInTheDocument();
-    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
-  });
-
-  it('uses a localized fallback and hides raw dismissal errors for unknown server failures', async () => {
-    const succeeded = createJobSummary({ status: 'succeeded', resultProjectId: 'jtp_demo' });
-    mocks.createJobs.initialJobs = [succeeded];
-    mocks.createJobs.dismiss.mockRejectedValueOnce({
-      response: {
-        data: {
-          errors: [
-            {
-              code: 'INTERNAL_SERVER_ERROR',
-              message: 'Sensitive internal server detail',
-            },
-          ],
-        },
-      },
-    });
-    renderListPage();
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Remove creation task Demo' }));
-
-    expect(await screen.findByText('Failed to remove creation task')).toBeInTheDocument();
-    expect(screen.queryByText('Sensitive internal server detail')).not.toBeInTheDocument();
-    expect(screen.getByText('Creation succeeded')).toBeInTheDocument();
+    await waitFor(() => expect(mocks.api.listProjects).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText('Creation succeeded')).not.toBeInTheDocument();
+    expect(screen.queryByText('Demo')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove creation task Demo' })).not.toBeInTheDocument();
+    expect(mocks.notification.success).not.toHaveBeenCalled();
+    expect(mocks.createJobs.dismiss).not.toHaveBeenCalled();
   });
 
   it('restores the Sync code drawer directly from URL state', async () => {
@@ -1262,6 +1299,7 @@ describe('JsTemplateSourceProjectsPage', () => {
   });
 
   it('filters Source Projects with the All, Enabled, and Disabled lifecycle control', async () => {
+    mocks.createJobs.initialJobs = [createJobSummary({ title: 'Creation ignores lifecycle filter' })];
     mocks.api.listProjects.mockResolvedValueOnce([
       {
         id: 'jtp_enabled',
@@ -1294,6 +1332,7 @@ describe('JsTemplateSourceProjectsPage', () => {
 
     await waitFor(() => expect(screen.queryByText('Enabled project')).not.toBeInTheDocument());
     expect(screen.getByText('Disabled project')).toBeInTheDocument();
+    expect(screen.getByText('Creation ignores lifecycle filter')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('combobox', { name: 'Lifecycle status' }));
     await userEvent.click(await screen.findByText('All', { selector: '.ant-select-item-option-content' }));
@@ -1481,7 +1520,10 @@ describe('JsTemplateSourceProjectsPage', () => {
     await waitFor(() => expect(screen.queryByText('Ops widgets')).not.toBeInTheDocument());
     expect(screen.getByText('Selected 1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Batch actions/ })).toBeEnabled();
-    expect(screen.getByRole('status', { name: 'Creation status' })).toHaveTextContent('Independent creation');
+    const tableRows = within(screen.getByRole('table')).getAllByRole('row');
+    expect(tableRows[1]).toHaveTextContent('Independent creation');
+    expect(tableRows[1]).toHaveTextContent('Creation pending');
+    expect(within(tableRows[1]).queryByRole('checkbox')).not.toBeInTheDocument();
     expect(mocks.api.changeLifecycle).not.toHaveBeenCalled();
 
     await userEvent.click(screen.getByRole('button', { name: /Batch actions/ }));

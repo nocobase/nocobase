@@ -18,18 +18,12 @@ export function isTerminalCreateJobStatus(status: JsTemplateCreateJobStatus): bo
   return status === 'succeeded' || status === 'failed';
 }
 
-export function selectVisibleCreationJobs(
-  jobs: JsTemplateCreateJobSummary[],
-  terminalLimit = 3,
-): JsTemplateCreateJobSummary[] {
-  const visibleTerminalJobIds = new Set(
-    jobs
-      .filter((job) => isTerminalCreateJobStatus(job.status))
-      .slice(0, Math.max(0, terminalLimit))
-      .map((job) => job.id),
-  );
+export function selectVisibleCreationJobs(jobs: JsTemplateCreateJobSummary[]): JsTemplateCreateJobSummary[] {
+  return jobs.filter((job) => job.status !== 'succeeded');
+}
 
-  return jobs.filter((job) => !isTerminalCreateJobStatus(job.status) || visibleTerminalJobIds.has(job.id));
+export function getCreateJobRowKey(job: JsTemplateCreateJobSummary): string {
+  return `creation:${job.targetProjectId || job.id}`;
 }
 
 export function collectCreateJobTransitions(
