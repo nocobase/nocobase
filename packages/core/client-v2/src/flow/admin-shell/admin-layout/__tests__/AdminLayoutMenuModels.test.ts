@@ -32,7 +32,7 @@ const { navigateMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../application/CustomRouterContextProvider', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../application/CustomRouterContextProvider')>();
+  const actual = await importOriginal<typeof import('@nocobase/client/src/application/CustomRouterContextProvider')>();
   return {
     ...actual,
     useNavigateNoUpdate: () => navigateMock,

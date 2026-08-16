@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import '@nocobase/client';
 import { getAssociationSelectAssociatedRecordsFilter, getAssociationSelectForeignKeyFilter } from '../TableSelectModel';
 
 describe('TableSelectModel', () => {
