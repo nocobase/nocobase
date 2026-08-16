@@ -141,6 +141,11 @@ const neutralImportFixtures = [
     source: "import type { Application } from '@nocobase/client-v2';\nexport type { Application };\n",
   },
   {
+    label: 'the reusable client Host importing a client-v2 type',
+    filePath: 'packages/core/runjs/src/client/boundary-violation.ts',
+    source: "import type { Application } from '@nocobase/client-v2';\nexport type { Application };\n",
+  },
+  {
     label: 'the compiler re-exporting a legacy client type',
     filePath: 'packages/core/runjs/src/compiler/boundary-violation.ts',
     source: "export type { Application } from '@nocobase/client';\n",
@@ -216,6 +221,7 @@ describe('RunJS and JS Template package boundaries', () => {
           'packages/plugins/@nocobase/plugin-flow-engine/src/client-v2/**/*.{ts,tsx}',
           'packages/plugins/@nocobase/plugin-js-template/src/client-v2/**/*.{ts,tsx}',
         ]),
+        neutralBoundaryEslint.lintFiles(['packages/core/runjs/src/client/**/*.{ts,tsx}']),
       ])
     ).flat();
     const violations = results.flatMap((result) =>

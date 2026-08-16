@@ -64,6 +64,13 @@ async function main() {
     const resolvedVersions = resolveCodeMirrorVersions(repositoryRoot);
     if (verifyRealClientTopology) {
       resolvedVersions.jsdom = resolveInstalledPackageVersion(repositoryRoot, 'jsdom');
+      for (const packageName of collectRequiredPackages(path.join(clientV2Root, 'lib/index.js'))) {
+        if (packageName.startsWith('@nocobase/') || packageName === 'react' || packageName === 'react-dom') {
+          continue;
+        }
+        resolvedVersions[packageName] ??=
+          clientV2Manifest.dependencies?.[packageName] || resolveInstalledPackageVersion(repositoryRoot, packageName);
+      }
     }
     const consumerRoot = createConsumer(
       temporaryRoot,
@@ -364,7 +371,7 @@ function createConsumer(temporaryRoot, tarballs, resolvedVersions, options) {
     dependencies[packageName] = fileDependency(consumerRoot, packageRoot);
   }
   for (const [packageName, version] of Object.entries(resolvedVersions)) {
-    dependencies[packageName] = version;
+    dependencies[packageName] ??= version;
   }
   dependencies['@nocobase/client-v2'] = fileDependency(
     consumerRoot,
@@ -434,6 +441,8 @@ function createPeerStubs(stubRoot, options) {
   );
   for (const [directoryName, packageName] of [
     ['ant-design-icons', '@ant-design/icons'],
+    ['ant-design-pro-layout', '@ant-design/pro-layout'],
+    ['emotion-css', '@emotion/css'],
     ['antd', 'antd'],
     ['acl', '@nocobase/acl'],
     ['actions', '@nocobase/actions'],
@@ -827,6 +836,19 @@ function resolveCodeMirrorVersions(repositoryRoot) {
     versions[packageName] = resolveInstalledPackageVersion(repositoryRoot, packageName);
   }
   return versions;
+}
+
+function collectRequiredPackages(entryPath) {
+  const packages = new Set();
+  const source = fs.readFileSync(entryPath, 'utf8');
+  for (const match of source.matchAll(/\brequire\(["']([^"']+)["']\)/gu)) {
+    const specifier = match[1];
+    if (specifier.startsWith('.') || specifier.startsWith('/') || specifier.startsWith('node:')) {
+      continue;
+    }
+    packages.add(specifier.startsWith('@') ? specifier.split('/').slice(0, 2).join('/') : specifier.split('/')[0]);
+  }
+  return [...packages].sort();
 }
 
 function resolveInstalledPackageVersion(repositoryRoot, packageName) {

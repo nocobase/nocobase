@@ -1,6 +1,9 @@
 {
   "name": "@nocobase/runjs",
   "version": "3.0.0-alpha.9",
+  "scripts": {
+    "verify:package-boundary": "node ./scripts/verify-package-boundary.mjs"
+  },
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "typesVersions": {
