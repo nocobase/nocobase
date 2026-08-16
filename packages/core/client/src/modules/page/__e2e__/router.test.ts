@@ -50,12 +50,4 @@ test.describe('router', () => {
     await page.goBack();
     await expect(page.getByTestId('schema-initializer-Menu-side')).toBeVisible();
   });
-
-  test('plugin settings menu opens on click', async ({ page, mockPage }) => {
-    await mockPage({ type: 'group' }).goto();
-
-    await page.getByTestId('plugin-settings-button').dispatchEvent('click');
-
-    await expect(page.getByRole('link', { name: 'API keys' })).toBeVisible();
-  });
 });

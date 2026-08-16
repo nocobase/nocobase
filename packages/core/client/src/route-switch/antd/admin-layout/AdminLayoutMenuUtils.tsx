@@ -317,12 +317,7 @@ const MenuDesignerButton: FC<{ testId: string; launcherModel: FlowModel; parentR
       subModelKey={'menuItems'}
       items={getMenuDesignerItems(props.launcherModel, props.parentRoute)}
     >
-      <FlowSettingsButton
-        data-testid={props.testId}
-        style={{ background: 'none' }}
-        icon={<PlusOutlined />}
-        onClick={(event) => event.stopPropagation()}
-      >
+      <FlowSettingsButton data-testid={props.testId} style={{ background: 'none' }} icon={<PlusOutlined />}>
         {t('Add menu item')}
       </FlowSettingsButton>
     </AddSubModelButton>
@@ -756,6 +751,7 @@ export function getAdminLayoutMenuInitializerButton(
     key: 'x-designer-button',
     name: <MenuDesignerButton testId={testId} launcherModel={launcherModel} parentRoute={parentRoute} />,
     path: getAdminLayoutMenuVirtualPath('designer', identity),
+    disabled: true,
     _route: {},
     _parentRoute: parentRoute,
     _launcherModel: launcherModel,

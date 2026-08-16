@@ -107,7 +107,6 @@ export const SettingsCenterDropdown = () => {
 
   return (
     <Dropdown
-      trigger={['click', 'hover']}
       menu={{
         style: {
           maxHeight: '70vh',

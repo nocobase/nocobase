@@ -58,7 +58,7 @@ export type GetAIConversationMessagesParams = {
 export type ParsedMessageRow = AIMessage & Model;
 
 export type GetAIConversationMessagesResult = {
-  rows: unknown[];
+  rows: any[];
   hasMore?: boolean;
   cursor?: string | null;
 };
