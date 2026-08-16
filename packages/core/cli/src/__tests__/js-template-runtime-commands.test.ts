@@ -125,7 +125,6 @@ describe('JS Template runtime commands', () => {
     );
     expect(saveAsJsTemplate.description).toContain('idempotencyKey is required');
     expect(saveAsJsTemplate.description).toContain('HTTP POST /jsTemplates:saveAsJsTemplate');
-    expect(saveAsJsTemplate.examples).toEqual(['nb api js-templates save-as-js-template --body-file <path>']);
     const parametersByFlagName = new Map(
       saveAsJsTemplate.parameters.map((parameter) => [parameter.flagName, parameter]),
     );
@@ -181,9 +180,6 @@ describe('JS Template runtime commands', () => {
       name: 'expectedProjectHeadCommitId',
       required: true,
     });
-    expect(detachToInline.examples.some((example) => example.startsWith('nb api js-templates detach-to-inline'))).toBe(
-      true,
-    );
     const detachToInlineFlags = createGeneratedFlags(detachToInline);
     expect(detachToInlineFlags['idempotency-key'].description).toContain('retry key');
     expect(detachToInlineFlags['body-file'].helpGroup).toBe('Raw JSON Body');

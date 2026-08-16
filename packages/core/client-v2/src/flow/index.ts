@@ -8,6 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
+import { createRunJSClientHosts, installRunJSClientHosts } from '@nocobase/runjs/client';
 import { IconPicker } from '../flow-compat';
 import { Plugin, type PluginOptions } from '..';
 import type { BaseApplication } from '../BaseApplication';
@@ -30,6 +31,10 @@ import {
 import { JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD, JSFieldSourceModeField } from './models/fields/JSFieldSourceModeField';
 import { JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD, JSItemSourceModeField } from './models/fields/JSItemSourceModeField';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
+import type { RunJSEditorProvider } from './components/runjs-studio/RunJSEditorRegistry';
+import { registerRunJSRegistryHost } from './components/runjs-source/RunJSRegistryHost';
+import { registerRunJSRuntimeHost, runJSFlowContextAdapter } from './components/runjs-source/RunJSRuntimeHost';
+import type { RunJSSettingsDescriptorProvider, RunJSSourceResolver } from './components/runjs-source/types';
 
 const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
 
@@ -41,7 +46,19 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
   PluginOptions<any>,
   TApp
 > {
+  private readonly runJSClientHosts = createRunJSClientHosts<
+    RunJSEditorProvider,
+    RunJSSettingsDescriptorProvider,
+    RunJSSourceResolver
+  >({ flowContext: runJSFlowContextAdapter });
+  private disposeRunJSClientHosts?: () => void;
+
+  async beforeLoad() {
+    this.installRunJSClientHosts();
+  }
+
   async load() {
+    this.installRunJSClientHosts();
     const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
 
     if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
@@ -113,6 +130,18 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       },
     );
     flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
+  }
+
+  dispose() {
+    this.disposeRunJSClientHosts?.();
+    this.disposeRunJSClientHosts = undefined;
+  }
+
+  private installRunJSClientHosts(): void {
+    this.disposeRunJSClientHosts ||= installRunJSClientHosts(this.runJSClientHosts, {
+      registerRegistryHost: registerRunJSRegistryHost,
+      registerRuntimeHost: registerRunJSRuntimeHost,
+    });
   }
 }
 

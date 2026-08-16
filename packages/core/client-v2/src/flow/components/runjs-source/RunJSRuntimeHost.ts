@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSValue } from '@nocobase/flow-engine';
+import { FlowContext, type RunJSValue } from '@nocobase/flow-engine';
+import type { RunJSFlowContextPort } from '@nocobase/runjs/workspace/shared';
 
 import type { RunJSSourceResolverRegistryHost } from './RunJSSourceResolverRegistry';
 import type { ResolveRunJSSourceBindingInput, ResolvedRuntimeRunJS, RuntimeRunJSInput } from './types';
@@ -117,6 +118,41 @@ export function getRunJSRuntimeHost(): RunJSRuntimeHost {
 export function clearRunJSRuntimeHosts(): void {
   hosts.length = 0;
 }
+
+export const runJSFlowContextAdapter: Pick<RunJSFlowContextPort, 'createRuntimeContext'> = {
+  createRuntimeContext(baseContext, resolved) {
+    if (baseContext && typeof baseContext === 'object' && !(baseContext instanceof FlowContext)) {
+      const runtimeContext: Record<string, unknown> = Object.create(baseContext);
+      runtimeContext.settings = resolved.settings;
+      runtimeContext.runJsSource = {
+        sourceMode: resolved.sourceMode,
+        sourceBinding: resolved.sourceBinding,
+        sourceMap: resolved.sourceMap,
+        context: resolved.context,
+      };
+      return runtimeContext;
+    }
+
+    const runtimeContext = new FlowContext();
+    if (baseContext instanceof FlowContext) {
+      try {
+        runtimeContext.delegate(baseContext);
+      } catch {
+        // Keep the runtime context usable when an already delegated context is reused by a degraded integration.
+      }
+    }
+    runtimeContext.defineProperty('settings', { value: resolved.settings });
+    runtimeContext.defineProperty('runJsSource', {
+      value: {
+        sourceMode: resolved.sourceMode,
+        sourceBinding: resolved.sourceBinding,
+        sourceMap: resolved.sourceMap,
+        context: resolved.context,
+      },
+    });
+    return runtimeContext;
+  },
+};
 
 export const getCanonicalRunJSSettings: RunJSRuntimeHost['getCanonicalRunJSSettings'] = (...args) =>
   getRunJSRuntimeHost().getCanonicalRunJSSettings(...args);
