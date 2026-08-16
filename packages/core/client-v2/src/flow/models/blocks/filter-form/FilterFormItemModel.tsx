@@ -881,7 +881,6 @@ FilterFormItemModel.registerFlow({
             'x-decorator': 'FormItem',
             'x-component-props': {
               flags,
-              sourceLabel: ctx.t('Default value'),
             },
           },
         };
