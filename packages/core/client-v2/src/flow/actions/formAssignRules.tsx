@@ -24,14 +24,13 @@ import { hasPersistedAssignRulesValue } from '../models/blocks/shared/legacyDefa
 const FormAssignRulesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {
     const ctx = useFlowContext();
-    const { onChange, value: propsValue } = props;
-    const t = React.useMemo(() => ctx.model.translate.bind(ctx.model), [ctx.model]);
+    const t = ctx.model.translate.bind(ctx.model);
     const { isTitleFieldCandidate, onSyncAssociationTitleField } = useAssociationTitleFieldSync(t);
-    const canEdit = typeof onChange === 'function';
+    const canEdit = typeof props.onChange === 'function';
 
     const fieldOptions = React.useMemo(() => {
       return collectFieldAssignCascaderOptions({ formBlockModel: ctx.model, t });
-    }, [ctx.model, t]);
+    }, [ctx.model]);
 
     const legacyDefaults = React.useMemo(() => {
       return collectLegacyDefaultValueRulesFromFormModel(ctx.model);
@@ -52,16 +51,16 @@ const FormAssignRulesUI = observer(
     }, []);
 
     const normalizedValue = React.useMemo(() => {
-      const base = Array.isArray(propsValue) ? propsValue : [];
+      const base = Array.isArray(props.value) ? props.value : [];
       return base;
-    }, [propsValue]);
+    }, [props.value]);
 
     const legacyAwareValue = React.useMemo(() => {
       if (hasPersistedValue) {
         return normalizedValue;
       }
-      return mergeAssignRulesWithLegacyDefaults(propsValue, legacyDefaults);
-    }, [hasPersistedValue, legacyDefaults, normalizedValue, propsValue]);
+      return mergeAssignRulesWithLegacyDefaults(props.value, legacyDefaults);
+    }, [hasPersistedValue, legacyDefaults, normalizedValue, props.value]);
 
     const value = React.useMemo(() => {
       if (!canEdit || !hasInitializedMerge) {
@@ -74,9 +73,9 @@ const FormAssignRulesUI = observer(
       (next: FieldAssignRuleItem[]) => {
         if (!canEdit) return;
         markInitialized();
-        onChange?.(next);
+        props.onChange?.(next);
       },
-      [canEdit, markInitialized, onChange],
+      [canEdit, markInitialized, props.onChange],
     );
 
     // 仅在首次打开时，把合并结果写回到当前 step 表单状态，后续不再自动合并（以免重复添加）。
@@ -90,10 +89,10 @@ const FormAssignRulesUI = observer(
       }
 
       if (!isEqual(normalizedValue, legacyAwareValue)) {
-        onChange?.(legacyAwareValue);
+        props.onChange?.(legacyAwareValue);
       }
       markInitialized();
-    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, onChange]);
+    }, [canEdit, hasPersistedValue, legacyAwareValue, markInitialized, normalizedValue, props.onChange]);
 
     return (
       <FieldAssignRulesEditor

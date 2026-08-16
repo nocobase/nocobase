@@ -80,10 +80,13 @@ function renderAction(action: any, model: any, initialValue: any[] = []) {
 
   const Harness = () => {
     const [value, setValue] = React.useState(initialValue);
-    const handleChange = React.useCallback((next: any[]) => {
-      onChange(next);
-      setValue(next);
-    }, []);
+    const handleChange = React.useCallback(
+      (next: any[]) => {
+        onChange(next);
+        setValue(next);
+      },
+      [onChange],
+    );
 
     return (
       <FlowSettingsContextProvider value={model.context}>

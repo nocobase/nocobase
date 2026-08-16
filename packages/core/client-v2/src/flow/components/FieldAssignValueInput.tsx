@@ -16,7 +16,6 @@ import {
   type VariableInputProps,
   useFlowContext,
   EditableItemModel,
-  FlowContext,
   FlowModelContext,
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
@@ -82,77 +81,10 @@ type ResolvedFieldContext = {
   collection: any | null;
   dataSource: any | null;
   blockModel: any;
-  dataSourceManager: AssignValueDataSourceManager | null;
-  sourceContext: unknown;
   fieldPath: string | null;
   fieldName: string | null;
   collectionField: CollectionField | null;
 };
-
-type AssignValueDataSourceManager = {
-  getCollection?: (dataSourceKey: string, collectionName: string) => ReturnType<typeof getCollectionFromModel>;
-  getDataSource?: (dataSourceKey: string) => unknown;
-};
-
-type AssignValueContextValues = {
-  collection?: ReturnType<typeof getCollectionFromModel> | null;
-  dataSource?: unknown;
-  blockModel?: unknown;
-  dataSourceManager?: AssignValueDataSourceManager | null;
-  collectionField?: CollectionField | null;
-};
-
-function getAssignValueRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
-}
-
-function getAssignValueModelContext(model: unknown): unknown {
-  return getAssignValueRecord(model)?.context;
-}
-
-function getAssignValueContextValues(context: unknown): AssignValueContextValues | undefined {
-  const record = getAssignValueRecord(context);
-  return record ? (record as AssignValueContextValues) : undefined;
-}
-
-function getAssignValueCustomCollectionField(itemModel: unknown): CollectionField | undefined {
-  const customFieldModel = getAssignValueRecord(itemModel)?.customFieldModelInstance;
-  return getAssignValueContextValues(getAssignValueModelContext(customFieldModel))?.collectionField ?? undefined;
-}
-
-function resolveAssignValueSourceContext(options: {
-  itemContext: unknown;
-  flowContext: unknown;
-  collection: unknown;
-  dataSource: unknown;
-  blockModel: unknown;
-  dataSourceManager: AssignValueDataSourceManager | null;
-}): unknown {
-  const { itemContext, flowContext, collection, dataSource, blockModel, dataSourceManager } = options;
-  if (!itemContext) return flowContext;
-  if (!flowContext || itemContext === flowContext) return itemContext;
-
-  if (itemContext instanceof FlowContext && flowContext instanceof FlowContext) {
-    const sourceContext = new FlowContext();
-    sourceContext.addDelegate(flowContext);
-    sourceContext.addDelegate(itemContext);
-    for (const [key, contextValue] of Object.entries({ collection, dataSource, blockModel, dataSourceManager })) {
-      if (contextValue !== undefined && contextValue !== null) {
-        sourceContext.defineProperty(key, { value: contextValue });
-      }
-    }
-    return sourceContext;
-  }
-
-  return {
-    ...getAssignValueRecord(flowContext),
-    ...getAssignValueRecord(itemContext),
-    ...(collection !== undefined && collection !== null ? { collection } : {}),
-    ...(dataSource !== undefined && dataSource !== null ? { dataSource } : {}),
-    ...(blockModel !== undefined && blockModel !== null ? { blockModel } : {}),
-    ...(dataSourceManager ? { dataSourceManager } : {}),
-  };
-}
 
 function withFullWidthStyle(style?: React.CSSProperties): React.CSSProperties {
   return { ...style, width: '100%', minWidth: 0 };
@@ -531,6 +463,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   React.useEffect(() => {
     extraMetaTreeRef.current = extraMetaTree;
   }, [extraMetaTree]);
+
   // 优先：表单上已配置的字段（含子表单/子表单列表的子字段）
   const itemModel = React.useMemo(() => {
     if (!targetPath) return null;
@@ -569,47 +502,36 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const resolved = React.useMemo<ResolvedFieldContext>(() => {
     // 1) 来自表单配置的字段：直接使用 itemModel 上下文
     if (itemModel) {
-      const itemContext = getAssignValueModelContext(itemModel);
-      const flowModelContext = getAssignValueModelContext(flowCtx.model);
-      const itemContextValues = getAssignValueContextValues(itemContext);
-      const flowContextValues = getAssignValueContextValues(flowModelContext);
+      const itemModelAny = itemModel as any;
+      const ctx = itemModel.context;
+      const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = ctx;
       const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
-      const dataSourceManager = itemContextValues?.dataSourceManager ?? flowContextValues?.dataSourceManager ?? null;
+      const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
       const rootCollectionFallback = getCollectionFromModel(flowCtx.model);
       const collection =
-        itemContextValues?.collection ??
-        flowContextValues?.collection ??
+        ctxCollection ||
         (init?.dataSourceKey && init?.collectionName
           ? dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName)
-          : undefined) ??
+          : undefined) ||
         rootCollectionFallback;
       const dataSource =
-        itemContextValues?.dataSource ??
-        flowContextValues?.dataSource ??
-        (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined) ??
+        ctxDataSource ||
+        (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined) ||
         (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined);
-      const blockModel = itemContextValues?.blockModel ?? flowContextValues?.blockModel ?? flowCtx.model;
       const fieldPath = resolveAssignValueFieldPath(itemModel);
       const fieldName = fieldPath?.split('.').slice(-1)[0];
       const collectionFieldFromModel = fieldName
         ? (collection?.getField?.(fieldName) as CollectionField | undefined)
         : undefined;
-      const customCollectionField = getAssignValueCustomCollectionField(itemModel);
+      const customCollectionField = itemModelAny?.customFieldModelInstance?.context?.collectionField as
+        | CollectionField
+        | undefined;
       const cf = collectionFieldFromModel || customCollectionField;
       return {
         itemModel,
         collection: collection || null,
         dataSource: dataSource || null,
         blockModel,
-        dataSourceManager,
-        sourceContext: resolveAssignValueSourceContext({
-          itemContext,
-          flowContext: flowModelContext,
-          collection,
-          dataSource,
-          blockModel,
-          dataSourceManager,
-        }),
         fieldPath: fieldPath || null,
         fieldName: fieldName || null,
         collectionField: cf || null,
@@ -617,18 +539,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     }
 
     // 2) 未配置字段：优先按根集合解析顶层字段（例如 foo / user）
-    const flowModelContext = getAssignValueModelContext(flowCtx.model);
-    const flowContextValues = getAssignValueContextValues(flowModelContext);
-    const rootCollection = getCollectionFromModel(flowCtx.model);
-    const blockModel = flowContextValues?.blockModel ?? flowCtx.model;
-    const dataSourceManager = flowContextValues?.dataSourceManager ?? null;
+    const rootCollection = getCollectionFromModel((flowCtx as any).model);
+    const blockModel = (flowCtx as any).model?.context?.blockModel || (flowCtx as any).model;
     const empty: ResolvedFieldContext = {
       itemModel: null,
       collection: null,
       dataSource: null,
       blockModel,
-      dataSourceManager,
-      sourceContext: flowModelContext,
       fieldPath: null,
       fieldName: null,
       collectionField: null,
@@ -638,12 +555,11 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       typeof rootCollection?.getField === 'function' ? (rootCollection.getField(targetPath) as CollectionField) : null;
     if (topLevelField) {
       const fieldName = String((topLevelField as any)?.name || targetPath || '');
+      const dataSourceManager = flowCtx.model?.context?.dataSourceManager;
       const dataSource =
-        flowContextValues?.dataSource ??
         (rootCollection?.dataSourceKey
           ? dataSourceManager?.getDataSource?.(rootCollection.dataSourceKey)
-          : undefined) ??
-        null;
+          : undefined) || null;
       return {
         ...empty,
         collection: rootCollection,
@@ -660,10 +576,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!nested) return empty;
     const collection = nested.collection;
     const fieldName = nested.fieldName;
+    const dataSourceManager = flowCtx.model?.context?.dataSourceManager;
     const dataSource =
-      flowContextValues?.dataSource ??
-      (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined) ??
-      null;
+      (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined) || null;
     return {
       ...empty,
       collection,
@@ -675,18 +590,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     };
   }, [flowCtx, itemModel, resolveNestedAssociationField, targetPath]);
 
-  const {
-    collection,
-    dataSource,
-    blockModel,
-    dataSourceManager,
-    sourceContext,
-    fieldPath,
-    fieldName,
-    collectionField: cf,
-  } = resolved;
-  const itemCollectionField = getAssignValueContextValues(getAssignValueModelContext(resolved.itemModel))
-    ?.collectionField;
+  const { collection, dataSource, blockModel, fieldPath, fieldName, collectionField: cf } = resolved;
+  const itemCollectionField = (resolved?.itemModel as any)?.context?.collectionField;
   const fieldSource = React.useMemo(() => resolveAssignValueFieldSource(itemModel), [itemModel]);
   const currentAllowMultiple = React.useMemo(() => {
     const effectiveCollectionField = (cf as CollectionField | null) || itemCollectionField || null;
@@ -759,6 +664,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const itemModelAny = itemModel as any;
     const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
     if (!engine) return;
+    const dataSourceManager = itemModelAny?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
     const effectiveCollection =
       collection || getCollectionFromModel(itemModelAny) || getCollectionFromModel(flowCtx.model);
     const { customFieldName, customFieldProps, currentAllowMultiple, originFieldModel, originProps } = fieldSource;
@@ -778,7 +684,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
         : undefined) ||
       effectiveCollectionField;
 
-    const binding = f ? EditableItemModel.getDefaultBindingByField(sourceContext as FlowModelContext, f) : null;
+    const binding = f
+      ? EditableItemModel.getDefaultBindingByField(resolved?.itemModel?.context || flowCtx.model?.context, f)
+      : null;
     const defaultBindingUse: string | undefined = binding?.modelName;
     const fieldSettingsInit = resolveAssignValueFieldSettingsInit({
       collection: effectiveCollection,
@@ -803,6 +711,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       collectionField: effectiveCollectionField,
     });
 
+    const sourceContext = resolved?.itemModel?.context || flowCtx.model?.context;
     const created = engine?.createModel?.(
       {
         use: 'VariableFieldFormModel',
@@ -903,8 +812,6 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     collection,
     dataSource,
     blockModel,
-    dataSourceManager,
-    sourceContext,
     fieldPath,
     fieldName,
     flowCtx,
