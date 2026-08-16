@@ -17,6 +17,7 @@ import {
   useWorkflowTaskCounts,
   useWorkflowTaskRecord,
   type TaskTypeOptions,
+  type WorkflowTaskActionsProps,
   type WorkflowTaskApiClient,
   type WorkflowTaskDetailModalProps,
   type WorkflowTaskFlowContext,
@@ -67,7 +68,7 @@ const TASK_POPUP_APPENDS = ['node', 'job', 'workflow', 'workflow.nodes', 'execut
 
 const CC_TASK_FILTER_QUERY_KEY = 'workflowCcTasksFilter';
 const DEFAULT_CC_TASK_FILTER = {
-  $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+  $and: [{ title: { $includes: '' } }],
 };
 const MOBILE_FILTER_POPOVER_WIDTH = 312;
 const MOBILE_FILTER_CONTENT_MIN_WIDTH = 288;
@@ -603,7 +604,7 @@ function WorkflowCcTaskFilterAction({ onlyIcon }: { onlyIcon?: boolean; reload?:
       initialValue={initialValue}
       onChange={handleFilterChange}
       t={t}
-      filterableFieldNames={['title', 'workflow']}
+      filterableFieldNames={['title']}
       buttonText={onlyIcon ? '' : undefined}
       showCount={false}
       popoverMinWidth={onlyIcon ? MOBILE_FILTER_CONTENT_MIN_WIDTH : undefined}
@@ -631,7 +632,7 @@ function WorkflowCcTaskFilterAction({ onlyIcon }: { onlyIcon?: boolean; reload?:
   return onlyIcon ? <Tooltip title={filterText}>{filter}</Tooltip> : filter;
 }
 
-function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reload?: () => Promise<void> }) {
+function WorkflowCcTaskActions({ onlyIcon, reload, workflowKey, workflowPendingCount }: WorkflowTaskActionsProps) {
   const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
   const taskTypes = getWorkflowTaskRegistry(ctx);
   const { counts, reload: reloadCounts } = useWorkflowTaskCounts(ctx, taskTypes);
@@ -641,7 +642,7 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
   const [readAllSubmitted, setReadAllSubmitted] = useState(false);
   const [readAllSubmitting, setReadAllSubmitting] = useState(false);
   const readAllSubmittingRef = useRef(false);
-  const pendingCount = counts[TASK_TYPE_CC]?.pending;
+  const pendingCount = workflowPendingCount ?? counts[TASK_TYPE_CC]?.pending;
   const readAllDisabled = readAllSubmitting || readAllSubmitted || pendingCount === 0;
 
   useEffect(() => {
@@ -670,7 +671,15 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
     readAllSubmittingRef.current = true;
     setReadAllSubmitting(true);
     try {
-      await ctx?.api.resource('workflowCcTasks').read?.();
+      await ctx?.api.resource('workflowCcTasks').read?.({
+        ...(workflowKey
+          ? {
+              filter: {
+                'workflow.key': workflowKey,
+              },
+            }
+          : {}),
+      });
       setReadAllSubmitted(true);
       if (reload) {
         await reload();
@@ -713,9 +722,13 @@ function WorkflowCcTaskActions({ onlyIcon, reload }: { onlyIcon?: boolean; reloa
   );
 }
 
-export function useCcTaskActionParams(status: WorkflowTaskStatus) {
+export function useCcTaskActionParams(status: WorkflowTaskStatus, workflowKey?: string) {
   const statusParams = STATUS_FILTER_MAP[status] ?? {};
-  const filter = mergeFilters(statusParams.filter as Record<string, unknown> | undefined, readTaskFilter());
+  const workflowFilter = workflowKey ? { 'workflow.key': workflowKey } : undefined;
+  const filter = mergeFilters(
+    mergeFilters(statusParams.filter as Record<string, unknown> | undefined, workflowFilter),
+    readTaskFilter(),
+  );
   return {
     ...statusParams,
     filter,

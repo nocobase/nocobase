@@ -137,6 +137,19 @@ describe('PluginWorkflowManualClientV2 task type registration', () => {
       appends: expect.any(Array),
       except: ['node.config', 'workflow.config', 'workflow.options'],
     });
+    expect(taskType.useActionParams('pending', 'workflow-1')).toEqual({
+      filter: {
+        $and: [
+          {
+            status: TASK_STATUS.PENDING,
+            'execution.status': 0,
+          },
+          { 'workflow.key': 'workflow-1' },
+        ],
+      },
+      appends: expect.any(Array),
+      except: ['node.config', 'workflow.config', 'workflow.options'],
+    });
     expect(taskType).not.toHaveProperty('alwaysShow');
   });
 });

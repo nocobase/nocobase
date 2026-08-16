@@ -6,29 +6,13 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { CheckCircleOutlined, DownOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { observer } from '@nocobase/flow-engine';
-import {
-  App,
-  Badge,
-  Button,
-  Drawer,
-  Flex,
-  Input,
-  Layout,
-  Menu,
-  Result,
-  Segmented,
-  Spin,
-  Tabs,
-  theme,
-  Tooltip,
-} from 'antd';
-import type { InputRef, MenuProps } from 'antd';
+import { App, Badge, Button, Flex, Layout, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
 import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import {
@@ -63,7 +47,14 @@ import {
 } from '@nocobase/plugin-mobile/client';
 
 import PluginWorkflowClient from '.';
+import {
+  WorkflowTaskFilterProvider as SharedWorkflowTaskFilterProvider,
+  WorkflowTaskNavigation,
+  useWorkflowTaskFilterContext,
+} from '../shared/WorkflowTaskNavigation';
 import { lang, NAMESPACE } from './locale';
+
+export { useWorkflowTaskFilterContext } from '../shared/WorkflowTaskNavigation';
 
 const layoutClass = css`
   height: 100%;
@@ -88,34 +79,6 @@ type TaskStats = { pending: number; all: number };
 
 type Stats = Record<string, TaskStats>;
 
-type WorkflowTaskStatsItem = {
-  workflowKey: string;
-  title: string;
-  stats: {
-    pending: number;
-    all: number;
-  };
-};
-
-type WorkflowTaskSelection = {
-  typeKey: string;
-  workflow: WorkflowTaskStatsItem;
-};
-
-type WorkflowTaskFilterContextValue = {
-  selectedWorkflow: WorkflowTaskStatsItem | null;
-  selectWorkflow: (workflow: WorkflowTaskStatsItem | null) => void;
-  workflows: WorkflowTaskStatsItem[];
-  loading: boolean;
-  loadingMore: boolean;
-  hasNext: boolean;
-  error: boolean;
-  search: string;
-  setSearch: (search: string) => void;
-  loadMore: () => void;
-  reload: () => void;
-};
-
 const TasksCountsContext = createContext<{ reload: () => void; counts: Stats; total: number }>({
   reload() {},
   counts: {},
@@ -126,226 +89,24 @@ export function useTasksCountsContext() {
   return useContext(TasksCountsContext);
 }
 
-const WorkflowTaskFilterContext = createContext<WorkflowTaskFilterContextValue>({
-  selectedWorkflow: null,
-  selectWorkflow() {},
-  workflows: [],
-  loading: false,
-  loadingMore: false,
-  hasNext: false,
-  error: false,
-  search: '',
-  setSearch() {},
-  loadMore() {},
-  reload() {},
-});
-
-export function useWorkflowTaskFilterContext() {
-  return useContext(WorkflowTaskFilterContext);
-}
-
-const WORKFLOW_TASK_STATS_PAGE_SIZE = 200;
-
 function WorkflowTaskFilterProvider({ children }: React.PropsWithChildren) {
   const apiClient = useAPIClient();
   const app = useApp();
   const type = useCurrentTaskType();
   const typeKey = type?.key;
-  const [workflowSelection, setWorkflowSelection] = useState<WorkflowTaskSelection | null>(null);
-  const [workflows, setWorkflows] = useState<WorkflowTaskStatsItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(false);
-  const [search, setSearch] = useState('');
-  const requestIdRef = useRef(0);
-  const previousTypeKeyRef = useRef(typeKey);
-  const selectedWorkflow = workflowSelection?.typeKey === typeKey ? workflowSelection.workflow : null;
-
-  const selectWorkflow = useCallback(
-    (workflow: WorkflowTaskStatsItem | null) => {
-      setWorkflowSelection(workflow && typeKey ? { typeKey, workflow } : null);
-    },
-    [typeKey],
+  const loadWorkflowTaskStats = useCallback(
+    (params) => apiClient.resource('userWorkflowTaskStats').listMine(params),
+    [apiClient],
   );
-
-  const loadPage = useCallback(
-    async (nextPage: number, append: boolean) => {
-      if (!typeKey) {
-        setWorkflows([]);
-        setHasNext(false);
-        return;
-      }
-      const requestId = ++requestIdRef.current;
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-        setHasNext(false);
-      }
-      setError(false);
-      try {
-        const response = await apiClient.resource('userWorkflowTaskStats').listMine({
-          type: typeKey,
-          page: nextPage,
-          pageSize: WORKFLOW_TASK_STATS_PAGE_SIZE,
-          ...(search ? { search } : {}),
-        });
-        if (requestId !== requestIdRef.current) {
-          return;
-        }
-        const rows = (response.data?.data ?? []) as WorkflowTaskStatsItem[];
-        setWorkflowSelection((selection) => {
-          if (!selection || selection.typeKey !== typeKey) {
-            return selection;
-          }
-          const workflow = rows.find((item) => item.workflowKey === selection.workflow.workflowKey);
-          return workflow ? { ...selection, workflow } : selection;
-        });
-        setWorkflows((previous) => {
-          if (!append) {
-            return rows;
-          }
-          const result = new Map(previous.map((item) => [item.workflowKey, item]));
-          rows.forEach((item) => result.set(item.workflowKey, item));
-          return Array.from(result.values());
-        });
-        setPage(nextPage);
-        setHasNext(Boolean(response.data?.meta?.hasNext));
-      } catch (err) {
-        if (requestId === requestIdRef.current) {
-          setError(true);
-          console.error(err);
-        }
-      } finally {
-        if (requestId === requestIdRef.current) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
-      }
-    },
-    [apiClient, search, typeKey],
-  );
-
-  const reload = useCallback(() => {
-    loadPage(1, false);
-  }, [loadPage]);
-
-  const loadMore = useCallback(() => {
-    if (!hasNext || loading || loadingMore) {
-      return;
-    }
-    loadPage(page + 1, true);
-  }, [hasNext, loadPage, loading, loadingMore, page]);
-
-  useEffect(() => {
-    if (previousTypeKeyRef.current === typeKey) {
-      return;
-    }
-    previousTypeKeyRef.current = typeKey;
-    requestIdRef.current += 1;
-    setWorkflowSelection(null);
-    setWorkflows([]);
-    setPage(1);
-    setHasNext(false);
-    setSearch('');
-  }, [typeKey]);
-
-  useEffect(() => {
-    reload();
-  }, [reload]);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const onTaskUpdate = ({ detail }: CustomEvent) => {
-      if (detail?.type !== typeKey) {
-        return;
-      }
-      if (timer) {
-        clearTimeout(timer);
-      }
-      timer = setTimeout(reload, 300);
-    };
-    app.eventBus.addEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
-    return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
-      app.eventBus.removeEventListener('ws:message:workflow:tasks:updated', onTaskUpdate);
-    };
-  }, [app.eventBus, reload, typeKey]);
-
-  const value = useMemo<WorkflowTaskFilterContextValue>(
-    () => ({
-      selectedWorkflow,
-      selectWorkflow,
-      workflows,
-      loading,
-      loadingMore,
-      hasNext,
-      error,
-      search,
-      setSearch,
-      loadMore,
-      reload,
-    }),
-    [error, hasNext, loadMore, loading, loadingMore, reload, search, selectWorkflow, selectedWorkflow, workflows],
-  );
-
-  return <WorkflowTaskFilterContext.Provider value={value}>{children}</WorkflowTaskFilterContext.Provider>;
-}
-
-function MenuLink({ type }: any) {
-  const mobilePage = useMobilePage();
 
   return (
-    <Link
-      replace
-      to={
-        mobilePage
-          ? `/page/workflow-tasks/${type}/${TASK_STATUS.PENDING}`
-          : `/admin/workflow/tasks/${type}/${TASK_STATUS.PENDING}`
-      }
+    <SharedWorkflowTaskFilterProvider
+      eventBus={app.eventBus}
+      loadWorkflowTaskStats={loadWorkflowTaskStats}
+      typeKey={typeKey}
     >
-      <TaskTypeLabel type={type} />
-    </Link>
-  );
-}
-
-function TaskTypeLabel({ type }: { type: string }) {
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
-  const compile = useCompile();
-  const { counts } = useContext(TasksCountsContext);
-  const { token } = useToken();
-  const typeTitle = compile(workflowPlugin.taskTypes.get(type)?.title);
-
-  return (
-    <span
-      className={css`
-        display: flex;
-        gap: ${token.marginXS}px;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        min-width: 0;
-
-        > span:first-child {
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        > .ant-badge {
-          flex: none;
-        }
-      `}
-    >
-      <span>{typeTitle}</span>
-      <Badge count={counts[type]?.pending || 0} size="small" />
-    </span>
+      {children}
+    </SharedWorkflowTaskFilterProvider>
   );
 }
 
@@ -444,12 +205,7 @@ function useAvailableTaskTypeItems() {
     () =>
       types
         .filter((key: string) => workflowPlugin.taskTypes.get(key)?.alwaysShow || Boolean(counts[key]?.all))
-        .map((key: string) => {
-          return {
-            key,
-            label: <MenuLink type={key} />,
-          };
-        }),
+        .map((key: string) => ({ key })),
     [counts, types, workflowPlugin.taskTypes],
   );
 }
@@ -461,519 +217,6 @@ function useCurrentTaskType() {
   return useMemo<any>(
     () => workflowPlugin.taskTypes.get(taskType ?? items[0]) ?? {},
     [items, taskType, workflowPlugin.taskTypes],
-  );
-}
-
-function WorkflowMenuItemLabel({ title, count }: { title: React.ReactNode; count: number }) {
-  const { token } = useToken();
-  return (
-    <span
-      className={css`
-        display: flex;
-        gap: ${token.marginXS}px;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        min-width: 0;
-
-        > span:first-child {
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-      `}
-    >
-      <span>{title}</span>
-      <span
-        className={css`
-          flex: none;
-          color: ${token.colorTextTertiary};
-          font-size: ${token.fontSizeSM}px;
-          font-variant-numeric: tabular-nums;
-        `}
-      >
-        {count}
-      </span>
-    </span>
-  );
-}
-
-function WorkflowAllMenuItemLabel({
-  search,
-  searchValue,
-  onSearchValueChange,
-  onSearch,
-}: {
-  search: string;
-  searchValue: string;
-  onSearchValueChange: (value: string) => void;
-  onSearch: (value: string) => void;
-}) {
-  const { token } = useToken();
-  const [searchExpanded, setSearchExpanded] = useState(Boolean(search));
-  const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef = useRef<InputRef>(null);
-  const focusAfterExpandRef = useRef(false);
-  const isComposingRef = useRef(false);
-  const suppressSubmitRef = useRef(false);
-
-  useEffect(() => {
-    if (search) {
-      setSearchExpanded(true);
-    }
-  }, [search]);
-
-  useEffect(() => {
-    if (searchExpanded && focusAfterExpandRef.current) {
-      focusAfterExpandRef.current = false;
-      searchInputRef.current?.focus();
-    }
-  }, [searchExpanded]);
-
-  const expandSearchWithFocus = useCallback(() => {
-    focusAfterExpandRef.current = true;
-    setSearchExpanded(true);
-  }, []);
-
-  const collapseSearch = useCallback(() => {
-    if (!searchFocused && !searchValue) {
-      setSearchExpanded(false);
-    }
-  }, [searchFocused, searchValue]);
-
-  return (
-    <div
-      onMouseLeave={collapseSearch}
-      className={css`
-        display: flex;
-        align-items: center;
-        width: 100%;
-        height: ${token.controlHeight}px;
-      `}
-    >
-      {searchExpanded ? (
-        <form
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={(event) => event.stopPropagation()}
-          onSubmit={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (isComposingRef.current || suppressSubmitRef.current) {
-              suppressSubmitRef.current = false;
-              return;
-            }
-            onSearch(searchValue.trim());
-          }}
-          className={css`
-            width: 100%;
-          `}
-        >
-          <Input
-            ref={searchInputRef}
-            allowClear
-            size="small"
-            value={searchValue}
-            placeholder={lang('Search workflows')}
-            aria-label={lang('Search workflows')}
-            onCompositionStart={() => {
-              isComposingRef.current = true;
-            }}
-            onCompositionEnd={() => {
-              isComposingRef.current = false;
-            }}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => {
-              setSearchFocused(false);
-              if (!searchValue) {
-                setSearchExpanded(false);
-              }
-            }}
-            onChange={(event) => onSearchValueChange(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-              if (event.key === 'Enter') {
-                suppressSubmitRef.current = event.nativeEvent.isComposing || isComposingRef.current;
-              }
-              if (event.key === 'Escape') {
-                onSearchValueChange('');
-                onSearch('');
-                setSearchExpanded(false);
-              }
-            }}
-          />
-        </form>
-      ) : (
-        <>
-          <span
-            className={css`
-              flex: 1;
-              min-width: 0;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            `}
-          >
-            {lang('All workflows')}
-          </span>
-          <button
-            type="button"
-            aria-label={lang('Search workflows')}
-            onMouseDown={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              expandSearchWithFocus();
-            }}
-            onMouseEnter={() => setSearchExpanded(true)}
-            onFocus={expandSearchWithFocus}
-            className={css`
-              display: inline-flex;
-              flex: none;
-              align-items: center;
-              justify-content: flex-end;
-              width: ${token.controlHeightSM}px;
-              height: ${token.controlHeightSM}px;
-              padding: 0;
-              color: ${token.colorTextSecondary};
-              cursor: pointer;
-              background: transparent;
-              border: 0;
-              border-radius: ${token.borderRadiusSM}px;
-
-              &:hover,
-              &:focus-visible {
-                color: ${token.colorPrimary};
-              }
-
-              &:focus-visible {
-                outline: 2px solid ${token.colorPrimaryBorder};
-                outline-offset: -2px;
-              }
-            `}
-          >
-            <SearchOutlined />
-          </button>
-        </>
-      )}
-    </div>
-  );
-}
-
-function TaskNavigationContent({ onWorkflowSelect }: { onWorkflowSelect?: () => void }) {
-  const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const { token } = useToken();
-  const items = useAvailableTaskTypeItems();
-  const typeKey = taskType ?? items[0]?.key;
-  const navigate = useNavigate();
-  const mobilePage = useMobilePage();
-  const {
-    selectedWorkflow,
-    selectWorkflow,
-    workflows,
-    loading,
-    loadingMore,
-    hasNext,
-    error,
-    search,
-    setSearch,
-    loadMore,
-    reload,
-  } = useWorkflowTaskFilterContext();
-  const [searchValue, setSearchValue] = useState(search);
-  const typeMenuKey = typeKey ? `type:${typeKey}` : undefined;
-
-  useEffect(() => {
-    setSearchValue(search);
-  }, [search]);
-
-  const handleWorkflowSelect = useCallback(
-    (workflow: WorkflowTaskStatsItem | null) => {
-      selectWorkflow(workflow);
-      onWorkflowSelect?.();
-    },
-    [onWorkflowSelect, selectWorkflow],
-  );
-
-  const handleMenuClick = useCallback<NonNullable<MenuProps['onClick']>>(
-    ({ key }) => {
-      if (key === 'workflow:all') {
-        handleWorkflowSelect(null);
-        return;
-      }
-      if (key === 'action:retry') {
-        reload();
-        return;
-      }
-      if (key === 'action:loadMore') {
-        loadMore();
-        return;
-      }
-      if (!key.startsWith('workflow:')) {
-        return;
-      }
-      const workflowKey = key.slice('workflow:'.length);
-      const workflow = workflows.find((item) => item.workflowKey === workflowKey);
-      if (workflow) {
-        handleWorkflowSelect(workflow);
-      }
-    },
-    [handleWorkflowSelect, loadMore, reload, workflows],
-  );
-
-  const handleOpenChange = useCallback<NonNullable<MenuProps['onOpenChange']>>(
-    (openKeys) => {
-      const nextTypeMenuKey = [...openKeys].reverse().find((key) => key.startsWith('type:') && key !== typeMenuKey);
-      if (!nextTypeMenuKey) {
-        selectWorkflow(null);
-        return;
-      }
-      const nextType = nextTypeMenuKey.slice('type:'.length);
-      if (nextType === typeKey) {
-        return;
-      }
-      navigate(
-        mobilePage
-          ? `/page/workflow-tasks/${nextType}/${TASK_STATUS.PENDING}`
-          : `/admin/workflow/tasks/${nextType}/${TASK_STATUS.PENDING}`,
-      );
-    },
-    [mobilePage, navigate, selectWorkflow, typeKey, typeMenuKey],
-  );
-
-  useEffect(() => {
-    if (!items.length || taskType) {
-      return;
-    }
-    navigate(mobilePage ? `/page/workflow-tasks/${typeKey}/${status}` : `/admin/workflow/tasks/${typeKey}/${status}`, {
-      replace: true,
-    });
-  }, [items.length, mobilePage, navigate, status, taskType, typeKey]);
-
-  const workflowMenuItems: NonNullable<MenuProps['items']> = [
-    {
-      key: 'workflow:all',
-      label: (
-        <WorkflowAllMenuItemLabel
-          search={search}
-          searchValue={searchValue}
-          onSearchValueChange={(value) => {
-            setSearchValue(value);
-            if (!value && search) {
-              setSearch('');
-            }
-          }}
-          onSearch={setSearch}
-        />
-      ),
-    },
-    ...workflows.map((workflow) => ({
-      key: `workflow:${workflow.workflowKey}`,
-      label: <WorkflowMenuItemLabel title={workflow.title} count={workflow.stats.pending} />,
-    })),
-  ];
-
-  if (loading) {
-    workflowMenuItems.push({
-      key: 'status:loading',
-      disabled: true,
-      label: (
-        <Flex justify="center">
-          <Spin size="small" />
-        </Flex>
-      ),
-    });
-  }
-  if (error) {
-    workflowMenuItems.push({ key: 'action:retry', label: <Flex justify="center">{lang('Retry')}</Flex> });
-  }
-  if (hasNext && !error) {
-    workflowMenuItems.push({
-      key: 'action:loadMore',
-      disabled: loadingMore,
-      label: <Flex justify="center">{loadingMore ? <Spin size="small" /> : lang('Load more')}</Flex>,
-    });
-  }
-
-  return (
-    <Menu
-      mode="inline"
-      inlineIndent={token.padding}
-      expandIcon={null}
-      openKeys={typeMenuKey ? [typeMenuKey] : []}
-      selectedKeys={[selectedWorkflow ? `workflow:${selectedWorkflow.workflowKey}` : 'workflow:all']}
-      onClick={handleMenuClick}
-      onOpenChange={handleOpenChange}
-      items={items.map(({ key }) => ({
-        key: `type:${key}`,
-        label: <TaskTypeLabel type={key} />,
-        children:
-          key === typeKey
-            ? workflowMenuItems
-            : [
-                {
-                  key: `placeholder:${key}`,
-                  disabled: true,
-                  className: 'workflow-task-menu-placeholder',
-                  label: null,
-                },
-              ],
-      }))}
-      className={css`
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        min-height: 0;
-        overflow: hidden;
-        background: ${token.colorBgContainer};
-        border-inline-end: 0 !important;
-
-        > .ant-menu-submenu {
-          flex: none;
-          min-height: 0;
-        }
-
-        > .ant-menu-submenu-open {
-          display: flex;
-          flex: 0 1 auto;
-          flex-direction: column;
-          min-height: ${token.controlHeightLG + token.marginXXS * 2}px;
-          overflow: hidden;
-        }
-
-        > .ant-menu-submenu-open > .ant-menu-submenu-title {
-          flex: none;
-        }
-
-        > .ant-menu-submenu-open > .ant-menu-sub.ant-menu-inline {
-          flex: 1;
-          min-height: 0;
-          overflow-x: hidden;
-          overflow-y: auto;
-          overscroll-behavior: contain;
-        }
-
-        .ant-menu-sub.ant-menu-inline {
-          width: calc(100% - ${token.marginXXS * 2}px);
-          margin-inline: ${token.marginXXS}px;
-          padding-block: ${token.paddingXXS}px;
-          background: ${token.colorFillTertiary} !important;
-          border-radius: ${token.borderRadius}px;
-        }
-
-        .ant-menu-submenu-title {
-          padding-inline-end: ${token.padding}px;
-        }
-
-        .ant-menu-sub.ant-menu-inline > .ant-menu-item {
-          height: ${token.controlHeight}px;
-          margin-block: 0;
-          line-height: ${token.controlHeight}px;
-        }
-
-        .ant-menu-title-content {
-          min-width: 0;
-        }
-
-        .workflow-task-menu-placeholder {
-          display: none !important;
-        }
-      `}
-    />
-  );
-}
-
-function MobileTaskNavigation() {
-  const [open, setOpen] = useState(false);
-  const compile = useCompile();
-  const type = useCurrentTaskType();
-  const { selectedWorkflow } = useWorkflowTaskFilterContext();
-  const { token } = useToken();
-  return (
-    <>
-      <div
-        style={{
-          background: token.colorBgContainer,
-          padding: `0 ${token.paddingPageHorizontal}px ${token.paddingXXS}px`,
-        }}
-      >
-        <Button
-          block
-          type="text"
-          aria-expanded={open}
-          aria-label={lang('Select workflow')}
-          onClick={() => setOpen(true)}
-          className={css`
-            height: ${token.controlHeight}px;
-            padding-inline: ${token.paddingSM}px;
-            background: ${token.colorFillAlter};
-            border: 0;
-
-            &:hover,
-            &:focus-visible {
-              background: ${token.colorFillSecondary} !important;
-            }
-          `}
-        >
-          <Flex
-            align="center"
-            justify="space-between"
-            gap={token.marginXS}
-            className={css`
-              width: 100%;
-              min-width: 0;
-            `}
-          >
-            <Flex
-              align="center"
-              gap={token.marginXXS}
-              className={css`
-                min-width: 0;
-              `}
-            >
-              <span>{compile(type.title)}</span>
-              {selectedWorkflow ? (
-                <>
-                  <RightOutlined
-                    className={css`
-                      flex: none;
-                      color: ${token.colorTextTertiary};
-                      font-size: ${token.fontSizeSM}px;
-                    `}
-                  />
-                  <span
-                    className={css`
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                      white-space: nowrap;
-                    `}
-                  >
-                    {selectedWorkflow.title}
-                  </span>
-                </>
-              ) : null}
-            </Flex>
-            <DownOutlined
-              className={css`
-                flex: none;
-                margin-inline-start: auto;
-                color: ${token.colorTextSecondary};
-              `}
-            />
-          </Flex>
-        </Button>
-      </div>
-      <Drawer
-        title={lang('Workflow tasks')}
-        placement="left"
-        width="min(360px, 88vw)"
-        open={open}
-        onClose={() => setOpen(false)}
-        styles={{ body: { padding: 0 } }}
-      >
-        <TaskNavigationContent onWorkflowSelect={() => setOpen(false)} />
-      </Drawer>
-    </>
   );
 }
 
@@ -1214,35 +457,58 @@ function TaskPageContent() {
   );
 }
 
-function TaskMenu() {
-  const { token } = useToken();
+function TaskNavigation({ forceMobile }: { forceMobile?: boolean }) {
+  const workflowPlugin = usePlugin(PluginWorkflowClient);
+  const compile = useCompile();
+  const { counts } = useContext(TasksCountsContext);
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const items = useAvailableTaskTypeItems();
+  const currentTypeKey = taskType ?? items[0]?.key;
+  const navigate = useNavigate();
+  const mobilePage = useMobilePage();
   const { isMobileLayout } = useMobileLayout();
+  const mobile = forceMobile ?? Boolean(mobilePage || isMobileLayout);
+  const taskTypes = useMemo(
+    () =>
+      items.map(({ key }) => ({
+        key,
+        title: compile(workflowPlugin.taskTypes.get(key)?.title),
+        count: counts[key]?.pending || 0,
+      })),
+    [compile, counts, items, workflowPlugin.taskTypes],
+  );
 
-  return isMobileLayout ? (
-    <Layout.Header
-      style={{
-        background: token.colorBgContainer,
-        height: 'auto',
-        padding: `${token.paddingXXS}px 0 0`,
-        lineHeight: 'normal',
-      }}
-    >
-      <MobileTaskNavigation />
-    </Layout.Header>
-  ) : (
-    <Layout.Sider
-      theme="light"
-      width={220}
-      breakpoint="md"
-      collapsedWidth="0"
-      zeroWidthTriggerStyle={{ top: 24 }}
-      style={{
-        background: token.colorBgContainer,
-        borderInlineEnd: `1px solid ${token.colorBorderSecondary}`,
-      }}
-    >
-      <TaskNavigationContent />
-    </Layout.Sider>
+  const handleTaskTypeSelect = useCallback(
+    (nextTypeKey: string) => {
+      navigate(
+        mobilePage || forceMobile
+          ? `/page/workflow-tasks/${nextTypeKey}/${TASK_STATUS.PENDING}`
+          : `/admin/workflow/tasks/${nextTypeKey}/${TASK_STATUS.PENDING}`,
+      );
+    },
+    [forceMobile, mobilePage, navigate],
+  );
+
+  useEffect(() => {
+    if (!items.length || taskType || !currentTypeKey) {
+      return;
+    }
+    navigate(
+      mobilePage || forceMobile
+        ? `/page/workflow-tasks/${currentTypeKey}/${status}`
+        : `/admin/workflow/tasks/${currentTypeKey}/${status}`,
+      { replace: true },
+    );
+  }, [currentTypeKey, forceMobile, items.length, mobilePage, navigate, status, taskType]);
+
+  return (
+    <WorkflowTaskNavigation
+      currentTypeKey={currentTypeKey}
+      mobile={mobile}
+      onTaskTypeSelect={handleTaskTypeSelect}
+      taskTypes={taskTypes}
+      t={lang}
+    />
   );
 }
 
@@ -1262,7 +528,7 @@ export function WorkflowTasks() {
     <TasksCountsProvider>
       <WorkflowTaskFilterProvider>
         <Layout className={layoutClass}>
-          <TaskMenu />
+          <TaskNavigation />
           <Layout
             className={css`
               > div {
@@ -1504,7 +770,7 @@ export function WorkflowTasksMobile() {
             <NavBar className="nb-workflow-tasks-back-action" onBack={() => navigate(-1)}>
               {lang('Workflow tasks')}
             </NavBar>
-            <MobileTaskNavigation />
+            <TaskNavigation forceMobile />
           </MobilePageHeader>
           <MobilePageContentContainer
             className={css`

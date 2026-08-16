@@ -12,23 +12,7 @@ import { useMobileLayout } from '@nocobase/client-v2';
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { useMemoizedFn } from 'ahooks';
-import {
-  App,
-  Badge,
-  Button,
-  Flex,
-  Layout,
-  List,
-  Menu,
-  Modal,
-  Result,
-  Segmented,
-  Select,
-  Tabs,
-  Typography,
-  theme,
-} from 'antd';
-import type { MenuProps } from 'antd';
+import { App, Button, Flex, Layout, List, Modal, Result, Segmented, Select, Tabs, Typography, theme } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { getWorkflowTasksPath } from '../constants';
@@ -52,14 +36,17 @@ import {
   type WorkflowTaskStatus,
 } from '../taskCenter';
 import { useT } from '../locale';
+import {
+  WorkflowTaskFilterProvider,
+  WorkflowTaskNavigation,
+  useWorkflowTaskFilterContext,
+} from '../../shared/WorkflowTaskNavigation';
 
 interface WorkflowTasksRouteParams {
   taskType?: string;
   status?: string;
   popupId?: string;
 }
-
-const MOBILE_TASK_TYPE_MENU_HEIGHT = 42;
 
 interface PendingWorkflowTaskPopupRecord {
   popupId: string;
@@ -146,94 +133,15 @@ function useCurrentTaskType(
   };
 }
 
-function TaskTypeMenu(props: {
-  taskTypes: ReturnType<typeof getWorkflowTaskRegistry>;
-  counts: ReturnType<typeof useWorkflowTaskCounts>['counts'];
-  selectedKey?: string;
-  status: WorkflowTaskStatus;
-  mobile: boolean;
-}) {
-  const { taskTypes, counts, selectedKey, status, mobile } = props;
-  const navigate = useNavigate();
-  const t = useT();
-  const { token } = theme.useToken();
-  const route = useWorkflowTasksRoute();
-  const taskTypeKeys = useMemo(() => getAvailableWorkflowTaskTypeKeys(taskTypes, counts), [counts, taskTypes]);
-  const items = useMemo<MenuProps['items']>(
-    () =>
-      taskTypeKeys.map((key) => {
-        const type = taskTypes?.get(key);
-        return {
-          key,
-          label: (
-            <Flex align="center" justify="space-between" gap={token.marginSM}>
-              <span>{type?.title ? t(type.title) : key}</span>
-              <Badge count={counts[key]?.pending || 0} size="small" />
-            </Flex>
-          ),
-        };
-      }),
-    [counts, t, taskTypeKeys, taskTypes, token.marginSM],
-  );
-
-  const handleMenuClick = useMemoizedFn(({ key }: { key: string }) => {
-    navigate(
-      withCurrentLocationSuffix(getWorkflowTasksPath(key, TASK_STATUS.PENDING, undefined, route.isMobileRoute), route),
-    );
-  });
-
-  if (!items?.length) {
-    return null;
-  }
-
-  if (mobile) {
-    return (
-      <Menu
-        data-testid="workflow-task-type-menu"
-        mode="horizontal"
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        items={items}
-        onClick={handleMenuClick}
-        style={{
-          background: token.colorBgContainer,
-          borderBottomColor: token.colorBorderSecondary,
-          height: MOBILE_TASK_TYPE_MENU_HEIGHT,
-          lineHeight: `${MOBILE_TASK_TYPE_MENU_HEIGHT}px`,
-          minHeight: MOBILE_TASK_TYPE_MENU_HEIGHT,
-          minWidth: 0,
-        }}
-      />
-    );
-  }
-
-  return (
-    <Layout.Sider
-      theme="light"
-      breakpoint="md"
-      collapsedWidth={0}
-      style={{
-        background: token.colorBgContainer,
-        borderRight: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
-      }}
-    >
-      <Menu
-        mode="inline"
-        selectedKeys={selectedKey ? [selectedKey] : []}
-        items={items}
-        onClick={handleMenuClick}
-        style={{ height: '100%', borderInlineEnd: 0 }}
-      />
-    </Layout.Sider>
-  );
-}
-
 function TaskStatusControls(props: {
   type: TaskTypeOptions;
   status: WorkflowTaskStatus;
   mobile: boolean;
   reload: () => Promise<void>;
+  workflowKey?: string;
+  workflowPendingCount?: number;
 }) {
-  const { type, status, mobile, reload } = props;
+  const { type, status, mobile, reload, workflowKey, workflowPendingCount } = props;
   const navigate = useNavigate();
   const t = useT();
   const { token } = theme.useToken();
@@ -270,7 +178,9 @@ function TaskStatusControls(props: {
           onChange={handleStatusChange}
           style={{ minWidth: 0 }}
         />
-        {Actions ? <Actions onlyIcon reload={reload} /> : null}
+        {Actions ? (
+          <Actions onlyIcon reload={reload} workflowKey={workflowKey} workflowPendingCount={workflowPendingCount} />
+        ) : null}
       </Flex>
     );
   }
@@ -281,7 +191,13 @@ function TaskStatusControls(props: {
       onChange={handleStatusChange}
       items={statusItems.map(({ key, label }) => ({ key, label }))}
       tabBarStyle={{ marginBottom: 0 }}
-      tabBarExtraContent={Actions ? { right: <Actions reload={reload} /> } : undefined}
+      tabBarExtraContent={
+        Actions
+          ? {
+              right: <Actions reload={reload} workflowKey={workflowKey} workflowPendingCount={workflowPendingCount} />,
+            }
+          : undefined
+      }
     />
   );
 }
@@ -533,12 +449,16 @@ function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClos
   );
 }
 
-function WorkflowTasksPageContent() {
-  const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
-  const taskTypes = getWorkflowTaskRegistry(ctx);
-  const countsState = useWorkflowTaskCounts(ctx, taskTypes);
+function WorkflowTasksPageContent(props: {
+  availableTaskTypeKeys: string[];
+  countsState: ReturnType<typeof useWorkflowTaskCounts>;
+  ctx?: WorkflowTaskFlowContext;
+  currentTaskType?: TaskTypeOptions;
+  currentTaskTypeKey?: string;
+  taskTypes: ReturnType<typeof getWorkflowTaskRegistry>;
+}) {
+  const { availableTaskTypeKeys, countsState, ctx, currentTaskType, currentTaskTypeKey, taskTypes } = props;
   const { counts, reload: reloadCounts } = countsState;
-  const { currentTaskType, currentTaskTypeKey, availableTaskTypeKeys } = useCurrentTaskType(taskTypes, counts);
   const route = useWorkflowTasksRoute();
   const { isMobileLayout } = useMobileLayout();
   const mobile = route.isMobileRoute || isMobileLayout;
@@ -546,12 +466,15 @@ function WorkflowTasksPageContent() {
   const { message } = App.useApp();
   const t = useT();
   const { token } = theme.useToken();
+  const { selectedWorkflow } = useWorkflowTaskFilterContext();
   const [records, setRecords] = useState<WorkflowTaskRecord[]>([]);
   const [currentRecord, setCurrentRecord] = useState<WorkflowTaskRecord | null>(() =>
     getPendingWorkflowTaskPopupRecord(currentTaskTypeKey, route.popupId),
   );
   const [total, setTotal] = useState(0);
-  const listSignature = `${currentTaskTypeKey ?? ''}\n${route.status}\n${route.search}`;
+  const listSignature = `${currentTaskTypeKey ?? ''}\n${route.status}\n${selectedWorkflow?.workflowKey ?? ''}\n${
+    route.search
+  }`;
   const [paginationState, setPaginationState] = useState({ signature: '', page: 1 });
   const page = paginationState.signature === listSignature ? paginationState.page : 1;
   const [loading, setLoading] = useState(false);
@@ -617,7 +540,7 @@ function WorkflowTasksPageContent() {
 
     setLoading(true);
     try {
-      const params = currentTaskType.useActionParams?.(route.status) ?? {};
+      const params = currentTaskType.useActionParams?.(route.status, selectedWorkflow?.workflowKey) ?? {};
       const response = await list({
         page,
         pageSize: WORKFLOW_TASKS_PAGE_SIZE,
@@ -656,7 +579,15 @@ function WorkflowTasksPageContent() {
     return () => {
       listRequestSeqRef.current += 1;
     };
-  }, [currentTaskTypeKey, loadRecords, page, route.search, route.status, showLoadFailed]);
+  }, [
+    currentTaskTypeKey,
+    loadRecords,
+    page,
+    route.search,
+    route.status,
+    selectedWorkflow?.workflowKey,
+    showLoadFailed,
+  ]);
 
   const loadPopupRecord = useMemoizedFn(async () => {
     const requestSeq = ++popupRequestSeqRef.current;
@@ -779,6 +710,25 @@ function WorkflowTasksPageContent() {
     setPaginationState({ signature: listSignature, page: nextPage });
   });
 
+  const navigationTaskTypes = useMemo(
+    () =>
+      availableTaskTypeKeys.map((key) => ({
+        key,
+        title: taskTypes?.get(key)?.title ? t(taskTypes.get(key)?.title as string) : key,
+        count: counts[key]?.pending || 0,
+      })),
+    [availableTaskTypeKeys, counts, t, taskTypes],
+  );
+
+  const handleTaskTypeSelect = useMemoizedFn((nextTypeKey: string) => {
+    navigate(
+      withCurrentLocationSuffix(
+        getWorkflowTasksPath(nextTypeKey, TASK_STATUS.PENDING, undefined, route.isMobileRoute),
+        route,
+      ),
+    );
+  });
+
   if (!currentTaskType || !currentTaskTypeKey) {
     return (
       <Result
@@ -799,7 +749,14 @@ function WorkflowTasksPageContent() {
           {t(currentTaskType.title)}
         </Typography.Title>
       )}
-      <TaskStatusControls type={currentTaskType} status={route.status} mobile={mobile} reload={refresh} />
+      <TaskStatusControls
+        type={currentTaskType}
+        status={route.status}
+        mobile={mobile}
+        reload={refresh}
+        workflowKey={selectedWorkflow?.workflowKey}
+        workflowPendingCount={selectedWorkflow?.stats.pending}
+      />
     </Flex>
   );
   const DetailModal = currentTaskType.DetailModal ?? WorkflowTaskDetailModal;
@@ -821,6 +778,15 @@ function WorkflowTasksPageContent() {
         background: token.colorBgLayout,
       }}
     >
+      {renderMobileDetailPage ? null : (
+        <WorkflowTaskNavigation
+          currentTypeKey={currentTaskTypeKey}
+          mobile={mobile}
+          onTaskTypeSelect={handleTaskTypeSelect}
+          taskTypes={navigationTaskTypes}
+          t={t}
+        />
+      )}
       {mobile && !renderMobileDetailPage ? (
         <Layout.Header
           style={{
@@ -831,26 +797,9 @@ function WorkflowTasksPageContent() {
             borderBottom: `${token.lineWidth}px ${token.lineType} ${token.colorBorderSecondary}`,
           }}
         >
-          <Flex vertical gap={0}>
-            <TaskTypeMenu
-              taskTypes={taskTypes}
-              counts={counts}
-              selectedKey={currentTaskTypeKey}
-              status={route.status}
-              mobile
-            />
-            <div style={{ padding: token.paddingSM }}>{header}</div>
-          </Flex>
+          <div style={{ padding: token.paddingSM }}>{header}</div>
         </Layout.Header>
-      ) : mobile ? null : (
-        <TaskTypeMenu
-          taskTypes={taskTypes}
-          counts={counts}
-          selectedKey={currentTaskTypeKey}
-          status={route.status}
-          mobile={false}
-        />
-      )}
+      ) : null}
       <Layout style={{ background: token.colorBgLayout }}>
         <Layout.Content
           style={{
@@ -917,5 +866,22 @@ function WorkflowTasksPageContent() {
 }
 
 export default function WorkflowTasksPage() {
-  return <WorkflowTasksPageContent />;
+  const ctx = useFlowContext() as WorkflowTaskFlowContext | undefined;
+  const taskTypes = getWorkflowTaskRegistry(ctx);
+  const countsState = useWorkflowTaskCounts(ctx, taskTypes);
+  const currentTaskTypeState = useCurrentTaskType(taskTypes, countsState.counts);
+  const loadWorkflowTaskStats = useMemoizedFn(async (params) => {
+    const listMine = ctx?.api.resource('userWorkflowTaskStats').listMine;
+    return listMine ? listMine(params) : { data: { data: [], meta: {} } };
+  });
+
+  return (
+    <WorkflowTaskFilterProvider
+      eventBus={ctx?.app?.eventBus}
+      loadWorkflowTaskStats={loadWorkflowTaskStats}
+      typeKey={currentTaskTypeState.currentTaskTypeKey}
+    >
+      <WorkflowTasksPageContent {...currentTaskTypeState} countsState={countsState} ctx={ctx} taskTypes={taskTypes} />
+    </WorkflowTaskFilterProvider>
+  );
 }

@@ -180,7 +180,7 @@ describe('workflow-manual v2 task type', () => {
     expect(holder.collectionFilterProps[0]).toEqual(
       expect.objectContaining({
         collection: holder.filterCollection,
-        filterableFieldNames: ['title', 'workflow'],
+        filterableFieldNames: ['title'],
       }),
     );
     expect(holder.navigate).toHaveBeenCalledWith(expect.stringContaining('workflowManualTasksFilter='), {

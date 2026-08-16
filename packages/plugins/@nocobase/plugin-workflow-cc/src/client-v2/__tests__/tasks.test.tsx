@@ -210,9 +210,9 @@ describe('workflow-cc v2 task type', () => {
     expect(holder.collectionFilterProps[0]).toEqual(
       expect.objectContaining({
         collection: holder.workflowCcTasksCollection,
-        filterableFieldNames: ['title', 'workflow'],
+        filterableFieldNames: ['title'],
         initialValue: {
-          $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
+          $and: [{ title: { $includes: '' } }],
         },
       }),
     );
@@ -303,6 +303,32 @@ describe('workflow-cc v2 task type', () => {
 
     await waitFor(() => expect(holder.read).toHaveBeenCalledTimes(1));
     expect(button).toBeDisabled();
+  });
+
+  it('marks only the selected workflow as read and uses its pending count', async () => {
+    holder.counts = { cc: { pending: 0 } };
+    holder.read.mockResolvedValue({});
+    const Actions = ccTaskType.Actions as React.ComponentType<{
+      reload?: () => Promise<void>;
+      workflowKey?: string;
+      workflowPendingCount?: number;
+    }>;
+
+    renderWithApp(
+      <Actions reload={vi.fn().mockResolvedValue(undefined)} workflowKey="workflow-1" workflowPendingCount={2} />,
+    );
+
+    const button = screen.getByRole('button', { name: /Mark all as read/ });
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+
+    await waitFor(() =>
+      expect(holder.read).toHaveBeenCalledWith({
+        filter: {
+          'workflow.key': 'workflow-1',
+        },
+      }),
+    );
   });
 
   it('does not run a duplicate count reload after Mark all as read when task-center reload is provided', async () => {

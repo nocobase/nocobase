@@ -125,6 +125,11 @@ describe('PluginWorkflowCCClientV2 task type registration', () => {
         status: 1,
       },
     });
+    expect(taskType.useActionParams('pending', 'workflow-1')).toMatchObject({
+      filter: {
+        $and: [{ status: 0 }, { 'workflow.key': 'workflow-1' }],
+      },
+    });
 
     const get = vi.fn();
     const apiClient = {
