@@ -7,7 +7,7 @@
 | Import | Contract |
 | --- | --- |
 | `@nocobase/runjs` | Source locators, diagnostics, runtime artifacts, path normalization, and stable serialization |
-| `@nocobase/runjs/client` | Dependency-light RunJS registries, runtime logic, error parsing, source resolution, evaluation, and Host lifecycle factory |
+| `@nocobase/runjs/client` | Dependency-light default RunJS runtime and registry hosts for browser clients |
 | `@nocobase/runjs/compiler` | Virtual-workspace compilation and source inspection |
 | `@nocobase/runjs/compiler/build-identity` | Compiler build identity without loading the compiler |
 | `@nocobase/runjs/compiler/loader` | Server-only lazy compiler loading that works from source and built packages |
@@ -43,13 +43,14 @@ The generated settings import is authoring-only and is not stored with runtime a
 
 ## Multi-file Workspace
 
-The Workspace implementation has three explicit layers:
+The Workspace implementation has explicit layers:
 
-- `client`, `compiler`, the root entry, and `workspace/shared` are runtime-neutral. The client entry implements the reusable Registry and Runtime Host logic against the ports defined by Shared; neither entry imports a NocoBase client runtime or UI framework. Shared also defines API-client, Flow-context, editor-provider, authoring-surface, diagnostics, and lifecycle-disposal ports. Snapshot, change-plan, path, and diagnostic helpers live here as well.
+- `compiler`, the root entry, and `workspace/shared` are runtime-neutral. Shared defines the API-client, registry, runtime, Flow-context, editor-provider, authoring-surface, diagnostics, and lifecycle-disposal ports used by host adapters. Snapshot, change-plan, path, and diagnostic helpers also live here and do not import a NocoBase client runtime.
 - `workspace/server` owns Database/Server-backed persistence, compilation materialization, permissions, diagnostics, ZIP handling, and Workspace services. It may depend on NocoBase Database and Server, but never on a browser client.
-- Core client-v2 owns the Flow-context adapter and installs the single default Registry and Runtime Host chain through its built-in Flow Engine plugin. The JS Template plugin registers multi-file and TypeScript authoring providers, Studio, and Workspace API lifecycle contributions without owning another default Host.
+- `client` owns the default dependency-light RunJS registry and runtime implementation. Client V2 supplies the FlowContext adapter and installs those hosts from its built-in `PluginFlowEngine`.
+- The JS Template plugin owns the multi-file and TypeScript authoring providers, Studio, and Workspace API lifecycle.
 
-The package publishes the browser-safe `client` entry for reusable Host logic. Consumers still obtain the active Host through core client-v2; they do not bootstrap a second Host from this entry.
+The browser entry does not import Client V2, Flow Engine, React, compiler, or server modules. Client-specific lifecycle and FlowContext behavior stay in the consuming client runtime.
 
 ## Virtual-workspace compiler
 
@@ -82,7 +83,7 @@ Settings descriptors and values are JSON data. Runtime code and source files do 
 
 - Root, compiler, `workspace/shared`, and `workspace/server` do not import client packages, including through type-only imports
 - Runtime-neutral Workspace code does not import Flow Engine host types; adapters exchange data through `workspace/shared` ports
-- Browser client code uses the dependency-light root or settings entry and never imports compiler or server helpers
+- Browser client code uses the dependency-light root, client, or settings entry and never imports compiler or server helpers
 - Server code imports `@nocobase/runjs/server` or compiler subpaths
 - JS Template consumers import only `@nocobase/runjs/js-template/*`
 - Workspace consumers import neutral contracts from `@nocobase/runjs/workspace/shared` and server behavior from the explicit server or Swagger entry
@@ -98,14 +99,13 @@ Run server tests sequentially:
 yarn test packages/core/runjs/src/compiler/__tests__/compiler-golden.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/compiler/__tests__/compiler-paths.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/workspace/server/__tests__/client-import-boundaries.test.ts --run --reporter=verbose
+yarn test packages/core/runjs/src/__tests__/package-exports.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/__tests__/settings-condition.test.ts --run --reporter=verbose
 yarn test packages/core/runjs/src/settings/__tests__/settings.test.ts --run --reporter=verbose
 ```
 
-Build the package after compiler or export changes, then verify the real tarballs from an external consumer. Quick mode packs RunJS and JS Template; the real-client-v2 mode also packs client-v2 and checks the final browser dependency topology. The real-client-v2 mode is not supported on Windows.
+Build the package after compiler or export changes:
 
 ```bash
 yarn build @nocobase/runjs
-yarn --cwd packages/core/runjs verify:package-boundary --json
-yarn --cwd packages/core/runjs verify:package-boundary --real-client-v2 --json
 ```

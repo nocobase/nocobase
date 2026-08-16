@@ -8,11 +8,14 @@
  */
 
 import type { ParamObject, RunJSValue } from '@nocobase/flow-engine';
-export { RunJSSourceResolverError } from '@nocobase/runjs/client';
+import type { RunJSSourceMode } from '@nocobase/runjs/workspace/shared';
 
-export const INLINE_RUNJS_SOURCE_MODE = 'inline';
-
-export type RunJSSourceMode = typeof INLINE_RUNJS_SOURCE_MODE | (string & {});
+export {
+  INLINE_RUNJS_SOURCE_MODE,
+  RunJSSourceResolverError,
+  type RunJSSourceResolverErrorCode,
+} from '@nocobase/runjs/workspace/shared';
+export type { RunJSSourceMode };
 export type RunJSSourceBinding = Record<string, unknown>;
 export type RunJSSourceSettings = Record<string, unknown>;
 export type RunJSSourceContext = Record<string, unknown>;
@@ -71,13 +74,6 @@ export interface RunJSSourceMenuSelectInput extends RunJSSourceMenuInput {
   defaultParams: ParamObject;
 }
 
-export interface RunJSSourceMenuLabels {
-  searchPlaceholder: string;
-  loadingLabel: string;
-  emptyLabel: string;
-  errorLabel: string;
-}
-
 export interface ResolvedRuntimeRunJS {
   code: string;
   version: string;
@@ -90,7 +86,6 @@ export interface ResolvedRuntimeRunJS {
 
 export interface RunJSSourceResolver {
   sourceMode: RunJSSourceMode;
-  getSourceMenuLabels?: () => Partial<RunJSSourceMenuLabels>;
   resolve: (input: RunJSSourceResolverInput) => RunJSSourceResolverResult | Promise<RunJSSourceResolverResult>;
   getBindingTitle?: (input: RunJSSourceResolverInput) => string | undefined | Promise<string | undefined>;
   getSettingsDescriptor?: (

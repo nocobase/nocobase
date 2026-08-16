@@ -31,7 +31,6 @@ import {
   clearRunJSRegistryHosts,
   clearRunJSRuntimeHosts,
 } from '@nocobase/client-v2';
-import PluginFlowEngineClient from '@nocobase/plugin-flow-engine/client';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
@@ -52,8 +51,7 @@ function createLegacyApplication() {
 }
 
 async function loadLegacyPlugins(app: Application) {
-  const flowEngine = new PluginFlowEngineClient({ name: 'plugin-flow-engine' }, app);
-  await flowEngine.load();
+  const flowEngine = app.pm.get(PluginFlowEngine) as PluginFlowEngine;
   const jsTemplate = new PluginJsTemplateClient({ name: 'js-template', packageName: NAMESPACE }, app);
 
   await jsTemplate.afterAdd();

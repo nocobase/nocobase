@@ -12,8 +12,8 @@ import _ from 'lodash';
 
 export class PluginFlowEngineClient extends Plugin {
   async afterAdd() {}
-
-  dispose() {}
+  async beforeLoad() {}
+  async load() {}
 }
 
 export default PluginFlowEngineClient;

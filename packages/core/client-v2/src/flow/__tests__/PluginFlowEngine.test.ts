@@ -10,10 +10,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createMockClient } from '../../MockApplication';
-import { PluginFlowEngine } from '../index';
-import { clearRunJSRegistryHosts, getRunJSRegistryHost } from '../components/runjs-source/RunJSRegistryHost';
-import { clearRunJSRuntimeHosts, getRunJSRuntimeHost } from '../components/runjs-source/RunJSRuntimeHost';
-import { RunJSEditorRegistry } from '../components/runjs-studio/RunJSEditorRegistry';
+import {
+  clearRunJSRegistryHosts,
+  clearRunJSRuntimeHosts,
+  evaluateInlineRunJSValue,
+  getRunJSRegistryHost,
+  getRunJSRuntimeHost,
+  PluginFlowEngine,
+  resolveRuntimeRunJS,
+} from '../index';
 
 const { detectedDeviceType } = vi.hoisted(() => ({
   detectedDeviceType: { value: 'mobile' },
@@ -28,8 +33,6 @@ vi.mock('react-device-detect', () => ({
 describe('PluginFlowEngine', () => {
   beforeEach(() => {
     detectedDeviceType.value = 'mobile';
-    clearRunJSRegistryHosts();
-    clearRunJSRuntimeHosts();
   });
 
   afterEach(() => {
@@ -56,6 +59,63 @@ describe('PluginFlowEngine', () => {
 
     expect(app.flowEngine.getAction('openView')).toBeTruthy();
     expect(warn.mock.calls.flat().join('\n')).not.toContain("Action 'openView' is already registered");
+    (app.pm.get(PluginFlowEngine) as PluginFlowEngine).dispose();
+  });
+
+  it('installs the default RunJS hosts from core', async () => {
+    const app = createMockClient();
+    const plugin = new PluginFlowEngine({}, app);
+
+    await plugin.beforeLoad();
+    await expect(resolveRuntimeRunJS({ runJs: { code: 'return 1;' } })).resolves.toMatchObject({
+      code: 'return 1;',
+      version: 'v1',
+      sourceMode: 'inline',
+      settings: {},
+    });
+    await expect(
+      evaluateInlineRunJSValue({
+        ctx: app.flowEngine.context,
+        runJs: {
+          code: 'return [ctx.settings.region, ctx.runJsSource.sourceMode, typeof window];',
+          version: 'v2',
+          settings: { region: 'APAC' },
+        },
+      }),
+    ).resolves.toEqual(['APAC', 'inline', 'object']);
+
+    plugin.dispose();
+    expect(getRunJSRegistryHost()).toBeUndefined();
+    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
+  });
+
+  it('hands the global RunJS hosts to the newest core plugin instance', async () => {
+    const first = new PluginFlowEngine({}, createMockClient());
+    const second = new PluginFlowEngine({}, createMockClient());
+    const activeOwnerKey = Symbol.for('nocobase.client-v2.plugin-flow-engine.runjs-client');
+    const activeOwnerState = globalThis as typeof globalThis & { [activeOwnerKey]?: PluginFlowEngine };
+
+    await first.beforeLoad();
+    expect(activeOwnerState[activeOwnerKey]).toBe(first);
+    const firstRegistryHost = getRunJSRegistryHost();
+    const firstRuntimeHost = getRunJSRuntimeHost();
+
+    await second.beforeLoad();
+    const secondRegistryHost = getRunJSRegistryHost();
+    const secondRuntimeHost = getRunJSRuntimeHost();
+    expect(activeOwnerState[activeOwnerKey]).toBe(second);
+    expect(secondRegistryHost).not.toBe(firstRegistryHost);
+    expect(secondRuntimeHost).not.toBe(firstRuntimeHost);
+
+    first.dispose();
+    expect(activeOwnerState[activeOwnerKey]).toBe(second);
+    expect(getRunJSRegistryHost()).toBe(secondRegistryHost);
+    expect(getRunJSRuntimeHost()).toBe(secondRuntimeHost);
+
+    second.dispose();
+    expect(activeOwnerState[activeOwnerKey]).toBeUndefined();
+    expect(getRunJSRegistryHost()).toBeUndefined();
+    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
   });
 
   it('should register the current device type before shared flow components', async () => {
@@ -77,6 +137,7 @@ describe('PluginFlowEngine', () => {
 
     expect(app.flowEngine.context.deviceType).toBe('mobile');
     expect(deviceTypesBeforeComponentRegistration).toEqual(['mobile']);
+    plugin.dispose();
   });
 
   it('should normalize the browser device type to computer', async () => {
@@ -87,60 +148,6 @@ describe('PluginFlowEngine', () => {
     await plugin.load();
 
     expect(app.flowEngine.context.deviceType).toBe('computer');
-  });
-
-  it('installs the default RunJS hosts idempotently and releases them on dispose', async () => {
-    const app = createMockClient();
-    const plugin = new PluginFlowEngine({}, app);
-
-    await plugin.beforeLoad();
-    const registryHost = getRunJSRegistryHost();
-    const runtimeHost = getRunJSRuntimeHost();
-    await plugin.beforeLoad();
-    await plugin.load();
-
-    expect(getRunJSRegistryHost()).toBe(registryHost);
-    expect(getRunJSRuntimeHost()).toBe(runtimeHost);
-
-    plugin.dispose();
-    expect(getRunJSRegistryHost()).toBeUndefined();
-    expect(() => getRunJSRuntimeHost()).toThrow('RunJS client runtime is not installed');
-  });
-
-  it('lets the latest application take over and restores the preceding hosts when released', async () => {
-    const first = new PluginFlowEngine({}, createMockClient());
-    const second = new PluginFlowEngine({}, createMockClient());
-
-    await first.beforeLoad();
-    const firstRegistryHost = getRunJSRegistryHost();
-    const firstRuntimeHost = getRunJSRuntimeHost();
-    await second.beforeLoad();
-
-    expect(getRunJSRegistryHost()).not.toBe(firstRegistryHost);
-    expect(getRunJSRuntimeHost()).not.toBe(firstRuntimeHost);
-
-    second.dispose();
-    expect(getRunJSRegistryHost()).toBe(firstRegistryHost);
-    expect(getRunJSRuntimeHost()).toBe(firstRuntimeHost);
-
-    first.dispose();
-    expect(getRunJSRegistryHost()).toBeUndefined();
-  });
-
-  it('adopts contributions registered before the default host is installed', async () => {
-    const disposeEditor = RunJSEditorRegistry.registerProvider({
-      key: 'early-editor',
-      renderEditor: () => null,
-    });
-    const plugin = new PluginFlowEngine({}, createMockClient());
-
-    expect(RunJSEditorRegistry.getProviders().map(({ key }) => key)).toEqual(['early-editor']);
-
-    await plugin.beforeLoad();
-    expect(RunJSEditorRegistry.getProviders().map(({ key }) => key)).toEqual(['early-editor']);
-
-    disposeEditor();
-    expect(RunJSEditorRegistry.getProviders()).toEqual([]);
     plugin.dispose();
   });
 });

@@ -29,7 +29,6 @@ import {
 } from '@nocobase/client-v2';
 import { FlowEngineProvider } from '@nocobase/flow-engine';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import PluginFlowEngineClientV2 from '@nocobase/plugin-flow-engine/client-v2';
 
 import { JS_TEMPLATE_ACL_SNIPPET, JS_TEMPLATE_SETTINGS_KEY, NAMESPACE } from '../../constants';
 import {
@@ -99,7 +98,6 @@ describe('PluginJsTemplateClientV2', () => {
     const app = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine' }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
         [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
       ],
     });
@@ -160,35 +158,16 @@ describe('PluginJsTemplateClientV2', () => {
     expectWorkspaceAuthoringRegistrations(0);
   });
 
-  it('loads successfully when registered before the Flow Engine plugin', async () => {
-    const app = createMockClient({
-      plugins: [
-        [PluginFlowEngine, { name: 'flow-engine' }],
-        [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
-      ],
-    });
-
-    await expect(app.load()).resolves.toBeUndefined();
-    expectJsTemplateRegistrations(1);
-    expectWorkspaceAuthoringRegistrations(1);
-
-    (app.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2).dispose();
-    (app.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
-  });
-
   it('hands active contributions from one client instance to the next', async () => {
     const appA = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine-a' }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine-a', packageName: '@nocobase/plugin-flow-engine' }],
         [PluginJsTemplateClientV2, { name: 'js-template-a', packageName: NAMESPACE }],
       ],
     });
     const appB = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine-b' }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine-b', packageName: '@nocobase/plugin-flow-engine' }],
         [PluginJsTemplateClientV2, { name: 'js-template-b', packageName: NAMESPACE }],
       ],
     });
@@ -232,8 +211,8 @@ describe('PluginJsTemplateClientV2', () => {
     } finally {
       pluginA?.dispose();
       pluginB?.dispose();
-      (appA.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
-      (appB.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
+      (appA.pm.get(PluginFlowEngine) as PluginFlowEngine).dispose();
+      (appB.pm.get(PluginFlowEngine) as PluginFlowEngine).dispose();
     }
   });
 
@@ -241,7 +220,6 @@ describe('PluginJsTemplateClientV2', () => {
     const app = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine' }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
         [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
       ],
     });
@@ -278,14 +256,13 @@ describe('PluginJsTemplateClientV2', () => {
     expectWorkspaceAuthoringRegistrations(0);
     expectJsTemplateRegistrations(0);
 
-    (app.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
+    (app.pm.get(PluginFlowEngine) as PluginFlowEngine).dispose();
   });
 
   it('renders an Inline JS block through the modern multi-file Studio with its Save as JS Template action', async () => {
     const app = createMockClient({
       plugins: [
         [PluginFlowEngine, { name: 'flow-engine' }],
-        [PluginFlowEngineClientV2, { name: 'plugin-flow-engine', packageName: '@nocobase/plugin-flow-engine' }],
         [PluginJsTemplateClientV2, { name: 'js-template', packageName: NAMESPACE }],
       ],
     });
@@ -410,7 +387,7 @@ describe('PluginJsTemplateClientV2', () => {
 
     editor.unmount();
     (app.pm.get(PluginJsTemplateClientV2) as PluginJsTemplateClientV2).dispose();
-    (app.pm.get(PluginFlowEngineClientV2) as PluginFlowEngineClientV2).dispose();
+    (app.pm.get(PluginFlowEngine) as PluginFlowEngine).dispose();
   });
 });
 
