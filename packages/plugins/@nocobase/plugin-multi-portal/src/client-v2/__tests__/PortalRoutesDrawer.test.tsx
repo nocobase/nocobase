@@ -19,6 +19,7 @@ const pageMenuModelRegistry = vi.hoisted(() => ({
   current: [] as Array<{ label: string; modelClass: string; routeType: string; sort: number }>,
   resolve: vi.fn(),
 }));
+const flowModelContext = vi.hoisted(() => ({ source: 'portal-routes-model' }));
 
 const flowContext = vi.hoisted(() => ({
   current: undefined as
@@ -34,6 +35,9 @@ const flowContext = vi.hoisted(() => ({
         };
         viewer: {
           drawer: ReturnType<typeof vi.fn>;
+        };
+        model: {
+          context: typeof flowModelContext;
         };
         routeRepository: {
           refreshAccessible: ReturnType<typeof vi.fn>;
@@ -125,6 +129,9 @@ function renderPortalRoutes(
     },
     viewer: {
       drawer,
+    },
+    model: {
+      context: flowModelContext,
     },
     routeRepository: {
       refreshAccessible,
@@ -436,7 +443,7 @@ describe('PortalRoutesDrawer', () => {
 
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
     await waitFor(() => {
-      expect(pageMenuModelRegistry.resolve).toHaveBeenCalled();
+      expect(pageMenuModelRegistry.resolve).toHaveBeenCalledWith(expect.any(Object), flowModelContext);
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'Add new' }));

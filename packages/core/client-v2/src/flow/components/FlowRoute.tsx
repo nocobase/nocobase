@@ -354,7 +354,10 @@ const FlowRoute = (props: FlowRouteProps = {}) => {
       }
 
       if (isPageMenuRoute(route)) {
-        const definition = await resolvePageMenuModelByRouteType(flowEngine, route.type, flowEngine.context);
+        const layoutModel = getLayoutModel(flowEngine);
+        const definition = layoutModel
+          ? await resolvePageMenuModelByRouteType(flowEngine, route.type, layoutModel.context)
+          : undefined;
         if (!active || requestId !== requestIdRef.current) {
           return;
         }

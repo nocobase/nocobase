@@ -28,7 +28,7 @@ import {
   type NocoBaseDesktopRoute,
   type ResolvedPageMenuModel,
 } from '@nocobase/client-v2';
-import { randomId, useFlowContext, useFlowEngine, useFlowView } from '@nocobase/flow-engine';
+import { randomId, useFlowContext, useFlowEngine, useFlowView, type FlowModelContext } from '@nocobase/flow-engine';
 import { App as AntdApp, Button, Checkbox, Form, Input, Popover, Radio, Space, Tag, Typography, theme } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Key } from 'antd/es/table/interface';
@@ -76,7 +76,7 @@ type DesktopRoutesResource = {
   ) => Promise<unknown>;
 };
 
-type PortalRoutesFlowContext = {
+type PortalRoutesFlowContext = FlowModelContext & {
   api: {
     request: (params: {
       method: 'get';
@@ -663,7 +663,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
 
   useEffect(() => {
     let active = true;
-    resolvePageMenuModels(flowEngine, flowEngine.context)
+    resolvePageMenuModels(flowEngine, ctx.model.context)
       .then((definitions) => {
         if (active) {
           setPageMenuModels(definitions);
@@ -677,7 +677,7 @@ function PortalRoutesTable({ portal }: { portal: MultiPortalRecord }) {
     return () => {
       active = false;
     };
-  }, [flowEngine]);
+  }, [ctx.model.context, flowEngine]);
 
   const loadRoutes = useCallback(async () => {
     setLoading(true);

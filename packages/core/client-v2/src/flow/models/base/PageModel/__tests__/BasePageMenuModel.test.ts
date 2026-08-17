@@ -58,8 +58,9 @@ InvalidPageMenuModel.define({
 describe('BasePageMenuModel', () => {
   it('returns no definitions before the base model is registered', async () => {
     const engine = new FlowEngine();
+    const hostModel = engine.createModel({ uid: 'host-model', use: 'FlowModel' });
 
-    await expect(resolvePageMenuModels(engine, engine.context)).resolves.toEqual([]);
+    await expect(resolvePageMenuModels(engine, hostModel.context)).resolves.toEqual([]);
   });
 
   it('discovers visible subclasses and sorts them by model metadata', async () => {
@@ -71,9 +72,10 @@ describe('BasePageMenuModel', () => {
       InvalidPageMenuModel,
       LaterPageMenuModel,
     });
+    const hostModel = engine.createModel({ uid: 'host-model', use: 'FlowModel' });
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    const definitions = await resolvePageMenuModels(engine, engine.context);
+    const definitions = await resolvePageMenuModels(engine, hostModel.context);
 
     expect(definitions).toEqual([
       {
@@ -98,12 +100,34 @@ describe('BasePageMenuModel', () => {
   it('resolves one page menu definition by route type', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ BasePageMenuModel, EarlierPageMenuModel });
+    const hostModel = engine.createModel({ uid: 'host-model', use: 'FlowModel' });
 
-    await expect(resolvePageMenuModelByRouteType(engine, 'earlierPage', engine.context)).resolves.toMatchObject({
+    await expect(resolvePageMenuModelByRouteType(engine, 'earlierPage', hostModel.context)).resolves.toMatchObject({
       modelClass: 'EarlierPageMenuModel',
       routeType: 'earlierPage',
     });
-    await expect(resolvePageMenuModelByRouteType(engine, 'missingPage', engine.context)).resolves.toBeUndefined();
+    await expect(resolvePageMenuModelByRouteType(engine, 'missingPage', hostModel.context)).resolves.toBeUndefined();
+  });
+
+  it('evaluates dynamic visibility with the host model context', async () => {
+    const hide = vi.fn((context) => context.model.uid !== 'host-model');
+    class ContextAwarePageMenuModel extends BasePageMenuModel {}
+    ContextAwarePageMenuModel.define({ hide, label: 'Context-aware page', routeType: 'contextAwarePage' });
+
+    const engine = new FlowEngine();
+    engine.registerModels({ BasePageMenuModel, ContextAwarePageMenuModel });
+    const hostModel = engine.createModel({ uid: 'host-model', use: 'FlowModel' });
+
+    await expect(resolvePageMenuModels(engine, hostModel.context)).resolves.toEqual([
+      {
+        icon: undefined,
+        label: 'Context-aware page',
+        modelClass: 'ContextAwarePageMenuModel',
+        routeType: 'contextAwarePage',
+        sort: 0,
+      },
+    ]);
+    expect(hide).toHaveBeenCalledWith(hostModel.context);
   });
 
   it('excludes empty and duplicate route types', async () => {
@@ -123,9 +147,10 @@ describe('BasePageMenuModel', () => {
       DuplicatePageMenuModelB,
       EmptyRouteTypePageMenuModel,
     });
+    const hostModel = engine.createModel({ uid: 'host-model', use: 'FlowModel' });
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    await expect(resolvePageMenuModels(engine, engine.context)).resolves.toEqual([]);
+    await expect(resolvePageMenuModels(engine, hostModel.context)).resolves.toEqual([]);
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("route type 'duplicatePage'"));
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining('must define a non-empty route type'));
     consoleError.mockRestore();

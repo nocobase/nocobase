@@ -1464,7 +1464,7 @@ const MobileHomePlaceholder = observer(
     useEffect(() => {
       let active = true;
 
-      resolvePageMenuModels(model.flowEngine, model.flowEngine.context)
+      resolvePageMenuModels(model.flowEngine, model.context)
         .then((definitions) => {
           if (active) {
             setPageMenuModels(definitions);

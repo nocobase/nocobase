@@ -63,7 +63,7 @@ function isHidden(meta: BasePageMenuModelMeta, context: FlowModelContext) {
 
 export async function resolvePageMenuModels(
   engine: FlowEngine,
-  context: FlowModelContext = engine.context,
+  context: FlowModelContext,
 ): Promise<ResolvedPageMenuModel[]> {
   if (!engine.getModelClass('BasePageMenuModel')) {
     return [];
@@ -115,7 +115,7 @@ export async function resolvePageMenuModels(
 export async function resolvePageMenuModelByRouteType(
   engine: FlowEngine,
   routeType: string | undefined,
-  context: FlowModelContext = engine.context,
+  context: FlowModelContext,
 ) {
   if (!routeType) {
     return undefined;

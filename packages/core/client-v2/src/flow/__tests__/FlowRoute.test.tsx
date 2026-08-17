@@ -765,8 +765,9 @@ describe('FlowRoute', () => {
   });
 
   it('should bridge an available page menu model', async () => {
+    const hide = vi.fn((context) => context.model.uid !== 'admin-layout-model');
     class DemoPageMenuModel extends BasePageMenuModel {}
-    DemoPageMenuModel.define({ label: 'Demo page', routeType: 'customPage' });
+    DemoPageMenuModel.define({ hide, label: 'Demo page', routeType: 'customPage' });
 
     const engine = new FlowEngine();
     engine.registerModels({ BasePageMenuModel, DemoPageMenuModel });
@@ -815,6 +816,7 @@ describe('FlowRoute', () => {
     await waitFor(() => {
       expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith('custom-page', expect.any(Object));
     });
+    expect(hide).toHaveBeenCalledWith(adminLayoutModel.context);
     expect(screen.queryByText('404')).not.toBeInTheDocument();
   });
 

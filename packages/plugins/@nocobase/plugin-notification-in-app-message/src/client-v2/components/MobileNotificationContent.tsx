@@ -477,7 +477,7 @@ function MobileNotificationContentInner() {
         tabIndex={0}
       >
         {channels.length === 0 && isFetchingChannelsObs.value ? (
-          <Flex justify="center" style={{ paddingTop: token.paddingXXL }}>
+          <Flex justify="center" style={{ paddingTop: token.marginXXL }}>
             <Spin />
           </Flex>
         ) : channels.length === 0 ? (
@@ -576,7 +576,7 @@ function MobileNotificationContentInner() {
         </Flex>
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {messages.length === 0 && isFetchingMessageObs.value ? (
-            <Flex justify="center" style={{ paddingTop: token.paddingXXL }}>
+            <Flex justify="center" style={{ paddingTop: token.marginXXL }}>
               <Spin />
             </Flex>
           ) : messages.length === 0 ? (
