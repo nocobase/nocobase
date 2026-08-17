@@ -157,6 +157,15 @@ class LocalLockAdapter implements ILockAdapter {
       }, ttl);
     };
 
+    const acquireLease = async (ttl: number): Promise<Releaser> => {
+      const rawRelease = reservation || ((await mutex.acquire()) as Releaser);
+      reservation = undefined;
+      const lease = { release: rawRelease };
+      activeLease = lease;
+      resetTimer(ttl);
+      return () => releaseLease(lease);
+    };
+
     return {
       release: async (): Promise<void> => {
         if (reservation) {
@@ -170,25 +179,13 @@ class LocalLockAdapter implements ILockAdapter {
         }
       },
       acquire: async (ttl: number): Promise<Releaser> => {
-        const rawRelease = reservation || ((await mutex.acquire()) as Releaser);
-        reservation = undefined;
-        const lease = { release: rawRelease };
-        activeLease = lease;
-        resetTimer(ttl);
-        return () => releaseLease(lease);
+        return acquireLease(ttl);
       },
       extend: async (ttl: number): Promise<void> => {
         resetTimer(ttl);
       },
       runExclusive: async <T>(fn: () => Promise<T>, ttl: number): Promise<T> => {
-        const release = await (async () => {
-          const rawRelease = reservation || ((await mutex.acquire()) as Releaser);
-          reservation = undefined;
-          const lease = { release: rawRelease };
-          activeLease = lease;
-          resetTimer(ttl);
-          return () => releaseLease(lease);
-        })();
+        const release = await acquireLease(ttl);
         try {
           return await fn();
         } catch (e) {
