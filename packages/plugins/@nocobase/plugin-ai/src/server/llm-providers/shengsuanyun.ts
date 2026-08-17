@@ -102,7 +102,7 @@ export class ShengSuanYunProvider extends LLMProvider {
 }
 
 export const shengsuanyunProviderOptions: LLMProviderMeta = {
-  title: 'SSYCloud(胜算云)',
+  title: 'SSYCloud',
   supportedModel: [SupportedModel.LLM],
   provider: ShengSuanYunProvider,
 };

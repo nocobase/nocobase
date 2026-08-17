@@ -48,7 +48,7 @@ describe('ShengSuanYunProvider', () => {
   });
 
   it('uses the SSYCloud brand name in provider selectors', () => {
-    expect(shengsuanyunProviderOptions.title).toBe('SSYCloud(胜算云)');
+    expect(shengsuanyunProviderOptions.title).toBe('SSYCloud');
   });
 
   it('adds NocoBase attribution headers to chat requests', () => {
