@@ -227,7 +227,8 @@ describe('plugin-js-template initial source creation', () => {
 
   it('rolls back repository creation when uploaded source cannot be compiled', async () => {
     const zipBase64 = await createZipBase64({
-      'src/client/js-blocks/broken/index.tsx': "import Missing from './missing';\nctx.render(<Missing />);\n",
+      'src/client/js-blocks/broken/index.tsx':
+        'const Duplicate = 1;\nconst Duplicate = 2;\nctx.render(<div>{Duplicate}</div>);\n',
       'src/client/js-blocks/broken/entry.json': '{"schemaVersion":1,"key":"broken"}\n',
     });
     const projectCount = await app.db.getRepository('jsTemplateProjects').count();
