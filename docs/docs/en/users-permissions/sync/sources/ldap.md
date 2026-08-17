@@ -52,6 +52,33 @@ Enable **Sync departments** and enter a **Department search DN** when the LDAP d
 
 The plugin searches organizational units below that DN, preserves their parent-child relationships, and associates users with departments based on their distinguished names. The configured Department search DN must cover the organizational units referenced by the users you expect to synchronize.
 
+## Synchronized fields
+
+### User fields
+
+User fields reuse the selected LDAP authenticator's **Attribute mapping**:
+
+| LDAP attribute or setting | NocoBase field or purpose |
+| --- | --- |
+| Login account attribute | Used as the source-unique user identifier and written to the username or email selected by the authenticator's **Use this field to bind the user** setting. This attribute is usually inferred from `{{account}}` in the authenticator's search filter, such as `uid`, `sAMAccountName`, or `mail`. A user without this attribute is skipped. |
+| Attribute mapped to `username` | Username. |
+| Attribute mapped to `nickname` | User nickname. |
+| Attribute mapped to `email` | Email address. |
+| Attribute mapped to `phone` | Phone number. |
+| `distinguishedName`, falling back to the entry DN | Finds the nearest synchronized department in the DN path and sets it as the user's primary department. This applies only when department synchronization is enabled. |
+
+For a multi-valued LDAP attribute, only the first value is currently synchronized. Other user attributes that are not included in the authenticator's attribute mapping are not synchronized.
+
+### Department fields
+
+| LDAP attribute or structure | NocoBase field or purpose |
+| --- | --- |
+| `objectGUID` | Source-unique department identifier. An organizational unit without this attribute is skipped. |
+| `ou`, `cn`, `name` | The first non-empty value in this order becomes the department name. An organizational unit without a name is skipped. |
+| `distinguishedName`, falling back to the entry DN | Identifies the current department and its parent to build the department hierarchy. |
+
+Department synchronization searches for `organizationalUnit` and `container` objects by default. It does not currently synchronize multiple user departments from attributes such as `memberOf`, or department owners.
+
 ## Troubleshooting
 
 - If no users are returned, verify the authenticator's Search DN, search scope, Bind DN permissions, and the synchronization filter.

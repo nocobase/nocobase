@@ -17,8 +17,28 @@ The **DingTalk** plugin synchronizes users and departments from a DingTalk organ
 
 1. Install and enable the **DingTalk** and **User Data Synchronization** plugins.
 2. Create an internal application in the DingTalk developer console.
-3. Grant the application permission to read the required contacts and configure its visibility range. Only authorized departments and users can be synchronized.
+3. Grant the contact permissions and configure the data permission scope described below.
 4. Copy the application's Client ID and Client Secret. See [Authentication: DingTalk](/auth-verification/auth-dingtalk/) for the credential setup.
+
+## Configure contact permissions and the data permission scope
+
+Open **Permission Management** for the application in the DingTalk developer console and grant the following contact permissions.
+
+| Permission | Identifier | Required | Purpose |
+| --- | --- | --- | --- |
+| Read department information | `qyapi_get_department_list` | Yes | Read the department list, names, and hierarchy. |
+| Read department members | `qyapi_get_department_member` | Yes | Read the member list of each department. |
+| Read member information | `qyapi_get_member` | Yes | Read member details and department memberships. |
+| Employee mobile number information | `fieldMobile` | When using mobile numbers | Synchronize mobile numbers. This permission is required when **User unique identifier field** is `mobile`. |
+| Email and other personal information | `fieldEmail` | No | Grant this permission when user email addresses need to be synchronized. |
+
+After granting the permissions, configure the application's **Data Permission Scope** (also called **Contact Permission Scope** or **Visibility Range** in some console versions) to include the departments and employees that may be synchronized. Select all employees for a full organization synchronization. If only selected departments or employees are included, NocoBase synchronizes only those entries.
+
+:::warning
+API permissions determine which fields the application can read, while the data permission scope determines which departments and employees it can read. Both must be configured. Event subscriptions do not replace contact read permissions: after receiving an event, NocoBase still calls DingTalk APIs to retrieve the latest user or department information.
+:::
+
+If the same DingTalk application is also used for sign-in, grant the personal-information permissions described in [Authentication: DingTalk](/auth-verification/auth-dingtalk/). Those sign-in permissions are not required solely for user data synchronization.
 
 ## Add a DingTalk synchronization source
 
@@ -77,9 +97,41 @@ Both event receiving modes handle the following DingTalk events:
 | `org_dept_modify` | Update the department and synchronize its users. |
 | `org_dept_remove` | Delete the synchronized department. |
 
+## Synchronized fields
+
+### Department fields
+
+| DingTalk field | NocoBase field or purpose |
+| --- | --- |
+| `dept_id` | Source-unique department identifier. |
+| `name` | Department name. |
+| `parent_id` | Parent department used to build the department hierarchy. If the parent is outside the data permission scope, the department is synchronized as a root department. |
+
+### User fields
+
+| DingTalk field | NocoBase field or purpose |
+| --- | --- |
+| `mobile` or `unionid` | Generates the source-unique user identifier and username according to **User unique identifier field**. A user without the selected field is skipped. |
+| `name` | User nickname. |
+| `mobile` | Phone number. Requires the **Employee mobile number information** permission. |
+| `email`, falling back to `org_email` | Email address. Requires the **Email and other personal information** permission. |
+| `dept_id_list` | Department memberships. Only departments within the data permission scope are retained. |
+| `dept_order_list` | Primary department. |
+| `leader_in_dept` | Whether the user is an owner of the corresponding department. |
+
+### Department owners
+
+DingTalk uses `leader_in_dept` in the user details to indicate whether the user is an owner of each department they belong to. NocoBase synchronizes this flag separately for each department: the same user can own multiple departments, and an owned department does not have to be the user's primary department. Only departments within the data permission scope are included.
+
+When an owner flag is removed in DingTalk, the corresponding owner flag in NocoBase is removed by the next synchronization. Owner status changed manually in NocoBase may be overwritten by DingTalk data during the next synchronization.
+
+Full and incremental synchronization use the same field mapping. Other DingTalk user fields, such as avatar, job title, and employee number, are not currently synchronized.
+
 ## Troubleshooting
 
-- If users or departments are missing, verify the application's contacts permissions and visibility range in DingTalk.
+- If synchronization returns no data or an entire department is missing, verify the three required contact read permissions and confirm that the department is included in the data permission scope.
+- If a user is present but their mobile number or email address is empty, verify the **Employee mobile number information** or **Email and other personal information** permission respectively.
+- If DingTalk reports that a department or employee is outside the permission scope, expand the application's data permission scope instead of only resubscribing to events.
 - If users are skipped, verify that they have a value for the configured unique identifier field.
 - For Stream mode, check the application logs for `Dingtalk stream client starting`, `Dingtalk stream client started`, or connection errors.
 - For HTTP callback mode, verify that the callback URL is publicly reachable and that Token and EncodingAESKey match the DingTalk configuration.
