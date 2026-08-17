@@ -539,6 +539,7 @@ describe('WorkflowTasksPage', () => {
     renderWithApp(<WorkflowTasksPage />);
 
     await screen.findByText('detail:Popup task');
+    expect(document.querySelector('.ant-tabs-nav')).toHaveStyle({ paddingInlineStart: '56px' });
     expect(document.querySelector('.ant-tabs-content-holder')).toHaveStyle({ padding: '8px' });
   });
 

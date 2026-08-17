@@ -844,13 +844,14 @@ function WorkflowTaskMobileDetailPage(props: { children: React.ReactNode; onClos
   const t = useT();
   const mobileBackButtonClassName = useMobileBackButtonClassName();
   const mobileTaskDetailTabsHeight = token.controlHeightLG + token.paddingXS;
+  const mobileTaskDetailTabsInset = token.paddingXS + token.controlHeightLG + token.paddingXS;
   const contentClassName = css`
     > div > .ant-tabs > .ant-tabs-nav {
       background: ${token.colorBgContainer};
       margin: 0;
       min-height: ${mobileTaskDetailTabsHeight}px;
       padding-inline: ${token.padding}px ${token.padding}px;
-      padding-left: ${token.controlHeight + token.paddingSM}px;
+      padding-inline-start: ${mobileTaskDetailTabsInset}px;
     }
 
     > div > .ant-tabs > .ant-tabs-content-holder {
