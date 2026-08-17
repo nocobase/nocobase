@@ -46,8 +46,10 @@ interface RunJSLogger {
   debug(...args: unknown[]): void;
   child(bindings: Record<string, unknown>): RunJSLogger;
 }
+// Values supplied dynamically by the RunJS runtime are permissive; explicit user-authored TypeScript types remain checked.
+type RunJSDynamicValue = any;
 interface RunJSUnknownObject {
-  [key: string]: unknown;
+  [key: string]: RunJSDynamicValue;
 }
 interface RunJSRecord extends RunJSUnknownObject {
   id?: string | number;
@@ -70,8 +72,8 @@ interface RunJSModel extends RunJSUnknownObject {
   readonly props?: RunJSUnknownObject;
 }
 interface RunJSForm extends RunJSUnknownObject {
-  getFieldValue(name: string | Array<string | number>): unknown;
-  getFieldsValue(): Record<string, unknown>;
+  getFieldValue(name: string | Array<string | number>): RunJSDynamicValue;
+  getFieldsValue(): RunJSUnknownObject;
   setFieldValue(name: string | Array<string | number>, value: unknown): void;
   setFieldsValue(values: Record<string, unknown>): void;
 }
@@ -98,24 +100,72 @@ interface RunJSNotification {
   destroy(key?: string): void;
 }
 interface RunJSModal {
-  info(config: Record<string, unknown>): unknown;
-  success(config: Record<string, unknown>): unknown;
-  error(config: Record<string, unknown>): unknown;
-  warning(config: Record<string, unknown>): unknown;
-  confirm(config: Record<string, unknown>): unknown;
+  info(config: Record<string, unknown>): RunJSDynamicValue;
+  success(config: Record<string, unknown>): RunJSDynamicValue;
+  error(config: Record<string, unknown>): RunJSDynamicValue;
+  warning(config: Record<string, unknown>): RunJSDynamicValue;
+  confirm(config: Record<string, unknown>): RunJSDynamicValue;
 }
 interface RunJSResource extends RunJSUnknownObject {
+  getData(): RunJSDynamicValue;
+  setData(value: RunJSDynamicValue): this;
+  hasData(): boolean;
+  getMeta(): RunJSUnknownObject;
+  getMeta(metaKey: string): RunJSDynamicValue;
+  setMeta(meta: RunJSUnknownObject): this;
+  getError(): RunJSDynamicValue;
+  clearError(): this;
+  on(event: string, callback: (...args: RunJSDynamicValue[]) => void): void;
+  off(event: string, callback: (...args: RunJSDynamicValue[]) => void): void;
+}
+interface RunJSAPIResource extends RunJSResource {
+  refresh(): Promise<void>;
+}
+interface RunJSRecordResource extends RunJSAPIResource {
+  setResourceName(resourceName: string): this;
+  getResourceName(): string;
+  setSourceId(sourceId: string | number): this;
+  getSourceId(): string | number;
+  setDataSourceKey(dataSourceKey: string): this;
+  getDataSourceKey(): string;
+  setFilter(filter: RunJSUnknownObject): this;
+  getFilter(): RunJSDynamicValue;
+  setFilterByTk(filterByTk: RunJSDynamicValue): this;
+  runAction(action: string, options?: RunJSUnknownObject): Promise<RunJSDynamicValue>;
+  refresh(): Promise<void>;
+}
+interface RunJSMultiRecordResource extends RunJSRecordResource {
   readonly selectedRows?: RunJSRecord[];
   readonly pagination?: RunJSUnknownObject;
-  getData?(): unknown;
-  setData?(value: unknown): RunJSResource;
-  getSelectedRows?(): RunJSRecord[];
-  setResourceName?(resourceName: string): RunJSResource;
-  setFilterByTk?(filterByTk: unknown): RunJSResource;
-  runAction?(action: string, options?: Record<string, unknown>): Promise<unknown>;
-  on?(event: string, callback: (...args: unknown[]) => void): void;
-  off?(event: string, callback: (...args: unknown[]) => void): void;
-  refresh?: () => Promise<unknown>;
+  getData(): RunJSRecord[];
+  getSelectedRows(): RunJSRecord[];
+  setPage(page: number): this;
+  getPage(): number;
+  setPageSize(pageSize: number): this;
+  getPageSize(): number;
+  getCount(): number;
+  getTotalPage(): number;
+  next(): Promise<void>;
+  previous(): Promise<void>;
+  goto(page: number): Promise<void>;
+}
+interface RunJSSingleRecordResource extends RunJSRecordResource {
+  save(data: RunJSDynamicValue, options?: RunJSUnknownObject): Promise<void>;
+  destroy(options?: RunJSUnknownObject): Promise<void>;
+}
+interface RunJSSQLResource extends RunJSRecordResource {
+  setPage(page: number): this;
+  getPage(): number;
+  setPageSize(pageSize: number): this;
+  getPageSize(): number;
+  setDebug(enabled: boolean): this;
+  setSQLType(type: 'selectRows' | 'selectRow' | 'selectVar'): this;
+  setSQL(sql: string): this;
+  setBind(bind: RunJSDynamicValue): this;
+  setLiquidContext(liquidContext: RunJSUnknownObject): this;
+  run(): Promise<RunJSDynamicValue>;
+  runBySQL(): Promise<RunJSDynamicValue>;
+  runById(): Promise<RunJSDynamicValue>;
 }
 interface RunJSApiResponse extends RunJSUnknownObject {
   data?: RunJSUnknownObject;
@@ -136,10 +186,10 @@ interface RunJSAuth {
   readonly user?: RunJSRecord;
 }
 interface RunJSViewer {
-  dialog(props: Record<string, unknown>): unknown;
-  drawer(props: Record<string, unknown>): unknown;
-  popover(props: Record<string, unknown>): unknown;
-  embed(props: Record<string, unknown>): unknown;
+  dialog(props: Record<string, unknown>): RunJSDynamicValue;
+  drawer(props: Record<string, unknown>): RunJSDynamicValue;
+  popover(props: Record<string, unknown>): RunJSDynamicValue;
+  embed(props: Record<string, unknown>): RunJSDynamicValue;
 }
 interface RunJSPopup extends RunJSUnknownObject {
   readonly uid?: string;
@@ -149,9 +199,9 @@ interface RunJSPopup extends RunJSUnknownObject {
   readonly resource?: RunJSUnknownObject;
 }
 interface RunJSSQL {
-  run(sql: string, options?: Record<string, unknown>): Promise<unknown>;
+  run(sql: string, options?: Record<string, unknown>): Promise<RunJSDynamicValue>;
   save(data: { uid: string; sql: string; dataSourceKey?: string }): Promise<void>;
-  runById(uid: string, options?: Record<string, unknown>): Promise<unknown>;
+  runById(uid: string, options?: Record<string, unknown>): Promise<RunJSDynamicValue>;
   destroy(uid: string): Promise<void>;
 }
 interface RunJSURLSearchParams {
@@ -190,7 +240,7 @@ interface RunJSLibraries {
   lodash: RunJSLodashLibrary;
   math: RunJSMathLibrary;
   formula: RunJSFormulaLibrary;
-  [libraryName: string]: unknown;
+  [libraryName: string]: RunJSDynamicValue;
 }
 interface RunJSSourceInfo {
   readonly sourceMode: string;
@@ -198,14 +248,14 @@ interface RunJSSourceInfo {
   readonly sourceMap?: string;
   readonly context?: RunJSUnknownObject;
 }
-interface RunJSExecutionResult<T = unknown> {
+interface RunJSExecutionResult<T = RunJSDynamicValue> {
   readonly success: boolean;
   readonly value?: T;
-  readonly error?: unknown;
+  readonly error?: RunJSDynamicValue;
   readonly timeout?: boolean;
 }
 interface RunJSSafeElement extends RunJSUnknownObject {
-  readonly __el: unknown;
+  readonly __el: RunJSDynamicValue;
   addEventListener(type: string, listener: (event: RunJSUnknownObject) => void): void;
   removeEventListener(type: string, listener: (event: RunJSUnknownObject) => void): void;
 }
@@ -247,26 +297,38 @@ interface RunJSContext {
   model: RunJSModel;
   render(value: unknown, container?: RunJSSafeElement): void;
   onRefReady(ref: RunJSRef<RunJSSafeElement>, callback: (element: RunJSSafeElement) => void, timeout?: number): void;
-  getVar<T = unknown>(path: string): Promise<T>;
-  getVarInfos(options?: Record<string, unknown>): Promise<Record<string, unknown>>;
-  getApiInfos(options?: Record<string, unknown>): Promise<Record<string, unknown>>;
-  getEnvInfos(): Promise<Record<string, unknown>>;
+  getVar<T = RunJSDynamicValue>(path: string): Promise<T>;
+  getVarInfos(options?: Record<string, unknown>): Promise<RunJSUnknownObject>;
+  getApiInfos(options?: Record<string, unknown>): Promise<RunJSUnknownObject>;
+  getEnvInfos(): Promise<RunJSUnknownObject>;
   getModel(uid: string, searchInPreviousEngines?: boolean): RunJSUnknownObject | undefined;
-  request<T = unknown>(options: Record<string, unknown>): Promise<T>;
-  runjs<T = unknown>(
+  request<T = RunJSDynamicValue>(options: Record<string, unknown>): Promise<T>;
+  runjs<T = RunJSDynamicValue>(
     code: string,
     variables?: Record<string, unknown>,
     options?: Record<string, unknown>,
   ): Promise<RunJSExecutionResult<T>>;
   loadCSS(href: string): Promise<void>;
-  openView(uid: string, options?: Record<string, unknown>): Promise<unknown>;
-  requireAsync(url: string): Promise<unknown>;
-  importAsync(url: string): Promise<unknown>;
-  makeResource(type: unknown): RunJSResource;
-  createResource(type: unknown): RunJSResource;
-  initResource(type: string): RunJSResource;
+  openView(uid: string, options?: Record<string, unknown>): Promise<RunJSDynamicValue>;
+  requireAsync(url: string): Promise<RunJSDynamicValue>;
+  importAsync(url: string): Promise<RunJSDynamicValue>;
+  makeResource(type: 'APIResource'): RunJSAPIResource;
+  makeResource(type: 'SingleRecordResource'): RunJSSingleRecordResource;
+  makeResource(type: 'MultiRecordResource'): RunJSMultiRecordResource;
+  makeResource(type: 'SQLResource'): RunJSSQLResource;
+  makeResource<T extends RunJSResource = RunJSResource>(type: unknown): T;
+  createResource(type: 'APIResource'): RunJSAPIResource;
+  createResource(type: 'SingleRecordResource'): RunJSSingleRecordResource;
+  createResource(type: 'MultiRecordResource'): RunJSMultiRecordResource;
+  createResource(type: 'SQLResource'): RunJSSQLResource;
+  createResource<T extends RunJSResource = RunJSResource>(type: unknown): T;
+  initResource(type: 'APIResource'): RunJSAPIResource;
+  initResource(type: 'SingleRecordResource'): RunJSSingleRecordResource;
+  initResource(type: 'MultiRecordResource'): RunJSMultiRecordResource;
+  initResource(type: 'SQLResource'): RunJSSQLResource;
+  initResource<T extends RunJSResource = RunJSResource>(type: string): T;
   resolveJsonTemplate<T = unknown>(template: T): Promise<T>;
-  runAction(name: string, params?: Record<string, unknown>): Promise<unknown> | unknown;
+  runAction(name: string, params?: Record<string, unknown>): Promise<RunJSDynamicValue> | RunJSDynamicValue;
   previewRunJS(code: string, version?: string): Promise<{ success: boolean; message: string }>;
   t(key: string, options?: Record<string, unknown>): string;
   view?: RunJSUnknownObject;
@@ -288,12 +350,12 @@ interface RunJSContext {
 const genericRunJSContextDeclaration = `
 interface RunJSContext {
   element?: RunJSSafeElement;
-  value?: unknown;
+  value?: RunJSDynamicValue;
   record?: RunJSRecord;
   collection?: RunJSCollection;
   collectionField?: RunJSCollectionField;
   form?: RunJSForm;
-  formValues?: Record<string, unknown>;
+  formValues?: RunJSUnknownObject;
   namePath?: Array<string | number>;
   disabled?: boolean;
   readOnly?: boolean;
@@ -302,7 +364,7 @@ interface RunJSContext {
   recordIndex?: number;
   settings?: Record<string, unknown>;
   runJsSource?: RunJSSourceInfo;
-  getValue?(): unknown;
+  getValue?(): RunJSDynamicValue;
   setValue?(value: unknown): void;
   setProps?(fieldModel: unknown, props: Record<string, unknown>): void;
   refresh?(): Promise<void>;
@@ -313,14 +375,14 @@ const runJSContextModelDeclarations: Record<string, string> = {
   JSBlockModel: `
 interface RunJSContext {
   element: RunJSSafeElement;
-  value?: unknown;
+  value?: RunJSDynamicValue;
   record?: RunJSRecord;
 }
 `,
   JSFieldModel: `
 interface RunJSContext {
   element: RunJSSafeElement;
-  value: unknown;
+  value: RunJSDynamicValue;
   record?: RunJSRecord;
   collection?: RunJSCollection;
   collectionField?: RunJSCollectionField;
@@ -329,15 +391,15 @@ interface RunJSContext {
   JSEditableFieldModel: `
 interface RunJSContext {
   element: RunJSSafeElement;
-  value: unknown;
+  value: RunJSDynamicValue;
   record?: RunJSRecord;
   collectionField?: RunJSCollectionField;
   form?: RunJSForm;
-  formValues?: Record<string, unknown>;
+  formValues?: RunJSUnknownObject;
   namePath?: Array<string | number>;
   disabled: boolean;
   readOnly: boolean;
-  getValue(): unknown;
+  getValue(): RunJSDynamicValue;
   setValue(value: unknown): void;
 }
 `,
@@ -346,7 +408,7 @@ interface RunJSContext {
   element: RunJSSafeElement;
   record?: RunJSRecord;
   resource?: RunJSResource;
-  formValues?: Record<string, unknown>;
+  formValues?: RunJSUnknownObject;
   item?: RunJSUnknownObject;
 }
 `,
@@ -355,14 +417,14 @@ interface RunJSContext {
   element: RunJSSafeElement;
   record?: RunJSRecord;
   resource?: RunJSResource;
-  formValues?: Record<string, unknown>;
+  formValues?: RunJSUnknownObject;
   item?: RunJSUnknownObject;
 }
 `,
   JSColumnModel: `
 interface RunJSContext {
   element: RunJSSafeElement;
-  value: unknown;
+  value: RunJSDynamicValue;
   record?: RunJSRecord;
   recordIndex: number;
   collection?: RunJSCollection;
@@ -388,7 +450,7 @@ interface RunJSContext {
   FilterFormJSActionModel: `
 interface RunJSContext {
   form?: RunJSForm;
-  formValues?: Record<string, unknown>;
+  formValues?: RunJSUnknownObject;
 }
 `,
   JSActionModel: `

@@ -47,6 +47,9 @@ export function shouldKeepRunJSTypeScriptDiagnostic(
   if (policy !== 'runjs-authoring') {
     return true;
   }
+  if (code === 2554) {
+    return false;
+  }
   if (code === 2339 && /^Property .+ does not exist on type ['"]unknown['"]\.$/.test(message)) {
     return false;
   }
