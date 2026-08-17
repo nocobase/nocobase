@@ -8,13 +8,13 @@
  */
 
 import type { ParamObject, RunJSValue } from '@nocobase/flow-engine';
-import type { RunJSSourceMode } from '@nocobase/runjs/workspace/shared';
+import type { RunJSSourceMode } from '@nocobase/runjs/client';
 
 export {
   INLINE_RUNJS_SOURCE_MODE,
   RunJSSourceResolverError,
   type RunJSSourceResolverErrorCode,
-} from '@nocobase/runjs/workspace/shared';
+} from '@nocobase/runjs/client';
 export type { RunJSSourceMode };
 export type RunJSSourceBinding = Record<string, unknown>;
 export type RunJSSourceSettings = Record<string, unknown>;

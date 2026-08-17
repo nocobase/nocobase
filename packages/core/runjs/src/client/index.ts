@@ -11,3 +11,4 @@ export * from './install';
 export * from './runtime';
 export * from './runtimeError';
 export * from './runJSRegistryHost';
+export * from '../workspace/shared/client-ports';

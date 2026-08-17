@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSRuntimeHostPort } from '@nocobase/runjs/workspace/shared';
+import type { RunJSRuntimeHostPort } from '@nocobase/runjs/client';
 
 export type {
   NormalizeJsTemplateSelectionInput,
@@ -16,8 +16,8 @@ export type {
   RunJSSettingsValidationIssue,
   RunJSSettingsValidationMode,
   RunJSSettingsValidationResult,
-} from '@nocobase/runjs/workspace/shared';
-export type { RunJSRuntimeErrorInfo as RunJSRuntimeError } from '@nocobase/runjs/workspace/shared';
+} from '@nocobase/runjs/client';
+export type { RunJSRuntimeErrorInfo as RunJSRuntimeError } from '@nocobase/runjs/client';
 
 export type RunJSRuntimeHost = RunJSRuntimeHostPort;
 

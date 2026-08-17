@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSRegistryHostPort } from '@nocobase/runjs/workspace/shared';
+import type { RunJSRegistryHostPort } from '@nocobase/runjs/client';
 import type { RunJSEditorProvider } from '../runjs-studio/types';
 import type { RunJSSettingsDescriptorProvider } from './RunJSSettingsDescriptorProviderRegistry';
 import type { RunJSSourceResolver } from './types';
