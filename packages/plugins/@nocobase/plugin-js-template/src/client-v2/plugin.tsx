@@ -38,7 +38,7 @@ export class PluginJsTemplateClientV2 extends Plugin<Record<string, never>, Appl
       this.disposers.push(registerJsTemplateRuntimeAuthSession(this.app.apiClient, this.app));
 
       this.disposers.push(registerJsTemplateRunJSFlowSettingsComponents(this.flowEngine.flowSettings));
-      this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient, (key) => this.t(key)));
+      this.disposers.push(installJsTemplateRunJSIntegrations(this.app.apiClient, (key) => String(this.t(key))));
       activeJsTemplateClientV2Instance = this;
 
       const title = this.t('JS Templates');
