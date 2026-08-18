@@ -373,6 +373,7 @@ const getProviderDescription = (provider: string, t: ReturnType<typeof useT>) =>
     mimo: 'Xiaomi MIMO',
     mistral: 'Mistral models',
     orcarouter: 'OrcaRouter (model routing gateway)',
+    shengsuanyun: '300+ latest mainstream models across leading model families',
   };
   return descriptions[provider] ? t(descriptions[provider]) : '';
 };

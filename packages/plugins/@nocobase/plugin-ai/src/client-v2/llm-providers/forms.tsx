@@ -89,6 +89,21 @@ export const OrcaRouterProviderSettingsForm: React.FC = () => {
   );
 };
 
+export const ShengSuanYunProviderSettingsForm: React.FC = () => {
+  const t = useT();
+
+  return (
+    <>
+      <Form.Item name={['options', 'apiKey']} label={t('API Key')} rules={[{ required: true }]}>
+        <EnvVariableInput />
+      </Form.Item>
+      <Form.Item name={['options', 'xTitle']} label={t('X-Title')} tooltip={t('Sent as the "X-Title" request header.')}>
+        <Input />
+      </Form.Item>
+    </>
+  );
+};
+
 export const EmptyProviderSettingsForm: React.FC = () => null;
 
 export const ModelSelect: React.FC<{
@@ -406,6 +421,50 @@ export const orcaRouterCompletionFields: OptionField[] = [
     step: 0.1,
     min: 0,
     max: 1,
+  },
+  {
+    name: 'responseFormat',
+    title: 'Response format',
+    description: 'Response format description',
+    defaultValue: 'text',
+    options: responseFormatWithSchemaOptions,
+  },
+  {
+    name: 'timeout',
+    title: 'Timeout (ms)',
+    defaultValue: 60000,
+  },
+  {
+    name: 'maxRetries',
+    title: 'Max retries',
+    defaultValue: 1,
+  },
+];
+
+export const shengSuanYunCompletionFields: OptionField[] = [
+  {
+    name: 'temperature',
+    title: 'Temperature',
+    description: 'Temperature description',
+    defaultValue: 1,
+    step: 0.1,
+    min: 0,
+    max: 2,
+  },
+  {
+    name: 'topP',
+    title: 'Top P',
+    description: 'Top P description',
+    defaultValue: 1,
+    step: 0.1,
+    min: 0,
+    max: 1,
+  },
+  {
+    name: 'maxCompletionTokens',
+    title: 'Max completion tokens',
+    description: 'Max completion tokens description',
+    defaultValue: -1,
   },
   {
     name: 'responseFormat',

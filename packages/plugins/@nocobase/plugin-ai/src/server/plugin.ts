@@ -47,6 +47,7 @@ import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/chec
 import { mimoProviderOptions } from './llm-providers/mimo';
 import { mistralProviderOptions } from './llm-providers/mistral';
 import { orcarouterProviderOptions } from './llm-providers/orcarouter';
+import { shengsuanyunProviderOptions } from './llm-providers/shengsuanyun';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 import {
   AIEmployeeInstruction,
@@ -185,6 +186,7 @@ export class PluginAIServer extends Plugin {
     this.aiManager.registerLLMProvider('kimi', kimiProviderOptions);
     this.aiManager.registerLLMProvider('xai', xaiProviderOptions);
     this.aiManager.registerLLMProvider('orcarouter', orcarouterProviderOptions);
+    this.aiManager.registerLLMProvider('shengsuanyun', shengsuanyunProviderOptions);
   }
 
   registerTools() {
