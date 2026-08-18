@@ -57,6 +57,8 @@ function createCdnClient() {
  * @param {string} timestampDir
  */
 const REWRITE_RULES = [
+  // AI API 请求保持原路径，避免被后续规则补上文档版本的时间戳前缀
+  { sourceUrl: '^/api/ai/(.*)$', targetTemplate: () => '/api/ai/$1', flag: 'break' },
   // /en/ 下无后缀的页面路由，去掉 /en/ 前缀并改写到目录式 index.html
   { sourceUrl: '^/en/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
   // 其他语言和默认语言的无后缀页面路由，统一改写到目录式 index.html
@@ -147,7 +149,11 @@ async function waitForRewriteRule(cdnClient, domain, timestampDir) {
           if (!config) return false;
           const args = config.functionArgs?.functionArg || [];
           const targetArg = args.find((a) => a.argName === 'target_url');
-          return config.status === 'success' && (targetArg?.argValue || '').startsWith(expectedPrefix);
+          const expectedTarget = rule.targetTemplate(timestampDir);
+          const targetMatches = expectedTarget.startsWith(expectedPrefix)
+            ? (targetArg?.argValue || '').startsWith(expectedPrefix)
+            : targetArg?.argValue === expectedTarget;
+          return config.status === 'success' && targetMatches;
         });
 
         if (allEffective) {
