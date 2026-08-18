@@ -14,7 +14,9 @@
     "eject": "rspress eject"
   },
   "dependencies": {
-    "@rspress/core": "2.0.7"
+    "@rspress/core": "2.0.7",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.3",

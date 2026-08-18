@@ -32,6 +32,7 @@ import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
 import { HomeHero } from './components/HomeHero';
+import { DocsAssistant } from './components/DocsAssistant/DocsAssistant';
 import { decodeTargetBlankHref } from '../shared/blankTargetLink';
 
 function getCustomMDXComponent() {
@@ -233,6 +234,9 @@ export const Layout = () => {
       //   </NoSSR>
       // }
       />
+      <NoSSR>
+        <DocsAssistant />
+      </NoSSR>
     </div>
   );
 };
