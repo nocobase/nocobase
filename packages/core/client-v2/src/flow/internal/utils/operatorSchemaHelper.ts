@@ -20,7 +20,7 @@ type OperatorMeta = {
 };
 
 type ComponentRegistry = {
-  getComponent?: (name: string) => ComponentType<Record<string, unknown>> | undefined;
+  getComponent?: (name: string, isShowError?: boolean) => ComponentType<Record<string, unknown>> | undefined;
 };
 
 type OperatorComponentFieldModel = {
@@ -67,6 +67,7 @@ export function resolveOperatorComponent(
   app: ComponentRegistry | undefined,
   operator: string,
   operators?: OperatorMeta[],
+  isShowError = true,
 ) {
   if (!operators || !Array.isArray(operators)) return null;
   const op = operators.find((item) => item?.value === operator);
@@ -77,7 +78,7 @@ export function resolveOperatorComponent(
   if (xComp === 'DateFilterDynamicComponent') {
     Comp = DateFilterDynamicComponent as ComponentType<Record<string, unknown>>;
   } else {
-    Comp = app?.getComponent?.(xComp);
+    Comp = isShowError ? app?.getComponent?.(xComp) : app?.getComponent?.(xComp, false);
   }
   if (!Comp) return null;
   const props = isRecord(schema?.['x-component-props']) ? schema['x-component-props'] : {};

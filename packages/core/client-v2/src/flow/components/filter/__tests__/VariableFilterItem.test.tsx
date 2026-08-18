@@ -158,6 +158,88 @@ describe('VariableFilterItem', () => {
     expect(value.value).toBe('abc');
   });
 
+  it.each([
+    { operator: '$includes', xComponent: 'Input' },
+    { operator: '$eq', xComponent: 'Select' },
+    { operator: '$in', xComponent: 'Select' },
+  ])('uses a silent app registry lookup for the local $xComponent control', async ({ operator, xComponent }) => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'status';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': xComponent,
+        enum: [{ label: 'Draft', value: 'draft' }],
+        'x-filter-operators': [
+          {
+            value: operator,
+            label: 'Operator',
+            selected: true,
+            schema: {
+              'x-component': xComponent,
+              'x-component-props': xComponent === 'Select' ? { mode: operator === '$in' ? 'tags' : null } : {},
+            },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe(operator);
+    });
+    if (xComponent === 'Select' && operator === '$eq') {
+      expect(getComponent).not.toHaveBeenCalled();
+    } else {
+      expect(getComponent).toHaveBeenCalledWith(xComponent, false);
+    }
+  });
+
+  it('continues resolving plugin-provided keyword controls from the app registry', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const MultipleKeywordsInput: React.FC = () => <div data-testid="multiple-keywords-input" />;
+    app.addComponents({ MultipleKeywordsInput });
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'name';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': 'Input',
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'Is any of',
+            selected: true,
+            schema: { 'x-component': 'MultipleKeywordsInput' },
+          },
+        ],
+      },
+      paths: ['collection', 'name'],
+      name: 'name',
+      title: 'Name',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    expect(await screen.findByTestId('multiple-keywords-input')).toBeTruthy();
+    expect(getComponent).toHaveBeenCalledWith('MultipleKeywordsInput');
+  });
+
   it('passes disabled through to the left selector, operator select, and right variable input', async () => {
     const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
     const model = CreateModel();
