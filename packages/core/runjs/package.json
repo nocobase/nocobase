@@ -1,0 +1,179 @@
+{
+  "name": "@nocobase/runjs",
+  "version": "3.0.0-alpha.9",
+  "scripts": {
+    "verify:package-boundary": "node ./scripts/verify-package-boundary.mjs"
+  },
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "client": [
+        "./lib/client/index.d.ts"
+      ],
+      "compiler/build-identity": [
+        "./lib/compiler/build-identity.d.ts"
+      ],
+      "compiler/loader": [
+        "./lib/compiler/loader.d.ts"
+      ],
+      "compiler/portable": [
+        "./lib/compiler/portable.d.ts"
+      ],
+      "compiler/static-module-references": [
+        "./lib/compiler/static-module-references.d.ts"
+      ],
+      "js-template": [
+        "./lib/js-template/index.d.ts"
+      ],
+      "js-template/client": [
+        "./lib/js-template/client/index.d.ts"
+      ],
+      "js-template/schema": [
+        "./lib/js-template/schema/index.d.ts"
+      ],
+      "js-template/schema/server": [
+        "./lib/js-template/schema/server.d.ts"
+      ],
+      "js-template/shared": [
+        "./lib/js-template/shared/index.d.ts"
+      ],
+      "js-template/typegen": [
+        "./lib/js-template/typegen/index.d.ts"
+      ],
+      "server": [
+        "./lib/server.d.ts"
+      ],
+      "workspace": [
+        "./lib/workspace/index.d.ts"
+      ],
+      "workspace/server": [
+        "./lib/workspace/server/index.d.ts"
+      ],
+      "workspace/shared": [
+        "./lib/workspace/shared/index.d.ts"
+      ],
+      "workspace/swagger": [
+        "./lib/workspace/swagger/index.d.ts"
+      ]
+    }
+  },
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "import": "./lib/client/index.js",
+      "require": "./lib/client/index.js"
+    },
+    "./compiler": {
+      "types": "./lib/compiler/index.d.ts",
+      "import": "./lib/compiler/index.js",
+      "require": "./lib/compiler/index.js"
+    },
+    "./compiler/build-identity": {
+      "types": "./lib/compiler/build-identity.d.ts",
+      "import": "./lib/compiler/build-identity.js",
+      "require": "./lib/compiler/build-identity.js"
+    },
+    "./compiler/loader": {
+      "types": "./lib/compiler/loader.d.ts",
+      "import": "./lib/compiler/loader.js",
+      "require": "./lib/compiler/loader.js"
+    },
+    "./compiler/portable": {
+      "types": "./lib/compiler/portable.d.ts",
+      "import": "./lib/compiler/portable.js",
+      "require": "./lib/compiler/portable.js"
+    },
+    "./compiler/static-module-references": {
+      "types": "./lib/compiler/static-module-references.d.ts",
+      "import": "./lib/compiler/static-module-references.js",
+      "require": "./lib/compiler/static-module-references.js"
+    },
+    "./js-template": {
+      "types": "./lib/js-template/index.d.ts",
+      "import": "./lib/js-template/index.js",
+      "require": "./lib/js-template/index.js"
+    },
+    "./js-template/client": {
+      "types": "./lib/js-template/client/index.d.ts",
+      "import": "./lib/js-template/client/index.js",
+      "require": "./lib/js-template/client/index.js"
+    },
+    "./js-template/schema": {
+      "types": "./lib/js-template/schema/index.d.ts",
+      "import": "./lib/js-template/schema/index.js",
+      "require": "./lib/js-template/schema/index.js"
+    },
+    "./js-template/schema/server": {
+      "types": "./lib/js-template/schema/server.d.ts",
+      "import": "./lib/js-template/schema/server.js",
+      "require": "./lib/js-template/schema/server.js"
+    },
+    "./js-template/schema/entry-v1.schema.json": "./lib/js-template/schema/entry-v1.schema.json",
+    "./js-template/shared": {
+      "types": "./lib/js-template/shared/index.d.ts",
+      "import": "./lib/js-template/shared/index.js",
+      "require": "./lib/js-template/shared/index.js"
+    },
+    "./js-template/typegen": {
+      "types": "./lib/js-template/typegen/index.d.ts",
+      "import": "./lib/js-template/typegen/index.js",
+      "require": "./lib/js-template/typegen/index.js"
+    },
+    "./settings": {
+      "types": "./lib/settings/index.d.ts",
+      "import": "./lib/settings/index.js",
+      "require": "./lib/settings/index.js"
+    },
+    "./server": {
+      "types": "./lib/server.d.ts",
+      "import": "./lib/server.js",
+      "require": "./lib/server.js"
+    },
+    "./workspace": {
+      "types": "./lib/workspace/index.d.ts",
+      "import": "./lib/workspace/index.js",
+      "require": "./lib/workspace/index.js"
+    },
+    "./workspace/server": {
+      "types": "./lib/workspace/server/index.d.ts",
+      "import": "./lib/workspace/server/index.js",
+      "require": "./lib/workspace/server/index.js"
+    },
+    "./workspace/shared": {
+      "types": "./lib/workspace/shared/index.d.ts",
+      "import": "./lib/workspace/shared/index.js",
+      "require": "./lib/workspace/shared/index.js"
+    },
+    "./workspace/swagger": {
+      "types": "./lib/workspace/swagger/index.d.ts",
+      "import": "./lib/workspace/swagger/index.js",
+      "require": "./lib/workspace/swagger/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dependencies": {
+    "@jridgewell/trace-mapping": "^0.3.25",
+    "esbuild": "~0.27.0",
+    "jszip": "^3.10.1",
+    "typescript": "5.1.3"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/resourcer": "2.x",
+    "@nocobase/server": "2.x"
+  },
+  "devDependencies": {
+    "ajv": "^6.12.6",
+    "cross-spawn": "^7.0.6",
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.0"
+  }
+}

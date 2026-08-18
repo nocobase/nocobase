@@ -186,6 +186,19 @@ describe('FlowSettings', () => {
       expect(flowSettings.components.Component1).toBe(Component1Updated);
     });
 
+    test('should allow intentional component overwrite without warning', () => {
+      const Component1 = () => 'Component1';
+      const Component1Updated = () => 'Component1Updated';
+
+      flowSettings.registerComponents({ Component1 });
+      flowSettings.registerComponents({ Component1: Component1Updated }, { warnOnOverwrite: false });
+
+      expect(consoleSpy.warn).not.toHaveBeenCalledWith(
+        "FlowSettings: Component with name 'Component1' is already registered and will be overwritten.",
+      );
+      expect(flowSettings.components.Component1).toBe(Component1Updated);
+    });
+
     test('should handle empty components object', () => {
       flowSettings.registerComponents({});
       expect(Object.keys(flowSettings.components)).toHaveLength(0);

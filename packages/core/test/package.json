@@ -26,6 +26,16 @@
         "default": "./es/client/index.mjs"
       }
     },
+    "./client-v2": {
+      "require": {
+        "types": "./lib/client-v2/index.d.ts",
+        "default": "./lib/client-v2/index.js"
+      },
+      "import": {
+        "types": "./es/client-v2/index.d.ts",
+        "default": "./es/client-v2/index.mjs"
+      }
+    },
     "./web": {
       "require": {
         "types": "./lib/web/index.d.ts",
@@ -51,6 +61,8 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
+    "@nocobase/client-v2": "3.0.0-alpha.9",
+    "@nocobase/runjs": "3.0.0-alpha.9",
     "@nocobase/server": "3.0.0-alpha.9",
     "@nocobase/utils": "3.0.0-alpha.9",
     "@playwright/test": "^1.45.3",

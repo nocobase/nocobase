@@ -9,10 +9,13 @@
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet } from 'lodash';
 import { JSEditableFieldModel } from '../JSEditableFieldModel';
+
+setupRunJSTestHosts();
 
 function createField(props?: Record<string, any>, code = '') {
   const engine = new FlowEngine();
@@ -80,6 +83,11 @@ ctx.setValue?.('44');
 ctx.render(<span data-testid="js-name-path">{JSON.stringify(ctx.namePath)}</span>);
 `;
 
+const RECORD_AWARE_CODE = `
+const React = ctx.React;
+ctx.render(<span data-testid="js-record-name">{ctx.record.name}:{ctx.value}</span>);
+`;
+
 function createFormStub(initialValues: any = {}) {
   const store = JSON.parse(JSON.stringify(initialValues));
   return {
@@ -103,6 +111,7 @@ function renderParentFieldWithFlowRenderer(
     fieldIndex?: string[];
     fieldStepParams?: Record<string, any>;
     form?: any;
+    getRecord?: () => Record<string, unknown>;
   },
 ) {
   const engine = new FlowEngine();
@@ -133,6 +142,12 @@ function renderParentFieldWithFlowRenderer(
   }
   if (options?.fieldIndex) {
     parent.subModels.field.context.defineProperty('fieldIndex', { value: options.fieldIndex });
+  }
+  if (options?.getRecord) {
+    parent.subModels.field.context.defineProperty('record', {
+      get: options.getRecord,
+      cache: false,
+    });
   }
 
   render(
@@ -200,6 +215,34 @@ describe('JSEditableFieldModel', () => {
     });
 
     expect(applyFlowSpy).not.toHaveBeenCalled();
+  });
+
+  it('reruns JavaScript settings when the record changes without a value change', async () => {
+    let currentRecord = {
+      name: 'Ada',
+    };
+    const parent = renderParentFieldWithFlowRenderer({ value: '5551000' }, undefined, RECORD_AWARE_CODE, {
+      getRecord: () => currentRecord,
+    });
+    const field = parent.subModels.field as JSEditableFieldModel;
+
+    await waitFor(() => {
+      expect(screen.getByTestId('js-record-name')).toHaveTextContent('Ada:5551000');
+    });
+
+    currentRecord = {
+      name: 'Grace',
+    };
+    await act(async () => {
+      field.setProps({
+        value: '5551000',
+        recordVersion: 'grace',
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('js-record-name')).toHaveTextContent('Grace:5551000');
+    });
   });
 
   it('coalesces script and pattern changes into one JavaScript settings run', async () => {

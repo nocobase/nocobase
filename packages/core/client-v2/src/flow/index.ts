@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowContext, FlowModel } from '@nocobase/flow-engine';
+import { createRunJSClientHosts, installRunJSClientHosts } from '@nocobase/runjs/client';
 import { IconPicker } from '../flow-compat';
 import { Plugin, type PluginOptions } from '..';
 import type { BaseApplication } from '../BaseApplication';
@@ -22,13 +23,57 @@ import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
 import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
+import { JSBlockSourceModeField } from './models/blocks/js-block/JSBlockSourceModeField';
+import {
+  JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD,
+  JSActionSourceModeField,
+} from './models/actions/JSActionSourceModeField';
+import { JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD, JSFieldSourceModeField } from './models/fields/JSFieldSourceModeField';
+import { JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD, JSItemSourceModeField } from './models/fields/JSItemSourceModeField';
 import { registerDeviceTypeContext } from './internal/registerDeviceTypeContext';
+import {
+  registerRunJSRegistryHost,
+  registerRunJSRuntimeHost,
+  type RunJSRegistryHost,
+  type RunJSRuntimeHost,
+  type RunJSSettingsDescriptorProvider,
+  type RunJSSourceResolver,
+} from './components/runjs-source';
+import type { RunJSEditorProvider } from './components/runjs-studio';
+
+const PLUGIN_FLOW_ENGINE_LOADED = Symbol.for('nocobase.client-v2.plugin-flow-engine.loaded');
+const ACTIVE_FLOW_ENGINE_CLIENT = Symbol.for('nocobase.client-v2.plugin-flow-engine.runjs-client');
+
+interface RunJSRuntimeClientOwner {
+  dispose(): void;
+}
+
+const activeFlowEngineClientState = globalThis as typeof globalThis & {
+  [ACTIVE_FLOW_ENGINE_CLIENT]?: RunJSRuntimeClientOwner;
+};
+
+interface FlowEngineWithPluginFlowEngineState {
+  [PLUGIN_FLOW_ENGINE_LOADED]?: true;
+}
 
 export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplication<any>> extends Plugin<
   PluginOptions<any>,
   TApp
 > {
+  private runJSRuntimeDisposer?: () => void;
+
+  async beforeLoad() {
+    this.activateRunJSRuntimeClient();
+  }
+
   async load() {
+    this.activateRunJSRuntimeClient();
+    const flowEngine = this.flowEngine as typeof this.flowEngine & FlowEngineWithPluginFlowEngineState;
+
+    if (flowEngine[PLUGIN_FLOW_ENGINE_LOADED]) {
+      return;
+    }
+
     registerDeviceTypeContext(this.flowEngine);
     this.app.addComponents({ FlowRoute });
     this.app.flowEngine.setModelRepository(new FlowModelRepository(this.app));
@@ -44,6 +89,13 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
       IconPicker,
       DefaultValue,
       FlowSettingsVariableTextArea: TextAreaWithContextSelector,
+      JSBlockJsTemplateSourceField: JSBlockSourceModeField,
+      JSActionJsTemplateSourceField: JSActionSourceModeField,
+      [JS_ACTION_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSActionSourceModeField,
+      JSFieldJsTemplateSourceField: JSFieldSourceModeField,
+      [JS_FIELD_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSFieldSourceModeField,
+      JSItemJsTemplateSourceField: JSItemSourceModeField,
+      [JS_ITEM_JS_TEMPLATE_FULL_SOURCE_FIELD]: JSItemSourceModeField,
     });
 
     // 动态流编辑入口
@@ -86,12 +138,88 @@ export class PluginFlowEngine<TApp extends BaseApplication<any> = BaseApplicatio
         completion: { insertText: "await ctx.previewRunJS('console.log(1)', 'v2')" },
       },
     );
+    flowEngine[PLUGIN_FLOW_ENGINE_LOADED] = true;
+  }
+
+  dispose() {
+    this.disposeRunJSRuntimeClient();
+    if (activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] === this) {
+      delete activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT];
+    }
+  }
+
+  private disposeRunJSRuntimeClient(): void {
+    this.runJSRuntimeDisposer?.();
+    this.runJSRuntimeDisposer = undefined;
+  }
+
+  private installRunJSRuntimeClient(): void {
+    if (this.runJSRuntimeDisposer) {
+      return;
+    }
+    const hosts: { registryHost: RunJSRegistryHost; runtimeHost: RunJSRuntimeHost } = createRunJSClientHosts<
+      RunJSEditorProvider,
+      RunJSSettingsDescriptorProvider,
+      RunJSSourceResolver
+    >(createRunJSRuntimeContext);
+    this.runJSRuntimeDisposer = installRunJSClientHosts(
+      {
+        registerRegistryHost: registerRunJSRegistryHost,
+        registerRuntimeHost: registerRunJSRuntimeHost,
+      },
+      hosts,
+    );
+  }
+
+  private activateRunJSRuntimeClient(): void {
+    if (activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] !== this) {
+      activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT]?.dispose();
+    }
+    this.installRunJSRuntimeClient();
+    activeFlowEngineClientState[ACTIVE_FLOW_ENGINE_CLIENT] = this;
   }
 }
+
+const createRunJSRuntimeContext: RunJSRuntimeHost['createRuntimeContext'] = (baseCtx, resolved) => {
+  if (baseCtx && typeof baseCtx === 'object' && !(baseCtx instanceof FlowContext)) {
+    const runtimeCtx: Record<string, unknown> = Object.create(baseCtx as object);
+    runtimeCtx.settings = resolved.settings;
+    runtimeCtx.runJsSource = {
+      sourceMode: resolved.sourceMode,
+      sourceBinding: resolved.sourceBinding,
+      sourceMap: resolved.sourceMap,
+      context: resolved.context,
+    };
+    return runtimeCtx;
+  }
+
+  const runtimeCtx = new FlowContext();
+  if (baseCtx instanceof FlowContext) {
+    try {
+      runtimeCtx.delegate(baseCtx);
+    } catch {
+      // Keep the runtime context usable in tests and degraded integrations.
+    }
+  }
+  runtimeCtx.defineProperty('settings', {
+    value: resolved.settings,
+  });
+  runtimeCtx.defineProperty('runJsSource', {
+    value: {
+      sourceMode: resolved.sourceMode,
+      sourceBinding: resolved.sourceBinding,
+      sourceMap: resolved.sourceMap,
+      context: resolved.context,
+    },
+  });
+  return runtimeCtx;
+};
 
 // Export all models for external use
 export * from './components/filter';
 export * from './components/code-editor';
+export * from './components/runjs-source';
+export * from './components/runjs-studio';
 export { default as FlowRoute } from './components/FlowRoute';
 export * from './components/TextAreaWithContextSelector';
 export * from './components/SkeletonFallback';
@@ -99,6 +227,12 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export * from './utils';
+export {
+  JS_TEMPLATE_SOURCE_MODE,
+  stableSerialize,
+  type JsTemplateSourceMode,
+  type RunJSSourceMode,
+} from './models/utils/runjsSourceRuntimeCommon';
 export * from './actions';
 export { FieldAssignValueInput } from './components/FieldAssignValueInput';
 export * from './system-settings';

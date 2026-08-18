@@ -1,0 +1,576 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { createMockServer, type MockServer } from '@nocobase/test';
+import type { RunJSSourceLocator } from '@nocobase/runjs/workspace/server';
+import { bootstrapFlowSurfaceRunJSWorkspace } from '@nocobase/plugin-flow-engine';
+
+import FlowModelRepository from '../../../../plugin-flow-engine/src/server/repository';
+import PluginJsTemplateServer from '../plugin';
+
+describe('JS Template Flow Engine RunJS source integration', () => {
+  let app: MockServer;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      registerActions: true,
+      acl: true,
+      plugins: [
+        'field-sort',
+        'system-settings',
+        'users',
+        'auth',
+        'acl',
+        'data-source-manager',
+        PluginJsTemplateServer,
+        'flow-engine',
+      ],
+    });
+  });
+
+  afterEach(async () => {
+    await app?.destroy();
+  });
+
+  it('exposes the RunJS workspace resource when JS Template is enabled', () => {
+    expect(app.resourceManager.isDefined('runJSSources')).toBe(true);
+  });
+
+  it('opens and saves a Flow Engine source with only the JS Template host', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'js-template-flow-source',
+      title: 'JS Template Flow source',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render("before");',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const agent = await app.agent().login(user);
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.step',
+      modelUid: 'js-template-flow-source',
+      flowKey: 'jsSettings',
+      stepKey: 'runJs',
+      paramPath: ['code'],
+    };
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+
+    expect(opened.status).toBe(200);
+    expect(opened.body.data.legacy).toMatchObject({
+      code: 'ctx.render("before");',
+      version: 'v2',
+    });
+
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.repoId,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Update Flow Engine source',
+        entryPath: 'src/main.tsx',
+        files: [
+          {
+            path: 'src/main.tsx',
+            operation: 'upsert',
+            content: 'ctx.render("after");',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(saved.status).toBe(200);
+    await expect(repository.findModelById('js-template-flow-source')).resolves.toMatchObject({
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: expect.stringContaining('after'),
+            version: 'v2',
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: saved.body.data.repository.id,
+              commitId: saved.body.data.commit.id,
+              entry: 'src/main.tsx',
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('opens and saves a multi-file Dynamic Flow source back to the Flow Registry', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'dynamic-flow-runjs-source',
+      title: 'Dynamic Flow RunJS source',
+      use: 'FormModel',
+      flowRegistry: {
+        eventFlow: {
+          on: 'submit',
+          steps: {
+            runjs: {
+              use: 'runjs',
+              defaultParams: {
+                code: 'return "before";',
+              },
+            },
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const agent = await app.agent().login(user);
+    const locator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-source',
+      flowKey: 'eventFlow',
+      stepKey: 'runjs',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+
+    expect(opened.status).toBe(200);
+    expect(opened.body.data).toMatchObject({
+      locator,
+      locatorKind: 'flowModel.flowRegistry.runjs',
+      legacy: {
+        code: 'return "before";',
+        version: 'v1',
+        language: 'javascript',
+      },
+    });
+
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.repoId,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Update Dynamic Flow source',
+        entryPath: 'src/main.ts',
+        files: [
+          {
+            path: 'src/main.ts',
+            operation: 'upsert',
+            content: 'import { result } from "./result";\nreturn result;',
+            language: 'typescript',
+          },
+          {
+            path: 'src/result.ts',
+            operation: 'upsert',
+            content: 'export const result = "after from helper";',
+            language: 'typescript',
+          },
+        ],
+      },
+    });
+
+    expect(saved.status).toBe(200);
+    const model = await repository.findModelById('dynamic-flow-runjs-source');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams.code).toContain('after from helper');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams.version).toBe('v1');
+    expect(model.flowRegistry.eventFlow.steps.runjs.defaultParams).not.toHaveProperty('sourceRef');
+
+    const reopened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(reopened.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/main.ts', content: expect.stringContaining('return result') }),
+        expect.objectContaining({ path: 'src/result.ts', content: expect.stringContaining('after from helper') }),
+      ]),
+    );
+  });
+
+  it('resolves Dynamic Flow sibling versions for params and empty defaultParams and fingerprints version changes', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'dynamic-flow-runjs-version-source',
+      use: 'FormModel',
+      flowRegistry: {
+        paramsFlow: {
+          steps: {
+            runjs: {
+              use: 'runjs',
+              params: {
+                code: 'return "params";',
+                version: 'v2',
+              },
+            },
+          },
+        },
+        emptyFlow: {
+          steps: {
+            runjs: {
+              use: 'runjs',
+              defaultParams: {
+                code: '',
+              },
+            },
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const agent = await app.agent().login(user);
+    const paramsLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-version-source',
+      flowKey: 'paramsFlow',
+      stepKey: 'runjs',
+      sourcePath: ['params', 'code'],
+    };
+    const emptyLocator: RunJSSourceLocator = {
+      kind: 'flowModel.flowRegistry.runjs',
+      modelUid: 'dynamic-flow-runjs-version-source',
+      flowKey: 'emptyFlow',
+      stepKey: 'runjs',
+      sourcePath: ['defaultParams', 'code'],
+    };
+
+    const paramsOpened = await agent.resource('runJSSources').open({ values: { locator: paramsLocator } });
+    const emptyOpened = await agent.resource('runJSSources').open({ values: { locator: emptyLocator } });
+
+    expect(paramsOpened.body.data.legacy).toMatchObject({
+      code: 'return "params";',
+      version: 'v2',
+      language: 'typescript',
+    });
+    expect(emptyOpened.body.data.legacy).toMatchObject({ code: '', version: 'v2', language: 'typescript' });
+
+    const model = await repository.findModelById('dynamic-flow-runjs-version-source');
+    model.flowRegistry.paramsFlow.steps.runjs.params.version = 'v1';
+    await repository.patch({ uid: model.uid, flowRegistry: model.flowRegistry });
+
+    const changedVersion = await agent.resource('runJSSources').open({ values: { locator: paramsLocator } });
+    expect(changedVersion.status).toBe(409);
+    expect(changedVersion.body.errors[0]).toMatchObject({ code: 'RUNJS_SOURCE_OWNER_OUTDATED' });
+
+    const staleSave = await agent.resource('runJSSources').save({
+      values: {
+        locator: paramsLocator,
+        repoId: paramsOpened.body.data.repository.repoId,
+        baseCommitId: paramsOpened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: paramsOpened.body.data.ownerFingerprint,
+        message: 'Reject stale Dynamic Flow version',
+        entryPath: 'src/main.tsx',
+        files: [{ path: 'src/main.tsx', operation: 'upsert', content: 'return "stale";', language: 'typescript' }],
+      },
+    });
+    expect(staleSave.status).toBe(409);
+    expect(staleSave.body.errors[0]).toMatchObject({ code: 'RUNJS_SOURCE_OWNER_OUTDATED' });
+  });
+
+  it('bootstraps a complete ordinary workspace in the Host transaction without creating a JS Template repo', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'new-inline-js-block',
+      title: 'New inline JS block',
+      use: 'JSBlockModel',
+      stepParams: {},
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'new-inline-js-block',
+      flowKey: 'jsSettings' as const,
+      stepKey: 'runJs' as const,
+      paramPath: ['code'] as ['code'],
+      versionPath: ['version'] as ['version'],
+    };
+    const jsTemplateProjectCount = await app.db.getRepository('jsTemplateProjects').count();
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      await expect(
+        bootstrapFlowSurfaceRunJSWorkspace(app, {
+          hostKind: 'js-block',
+          modelUse: 'JSBlockModel',
+          locator,
+          transaction,
+          authoringContext: {
+            userId: String(user.get('id')),
+            currentUser: user,
+            state: { currentUser: user },
+            request: { resourceName: 'flowSurfaces', actionName: 'addBlock', requestId: 'bootstrap-request' },
+            can: () => ({}),
+          },
+        }),
+      ).resolves.toEqual({ status: 'ready', retryable: false });
+    });
+
+    const agent = await app.agent().login(user);
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(opened.status).toBe(200);
+    expect(opened.body.data.repository).toMatchObject({
+      ownerType: 'runjs-source',
+      name: 'source',
+      headCommitId: expect.any(String),
+    });
+    expect(opened.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/client/index.tsx', content: 'ctx.render(null);' }),
+        expect.objectContaining({ path: '.nocobase/runjs-source.json' }),
+        expect.objectContaining({
+          path: 'src/client/entry.json',
+          content: expect.stringMatching(/"key": "inline-js-block-[a-f0-9]{16}"/),
+        }),
+      ]),
+    );
+    const model = await repository.findModelById('new-inline-js-block');
+    expect(model).toMatchObject({
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: opened.body.data.repository.repoId,
+              commitId: opened.body.data.repository.headCommitId,
+              entry: 'src/client/index.tsx',
+            },
+          },
+        },
+      },
+    });
+    expect(model.stepParams.jsSettings.runJs).not.toHaveProperty('sourceBinding');
+    await expect(app.db.getRepository('jsTemplateProjects').count()).resolves.toBe(jsTemplateProjectCount);
+
+    const commitCount = await app.db.getRepository('vscFileCommits').count();
+    await app.db.sequelize.transaction(async (transaction) => {
+      await bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
+        locator,
+        transaction,
+        authoringContext: {
+          userId: String(user.get('id')),
+          currentUser: user,
+          state: { currentUser: user },
+          request: { resourceName: 'flowSurfaces', actionName: 'addBlock' },
+          can: () => ({}),
+        },
+      });
+    });
+    await expect(app.db.getRepository('vscFileCommits').count()).resolves.toBe(commitCount);
+  });
+
+  it('preserves existing workspace files while adding a missing descriptor', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'partial-inline-js-block',
+      use: 'JSBlockModel',
+      stepParams: {},
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'partial-inline-js-block',
+      flowKey: 'jsSettings' as const,
+      stepKey: 'runJs' as const,
+      paramPath: ['code'] as ['code'],
+      versionPath: ['version'] as ['version'],
+    };
+    const agent = await app.agent().login(user);
+    const opened = await agent.resource('runJSSources').open({ values: { locator } });
+    const existingFiles = opened.body.data.files.map(
+      (file: { path: string; content: string; language?: string; mode?: string }) => ({
+        path: file.path,
+        content: file.content,
+        language: file.language,
+        mode: file.mode,
+        operation: 'upsert',
+      }),
+    );
+    const helperContent = 'export const preserved = true;';
+    const saved = await agent.resource('runJSSources').save({
+      values: {
+        locator,
+        repoId: opened.body.data.repository.repoId,
+        baseCommitId: opened.body.data.repository.headCommitId,
+        baseOwnerFingerprint: opened.body.data.ownerFingerprint,
+        message: 'Add an existing helper',
+        files: [
+          ...existingFiles,
+          {
+            path: 'src/client/preserved.ts',
+            content: helperContent,
+            language: 'typescript',
+            operation: 'upsert',
+          },
+        ],
+      },
+    });
+    expect(saved.status).toBe(200);
+
+    await app.db.sequelize.transaction(async (transaction) => {
+      await bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
+        locator,
+        transaction,
+        authoringContext: {
+          userId: String(user.get('id')),
+          currentUser: user,
+          state: { currentUser: user },
+          request: { resourceName: 'flowSurfaces', actionName: 'addBlock' },
+          can: () => ({}),
+        },
+      });
+    });
+
+    const reopened = await agent.resource('runJSSources').open({ values: { locator } });
+    expect(reopened.body.data.files).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: 'src/client/preserved.ts', content: helperContent }),
+        expect.objectContaining({ path: 'src/client/entry.json' }),
+      ]),
+    );
+  });
+
+  it('returns a non-retryable bootstrap error after rolling back partial workspace writes and can retry cleanly', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'invalid-inline-js-block',
+      use: 'JSBlockModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render(',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'invalid-inline-js-block',
+      flowKey: 'jsSettings' as const,
+      stepKey: 'runJs' as const,
+      paramPath: ['code'] as ['code'],
+      versionPath: ['version'] as ['version'],
+    };
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const authoringContext = {
+      userId: String(user.get('id')),
+      currentUser: user,
+      state: { currentUser: user },
+      request: { resourceName: 'flowSurfaces', actionName: 'createPage' },
+      can: () => ({}),
+    };
+
+    const failed = await app.db.sequelize.transaction((transaction) =>
+      bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
+        locator,
+        transaction,
+        authoringContext,
+      }),
+    );
+
+    expect(failed).toMatchObject({
+      status: 'error',
+      retryable: false,
+      error: {
+        code: 'RUNJS_COMPILE_FAILED',
+      },
+    });
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(repository.findModelById('invalid-inline-js-block')).resolves.not.toHaveProperty(
+      'stepParams.jsSettings.runJs.sourceRef',
+    );
+
+    await repository.patch({
+      uid: 'invalid-inline-js-block',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            code: 'ctx.render(null);',
+            version: 'v2',
+          },
+        },
+      },
+    });
+    const retried = await app.db.sequelize.transaction((transaction) =>
+      bootstrapFlowSurfaceRunJSWorkspace(app, {
+        hostKind: 'js-block',
+        modelUse: 'JSBlockModel',
+        locator,
+        transaction,
+        authoringContext,
+      }),
+    );
+
+    expect(retried).toEqual({ status: 'ready', retryable: false });
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount + 1);
+    await expect(repository.findModelById('invalid-inline-js-block')).resolves.toMatchObject({
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            sourceRef: {
+              type: 'vsc-file',
+              repoId: expect.any(String),
+              commitId: expect.any(String),
+              entry: 'src/client/index.tsx',
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('rolls back the ordinary repository and sourceRef when the surrounding Host transaction fails', async () => {
+    const repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    await repository.insertModel({
+      uid: 'rolled-back-inline-js-block',
+      use: 'JSBlockModel',
+      stepParams: {},
+    });
+    const user = await app.db.getRepository('users').findOne();
+    const repositoryCount = await app.db.getRepository('vscFileRepositories').count();
+    const locator = {
+      kind: 'flowModel.step' as const,
+      modelUid: 'rolled-back-inline-js-block',
+      flowKey: 'jsSettings' as const,
+      stepKey: 'runJs' as const,
+      paramPath: ['code'] as ['code'],
+      versionPath: ['version'] as ['version'],
+    };
+
+    await expect(
+      app.db.sequelize.transaction(async (transaction) => {
+        await bootstrapFlowSurfaceRunJSWorkspace(app, {
+          hostKind: 'js-block',
+          modelUse: 'JSBlockModel',
+          locator,
+          transaction,
+          authoringContext: {
+            userId: String(user.get('id')),
+            currentUser: user,
+            state: { currentUser: user },
+            request: { resourceName: 'flowSurfaces', actionName: 'createPage' },
+            can: () => ({}),
+          },
+        });
+        throw new Error('Host write failed');
+      }),
+    ).rejects.toThrow('Host write failed');
+
+    await expect(app.db.getRepository('vscFileRepositories').count()).resolves.toBe(repositoryCount);
+    await expect(repository.findModelById('rolled-back-inline-js-block')).resolves.toMatchObject({ stepParams: {} });
+  });
+});

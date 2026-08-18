@@ -61,6 +61,7 @@
     "@nocobase/plugin-gantt": "3.0.0-alpha.9",
     "@nocobase/plugin-graph-collection-manager": "3.0.0-alpha.9",
     "@nocobase/plugin-idp-oauth": "3.0.0-alpha.9",
+    "@nocobase/plugin-js-template": "3.0.0-alpha.9",
     "@nocobase/plugin-kanban": "3.0.0-alpha.9",
     "@nocobase/plugin-license": "3.0.0-alpha.9",
     "@nocobase/plugin-locale-tester": "3.0.0-alpha.9",

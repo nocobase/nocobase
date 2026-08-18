@@ -23,10 +23,24 @@ export interface EditorRef {
   logs: RunLog[];
 }
 
+export interface CodeEditorDiagnostic {
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  line?: number;
+  column?: number;
+  endLine?: number;
+  endColumn?: number;
+  from?: number;
+  to?: number;
+  source?: string;
+}
+
 export type CodeEditorExtra = ComponentType<{
   name?: string;
   language?: string;
   scene?: string | string[];
+  authoringSurfaceId?: string;
+  readonly?: boolean;
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }>;

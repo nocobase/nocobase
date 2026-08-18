@@ -9,10 +9,13 @@
 
 import React from 'react';
 import { render, screen, waitFor } from '@nocobase/test/client';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { App, ConfigProvider } from 'antd';
 import { describe, expect, it } from 'vitest';
 import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { JSItemActionModel } from '../JSItemActionModel';
+
+setupRunJSTestHosts();
 
 describe('JSItemActionModel', () => {
   it('renders collection-level custom content', async () => {

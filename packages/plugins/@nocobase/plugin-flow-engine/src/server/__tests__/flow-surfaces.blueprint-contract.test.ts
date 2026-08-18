@@ -8,6 +8,7 @@
  */
 
 import _ from 'lodash';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
@@ -16,6 +17,7 @@ import {
   createPage,
   createMenu,
   destroyFlowSurfacesContractContext,
+  expectCommittedRunJSSource,
   getData,
   getRouteBackedTabs,
   getSurface,
@@ -381,8 +383,8 @@ describe('flowSurfaces applyBlueprint contract', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
-      plugins: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS as any,
-      enabledPluginAliases: FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS,
+      plugins: [...FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer] as any,
+      enabledPluginAliases: [...FLOW_SURFACES_CONTRACT_TEMPLATE_TEST_PLUGINS, 'js-template'],
     });
     ({ rootAgent, flowRepo, routesRepo } = context);
   }, 120000);
@@ -1104,10 +1106,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const data = getData(executeRes);
     const jsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'JSBlockModel')[0];
-    expect(jsBlock?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code,
+    const runJs = jsBlock?.stepParams?.jsSettings?.runJs;
+    expect(runJs).toMatchObject({
       version: 'v2',
     });
+    const runtimeCode: unknown = runJs?.code;
+    if (typeof runtimeCode !== 'string') {
+      throw new Error('Expected JS block runJs.code to be a string');
+    }
+    expect(runtimeCode.length).toBeGreaterThan(0);
+    await expectCommittedRunJSSource(rootAgent, jsBlock.runJSLocator, runJs?.sourceRef, code);
   });
 
   it('should apply inline JS block code from applyBlueprint settings', async () => {
@@ -1138,10 +1146,16 @@ describe('flowSurfaces applyBlueprint contract', () => {
     expect(executeRes.status, readErrorMessage(executeRes)).toBe(200);
     const data = getData(executeRes);
     const jsBlock = collectDescendantNodes(data.surface.tree, (item) => item?.use === 'JSBlockModel')[0];
-    expect(jsBlock?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code,
+    const runJs = jsBlock?.stepParams?.jsSettings?.runJs;
+    expect(runJs).toMatchObject({
       version: 'v2',
     });
+    const runtimeCode: unknown = runJs?.code;
+    if (typeof runtimeCode !== 'string') {
+      throw new Error('Expected JS block runJs.code to be a string');
+    }
+    expect(runtimeCode.length).toBeGreaterThan(0);
+    await expectCommittedRunJSSource(rootAgent, jsBlock.runJSLocator, runJs?.sourceRef, code);
   });
 
   it('should create flow-model calendar blocks through applyBlueprint', async () => {

@@ -8,3 +8,4 @@
  */
 
 export * from './JSBlock';
+export * from './JSBlockSourceModeField';

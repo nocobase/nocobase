@@ -7,13 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Context } from '@nocobase/actions';
 import { MagicAttributeModel } from '@nocobase/database';
+import type { Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
+import {
+  markJsTemplateUsagesOwnerMissingForNodeTree,
+  syncJsTemplateUsagesForNodeTree,
+} from './flow-surfaces/js-template-usage-integration';
 import { FlowSchemaModel } from './model';
 import FlowModelRepository from './repository';
+import { archiveRunJSRepositoriesForNodeTree } from './runjs-sources/repository-cleanup';
+
+type JsTemplateUsageActionContext = {
+  request?: {
+    headers?: Record<string, string | string[] | undefined>;
+    header?: Record<string, string | string[] | undefined>;
+  };
+  can?: (input: { resource: string; action: string }) => unknown | Promise<unknown>;
+  auth?: {
+    user?: unknown;
+  };
+  state?: Record<string, unknown>;
+  timezone?: string;
+};
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
@@ -109,6 +129,33 @@ export class PluginUISchemaStorageServer extends Plugin {
       await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
+    db.on('flowModels.beforeRemoveTree', async (payload: { rootUid?: unknown }, options) => {
+      const rootUid = typeof payload?.rootUid === 'string' ? payload.rootUid.trim() : '';
+      if (!rootUid) {
+        return;
+      }
+      const repository = db.getCollection('flowModels').repository as FlowModelRepository;
+      const node = await repository.findModelById(rootUid, {
+        transaction: options?.transaction,
+        includeAsyncNode: true,
+      });
+      await markJsTemplateUsagesOwnerMissingForNodeTree(
+        this,
+        {
+          rootUid,
+          action: 'flowModels.repository.remove',
+        },
+        {
+          transaction: options?.transaction,
+          requestSource: 'flowModels.beforeRemoveTree',
+        },
+      );
+      await archiveRunJSRepositoriesForNodeTree(this.app, db, node, {
+        transaction: options?.transaction,
+        requestSource: 'flowModels.beforeRemoveTree',
+      });
+    });
+
     this.app.resourceManager.define({
       name: 'flowModels',
       actions: {
@@ -125,7 +172,18 @@ export class PluginUISchemaStorageServer extends Plugin {
         duplicate: async (ctx, next) => {
           const { uid } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const duplicated = await repository.duplicate(uid);
+          const duplicated = await ctx.db.sequelize.transaction(async (transaction) => {
+            const duplicated = await repository.duplicate(uid, { transaction });
+            await syncJsTemplateUsagesForNodeTree(
+              this,
+              {
+                rootUid: duplicated?.uid,
+                action: 'flowModels.duplicate',
+              },
+              getJsTemplateUsageContext(ctx, transaction),
+            );
+            return duplicated;
+          });
           ctx.body = duplicated;
           await next();
         },
@@ -151,7 +209,18 @@ export class PluginUISchemaStorageServer extends Plugin {
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const uid = await repository.upsertModel(values);
+          const uid = await ctx.db.sequelize.transaction(async (transaction) => {
+            const uid = await repository.upsertModel(values, { transaction });
+            await syncJsTemplateUsagesForNodeTree(
+              this,
+              {
+                rootUid: uid,
+                action: 'flowModels.save',
+              },
+              getJsTemplateUsageContext(ctx, transaction),
+            );
+            return uid;
+          });
           ctx.body = uid;
           // ctx.body = await repository.findModelById(uid);
           await next();
@@ -170,7 +239,7 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 
   async load() {
-    const getSourceAndTargetForRemoveAction = async (ctx: any) => {
+    const getSourceAndTargetForRemoveAction = async (ctx: Context) => {
       const { filterByTk } = ctx.action.params;
       return {
         targetCollection: 'flowModels',
@@ -178,17 +247,20 @@ export class PluginUISchemaStorageServer extends Plugin {
       };
     };
 
-    const getSourceAndTargetForInsertAdjacentAction = async (ctx: any) => {
+    const getSourceAndTargetForInsertAdjacentAction = async (ctx: Context) => {
+      const body = toRecord(ctx.request.body);
+      const options = toRecord(body.options);
       return {
         targetCollection: 'flowModels',
-        targetRecordUK: ctx.request.body?.options?.['uid'],
+        targetRecordUK: options.uid,
       };
     };
 
-    const getSourceAndTargetForPatchAction = async (ctx: any) => {
+    const getSourceAndTargetForPatchAction = async (ctx: Context) => {
+      const body = toRecord(ctx.request.body);
       return {
         targetCollection: 'flowModels',
-        targetRecordUK: ctx.request.body?.['uid'],
+        targetRecordUK: body.uid,
       };
     };
     this.app.auditManager.registerActions([
@@ -197,6 +269,50 @@ export class PluginUISchemaStorageServer extends Plugin {
       { name: 'flowModels:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
     ]);
   }
+}
+
+function getJsTemplateUsageContext(ctx: unknown, transaction?: Transaction) {
+  const actionCtx: JsTemplateUsageActionContext =
+    ctx && typeof ctx === 'object' ? (ctx as JsTemplateUsageActionContext) : {};
+  const headers = actionCtx.request?.headers || actionCtx.request?.header || {};
+  return {
+    can: actionCtx.can,
+    actorUserId: getCurrentUserId(actionCtx),
+    requestId: getHeader(headers, 'x-request-id') || getHeader(headers, 'x-correlation-id'),
+    requestSource: getHeader(headers, 'x-request-source') || 'flowModels',
+    currentUser: actionCtx.auth?.user,
+    state: actionCtx.state,
+    timezone: actionCtx.timezone,
+    transaction,
+  };
+}
+
+function getCurrentUserId(ctx: JsTemplateUsageActionContext): string | null {
+  const user = ctx.auth?.user;
+  if (!user || typeof user !== 'object') {
+    return null;
+  }
+  const userRecord = user as { id?: unknown; get?: (key: string) => unknown };
+  if (typeof userRecord.id === 'string' || typeof userRecord.id === 'number') {
+    return String(userRecord.id);
+  }
+  if (typeof userRecord.get === 'function') {
+    const id = userRecord.get('id');
+    return typeof id === 'string' || typeof id === 'number' ? String(id) : null;
+  }
+  return null;
+}
+
+function getHeader(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
+  const value = headers[name] || headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 export default PluginUISchemaStorageServer;

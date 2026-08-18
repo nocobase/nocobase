@@ -11,17 +11,18 @@
  * RunJS context registration entry. No side-effects by default.
  */
 import { RunJSContextRegistry } from './registry';
-import { FlowRunJSContext } from '../flowContext';
-import { defineBaseContextMeta } from './contexts/base';
-import { applyRunJSContextContributions, markRunJSContextsSetupDone } from './contributions';
+import {
+  applyRunJSContextContributions,
+  markRunJSContextsSetupDone,
+  setRunJSContextContributionBase,
+} from './contributions';
 
 let done = false;
 export async function setupRunJSContexts() {
   if (done) return;
-  defineBaseContextMeta();
-
-  // Lazy import to avoid circular dependencies during module initialization
   const [
+    { FlowRunJSContext },
+    { defineBaseContextMeta },
     { JSBlockRunJSContext },
     { JSFieldRunJSContext },
     { JSEditableFieldRunJSContext },
@@ -31,6 +32,8 @@ export async function setupRunJSContexts() {
     { JSRecordActionRunJSContext },
     { JSCollectionActionRunJSContext },
   ] = await Promise.all([
+    import('../flowContext'),
+    import('./contexts/base'),
     import('./contexts/JSBlockRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
     import('./contexts/JSEditableFieldRunJSContext'),
@@ -40,6 +43,8 @@ export async function setupRunJSContexts() {
     import('./contexts/JSRecordActionRunJSContext'),
     import('./contexts/JSCollectionActionRunJSContext'),
   ]);
+  setRunJSContextContributionBase(FlowRunJSContext);
+  defineBaseContextMeta();
 
   const registerBuiltins = (version: 'v1' | 'v2') => {
     RunJSContextRegistry.register(version, '*', FlowRunJSContext);

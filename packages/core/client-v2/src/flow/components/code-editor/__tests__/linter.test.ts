@@ -31,6 +31,47 @@ describe('code-editor linter', () => {
     expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(true);
   });
 
+  it('accepts ES module imports and treats imported names as declared', () => {
+    const code = `import { abc } from './helper';\nabc();`;
+    const diags = computeDiagnosticsFromText(code);
+    expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(false);
+    expect(diags.some((d) => d.message.includes('Possible undefined variable: abc'))).toBe(false);
+  });
+
+  it('does not report TypeScript-only syntax as a JavaScript syntax error in TypeScript files', () => {
+    const code = `
+import { fetchUsers, type FetchUsersResult } from '../api';
+type UsersTableProps = { t: (key: string) => string };
+declare const fetchPage: <T>() => Promise<T>;
+const result = await fetchPage<FetchUsersResult>();
+export type { UsersTableProps };
+`;
+    const diags = computeDiagnosticsFromText(code, { language: 'typescriptreact' });
+
+    expect(diags.some((d) => d.severity === 'error' && /Syntax error:/.test(d.message))).toBe(false);
+  });
+
+  it('uses the TSX parser when a .tsx file is reported as the TypeScript language family', () => {
+    const code = `
+function App() {
+  return <div style={{ padding: 16 }}><UsersTable t={ctx.t} /></div>;
+}
+ctx.render(<App />);
+`;
+    const diags = computeDiagnosticsFromText(code, {
+      fileName: 'src/client/index.tsx',
+      language: 'typescript',
+    });
+
+    expect(diags.filter((diagnostic) => diagnostic.severity === 'error')).toEqual([]);
+  });
+
+  it('still reports real syntax errors in TypeScript files', () => {
+    const diags = computeDiagnosticsFromText(`type User = { name: ; };`, { language: 'typescript' });
+
+    expect(diags.some((d) => d.severity === 'error' && /Syntax error/.test(d.message))).toBe(true);
+  });
+
   it('reports possible undefined variable warning', () => {
     const code = `foo + 1;`;
     const diags = computeDiagnosticsFromText(code);

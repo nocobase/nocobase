@@ -32,6 +32,24 @@ describe('EngineActionRegistry', () => {
     warnSpy.mockRestore();
   });
 
+  it('allows intentional duplicate action registration without warning', () => {
+    const reg = new EngineActionRegistry();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const handler1 = vi.fn();
+    const handler2 = vi.fn();
+
+    reg.registerActions({
+      a: { name: 'a', handler: handler1 },
+    });
+    reg.registerActions({ a: { name: 'a', handler: handler2 } }, { warnOnOverwrite: false });
+
+    expect(warnSpy).not.toHaveBeenCalledWith("Action 'a' is already registered. It will be overwritten.");
+    expect(reg.getAction('a')?.handler).toBe(handler2);
+
+    warnSpy.mockRestore();
+  });
+
   it('getActions returns a copy (not affecting registry)', () => {
     const reg = new EngineActionRegistry();
     reg.registerActions({ base: { name: 'base', handler: () => {} } });

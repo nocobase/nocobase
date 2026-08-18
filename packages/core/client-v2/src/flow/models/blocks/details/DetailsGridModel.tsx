@@ -13,6 +13,7 @@ import { Skeleton } from 'antd';
 import React from 'react';
 import { FieldModel, GridModel } from '../../base';
 import { DetailsBlockModel } from './DetailsBlockModel';
+import { resolveFieldMenuItems } from '../../menuItemProviders';
 
 export class DetailsGridModel extends GridModel<{
   parent: DetailsBlockModel;
@@ -61,6 +62,7 @@ export class DetailsGridModel extends GridModel<{
           this.context.getModelClassName('DetailsAssociationFieldGroupModel'),
           this.context.getModelClassName('DetailsCustomItemModel'),
         ].filter(Boolean)}
+        items={(ctx) => resolveFieldMenuItems({ surface: 'details-field', model: this, ctx })}
         keepDropdownOpen
       >
         <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Fields')}</FlowSettingsButton>

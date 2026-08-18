@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { test, expect } from 'vitest';
+import { expect, test } from 'vitest';
+
 import { commandRelativePathToRegistryKey } from '../lib/command-discovery.js';
 
 test('commandRelativePathToRegistryKey maps index modules to parent commands', () => {
@@ -20,4 +21,5 @@ test('commandRelativePathToRegistryKey maps index modules to parent commands', (
   expect(commandRelativePathToRegistryKey('license/plugins/clean.ts')).toBe('license:plugins:clean');
   expect(commandRelativePathToRegistryKey('license/plugins/sync.ts')).toBe('license:plugins:sync');
   expect(commandRelativePathToRegistryKey('revision/create.ts')).toBe('revision:create');
+  expect(commandRelativePathToRegistryKey('js-template/pull.ts')).toBe('js-template:pull');
 });

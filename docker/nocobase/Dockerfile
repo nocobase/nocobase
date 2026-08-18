@@ -27,9 +27,10 @@ ENV NOCOBASE_RUNNING_IN_DOCKER=true
 ENV NB_SKIP_STARTUP_UPDATE=1
 
 RUN set -eux; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends ca-certificates git; \
   if [ "${INSTALL_NGINX}" = "1" ]; then \
-    apt-get update; \
-    apt-get install -y --no-install-recommends ca-certificates gnupg wget; \
+    apt-get install -y --no-install-recommends gnupg wget; \
     wget -qO /tmp/nginx_signing.key https://nginx.org/keys/nginx_signing.key; \
     gpg --batch --yes --dearmor -o /usr/share/keyrings/nginx-archive-keyring.gpg /tmp/nginx_signing.key; \
     printf '%s\n' \
@@ -45,7 +46,8 @@ RUN set -eux; \
     /etc/apt/sources.list.d/nginx.list \
     /tmp/nginx_signing.key \
     /usr/share/keyrings/nginx-archive-keyring.gpg \
-    /var/lib/apt/lists/*
+    /var/lib/apt/lists/*; \
+  git --version
 
 WORKDIR /app/nocobase
 

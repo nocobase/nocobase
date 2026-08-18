@@ -15,6 +15,7 @@ import {
   type FrontendToolManifest,
   isFrontendToolManifest,
 } from '../common/frontend-tools';
+import { LEGACY_CODE_EDITOR_TOOL_NAMES, resolveWorkspaceAuthoringToolSets } from '../common/workspace-authoring';
 import type { WorkContext } from './types/ai-message.type';
 
 type MessageLike = {
@@ -135,6 +136,10 @@ export const shouldAutoExecuteFrontendTool = (tools: FrontendToolManifest[], arg
   return tools.find((tool) => tool.id === args.toolId)?.permission === 'ALLOW';
 };
 
+export const getBlockedFrontendToolNames = (frontendTools: FrontendToolManifest[]): string[] => {
+  return resolveWorkspaceAuthoringToolSets(frontendTools).size > 0 ? [...LEGACY_CODE_EDITOR_TOOL_NAMES] : [];
+};
+
 export const prepareToolsForFrontendConversation = <T extends { definition: { name: string; description: string } }>(
   tools: T[],
   frontendTools: FrontendToolManifest[],
@@ -145,10 +150,12 @@ export const prepareToolsForFrontendConversation = <T extends { definition: { na
     );
   }
 
+  const blockedToolNames = new Set(getBlockedFrontendToolNames(frontendTools));
+  const availableTools = tools.filter((tool) => !blockedToolNames.has(tool.definition.name));
   const catalog = frontendTools.map(({ id, name, title, description }) => ({ id, name, title, description }));
   const toolIds = frontendTools.map((tool) => tool.id) as [string, ...string[]];
   const toolIdSchema = z.enum(toolIds).describe(`Use an exact tool id from this catalog: ${JSON.stringify(catalog)}`);
-  return tools.map((tool) => {
+  return availableTools.map((tool) => {
     if (tool.definition.name !== LOAD_FRONTEND_TOOL_NAME && tool.definition.name !== EXECUTE_FRONTEND_TOOL_NAME) {
       return tool;
     }

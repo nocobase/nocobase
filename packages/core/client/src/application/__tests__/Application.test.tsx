@@ -28,7 +28,6 @@ describe('Application', () => {
   });
 
   const router: any = { type: 'memory', initialEntries: ['/'] };
-  const initialProvidersLength = 10;
   it('should support constructing without options', () => {
     let app: Application | undefined;
 
@@ -267,7 +266,7 @@ describe('Application', () => {
 
     it('initial', () => {
       const app = new Application({ router, providers: [Hello, [World, { name: 'aaa' }]] });
-      expect(app.providers.slice(initialProvidersLength)).toEqual([
+      expect(app.providers.slice(-2)).toEqual([
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -276,7 +275,7 @@ describe('Application', () => {
     it('addProviders', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProviders([[World, { name: 'aaa' }], Foo]);
-      expect(app.providers.slice(initialProvidersLength)).toEqual([
+      expect(app.providers.slice(-3)).toEqual([
         [Hello, undefined],
         [World, { name: 'aaa' }],
         [Foo, undefined],
@@ -286,7 +285,7 @@ describe('Application', () => {
     it('addProvider', () => {
       const app = new Application({ router, providers: [Hello] });
       app.addProvider(World, { name: 'aaa' });
-      expect(app.providers.slice(initialProvidersLength)).toEqual([
+      expect(app.providers.slice(-2)).toEqual([
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);
@@ -295,7 +294,7 @@ describe('Application', () => {
     it('use', () => {
       const app = new Application({ router, providers: [Hello] });
       app.use(World, { name: 'aaa' });
-      expect(app.providers.slice(initialProvidersLength)).toEqual([
+      expect(app.providers.slice(-2)).toEqual([
         [Hello, undefined],
         [World, { name: 'aaa' }],
       ]);

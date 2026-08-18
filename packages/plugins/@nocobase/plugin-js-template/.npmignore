@@ -1,0 +1,12 @@
+/src/!(swagger)/**/*
+/src/*.*
+/src/swagger/**/__tests__/**/*
+/node_modules/
+/docs/
+/build.config.ts
+/dist/node_modules/**/src/
+/dist/node_modules/**/__tests__/
+/dist/node_modules/**/test/
+/dist/node_modules/**/tests/
+/dist/node_modules/**/*.test.*
+/dist/node_modules/**/*.spec.*

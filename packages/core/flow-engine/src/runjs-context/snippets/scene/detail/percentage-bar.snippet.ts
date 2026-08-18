@@ -8,11 +8,12 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSEditableFieldRunJSContext } from '../../../contexts/JSEditableFieldRunJSContext';
 import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
 import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSEditableFieldRunJSContext],
   prefix: 'sn-jsf-percent',
   label: 'Display number field as percentage bar',
   description: 'Render numeric values as a percentage progress bar',

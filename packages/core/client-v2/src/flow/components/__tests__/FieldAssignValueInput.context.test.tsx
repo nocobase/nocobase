@@ -173,8 +173,17 @@ describe('FieldAssignValueInput context', () => {
       getField: (name: string) => (name === 'status' ? collectionField : null),
       getFields: () => [collectionField],
     };
-    const formModel = {
-      context: { ...sourceContext, engine, collection, blockModel: null as any },
+    type FormModel = {
+      context: typeof sourceContext & {
+        engine: typeof engine;
+        collection: typeof collection;
+        blockModel: FormModel | null;
+      };
+      collection: typeof collection;
+      subModels: Record<string, unknown>;
+    };
+    const formModel: FormModel = {
+      context: { ...sourceContext, engine, collection, blockModel: null },
       collection,
       subModels: {},
     };

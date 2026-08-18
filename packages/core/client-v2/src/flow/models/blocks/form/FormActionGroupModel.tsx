@@ -9,6 +9,50 @@
 
 import { ActionGroupModel } from '../../base/ActionGroupModel';
 import { FormActionModel } from './FormActionModel';
+import type { FlowModelContext, SubModelItem } from '@nocobase/flow-engine';
+
+async function filterAllowedFormActionItems(
+  items: SubModelItem[],
+  allowedSet: Set<string>,
+  ctx: FlowModelContext,
+): Promise<SubModelItem[]> {
+  const filtered: SubModelItem[] = [];
+
+  for (const item of items) {
+    if (item.useModel) {
+      if (allowedSet.has(item.useModel)) {
+        filtered.push(item);
+      }
+      continue;
+    }
+
+    if (Array.isArray(item.children)) {
+      const children = await filterAllowedFormActionItems(item.children, allowedSet, ctx);
+      if (children.length > 0 || item.createModelOptions) {
+        filtered.push({ ...item, children });
+      }
+      continue;
+    }
+
+    if (typeof item.children === 'function') {
+      const resolveChildren = item.children;
+      filtered.push({
+        ...item,
+        children: async (childCtx) => {
+          const children = await resolveChildren(childCtx);
+          return filterAllowedFormActionItems(children, allowedSet, childCtx);
+        },
+      });
+      continue;
+    }
+
+    if (item.key && allowedSet.has(item.key)) {
+      filtered.push(item);
+    }
+  }
+
+  return filtered;
+}
 
 export class FormActionGroupModel extends ActionGroupModel {
   static baseClass = FormActionModel;
@@ -24,6 +68,6 @@ export class FormActionGroupModel extends ActionGroupModel {
 
     const items = await super.defineChildren(ctx);
     const allowedSet = new Set(allowedModelNames);
-    return items.filter((item) => allowedSet.has(item.useModel || item.key));
+    return filterAllowedFormActionItems(items, allowedSet, ctx);
   }
 }

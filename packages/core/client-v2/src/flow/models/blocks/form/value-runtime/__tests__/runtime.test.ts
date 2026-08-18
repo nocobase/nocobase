@@ -15,8 +15,11 @@ import { observable } from '@formily/reactive';
 import { get as lodashGet, merge as lodashMerge, set as lodashSet } from 'lodash';
 import { FlowContext, JSRunner } from '@nocobase/flow-engine';
 import { getValuesByPath } from '@nocobase/shared';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { FormValueRuntime } from '..';
 import type { FormInstance } from 'antd';
+
+setupRunJSTestHosts();
 
 function createFormStub(initialValues: any = {}) {
   const store: any = JSON.parse(JSON.stringify(initialValues || {}));

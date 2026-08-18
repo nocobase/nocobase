@@ -91,7 +91,7 @@ export const SettingsCenterDropdown = () => {
       },
       ...othersSettings,
     ].filter(Boolean) as any[];
-  }, [app, t]);
+  }, [app, compile, snippets, t]);
 
   useEffect(() => {
     return () => {

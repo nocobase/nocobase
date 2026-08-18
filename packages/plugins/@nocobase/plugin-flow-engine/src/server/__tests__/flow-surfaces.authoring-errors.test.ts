@@ -18,10 +18,13 @@ import {
   readErrorMessage,
   type FlowSurfacesContractContext,
 } from './flow-surfaces.contract.helpers';
+import './runjs-source-inspector.setup';
 import { uid } from '@nocobase/utils';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { collectFlowSurfaceAuthoringErrors } from '../flow-surfaces/authoring-validation';
 import { collectFlowRegistryRunJsAuthoringErrors, inspectRunJsAuthoringCode } from '../flow-surfaces/runjs-authoring';
+import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
 const LARGE_GENERATED_POPUP_COLLECTION = 'flow_surface_large_generated_popup_records';
 const LARGE_GENERATED_POPUP_FIELDS = Array.from({ length: 11 }, (_item, index) => `field${index + 1}`);
@@ -64,7 +67,10 @@ describe('flowSurfaces backend authoring aggregate errors', () => {
   let rootAgent: FlowSurfacesContractContext['rootAgent'];
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+      plugins: [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+    });
     ({ rootAgent } = context);
     await rootAgent.resource('collections').create({
       values: {
@@ -6912,9 +6918,10 @@ ctx.render(React.createElement(DashboardKPIs));
     expect(addBlockResponse.status, readErrorMessage(addBlockResponse)).toBe(200);
     const addBlockReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
     expect(addBlockReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: addBlockCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(addBlockReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Add block KPI');
 
     const composeCode = "ctx.render('<div>Compose KPI</div>');";
     const composeResponse = await rootAgent.resource('flowSurfaces').compose({
@@ -6937,9 +6944,10 @@ ctx.render(React.createElement(DashboardKPIs));
     const composedUid = getData(composeResponse).blocks?.[0]?.uid;
     const composedReadback = await getSurface(rootAgent, { uid: composedUid });
     expect(composedReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: composeCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(composedReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Compose KPI');
 
     const configureCode = "ctx.render('<div>Configured KPI</div>');";
     const configureResponse = await rootAgent.resource('flowSurfaces').configure({
@@ -6955,9 +6963,10 @@ ctx.render(React.createElement(DashboardKPIs));
     expect(configureResponse.status, readErrorMessage(configureResponse)).toBe(200);
     const configuredReadback = await getSurface(rootAgent, { uid: getData(addBlockResponse).uid });
     expect(configuredReadback.tree?.stepParams?.jsSettings?.runJs).toMatchObject({
-      code: configureCode,
       version: 'v2',
+      sourceRef: { type: 'vsc-file' },
     });
+    expect(configuredReadback.tree?.stepParams?.jsSettings?.runJs?.code).toContain('Configured KPI');
   });
 
   it('should return no-skip RunJS repair guidance from flowSurfaces write errors', async () => {

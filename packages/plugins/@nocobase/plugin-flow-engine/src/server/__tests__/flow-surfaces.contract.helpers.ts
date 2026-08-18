@@ -11,6 +11,7 @@ import type { Database, Repository } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
+import type { FlowSurfaceRunJSLocator } from '../flow-surfaces/page-surface-contract';
 import { resolveFlowSurfaceDefaultFilterMinimumCandidateFieldNames } from '../flow-surfaces/public-data-surface-default-filter';
 import { waitForFixtureCollectionsReady } from './flow-surfaces.fixture-ready';
 import { FLOW_SURFACES_TEST_PLUGIN_INSTALLS, FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
@@ -348,6 +349,65 @@ export function getComposeBlock(result: any, key: string) {
 
 export function readErrorMessage(response: any) {
   return response?.body?.errors?.[0]?.message || '';
+}
+
+export async function expectCommittedRunJSSource(
+  rootAgent: FlowSurfacesContractContext['rootAgent'],
+  locator: FlowSurfaceRunJSLocator,
+  sourceRef: unknown,
+  expectedSource: string,
+) {
+  if (!sourceRef || typeof sourceRef !== 'object' || Array.isArray(sourceRef)) {
+    throw new Error('Expected RunJS sourceRef to be an object');
+  }
+  const sourceRefRecord = sourceRef as Record<string, unknown>;
+  const { type, repoId, commitId, entry } = sourceRefRecord;
+  if (type !== 'vsc-file') {
+    throw new Error("Expected RunJS sourceRef.type to be 'vsc-file'");
+  }
+  if (typeof repoId !== 'string' || !repoId) {
+    throw new Error('Expected RunJS sourceRef.repoId to be a non-empty string');
+  }
+  if (typeof commitId !== 'string' || !commitId) {
+    throw new Error('Expected RunJS sourceRef.commitId to be a non-empty string');
+  }
+  if (typeof entry !== 'string' || !entry) {
+    throw new Error('Expected RunJS sourceRef.entry to be a non-empty string');
+  }
+  expect(sourceRefRecord).toMatchObject({
+    type: 'vsc-file',
+    repoId: expect.any(String),
+    commitId: expect.any(String),
+    entry: expect.any(String),
+  });
+
+  const versionResponse = await rootAgent.resource('runJSSources').getVersion({
+    values: {
+      locator,
+      repoId,
+      commitId,
+      includeFiles: true,
+    },
+  });
+  expect(versionResponse.status, readErrorMessage(versionResponse)).toBe(200);
+  const versionData: unknown = getData(versionResponse);
+  if (!versionData || typeof versionData !== 'object' || Array.isArray(versionData)) {
+    throw new Error('Expected runJSSources:getVersion to return an object');
+  }
+  const files = (versionData as Record<string, unknown>).files;
+  if (!Array.isArray(files)) {
+    throw new Error('Expected runJSSources:getVersion to return files');
+  }
+  const entryFile = files.find((file): file is Record<string, unknown> => {
+    if (!file || typeof file !== 'object' || Array.isArray(file)) {
+      return false;
+    }
+    return (file as Record<string, unknown>).path === entry;
+  });
+  if (!entryFile) {
+    throw new Error(`Expected sourceRef.entry '${entry}' in the referenced RunJS commit`);
+  }
+  expect(entryFile.content).toBe(expectedSource);
 }
 
 function readFixtureResponseError(response: any) {

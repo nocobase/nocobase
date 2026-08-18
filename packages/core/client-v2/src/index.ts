@@ -58,6 +58,7 @@ export {
   isTitleField,
   isTitleFieldInterface,
   NocoBaseDesktopRouteType,
+  useFullscreenOverlay,
 } from './flow-compat';
 export type { NocoBaseDesktopRoute } from './flow-compat';
 export * from './utils/markdownSanitize';

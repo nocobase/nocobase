@@ -8,11 +8,12 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSEditableFieldRunJSContext } from '../../../contexts/JSEditableFieldRunJSContext';
 import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
 import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSEditableFieldRunJSContext],
   prefix: 'sn-jsf-value',
   label: 'Display text field as highlighted text',
   description: 'Render the current text field value with simple highlight styling',

@@ -17,6 +17,7 @@ import { createRunJSCompletionSource } from '../runjsCompletionSource';
 
 function makeDoc(text: string) {
   return {
+    length: text.length,
     sliceString(from: number, to: number) {
       return text.slice(from, to);
     },
@@ -24,6 +25,69 @@ function makeDoc(text: string) {
 }
 
 describe('createRunJSCompletionSource', () => {
+  it('returns null when it has no options so later sources can provide completions', async () => {
+    const source = createRunJSCompletionSource({
+      hostCtx: {},
+      staticOptions: [],
+      moduleImportOptions: [],
+    });
+
+    const text = 'tes';
+    const context: any = {
+      explicit: false,
+      pos: text.length,
+      state: { doc: makeDoc(text) },
+      matchBefore: () => ({ from: 0, to: text.length, text }),
+    };
+
+    await expect(source(context)).resolves.toBeNull();
+  });
+
+  it('completes local module import specifiers inside import source strings', async () => {
+    const source = createRunJSCompletionSource({
+      hostCtx: {},
+      staticOptions: [],
+      moduleImportOptions: [{ specifier: './helper', detail: 'src/helper.ts', exports: ['abc'] }],
+    });
+
+    const text = "import { abc } from './he";
+    const context: any = {
+      explicit: false,
+      pos: text.length,
+      state: { doc: makeDoc(text) },
+      matchBefore: vi.fn(),
+    };
+
+    const res = await source(context);
+    expect(res).toBeTruthy();
+    expect((res as any).from).toBe(text.length - './he'.length);
+    expect((res as any).options.some((option: any) => option.label === './helper')).toBe(true);
+    expect(context.matchBefore).not.toHaveBeenCalled();
+  });
+
+  it('completes named imports from local module exports', async () => {
+    const source = createRunJSCompletionSource({
+      hostCtx: {},
+      staticOptions: [],
+      moduleImportOptions: [{ specifier: './helper', detail: 'src/helper.ts', exports: ['abc', 'other'] }],
+    });
+
+    const prefix = 'import { ab';
+    const suffix = " } from './helper'";
+    const context: any = {
+      explicit: false,
+      pos: prefix.length,
+      state: { doc: makeDoc(`${prefix}${suffix}`) },
+      matchBefore: vi.fn(),
+    };
+
+    const res = await source(context);
+    expect(res).toBeTruthy();
+    expect((res as any).from).toBe(prefix.length - 'ab'.length);
+    expect((res as any).options.some((option: any) => option.label === 'abc')).toBe(true);
+    expect(context.matchBefore).not.toHaveBeenCalled();
+  });
+
   it('suppresses snapshot property completions under meta root (keeps meta breadcrumb)', async () => {
     const hostCtx: any = {
       t: (s: string) => s,

@@ -480,6 +480,28 @@ describe('filter-form defaultValues wiring', () => {
     expect(values.username_user).toBe('Matched');
   });
 
+  it('skips an inline RunJS filter default when execution fails', async () => {
+    const { model, values } = createFilterFormDefaultValuesModel([
+      {
+        key: 'username-runjs-error',
+        enable: true,
+        targetPath: 'username',
+        mode: 'assign',
+        value: {
+          code: 'throw new Error("boom")',
+          version: 'v2',
+          settings: { currency: 'USD' },
+        },
+      },
+    ]);
+    (model as any).uid = 'filter_form_1';
+    (model.context as any).runjs = async () => ({ success: false, error: new Error('boom') });
+
+    await FilterFormBlockModel.prototype.applyFormDefaultValues.call(model as any);
+
+    expect(values.username_user).toBeUndefined();
+  });
+
   it('emits formValuesChange with final values after applying dependent field values', async () => {
     const { model, values } = createFilterFormDefaultValuesModel(
       [

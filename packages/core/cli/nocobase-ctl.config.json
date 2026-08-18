@@ -329,6 +329,96 @@
         }
       }
     },
+    "run-js": {
+      "name": "run-js",
+      "description": "Discover and author owner-aware RunJS source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": ["runJSSources"],
+        "excludes": [],
+        "overrides": {
+          "runJSSources": {
+            "name": "run-js-sources",
+            "description": "Inspect capabilities and author complete RunJS workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "runJSSources:capabilities",
+                "runJSSources:open",
+                "runJSSources:openLatest",
+                "runJSSources:compilePreview",
+                "runJSSources:save",
+                "runJSSources:saveChanges"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "js-template": {
+      "name": "js-template",
+      "description": "Discover, author, and compile JS Template source workspaces.",
+      "include": true,
+      "resources": {
+        "includes": [
+          "jsTemplateProjects",
+          "jsTemplateCreateJobs",
+          "jsTemplates",
+          "jsTemplateUsages",
+          "jsTemplateFiles"
+        ],
+        "excludes": [],
+        "overrides": {
+          "jsTemplateProjects": {
+            "name": "js-template-projects",
+            "description": "Discover Source Projects for JS Templates.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateProjects:list", "jsTemplateProjects:get"]
+            }
+          },
+          "jsTemplateCreateJobs": {
+            "name": "js-template-create-jobs",
+            "description": "Inspect and dismiss Source Project creation jobs.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateCreateJobs:list", "jsTemplateCreateJobs:get", "jsTemplateCreateJobs:dismiss"]
+            }
+          },
+          "jsTemplates": {
+            "name": "js-templates",
+            "description": "Inspect, discover, compile, save, detach, and delete reusable JS Templates.",
+            "topLevel": true,
+            "operations": {
+              "includes": [
+                "jsTemplates:get",
+                "jsTemplates:listSelectable",
+                "jsTemplates:compileWorkspacePreview",
+                "jsTemplates:saveAsJsTemplate",
+                "jsTemplates:detachToInline",
+                "jsTemplates:delete"
+              ]
+            }
+          },
+          "jsTemplateUsages": {
+            "name": "js-template-usages",
+            "description": "Inspect paginated visible usage locations for one JS Template.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateUsages:listUsages"]
+            }
+          },
+          "jsTemplateFiles": {
+            "name": "js-template-files",
+            "description": "Pull, read, and save JS Template source workspaces.",
+            "topLevel": true,
+            "operations": {
+              "includes": ["jsTemplateFiles:pull", "jsTemplateFiles:getFile", "jsTemplateFiles:saveSource"]
+            }
+          }
+        }
+      }
+    },
     "map": {
       "name": "map",
       "description": "Map blocks with support for AMap, Google Maps, and extensible providers.",

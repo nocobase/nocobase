@@ -26,7 +26,7 @@ import type { ChatEditorRef } from '../../../client-v2/ai-employees/types';
 const createEditorToolState = (uid: string, editorRef: ChatEditorRef) => {
   const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
   chatBoxRuntime.chatMessageModel.setEditorRef(uid, editorRef);
-  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(uid);
+  chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid(undefined, uid);
   return { chatBoxRuntime };
 };
 
@@ -218,12 +218,12 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     chatMessageModel.unregisterEditorRef('editor-cleanup', oldEditorRef);
 
     expect(chatMessageModel.editorRef['editor-cleanup']).toBe(newEditorRef);
-    expect(chatMessageModel.currentEditorRefUid).toBe('editor-cleanup');
+    expect(chatMessageModel.getSessionState().currentEditorRefUid).toBe('editor-cleanup');
 
     chatMessageModel.unregisterEditorRef('editor-cleanup', newEditorRef);
 
     expect(chatMessageModel.editorRef['editor-cleanup']).toBeNull();
-    expect(chatMessageModel.currentEditorRefUid).toBeNull();
+    expect(chatMessageModel.getSessionState().currentEditorRefUid).toBeNull();
   });
 
   it('rejects a patch with a bare hunk header without mutating the editor', async () => {
@@ -315,6 +315,44 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     expect(result.content.lineCount).toBe(3);
   });
 
+  it('keeps legacy editor reads and writes isolated by conversation', async () => {
+    const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
+    let firstCode = 'const owner = "first";';
+    let secondCode = 'const owner = "second";';
+    chatBoxRuntime.chatMessageModel.setEditorRef('editor-first', {
+      read: () => firstCode,
+      write: (code: string) => {
+        firstCode = code;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    chatBoxRuntime.chatMessageModel.setEditorRef('editor-second', {
+      read: () => secondCode,
+      write: (code: string) => {
+        secondCode = code;
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid('session-first', 'editor-first');
+    chatBoxRuntime.chatMessageModel.setCurrentEditorRefUid('session-second', 'editor-second');
+
+    chatBoxRuntime.chatConversationModel.setCurrentConversation('session-first');
+    const firstRead = await readJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {});
+    const firstWrite = await writeJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {
+      code: 'const owner = "first-updated";',
+    });
+    chatBoxRuntime.chatConversationModel.setCurrentConversation('session-second');
+    const secondRead = await readJSCodeTool[1].invoke.call({ chatBoxRuntime }, {} as never, {});
+
+    expect(firstRead.content.code).toBe('const owner = "first";');
+    expect(firstWrite.status).toBe('success');
+    expect(secondRead.content.code).toBe('const owner = "second";');
+    expect(firstCode).toBe('const owner = "first-updated";');
+    expect(secondCode).toBe('const owner = "second";');
+  });
+
   it('does not mutate editor code when a patch fails', async () => {
     let code = 'const label = "old";\nctx.render(label);\n';
     const editorState = createEditorToolState('editor-failed-patch', {
@@ -336,6 +374,74 @@ const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/d
     expect(result.status).toBe('error');
     expect(result.content.message).toContain('Call readJSCode before retrying');
     expect(code).toBe('const label = "old";\nctx.render(label);\n');
+  });
+
+  it('rejects legacy single-file tools for workspace sessions', async () => {
+    const reads: string[] = [];
+    const writes: string[] = [];
+    const runs: string[] = [];
+    const previews: string[] = [];
+    const editorState = createEditorToolState('editor-workspace', {
+      read: () => {
+        reads.push('read');
+        return 'source';
+      },
+      write: (code: string) => {
+        writes.push(code);
+      },
+      run: async () => {
+        runs.push('run');
+      },
+      snippetEntries: [],
+      logs: [],
+    } as ChatEditorRef);
+    editorState.chatBoxRuntime.chatMessageModel.setSessionWorkspaceSurfaceId(undefined, 'workspace-a');
+
+    const flowContext = {
+      previewRunJS: async (code: string) => {
+        previews.push(code);
+        return { success: true };
+      },
+    };
+    const results = await Promise.all([
+      readJSCodeTool[1].invoke.call(editorState, {} as never, {}),
+      writeJSCodeTool[1].invoke.call(editorState, {} as never, { code: 'next' }),
+      patchJSCodeTool[1].invoke.call(editorState, {} as never, {
+        patch: '@@ -1 +1 @@\\n-old\\n+new\\n',
+      }),
+      lintAndTestJSTool[1].invoke.call({ ...editorState, flowContext }, {} as never, { code: 'explicit code' }),
+    ]);
+
+    for (const result of results) {
+      expect(result.status).toBe('error');
+      expect(result.content.message).toContain('Workspace tools');
+    }
+    expect(reads).toEqual([]);
+    expect(writes).toEqual([]);
+    expect(runs).toEqual([]);
+    expect(previews).toEqual([]);
+  });
+
+  it('preserves explicit linting without a mounted single-file editor', async () => {
+    const chatBoxRuntime = createChatBoxRuntime({ mode: 'global' });
+    const previewedCode: string[] = [];
+
+    const result = await lintAndTestJSTool[1].invoke.call(
+      {
+        chatBoxRuntime,
+        flowContext: {
+          previewRunJS: async (code: string) => {
+            previewedCode.push(code);
+            return { success: true };
+          },
+        },
+      },
+      {} as never,
+      { code: 'const explicit = true;' },
+    );
+
+    expect(result.status).toBe('success');
+    expect(previewedCode).toEqual(['const explicit = true;']);
   });
 });
 

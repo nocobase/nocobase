@@ -38,6 +38,7 @@ vi.mock('antd', async (importOriginal) => {
     (globalThis as any).__lastDropdownOnOpenChange = props.onOpenChange;
     (globalThis as any).__lastDropdownOpen = props.open;
     (globalThis as any).__lastDropdownGetPopupContainer = props.getPopupContainer;
+    (globalThis as any).__lastDropdownTrigger = props.trigger;
     dropdownMenus.push(props.menu);
     return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
   };
@@ -134,6 +135,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     (globalThis as any).__lastDropdownOnOpenChange = undefined;
     (globalThis as any).__lastDropdownOpen = undefined;
     (globalThis as any).__lastDropdownGetPopupContainer = undefined;
+    (globalThis as any).__lastDropdownTrigger = undefined;
   });
 
   afterEach(() => {
@@ -176,6 +178,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     );
 
     expect(getByLabelText('flows-settings')).toBeTruthy();
+    expect((globalThis as any).__lastDropdownTrigger).toEqual(['hover', 'click']);
     expect(hideInSettings).not.toHaveBeenCalled();
     expect(uiSchema).not.toHaveBeenCalled();
 
@@ -287,6 +290,77 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     // 静态流的 step 存在（key: `${flowKey}:${stepKey}`），动态流 step 不存在
     expect(items.some((it) => String(it.key || '').startsWith('static1:'))).toBe(true);
     expect(items.some((it) => String(it.key || '').startsWith('dyn1:'))).toBe(false);
+  });
+
+  it('includes runtime setting steps returned by the model hook without showing instance flows', async () => {
+    class TestFlowModel extends FlowModel {
+      getRuntimeFlowSettingSteps(flowKey: string) {
+        if (flowKey !== 'staticRuntime') {
+          return undefined;
+        }
+        return {
+          injected: {
+            title: 'Injected',
+            uiSchema: {
+              value: { type: 'string', 'x-component': 'Input' },
+            },
+          },
+        };
+      }
+    }
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'model-runtime-settings-steps', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'staticRuntime',
+      title: 'Static Runtime Flow',
+      steps: {
+        general: {
+          title: 'General',
+          uiSchema: {
+            field: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    model.flowRegistry.addFlow('runtimeDyn', {
+      title: 'Dynamic Flow',
+      steps: {
+        general: {
+          title: 'General (Dyn)',
+          uiSchema: {
+            field: { type: 'string', 'x-component': 'Input' },
+          },
+        },
+      },
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showDeleteButton: false,
+            showCopyUidButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys).toContain('staticRuntime:general');
+      expect(keys).toContain('staticRuntime:injected');
+      expect(keys.some((key) => key.startsWith('runtimeDyn:'))).toBe(false);
+    });
   });
 
   it('filters out steps with hideInSettings and keeps visible ones', async () => {

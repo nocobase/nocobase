@@ -11,7 +11,13 @@ import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import type { Application } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import {
+  createFlowSurfaceRunJSWorkspaceBootstrapPort,
+  type RunJSWorkspaceServerModule,
+} from '@nocobase/runjs/workspace/server';
 import { registerFlowSurfacesResource } from './flow-surfaces';
+import { registerFlowSurfaceRunJSWorkspaceBootstrapPort } from './flow-surfaces/page-surface-contract';
+import { registerFlowModelRunJSSourceAdapters } from './runjs-sources';
 import PluginUISchemaStorageServer from './server';
 import { JSONValue } from './template/resolver';
 import type { AnalyzedTemplate, ResolvePathPolicy } from './template/variable-expression';
@@ -29,6 +35,28 @@ import {
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private recordSlotResolverDisposers: Array<() => void> = [];
+
+  installRunJSWorkspaceIntegration(workspaceModule: RunJSWorkspaceServerModule): () => void {
+    const unregisterRunJSSourceAdapters = registerFlowModelRunJSSourceAdapters(this.db, workspaceModule);
+    const unregisterRunJSWorkspaceBootstrapPort = registerFlowSurfaceRunJSWorkspaceBootstrapPort(
+      this.app,
+      createFlowSurfaceRunJSWorkspaceBootstrapPort(
+        this.db,
+        workspaceModule.getRunJSSourceAdapterRegistry(),
+        workspaceModule.getPermissionHookRegistry(),
+        workspaceModule.getRunJSSourceAuthoringInspectorRegistry(),
+      ),
+    );
+    let installed = true;
+    return () => {
+      if (!installed) {
+        return;
+      }
+      installed = false;
+      unregisterRunJSWorkspaceBootstrapPort();
+      unregisterRunJSSourceAdapters();
+    };
+  }
 
   async afterAdd() {}
 
@@ -256,18 +284,18 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     });
   }
 
-  async install() {}
-
-  async afterEnable() {
-    this.registerRecordSlotResolvers();
-  }
-
   async afterDisable() {
     this.disposeRecordSlotResolvers();
   }
 
   async remove() {
     this.disposeRecordSlotResolvers();
+  }
+
+  async install() {}
+
+  async afterEnable() {
+    this.registerRecordSlotResolvers();
   }
 
   private disposeRecordSlotResolvers() {

@@ -9,12 +9,14 @@
 
 import _ from 'lodash';
 import { uid } from '@nocobase/utils';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   addBlockData,
   getComposeBlock,
   createFlowSurfacesContractContext,
   createPage,
   destroyFlowSurfacesContractContext,
+  expectCommittedRunJSSource,
   expectStructuredError,
   getData,
   getSurface,
@@ -26,6 +28,7 @@ import { loginFlowSurfacesRootAgent, syncFlowSurfacesEnabledPlugins } from './fl
 import {
   FLOW_SURFACES_APPROVAL_TEST_ENABLED_PLUGIN_ALIASES,
   FLOW_SURFACES_MINIMAL_TEST_PLUGINS,
+  FLOW_SURFACES_TEST_PLUGIN_INSTALLS,
   FLOW_SURFACES_TEST_PLUGINS,
 } from './flow-surfaces.test-plugins';
 import { expectTemplateUsage, saveTemplate } from './flow-surfaces.templates.helpers';
@@ -464,7 +467,10 @@ describe('flowSurfaces catalog + compose contract', () => {
   }
 
   beforeAll(async () => {
-    context = await createFlowSurfacesContractContext();
+    context = await createFlowSurfacesContractContext({
+      plugins: [...FLOW_SURFACES_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'js-template'],
+    });
     ({ app, flowRepo, rootAgent } = context);
     calendarPopupSourceTables.clear();
   }, 120000);
@@ -1425,6 +1431,8 @@ describe('flowSurfaces catalog + compose contract', () => {
   });
 
   it('should create jsItem actions in public collection record and form action slots', async () => {
+    const collectionActionSource = 'ctx.render("collection action");';
+    const recordActionSource = 'ctx.render("record action");';
     const page = await createPage(rootAgent, {
       title: 'JS item action create page',
       tabTitle: 'JS item action create tab',
@@ -1482,22 +1490,34 @@ describe('flowSurfaces catalog + compose contract', () => {
           settings: {
             title: 'Table tools',
             version: '1.0.0',
-            code: 'ctx.render(null);',
+            code: collectionActionSource,
           },
         },
       }),
     );
-    expect((await getSurface(rootAgent, { uid: collectionAction.uid })).tree).toMatchObject({
+    const collectionActionReadback = await getSurface(rootAgent, { uid: collectionAction.uid });
+    expect(collectionActionReadback.tree).toMatchObject({
       use: 'JSItemActionModel',
       stepParams: {
         jsSettings: {
           runJs: {
             version: '1.0.0',
-            code: 'ctx.render(null);',
           },
         },
       },
     });
+    const collectionActionRunJs = collectionActionReadback.tree.stepParams?.jsSettings?.runJs;
+    const collectionRuntimeCode: unknown = collectionActionRunJs?.code;
+    if (typeof collectionRuntimeCode !== 'string') {
+      throw new Error('Expected collection action runJs.code to be a string');
+    }
+    expect(collectionRuntimeCode.length).toBeGreaterThan(0);
+    await expectCommittedRunJSSource(
+      rootAgent,
+      collectionActionReadback.tree.runJSLocator,
+      collectionActionRunJs?.sourceRef,
+      collectionActionSource,
+    );
 
     const recordAction = getData(
       await rootAgent.resource('flowSurfaces').addRecordAction({
@@ -1509,22 +1529,34 @@ describe('flowSurfaces catalog + compose contract', () => {
           settings: {
             title: 'Row tools',
             version: '1.0.1',
-            code: 'ctx.render(null);',
+            code: recordActionSource,
           },
         },
       }),
     );
-    expect((await getSurface(rootAgent, { uid: recordAction.uid })).tree).toMatchObject({
+    const recordActionReadback = await getSurface(rootAgent, { uid: recordAction.uid });
+    expect(recordActionReadback.tree).toMatchObject({
       use: 'JSItemActionModel',
       stepParams: {
         jsSettings: {
           runJs: {
             version: '1.0.1',
-            code: 'ctx.render(null);',
           },
         },
       },
     });
+    const recordActionRunJs = recordActionReadback.tree.stepParams?.jsSettings?.runJs;
+    const recordRuntimeCode: unknown = recordActionRunJs?.code;
+    if (typeof recordRuntimeCode !== 'string') {
+      throw new Error('Expected record action runJs.code to be a string');
+    }
+    expect(recordRuntimeCode.length).toBeGreaterThan(0);
+    await expectCommittedRunJSSource(
+      rootAgent,
+      recordActionReadback.tree.runJSLocator,
+      recordActionRunJs?.sourceRef,
+      recordActionSource,
+    );
 
     const formAction = getData(
       await rootAgent.resource('flowSurfaces').addAction({

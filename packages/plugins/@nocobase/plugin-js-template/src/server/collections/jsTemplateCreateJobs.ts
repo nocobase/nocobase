@@ -1,0 +1,69 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { defineCollection } from '@nocobase/database';
+
+import { JS_TEMPLATE_COLLECTIONS } from '../../constants';
+
+export default defineCollection({
+  name: JS_TEMPLATE_COLLECTIONS.createJobs,
+  dataCategory: 'system',
+  autoGenId: false,
+  timestamps: true,
+  indexes: [
+    {
+      name: 'jst_create_job_reservation_uq',
+      unique: true,
+      fields: ['applicationName', 'reservationKey'],
+    },
+    {
+      name: 'jst_create_job_idempotency_uq',
+      unique: true,
+      fields: ['applicationName', 'actorUserId', 'sessionId', 'idempotencyKey'],
+    },
+    { name: 'jst_create_job_status_idx', fields: ['applicationName', 'status'] },
+    { name: 'jst_create_job_scan_idx', fields: ['applicationName', 'status', 'leaseExpiresAt'] },
+    {
+      name: 'jst_create_job_actor_idx',
+      fields: ['applicationName', 'actorUserId', 'status'],
+    },
+  ],
+  fields: [
+    { type: 'uid', name: 'id', prefix: 'jtcj_', primaryKey: true },
+    { type: 'string', name: 'applicationName', allowNull: false },
+    { type: 'string', name: 'targetProjectId', length: 64, allowNull: false, unique: true },
+    { type: 'string', name: 'name', allowNull: false },
+    { type: 'string', name: 'normalizedName', allowNull: false },
+    { type: 'string', name: 'title' },
+    { type: 'text', name: 'description' },
+    { type: 'string', name: 'sourceType', length: 32, allowNull: false },
+    { type: 'string', name: 'idempotencyKey', length: 255, allowNull: false },
+    { type: 'string', name: 'requestHash', length: 64, allowNull: false },
+    { type: 'string', name: 'status', length: 32, allowNull: false, defaultValue: 'pending' },
+    { type: 'string', name: 'resultProjectId', length: 64 },
+    { type: 'json', name: 'payload' },
+    { type: 'string', name: 'errorCode' },
+    { type: 'string', name: 'errorReasonCode', length: 128 },
+    { type: 'text', name: 'errorMessage' },
+    { type: 'string', name: 'reservationKey', length: 80 },
+    { type: 'string', name: 'actorUserId', length: 64, allowNull: false },
+    { type: 'string', name: 'sessionId', length: 128, allowNull: false },
+    { type: 'string', name: 'authorizationRole', length: 128, allowNull: false },
+    { type: 'json', name: 'authorizationRoles', allowNull: false },
+    { type: 'boolean', name: 'dismissed', allowNull: false, defaultValue: false },
+    { type: 'string', name: 'requestId' },
+    { type: 'string', name: 'claimToken', length: 64 },
+    { type: 'string', name: 'claimOwner', length: 128 },
+    { type: 'date', name: 'leaseExpiresAt' },
+    { type: 'date', name: 'heartbeatAt' },
+    { type: 'integer', name: 'attempt', allowNull: false, defaultValue: 0 },
+    { type: 'date', name: 'startedAt' },
+    { type: 'date', name: 'finishedAt' },
+  ],
+});

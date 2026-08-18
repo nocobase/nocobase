@@ -157,7 +157,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
       chatConversationModel.setCurrentConversation(undefined);
       workflowTaskModel.setCurrentWorkflowTask(undefined);
       clear(undefined, undefined);
-      draftChat.setMessages([]);
+      draftChat.resetSessionState();
       return;
     }
     const greetingMsg = {
@@ -171,7 +171,7 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
     chatConversationModel.setCurrentConversation(undefined);
     workflowTaskModel.setCurrentWorkflowTask(undefined);
     clear(undefined, undefined);
-    draftChat.setMessages([greetingMsg]);
+    draftChat.resetSessionState({ messages: [greetingMsg] });
     chatSenderModel.senderRef?.current?.focus();
   }, [chatBoxModel, chatConversationModel, chatSenderModel, clear, draftChat, t, workflowTaskModel]);
 
@@ -192,9 +192,9 @@ export const useChatBoxActions = (runtime?: ChatBoxRuntime) => {
           },
         };
         chatSenderModel.senderRef?.current?.focus();
-        draftChat.setMessages([greetingMsg]);
+        draftChat.resetSessionState({ messages: [greetingMsg] });
       } else {
-        draftChat.setMessages([]);
+        draftChat.resetSessionState();
       }
     },
     [chatBoxModel, chatConversationModel, chatSenderModel, clear, draftChat, t, workflowTaskModel],

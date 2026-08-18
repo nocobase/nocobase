@@ -46,7 +46,8 @@ describe('dirtyAwareApiClient', () => {
   it('should mark the resource dirty after mutating resource actions succeed', async () => {
     const engine = new FlowEngine();
     const list = vi.fn(async () => ({ data: { data: [] } }));
-    const update = vi.fn(async () => ({ data: { data: { id: 1 } } }));
+    const updateResponse = { data: { data: { id: 1 } } };
+    const update = vi.fn(async () => updateResponse);
     const api: TestApi = {
       auth: { locale: 'zh-CN' },
       request: vi.fn(async () => ({ data: { ok: true } })),
@@ -57,9 +58,10 @@ describe('dirtyAwareApiClient', () => {
     await wrappedApi.resource('posts').list();
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(0);
 
-    await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
+    const result = await wrappedApi.resource('posts').update({ filterByTk: 1, values: { title: 't' } });
 
     expect(update).toHaveBeenCalledTimes(1);
+    expect(result).toBe(updateResponse);
     expect(engine.getDataSourceDirtyVersion('main', 'posts')).toBe(1);
     expect(getDirtyAwareApiClient(api, engine.context)).toBe(wrappedApi);
   });

@@ -10,6 +10,7 @@
 import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import PluginJsTemplateServer from '../../../../plugin-js-template/src/server';
 import {
   createFlowSurfacesContractContext,
   destroyFlowSurfacesContractContext,
@@ -246,8 +247,8 @@ describe('flowSurfaces exportBlueprint', () => {
 
   beforeAll(async () => {
     context = await createFlowSurfacesContractContext({
-      plugins: FLOW_SURFACES_RECORD_HISTORY_TEST_PLUGIN_INSTALLS,
-      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'record-history'],
+      plugins: [...FLOW_SURFACES_RECORD_HISTORY_TEST_PLUGIN_INSTALLS, PluginJsTemplateServer],
+      enabledPluginAliases: [...FLOW_SURFACES_TEST_PLUGINS, 'record-history', 'js-template'],
     });
     rootAgent = context.rootAgent;
   });
@@ -763,6 +764,16 @@ describe('flowSurfaces exportBlueprint', () => {
           runJs: {
             version: '1.0.1',
             code: "ctx.message.info('Diagnostics ready');",
+            sourceMode: 'js-template',
+            sourceBinding: {
+              type: 'js-template-entry',
+              projectId: 'jtp_diagnostics',
+              templateId: 'jtt_collection_diagnostics',
+              kind: 'js-action',
+            },
+            settings: {
+              severity: 'info',
+            },
           },
         },
       },
@@ -788,6 +799,16 @@ describe('flowSurfaces exportBlueprint', () => {
           runJs: {
             version: '1.0.2',
             code: "ctx.render('Row diagnostics ready');",
+            sourceMode: 'js-template',
+            sourceBinding: {
+              type: 'js-template-entry',
+              projectId: 'jtp_diagnostics',
+              templateId: 'jtt_row_diagnostics',
+              kind: 'js-item',
+            },
+            settings: {
+              compact: true,
+            },
           },
         },
       },
@@ -811,8 +832,19 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.1',
         code: "ctx.message.info('Diagnostics ready');",
+        sourceMode: 'js-template',
+        sourceBinding: {
+          type: 'js-template-entry',
+          projectId: 'jtp_diagnostics',
+          templateId: 'jtt_collection_diagnostics',
+          kind: 'js-action',
+        },
+        settings: {
+          severity: 'info',
+        },
       },
     });
+    expect(jsAction?.settings).not.toHaveProperty('sourceRef');
     const jsItemAction = tableDocument.recordActions.find((action) => action?.type === 'jsItem');
     expect(jsItemAction).toMatchObject({
       type: 'jsItem',
@@ -821,6 +853,16 @@ describe('flowSurfaces exportBlueprint', () => {
         iconOnly: true,
         version: '1.0.2',
         code: "ctx.render('Row diagnostics ready');",
+        sourceMode: 'js-template',
+        sourceBinding: {
+          type: 'js-template-entry',
+          projectId: 'jtp_diagnostics',
+          templateId: 'jtt_row_diagnostics',
+          kind: 'js-item',
+        },
+        settings: {
+          compact: true,
+        },
       },
     });
     expect(exported.unsupported).toEqual([]);
@@ -829,6 +871,199 @@ describe('flowSurfaces exportBlueprint', () => {
       values: exported.document,
     });
     expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+
+    const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
+    const [replacedTableDocument] = getData(replacedExportRes).document.tabs[0].blocks;
+    expect(replacedTableDocument.actions.find((action) => action?.type === 'js')?.settings).toMatchObject({
+      code: "ctx.message.info('Diagnostics ready');",
+      sourceMode: 'js-template',
+      sourceBinding: expect.objectContaining({
+        templateId: 'jtt_collection_diagnostics',
+        kind: 'js-action',
+      }),
+      settings: {
+        severity: 'info',
+      },
+    });
+    expect(replacedTableDocument.recordActions.find((action) => action?.type === 'jsItem')?.settings).toMatchObject({
+      code: "ctx.render('Row diagnostics ready');",
+      sourceMode: 'js-template',
+      sourceBinding: expect.objectContaining({
+        templateId: 'jtt_row_diagnostics',
+        kind: 'js-item',
+      }),
+      settings: {
+        compact: true,
+      },
+    });
+  });
+
+  it('should round-trip bound JS fields and standalone JS columns with source settings', async () => {
+    const title = `Export JS fields ${Date.now()}`;
+    const jsFieldSettings = {
+      code: "ctx.render(String(ctx.value || ''));",
+      version: '1.0.0',
+      sourceMode: 'js-template',
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_fields',
+        templateId: 'jtt_nickname_field',
+        kind: 'js-field',
+      },
+      settings: {
+        emptyText: '-',
+      },
+    };
+    const jsColumnSettings = {
+      title: 'Runtime status',
+      code: "ctx.render(String(ctx.record?.status || ''));",
+      version: '1.0.1',
+      sourceMode: 'js-template',
+      sourceBinding: {
+        type: 'js-template-entry',
+        projectId: 'jtp_fields',
+        templateId: 'jtt_status_column',
+        kind: 'js-field',
+      },
+      settings: {
+        color: 'blue',
+      },
+    };
+    const createRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: {
+        version: '1',
+        mode: 'create',
+        navigation: {
+          item: {
+            title,
+          },
+        },
+        page: {
+          title,
+        },
+        tabs: [
+          {
+            key: 'mainTab',
+            layout: {
+              rows: [
+                [
+                  { key: 'employeesTable', span: 12 },
+                  { key: 'employeesForm', span: 12 },
+                ],
+              ],
+            },
+            blocks: [
+              {
+                key: 'employeesTable',
+                type: 'table',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'nicknameField',
+                    field: 'nickname',
+                    renderer: 'js',
+                    settings: jsFieldSettings,
+                  },
+                  {
+                    key: 'statusColumn',
+                    type: 'jsColumn',
+                    settings: jsColumnSettings,
+                  },
+                ],
+              },
+              {
+                key: 'employeesForm',
+                type: 'createForm',
+                collection: 'employees',
+                fields: [
+                  {
+                    key: 'editableNicknameField',
+                    field: 'nickname',
+                    renderer: 'js',
+                    settings: jsFieldSettings,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(createRes.status, readErrorMessage(createRes)).toBe(200);
+    const pageSchemaUid = getData(createRes).target.pageSchemaUid as string;
+    const readback = await readPage(rootAgent, pageSchemaUid);
+    const submitAction = collectDescendantNodes(readback.tree, (item) => item?.use === 'FormSubmitActionModel')[0];
+    expect(submitAction?.uid).toBeTruthy();
+    await context.flowRepo.remove(submitAction.uid);
+
+    const exportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(exportRes.status, readErrorMessage(exportRes)).toBe(200);
+    const exported = getData(exportRes);
+    expect(exported.unsupported).toEqual([]);
+    const table = exported.document.tabs[0].blocks.find((block) => block.key === 'employeesTable');
+    const form = exported.document.tabs[0].blocks.find((block) => block.key === 'employeesForm');
+    expect(table.fields.find((field) => field.key === 'nicknameField')).toMatchObject({
+      field: 'nickname',
+      renderer: 'js',
+      settings: jsFieldSettings,
+    });
+    expect(table.fields.find((field) => field.key === 'nicknameField')?.settings).not.toHaveProperty('sourceRef');
+    expect(table.fields.find((field) => field.key === 'statusColumn')).toMatchObject({
+      type: 'jsColumn',
+      settings: jsColumnSettings,
+    });
+    expect(table.fields.find((field) => field.key === 'statusColumn')?.settings).not.toHaveProperty('sourceRef');
+    expect(form.fields.find((field) => field.key === 'editableNicknameField')).toMatchObject({
+      field: 'nickname',
+      renderer: 'js',
+      settings: jsFieldSettings,
+    });
+
+    const replaceRes = await rootAgent.resource('flowSurfaces').applyBlueprint({
+      values: exported.document,
+    });
+    expect(replaceRes.status, readErrorMessage(replaceRes)).toBe(200);
+    const replacedReadback = await readPage(rootAgent, pageSchemaUid);
+    const replacedSubmitAction = collectDescendantNodes(
+      replacedReadback.tree,
+      (item) => item?.use === 'FormSubmitActionModel',
+    )[0];
+    expect(replacedSubmitAction?.uid).toBeTruthy();
+    await context.flowRepo.remove(replacedSubmitAction.uid);
+
+    const replacedExportRes = await rootAgent.resource('flowSurfaces').exportBlueprint({
+      values: {
+        target: {
+          pageSchemaUid,
+        },
+      },
+    });
+    expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
+    const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
+    const replacedTable = replacedBlocks.find((block) => block.key === 'employeesTable');
+    const replacedForm = replacedBlocks.find((block) => block.key === 'employeesForm');
+    expect(replacedTable.fields.find((field) => field.key === 'nicknameField')?.settings).toMatchObject(
+      jsFieldSettings,
+    );
+    expect(replacedTable.fields.find((field) => field.key === 'statusColumn')?.settings).toMatchObject(
+      jsColumnSettings,
+    );
+    expect(replacedForm.fields.find((field) => field.key === 'editableNicknameField')?.settings).toMatchObject(
+      jsFieldSettings,
+    );
   });
 
   it('should preserve associated resource default action popup runtime as supported state', async () => {
@@ -1136,9 +1371,12 @@ describe('flowSurfaces exportBlueprint', () => {
       settings: {
         showBlockCard: false,
         version: '1.0.0',
-        code: "ctx.render('Ready');",
+        code: expect.stringContaining('ctx.render("Ready")'),
       },
     });
+    expect(jsBlock?.settings?.code).toContain('//# sourceURL=nocobase-runjs://bundle/');
+    expect(jsBlock?.settings).not.toHaveProperty('sourceRef');
+    const runtimeBannerArtifact = jsBlock?.settings?.code;
     const recordHistoryBlock = blocks.find((block) => block.key === 'departmentHistory');
     expect(recordHistoryBlock).toMatchObject({
       type: 'recordHistory',
@@ -1174,7 +1412,11 @@ describe('flowSurfaces exportBlueprint', () => {
     expect(replacedExportRes.status, readErrorMessage(replacedExportRes)).toBe(200);
     const replacedBlocks = getData(replacedExportRes).document.tabs[0].blocks;
     const replacedJsBlock = replacedBlocks.find((block) => block.key === 'runtimeBanner');
-    expect(replacedJsBlock?.settings?.showBlockCard).toBe(false);
+    expect(replacedJsBlock?.settings).toMatchObject({
+      showBlockCard: false,
+      code: runtimeBannerArtifact,
+    });
+    expect(replacedJsBlock?.settings).not.toHaveProperty('sourceRef');
   });
 
   it('should preserve supported kanban public settings and hidden popup display settings', async () => {

@@ -11,7 +11,7 @@ export { afterSuccess } from './afterSuccess';
 export * from './confirm';
 export * from './dataScope';
 export * from './openView';
-export * from './runjs';
+export { runjs } from './runjs';
 export * from './showMessage';
 export * from './showNotification';
 export * from './navigateToURL';

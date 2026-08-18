@@ -43,4 +43,37 @@ describe('FormActionGroupModel', () => {
 
     expect(items.map((item: any) => item.useModel)).toEqual(['AllowedFormActionModel']);
   });
+
+  it('filters nested provider items by their useModel', async () => {
+    class AllowedProviderActionModel extends FormActionModel {}
+    class HiddenProviderActionModel extends FormActionModel {}
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      FormActionModel,
+      AllowedProviderActionModel,
+      HiddenProviderActionModel,
+    });
+    const dispose = FormActionGroupModel.registerMenuItemProvider('nested-provider', () => ({
+      key: 'provider-group',
+      label: 'Provider group',
+      children: [
+        { key: 'allowed-provider', useModel: 'AllowedProviderActionModel' },
+        { key: 'hidden-provider', useModel: 'HiddenProviderActionModel' },
+      ],
+    }));
+
+    try {
+      const items = await FormActionGroupModel.defineChildren({
+        engine,
+        allowedFormActionModelNames: ['AllowedProviderActionModel'],
+      } as any);
+      const providerGroup = items.find((item) => item.key === 'provider-group');
+      const children = Array.isArray(providerGroup?.children) ? providerGroup.children : [];
+
+      expect(children.map((item) => item.useModel)).toEqual(['AllowedProviderActionModel']);
+    } finally {
+      dispose();
+    }
+  });
 });

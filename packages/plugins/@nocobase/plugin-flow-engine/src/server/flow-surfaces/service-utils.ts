@@ -303,6 +303,10 @@ export function flattenModel(node: any, carry: Record<string, any> = {}) {
     ...(node.template ? { template: node.template } : {}),
     ...(node.fieldsTemplate ? { fieldsTemplate: node.fieldsTemplate } : {}),
     ...(node.popup ? { popup: node.popup } : {}),
+    ...(node.runJSLocator ? { runJSLocator: node.runJSLocator } : {}),
+    ...(node.workspaceStatus ? { workspaceStatus: node.workspaceStatus } : {}),
+    ...(typeof node.workspaceRetryable === 'boolean' ? { workspaceRetryable: node.workspaceRetryable } : {}),
+    ...(node.workspaceError ? { workspaceError: node.workspaceError } : {}),
   };
   Object.values(node.subModels || {}).forEach((value) => {
     _.castArray(value as any).forEach((child) => flattenModel(child, carry));
@@ -739,6 +743,7 @@ export function toFlowSurfaceBatchItemError(error: any) {
     message: normalized.message,
     status: normalized.status,
     type: normalized.type,
+    ...normalized.options,
   };
 }
 
@@ -790,11 +795,33 @@ export function splitComposeFieldChanges(changes: Record<string, any>, wrapperUs
     'options',
     'code',
     'version',
+    'sourceMode',
+    'sourceBinding',
+    'settings',
   ]);
   return {
     wrapperChanges: _.pickBy(wrapperChanges, (value) => !_.isUndefined(value)),
     fieldChanges: _.pickBy(fieldChanges, (value) => !_.isUndefined(value)),
   };
+}
+
+const RUN_JS_SOURCE_CHANGE_KEYS = ['code', 'version', 'sourceMode', 'sourceBinding', 'settings'] as const;
+
+export function buildRunJsSourceChanges(changes: Record<string, any>) {
+  if (!hasDefinedValue(changes, [...RUN_JS_SOURCE_CHANGE_KEYS])) {
+    return undefined;
+  }
+
+  return buildDefinedPayload({
+    code: changes.code,
+    version: changes.version,
+    sourceMode:
+      hasOwnDefined(changes, 'sourceMode') || !hasOwnDefined(changes, 'sourceBinding')
+        ? changes.sourceMode
+        : 'js-template',
+    sourceBinding: changes.sourceBinding,
+    settings: changes.settings,
+  });
 }
 
 export function getCatalogRecordActionContainerUse(use?: string) {

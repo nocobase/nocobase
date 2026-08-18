@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { isAIEmployeeEnabled } from '../resource/aiConversations';
 
 describe('aiConversations resource', () => {

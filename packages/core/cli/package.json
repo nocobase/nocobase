@@ -80,6 +80,9 @@
       "revision": {
         "description": "Manage restorable revisions during NocoBase app building."
       },
+      "js-template": {
+        "description": "Pull, check, and save local JS Templates source workspaces."
+      },
       "examples": {
         "description": "Internal example commands for prompt and UI experiments.",
         "hidden": true

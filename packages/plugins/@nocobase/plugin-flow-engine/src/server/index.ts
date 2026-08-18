@@ -8,8 +8,28 @@
  */
 
 export { default } from './plugin';
+export { inspectRunJsAuthoringCode } from './flow-surfaces/runjs-authoring';
 export { FlowModelRepository } from './repository';
 export { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
+export type {
+  RunJSSourceAdapter,
+  RunJSSourceAdapterRegistry,
+  RunJSSourceAuthoringInspector,
+  VscPermissionHook,
+  VscPermissionHookRegistry,
+} from '@nocobase/runjs/workspace/server';
+export {
+  bootstrapFlowSurfaceRunJSWorkspace,
+  buildFlowSurfaceRunJSLocator,
+  hasFlowSurfaceRunJSWorkspaceBootstrapPort,
+  registerFlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSLocator,
+  type FlowSurfaceRunJSAuthoringContext,
+  type FlowSurfaceRunJSWorkspaceBootstrapInput,
+  type FlowSurfaceRunJSWorkspaceBootstrapPort,
+  type FlowSurfaceRunJSWorkspaceBootstrapResult,
+  type FlowSurfaceRunJSWorkspaceStatus,
+} from './flow-surfaces/page-surface-contract';
 export {
   createNestedRecordSlotResolver,
   getRecordSlotResolverRegistry,

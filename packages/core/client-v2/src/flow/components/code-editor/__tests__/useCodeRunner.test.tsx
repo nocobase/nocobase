@@ -12,6 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react-hooks';
 import { render, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
+import { setupRunJSTestHosts } from '@nocobase/test/client-v2';
 import { useCodeRunner } from '../hooks/useCodeRunner';
 import {
   FlowContext,
@@ -23,6 +24,8 @@ import {
   createViewScopedEngine,
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
+
+setupRunJSTestHosts();
 
 // Minimal beforeRender event model that executes preview code
 class DummyJsAutoModel extends FlowModel {

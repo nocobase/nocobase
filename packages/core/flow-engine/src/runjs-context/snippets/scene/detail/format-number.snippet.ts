@@ -8,11 +8,12 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSEditableFieldRunJSContext } from '../../../contexts/JSEditableFieldRunJSContext';
 import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
 import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSEditableFieldRunJSContext],
   prefix: 'sn-jsf-num',
   label: 'Display number field as localized number',
   description: 'Format numeric values with locale-aware separators before rendering',

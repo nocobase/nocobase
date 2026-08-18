@@ -42,4 +42,12 @@ describe('vitest test routing', () => {
       'packages/plugins/@nocobase/plugin-acl/src/client-v2/**/__tests__/**/*.{test,spec}.{ts,tsx}',
     );
   });
+
+  test('an explicit __tests__ directory includes its test files directly', () => {
+    process.argv = ['node', 'vitest', 'packages/core/runjs/src/workspace/server/__tests__'];
+
+    expect(getFilterInclude(false).include).toEqual([
+      'packages/core/runjs/src/workspace/server/__tests__/**/*.{test,spec}.{ts,tsx}',
+    ]);
+  });
 });

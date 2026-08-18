@@ -22,6 +22,14 @@ export const setupAICoding = () => {
 };
 
 const AICodingExtra: CodeEditorExtra = (props) => {
+  if (props.readonly) {
+    return null;
+  }
+
+  return <WritableAICodingExtra {...props} />;
+};
+
+const WritableAICodingExtra: CodeEditorExtra = (props) => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const fallbackFlowKey = React.useRef(randomId()).current;
   const fallbackStep = React.useRef(randomId()).current;
@@ -37,6 +45,7 @@ const AICodingExtra: CodeEditorExtra = (props) => {
       name={name}
       language={props.language ?? 'javascript'}
       scene={normalizedScene ?? 'unknown'}
+      authoringSurfaceId={props.authoringSurfaceId}
     />
   );
 };

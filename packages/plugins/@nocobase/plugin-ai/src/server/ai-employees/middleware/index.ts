@@ -11,4 +11,5 @@ export * from './conversation';
 export * from './skill-tools';
 export * from './tool-call-sanitizer';
 export * from './tools';
+export * from './workspace-validation';
 export * from './workflow-history';

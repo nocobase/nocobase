@@ -50,7 +50,8 @@ describe('FlowExecutor', () => {
         steps: {
           step1: {
             use: 'testAction',
-            defaultParams: { b: 22, c: 3 },
+            params: { b: 11, code: 'legacyCode', legacyOnly: 'fromParams' },
+            defaultParams: { b: 22, c: 3, code: 'defaultCode' },
           },
           step2: {
             handler: step2Handler,
@@ -69,10 +70,10 @@ describe('FlowExecutor', () => {
 
     const result = await engine.executor.runFlow(model, 'testFlow');
 
-    // step1 received merged params: action(a=1,b=2) + step(b=22,c=3) + model(b=99,d=4)
+    // step1 received merged params: action + defaultParams + legacy step params + model stepParams
     expect(actionHandler).toHaveBeenCalledTimes(1);
     const [, receivedParams] = actionHandler.mock.calls[0];
-    expect(receivedParams).toEqual({ a: 1, b: 99, c: 3, d: 4 });
+    expect(receivedParams).toEqual({ a: 1, b: 99, c: 3, code: 'legacyCode', legacyOnly: 'fromParams', d: 4 });
 
     expect(step2Handler).toHaveBeenCalledTimes(1);
 

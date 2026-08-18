@@ -7,23 +7,163 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
+  acceptCompletion,
   autocompletion,
+  completionStatus,
   type Completion,
-  type CompletionContext,
-  type CompletionResult,
   type CompletionSource,
 } from '@codemirror/autocomplete';
-import { lintGutter } from '@codemirror/lint';
+import { json } from '@codemirror/lang-json';
+import { forceLinting, lintGutter } from '@codemirror/lint';
+import { Compartment, EditorSelection, EditorState, Prec, type Extension } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
-import { EditorView, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
+import { EditorView, keymap, placeholder as cmPlaceholder, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
+import {
+  createJsonCompletionSource,
+  createJsonHoverTooltip,
+  createJsonLinter,
+  type CodeEditorJsonSchema,
+  type CodeEditorJsonSchemaRef,
+} from '../jsonLanguageService';
 import { createJavaScriptLinter } from '../linter';
+import type { CodeEditorDiagnostic } from '../types';
 import { resolveTooltipParent } from './tooltipParent';
+
+const acceptCompletionOrKeepPending = (view: EditorView): boolean => {
+  if (completionStatus(view.state) === 'pending') return true;
+  return acceptCompletion(view);
+};
+
+const tabCompletionKeymap = Prec.highest(keymap.of([{ key: 'Tab', run: acceptCompletionOrKeepPending }]));
+
+function createLanguageConfig(
+  language: string | undefined,
+  fileName: string | undefined,
+): {
+  extension: Extension;
+  isJson: boolean;
+} {
+  const normalizedLanguage = language?.trim().toLowerCase();
+  const normalizedFileName = fileName?.trim().toLowerCase();
+  const isTypeScriptFile = normalizedFileName?.endsWith('.ts') === true;
+  const isTypeScriptReactFile = normalizedFileName?.endsWith('.tsx') === true;
+
+  switch (normalizedLanguage) {
+    case 'json':
+      return { extension: json(), isJson: true };
+    case 'typescript':
+    case 'ts':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
+        isJson: false,
+      };
+    case 'tsx':
+    case 'typescriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: true }),
+        isJson: false,
+      };
+    case 'jsx':
+    case 'javascriptreact':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+    case 'javascript':
+    case 'js':
+      return {
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+    default:
+      if (isTypeScriptFile || isTypeScriptReactFile) {
+        return {
+          extension: javascriptWithHtmlTemplates({ jsx: isTypeScriptReactFile, typescript: true }),
+          isJson: false,
+        };
+      }
+      return {
+        // Preserve the existing JSX-compatible JavaScript behavior for omitted and unknown languages.
+        extension: javascriptWithHtmlTemplates({ jsx: true, typescript: false }),
+        isJson: false,
+      };
+  }
+}
+
+function createEditorTheme(height: string | number, minHeight: string | number | undefined): Extension {
+  const cmMinHeight =
+    typeof minHeight === 'undefined' ? undefined : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
+  const gutterTheme =
+    typeof cmMinHeight === 'string'
+      ? {
+          '.cm-gutter,.cm-content': {
+            minHeight: cmMinHeight,
+          },
+        }
+      : {};
+
+  return EditorView.theme({
+    '&.cm-editor': {
+      height: typeof height === 'string' ? height || '100%' : `${height}px`,
+    },
+    ...gutterTheme,
+    '.cm-scroller': {
+      fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+      overflow: 'auto',
+    },
+    '.cm-placeholder': {
+      color: '#999',
+      fontStyle: 'normal',
+      whiteSpace: 'pre',
+      pointerEvents: 'none',
+    },
+    '.cm-diagnostic': {
+      padding: '4px 8px',
+      borderRadius: '4px',
+      border: '1px solid #d9d9d9',
+      backgroundColor: '#fff',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      fontSize: '12px',
+      maxWidth: '300px',
+    },
+    '.cm-diagnostic-error': {
+      borderLeftColor: '#ff4d4f',
+      borderLeftWidth: '3px',
+    },
+    '.cm-diagnostic-warning': {
+      borderLeftColor: '#faad14',
+      borderLeftWidth: '3px',
+    },
+    '.cm-diagnostic-info': {
+      borderLeftColor: '#1890ff',
+      borderLeftWidth: '3px',
+    },
+    '.cm-lintRange-error': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23ff4d4f' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-lintRange-warning': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23faad14' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-lintRange-info': {
+      backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%231890ff' fill='none' stroke-width='.7'/></svg>")`,
+      backgroundRepeat: 'repeat-x',
+      backgroundPosition: 'left bottom',
+    },
+    '.cm-tooltip': {
+      zIndex: 1,
+    },
+  });
+}
 
 export const EditorCore: React.FC<{
   value?: string;
@@ -34,9 +174,13 @@ export const EditorCore: React.FC<{
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
+  diagnostics?: CodeEditorDiagnostic[];
+  fileName?: string;
   knownCtxMemberRoots?: string[];
   extraCompletions?: Completion[];
   completionSource?: CompletionSource;
+  language?: string;
+  jsonSchema?: CodeEditorJsonSchema;
   viewRef: React.MutableRefObject<EditorView | null>;
 }> = ({
   value = '',
@@ -47,170 +191,238 @@ export const EditorCore: React.FC<{
   theme = 'light',
   readonly = false,
   enableLinter = false,
+  diagnostics,
+  fileName,
   knownCtxMemberRoots,
   extraCompletions,
   completionSource,
+  language,
+  jsonSchema,
   viewRef,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const onChangeRef = useRef<typeof onChange>();
-  // keep latest onChange without re-creating the editor
+  const readonlyRef = useRef(readonly);
+  const completionSourceRef = useRef(completionSource);
+  const extraCompletionsRef = useRef(extraCompletions);
+  const jsonSchemaRef = useRef<CodeEditorJsonSchema | undefined>(jsonSchema) as CodeEditorJsonSchemaRef;
+  const readonlyCompartment = useMemo(() => new Compartment(), []);
+  const languageCompartment = useMemo(() => new Compartment(), []);
+  const completionCompartment = useMemo(() => new Compartment(), []);
+  const linterCompartment = useMemo(() => new Compartment(), []);
+  const hoverCompartment = useMemo(() => new Compartment(), []);
+  const placeholderCompartment = useMemo(() => new Compartment(), []);
+  const themeCompartment = useMemo(() => new Compartment(), []);
+  const editorThemeCompartment = useMemo(() => new Compartment(), []);
+
+  completionSourceRef.current = completionSource;
+  extraCompletionsRef.current = extraCompletions;
+  jsonSchemaRef.current = jsonSchema;
+  readonlyRef.current = readonly;
+
+  const dynamicCompletionSource = useMemo<CompletionSource>(() => {
+    return (context) => {
+      if (completionSourceRef.current) {
+        return completionSourceRef.current(context);
+      }
+
+      const options = extraCompletionsRef.current;
+      if (!options?.length) {
+        return null;
+      }
+
+      const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
+      if (!word) {
+        return context.explicit ? { from: context.pos, to: context.pos, options } : null;
+      }
+      if (word.from === word.to && !context.explicit) {
+        return null;
+      }
+
+      return { from: word.from, to: word.to, options };
+    };
+  }, []);
+  const jsonCompletionSource = useMemo(() => createJsonCompletionSource(jsonSchemaRef), []);
+  const jsonLinter = useMemo(() => createJsonLinter(jsonSchemaRef), []);
+  const jsonHover = useMemo(() => createJsonHoverTooltip(jsonSchemaRef), []);
+
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
 
   useEffect(() => {
-    if (!editorRef.current) return;
-    const staticCompletionSource = (options: Completion[]) => {
-      const source = (context: CompletionContext): CompletionResult | null => {
-        const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
-        if (!word) {
-          if (context.explicit) {
-            return { from: context.pos, to: context.pos, options };
-          }
-          return null;
-        }
-        if (word.from === word.to && !context.explicit) return null;
-        return { from: word.from, to: word.to, options };
-      };
-      return source;
-    };
-
-    const cmMinHeight =
-      typeof minHeight === 'undefined' ? undefined : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
-    const gutterTheme =
-      typeof cmMinHeight === 'string'
-        ? {
-            '.cm-gutter,.cm-content': {
-              minHeight: cmMinHeight,
-            },
-          }
-        : {};
-
-    const extensions = [
-      basicSetup,
-      javascriptWithHtmlTemplates(),
-      autocompletion({
-        override: [
-          createHtmlCompletion(),
-          createJsxCompletion(),
-          ...(typeof completionSource === 'function'
-            ? [completionSource]
-            : Array.isArray(extraCompletions) && extraCompletions.length
-              ? [staticCompletionSource(extraCompletions)]
-              : []),
-        ],
-        closeOnBlur: false,
-        activateOnTyping: true,
-      }),
-      ...(placeholder ? [cmPlaceholder(placeholder)] : []),
-      ...(enableLinter ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })] : []),
-      // Prefer the current popup container so completion tooltips stay above Modal/Drawer masks.
-      tooltips({
-        parent: resolveTooltipParent(editorRef.current),
-      }),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged && !readonly) {
-          const newValue = update.state.doc.toString();
-          try {
-            onChangeRef.current?.(newValue);
-          } catch (_) {
-            void 0;
-          }
-        }
-      }),
-      EditorView.theme({
-        '&.cm-editor': {
-          height: typeof height === 'string' ? height || '100%' : `${height}px`,
-        },
-        ...gutterTheme,
-        '.cm-scroller': {
-          fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
-          overflow: 'auto',
-        },
-        '.cm-placeholder': {
-          color: '#999',
-          fontStyle: 'normal',
-          whiteSpace: 'pre',
-          pointerEvents: 'none',
-        },
-        '.cm-diagnostic': {
-          padding: '4px 8px',
-          borderRadius: '4px',
-          border: '1px solid #d9d9d9',
-          backgroundColor: '#fff',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          fontSize: '12px',
-          maxWidth: '300px',
-        },
-        '.cm-diagnostic-error': {
-          borderLeftColor: '#ff4d4f',
-          borderLeftWidth: '3px',
-        },
-        '.cm-diagnostic-warning': {
-          borderLeftColor: '#faad14',
-          borderLeftWidth: '3px',
-        },
-        '.cm-diagnostic-info': {
-          borderLeftColor: '#1890ff',
-          borderLeftWidth: '3px',
-        },
-        '.cm-lintRange-error': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23ff4d4f' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-lintRange-warning': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%23faad14' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-lintRange-info': {
-          backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%231890ff' fill='none' stroke-width='.7'/></svg>")`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'left bottom',
-        },
-        '.cm-tooltip': {
-          zIndex: 1,
-        },
-      }),
-    ];
-
-    if (theme === 'dark') {
-      extensions.push(oneDark);
+    if (!editorRef.current) {
+      return;
     }
 
-    // Preserve current document when reinitializing (e.g., theme/linters/completions change)
-    const initialDoc = (
-      viewRef.current && typeof viewRef.current.state?.doc?.toString === 'function'
-        ? viewRef.current.state.doc.toString()
-        : value || ''
-    ) as string;
-    const view = new EditorView({ doc: initialDoc, extensions, parent: editorRef.current });
+    const languageConfig = createLanguageConfig(language, fileName);
+    const jsonLanguage = languageConfig.isJson;
+    const view = new EditorView({
+      doc: value || '',
+      extensions: [
+        basicSetup,
+        tabCompletionKeymap,
+        readonlyCompartment.of([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
+        languageCompartment.of(languageConfig.extension),
+        completionCompartment.of(
+          autocompletion({
+            override: jsonLanguage
+              ? [jsonCompletionSource]
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource],
+            closeOnBlur: false,
+            activateOnTyping: true,
+            interactionDelay: 0,
+          }),
+        ),
+        linterCompartment.of(
+          jsonLanguage
+            ? [lintGutter(), jsonLinter]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
+              : [],
+        ),
+        hoverCompartment.of(jsonLanguage ? jsonHover : []),
+        placeholderCompartment.of(placeholder ? cmPlaceholder(placeholder) : []),
+        themeCompartment.of(theme === 'dark' ? oneDark : []),
+        editorThemeCompartment.of(createEditorTheme(height, minHeight)),
+        tooltips({
+          parent: resolveTooltipParent(editorRef.current),
+        }),
+        EditorView.updateListener.of((update) => {
+          if (update.docChanged && !readonlyRef.current) {
+            const newValue = update.state.doc.toString();
+            try {
+              onChangeRef.current?.(newValue);
+            } catch (_) {
+              // Ignore host callbacks so editor input stays responsive.
+            }
+          }
+        }),
+      ],
+      parent: editorRef.current,
+    });
     viewRef.current = view;
+
     return () => {
       try {
         view.destroy();
       } catch (_) {
-        void 0;
+        // EditorView.destroy is best-effort during host teardown.
       }
       viewRef.current = null;
     };
+    // Dynamic editor behavior is updated through compartments below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completionSource, extraCompletions, enableLinter, height, minHeight, theme, readonly, placeholder]);
+  }, []);
 
-  // Update editor content when value changes
   useEffect(() => {
     const view = viewRef.current;
-    if (view && view.state.doc.toString() !== (value || '')) {
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value || '' } });
+    if (!view) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+
+    const languageConfig = createLanguageConfig(language, fileName);
+    const jsonLanguage = languageConfig.isJson;
+    view.dispatch({
+      effects: [
+        readonlyCompartment.reconfigure([EditorState.readOnly.of(readonly), EditorView.editable.of(!readonly)]),
+        languageCompartment.reconfigure(languageConfig.extension),
+        completionCompartment.reconfigure(
+          autocompletion({
+            override: jsonLanguage
+              ? [jsonCompletionSource]
+              : [createHtmlCompletion(), createJsxCompletion(), dynamicCompletionSource],
+            closeOnBlur: false,
+            activateOnTyping: true,
+            interactionDelay: 0,
+          }),
+        ),
+        linterCompartment.reconfigure(
+          jsonLanguage
+            ? [lintGutter(), jsonLinter]
+            : enableLinter
+              ? [
+                  lintGutter(),
+                  createJavaScriptLinter({
+                    externalDiagnostics: diagnostics,
+                    fileName,
+                    knownCtxMemberRoots,
+                    language,
+                  }),
+                ]
+              : [],
+        ),
+        hoverCompartment.reconfigure(jsonLanguage ? jsonHover : []),
+        placeholderCompartment.reconfigure(placeholder ? cmPlaceholder(placeholder) : []),
+        themeCompartment.reconfigure(theme === 'dark' ? oneDark : []),
+        editorThemeCompartment.reconfigure(createEditorTheme(height, minHeight)),
+      ],
+    });
+  }, [
+    completionCompartment,
+    dynamicCompletionSource,
+    diagnostics,
+    editorThemeCompartment,
+    enableLinter,
+    fileName,
+    height,
+    hoverCompartment,
+    jsonCompletionSource,
+    jsonHover,
+    jsonLinter,
+    knownCtxMemberRoots,
+    language,
+    languageCompartment,
+    linterCompartment,
+    minHeight,
+    placeholder,
+    placeholderCompartment,
+    readonly,
+    readonlyCompartment,
+    theme,
+    themeCompartment,
+    viewRef,
+  ]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (view && (createLanguageConfig(language, fileName).isJson || enableLinter)) {
+      forceLinting(view);
+    }
+  }, [diagnostics, enableLinter, fileName, jsonSchema, language, viewRef]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    const nextValue = value || '';
+    if (!view || view.state.doc.toString() === nextValue) {
+      return;
+    }
+
+    const clampPosition = (position: number) => Math.min(position, nextValue.length);
+    const selection = EditorSelection.create(
+      view.state.selection.ranges.map((range) =>
+        EditorSelection.range(clampPosition(range.anchor), clampPosition(range.head)),
+      ),
+      view.state.selection.mainIndex,
+    );
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: nextValue },
+      selection,
+    });
+  }, [value, viewRef]);
+
+  const editorContainerMinHeight =
+    typeof minHeight === 'undefined' ? 120 : typeof minHeight === 'string' ? minHeight : `${minHeight}px`;
 
   return (
-    <>
-      <div style={{ flex: 1, minHeight: 120 }} ref={editorRef} />
-    </>
+    <div style={{ flex: 1, minHeight: editorContainerMinHeight, minWidth: 0, overflow: 'hidden' }} ref={editorRef} />
   );
 };

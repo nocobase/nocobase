@@ -47,7 +47,7 @@ export const FIELD_WRAPPER_USES = new Set([
 
 export const CREATABLE_STANDALONE_FIELD_USES = new Set(['JSColumnModel', 'JSItemModel', 'DividerItemModel']);
 
-export const STANDALONE_FIELD_NODE_USES = new Set([...CREATABLE_STANDALONE_FIELD_USES, 'FormJSFieldItemModel']);
+export const STANDALONE_FIELD_NODE_USES = new Set(CREATABLE_STANDALONE_FIELD_USES);
 
 export const ACTION_BUTTON_USES = new Set([
   'AddNewActionModel',

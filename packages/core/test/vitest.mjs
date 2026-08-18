@@ -200,7 +200,11 @@ export const getFilterInclude = (isServer, isCoverage) => {
     };
   }
 
-  const suffix = isCoverage ? `**/*.{ts,tsx}` : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
+  const suffix = isCoverage
+    ? `**/*.{ts,tsx}`
+    : path.basename(absPath) === '__tests__'
+      ? `**/*.{test,spec}.{ts,tsx}`
+      : `**/__tests__/**/*.{test,spec}.{ts,tsx}`;
 
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));

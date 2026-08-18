@@ -1,0 +1,139 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Transaction } from '@nocobase/database';
+import type { RunJSSourceAdapterContext } from '@nocobase/runjs/workspace/server';
+
+export const FLOW_SURFACE_RUNJS_HOSTS = {
+  JSBlockModel: { hostKind: 'js-block', flowKey: 'jsSettings' },
+  JSFieldModel: { hostKind: 'js-field', flowKey: 'jsSettings' },
+  JSEditableFieldModel: { hostKind: 'js-editable-field', flowKey: 'jsSettings' },
+  JSColumnModel: { hostKind: 'js-column', flowKey: 'jsSettings' },
+  JSItemModel: { hostKind: 'js-item', flowKey: 'jsSettings' },
+  JSItemActionModel: { hostKind: 'js-item-action', flowKey: 'jsSettings' },
+  JSActionModel: { hostKind: 'js-action', flowKey: 'clickSettings' },
+  JSRecordActionModel: { hostKind: 'js-record-action', flowKey: 'clickSettings' },
+  JSCollectionActionModel: { hostKind: 'js-collection-action', flowKey: 'clickSettings' },
+  JSFormActionModel: { hostKind: 'js-form-action', flowKey: 'clickSettings' },
+  FilterFormJSActionModel: { hostKind: 'filter-form-js-action', flowKey: 'clickSettings' },
+} as const;
+
+export type FlowSurfaceRunJSModelUse = keyof typeof FLOW_SURFACE_RUNJS_HOSTS;
+export type FlowSurfaceRunJSHostKind = (typeof FLOW_SURFACE_RUNJS_HOSTS)[FlowSurfaceRunJSModelUse]['hostKind'];
+export type FlowSurfaceRunJSFlowKey = (typeof FLOW_SURFACE_RUNJS_HOSTS)[FlowSurfaceRunJSModelUse]['flowKey'];
+
+export type FlowSurfaceRunJSLocator = {
+  kind: 'flowModel.step';
+  modelUid: string;
+  flowKey: FlowSurfaceRunJSFlowKey;
+  stepKey: 'runJs';
+  paramPath: ['code'];
+  versionPath: ['version'];
+};
+
+export type FlowSurfaceRunJSWorkspaceStatus = 'ready' | 'pending' | 'error';
+
+export type FlowSurfaceRunJSWorkspaceError = {
+  code: string;
+  message: string;
+};
+
+export type FlowSurfaceRunJSWorkspaceBootstrapInput = {
+  hostKind: FlowSurfaceRunJSHostKind;
+  modelUse: FlowSurfaceRunJSModelUse;
+  locator: FlowSurfaceRunJSLocator;
+  transaction: Transaction;
+  authoringContext: FlowSurfaceRunJSAuthoringContext;
+};
+
+export type FlowSurfaceRunJSAuthoringContext = Partial<
+  Pick<RunJSSourceAdapterContext, 'userId' | 'request' | 'state' | 'currentUser' | 'timezone' | 'can'>
+>;
+
+export type FlowSurfaceRunJSWorkspaceBootstrapResult = {
+  status: FlowSurfaceRunJSWorkspaceStatus;
+  retryable: boolean;
+  error?: FlowSurfaceRunJSWorkspaceError;
+};
+
+export type FlowSurfaceRunJSWorkspaceBootstrapPort = (
+  input: FlowSurfaceRunJSWorkspaceBootstrapInput,
+) => Promise<FlowSurfaceRunJSWorkspaceBootstrapResult>;
+
+const RUNJS_WORKSPACE_BOOTSTRAP_PORT = Symbol.for(
+  '@nocobase/plugin-flow-engine/flow-surface-runjs-workspace-bootstrap-port',
+);
+
+type FlowSurfaceRunJSWorkspaceBootstrapApp = object & {
+  [RUNJS_WORKSPACE_BOOTSTRAP_PORT]?: FlowSurfaceRunJSWorkspaceBootstrapPort;
+};
+
+export function resolveFlowSurfaceRunJSHost(modelUse: unknown) {
+  const normalizedUse = String(modelUse || '').trim() as FlowSurfaceRunJSModelUse;
+  return FLOW_SURFACE_RUNJS_HOSTS[normalizedUse];
+}
+
+export function buildFlowSurfaceRunJSLocator(
+  modelUid: string,
+  modelUse: FlowSurfaceRunJSModelUse = 'JSBlockModel',
+): FlowSurfaceRunJSLocator {
+  const host = FLOW_SURFACE_RUNJS_HOSTS[modelUse];
+  return {
+    kind: 'flowModel.step',
+    modelUid,
+    flowKey: host.flowKey,
+    stepKey: 'runJs',
+    paramPath: ['code'],
+    versionPath: ['version'],
+  };
+}
+
+export function hasFlowSurfaceRunJSWorkspaceBootstrapPort(app: object): boolean {
+  return Boolean((app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT]);
+}
+
+export function registerFlowSurfaceRunJSWorkspaceBootstrapPort(
+  app: object,
+  port: FlowSurfaceRunJSWorkspaceBootstrapPort,
+) {
+  const bootstrapApp = app as FlowSurfaceRunJSWorkspaceBootstrapApp;
+  bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT] = port;
+  return () => {
+    if (bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT] === port) {
+      delete bootstrapApp[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
+    }
+  };
+}
+
+export async function bootstrapFlowSurfaceRunJSWorkspace(
+  app: object,
+  input: FlowSurfaceRunJSWorkspaceBootstrapInput,
+): Promise<FlowSurfaceRunJSWorkspaceBootstrapResult | undefined> {
+  const port = (app as FlowSurfaceRunJSWorkspaceBootstrapApp)[RUNJS_WORKSPACE_BOOTSTRAP_PORT];
+  if (!port) {
+    return undefined;
+  }
+  return port(input);
+}
+
+export function isRouteBackedPageUse(use?: string) {
+  return use === 'RootPageModel';
+}
+
+export function supportsPageTabs(use?: string) {
+  return use === 'RootPageModel';
+}
+
+export function supportsPageBlockAuthoring(use?: string) {
+  return use === 'RootPageModel';
+}
+
+export function supportsStandardPageBlueprint(use?: string) {
+  return use === 'RootPageModel';
+}

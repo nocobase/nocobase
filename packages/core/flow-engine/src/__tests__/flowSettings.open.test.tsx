@@ -710,6 +710,47 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(dialog).toHaveBeenCalled(); // 应该显示弹窗，但只包含 visibleStep
   });
 
+  it('recomputes runtime step visibility whenever openFlowSettings is reopened', async () => {
+    class RuntimeSettingsModel extends FlowModel {
+      getRuntimeFlowSettingSteps(flowKey: string) {
+        if (flowKey !== 'runtimeVisibility') {
+          return undefined;
+        }
+        return {
+          runtimeStep: {
+            key: 'runtimeStep',
+            title: 'Runtime step',
+            hideInSettings: () => this.getStepParams('runtimeVisibility', 'state')?.hidden === true,
+            uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+          },
+        };
+      }
+    }
+    const engine = new FlowEngine();
+    const model = new RuntimeSettingsModel({ uid: 'runtime-visibility-open', flowEngine: engine });
+    RuntimeSettingsModel.registerFlow({ key: 'runtimeVisibility', steps: {} });
+
+    const dialog = vi.fn(({ content }) => {
+      const currentDialog = { close: vi.fn(), Footer: () => null };
+      if (typeof content === 'function') content(currentDialog, { defineMethod: vi.fn() });
+      return currentDialog;
+    });
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    model.context.defineProperty('viewer', { value: { dialog } });
+
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).toHaveBeenCalledOnce();
+
+    model.setStepParams('runtimeVisibility', 'state', { hidden: true });
+    dialog.mockClear();
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).not.toHaveBeenCalled();
+
+    model.setStepParams('runtimeVisibility', 'state', { hidden: false });
+    await model.openFlowSettings({ flowKey: 'runtimeVisibility' });
+    expect(dialog).toHaveBeenCalledOnce();
+  });
+
   it('accepts uiMode object (dialog) and merges props while keeping our content', async () => {
     const engine = new FlowEngine();
     const flowSettings = new FlowSettings(engine);
@@ -1117,6 +1158,8 @@ describe('FlowSettings.open rendering behavior', () => {
     const onCloseSpy = vi.fn();
     const embed = vi.fn((opts: any) => {
       expect(opts.target).toBe(mockTarget);
+      expect(opts.title).toBeNull();
+      expect(opts.footer).toBeNull();
       expect(opts.width).toBe('60%');
       expect(opts.maxWidth).toBe('900px');
       expect(typeof opts.onOpen).toBe('function');
@@ -1151,8 +1194,10 @@ describe('FlowSettings.open rendering behavior', () => {
       uiMode: {
         type: 'embed',
         props: {
+          title: null,
           width: '60%',
           maxWidth: '900px',
+          footer: null,
           onOpen: onOpenSpy,
           onClose: onCloseSpy,
         },
@@ -1703,6 +1748,48 @@ describe('FlowSettings.open rendering behavior', () => {
     expect(saveStepParams).toHaveBeenCalled();
     expect(success).toHaveBeenCalledWith('Configuration saved');
     expect(capturedDialog.close).toHaveBeenCalled();
+  });
+
+  it('lets runtime-only setting steps persist canonical params without storing their own values', async () => {
+    const engine = new FlowEngine();
+    const flowSettings = new FlowSettings(engine);
+    const TestFlowModel = createIsolatedFlowModel('test-transient-submit');
+    const model = new TestFlowModel({ uid: 'm-transient-submit', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'settingsFlow',
+      steps: {
+        runtimeSetting: {
+          title: 'Runtime setting',
+          persistParams: false,
+          uiSchema: { value: { type: 'string', 'x-component': 'Input' } },
+          defaultParams: { value: 'saved value' },
+          beforeParamsSave(ctx, params) {
+            ctx.model.setStepParams('settingsFlow', 'canonical', { value: params.value });
+          },
+        },
+      },
+    });
+
+    model.context.defineProperty('message', { value: { info: vi.fn(), error: vi.fn(), success: vi.fn() } });
+    vi.spyOn(model, 'saveStepParams').mockResolvedValue(undefined);
+
+    let capturedDialog: any;
+    model.context.defineProperty('viewer', {
+      value: {
+        dialog: ({ content }) => {
+          capturedDialog = { close: vi.fn(), Footer: () => null };
+          content(capturedDialog, { defineMethod: vi.fn() });
+          return capturedDialog;
+        },
+      },
+    });
+
+    await flowSettings.open({ model, flowKey: 'settingsFlow', stepKey: 'runtimeSetting' } as any);
+    await capturedDialog.submit();
+
+    expect(model.getStepParams('settingsFlow', 'runtimeSetting')).toBeUndefined();
+    expect(model.getStepParams('settingsFlow', 'canonical')).toEqual({ value: 'saved value' });
   });
 
   it('submit method handles multiple steps correctly', async () => {

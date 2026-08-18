@@ -48,6 +48,7 @@ import {
 import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
+import { resolveFieldMenuItems } from '../../menuItemProviders';
 import {
   applyMobilePaginationProps,
   createCompactSimpleItemRender,
@@ -186,6 +187,7 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
         model.getModelClassName('TableAssociationFieldGroupModel'),
         model.getModelClassName('TableCustomColumnModel'),
       ].filter(Boolean)}
+      items={(ctx) => resolveFieldMenuItems({ surface: 'table-column', model, ctx })}
       keepDropdownOpen
     >
       {renderTableSettingsButton(model, 'Fields')}
