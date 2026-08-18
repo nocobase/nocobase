@@ -34,6 +34,8 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   'DateFilterDynamicComponent',
 );
 
+const fallbackInputComponents = new Set(['Input', 'Input.URL', 'NanoIDInput']);
+
 // 简化的本地辅助：按需获取 ctx.collection 的字段树（MetaTreeNode[]）
 async function buildCollectionLeftMetaTreeLocal(ctx: any): Promise<MetaTreeNode[]> {
   const resolve = async (sub: any): Promise<MetaTreeNode[]> => {
@@ -276,9 +278,9 @@ function createStaticInputRenderer(
           onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
         />
       );
-    // 未内置的 x-component：尝试从 app 解析组件
+    // 未直接处理的 x-component：尝试从 app 解析组件，文本输入类组件查找失败时静默回退到 Input
     if (xComp && app?.getComponent) {
-      const Comp = app.getComponent(xComp as any);
+      const Comp = app.getComponent(xComp, !fallbackInputComponents.has(xComp));
       if (Comp) {
         return (
           <Comp
@@ -595,8 +597,14 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
     const renderRightValueComponent = useCallback(() => {
       // 文本类多关键词：优先使用操作符 schema 声明的组件
-      const resolved = resolveOperatorComponent(model.context.app, operator, operatorMetaList);
       const supportKeyword = operator === '$in' || operator === '$notIn';
+      const operatorComponent = currentOpMeta?.schema?.['x-component'] as string | undefined;
+      const isLocallyRenderedComponent =
+        operatorComponent === 'Select' ||
+        (typeof operatorComponent === 'string' && fallbackInputComponents.has(operatorComponent));
+      const resolved = supportKeyword
+        ? resolveOperatorComponent(model.context.app, operator, operatorMetaList, !isLocallyRenderedComponent)
+        : null;
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
         const nextProps = { ...xProps };
@@ -642,6 +650,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       disabled,
       operator,
       operatorMetaList,
+      currentOpMeta,
       rightValue,
       staticInputRenderer,
       model.context.app,
