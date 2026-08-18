@@ -10,13 +10,9 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
-import { namespace, useT } from '../../locale';
-
-const API_KEY_URL = 'https://www.shengsuanyun.com/?from=CH_PEMWBPGH';
+import { namespace } from '../../locale';
 
 export const ProviderSettingsForm: React.FC = () => {
-  const t = useT();
-
   return (
     <SchemaComponent
       schema={{
@@ -27,18 +23,14 @@ export const ProviderSettingsForm: React.FC = () => {
             type: 'string',
             required: true,
             'x-decorator': 'FormItem',
-            'x-decorator-props': {
-              colon: false,
-              label: (
-                <span>
-                  {t('API Key')}:{' '}
-                  <a href={API_KEY_URL} target="_blank" rel="noopener noreferrer">
-                    {t('Get API Key')}
-                  </a>
-                </span>
-              ),
-            },
             'x-component': 'TextAreaWithGlobalScope',
+          },
+          xTitle: {
+            title: tExpr('X-Title', { ns: namespace }),
+            description: tExpr('Sent as the "X-Title" request header.', { ns: namespace }),
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
           },
         },
       }}

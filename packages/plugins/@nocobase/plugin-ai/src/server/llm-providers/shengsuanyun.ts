@@ -31,7 +31,7 @@ export class ShengSuanYunProvider extends LLMProvider {
   }
 
   createModel() {
-    const { apiKey } = this.serviceOptions || {};
+    const { apiKey, xTitle } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { name, schema } = structuredOutput || {};
     const responseFormatOptions: Record<string, unknown> = {
@@ -53,9 +53,7 @@ export class ShengSuanYunProvider extends LLMProvider {
       },
       configuration: {
         baseURL: this.getResolvedBaseURL(),
-        defaultHeaders: {
-          'X-Title': 'NocoBase',
-        },
+        ...(xTitle ? { defaultHeaders: { 'X-Title': xTitle } } : {}),
       },
     });
   }
@@ -65,7 +63,7 @@ export class ShengSuanYunProvider extends LLMProvider {
     code?: number;
     errMsg?: string;
   }> {
-    const { apiKey } = this.serviceOptions || {};
+    const { apiKey, xTitle } = this.serviceOptions || {};
     let url: string;
 
     try {
@@ -84,7 +82,7 @@ export class ShengSuanYunProvider extends LLMProvider {
         url,
         headers: {
           Authorization: `Bearer ${apiKey}`,
-          'X-Title': 'NocoBase',
+          ...(xTitle ? { 'X-Title': xTitle } : {}),
         },
       });
       const models = Array.isArray(response?.data?.data) ? (response.data.data as ShengSuanYunModel[]) : [];

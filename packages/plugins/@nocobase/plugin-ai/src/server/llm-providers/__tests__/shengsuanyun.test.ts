@@ -51,7 +51,23 @@ describe('ShengSuanYunProvider', () => {
     expect(shengsuanyunProviderOptions.title).toBe('SSYCloud');
   });
 
-  it('adds NocoBase attribution headers to chat requests', () => {
+  it('adds the configured X-Title header to chat requests', () => {
+    process.env.SERVER_REQUEST_WHITELIST = 'router.shengsuanyun.com';
+    const provider = new ShengSuanYunProvider({
+      app: createApp(),
+      serviceOptions: { apiKey: 'test-key', xTitle: 'Test App' },
+      modelOptions: { model: 'deepseek/deepseek-v4-flash' },
+    });
+
+    expect(provider.chatModel.clientConfig).toMatchObject({
+      baseURL: 'https://router.shengsuanyun.com/api/v1',
+      defaultHeaders: {
+        'X-Title': 'Test App',
+      },
+    });
+  });
+
+  it('does not hardcode the X-Title header', () => {
     process.env.SERVER_REQUEST_WHITELIST = 'router.shengsuanyun.com';
     const provider = new ShengSuanYunProvider({
       app: createApp(),
@@ -59,12 +75,7 @@ describe('ShengSuanYunProvider', () => {
       modelOptions: { model: 'deepseek/deepseek-v4-flash' },
     });
 
-    expect(provider.chatModel.clientConfig).toMatchObject({
-      baseURL: 'https://router.shengsuanyun.com/api/v1',
-      defaultHeaders: {
-        'X-Title': 'NocoBase',
-      },
-    });
+    expect(provider.chatModel.clientConfig.defaultHeaders).toBeUndefined();
   });
 
   it('recognizes Chat Completions-compatible models', () => {
@@ -83,7 +94,7 @@ describe('ShengSuanYunProvider', () => {
     expect(supportsChatCompletions({ id: 'legacy-model' })).toBe(true);
   });
 
-  it('loads and filters the account model catalog with NocoBase attribution headers', async () => {
+  it('loads and filters the account model catalog with the configured X-Title header', async () => {
     process.env.SERVER_REQUEST_WHITELIST = 'router.shengsuanyun.com';
     serverRequestMock.mockResolvedValue({
       data: {
@@ -104,7 +115,7 @@ describe('ShengSuanYunProvider', () => {
     });
     const provider = new ShengSuanYunProvider({
       app: createApp(),
-      serviceOptions: { apiKey: 'test-key' },
+      serviceOptions: { apiKey: 'test-key', xTitle: 'Test App' },
     });
 
     await expect(provider.listModels()).resolves.toEqual({
@@ -115,7 +126,7 @@ describe('ShengSuanYunProvider', () => {
       url: 'https://router.shengsuanyun.com/api/v1/models',
       headers: {
         Authorization: 'Bearer test-key',
-        'X-Title': 'NocoBase',
+        'X-Title': 'Test App',
       },
     });
   });

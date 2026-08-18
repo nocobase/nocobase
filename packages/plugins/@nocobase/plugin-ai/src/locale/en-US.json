@@ -1,5 +1,7 @@
 {
   "API Key": "API Key",
+  "X-Title": "X-Title",
+  "Sent as the \"X-Title\" request header.": "Sent as the \"X-Title\" request header.",
   "HTTP Referer": "HTTP Referer",
   "App Title": "App Title",
   "Optional. Sent as the \"HTTP-Referer\" header for app attribution.": "Optional. Sent as the \"HTTP-Referer\" header for app attribution.",
@@ -140,7 +142,6 @@
   "Get code snippet content": "Get code snippet content",
   "Get code snippet list": "Get code snippet list",
   "Get models list failed, you can enter a model name manually.": "Get models list failed, you can enter a model name manually.",
-  "Get API Key": "Get API Key",
   "Greeting message": "Greeting message",
   "Greeting message placeholder": "Opening message sent to the user when starting a new conversation.",
   "HTML": "HTML",
