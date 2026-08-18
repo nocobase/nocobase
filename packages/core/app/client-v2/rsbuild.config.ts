@@ -199,6 +199,8 @@ export default defineConfig(({ command }) => {
     },
     output: {
       target: 'web',
+      overrideBrowserslist: ['chrome >= 87', 'edge >= 88', 'firefox >= 78', 'safari >= 14'],
+      polyfill: 'usage',
       distPath: {
         root: path.resolve(__dirname, `../dist/client/${MODERN_CLIENT_DIST_DIR}`),
         js: 'assets',
