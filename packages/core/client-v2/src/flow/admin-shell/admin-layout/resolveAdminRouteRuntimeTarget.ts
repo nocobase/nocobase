@@ -9,7 +9,7 @@
 
 import { getModernClientPrefix, getV2EffectiveBasePath } from '../../../authRedirect';
 import type { BaseApplication } from '../../../BaseApplication';
-import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import { isFlowPageRoute, NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
 import type { LayoutDefinition } from '../../../layout-manager/types';
 
 export type AdminRouteNavigationMode = 'spa' | 'document';
@@ -161,7 +161,7 @@ export function isV2MenuRoute(route: NocoBaseDesktopRoute | undefined): boolean 
     return false;
   }
 
-  if (route.type === NocoBaseDesktopRouteType.flowPage || route.type === NocoBaseDesktopRouteType.link) {
+  if (isFlowPageRoute(route) || route.type === NocoBaseDesktopRouteType.link) {
     return true;
   }
 
@@ -182,7 +182,7 @@ export function findFirstV2LandingRoute(routes: NocoBaseDesktopRoute[] | undefin
       continue;
     }
 
-    if (route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (isFlowPageRoute(route)) {
       return route;
     }
 
@@ -209,7 +209,7 @@ export function findFirstAccessiblePageRoute(
       continue;
     }
 
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+    if (route.type === NocoBaseDesktopRouteType.page || isFlowPageRoute(route)) {
       return route;
     }
 
@@ -238,7 +238,7 @@ function resolvePageRuntimeTarget(
     };
   }
 
-  if (route.type === NocoBaseDesktopRouteType.flowPage) {
+  if (isFlowPageRoute(route)) {
     return {
       runtimePath: getV2AdminPath(app, route.schemaUid, options.layout),
       navigationMode: 'spa' as const,
@@ -280,7 +280,7 @@ export function resolveAdminRouteRuntimeTarget(
     return EMPTY_TARGET;
   }
 
-  if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
+  if (route.type === NocoBaseDesktopRouteType.page || isFlowPageRoute(route)) {
     return resolvePageRuntimeTarget(options, route);
   }
 

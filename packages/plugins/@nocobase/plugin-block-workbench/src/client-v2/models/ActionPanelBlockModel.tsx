@@ -16,11 +16,12 @@ import {
   FlowModelRenderer,
   DndProvider,
   observer,
+  reaction,
   type SubModelItem,
   type SubModelItemsType,
 } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
-import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
+import { Space, Avatar, Badge, Button, Tooltip, ConfigProvider } from 'antd';
 import { Grid, List } from 'antd-mobile';
 import React from 'react';
 import { BlockModel, Icon, ActionModel } from '@nocobase/client-v2';
@@ -43,6 +44,57 @@ function isRenderableActionModel(action: unknown): action is ActionModel {
 type EntryActionAvailability = {
   isEntryActionAvailable?: () => boolean;
   getEntryActionUnavailableMessage?: () => string | undefined;
+};
+
+export type ActionPanelBadgeOptions = {
+  count?: number | string;
+  dot?: boolean;
+  overflowCount?: number;
+  showZero?: boolean;
+  title?: string;
+};
+
+export type ActionPanelBadgeAction = {
+  actionPanelBadge?: ActionPanelBadgeOptions | null;
+};
+
+function getActionPanelBadge(action: ActionModel) {
+  return (action as ActionModel & ActionPanelBadgeAction).actionPanelBadge || null;
+}
+
+export function ActionPanelBadge({
+  badge,
+  children,
+}: {
+  badge?: ActionPanelBadgeOptions | null;
+  children: React.ReactNode;
+}) {
+  if (!badge) {
+    return <>{children}</>;
+  }
+  return (
+    <Badge
+      count={badge.count}
+      dot={badge.dot}
+      overflowCount={badge.overflowCount}
+      showZero={badge.showZero}
+      title={badge.title}
+    >
+      {children}
+    </Badge>
+  );
+}
+
+const ActionPanelActionBadge = ({ action, children }: { action: ActionModel; children: React.ReactNode }) => {
+  const [badge, setBadge] = React.useState(() => getActionPanelBadge(action));
+
+  React.useEffect(() => {
+    return reaction(() => getActionPanelBadge(action), setBadge, {
+      fireImmediately: true,
+    });
+  }, [action]);
+
+  return <ActionPanelBadge badge={badge}>{children}</ActionPanelBadge>;
 };
 
 function isEntryActionUnavailable(action: ActionModel) {
@@ -218,22 +270,26 @@ export class ActionPanelBlockModel extends BlockModel {
                       background-color: ${color};
                     `;
                     const horizontal = itemLayout === WorkbenchItemLayout.Horizontal;
-                    const renderActionContent = (compact = false) => (
-                      <div
-                        className={`${
-                          horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
-                        } ${compact ? hiddenClass : ''}`}
-                      >
-                        <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                    const renderActionContent = (compact = false) => {
+                      return (
                         <div
-                          className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
-                            ellipsis ? textEllipsisClass : textWrapClass
-                          }`}
+                          className={`${
+                            horizontal ? `${gridHorizontalContentClass} ${gridHorizontalCardClass}` : gridContentClass
+                          } ${compact ? hiddenClass : ''}`}
                         >
-                          {title}
+                          <ActionPanelActionBadge action={action}>
+                            <Avatar className={avatarClass} size={gridIconSize} icon={<Icon type={icon as any} />} />
+                          </ActionPanelActionBadge>
+                          <div
+                            className={`${gridTitleClass} ${horizontal ? gridHorizontalTitleClass : ''} ${
+                              ellipsis ? textEllipsisClass : textWrapClass
+                            }`}
+                          >
+                            {title}
+                          </div>
                         </div>
-                      </div>
-                    );
+                      );
+                    };
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;
@@ -317,17 +373,25 @@ export class ActionPanelBlockModel extends BlockModel {
                     const avatarClass = css`
                       background-color: ${color};
                     `;
-                    const renderActionContent = (compact = false) => (
-                      <List.Item
-                        prefix={(<Avatar className={avatarClass} icon={<Icon type={icon as any} />} />) as any}
-                      >
-                        <div
-                          className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
+                    const renderActionContent = (compact = false) => {
+                      return (
+                        <List.Item
+                          prefix={
+                            (
+                              <ActionPanelActionBadge action={action}>
+                                <Avatar className={avatarClass} icon={<Icon type={icon as any} />} />
+                              </ActionPanelActionBadge>
+                            ) as any
+                          }
                         >
-                          {title}
-                        </div>
-                      </List.Item>
-                    );
+                          <div
+                            className={`${compact ? hiddenClass : ''} ${ellipsis ? textEllipsisClass : textWrapClass}`}
+                          >
+                            {title}
+                          </div>
+                        </List.Item>
+                      );
+                    };
 
                     action.enableEditDanger = false;
                     action.enableEditType = false;

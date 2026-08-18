@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSettingsContext } from '@nocobase/flow-engine';
+import type { FlowModel, FlowSettingsContext } from '@nocobase/flow-engine';
+import { resolvePageMenuModels } from '@nocobase/client-v2';
 import {
   AdminLayoutMenuCreationMeta,
   AdminLayoutMenuCreationParams,
@@ -174,20 +175,31 @@ export const getMenuCreationUiSchema = (
   return schema;
 };
 
-const getInsertMenuUiSchema = (t: (title: any) => any): Record<string, any> => ({
-  menuType: {
-    title: t('Menu type'),
-    required: true,
-    enum: MENU_TYPE_OPTIONS.map((item) => ({
-      label: t(item.label),
-      value: item.value,
-    })),
-    'x-decorator': 'FormItem',
-    'x-component': 'Radio.Group',
-  },
-  ...buildMenuBasicSchema(t),
-  ...buildReactiveLinkSettingSchema(t, 'menuType'),
-});
+const getInsertMenuUiSchema = async (ctx: FlowSettingsContext<FlowModel>): Promise<Record<string, any>> => {
+  const pageMenuModels = await resolvePageMenuModels(ctx.model.flowEngine, ctx.model.context);
+  const pageMenuOptions = pageMenuModels.map((definition) => ({
+    label: typeof definition.label === 'string' ? ctx.t(definition.label) : definition.routeType,
+    value: definition.routeType,
+  }));
+
+  return {
+    menuType: {
+      title: ctx.t('Menu type'),
+      required: true,
+      enum: [
+        ...MENU_TYPE_OPTIONS.map((item) => ({
+          label: ctx.t(item.label),
+          value: item.value,
+        })),
+        ...pageMenuOptions,
+      ],
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+    },
+    ...buildMenuBasicSchema(ctx.t),
+    ...buildReactiveLinkSettingSchema(ctx.t, 'menuType'),
+  };
+};
 
 type FlowMenuModelLike = {
   getRoute(): NocoBaseDesktopRoute | undefined;
@@ -210,7 +222,7 @@ export const createInsertMenuStep = (options: {
   defaultParams: async () => ({
     menuType: 'flowPage',
   }),
-  uiSchema: async (ctx: FlowSettingsContext<any>) => getInsertMenuUiSchema(ctx.t),
+  uiSchema: async (ctx: FlowSettingsContext<FlowModel>) => getInsertMenuUiSchema(ctx),
   beforeParamsSave: async (ctx: FlowSettingsContext<any>, params) => {
     const model = ctx.model as FlowMenuModelLike;
     const route = model.getRoute();

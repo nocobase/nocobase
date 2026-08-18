@@ -8,6 +8,7 @@
  */
 
 export * from './ChildPageModel';
+export * from './BasePageMenuModel';
 export * from './MainPageModel';
 export * from './PageModel';
 export * from './PageTabModel';

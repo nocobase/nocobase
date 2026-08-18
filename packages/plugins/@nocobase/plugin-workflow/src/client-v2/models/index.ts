@@ -12,3 +12,5 @@ export { NodeDetailsGridModel } from './NodeDetailsGridModel';
 export { NodeValueModel } from './NodeValueModel';
 export { TaskCardCommonItemModel } from './TaskCardCommonItemModel';
 export { WorkflowTasksTopbarActionModel } from './WorkflowTasksTopbarActionModel';
+export { WorkflowTasksEntryActionModel } from './WorkflowTasksEntryActionModel';
+export { WorkflowTasksEmbeddedPageModel } from './WorkflowTasksEmbeddedPageModel';

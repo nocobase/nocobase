@@ -8,6 +8,7 @@
  */
 
 import { parsePathnameToViewParams } from '@nocobase/flow-engine';
+import { createMemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { removeLastPopupPath } from '../../schema-component/antd/page/pagePopupUtils';
 import { NocoBaseBuildInPlugin } from '../index';
@@ -22,15 +23,46 @@ describe('admin v1/v2 compatibility', () => {
     const paths = add.mock.calls.map((call) => call[1]?.path).filter(Boolean);
 
     expect(paths).toEqual(
-      expect.arrayContaining([
-        '/admin/:name/tabs/:tabUid',
-        '/admin/:name/popups/*',
-        '/admin/:name/tabs/:tabUid/popups/*',
-        '/admin/:name/tab/:tabUid',
-        '/admin/:name/view/*',
-        '/admin/:name/tab/:tabUid/view/*',
-      ]),
+      expect.arrayContaining(['/admin/:name/*', 'tabs/:tabUid', 'popups/*', 'tab/:tabUid', 'view/*']),
     );
+  });
+
+  it('should build a valid nested admin route tree when the page route accepts business segments', () => {
+    const add = vi.fn();
+    NocoBaseBuildInPlugin.prototype.addRoutes.call({
+      router: { add },
+    } as any);
+
+    const routeByName = new Map(add.mock.calls.map(([name, route]) => [name, route]));
+    const routePath = (name: string) => routeByName.get(name)?.path;
+    const routes = [
+      {
+        path: routePath('admin'),
+        children: [
+          {
+            path: routePath('admin.page'),
+            children: [
+              {
+                path: routePath('admin.page.tabs'),
+                children: [{ path: routePath('admin.page.tabs.popups') }],
+              },
+              { path: routePath('admin.page.popups') },
+              {
+                path: routePath('admin.page.tab'),
+                children: [{ path: routePath('admin.page.tab.view') }],
+              },
+              { path: routePath('admin.page.view') },
+            ],
+          },
+        ],
+      },
+    ];
+
+    expect(() =>
+      createMemoryRouter(routes, {
+        initialEntries: ['/admin/pageA/tabs/tabA'],
+      }),
+    ).not.toThrow();
   });
 
   it('should keep v2 tab/view deep link replay semantics', () => {

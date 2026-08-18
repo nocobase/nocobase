@@ -330,6 +330,49 @@ describe('AdminLayoutRouteCoordinator', () => {
     });
   });
 
+  it('preserves child view extension segments during initial deep-link step navigation', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const navigate = vi.fn();
+    engine.context.defineProperty('router', {
+      value: {
+        navigate,
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: vi.fn(() => ({})),
+      },
+    });
+
+    const rootDispatchEvent = createDispatchEventMock();
+    const taskDispatchEvent = createDispatchEventMock();
+    const rootViewItem = createViewItem('test-route', rootDispatchEvent);
+    const taskViewItem = createViewItem('workflow-tasks', taskDispatchEvent, 1);
+
+    mockResolveViewParamsToViewList.mockReturnValue([rootViewItem, taskViewItem]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({
+      viewsToClose: [],
+      viewsToOpen: [rootViewItem, taskViewItem],
+    });
+
+    const coordinator = new BaseLayoutRouteCoordinator(engine, { basePathname: '/admin' });
+    coordinator.registerPage('test-route', {
+      active: true,
+      layoutContentElement: document.createElement('div'),
+    });
+    coordinator.syncRoute({
+      pageUid: 'test-route',
+      pathname: '/admin/test-route/view/workflow-tasks/tasktype/approval-apply/status/completed',
+    });
+
+    expect(navigate).toHaveBeenCalledWith('/admin/test-route', { replace: true });
+    expect(navigate).toHaveBeenCalledWith(
+      '/admin/test-route/view/workflow-tasks/tasktype/approval-apply/status/completed',
+      undefined,
+    );
+  });
+
   it('replays the active route view when the layout content element changes', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RouteModel });

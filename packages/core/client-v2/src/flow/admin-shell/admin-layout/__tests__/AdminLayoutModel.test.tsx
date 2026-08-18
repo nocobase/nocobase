@@ -396,6 +396,116 @@ describe('AdminLayoutModel runtime', () => {
     });
   });
 
+  it('should allow custom lowercase route params after a child view uid', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageViewRouteName('admin'),
+        pathname: '/admin/page-1/view/workflow-tasks/tasktype/approval-apply/status/pending/popupid/123',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pathname: '/admin/page-1/view/workflow-tasks/tasktype/approval-apply/status/pending/popupid/123',
+      pageUid: 'page-1',
+      viewStack: [{ viewUid: 'page-1' }, { viewUid: 'workflow-tasks' }],
+    });
+  });
+
+  it('should allow custom lowercase route params after a page menu root uid', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) =>
+          pageUid === 'custom-page'
+            ? {
+                type: 'customPage',
+                schemaUid: pageUid,
+                options: {
+                  pageMenuModelClass: 'DemoPageMenuModel',
+                },
+              }
+            : { type: NocoBaseDesktopRouteType.flowPage, schemaUid: pageUid },
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/custom-page/section/recent/filter/pending/recordid/123',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pageUid: 'custom-page',
+      pathname: '/admin/custom-page/section/recent/filter/pending/recordid/123',
+      viewStack: [{ viewUid: 'custom-page' }],
+    });
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/page-1/section/recent/filter/pending',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'notFound',
+    });
+  });
+
+  it('should defer custom root route validation while accessible routes are loading', async () => {
+    const engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: () => undefined,
+        isAccessibleLoaded: () => false,
+      },
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <TestAdminLayoutHost />
+      </FlowEngineProvider>,
+    );
+    const model = engine.getModel<TestAdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    expect(
+      model.resolveLayoutRoute({
+        name: getLayoutPageRouteName('admin'),
+        pathname: '/admin/custom-page/tasktype/approval-apply/status/pending',
+        layoutBasePathname: '/admin',
+      }),
+    ).toMatchObject({
+      type: 'page',
+      pageUid: 'custom-page',
+      pathname: '/admin/custom-page/tasktype/approval-apply/status/pending',
+      viewStack: [{ viewUid: 'custom-page' }],
+    });
+  });
+
   it('should reject malformed RunJS openView route params', async () => {
     const wrongViewToken = encodeOpenViewRouteState('other-popup', { mode: 'dialog', size: 'large' });
     if (!wrongViewToken) {
@@ -413,11 +523,11 @@ describe('AdminLayoutModel runtime', () => {
 
     [
       '/admin/page-1/sourceid',
+      '/admin/page-1/tasktype/approval-apply',
       '/admin/page-1/AbCdEfGh/filterbytk/1',
+      '/admin/page-1/view/popup/tasktype',
       '/admin/page-1/view/popup/AbCdEfGh/filterbytk/1',
       '/admin/page-1/view/popup/opts/AbCdEfGh/filterbytk/1',
-      '/admin/page-1/view/popup/openviewmode/dialog',
-      '/admin/page-1/view/popup/openviewsize/large',
       `/admin/page-1/view/popup/opts/${wrongViewToken}/filterbytk/1`,
     ].forEach((pathname) => {
       expect(

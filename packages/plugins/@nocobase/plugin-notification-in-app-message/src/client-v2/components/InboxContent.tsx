@@ -71,95 +71,102 @@ const InnerInboxContent = () => {
   ) : null;
 
   return (
-    <Layout style={{ height: '100%' }}>
+    <Layout style={{ height: '100%', minHeight: 0, overflow: 'hidden' }}>
       <Layout.Sider
         width={350}
         style={{
           height: '100%',
-          overflowY: 'auto',
+          minHeight: 0,
+          overflow: 'hidden',
           background: token.colorBgContainer,
           padding: `0 ${token.paddingSM}px`,
           border: 'none',
         }}
       >
-        <FilterTab />
-        <List
-          itemLayout="horizontal"
-          dataSource={channels}
-          loadMore={loadMoreNode}
-          style={{ paddingBottom: token.paddingLG }}
-          loading={channels.length === 0 && isFetchingChannelsObs.value}
-          renderItem={(item) => {
-            const title = compileT(item.title || item.name);
-            const isActive = selectedChannelName === item.name;
-            const titleColor = isActive ? token.colorPrimaryText : token.colorText;
-            const textColor = isActive ? token.colorPrimaryText : token.colorTextTertiary;
-            return (
-              <List.Item
-                style={{
-                  padding: `${token.paddingSM}px ${token.paddingSM}px`,
-                  color: titleColor,
-                  ...(isActive ? { backgroundColor: token.colorPrimaryBg } : {}),
-                  cursor: 'pointer',
-                  marginTop: token.marginSM,
-                  border: 'none',
-                  borderRadius: token.borderRadius,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}
-                onClick={() => onSelectChannel(item.name)}
-              >
-                <Flex justify="space-between" style={{ width: '100%' }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      fontWeight: 'bold',
-                    }}
-                    title={title}
-                  >
-                    {title}
-                  </div>
-                  <div
-                    style={{
-                      fontWeight: 400,
-                      textAlign: 'right',
-                      fontFamily: 'monospace',
-                      color: textColor,
-                      marginLeft: token.marginSM,
-                    }}
-                  >
-                    {dayjs(Number.parseInt(String(item.latestMsgReceiveTimestamp), 10)).fromNow()}
-                  </div>
-                </Flex>
-                <Flex justify="space-between" style={{ width: '100%', marginTop: token.marginXS }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      textOverflow: 'ellipsis',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      color: textColor,
-                    }}
-                  >
-                    {item.latestMsgTitle}
-                  </div>
-                  {channelStatusFilterObs.value !== 'read' ? (
-                    <Badge style={{ border: 'none' }} count={item.unreadMsgCnt} />
-                  ) : null}
-                </Flex>
-              </List.Item>
-            );
-          }}
-        />
+        <div
+          data-testid="channel-list-panel"
+          style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}
+        >
+          <FilterTab />
+          <List
+            itemLayout="horizontal"
+            dataSource={channels}
+            loadMore={loadMoreNode}
+            style={{ flex: 1, minHeight: 0, overflowY: 'auto', paddingBottom: token.paddingLG }}
+            loading={channels.length === 0 && isFetchingChannelsObs.value}
+            renderItem={(item) => {
+              const title = compileT(item.title || item.name);
+              const isActive = selectedChannelName === item.name;
+              const titleColor = isActive ? token.colorPrimaryText : token.colorText;
+              const textColor = isActive ? token.colorPrimaryText : token.colorTextTertiary;
+              return (
+                <List.Item
+                  style={{
+                    padding: `${token.paddingSM}px ${token.paddingSM}px`,
+                    color: titleColor,
+                    ...(isActive ? { backgroundColor: token.colorPrimaryBg } : {}),
+                    cursor: 'pointer',
+                    marginTop: token.marginSM,
+                    border: 'none',
+                    borderRadius: token.borderRadius,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                  }}
+                  onClick={() => onSelectChannel(item.name)}
+                >
+                  <Flex justify="space-between" style={{ width: '100%' }}>
+                    <div
+                      style={{
+                        flex: 1,
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        fontWeight: 'bold',
+                      }}
+                      title={title}
+                    >
+                      {title}
+                    </div>
+                    <div
+                      style={{
+                        fontWeight: 400,
+                        textAlign: 'right',
+                        fontFamily: 'monospace',
+                        color: textColor,
+                        marginLeft: token.marginSM,
+                      }}
+                    >
+                      {dayjs(Number.parseInt(String(item.latestMsgReceiveTimestamp), 10)).fromNow()}
+                    </div>
+                  </Flex>
+                  <Flex justify="space-between" style={{ width: '100%', marginTop: token.marginXS }}>
+                    <div
+                      style={{
+                        flex: 1,
+                        textOverflow: 'ellipsis',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        color: textColor,
+                      }}
+                    >
+                      {item.latestMsgTitle}
+                    </div>
+                    {channelStatusFilterObs.value !== 'read' ? (
+                      <Badge style={{ border: 'none' }} count={item.unreadMsgCnt} />
+                    ) : null}
+                  </Flex>
+                </List.Item>
+              );
+            }}
+          />
+        </div>
       </Layout.Sider>
       <Layout.Content
         style={{
           padding: token.paddingLG,
           height: '100%',
+          minHeight: 0,
           overflowY: 'auto',
           backgroundColor: token.colorBgLayout,
         }}

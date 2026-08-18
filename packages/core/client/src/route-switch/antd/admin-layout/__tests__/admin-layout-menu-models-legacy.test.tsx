@@ -9,14 +9,23 @@
 
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ADMIN_LAYOUT_MODEL_UID } from '@nocobase/client-v2';
+import { ADMIN_LAYOUT_MODEL_UID, BasePageMenuModel } from '@nocobase/client-v2';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { waitFor } from '@testing-library/react';
 import { AdminLayoutMenuItemModel } from '../AdminLayoutMenuModels';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 import { hydrateLegacyActiveMenuPersistedStateForTest } from '../AdminLayoutComponentV1';
-import { resolveAdminLayoutMenuDragMoveOptions } from '../AdminLayoutMenuUtils';
+import { getAdminLayoutMenuInitializerButton, resolveAdminLayoutMenuDragMoveOptions } from '../AdminLayoutMenuUtils';
 import { NocoBaseDesktopRouteType } from '../route-types';
+
+class LegacyDemoPageMenuModel extends BasePageMenuModel {}
+
+LegacyDemoPageMenuModel.define({
+  routeType: 'legacyDemoPage',
+  label: 'Legacy demo page',
+  icon: 'MailOutlined',
+  sort: 20,
+});
 
 describe('AdminLayoutMenuItemModel legacy behavior', () => {
   let engine: FlowEngine;
@@ -30,6 +39,8 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
     engine.registerModels({
       AdminLayoutModel: AdminLayoutModelV1,
       AdminLayoutMenuItemModel,
+      BasePageMenuModel,
+      LegacyDemoPageMenuModel,
     });
     engine.context.defineProperty('routeRepository', {
       value: {
@@ -100,6 +111,7 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
       { label: 'Classic page (v1)', value: 'page' },
       { label: 'Modern page (v2)', value: 'flowPage' },
       { label: 'Link', value: 'link' },
+      { label: 'Legacy demo page', value: 'legacyDemoPage' },
     ]);
   });
 
@@ -167,6 +179,164 @@ describe('AdminLayoutMenuItemModel legacy behavior', () => {
         url: '/uiSchemas:insert',
       }),
     );
+  });
+
+  it('should expose the same page menu model discovery in client v1', async () => {
+    const model = engine.createModel<AdminLayoutModelV1>({
+      uid: 'legacy-admin-layout-page-menu-options',
+      use: AdminLayoutModelV1,
+    });
+
+    const initializer = getAdminLayoutMenuInitializerButton('legacy-page-menu-options', model);
+    const menuDesignerElement = initializer.name as React.ReactElement;
+    const addSubModelButtonElement = (
+      menuDesignerElement.type as (props: typeof menuDesignerElement.props) => React.ReactElement
+    )(menuDesignerElement.props);
+    const items = await addSubModelButtonElement.props.items();
+
+    expect(items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'legacyDemoPage',
+          label: 'Legacy demo page',
+        }),
+      ]),
+    );
+  });
+
+  it('should create page menu routes without inserting a legacy UI schema', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 100,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-page-menu-create',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'legacyDemoPage',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Legacy custom demo',
+      icon: 'AppstoreOutlined',
+    });
+
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledWith(
+      {
+        type: 'legacyDemoPage',
+        title: 'Legacy custom demo',
+        icon: 'AppstoreOutlined',
+        schemaUid: expect.any(String),
+        options: {
+          pageMenuModelClass: 'LegacyDemoPageMenuModel',
+        },
+        parentId: undefined,
+      },
+      undefined,
+    );
+    expect(api.request).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: '/uiSchemas:insert',
+      }),
+    );
+  });
+
+  it('should reject a custom menu type when its page menu model is unavailable in client v1', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 101,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-page-menu-missing',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'missingPageMenu',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Missing page menu',
+      icon: 'AppstoreOutlined',
+    });
+
+    await expect(model.save()).rejects.toThrow("Unknown or unavailable menu type 'missingPageMenu'.");
+    expect(createRoute).not.toHaveBeenCalled();
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('should render page menu routes as regular page menu nodes in client v1', () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-page-menu-node',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 101,
+          type: 'legacyDemoPage',
+          title: 'Legacy demo page',
+          schemaUid: 'legacy-demo-page',
+          options: {
+            pageMenuModelClass: 'LegacyDemoPageMenuModel',
+          },
+        },
+      },
+    });
+
+    expect(
+      model.toProLayoutRoute({
+        designable: false,
+        isMobile: false,
+        t: (title) => title,
+      }),
+    ).toMatchObject({
+      name: 'Legacy demo page',
+      path: '/admin/legacy-demo-page',
+      redirect: '/admin/legacy-demo-page',
+    });
+  });
+
+  it('should delete page menu routes without removing a legacy UI schema', async () => {
+    const deleteRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.deleteRoute = deleteRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'legacy-page-menu-delete',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 102,
+          type: 'legacyDemoPage',
+          title: 'Legacy demo page',
+          schemaUid: 'legacy-demo-page',
+          options: {
+            pageMenuModelClass: 'LegacyDemoPageMenuModel',
+          },
+        },
+      },
+    });
+
+    await model.destroy();
+
+    expect(deleteRoute).toHaveBeenCalledWith(102);
+    expect(api.resource).not.toHaveBeenCalledWith('uiSchemas');
   });
 
   it('should still remove ui schema when deleting current route in client v1', async () => {

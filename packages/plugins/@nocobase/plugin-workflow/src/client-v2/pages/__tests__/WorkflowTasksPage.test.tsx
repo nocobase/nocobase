@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { App } from 'antd';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { App, Tabs } from 'antd';
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
@@ -58,7 +58,11 @@ vi.mock('../../locale', () => ({
   tExpr: (key: string) => key,
 }));
 
-import WorkflowTasksPage from '../WorkflowTasksPage';
+import WorkflowTasksPage, {
+  WorkflowTasksContent,
+  WorkflowTasksEmbeddedRouteProvider,
+  WorkflowTasksPageMenuRouteProvider,
+} from '../WorkflowTasksPage';
 
 function renderWithApp(node: React.ReactNode) {
   return render(<App>{node}</App>);
@@ -72,6 +76,15 @@ function DemoItem() {
 function DemoDetail() {
   const { record } = useWorkflowTaskRecord();
   return <div>detail:{String(record.title)}</div>;
+}
+
+function DemoTabbedDetail() {
+  const { record } = useWorkflowTaskRecord();
+  return (
+    <div>
+      <Tabs items={[{ key: 'detail', label: 'Detail', children: <div>detail:{String(record.title)}</div> }]} />
+    </div>
+  );
 }
 
 function createTaskTypes(options: Partial<TaskTypeOptions> = {}) {
@@ -496,15 +509,271 @@ describe('WorkflowTasksPage', () => {
       position: 'relative',
     });
     expect(screen.getByTestId('workflow-task-mobile-detail-content')).toBeInTheDocument();
+    const backButtonContainer = screen.getByTestId('workflow-task-mobile-detail-back');
+    const backButton = within(backButtonContainer).getByRole('button', { name: 'Back' });
+    expect(backButtonContainer).toHaveStyle({ alignItems: 'center', display: 'flex', height: '48px' });
+    expect(backButton).toHaveClass('ant-btn-lg');
     expect(screen.getByText('detail:Open me')).toBeInTheDocument();
     expect(screen.queryByTestId('workflow-task-list-region')).not.toBeInTheDocument();
     expect(document.body.querySelector('.ant-modal')).not.toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+      fireEvent.click(backButton);
     });
 
     expect(holder.navigate).toHaveBeenCalledWith('/mobile/page/workflow-tasks/demo/pending', { replace: true });
+  });
+
+  it('uses compact list spacing for mobile detail tabs', async () => {
+    const getPopupRecord = vi.fn().mockResolvedValue({ data: { data: { id: 7, title: 'Popup task' } } });
+    const { registry } = createTaskTypes({ Detail: DemoTabbedDetail, getPopupRecord });
+    const demoTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: 'demo', status: 'pending', popupId: '7' };
+    holder.location = { pathname: '/mobile/page/workflow-tasks/demo/pending/7', search: '', hash: '' };
+    holder.isMobileLayout = true;
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByText('detail:Popup task');
+    expect(document.querySelector('.ant-tabs-nav')).toHaveStyle({ paddingInlineStart: '56px' });
+    expect(document.querySelector('.ant-tabs-content-holder')).toHaveStyle({ padding: '8px' });
+  });
+
+  it('reuses the mobile task content in embedded view routes', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Embedded task' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/home/view/workflow-entry/tasktype/demo/status/pending',
+      search: '',
+      hash: '',
+    };
+    holder.isMobileLayout = false;
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        inputArgs: {
+          viewUid: 'workflow-entry',
+        },
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksEmbeddedRouteProvider>
+        <WorkflowTasksContent forceMobile />
+      </WorkflowTasksEmbeddedRouteProvider>,
+    );
+
+    await screen.findByTestId('workflow-tasks-mobile');
+    fireEvent.click(await screen.findByText('Embedded task'));
+
+    expect(holder.navigate).toHaveBeenCalledWith(
+      '/admin/home/view/workflow-entry/tasktype/demo/status/pending/popupid/9',
+    );
+    expect(await screen.findByTestId('workflow-task-mobile-detail-page')).toBeInTheDocument();
+    expect(screen.getByText('detail:Embedded task')).toBeInTheDocument();
+  });
+
+  it('renders page-menu task types as desktop tabs without the internal sidebar', async () => {
+    const demoTaskType = createTaskTypes().taskType;
+    const otherTaskType: TaskTypeOptions = {
+      ...createTaskTypes().taskType,
+      key: 'other',
+      title: 'Other tasks',
+      collection: 'otherTasks',
+    };
+    const registry = createMultiTaskTypes({ demo: demoTaskType, other: otherTaskType });
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: { data: [{ id: 1, title: 'Task A' }], meta: { count: 1 } } }),
+    };
+    const otherTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: [
+          { type: 'demo', stats: { pending: 1, completed: 1, all: 2 } },
+          { type: 'other', stats: { pending: 1, all: 1 } },
+        ],
+      }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/workflow-menu/tasktype/demo/status/completed',
+      search: '',
+      hash: '',
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, otherTasks, userWorkflowTasks });
+
+    const { container } = renderWithApp(
+      <WorkflowTasksPageMenuRouteProvider pageUid="workflow-menu">
+        <WorkflowTasksContent desktopTaskTypeNavigation="tabs" />
+      </WorkflowTasksPageMenuRouteProvider>,
+    );
+
+    await screen.findByText('Task A');
+
+    expect(screen.getByTestId('workflow-tasks-desktop')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('workflow-task-type-menu')).getByRole('tab', { name: /Demo tasks/ }),
+    ).toBeVisible();
+    expect(container.querySelector('.ant-layout-sider')).not.toBeInTheDocument();
+    expect(demoTaskType.useActionParams).toHaveBeenCalledWith('completed', undefined);
+
+    fireEvent.click(screen.getByRole('tab', { name: /Other tasks/ }));
+    expect(holder.navigate).toHaveBeenCalledWith('/admin/workflow-menu/tasktype/other/status/pending');
+  });
+
+  it('restores a completed page-menu popup deep link without redirecting to the default route', async () => {
+    const getPopupRecord = vi.fn().mockResolvedValue({ data: { data: { id: 7, title: 'Completed task' } } });
+    const { taskType, registry } = createTaskTypes({ getPopupRecord });
+    const demoTasks = { listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }) };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { completed: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/workflow-menu/tasktype/demo/status/completed/popupid/7',
+      search: '',
+      hash: '',
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(
+      <WorkflowTasksPageMenuRouteProvider pageUid="workflow-menu">
+        <WorkflowTasksContent desktopTaskTypeNavigation="tabs" />
+      </WorkflowTasksPageMenuRouteProvider>,
+    );
+
+    await screen.findByText('detail:Completed task');
+
+    expect(taskType.useActionParams).toHaveBeenCalledWith('completed', undefined);
+    expect(getPopupRecord).toHaveBeenCalledWith(holder.ctx.api, { params: { filterByTk: '7' } });
+    expect(holder.navigate).not.toHaveBeenCalled();
+  });
+
+  it('reuses mobile task content for a page-menu root without showing an embedded back button', async () => {
+    const back = vi.fn();
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: { data: [{ id: 1, title: 'Mobile task' }], meta: { count: 1 } } }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/mobile/workflow-menu/tasktype/demo/status/pending',
+      search: '',
+      hash: '',
+    };
+    holder.isMobileLayout = true;
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        navigation: { back },
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksPageMenuRouteProvider pageUid="workflow-menu">
+        <WorkflowTasksContent desktopTaskTypeNavigation="tabs" />
+      </WorkflowTasksPageMenuRouteProvider>,
+    );
+
+    await screen.findByText('Mobile task');
+
+    expect(screen.getByTestId('workflow-tasks-mobile')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument();
+    expect(back).not.toHaveBeenCalled();
+  });
+
+  it('uses view navigation to close the embedded mobile task list', async () => {
+    const back = vi.fn(function (this: unknown) {
+      expect(this).toBe(navigation);
+    });
+    const navigation = { back };
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Embedded task' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/home/view/workflow-entry/tasktype/demo/status/pending',
+      search: '',
+      hash: '',
+    };
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        inputArgs: {
+          viewUid: 'workflow-entry',
+        },
+        navigation,
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksEmbeddedRouteProvider>
+        <WorkflowTasksContent forceMobile />
+      </WorkflowTasksEmbeddedRouteProvider>,
+    );
+
+    await screen.findByTestId('workflow-tasks-mobile');
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }));
+
+    expect(back).toHaveBeenCalledTimes(1);
+    expect(holder.navigate).not.toHaveBeenCalled();
+  });
+
+  it('does not rewrite the parent route while an embedded view is closing', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({
+        data: { data: [{ id: 9, title: 'Embedded task' }], meta: { count: 1 } },
+      }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.params = { taskType: undefined, status: undefined, popupId: undefined };
+    holder.location = {
+      pathname: '/admin/home',
+      search: '',
+      hash: '',
+    };
+    holder.ctx = {
+      ...makeCtx(registry, { demoTasks, userWorkflowTasks }),
+      view: {
+        inputArgs: {
+          viewUid: 'workflow-entry',
+        },
+      },
+    } as WorkflowTaskFlowContext;
+
+    renderWithApp(
+      <WorkflowTasksEmbeddedRouteProvider>
+        <WorkflowTasksContent forceMobile />
+      </WorkflowTasksEmbeddedRouteProvider>,
+    );
+
+    await screen.findByText('Embedded task');
+
+    expect(holder.navigate).not.toHaveBeenCalled();
   });
 
   it('keeps the clicked record open while loading the same popup record from the route', async () => {

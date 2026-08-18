@@ -8,6 +8,7 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
+import { resolvePageMenuModels, type ResolvedPageMenuModel } from '@nocobase/client-v2';
 import {
   AddSubModelButton,
   DragHandler as FlowDragHandler,
@@ -80,7 +81,7 @@ export type AdminLayoutMenuMovePositionOption = {
 
 export type AdminLayoutMenuInsertPosition = 'beforeBegin' | 'afterEnd' | 'beforeEnd';
 
-export type AdminLayoutMenuCreationType = 'group' | 'page' | 'flowPage' | 'link';
+export type AdminLayoutMenuCreationType = 'group' | 'page' | 'flowPage' | 'link' | (string & {});
 
 export type AdminLayoutMenuCreationSource = 'header' | 'sider' | 'insert';
 
@@ -290,11 +291,16 @@ const createMenuCreationModelOptions = (launcherModel: FlowModel, meta: AdminLay
   },
 });
 
-const getMenuDesignerItems = (launcherModel: FlowModel, parentRoute?: NocoBaseDesktopRoute) => {
+const getPageMenuLabel = (definition: ResolvedPageMenuModel, t: (value: string) => string): string => {
+  return typeof definition.label === 'string' ? t(definition.label) : definition.routeType;
+};
+
+const getMenuDesignerItems = async (launcherModel: FlowModel, parentRoute?: NocoBaseDesktopRoute) => {
   const t = (value: any) => translateByModel(launcherModel, value);
   const source: AdminLayoutMenuCreationSource = parentRoute ? 'sider' : 'header';
+  const pageMenuModels = await resolvePageMenuModels(launcherModel.flowEngine, launcherModel.context);
 
-  return MENU_TYPE_ITEMS.map((item) => ({
+  const builtInItems = MENU_TYPE_ITEMS.map((item) => ({
     key: item.key,
     label: t(item.label),
     createModelOptions: () =>
@@ -304,6 +310,34 @@ const getMenuDesignerItems = (launcherModel: FlowModel, parentRoute?: NocoBaseDe
         parentRoute,
       }),
   }));
+
+  const pageMenuItems = pageMenuModels.map((definition) => {
+    const label = getPageMenuLabel(definition, t);
+    const icon = typeof definition.icon === 'string' ? definition.icon : undefined;
+
+    return {
+      key: definition.routeType,
+      label,
+      icon: icon ? <Icon type={icon} /> : undefined,
+      createModelOptions: async () => ({
+        ...createMenuCreationModelOptions(launcherModel, {
+          menuType: definition.routeType,
+          source,
+          parentRoute,
+        }),
+        stepParams: {
+          menuCreation: {
+            basic: {
+              title: label,
+              icon,
+            },
+          },
+        },
+      }),
+    };
+  });
+
+  return [...builtInItems, ...pageMenuItems];
 };
 
 const MenuDesignerButton: FC<{ testId: string; launcherModel: FlowModel; parentRoute?: NocoBaseDesktopRoute }> = (
@@ -315,7 +349,7 @@ const MenuDesignerButton: FC<{ testId: string; launcherModel: FlowModel; parentR
     <AddSubModelButton
       model={props.launcherModel}
       subModelKey={'menuItems'}
-      items={getMenuDesignerItems(props.launcherModel, props.parentRoute)}
+      items={() => getMenuDesignerItems(props.launcherModel, props.parentRoute)}
     >
       <FlowSettingsButton data-testid={props.testId} style={{ background: 'none' }} icon={<PlusOutlined />}>
         {t('Add menu item')}

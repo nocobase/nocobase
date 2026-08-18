@@ -252,6 +252,40 @@ describe('AdminDynamicPage', () => {
     expect(screen.queryByTestId('remote-schema')).toBeNull();
   });
 
+  it('should render page menu routes through v2 FlowRoute in legacy admin route', async () => {
+    useAllAccessDesktopRoutesMock.mockReturnValue({
+      allAccessRoutes: [
+        {
+          schemaUid: 'custom-page',
+          type: 'customPage',
+          options: {
+            pageMenuModelClass: 'DemoPageMenuModel',
+          },
+        },
+      ],
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={['/admin/custom-page/section/recent']}>
+          <Routes>
+            <Route
+              path="/admin/:name/*"
+              element={
+                <CurrentPageUidProvider>
+                  <AdminDynamicPage />
+                </CurrentPageUidProvider>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    expect(await screen.findByTestId('flow-route')).toHaveAttribute('data-uid', 'custom-page');
+    expect(screen.queryByTestId('remote-schema')).toBeNull();
+  });
+
   it('should wait for collection metadata before rendering flow pages in legacy admin route', () => {
     useRemoteCollectionManagerLoadingMock.mockReturnValue(true);
 

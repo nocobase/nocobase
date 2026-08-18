@@ -155,7 +155,7 @@ export class LayoutManager<TApp extends BaseApplication<any> = BaseApplication<a
     });
 
     this.app.router.add(getLayoutPageRouteName(routeBaseName), {
-      path: ':name',
+      path: ':name/*',
       authCheck,
       skipAuthCheck,
       element: <LayoutContentRoute layoutRouteName={layout.routeName} />,

@@ -28,8 +28,11 @@ import { css } from '@emotion/css';
 import {
   BaseLayoutModel,
   BaseLayoutRouteCoordinator,
+  buildPageMenuRoute,
   KeepAlive,
+  resolvePageMenuModels,
   type LayoutDefinition,
+  type ResolvedPageMenuModel,
   type RouteModel,
   type RoutePageMeta,
   useUIConfigurationPermissions,
@@ -87,7 +90,12 @@ import {
   resolveMobileMenuDragMoveOptionsFromEvent,
   toMobileRouterNavigationPath,
 } from './MobileMenuModels';
-import { getMobileLinkRouteHref, getMobilePagePath, mobileRouteTreeContainsTabKey } from './MobileMenuUtils';
+import {
+  getMobileLinkRouteHref,
+  getMobilePagePath,
+  isFlowPageRoute,
+  mobileRouteTreeContainsTabKey,
+} from './MobileMenuUtils';
 import { MobilePageSurface } from './mobileComponents';
 import {
   toMobileCompactThemeToken,
@@ -96,7 +104,7 @@ import {
   type MobileLayoutThemeToken,
 } from './mobileThemeToken';
 
-type MobileHomeAddMenuKey = 'page' | 'link';
+type MobileHomeAddMenuKey = 'page' | 'link' | (string & {});
 
 type FakeMobileDesktopRoute = {
   key: string;
@@ -217,12 +225,17 @@ type MobileFlowSettingsPreferenceSnapshot = {
 
 function setMobileRootPageModel(routeModel: RouteModel, rootPageModelClass?: string) {
   const openViewParams = routeModel.getStepParams('popupSettings', 'openView') || {};
+  const currentRoute = routeModel.context.currentRoute as NocoBaseDesktopRoute | undefined;
+  const pageMenuModelClass = currentRoute?.options?.pageMenuModelClass;
 
   routeModel.setStepParams('popupSettings', 'openView', {
     mode: 'embed',
     preventClose: true,
     ...openViewParams,
-    pageModelClass: rootPageModelClass || 'MobileRootPageModel',
+    pageModelClass:
+      (typeof pageMenuModelClass === 'string' && pageMenuModelClass.trim() ? pageMenuModelClass : undefined) ||
+      rootPageModelClass ||
+      'MobileRootPageModel',
   });
 }
 
@@ -429,7 +442,7 @@ export function normalizeAccessibleDesktopRoutesToMobileRoutes(
       description: route.tooltip && route.tooltip !== route.title ? t(route.tooltip) : undefined,
       icon: getAccessibleDesktopRouteIcon(route),
       sort: typeof route.sort === 'number' ? route.sort : index,
-      path: type === NocoBaseDesktopRouteType.flowPage ? getMobilePagePath(basePathname, route) : undefined,
+      path: isFlowPageRoute(route) ? getMobilePagePath(basePathname, route) : undefined,
       href: type === NocoBaseDesktopRouteType.link ? getMobileLinkRouteHref(route) : undefined,
       route,
       hidden: route.hidden,
@@ -533,8 +546,15 @@ export function createMobileHomeTabItems(t: Translate): MobileHomeTabItem[] {
   return createMobileHomeTabItemsFromDesktopRoutes(createFakeMobileDesktopRoutes(t));
 }
 
-export function createMobileHomeAddMenuItems(t: Translate): MobileHomeAddMenuItem[] {
-  return [
+function getMobilePageMenuLabel(definition: ResolvedPageMenuModel, t: Translate) {
+  return typeof definition.label === 'string' ? t(definition.label) : definition.routeType;
+}
+
+export function createMobileHomeAddMenuItems(
+  t: Translate,
+  pageMenuModels: ResolvedPageMenuModel[] = [],
+): MobileHomeAddMenuItem[] {
+  const builtInItems: MobileHomeAddMenuItem[] = [
     {
       key: 'page',
       label: t('Page'),
@@ -545,6 +565,15 @@ export function createMobileHomeAddMenuItems(t: Translate): MobileHomeAddMenuIte
       label: t('Link'),
       icon: <LinkOutlined />,
     },
+  ];
+
+  return [
+    ...builtInItems,
+    ...pageMenuModels.map((definition) => ({
+      key: definition.routeType,
+      label: getMobilePageMenuLabel(definition, t),
+      icon: typeof definition.icon === 'string' ? <Icon type={definition.icon} /> : <FileTextOutlined />,
+    })),
   ];
 }
 
@@ -622,7 +651,7 @@ export function createMobileAddBlockMenuItems(t: Translate): MobileAddBlockMenuG
 }
 
 function getMobileTabConfigurationTitle(type: MobileHomeAddMenuKey, t: Translate) {
-  return type === 'page' ? t('Add page') : t('Add link');
+  return type === 'link' ? t('Add link') : t('Add page');
 }
 
 function getFirstFormValidationMessage(error: unknown) {
@@ -785,13 +814,7 @@ const MobileLayoutComponentContent = observer((props: { model: MobileLayoutModel
     ],
   );
   useLayoutEffect(() => {
-    const uninstallRouteRepository = installMobileLayoutRouteRepository(model);
-    const uninstallDesktopRouteWriteScope = installMobileDesktopRouteWriteScope(model);
-
-    return () => {
-      uninstallDesktopRouteWriteScope();
-      uninstallRouteRepository();
-    };
+    return installMobileDesktopRouteWriteScope(model);
   }, [model]);
 
   useEffect(() => {
@@ -1130,8 +1153,7 @@ function normalizeRenderableMobileTabItems(tabItems: MobileTabNode[], designMode
     return renderableTabItems;
   }
 
-  const fallbackItem =
-    renderableTabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage) || renderableTabItems[0];
+  const fallbackItem = renderableTabItems.find((item) => isFlowPageRoute(item.route)) || renderableTabItems[0];
 
   return renderableTabItems.map((item) => ({
     ...item,
@@ -1273,7 +1295,7 @@ function isMobileLayoutRootLocation(model: MobileLayoutModel, pathname: string) 
 }
 
 function getDefaultMobileFlowPageRoute(tabItems: MobileTabNode[]) {
-  return tabItems.find((item) => item.type === NocoBaseDesktopRouteType.flowPage && item.path);
+  return tabItems.find((item) => isFlowPageRoute(item.route) && item.path);
 }
 
 const MobileHomePlaceholder = observer(
@@ -1296,6 +1318,7 @@ const MobileHomePlaceholder = observer(
     );
     const [addTabDropdownOpen, setAddTabDropdownOpen] = useState(false);
     const [configuringTabType, setConfiguringTabType] = useState<MobileHomeAddMenuKey | null>(null);
+    const [pageMenuModels, setPageMenuModels] = useState<ResolvedPageMenuModel[]>([]);
     const [menuRouteVersion, setMenuRouteVersion] = useState(0);
     const menuRouteRefreshVersion = model.menuRouteRefreshVersion;
     const activeRouteKeyFromLayout = model.getActiveMobileTabKey();
@@ -1308,7 +1331,7 @@ const MobileHomePlaceholder = observer(
       (key: string) => model.flowEngine.context.t(key, { ns: ['lm-desktop-routes', NAMESPACE, 'client'] }),
       [model.flowEngine.context],
     );
-    const addMenuItems = useMemo(() => createMobileHomeAddMenuItems(t), [t]);
+    const addMenuItems = useMemo(() => createMobileHomeAddMenuItems(t, pageMenuModels), [pageMenuModels, t]);
     const addBlockMenuGroups = useMemo(() => createMobileAddBlockMenuItems(t), [t]);
     const [activeRouteKey, setActiveRouteKey] = useState<string | undefined>();
     const resolvedActiveRouteKey = activeRouteKeyFromLayout || activeRouteKey;
@@ -1327,7 +1350,7 @@ const MobileHomePlaceholder = observer(
     const activeRoute =
       renderableTabItems.find((route) => route.key === resolvedActiveRouteKey) ||
       renderableTabItems.find((route) => route.active) ||
-      renderableTabItems.find((route) => route.type === NocoBaseDesktopRouteType.flowPage) ||
+      renderableTabItems.find((route) => isFlowPageRoute(route.route)) ||
       renderableTabItems[0];
     const menuItems = useMemo(() => {
       const routes = normalizeAccessibleDesktopRoutesToMobileRoutes(
@@ -1363,12 +1386,19 @@ const MobileHomePlaceholder = observer(
     );
     const handleAddTabMenuClick = useCallback<NonNullable<MenuProps['onClick']>>(
       ({ key }) => {
-        const type: MobileHomeAddMenuKey = key === 'link' ? 'link' : 'page';
+        const type = key as MobileHomeAddMenuKey;
+        const pageMenuModel = pageMenuModels.find((definition) => definition.routeType === type);
         setAddTabDropdownOpen(false);
         addTabForm.resetFields();
+        if (pageMenuModel) {
+          addTabForm.setFieldsValue({
+            title: getMobilePageMenuLabel(pageMenuModel, t),
+            icon: typeof pageMenuModel.icon === 'string' ? pageMenuModel.icon : undefined,
+          });
+        }
         setConfiguringTabType(type);
       },
-      [addTabForm],
+      [addTabForm, pageMenuModels, t],
     );
     const handleAddTabModalCancel = useCallback(() => {
       setConfiguringTabType(null);
@@ -1382,7 +1412,20 @@ const MobileHomePlaceholder = observer(
       try {
         const values = await addTabForm.validateFields();
         const routeRepository = model.flowEngine.context.routeRepository;
-        const creationValues = createMobileDesktopRouteCreationValues(configuringTabType, values);
+        const pageMenuModel = pageMenuModels.find((definition) => definition.routeType === configuringTabType);
+        const creationValues = pageMenuModel
+          ? (() => {
+              const schemaUid = uid();
+              return {
+                route: buildPageMenuRoute(pageMenuModel, {
+                  title: values.title?.trim(),
+                  icon: values.icon?.trim(),
+                  schemaUid,
+                }),
+                activeRouteKey: schemaUid,
+              };
+            })()
+          : createMobileDesktopRouteCreationValues(configuringTabType === 'link' ? 'link' : 'page', values);
 
         if (!routeRepository?.createRoute) {
           throw new Error('Route repository is unavailable.');
@@ -1392,7 +1435,7 @@ const MobileHomePlaceholder = observer(
           refreshAfterMutation: false,
         });
         await refreshMobileLayoutAccessibleRoutes(model, routeRepository);
-        if (configuringTabType === 'page') {
+        if (configuringTabType !== 'link') {
           setActiveRouteKey(creationValues.activeRouteKey);
         }
         setConfiguringTabType(null);
@@ -1406,7 +1449,7 @@ const MobileHomePlaceholder = observer(
 
         console.error('[NocoBase] plugin-ui-layout failed to create mobile tab route.', error);
       }
-    }, [addTabForm, configuringTabType, message, model]);
+    }, [addTabForm, configuringTabType, message, model, pageMenuModels]);
     const addTabModalTitle = useMemo(
       () => (configuringTabType ? getMobileTabConfigurationTitle(configuringTabType, t) : undefined),
       [configuringTabType, t],
@@ -1417,6 +1460,24 @@ const MobileHomePlaceholder = observer(
       },
       [model],
     );
+
+    useEffect(() => {
+      let active = true;
+
+      resolvePageMenuModels(model.flowEngine, model.context)
+        .then((definitions) => {
+          if (active) {
+            setPageMenuModels(definitions);
+          }
+        })
+        .catch((error) => {
+          console.error('[NocoBase] plugin-ui-layout failed to load page menu models.', error);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [model]);
 
     useEffect(() => {
       if (!designModeEnabled) {
@@ -2124,6 +2185,10 @@ const MobileHomePlaceholder = observer(
 
 export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure> {
   menuRouteRefreshVersion = 0;
+  private mobileRouteRepository?: unknown;
+  private mobileRouteRepositoryApi?: unknown;
+  private mobileRouteRepositoryLayoutUid?: unknown;
+  private disposeMobileRouteRepository?: () => void;
 
   constructor(options: ConstructorParameters<typeof BaseLayoutModel>[0]) {
     super(options);
@@ -2144,7 +2209,38 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
 
   protected onMount(): void {
     this.setIsMobileLayout(true);
+    this.ensureMobileRouteRepositoryInstalled();
     super.onMount();
+  }
+
+  protected onUnmount(): void {
+    this.disposeMobileRouteRepository?.();
+    this.disposeMobileRouteRepository = undefined;
+    this.mobileRouteRepository = undefined;
+    this.mobileRouteRepositoryApi = undefined;
+    this.mobileRouteRepositoryLayoutUid = undefined;
+    super.onUnmount();
+  }
+
+  private ensureMobileRouteRepositoryInstalled() {
+    const routeRepository = this.flowEngine.context.routeRepository;
+    const api = this.flowEngine.context.api;
+    const layoutUid = this.layout?.uid;
+
+    if (
+      this.disposeMobileRouteRepository &&
+      this.mobileRouteRepository === routeRepository &&
+      this.mobileRouteRepositoryApi === api &&
+      this.mobileRouteRepositoryLayoutUid === layoutUid
+    ) {
+      return;
+    }
+
+    this.disposeMobileRouteRepository?.();
+    this.mobileRouteRepository = routeRepository;
+    this.mobileRouteRepositoryApi = api;
+    this.mobileRouteRepositoryLayoutUid = layoutUid;
+    this.disposeMobileRouteRepository = installMobileLayoutRouteRepository(this);
   }
 
   refreshMenuRouteTree() {
@@ -2217,7 +2313,7 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
       return nodes;
     }
 
-    const fallbackFlowPage = nodes.find((item) => item.type === NocoBaseDesktopRouteType.flowPage);
+    const fallbackFlowPage = nodes.find((item) => isFlowPageRoute(item.route));
     if (!fallbackFlowPage) {
       return nodes;
     }
@@ -2229,6 +2325,7 @@ export class MobileLayoutModel extends BaseLayoutModel<MobileLayoutMenuStructure
   }
 
   render() {
+    this.ensureMobileRouteRepositoryInstalled();
     return <MobileLayoutComponent model={this} />;
   }
 }

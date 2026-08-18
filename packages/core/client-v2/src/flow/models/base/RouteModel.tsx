@@ -18,10 +18,14 @@ RouteModel.registerFlow({
     openView: {
       use: 'openView',
       defaultParams(ctx) {
+        const pageMenuModelClass = ctx.currentRoute?.options?.pageMenuModelClass;
         return {
           mode: 'embed',
           preventClose: true,
-          pageModelClass: ctx.layout?.rootPageModelClass || 'RootPageModel',
+          pageModelClass:
+            (typeof pageMenuModelClass === 'string' && pageMenuModelClass.trim() ? pageMenuModelClass : undefined) ||
+            ctx.layout?.rootPageModelClass ||
+            'RootPageModel',
         };
       },
     },
