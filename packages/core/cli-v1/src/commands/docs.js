@@ -57,10 +57,12 @@ function createCdnClient() {
  * @param {string} timestampDir
  */
 const REWRITE_RULES = [
+  // AI API 请求保持原路径，避免被后续规则补上文档版本的时间戳前缀
+  { sourceUrl: '^/api/ai/(.*)$', targetTemplate: () => '/api/ai/$1', flag: 'break' },
   // /en/ 下无后缀的页面路由，去掉 /en/ 前缀并改写到目录式 index.html
   { sourceUrl: '^/en/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
   // 其他语言和默认语言的无后缀页面路由，统一改写到目录式 index.html
-  { sourceUrl: '^/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
+  { sourceUrl: '^/([^.]*[^/.])/?$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
   // /en/ 下的静态资源和目录，继续去掉 /en/ 前缀
   { sourceUrl: '^/en/(.*)', targetTemplate: (ts) => `/${ts}/$1`, flag: 'break' },
   // 兜底：所有其他请求继续只补时间戳前缀
