@@ -17,7 +17,7 @@ import {
   FlowSettingsButton,
   observer,
 } from '@nocobase/flow-engine';
-import { Badge, Tooltip } from 'antd';
+import { Badge } from 'antd';
 import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
@@ -153,6 +153,24 @@ const getLayoutRoutePathFromModel = (model: FlowModel): AdminLayoutRoutePathLike
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const siderMenuItemStyle: React.CSSProperties = { ...menuItemStyle, width: '100%', minWidth: 0 };
+const siderMenuItemContentStyle: React.CSSProperties = { flex: 1, minWidth: 0, overflow: 'hidden' };
+const siderMenuItemLinkStyle: React.CSSProperties = {
+  display: 'block',
+  flex: 1,
+  width: '100%',
+  minWidth: 0,
+  overflow: 'hidden',
+};
+const getMenuItemText = (name: React.ReactNode) => {
+  if (typeof name === 'string' || typeof name === 'number') {
+    return String(name);
+  }
+
+  if (React.isValidElement<{ title?: unknown }>(name) && typeof name.props.title === 'string') {
+    return name.props.title;
+  }
+};
 const groupLandingEntryStyle = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -553,16 +571,16 @@ export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
 
 const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
+  const { inHeader } = useContext(HeaderContext);
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
   const navigate = useNavigateNoUpdate();
   const routerBasename = useRouterBasename();
   const { closeMobileMenu } = useContext(MobileMenuControlContext);
   const ariaLabel =
-    typeof item.name === 'string' || typeof item.name === 'number'
-      ? String(item.name)
-      : typeof item._route?.title === 'string' || typeof item._route?.title === 'number'
-        ? String(item._route.title)
-        : undefined;
+    getMenuItemText(item.name) ??
+    (typeof item._route?.title === 'string' || typeof item._route?.title === 'number'
+      ? String(item._route.title)
+      : undefined);
   const runtimePath = item._runtimePath;
   const spaRuntimePath = runtimePath ? toRouterNavigationPath(runtimePath, routerBasename) : runtimePath;
 
@@ -633,7 +651,12 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRender
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <div aria-label={ariaLabel} role="none" style={menuItemStyle}>
+        <div
+          aria-label={ariaLabel}
+          title={inHeader || item._route?.tooltip ? undefined : ariaLabel}
+          role="none"
+          style={inHeader ? menuItemStyle : siderMenuItemStyle}
+        >
           {content}
           {landingEntry}
           {badgeCount != null && (
@@ -650,24 +673,9 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRender
   );
 };
 
-const WithTooltip: FC<{ title: React.ReactNode; hidden: boolean; badgeProps: any }> = (props) => {
-  const { inHeader } = useContext(HeaderContext);
-
-  if (props.hidden || inHeader) {
-    return props.children;
-  }
-
-  return (
-    <Tooltip title={props.title} placement="right">
-      <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
-        {props.children}
-      </Badge>
-    </Tooltip>
-  );
-};
-
 const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
+  const { inHeader } = useContext(HeaderContext);
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count, item._model?.context);
   const navigate = useNavigateNoUpdate();
@@ -677,7 +685,10 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   const runtimePath = item._runtimePath || path;
   const spaRuntimePath = runtimePath ? toRouterNavigationPath(runtimePath, basenameOfCurrentRouter) : runtimePath;
   const isDocumentNavigation = item._navigationMode === 'document';
-  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
+  const { textColor: badgeTextColor, ...antdBadgeOptions } = item._route.options?.badge || {};
+  const badgeProps = { ...antdBadgeOptions, count: badgeCount };
+  const menuItemText = getMenuItemText(item.name);
+  const nativeTitle = inHeader || item._route?.tooltip ? undefined : menuItemText;
 
   const canUseNativeAnchor = !!runtimePath && isDocumentNavigation;
 
@@ -767,17 +778,25 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <div role="none" style={menuItemStyle}>
-            <div onClick={handleClickLink}>
-              <Link to={location.pathname} aria-label={typeof item.name === 'string' ? item.name : undefined}>
+          <div role="none" style={inHeader ? menuItemStyle : siderMenuItemStyle}>
+            <div onClick={handleClickLink} style={inHeader ? undefined : siderMenuItemContentStyle}>
+              <Link
+                to={location.pathname}
+                aria-label={menuItemText}
+                title={nativeTitle}
+                style={inHeader ? undefined : siderMenuItemLinkStyle}
+              >
                 {props.children}
               </Link>
             </div>
             {badgeCount != null && (
               <Badge
-                {...item._route.options?.badge}
-                count={badgeCount}
-                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
+                {...badgeProps}
+                style={{
+                  marginLeft: 4,
+                  ...(badgeTextColor == null ? {} : { color: badgeTextColor }),
+                  maxWidth: '10em',
+                }}
                 dot={false}
               ></Badge>
             )}
@@ -787,45 +806,45 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
     );
   }
 
-  const itemContent = (
-    <WithTooltip
-      title={item.name}
-      hidden={
-        item._route.type === NocoBaseDesktopRouteType.group || (item._depth || 0) > 0 || !props.options?.collapsed
-      }
-      badgeProps={badgeProps}
+  const itemContent = canUseNativeAnchor ? (
+    <a
+      href={runtimePath}
+      aria-label={menuItemText}
+      title={nativeTitle}
+      onClick={handleClickMenuItem}
+      style={inHeader ? undefined : siderMenuItemLinkStyle}
     >
-      {canUseNativeAnchor ? (
-        <a
-          href={runtimePath}
-          aria-label={typeof item.name === 'string' ? item.name : undefined}
-          onClick={handleClickMenuItem as any}
-        >
-          {props.children}
-        </a>
-      ) : runtimePath ? (
-        <Link
-          to={spaRuntimePath}
-          aria-label={typeof item.name === 'string' ? item.name : undefined}
-          onClick={handleClickMenuItem}
-        >
-          {props.children}
-        </Link>
-      ) : (
-        <span aria-label={typeof item.name === 'string' ? item.name : undefined}>{props.children}</span>
-      )}
-    </WithTooltip>
+      {props.children}
+    </a>
+  ) : runtimePath ? (
+    <Link
+      to={spaRuntimePath}
+      aria-label={menuItemText}
+      title={nativeTitle}
+      onClick={handleClickMenuItem}
+      style={inHeader ? undefined : siderMenuItemLinkStyle}
+    >
+      {props.children}
+    </Link>
+  ) : (
+    <span aria-label={menuItemText} title={nativeTitle} style={inHeader ? undefined : siderMenuItemLinkStyle}>
+      {props.children}
+    </span>
   );
 
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <div role="none" style={menuItemStyle}>
+        <div role="none" style={inHeader ? menuItemStyle : siderMenuItemStyle}>
           {itemContent}
           {badgeCount != null && (
             <Badge
               {...badgeProps}
-              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
+              style={{
+                marginLeft: 4,
+                ...(badgeTextColor == null ? {} : { color: badgeTextColor }),
+                maxWidth: '10em',
+              }}
               dot={false}
             ></Badge>
           )}
