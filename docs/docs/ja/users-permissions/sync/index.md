@@ -8,6 +8,13 @@ pkg: '@nocobase/plugin-user-data-sync'
 
 ユーザーデータ同期元を登録・管理する機能です。デフォルトではHTTP APIが提供されていますが、プラグインを通じて他のデータソースを拡張することも可能です。デフォルトでは、**ユーザー** コレクションと**部門** コレクションへのデータ同期をサポートしており、プラグインを使って他の同期ターゲットリソースに拡張することもできます。
 
+## 利用可能なデータソース
+
+- [DingTalk](./sources/dingtalk.md) — HTTP コールバックまたは Stream モードで DingTalk のユーザーと部署を同期します。
+- [LDAP](./sources/ldap.md) — 既存の LDAP 認証器を再利用して、LDAP ユーザーと任意の組織単位を同期します。
+- [WeCom](./sources/wecom.md) — WeCom のユーザーと部署を同期します。
+- [HTTP API](./sources/api.md) — 同期 API を通じてユーザーと部署データを送信します。
+
 ## データソースの管理とデータ同期
 
 ![](https://static-docs.nocobase.com/202412041043465.png)

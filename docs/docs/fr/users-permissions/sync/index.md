@@ -8,6 +8,13 @@ pkg: '@nocobase/plugin-user-data-sync'
 
 Cette fonctionnalité vous permet d'enregistrer et de gérer les sources de synchronisation des données utilisateur. Par défaut, une API HTTP est fournie, mais d'autres sources de données peuvent être prises en charge via des plugins. Elle prend en charge la synchronisation des données vers les **collections** Utilisateurs et Départements par défaut, avec la possibilité d'étendre la synchronisation à d'autres ressources cibles à l'aide de plugins.
 
+## Sources de données disponibles
+
+- [DingTalk](./sources/dingtalk.md) — Synchronisez les utilisateurs et départements DingTalk via callback HTTP ou mode Stream.
+- [LDAP](./sources/ldap.md) — Synchronisez les utilisateurs LDAP et les unités d'organisation facultatives en réutilisant un authentificateur LDAP.
+- [WeCom](./sources/wecom.md) — Synchronisez les utilisateurs et départements WeCom.
+- [API HTTP](./sources/api.md) — Envoyez les utilisateurs et départements via l'API de synchronisation.
+
 ## Gestion et synchronisation des sources de données
 
 ![](https://static-docs.nocobase.com/202412041043465.png)
