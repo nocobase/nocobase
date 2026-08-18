@@ -21,6 +21,9 @@ const mocks = vi.hoisted(() => {
         nickname: 'Sales',
       },
       readonly: false,
+      chatBoxRef: {
+        current: null as HTMLDivElement | null,
+      },
     },
     chatConversationModel: {
       currentConversation: undefined as string | undefined,
@@ -44,6 +47,7 @@ const mocks = vi.hoisted(() => {
 
   return {
     runtime,
+    attachmentsGetDropContainer: undefined as (() => HTMLElement | null | undefined) | undefined,
     send: vi.fn(),
     cancelRequest: vi.fn(),
     finishEditingMessage: vi.fn(),
@@ -58,7 +62,16 @@ vi.mock('@ant-design/x', async () => {
   MockButton.displayName = 'MockButton';
 
   return {
-    Attachments: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+    Attachments: ({
+      children,
+      getDropContainer,
+    }: {
+      children?: React.ReactNode;
+      getDropContainer?: () => HTMLElement | null | undefined;
+    }) => {
+      mocks.attachmentsGetDropContainer = getDropContainer;
+      return <div>{children}</div>;
+    },
     Sender: React.forwardRef<
       { nativeElement?: HTMLTextAreaElement },
       {
@@ -167,7 +180,22 @@ describe('Sender input state', () => {
     mocks.runtime.chatSenderModel.setSenderValue.mockClear();
     mocks.runtime.chatSenderModel.setSenderRef.mockClear();
     mocks.runtime.chatSenderModel.setShowSenderHint.mockClear();
+    mocks.runtime.chatBoxModel.chatBoxRef.current = null;
+    mocks.attachmentsGetDropContainer = undefined;
     mocks.send.mockClear();
+  });
+
+  it('limits attachment drops to the mounted chat box', () => {
+    const dropContainer = document.createElement('div');
+    mocks.runtime.chatBoxModel.chatBoxRef.current = dropContainer;
+
+    render(
+      <Sender showContextSelector={false} showWebSearch={false} showEmployeeSelect={false} showModelSelect={false} />,
+    );
+
+    expect(mocks.attachmentsGetDropContainer?.()).toBe(dropContainer);
+    mocks.runtime.chatBoxModel.chatBoxRef.current = null;
+    expect(mocks.attachmentsGetDropContainer?.()).toBeNull();
   });
 
   it('keeps typing local until blur', () => {
