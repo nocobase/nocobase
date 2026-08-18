@@ -1,5 +1,7 @@
 {
   "API Key": "API Key",
+  "X-Title": "X-Title",
+  "Sent as the \"X-Title\" request header.": "Sent as the \"X-Title\" request header.",
   "HTTP Referer": "HTTP Referer",
   "App Title": "App Title",
   "Optional. Sent as the \"HTTP-Referer\" header for app attribution.": "Optional. Sent as the \"HTTP-Referer\" header for app attribution.",
@@ -166,6 +168,7 @@
   "Message type": "Message type",
   "Messages": "Messages",
   "Mistral models": "Mistral models",
+  "300+ latest mainstream models across leading model families": "300+ latest mainstream models across leading model families",
   "Model": "Model",
   "Model settings": "Model settings",
   "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.": "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.",

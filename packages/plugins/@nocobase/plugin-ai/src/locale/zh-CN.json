@@ -1,5 +1,7 @@
 {
   "API Key": "API Key",
+  "X-Title": "X-Title",
+  "Sent as the \"X-Title\" request header.": "作为 \"X-Title\" 请求头发送。",
   "HTTP Referer": "HTTP Referer",
   "App Title": "应用标题",
   "Optional. Sent as the \"HTTP-Referer\" header for app attribution.": "可选。作为 \"HTTP-Referer\" 请求头发送，用于应用来源标识。",
@@ -167,6 +169,7 @@
   "Message type": "消息类型",
   "Messages": "消息",
   "Mistral models": "Mistral 模型",
+  "300+ latest mainstream models across leading model families": "300+最新各系列主流模型",
   "Model": "模型",
   "Model settings": "模型设置",
   "Missing knowledge base configuration for keys: {{keys}}. Create knowledge bases with the same keys to enable this employee normally.": "以下知识库 Key 缺少配置：{{keys}}。请创建相同 Key 的知识库，员工才能正常使用知识库能力。",
