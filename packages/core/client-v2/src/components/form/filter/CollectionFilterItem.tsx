@@ -130,8 +130,10 @@ export const CollectionFilterItem: FC<CollectionFilterItemProps> = observer(
       [operatorOptions, operator],
     );
 
-    const handleFieldChange = (next: (string | number)[]) => {
-      const path = next.map(String);
+    const handleFieldChange = (next?: (string | number)[]) => {
+      // rc-cascader emits `undefined` when its clear icon is clicked in single-select mode, despite its public type
+      // declaring an array. Treat that runtime value as an empty path so clearing the field also resets the row.
+      const path = (next ?? []).map(String);
       props.value.path = path.join('.');
       const leaf = findOptionByPath(options, path);
       props.value.operator = leaf?.operators?.[0]?.value || '';
