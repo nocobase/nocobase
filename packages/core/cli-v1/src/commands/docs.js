@@ -57,17 +57,39 @@ function createCdnClient() {
  * @param {string} timestampDir
  */
 const REWRITE_RULES = [
-  // AI API 请求保持原路径，避免被后续规则补上文档版本的时间戳前缀
-  { sourceUrl: '^/api/ai/(.*)$', targetTemplate: () => '/api/ai/$1', flag: 'break' },
   // /en/ 下无后缀的页面路由，去掉 /en/ 前缀并改写到目录式 index.html
-  { sourceUrl: '^/en/([^.]*[^/.])$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
-  // 其他语言和默认语言的无后缀页面路由，统一改写到目录式 index.html
-  { sourceUrl: '^/([^.]*[^/.])/?$', targetTemplate: (ts) => `/${ts}/$1/index.html`, flag: 'break' },
+  {
+    sourceUrl: '^/en/([^.]*[^/.])/?$',
+    previousSourceUrls: ['^/en/([^.]*[^/.])$'],
+    targetTemplate: (ts) => `/${ts}/$1/index.html`,
+    flag: 'break',
+  },
+  // 其他语言和默认语言的无后缀页面路由，排除保持原路径回源的 AI API
+  {
+    sourceUrl: '^/(?!api/ai(?:/|$))([^.]*[^/.])/?$',
+    previousSourceUrls: ['^/([^.]*[^/.])$', '^/([^.]*[^/.])/?$'],
+    targetTemplate: (ts) => `/${ts}/$1/index.html`,
+    flag: 'break',
+  },
   // /en/ 下的静态资源和目录，继续去掉 /en/ 前缀
   { sourceUrl: '^/en/(.*)', targetTemplate: (ts) => `/${ts}/$1`, flag: 'break' },
-  // 兜底：所有其他请求继续只补时间戳前缀
-  { sourceUrl: '^/(.*)', targetTemplate: (ts) => `/${ts}/$1`, flag: 'break' },
+  // 兜底：除 AI API 外的所有其他请求继续只补时间戳前缀
+  {
+    sourceUrl: '^/(?!api/ai(?:/|$))(.*)',
+    previousSourceUrls: ['^/(.*)'],
+    targetTemplate: (ts) => `/${ts}/$1`,
+    flag: 'break',
+  },
 ];
+
+function getExistingConfigId(existingConfigMap, rule) {
+  const sourceUrls = [rule.sourceUrl, ...(rule.previousSourceUrls || [])];
+  for (const sourceUrl of sourceUrls) {
+    if (existingConfigMap[sourceUrl]) {
+      return existingConfigMap[sourceUrl];
+    }
+  }
+}
 
 async function updateCdnOriginRewrite(cdnClient, domain, timestampDir) {
   const Cdn20180510 = require('@alicloud/cdn20180510');
@@ -104,8 +126,9 @@ async function updateCdnOriginRewrite(cdnClient, domain, timestampDir) {
         { argName: 'flag', argValue: rule.flag },
       ],
     };
-    if (existingConfigMap[rule.sourceUrl]) {
-      functionConfig.configId = existingConfigMap[rule.sourceUrl];
+    const existingConfigId = getExistingConfigId(existingConfigMap, rule);
+    if (existingConfigId) {
+      functionConfig.configId = existingConfigId;
     }
     return functionConfig;
   });
@@ -139,7 +162,6 @@ async function waitForRewriteRule(cdnClient, domain, timestampDir) {
       const configs = response.body?.domainConfigs?.domainConfig;
 
       if (configs && configs.length > 0) {
-        const expectedPrefix = `/${timestampDir}/`;
         const allEffective = REWRITE_RULES.every((rule) => {
           const config = configs.find((c) => {
             const cArgs = c.functionArgs?.functionArg || [];
@@ -149,7 +171,7 @@ async function waitForRewriteRule(cdnClient, domain, timestampDir) {
           if (!config) return false;
           const args = config.functionArgs?.functionArg || [];
           const targetArg = args.find((a) => a.argName === 'target_url');
-          return config.status === 'success' && (targetArg?.argValue || '').startsWith(expectedPrefix);
+          return config.status === 'success' && targetArg?.argValue === rule.targetTemplate(timestampDir);
         });
 
         if (allEffective) {
@@ -306,3 +328,5 @@ module.exports = (cli) => {
       }
     });
 };
+
+module.exports._test = { getExistingConfigId, REWRITE_RULES };
