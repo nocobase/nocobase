@@ -104,6 +104,23 @@ describe('CollectionFilterItem', () => {
     });
   });
 
+  it('clears the filter row when the selected field is cleared', async () => {
+    const value = observable({ path: 'username', operator: '$eq', value: 'alice' });
+    const collection = buildStubCollection([{ name: 'username', title: 'Username' }]);
+
+    const { container } = render(<CollectionFilterItem value={value} collection={collection} />);
+
+    const clear = container.querySelector('.ant-select-clear');
+    if (!clear) throw new Error('expected Cascader clear control to be rendered');
+    fireEvent.mouseDown(clear);
+
+    await waitFor(() => {
+      expect(value.path).toBe('');
+      expect(value.operator).toBe('');
+      expect(value.value).toBeUndefined();
+    });
+  });
+
   it('clears value when the operator changes', async () => {
     const value = observable({ path: 'username', operator: '$eq', value: 'alice' });
     const collection = buildStubCollection([{ name: 'username', title: 'Username' }]);
