@@ -11,6 +11,13 @@ keywords: "Đồng bộ dữ liệu người dùng,đồng bộ dữ liệu,HTTP
 
 Đăng ký và quản lý các nguồn đồng bộ dữ liệu người dùng. Mặc định cung cấp HTTP API, có thể mở rộng các nguồn dữ liệu khác thông qua plugin. Mặc định hỗ trợ đồng bộ dữ liệu vào bảng **người dùng** và **phòng ban**, cũng có thể mở rộng các tài nguyên đích đồng bộ khác thông qua plugin.
 
+## Nguồn dữ liệu có sẵn
+
+- [DingTalk](./sources/dingtalk.md) — Đồng bộ người dùng và phòng ban DingTalk qua callback HTTP hoặc chế độ Stream.
+- [LDAP](./sources/ldap.md) — Đồng bộ người dùng LDAP và đơn vị tổ chức tùy chọn bằng bộ xác thực LDAP hiện có.
+- [WeCom](./sources/wecom.md) — Đồng bộ người dùng và phòng ban từ WeCom.
+- [HTTP API](./sources/api.md) — Gửi dữ liệu người dùng và phòng ban qua API đồng bộ.
+
 ## Quản lý nguồn dữ liệu và đồng bộ dữ liệu
 
 ![](https://static-docs.nocobase.com/202412041043465.png)
