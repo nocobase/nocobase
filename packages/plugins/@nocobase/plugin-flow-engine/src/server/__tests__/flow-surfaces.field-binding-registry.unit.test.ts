@@ -333,6 +333,14 @@ describe('flowSurfaces field binding registry', () => {
         template: 'tree',
       },
     };
+    const runtimeTreeToOneField = {
+      interface: 'm2o',
+      targetCollection: () => ({
+        options: {
+          template: 'tree',
+        },
+      }),
+    };
     const generalToOneField = {
       interface: 'm2o',
       targetCollection: {
@@ -369,6 +377,12 @@ describe('flowSurfaces field binding registry', () => {
         field: treeToOneField,
       })?.has('CascadeSelectFieldModel'),
     ).toBe(true);
+    expect(
+      resolveSupportedFieldCapability({
+        containerUse: 'FilterFormBlockModel',
+        field: runtimeTreeToOneField,
+      }).fieldUse,
+    ).toBe('CascadeSelectFieldModel');
 
     expect(
       resolveSupportedFieldCapability({
