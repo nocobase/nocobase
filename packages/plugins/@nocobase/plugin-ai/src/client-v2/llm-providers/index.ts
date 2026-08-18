@@ -20,6 +20,8 @@ import {
   openAIResponsesFields,
   OrcaRouterProviderSettingsForm,
   ProviderSettingsForm,
+  shengSuanYunCompletionFields,
+  ShengSuanYunProviderSettingsForm,
   qwenCompletionFields,
   xAICompletionFields,
   type OptionField,
@@ -74,6 +76,13 @@ export const orcarouterProviderOptions = createProviderOptions(createModelSettin
   ProviderSettingsForm: OrcaRouterProviderSettingsForm,
 });
 
+export const shengsuanyunProviderOptions = createProviderOptions(
+  createModelSettingsForm(shengSuanYunCompletionFields),
+  {
+    ProviderSettingsForm: ShengSuanYunProviderSettingsForm,
+  },
+);
+
 export const ollamaProviderOptions = createProviderOptions(createModelSettingsForm(ollamaCompletionFields), {
   ProviderSettingsForm: EmptyProviderSettingsForm,
 });
@@ -91,6 +100,7 @@ export const builtinLLMProviderOptions: Array<[string, LLMProviderOptions]> = [
   ['mimo', mimoProviderOptions],
   ['mistral', mistralProviderOptions],
   ['orcarouter', orcarouterProviderOptions],
+  ['shengsuanyun', shengsuanyunProviderOptions],
 ];
 
 const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
@@ -106,6 +116,7 @@ const builtinLLMProviderModelOptionFields = new Map<string, OptionField[]>([
   ['mimo', openAICompletionFields],
   ['mistral', mistralCompletionFields],
   ['orcarouter', orcaRouterCompletionFields],
+  ['shengsuanyun', shengSuanYunCompletionFields],
 ]);
 
 export const getBuiltinLLMProviderModelOptionFields = (provider?: string): OptionField[] =>
