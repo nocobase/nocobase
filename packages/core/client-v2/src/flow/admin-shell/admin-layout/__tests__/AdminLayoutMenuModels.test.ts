@@ -19,6 +19,7 @@ import {
   AdminLayoutMenuItemModel,
   AdminLayoutModel,
   ADMIN_LAYOUT_MODEL_UID,
+  buildMenuTitleWithIcon,
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
@@ -117,6 +118,233 @@ describe('AdminLayoutModel menu items', () => {
     schemaUid: 'page-1',
     type: NocoBaseDesktopRouteType.page,
     ...options,
+  });
+
+  type MenuTitleOptions = {
+    title: string;
+    collapsed: boolean;
+    name?: React.ReactNode;
+    routeTitle?: string;
+    renderType?: 'item' | 'group';
+    tooltip?: string;
+    badgeCount?: number;
+    badgeIndicatorColor?: string;
+    badgeTextColor?: string;
+    depth?: number;
+  };
+
+  const createMenuTitle = (options: MenuTitleOptions) => {
+    const {
+      title,
+      collapsed,
+      name = title,
+      routeTitle = title,
+      renderType = 'item',
+      tooltip,
+      badgeCount,
+      badgeIndicatorColor,
+      badgeTextColor,
+      depth = 1,
+    } = options;
+
+    return React.createElement(
+      FlowEngineProvider,
+      { engine },
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ['/admin/current-page'] },
+        React.createElement(AdminLayoutMenuItemRenderer, {
+          renderType,
+          item: {
+            name,
+            path: '/admin/menu-title',
+            _runtimePath: '/apps/demo/v2/admin/menu-title',
+            _navigationMode: 'spa',
+            _isLegacy: false,
+            _depth: depth,
+            _route: {
+              type: NocoBaseDesktopRouteType.flowPage,
+              title: routeTitle,
+              tooltip,
+              schemaUid: 'menu-title',
+              options:
+                badgeCount == null
+                  ? {}
+                  : {
+                      badge: {
+                        count: badgeCount,
+                        styles: badgeIndicatorColor ? { indicator: { color: badgeIndicatorColor } } : undefined,
+                        textColor: badgeTextColor,
+                      },
+                    },
+            },
+          },
+          dom: React.createElement(
+            'span',
+            { className: 'ant-pro-base-menu-inline-item-text' },
+            collapsed ? title.slice(0, 1) : title,
+          ),
+          options: { isMobile: false, collapsed },
+        }),
+      ),
+    );
+  };
+
+  const renderMenuTitle = (options: MenuTitleOptions) => render(createMenuTitle(options));
+
+  it.each([false, true])(
+    'should use a native title without an extra tooltip trigger when collapsed is %s',
+    async (collapsed) => {
+      vi.useFakeTimers();
+      const title = 'A complete menu title that may be truncated';
+
+      try {
+        const { container } = renderMenuTitle({ title, collapsed });
+        const link = screen.getByRole('link', { name: title });
+        const menuItem = link.closest<HTMLElement>('[role="none"]');
+
+        expect(link).toHaveAttribute('title', title);
+        expect(link.parentElement).toBe(menuItem);
+        expect(menuItem).toHaveStyle({ width: '100%', minWidth: 0 });
+        expect(link).toHaveStyle({ display: 'block', width: '100%', minWidth: 0, overflow: 'hidden' });
+        expect(container.querySelector('.ant-tooltip')).not.toBeInTheDocument();
+
+        await act(async () => {
+          fireEvent.mouseEnter(link);
+          await vi.advanceTimersByTimeAsync(500);
+        });
+
+        expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+      } finally {
+        vi.clearAllTimers();
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it('should use the translated native title for an icon-wrapped nested menu name', () => {
+    const title = 'A translated nested menu title';
+    const { name } = buildMenuTitleWithIcon(
+      { title: 'menu.nested.title', icon: 'AppstoreOutlined' },
+      () => title,
+      true,
+    );
+
+    renderMenuTitle({ title, name, collapsed: true, depth: 2 });
+
+    expect(screen.getByRole('link', { name: title })).toHaveAttribute('title', title);
+  });
+
+  it('should use the translated native title for an icon-wrapped nested group name', () => {
+    const title = 'A translated nested group title';
+    const { name } = buildMenuTitleWithIcon(
+      { title: 'menu.nested.group', icon: 'AppstoreOutlined' },
+      () => title,
+      true,
+    );
+    const { container } = renderMenuTitle({
+      title,
+      name,
+      routeTitle: 'menu.nested.group',
+      renderType: 'group',
+      collapsed: true,
+      depth: 2,
+    });
+    const group = container.querySelector('[role="none"]');
+
+    expect(group).toHaveAttribute('title', title);
+    expect(group).toHaveAttribute('aria-label', title);
+  });
+
+  it('should preserve a numeric group name as the native title', () => {
+    const { container } = renderMenuTitle({
+      title: '0',
+      name: 0,
+      routeTitle: 'menu.numeric.group',
+      renderType: 'group',
+      collapsed: true,
+    });
+    const group = container.querySelector('[role="none"]');
+
+    expect(group).toHaveAttribute('title', '0');
+    expect(group).toHaveAttribute('aria-label', '0');
+  });
+
+  it.each(['item', 'group'] as const)(
+    'should let an explicit route tooltip own hover behavior for a sider %s',
+    (renderType) => {
+      const title = 'A menu title with an explicit description';
+      const { container } = renderMenuTitle({
+        title,
+        renderType,
+        collapsed: false,
+        tooltip: 'An explicitly configured menu description',
+      });
+      const titleTarget =
+        renderType === 'item' ? screen.getByRole('link', { name: title }) : container.querySelector('[role="none"]');
+
+      expect(titleTarget).not.toHaveAttribute('title');
+      expect(screen.getByRole('img', { name: 'question-circle' })).toBeInTheDocument();
+    },
+  );
+
+  it('should keep the same menu link when the sider expands', async () => {
+    vi.useFakeTimers();
+    const title = 'A title that fits after expanding';
+
+    try {
+      const { rerender } = renderMenuTitle({ title, collapsed: true });
+      const link = screen.getByRole('link', { name: title });
+
+      await act(async () => {
+        rerender(createMenuTitle({ title, collapsed: false }));
+        await vi.runOnlyPendingTimersAsync();
+      });
+
+      expect(screen.getByRole('link', { name: title })).toBe(link);
+      expect(link).toHaveAttribute('title', title);
+    } finally {
+      vi.clearAllTimers();
+      vi.useRealTimers();
+    }
+  });
+
+  it.each([true, false])(
+    'should render one badge indicator for a nested menu title when collapsed is %s',
+    (collapsed) => {
+      const title = 'A nested menu title with a badge';
+      const { container } = renderMenuTitle({ title, collapsed, badgeCount: 7 });
+
+      expect(container.querySelectorAll('.ant-badge-count')).toHaveLength(1);
+    },
+  );
+
+  it('should render one badge indicator for a top-level collapsed menu title', () => {
+    const title = 'A top-level collapsed menu title with a badge';
+    const { container } = renderMenuTitle({
+      title,
+      collapsed: true,
+      badgeCount: 7,
+      badgeTextColor: 'rgb(1, 2, 3)',
+      depth: 0,
+    });
+    const indicator = container.querySelector<HTMLElement>('.ant-badge-count');
+
+    expect(container.querySelectorAll('.ant-badge-count')).toHaveLength(1);
+    expect(indicator).toHaveStyle({ color: 'rgb(1, 2, 3)' });
+  });
+
+  it('should preserve the Ant Design indicator color when collapsed badge textColor is unset', () => {
+    const title = 'A top-level collapsed menu title with an indicator color';
+    const { container } = renderMenuTitle({
+      title,
+      collapsed: true,
+      badgeCount: 7,
+      badgeIndicatorColor: 'rgb(4, 5, 6)',
+      depth: 0,
+    });
+
+    expect(container.querySelector('.ant-badge-count')).toHaveStyle({ color: 'rgb(4, 5, 6)' });
   });
 
   it('should normalize legacy variables only inside template expressions', () => {
