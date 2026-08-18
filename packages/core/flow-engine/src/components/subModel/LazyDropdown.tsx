@@ -8,8 +8,8 @@
  */
 
 import { css } from '@emotion/css';
-import { ConfigProvider, Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
-import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ConfigProvider, Dropdown, DropdownProps, Empty, Input, InputProps, Spin, theme } from 'antd';
+import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFlowEngine } from '../../provider';
 
 // ==================== Types ====================
@@ -68,16 +68,6 @@ interface ExtendedMenuInfo {
 }
 
 // ==================== Custom Hooks ====================
-
-/**
- * 计算合适的下拉菜单最大高度
- */
-const useNiceDropdownMaxHeight = () => {
-  return useMemo(() => {
-    const maxHeight = Math.min(window.innerHeight * 0.6, 400);
-    return maxHeight;
-  }, []);
-};
 
 /**
  * 处理异步菜单项加载的逻辑
@@ -555,6 +545,7 @@ const KEEP_OPEN_LABEL_STYLE: React.CSSProperties = {
 
 // 短暂保持打开状态的注册表（用于跨父节点快速重建时的恢复）
 const DROPDOWN_PERSIST_TTL_MS = 350;
+const DEFAULT_DROPDOWN_MAX_HEIGHT = 400;
 const MENU_CLOSE_DELAY = 0.3;
 const SUBMENU_MOTION_DISABLED = {
   motionEnter: false,
@@ -565,8 +556,11 @@ const dropdownPersistRegistry: Map<string, number> = new Map();
 const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownMenuProps }> = ({ menu, ...props }) => {
   const engine = useFlowEngine();
   const { getPrefixCls } = React.useContext(ConfigProvider.ConfigContext);
+  const { token } = theme.useToken();
   const triggerId = React.useId();
+  const showArrow = Boolean(props.arrow);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [dropdownMaxHeight, setDropdownMaxHeight] = useState(DEFAULT_DROPDOWN_MAX_HEIGHT);
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
   const [rootItems, setRootItems] = useState<Item[]>([]);
   const [rootLoading, setRootLoading] = useState(false);
@@ -578,7 +572,6 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const mergedOpenClassName = [props.openClassName ?? defaultOpenClassName, triggerOpenClassName]
     .filter(Boolean)
     .join(' ');
-  const dropdownMaxHeight = useNiceDropdownMaxHeight();
   const t = engine.translate.bind(engine);
 
   // 解构 menu，避免在 effect 中直接依赖整个对象，减少不必要的重跑并满足 exhaustive-deps
@@ -596,6 +589,28 @@ const LazyDropdown: React.FC<Omit<DropdownProps, 'menu'> & { menu: LazyDropdownM
   const { searchValues, inputValues, clearSearchValue, clearAllSearchValues } = searchHandlers;
   const { requestKeepOpen, shouldPreventClose } = useKeepDropdownOpen();
   useSubmenuStyles(menuVisible, dropdownMaxHeight);
+
+  useLayoutEffect(() => {
+    if (!menuVisible) return;
+
+    const updateDropdownMaxHeight = () => {
+      const trigger = document.querySelector<HTMLElement>(`.${triggerOpenClassName}`);
+      if (!trigger) return;
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const placementOffset = token.marginXXS + (showArrow ? token.sizePopupArrow / 2 : 0);
+      const reservedSpace = placementOffset + token.marginXXS;
+      const availableAbove = triggerRect.top - reservedSpace;
+      const availableBelow = window.innerHeight - triggerRect.bottom - reservedSpace;
+      const nextMaxHeight = Math.min(DEFAULT_DROPDOWN_MAX_HEIGHT, Math.max(0, availableAbove, availableBelow));
+
+      setDropdownMaxHeight(nextMaxHeight);
+    };
+
+    updateDropdownMaxHeight();
+    window.addEventListener('resize', updateDropdownMaxHeight);
+    return () => window.removeEventListener('resize', updateDropdownMaxHeight);
+  }, [menuVisible, showArrow, token.marginXXS, token.sizePopupArrow, triggerOpenClassName]);
 
   const closeMenu = useCallback(() => {
     setMenuVisible(false);
