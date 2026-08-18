@@ -477,7 +477,7 @@ const UploadFiles: React.FC<{ disabled?: boolean }> = observer(({ disabled }) =>
 
   return (
     <Attachments
-      getDropContainer={() => chatBoxRef?.current ?? document.body}
+      getDropContainer={() => chatBoxRef?.current}
       styles={{
         placeholder: {
           opacity: 0.8,

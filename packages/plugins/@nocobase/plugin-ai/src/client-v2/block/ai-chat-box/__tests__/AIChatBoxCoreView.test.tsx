@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
   getAIEmployees: vi.fn(),
   refreshAITools: vi.fn(),
   setRoles: vi.fn(),
+  setChatBoxRef: vi.fn(),
   aiEmployees: [] as Array<{ username: string; nickname?: string; category?: string }>,
   currentEmployee: { username: 'legacy', nickname: 'Legacy' },
   currentConversation: undefined as string | undefined,
@@ -60,6 +61,7 @@ vi.mock('../../../ai-employees/chatbox/stores/runtime', () => ({
       roles: {},
       senderValue: mocks.senderValue,
       setRoles: mocks.setRoles,
+      setChatBoxRef: mocks.setChatBoxRef,
       setSenderValue: mocks.setSenderValue,
     },
     chatConversationModel: {
@@ -132,6 +134,23 @@ const createAIChatBoxCoreViewNode = (props: AIChatBoxBlockProps) => {
 };
 
 describe('AIChatBoxCoreView', () => {
+  it('registers its root as the attachment drop container', () => {
+    mocks.setChatBoxRef.mockReset();
+    mocks.currentConversation = undefined;
+    mocks.draftMessages = [];
+    mocks.getAIEmployees.mockResolvedValue([]);
+
+    const { container, unmount } = render(createAIChatBoxCoreViewNode({ showMessages: false, showDisclaimer: false }));
+
+    const root = container.firstElementChild;
+    const registeredRef = mocks.setChatBoxRef.mock.calls[0][0] as React.MutableRefObject<HTMLDivElement | null>;
+    expect(registeredRef.current).toBe(root);
+    expect(root).toHaveStyle({ position: 'relative' });
+
+    unmount();
+    expect(mocks.setChatBoxRef).toHaveBeenLastCalledWith(null);
+  });
+
   it('keeps messages in a bounded flex region above the sender', () => {
     mocks.messagesRendered = false;
     mocks.currentConversation = undefined;
