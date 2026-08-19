@@ -47,6 +47,10 @@ vi.mock('@nocobase/flow-engine', async () => {
   return { ...actual, VariableInput: MockVariableInput };
 });
 
+vi.mock('../../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent', () => ({
+  DateFilterDynamicComponent: () => <div data-testid="date-filter-dynamic-component" />,
+}));
+
 const getRenderedSelectTexts = (root: ParentNode = document.body) =>
   Array.from(root.querySelectorAll('.ant-select-selection-item')).map((node) => (node.textContent || '').trim());
 
@@ -203,6 +207,45 @@ describe('VariableFilterItem', () => {
     } else {
       expect(getComponent).toHaveBeenCalledWith(xComponent, false);
     }
+  });
+
+  it('silently handles the DatePicker field schema before the date operator component takes over', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'createdAt';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'createdAt',
+      uiSchema: {
+        'x-component': 'DatePicker',
+        'x-filter-operators': [
+          {
+            value: '$dateOn',
+            label: 'Is',
+            selected: true,
+            schema: {
+              'x-component': 'DateFilterDynamicComponent',
+              'x-component-props': { isRange: false },
+            },
+          },
+        ],
+      },
+      paths: ['collection', 'createdAt'],
+      name: 'createdAt',
+      title: 'Created at',
+      type: 'date',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$dateOn');
+    });
+    expect(getComponent).toHaveBeenCalledWith('DatePicker', false);
+    expect(await screen.findByTestId('date-filter-dynamic-component')).toBeInTheDocument();
   });
 
   it('continues resolving plugin-provided keyword controls from the app registry', async () => {

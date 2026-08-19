@@ -34,7 +34,7 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   'DateFilterDynamicComponent',
 );
 
-const fallbackInputComponents = new Set(['Input', 'Input.URL', 'NanoIDInput']);
+const fallbackInputComponents = new Set(['Input', 'Input.URL', 'NanoIDInput', 'DatePicker']);
 
 // 简化的本地辅助：按需获取 ctx.collection 的字段树（MetaTreeNode[]）
 async function buildCollectionLeftMetaTreeLocal(ctx: any): Promise<MetaTreeNode[]> {
@@ -278,7 +278,7 @@ function createStaticInputRenderer(
           onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
         />
       );
-    // 未直接处理的 x-component：尝试从 app 解析组件，文本输入类组件查找失败时静默回退到 Input
+    // 未直接处理的 x-component：尝试从 app 解析组件，可由筛选器接管的过渡组件查找失败时静默回退到 Input
     if (xComp && app?.getComponent) {
       const Comp = app.getComponent(xComp, !fallbackInputComponents.has(xComp));
       if (Comp) {
