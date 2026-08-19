@@ -18,6 +18,18 @@ import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
 const PRESERVED_LOGICAL_FIELD_TYPES_ON_SYNC: readonly string[] = ['formula'];
 
+export type LoadedCollectionOptions = {
+  name: string;
+  fields?: FieldOptions[];
+  [key: string]: unknown;
+};
+
+export type LoadedCollections = Record<string, LoadedCollectionOptions>;
+
+export type LoadTablesOptions = {
+  localData?: LoadedCollections;
+};
+
 export abstract class DatabaseDataSource<T extends DatabaseIntrospector = DatabaseIntrospector> extends DataSource {
   declare introspector: T;
 
@@ -41,13 +53,11 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
   }
 
   abstract readTables(): Promise<any>;
-  abstract loadTables(ctx: Context, tables: string[]): Promise<any>;
+  abstract loadTables(ctx: Context, tables: string[], options?: LoadTablesOptions): Promise<unknown>;
 
   mergeWithLoadedCollections(
     collections: CollectionOptions[],
-    loadedCollections: {
-      [name: string]: { name: string; fields: FieldOptions[] };
-    },
+    loadedCollections: LoadedCollections,
   ): CollectionOptions[] {
     return collections.map((collection) => {
       const loadedCollection = loadedCollections[collection.name];

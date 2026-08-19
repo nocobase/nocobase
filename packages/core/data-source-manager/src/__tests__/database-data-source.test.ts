@@ -10,6 +10,47 @@
 import { DatabaseDataSource } from '@nocobase/data-source-manager';
 
 describe('database data source', () => {
+  it('should preserve customized field display name during introspection merge', () => {
+    const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource;
+
+    const [collection] = dataSource.mergeWithLoadedCollections(
+      [
+        {
+          name: 'departments',
+          tableName: 'departments',
+          fields: [
+            {
+              name: 'name',
+              field: 'name',
+              rawType: 'VARCHAR',
+              type: 'string',
+              uiSchema: {
+                title: 'name',
+              },
+            },
+          ],
+        },
+      ],
+      {
+        departments: {
+          name: 'departments',
+          fields: [
+            {
+              name: 'name',
+              field: 'name',
+              rawType: 'VARCHAR',
+              type: 'string',
+              uiSchema: {
+                title: 'Department name',
+              },
+            },
+          ],
+        },
+      },
+    );
+
+    expect(collection.fields[0].uiSchema.title).toBe('Department name');
+  });
   it('should preserve mapped fields regardless of loaded field order', () => {
     const dataSource = Object.create(DatabaseDataSource.prototype) as DatabaseDataSource<any>;
 
