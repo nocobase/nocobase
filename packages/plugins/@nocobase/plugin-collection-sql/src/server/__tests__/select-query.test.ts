@@ -79,6 +79,42 @@ describe('select query', () => {
       'SELECT "id", "name" FROM (SELECT * FROM "users") AS "users" WHERE "users"."id" = 1 GROUP BY "id" ORDER BY "users"."id" LIMIT 1 OFFSET 0;',
     );
   });
+
+  test.each(['{{search_query}}', "'{{search_query}}'"])('binds SQL variable %s', (placeholder) => {
+    model.sql = `SELECT * FROM "users" WHERE "name" = ${placeholder}`;
+    const options = {
+      context: {
+        action: {
+          params: {
+            search_query: "O'Reilly",
+          },
+        },
+      },
+    };
+
+    const query = queryGenerator.selectQuery('users', options, model);
+
+    expect(query).toBe('SELECT * FROM (SELECT * FROM "users" WHERE "name" = $sql_search_query) AS "users";');
+    expect(options).toMatchObject({
+      bind: {
+        sql_search_query: "O'Reilly",
+      },
+    });
+  });
+
+  test('binds missing SQL variables as null for previews', () => {
+    model.sql = 'SELECT * FROM "users" WHERE "name" = {{search_query}}';
+    const options = {};
+
+    const query = queryGenerator.selectQuery('users', options, model);
+
+    expect(query).toBe('SELECT * FROM "users" WHERE "name" = $sql_search_query;');
+    expect(options).toMatchObject({
+      bind: {
+        sql_search_query: null,
+      },
+    });
+  });
 });
 
 describe('select query with DB_TABLE_PREFIX', () => {

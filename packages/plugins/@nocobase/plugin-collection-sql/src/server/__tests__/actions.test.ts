@@ -105,6 +105,74 @@ describe('sql collection', () => {
     expect(res.body.data.sources).toEqual(['testSqlCollection']);
   });
 
+  it('should bind SQL variables from API query parameters', async () => {
+    await agent.resource('collections').create({
+      values: {
+        name: 'sqlVariableSource',
+        fields: [
+          {
+            name: 'testField',
+            type: 'string',
+            interface: 'input',
+          },
+        ],
+      },
+    });
+    await agent.resource('sqlVariableSource').create({
+      values: {
+        testField: "O'Reilly",
+      },
+    });
+    await agent.resource('sqlVariableSource').create({
+      values: {
+        testField: 'other',
+      },
+    });
+
+    const source = db.queryInterface.quoteIdentifier('sqlVariableSource');
+    const field = db.queryInterface.quoteIdentifier('testField');
+    const preview = await agent.resource('sqlCollection').execute({
+      values: {
+        sql: `select * from ${source} where ${field} = {{search_query}}`,
+      },
+    });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.data).toHaveLength(0);
+
+    for (const [index, placeholder] of ['{{search_query}}', "'{{search_query}}'"].entries()) {
+      const collectionName = `parameterizedSqlCollection${index}`;
+      await agent.resource('collections').create({
+        values: {
+          name: collectionName,
+          sql: `select * from ${source} where ${field} = ${placeholder}`,
+          template: 'sql',
+          filterTargetKey: 'id',
+          fields: [
+            {
+              name: 'id',
+              type: 'bigInt',
+              interface: 'integer',
+            },
+            {
+              name: 'testField',
+              type: 'string',
+              interface: 'input',
+            },
+          ],
+        },
+      });
+
+      const res = await agent.resource(collectionName).list({
+        search_query: "O'Reilly",
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.meta.count).toBe(1);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0].testField).toBe("O'Reilly");
+    }
+  });
+
   it('sqlCollection:update', async () => {
     await agent.resource('collections').create({
       values: {
