@@ -17,15 +17,21 @@ import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base/FieldModel';
 import { hasDisplayValue, normalizeDisplayValue } from '../utils/displayValueUtils';
 
-export function transformNestedData(inputData) {
-  const resultArray = [];
+export function transformNestedData(inputData: unknown) {
+  const resultArray: Record<string, unknown>[] = [];
+  const visited = new WeakSet<object>();
 
-  function recursiveTransform(data) {
-    if (data?.parent) {
-      const { parent } = data;
+  function recursiveTransform(data: unknown) {
+    if (!data || typeof data !== 'object' || visited.has(data)) {
+      return;
+    }
+    visited.add(data);
+    const record = data as Record<string, unknown>;
+    if (record.parent) {
+      const { parent } = record;
       recursiveTransform(parent);
     }
-    const { parent, ...other } = data;
+    const { parent, ...other } = record;
     resultArray.push(other);
   }
   if (inputData) {
