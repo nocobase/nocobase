@@ -119,6 +119,162 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   allowEdit?: boolean;
 }
 
+type AssociationHydrationSetterOptions = {
+  source?: string;
+  markExplicit?: boolean;
+  triggerEvent?: boolean;
+};
+
+type AssociationHydrationSetterContext = {
+  setFormValue?: (
+    namePath: unknown,
+    value: unknown,
+    options?: AssociationHydrationSetterOptions,
+  ) => Promise<unknown> | void;
+};
+
+export type AssociationHydrationModel = {
+  resource?: {
+    get?: (tk: unknown) => Promise<unknown> | unknown;
+  };
+  context?: unknown;
+  props?: {
+    name?: unknown;
+  };
+};
+
+type AssociationHydrationStatus = 'pending' | 'done';
+
+type AssociationHydrationCandidate = {
+  item: AssociationOption;
+  tk: unknown;
+  tkKey: string;
+};
+
+export function isAssociationRecord(value: unknown): value is AssociationOption {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+export function collectAssociationHydrationCandidates(options: {
+  value: LazySelectProps['value'];
+  isMultiple: boolean;
+  valueKey: string;
+  labelKey: string;
+  statusMap: Map<string, AssociationHydrationStatus>;
+}): AssociationHydrationCandidate[] {
+  const { value, isMultiple, valueKey, labelKey, statusMap } = options;
+  const list = isMultiple ? (Array.isArray(value) ? value : []) : value != null ? [value] : [];
+  const activeTkKeys = new Set<string>();
+
+  for (const item of list) {
+    if (!isAssociationRecord(item)) continue;
+    const tk = item[valueKey];
+    if (tk == null) continue;
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (tkKey) activeTkKeys.add(tkKey);
+  }
+
+  for (const key of Array.from(statusMap.keys())) {
+    if (!activeTkKeys.has(key)) statusMap.delete(key);
+  }
+
+  const candidates: AssociationHydrationCandidate[] = [];
+  for (const item of list) {
+    if (!isAssociationRecord(item)) continue;
+    const tk = item[valueKey];
+    if (tk == null || item[labelKey] != null) continue;
+
+    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
+    if (!tkKey || statusMap.has(tkKey)) continue;
+
+    statusMap.set(tkKey, 'pending');
+    candidates.push({ item, tk, tkKey });
+  }
+
+  return candidates;
+}
+
+function hasAssociationHydrationSetter(value: unknown): value is AssociationHydrationSetterContext {
+  return isAssociationRecord(value) && typeof value.setFormValue === 'function';
+}
+
+export function getAssociationHydrationNamePath(model: AssociationHydrationModel) {
+  const context = isAssociationRecord(model.context) ? model.context : undefined;
+  return context?.fieldPathArray ?? context?.fieldPath ?? model.props?.name;
+}
+
+export function getAssociationHydrationSetterContext(model: AssociationHydrationModel) {
+  if (hasAssociationHydrationSetter(model.context)) return model.context;
+
+  const context = isAssociationRecord(model.context) ? model.context : undefined;
+  const blockModel = isAssociationRecord(context?.blockModel) ? context.blockModel : undefined;
+  return hasAssociationHydrationSetter(blockModel?.context) ? blockModel.context : undefined;
+}
+
+export function useAssociationValueHydration(options: {
+  model: AssociationHydrationModel;
+  value: LazySelectProps['value'];
+  isMultiple: boolean;
+  fieldNames: AssociationFieldNames;
+  onChange: LazySelectProps['onChange'];
+}) {
+  const { model, value, isMultiple, fieldNames, onChange } = options;
+  const hydrateStatusRef = React.useRef<Map<string, AssociationHydrationStatus>>(new Map());
+
+  React.useEffect(() => {
+    const resource = model.resource;
+    if (typeof resource?.get !== 'function' || !fieldNames.value || !fieldNames.label) return;
+
+    const current = value;
+    const candidates = collectAssociationHydrationCandidates({
+      value: current,
+      isMultiple,
+      valueKey: fieldNames.value,
+      labelKey: fieldNames.label,
+      statusMap: hydrateStatusRef.current,
+    });
+    if (!candidates.length) return;
+
+    const namePath = getAssociationHydrationNamePath(model);
+    const setterContext = getAssociationHydrationSetterContext(model);
+
+    const hydrateCandidate = async ({ item, tk, tkKey }: AssociationHydrationCandidate) => {
+      try {
+        const record = await resource.get?.(tk);
+        if (!isAssociationRecord(record)) return;
+
+        const merged = { ...item, ...record };
+        if (merged[fieldNames.label] == null) return;
+
+        const nextValue = isMultiple
+          ? (Array.isArray(current) ? current : []).map((entry) =>
+              isAssociationRecord(entry) && entry[fieldNames.value] === tk ? merged : entry,
+            )
+          : merged;
+
+        if (typeof setterContext?.setFormValue === 'function' && namePath != null) {
+          await setterContext.setFormValue(namePath, nextValue, {
+            source: 'default',
+            markExplicit: false,
+            triggerEvent: false,
+          });
+          return;
+        }
+
+        onChange(nextValue);
+      } catch {
+        // Keep the original ID-only value when the related record cannot be loaded.
+      } finally {
+        hydrateStatusRef.current.set(tkKey, 'done');
+      }
+    };
+
+    candidates.forEach((candidate) => {
+      hydrateCandidate(candidate);
+    });
+  }, [fieldNames.label, fieldNames.value, isMultiple, model, onChange, value]);
+}
+
 export interface LabelByFieldProps {
   option: AssociationOption;
   fieldNames: AssociationFieldNames;
