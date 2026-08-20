@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.1.44](https://github.com/nocobase/nocobase/compare/v2.1.43...v2.1.44) - 2026-08-20
+
+### 🎉 New Features
+
+- **[Multi-space]** Added search to space switchers and space management in both v1 and v2 by @jiannx
+
+### 🐛 Bug Fixes
+
+- **[DingTalk]** Fixed DingTalk internal auto-login retaining the previous user's session after switching accounts. by @chenzhizdt
+
 ## [v2.1.43](https://github.com/nocobase/nocobase/compare/v2.1.42...v2.1.43) - 2026-08-19
 
 ### 🐛 Bug Fixes

@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.1.44](https://github.com/nocobase/nocobase/compare/v2.1.43...v2.1.44) - 2026-08-20
+
+### 🎉 新特性
+
+- **[多空间]** v1 和 v2 的空间切换器及空间管理新增搜索功能 by @jiannx
+
+### 🐛 修复
+
+- **[钉钉]** 修复切换钉钉账号后，内部免登仍然保留上一个用户会话的问题。 by @chenzhizdt
+
 ## [v2.1.43](https://github.com/nocobase/nocobase/compare/v2.1.42...v2.1.43) - 2026-08-19
 
 ### 🐛 修复
