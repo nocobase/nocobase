@@ -12,13 +12,13 @@ This page collects common pitfalls when developing client plugins. If you run in
 
 ### Plugin not visible in the Plugin Manager after creation
 
-Make sure you ran `yarn pm create` instead of manually creating the directory. `yarn pm create` not only generates files but also registers the plugin in the `applicationPlugins` database table. If you created the directory manually, run `yarn nocobase upgrade` to trigger a rescan.
+Make sure you ran `nb scaffold plugin` instead of manually creating the directory. `nb scaffold plugin` not only generates files but also registers the plugin in the `applicationPlugins` database table. If you created the directory manually, run `nb app upgrade` to trigger a rescan.
 
 ### No changes on the page after enabling a plugin
 
 Troubleshoot in this order:
 
-1. Confirm you ran `yarn pm enable <pluginName>`
+1. Confirm you ran `nb plugin enable <pluginName>`
 2. Refresh the browser (sometimes a hard refresh `Ctrl+Shift+R` is needed)
 3. Check the browser console for errors
 
@@ -30,7 +30,7 @@ Different file types have different hot reload behaviors:
 | --- | --- |
 | tsx/ts under `src/client-v2/` | Auto hot reload, no action needed |
 | Translation files under `src/locale/` | **Restart the application** |
-| New or modified collections under `src/server/collections/` | Run `yarn nocobase upgrade` |
+| New or modified collections under `src/server/collections/` | Run `nb app upgrade` |
 
 If client code changes don't hot reload, try refreshing the browser first.
 
@@ -220,15 +220,15 @@ Troubleshoot in this order:
 
 ## Build and Deployment Issues
 
-### `yarn build --tar` error "no paths specified to add to archive"
+### `nb source build --tar` error "no paths specified to add to archive"
 
-When running `yarn build <pluginName> --tar`, you get:
+When running `nb source build <pluginName> --tar`, you get:
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-However, running `yarn build <pluginName>` alone (without `--tar`) works fine.
+However, running `nb source build <pluginName>` alone (without `--tar`) works fine.
 
 This is usually because the plugin's `.npmignore` uses **negation syntax** (npm's `!` prefix). When `--tar` packages the plugin, NocoBase reads each line of `.npmignore` and prepends `!` to convert them into `fast-glob` exclusion patterns. If your `.npmignore` already uses negation syntax, like:
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 This is usually because **the plugin bundled NocoBase's built-in dependencies into its own `node_modules/`**. NocoBase's build system maintains an [external list](../../dependency-management) of packages (such as `react`, `antd`, `axios`, `lodash`, etc.) that are provided by the NocoBase host and should not be bundled into plugins. If a plugin carries its own private copy, it may conflict with the version already loaded by the host at runtime, causing various unexpected errors.
 
-**Why it works locally:** During local development, the plugin is in the `packages/plugins/` directory without a private `node_modules/`. Dependencies resolve to the already-loaded versions in the project root, so no conflicts occur.
+**Why it works locally:** During local development, the plugin is in the `plugins/` directory without a private `node_modules/`. Dependencies resolve to the already-loaded versions in the project root, so no conflicts occur.
 
 **Solution:** Move all `dependencies` in the plugin's `package.json` to `devDependencies` — NocoBase's build system will automatically handle plugin dependencies:
 

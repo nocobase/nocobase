@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, cpSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -10,6 +10,8 @@ const packageRoot = path.resolve(scriptsDir, '..');
 const distDir = path.join(packageRoot, 'dist');
 const srcLocaleDir = path.join(packageRoot, 'src', 'locale');
 const distLocaleDir = path.join(distDir, 'locale');
+const srcScaffoldsDir = path.join(packageRoot, 'src', 'scaffolds');
+const distScaffoldsDir = path.join(distDir, 'scaffolds');
 const tscBin = require.resolve('typescript/bin/tsc');
 
 rmSync(distDir, { recursive: true, force: true });
@@ -31,4 +33,22 @@ for (const entry of readdirSync(srcLocaleDir, { withFileTypes: true })) {
   }
 
   copyFileSync(path.join(srcLocaleDir, entry.name), path.join(distLocaleDir, entry.name));
+}
+
+for (const scaffoldEntry of readdirSync(srcScaffoldsDir, { withFileTypes: true })) {
+  if (!scaffoldEntry.isDirectory()) {
+    continue;
+  }
+
+  const sourceTemplateDir = path.join(srcScaffoldsDir, scaffoldEntry.name, 'templates');
+  const targetTemplateDir = path.join(distScaffoldsDir, scaffoldEntry.name, 'templates');
+
+  try {
+    cpSync(sourceTemplateDir, targetTemplateDir, { recursive: true, force: true });
+  } catch (error) {
+    if ((error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') || !error) {
+      continue;
+    }
+    throw error;
+  }
 }

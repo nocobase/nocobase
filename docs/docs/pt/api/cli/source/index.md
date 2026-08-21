@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,código-fonte,download,dev,build,test"
 
 # nb source
 
-Gerencia o projeto local do código-fonte do NocoBase. O env npm/Git utiliza o diretório local do código-fonte; o env Docker, em geral, precisa apenas do [`nb app`](../app/index.md) para gerenciar o estado em execução.
+Gerencia o projeto local do código-fonte do NocoBase. Os comandos `nb source` devem ser executados no diretório de código-fonte (`<app-path>/source/`). O env npm/Git utiliza o diretório local do código-fonte; o env Docker, em geral, precisa apenas do [`nb app`](../app/index.md) para gerenciar o estado em execução.
 
 ## Uso
 

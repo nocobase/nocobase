@@ -28,7 +28,20 @@ Berikut tercantum semua hal yang dapat dilakukan AI saat ini untuk Anda. Setiap 
 
 - **Beri tahu AI dengan jelas untuk membuat atau memodifikasi Plugin NocoBase, dan berikan nama Plugin** — misalnya "Tolong gunakan nocobase-plugin-development skill untuk membantu saya mengembangkan Plugin NocoBase, namanya @my-scope/plugin-rating". Tanpa memberikan nama Plugin, AI mungkin tidak tahu di mana harus menghasilkan kode.
 - **Tentukan dengan jelas penggunaan nocobase-plugin-development skill di prompt** — misalnya "Tolong gunakan nocobase-plugin-development skill untuk membantu saya mengembangkan Plugin NocoBase…". Dengan ini AI Agent dapat langsung membaca kemampuan Skills, menghindari masuk ke mode plan dan mengabaikan Skills.
-- **Jalankan AI Agent di direktori root repository kode sumber NocoBase** — dengan ini AI dapat secara otomatis menemukan struktur proyek, dependensi, dan Plugin yang sudah ada. Jika Anda tidak berada di direktori root kode sumber, perlu memberi tahu AI Agent path repository kode sumber.
+- **Jalankan AI Agent di direktori root proyek yang dibuat oleh `nb init`** — disarankan menggunakan sumber Git untuk membuat proyek, sehingga AI dapat langsung mereferensikan kode sumber inti NocoBase, hasil pengembangan lebih baik. Jika Anda tidak berada di direktori root proyek, perlu memberi tahu AI Agent path proyek Anda.
+
+Struktur direktori proyek yang dibuat oleh `nb init` adalah sebagai berikut (yaitu `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # Metadata yang disimpan CLI untuk env saat ini
+├── source/               # Source code aplikasi (inti NocoBase + plugin bawaan)
+├── storage/              # Direktori data runtime
+├── plugins/              # Source code plugin Anda (nb scaffold plugin menghasilkan di sini)
+└── .env                  # File environment variable aplikasi
+```
+
+Semua contoh prompt di bawah ini mengasumsikan Anda membuka AI Agent di `<app-path>`.
 
 ## Indeks Cepat
 
@@ -49,16 +62,16 @@ Berikut tercantum semua hal yang dapat dilakukan AI saat ini untuk Anda. Setiap 
 
 AI dapat menghasilkan struktur direktori Plugin NocoBase yang lengkap berdasarkan deskripsi kebutuhan Anda — termasuk file entry frontend dan backend, definisi tipe, dan konfigurasi dasar.
 
-Contoh prompt:
+Di direktori root proyek (`<app-path>`) buka AI Agent, kirimkan prompt:
 
 ```
 Bantu saya membuat Plugin NocoBase, nama Plugin @my-scope/plugin-todo
 ```
 
-AI akan menjalankan `yarn pm create @my-scope/plugin-todo` dan menghasilkan direktori standar:
+AI akan menjalankan `nb scaffold plugin @my-scope/plugin-todo` dan menghasilkan direktori standar:
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

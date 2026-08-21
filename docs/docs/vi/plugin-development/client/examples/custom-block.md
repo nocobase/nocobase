@@ -36,20 +36,26 @@ Chúng ta sẽ tạo một block "Simple block":
 Toàn bộ source code xem tại [@nocobase-example/plugin-simple-block](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block). Nếu bạn muốn chạy thử trực tiếp ở local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-simple-block
+nb plugin enable @nocobase-example/plugin-simple-block
 ```
 
 Sau đây ta sẽ xây dựng plugin này từ đầu, từng bước một.
 
 ## Bước 1: Tạo khung plugin
 
-Tại thư mục gốc của repo, chạy:
+Tại thư mục gốc của dự án hoặc thư mục `source/`, chạy:
 
 ```bash
-yarn pm create @my-project/plugin-simple-block
+nb scaffold plugin @my-project/plugin-simple-block
 ```
 
-Lệnh này sẽ sinh cấu trúc file cơ bản tại `packages/plugins/@my-project/plugin-simple-block`. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+Lệnh này sẽ sinh cấu trúc file cơ bản tại `plugins/@my-project/plugin-simple-block`. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Bước 2: Tạo Block Model
 
@@ -168,7 +174,7 @@ export default PluginSimpleBlockClient;
 ## Bước 5: Bật plugin
 
 ```bash
-yarn pm enable @my-project/plugin-simple-block
+nb plugin enable @my-project/plugin-simple-block
 ```
 
 Sau khi bật, tạo một trang mới, click "Thêm Block" và bạn sẽ thấy "Simple block". Sau khi thêm, click vào nút cấu hình của block để chỉnh sửa nội dung HTML.

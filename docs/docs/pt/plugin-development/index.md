@@ -1,3 +1,9 @@
+---
+title: "Visão Geral do Desenvolvimento de Plugins"
+description: "Arquitetura de microkernel do NocoBase, ciclo de vida dos plugins, estrutura de diretórios, plug and play, full-stack, código-fonte client/server, metadados do package.json."
+keywords: "desenvolvimento de plugins,plugin NocoBase,microkernel,ciclo de vida do plugin,full-stack,extensão NocoBase"
+---
+
 # Visão Geral do Desenvolvimento de Plugins
 
 O NocoBase adota uma **arquitetura de microkernel**, onde o núcleo é responsável apenas pelo agendamento do ciclo de vida dos plugins, pelo gerenciamento de dependências e pela encapsulação de capacidades básicas. Todas as funcionalidades de negócio são fornecidas na forma de plugins. Portanto, entender a estrutura organizacional, o ciclo de vida e a forma de gerenciamento dos plugins é o primeiro passo para personalizar o NocoBase.
@@ -14,27 +20,38 @@ Cada plugin é um pacote npm independente e geralmente possui a seguinte estrutu
 ```bash
 plugin-hello/
 ├─ package.json          # Nome do plugin, dependências e metadados do plugin NocoBase
-├─ client.js             # Artefato de build frontend para carregamento em tempo de execução
+├─ client-v2.js          # Artefato de build frontend para carregamento em tempo de execução
 ├─ server.js             # Artefato de build backend para carregamento em tempo de execução
 ├─ src/
-│  ├─ client/            # Código-fonte do lado do cliente, pode registrar blocos, ações, campos, etc.
+│  ├─ client-v2/         # Código-fonte do lado do cliente, pode registrar blocos, ações, campos, etc.
 │  └─ server/            # Código-fonte do lado do servidor, pode registrar recursos, eventos, comandos, etc.
 ```
 
+## Pré-requisitos
+
+Antes de desenvolver plugins, você precisa primeiro inicializar uma aplicação através do NocoBase CLI. O CLI suporta duas origens, npm e Git:
+
+- **Origem npm** (`create-nocobase-app`): Ideal para começar rapidamente, pronto para uso.
+- **Origem Git** (recomendado): Clona o repositório de código-fonte do NocoBase. Ao usar IA para desenvolvimento, permite referenciar diretamente o código-fonte do núcleo, com melhores resultados.
+
+Consulte [Instalar aplicação via CLI](../nocobase-cli/installation/cli.md) ou [Guia de integração com AI Agent](../ai/quick-start.mdx) para detalhes.
+
 ## Convenções de Diretório e Ordem de Carregamento
 
-Por padrão, o NocoBase verifica os seguintes diretórios para carregar plugins:
+Aplicações criadas via `nb init` possuem a seguinte estrutura de diretórios:
 
 ```bash
-my-nocobase-app/
-├── packages/
-│   └── plugins/          # Plugins em desenvolvimento (prioridade mais alta)
-└── storage/
-    └── plugins/          # Plugins compilados, por exemplo, plugins enviados ou publicados
+<app-path>/
+├── .nb/                  # Metadados salvos pelo CLI para o env atual
+├── source/               # Código-fonte da aplicação (projeto NocoBase)
+├── storage/              # Diretório de dados em tempo de execução
+│   └── plugins/          # Plugins compilados (enviados ou importados)
+├── plugins/              # Código-fonte dos seus plugins (nb scaffold plugin gera aqui)
+└── .env                  # Arquivo de variáveis de ambiente da aplicação
 ```
 
-- `packages/plugins`: É o diretório para o desenvolvimento local de plugins, com suporte a compilação e depuração em tempo real.
-- `storage/plugins`: Armazena plugins compilados, como edições comerciais ou plugins de terceiros.
+- `plugins/`: Diretório de código-fonte dos plugins que você desenvolve. Plugins criados via `nb scaffold plugin` são colocados aqui. O `nb` sincroniza automaticamente os plugins para `source/packages/plugins/` para uso nos fluxos de desenvolvimento e construção — você não precisa operar manualmente no diretório `source/`.
+- `storage/plugins/`: Armazena plugins já compilados, como edições comerciais ou plugins de terceiros.
 
 ## Ciclo de Vida e Estados do Plugin
 
@@ -57,19 +74,13 @@ Um plugin geralmente passa pelas seguintes etapas:
 
 ```bash
 # 1. Cria o esqueleto do plugin
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 
-# 2. Puxa o pacote do plugin (baixa ou vincula)
-yarn pm pull @my-project/plugin-hello
+# 2. Habilita o plugin (instala automaticamente na primeira habilitação)
+nb plugin enable @my-project/plugin-hello
 
-# 3. Habilita o plugin (instala automaticamente na primeira habilitação)
-yarn pm enable @my-project/plugin-hello
-
-# 4. Desabilita o plugin
-yarn pm disable @my-project/plugin-hello
-
-# 5. Remove o plugin
-yarn pm remove @my-project/plugin-hello
+# 3. Desabilita o plugin
+nb plugin disable @my-project/plugin-hello
 ```
 
 ## Interface de Gerenciamento de Plugins
@@ -79,3 +90,12 @@ Acesse o gerenciador de plugins no navegador para visualizar e gerenciar plugins
 **URL Padrão:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
 
 ![Gerenciador de Plugins](https://static-docs.nocobase.com/20251030195350.png)
+
+## Links relacionados
+
+- [Escreva Seu Primeiro Plugin](./write-your-first-plugin.md) — Criando um plugin de bloco do zero, entendendo o fluxo completo de desenvolvimento
+- [Estrutura do Projeto](./project-structure.md) — Convenções de diretório do projeto NocoBase e ordem de carregamento dos plugins
+- [Visão Geral do Desenvolvimento no Servidor](./server/index.md) — Introdução geral e conceitos centrais dos plugins do lado do servidor
+- [Visão Geral do Desenvolvimento no Cliente](./client/index.md) — Introdução geral e conceitos centrais dos plugins do lado do cliente
+- [Construção e Empacotamento](./build.md) — Fluxo de construção, empacotamento e distribuição dos plugins
+- [Gerenciamento de Dependências](./dependency-management.md) — Declaração e gerenciamento de dependências do plugin

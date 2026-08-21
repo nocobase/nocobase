@@ -1,62 +1,51 @@
+---
+title: "Plugin-Projektstruktur"
+description: "NocoBase Plugin-Projektstruktur: nb init Anwendungslayout, plugins Plugin-Verzeichnis, source Quellcode-Projekt, storage Laufzeitverzeichnis."
+keywords: "Projektstruktur,nb init,plugins,Plugin-Verzeichnis,NocoBase"
+---
+
 # Projektstruktur
 
-Ganz gleich, ob Sie den Quellcode über Git klonen oder ein Projekt mit `create-nocobase-app` initialisieren: Das generierte NocoBase-Projekt ist im Wesentlichen ein auf **Yarn Workspace** basierendes Monorepo.
+Über NocoBase CLI (`nb init`) initialisierte Anwendungen erzeugen ein standardisiertes Anwendungsverzeichnis. Die CLI unterstützt npm (`create-nocobase-app`) und Git als Quellen; die oberste Verzeichnisstruktur ist identisch.
 
 ## Überblick über die oberste Verzeichnisstruktur
 
-Das folgende Beispiel verwendet `my-nocobase-app/` als Projektverzeichnis. In verschiedenen Umgebungen kann es geringfügige Abweichungen geben:
-
 ```bash
-my-nocobase-app/
-├── packages/              # Projekt-Quellcode
-│   ├── plugins/           # Quellcode von Plugins in Entwicklung (unkompiliert)
+<app-path>/
+├── .nb/                   # CLI-Metadaten für die aktuelle Umgebung
+├── source/                # Anwendungsquellcode-Projekt (NocoBase-Kern + integrierte Plugins)
 ├── storage/               # Laufzeitdaten und dynamisch generierte Inhalte
-│   ├── apps/
-│   ├── db/
-│   ├── logs/
-│   ├── uploads/
-│   ├── plugins/           # Kompilierte Plugins (einschließlich der über die Benutzeroberfläche hochgeladenen)
-│   └── tar/               # Plugin-Paketdateien (.tar)
-├── scripts/               # Hilfsskripte und Tool-Befehle
-├── .env*                  # Umgebungsvariablen-Konfigurationen für verschiedene Umgebungen
-├── lerna.json             # Lerna Workspace-Konfiguration
-├── package.json           # Root-Paketkonfiguration, deklariert Workspace und Skripte
-├── tsconfig*.json         # TypeScript-Konfigurationen (Frontend, Backend, Pfad-Mapping)
-├── vitest.config.mts      # Vitest Unit-Test-Konfiguration
-└── playwright.config.ts   # Playwright E2E-Testkonfiguration
+│   ├── plugins/           # Kompilierte Plugins (hochgeladen oder importiert)
+│   └── tar/               # Plugin-Paketdateien (.tgz)
+├── plugins/               # Deine Plugin-Quellcodes (nb scaffold plugin erzeugt sie hier)
+└── .env                   # Umgebungsvariablen-Konfiguration
 ```
 
-## Erläuterung des Unterverzeichnisses `packages/`
+## plugins/ Plugin-Entwicklungsverzeichnis
 
-Das Verzeichnis `packages/` enthält die Kernmodule und erweiterbaren Pakete von NocoBase. Der Inhalt hängt von der Projektquelle ab:
+`plugins/` ist der Hauptort für die Entwicklung benutzerdefinierter Plugins. Über `nb scaffold plugin` erstellte Plugins werden hier abgelegt.
 
-- **Projekte, die mit `create-nocobase-app` erstellt wurden**: Standardmäßig enthält es nur `packages/plugins/`, das den Quellcode für benutzerdefinierte Plugins speichert. Jedes Unterverzeichnis ist ein unabhängiges npm-Paket.
-- **Geklontes offizielles Quellcode-Repository**: Hier finden Sie weitere Unterverzeichnisse wie `core/`, `plugins/`, `pro-plugins/`, `presets/` usw., die dem Framework-Kern, den integrierten Plugins und den offiziellen vordefinierten Lösungen entsprechen.
+`nb` synchronisiert Plugins unter `plugins/` automatisch als symbolische Links nach `source/packages/plugins/` für den Entwicklungs- und Build-Prozess. Sie müssen den Inhalt von `source/` nicht manuell bearbeiten.
 
-In jedem Fall ist `packages/plugins` der Hauptort für die Entwicklung und das Debugging benutzerdefinierter Plugins.
+## source/ Quellcode-Projektverzeichnis
+
+Das Verzeichnis `source/` enthält das vollständige NocoBase-Quellcode-Projekt. Der Inhalt hängt von der Projektquelle ab:
+
+- **npm-Quelle** (`create-nocobase-app`): Standardmäßig nur Basisverzeichnisse wie `packages/plugins/`.
+- **Git-Quelle** (empfohlen): Enthält den vollständigen Framework-Kern (`packages/core/`), integrierte Plugins usw., die bei der KI-Entwicklung direkt als Referenz dienen können.
 
 ## Das `storage/` Laufzeitverzeichnis
 
-`storage/` speichert zur Laufzeit generierte Daten und Build-Ausgaben. Die gängigen Unterverzeichnisse werden im Folgenden erläutert:
+`storage/` speichert zur Laufzeit generierte Daten und Build-Ausgaben:
 
-- `apps/`: Konfiguration und Cache für Multi-App-Szenarien.
-- `logs/`: Laufzeit-Logs und Debug-Ausgaben.
-- `uploads/`: Vom Benutzer hochgeladene Dateien und Medienressourcen.
-- `plugins/`: Paketierte Plugins, die über die Benutzeroberfläche hochgeladen oder per CLI importiert wurden.
-- `tar/`: Komprimierte Plugin-Pakete, die nach Ausführung von `yarn build <plugin> --tar` generiert werden.
-
-> Es wird in der Regel empfohlen, das `storage`-Verzeichnis zu `.gitignore` hinzuzufügen und es bei der Bereitstellung oder Sicherung separat zu behandeln.
-
-## Umgebungskonfiguration und Projekt-Skripte
-
-- `.env`, `.env.test`, `.env.e2e`: Werden jeweils für den lokalen Betrieb, Unit-/Integrationstests und End-to-End-Tests verwendet.
-- `scripts/`: Enthält gängige Wartungsskripte (wie Datenbankinitialisierung, Release-Hilfsprogramme usw.).
+- `plugins/`: Über die Benutzeroberfläche hochgeladene oder per CLI importierte paketierte Plugins.
+- `tar/`: Komprimierte Plugin-Pakete, die nach Ausführung von `nb source build <plugin> --tar` generiert werden.
 
 ## Plugin-Ladepfade und Priorität
 
 Plugins können an mehreren Orten existieren. NocoBase lädt sie beim Start in der folgenden Prioritätsreihenfolge:
 
-1. Die Quellcode-Version in `packages/plugins` (für lokale Entwicklung und Debugging).
+1. Die Quellcode-Version in `source/packages/plugins` (für lokale Entwicklung und Debugging, von `nb` automatisch aus `plugins/` synchronisiert).
 2. Die gepackte Version in `storage/plugins` (über die Benutzeroberfläche hochgeladen oder per CLI importiert).
 3. Abhängigkeitspakete in `node_modules` (über npm/yarn installiert oder im Framework integriert).
 
@@ -67,16 +56,16 @@ Wenn ein Plugin mit demselben Namen sowohl im Quellcode-Verzeichnis als auch im 
 Erstellen Sie ein Plugin über die CLI:
 
 ```bash
-yarn pm create @my-project/plugin-hello
+nb scaffold plugin @my-project/plugin-hello
 ```
 
 Die generierte Verzeichnisstruktur sieht wie folgt aus:
 
 ```bash
-packages/plugins/@my-project/plugin-hello/
+plugins/@my-project/plugin-hello/
 ├── dist/                    # Build-Ausgabe (bei Bedarf generiert)
 ├── src/                     # Quellcode-Verzeichnis
-│   ├── client/              # Frontend-Code (Blöcke, Seiten, Modelle usw.)
+│   ├── client-v2/           # Frontend-Code (Blöcke, Seiten, Modelle usw.)
 │   │   ├── plugin.ts        # Hauptklasse des Client-Plugins
 │   │   └── index.ts         # Client-Einstiegspunkt
 │   ├── locale/              # Mehrsprachige Ressourcen (Frontend und Backend geteilt)
@@ -88,13 +77,24 @@ packages/plugins/@my-project/plugin-hello/
 │       ├── plugin.ts        # Hauptklasse des Server-Plugins
 │       └── index.ts         # Server-Einstiegspunkt
 ├── index.ts                 # Frontend- und Backend-Bridge-Export
-├── client.d.ts              # Frontend-Typdeklarationen
-├── client.js                # Frontend-Build-Artefakt
+├── client-v2.d.ts           # Frontend-Typdeklarationen
+├── client-v2.js             # Frontend-Build-Artefakt
 ├── server.d.ts              # Serverseitige Typdeklarationen
 ├── server.js                # Serverseitiges Build-Artefakt
 ├── .npmignore               # Veröffentlichungs-Ignorierkonfiguration
 └── package.json
 ```
 
-> Nach Abschluss des Builds werden das Verzeichnis `dist/` sowie die Dateien `client.js` und `server.js` geladen, wenn das Plugin aktiviert wird.  
-> Während der Entwicklung müssen Sie nur das Verzeichnis `src/` ändern. Vor der Veröffentlichung führen Sie einfach `yarn build <plugin>` oder `yarn build <plugin> --tar` aus.
+:::tip Hinweis
+
+Nach Abschluss des Builds werden das Verzeichnis `dist/` sowie die Dateien `client-v2.js` und `server.js` geladen, wenn das Plugin aktiviert wird. Während der Entwicklung müssen Sie nur das Verzeichnis `src/` ändern. Vor der Veröffentlichung führen Sie einfach `nb source build <plugin>` oder `nb source build <plugin> --tar` aus.
+
+:::
+
+## Verwandte Links
+
+- [Ihren ersten Plugin entwickeln](./write-your-first-plugin.md) — Ein Plugin von Grund auf erstellen und den vollständigen Entwicklungs-Workflow erleben
+- [Server-Entwicklung Übersicht](./server/index.md) — Gesamtübersicht und Kernkonzepte der serverseitigen Plugin-Entwicklung
+- [Client-Entwicklung Übersicht](./client/index.md) — Gesamtübersicht und Kernkonzepte der clientseitigen Plugin-Entwicklung
+- [Build und Paketierung](./build.md) — Build-, Paketierungs- und Distributionsprozess für Plugins
+- [Abhängigkeitsverwaltung](./dependency-management.md) — Deklaration und Verwaltung von Plugin-Abhängigkeiten

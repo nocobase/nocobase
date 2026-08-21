@@ -15,6 +15,8 @@ import {
   runLocalNocoBaseCommand,
 } from '../../lib/app-runtime.js';
 import { ensureCrossEnvConfirmed, hasExplicitEnvSelection } from '../../lib/env-guard.js';
+import { isCliManagedSourceApp, summarizePluginWorkspaceSync, syncPluginWorkspace } from '../../lib/plugin-workspace.js';
+import { printInfo, printWarning } from '../../lib/ui.js';
 
 export default class PluginList extends Command {
   static override hidden = false;
@@ -62,6 +64,20 @@ export default class PluginList extends Command {
 
     if (runtime.kind === 'local') {
       try {
+        if (isCliManagedSourceApp({ appPath: runtime.env.appPath, sourcePath: runtime.env.sourcePath })) {
+          const syncResult = await syncPluginWorkspace({
+            appPath: runtime.env.appPath,
+            sourcePath: runtime.env.sourcePath,
+            mode: 'all',
+          });
+          const summary = summarizePluginWorkspaceSync(syncResult);
+          if (summary.length > 0) {
+            printInfo(`Plugin workspace synced: ${summary.join('; ')}`);
+          }
+          for (const warning of syncResult.warnings) {
+            printWarning(warning);
+          }
+        }
         await runLocalNocoBaseCommand(runtime, ['pm', 'list']);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);

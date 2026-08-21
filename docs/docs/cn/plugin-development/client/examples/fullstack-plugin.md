@@ -40,20 +40,26 @@ keywords: "前后端联动,TableBlockModel,defineCollection,ActionModel,Clickabl
 完整源码见 [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource)。如果你想直接在本地跑起来看效果：
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 下面从零开始，一步步搭建这个插件。
 
 ## 第一步：创建插件骨架
 
-在仓库根目录执行：
+在项目根目录或 `source/` 目录下执行：
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 详细说明见 [编写第一个插件](../../write-your-first-plugin)。
+
+接着运行开发模式，之后修改代码就能热更新：
+
+```bash
+nb source dev
+```
 
 ## 第二步：定义数据表（服务端）
 
@@ -458,7 +464,7 @@ export default PluginCustomTableBlockResourceClientV2;
 ## 第九步：启用插件
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 启用后：

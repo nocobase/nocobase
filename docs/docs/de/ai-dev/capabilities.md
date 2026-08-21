@@ -28,7 +28,20 @@ Im Folgenden sind alle Aufgaben aufgelistet, bei denen die KI Ihnen derzeit helf
 
 - **Teilen Sie der KI klar mit, dass Sie ein NocoBase-Plugin erstellen oder ändern möchten, und geben Sie den Plugin-Namen an** – zum Beispiel: „Bitte hilf mir mit dem nocobase-plugin-development Skill, ein NocoBase-Plugin namens @my-scope/plugin-rating zu entwickeln". Ohne Angabe des Plugin-Namens weiß die KI möglicherweise nicht, wohin sie den Code generieren soll.
 - **Geben Sie in der Eingabeaufforderung explizit an, dass das nocobase-plugin-development Skill verwendet werden soll** – zum Beispiel: „Bitte hilf mir mit dem nocobase-plugin-development Skill, ein NocoBase-Plugin zu entwickeln …". So kann der KI-Agent direkt auf die Funktionen des Skills zugreifen, ohne in den Plan-Modus zu wechseln und das Skill zu ignorieren.
-- **Führen Sie den KI-Agenten im Stammverzeichnis des NocoBase-Quellcode-Repositorys aus** – so kann die KI automatisch die Projektstruktur, Abhängigkeiten und vorhandenen Plugins finden. Wenn Sie sich nicht im Stammverzeichnis befinden, müssen Sie dem KI-Agenten den Pfad zum Quellcode-Repository zusätzlich mitteilen.
+- **Führen Sie den KI-Agenten im mit `nb init` erstellten Projektstammverzeichnis aus** – es wird empfohlen, Projekte mit Git-Quelle zu erstellen, damit die KI direkt auf den NocoBase-Kernquellcode zugreifen kann und bessere Ergebnisse erzielt. Wenn Sie sich nicht im Projektstammverzeichnis befinden, müssen Sie dem KI-Agenten den Pfad zum Projekt zusätzlich mitteilen.
+
+Die mit `nb init` erstellte Projektverzeichnisstruktur sieht wie folgt aus (d. h. `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # CLI-Metadaten für die aktuelle Umgebung
+├── source/               # Quellcode-Projekt (NocoBase-Kern + eingebaute Plugins)
+├── storage/              # Laufzeitdatenverzeichnis
+├── plugins/              # Ihr Plugin-Quellcode (von nb scaffold plugin hier generiert)
+└── .env                  # Umgebungsvariablen-Datei
+```
+
+Alle folgenden Beispiel-Eingabeaufforderungen gehen davon aus, dass Sie den KI-Agenten im `<app-path>`-Verzeichnis ausführen.
 
 ## Schnellindex
 
@@ -49,16 +62,16 @@ Im Folgenden sind alle Aufgaben aufgelistet, bei denen die KI Ihnen derzeit helf
 
 Die KI kann basierend auf Ihrer Anforderungsbeschreibung eine vollständige Verzeichnisstruktur eines NocoBase-Plugins generieren – einschließlich Frontend- und Backend-Eingangsdateien, Typdefinitionen und Basiskonfiguration.
 
-Beispiel-Eingabeaufforderung:
+Öffnen Sie den KI-Agenten im Projektstammverzeichnis (`<app-path>`) und senden Sie die Eingabeaufforderung:
 
 ```
 Hilf mir, ein NocoBase-Plugin namens @my-scope/plugin-todo zu erstellen
 ```
 
-Die KI führt `yarn pm create @my-scope/plugin-todo` aus und generiert das Standardverzeichnis:
+Die KI führt `nb scaffold plugin @my-scope/plugin-todo` aus und generiert das Standardverzeichnis:
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts

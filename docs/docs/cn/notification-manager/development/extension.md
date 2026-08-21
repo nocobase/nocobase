@@ -80,7 +80,7 @@ export default PluginNotificationExampleServer;
 
 ### 插件创建
 
-1. 执行创建插件命令`yarn pm add @nocobase/plugin-notification-example`
+1. 执行创建插件命令`nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### 客户端开发
 
@@ -271,8 +271,8 @@ export default PluginNotificationExampleServer;
 
 ### 插件注册启动
 
-1. 执行注册命令`yarn p add @nocobase/plugin-notification-example`
-2. 执行启用命令`yarn pm enable @nocobase/plugin-notification-example`
+1. 执行注册命令`nb scaffold plugin @nocobase/plugin-notification-example`
+2. 执行启用命令`nb plugin enable @nocobase/plugin-notification-example`
 
 ### 渠道配置
 

@@ -6,7 +6,7 @@ keywords: "nb source,NocoBase CLI,source code,download,dev,build,test"
 
 # nb source
 
-Mengelola proyek source code NocoBase lokal. Env npm/Git menggunakan direktori source code lokal; env Docker biasanya hanya perlu menggunakan [`nb app`](../app/index.md) untuk mengelola runtime.
+Mengelola proyek source code NocoBase lokal. Perintah `nb source` perlu dijalankan di direktori source code (`<app-path>/source/`). Env npm/Git menggunakan direktori source code lokal; env Docker biasanya hanya perlu menggunakan [`nb app`](../app/index.md) untuk mengelola runtime.
 
 ## Penggunaan
 

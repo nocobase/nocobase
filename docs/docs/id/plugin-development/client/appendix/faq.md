@@ -12,13 +12,13 @@ Berikut adalah masalah yang lebih mudah dijumpai saat mengembangkan plugin clien
 
 ### Plugin tidak terlihat di manajer setelah dibuat
 
-Pastikan menjalankan `yarn pm create` bukan membuat direktori secara manual. `yarn pm create` selain menggenerate file, juga akan mendaftarkan plugin ke tabel `applicationPlugins` di database. Jika sudah membuat direktori secara manual, dapat menjalankan `yarn nocobase upgrade` untuk memindai ulang.
+Pastikan menjalankan `nb scaffold plugin` bukan membuat direktori secara manual. `nb scaffold plugin` selain menggenerate file, juga akan mendaftarkan plugin ke tabel `applicationPlugins` di database. Jika sudah membuat direktori secara manual, dapat menjalankan `nb app upgrade` untuk memindai ulang.
 
 ### Halaman tidak berubah setelah plugin diaktifkan
 
 Periksa berdasarkan urutan berikut:
 
-1. Pastikan menjalankan `yarn pm enable <pluginName>`
+1. Pastikan menjalankan `nb plugin enable <pluginName>`
 2. Refresh browser (terkadang perlu force refresh `Ctrl+Shift+R`)
 3. Periksa apakah ada error di console browser
 
@@ -30,7 +30,7 @@ Untuk tipe file yang berbeda, perilaku hot update berbeda:
 | --- | --- |
 | tsx/ts di `src/client-v2/` | Hot update otomatis, tidak perlu operasi |
 | File terjemahan di `src/locale/` | **Restart aplikasi** |
-| Menambah atau memodifikasi collection di `src/server/collections/` | Jalankan `yarn nocobase upgrade` |
+| Menambah atau memodifikasi collection di `src/server/collections/` | Jalankan `nb app upgrade` |
 
 Jika kode client diubah tetapi tidak hot update, coba refresh browser dulu.
 
@@ -220,15 +220,15 @@ Periksa berdasarkan urutan berikut:
 
 ## Terkait Build dan Deployment
 
-### `yarn build --tar` error "no paths specified to add to archive"
+### `nb source build --tar` error "no paths specified to add to archive"
 
-Error saat menjalankan `yarn build <pluginName> --tar`:
+Error saat menjalankan `nb source build <pluginName> --tar`:
 
 ```bash
 TypeError: no paths specified to add to archive
 ```
 
-Tetapi menjalankan `yarn build <pluginName>` saja (tanpa `--tar`) normal.
+Tetapi menjalankan `nb source build <pluginName>` saja (tanpa `--tar`) normal.
 
 Masalah ini biasanya karena `.npmignore` plugin **menggunakan sintaks negasi** (prefix `!` npm). Saat packaging `--tar`, NocoBase akan membaca setiap baris `.npmignore` dan menambahkan `!` di depan untuk mengkonversi ke pattern exclude `fast-glob`. Jika `.npmignore` Anda sudah menggunakan sintaks negasi, contoh:
 
@@ -259,7 +259,7 @@ TypeError: Cannot assign to read only property 'constructor' of object '[object 
 
 Masalah ini biasanya karena **plugin mengemas dependensi bawaan NocoBase ke dalam `node_modules/`-nya sendiri**. Sistem build NocoBase memiliki [daftar external](../../dependency-management), paket-paket di dalamnya (seperti `react`, `antd`, `axios`, `lodash`, dll.) disediakan oleh host NocoBase, tidak boleh dikemas ke dalam plugin. Jika plugin membawa salinan privat, runtime mungkin akan konflik dengan versi yang sudah dimuat oleh host, menyebabkan berbagai error aneh.
 
-**Mengapa lokal tidak bermasalah:** Saat development lokal plugin berada di direktori `packages/plugins/`, tanpa `node_modules/` privat, dependensi akan resolve ke versi yang sudah dimuat di direktori root proyek, tidak akan menghasilkan konflik.
+**Mengapa lokal tidak bermasalah:** Saat development lokal plugin berada di direktori `plugins/`, tanpa `node_modules/` privat, dependensi akan resolve ke versi yang sudah dimuat di direktori root proyek, tidak akan menghasilkan konflik.
 
 **Solusi:** Pindahkan semua `dependencies` di `package.json` plugin ke `devDependencies` — sistem build NocoBase akan otomatis menangani dependensi plugin:
 

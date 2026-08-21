@@ -191,16 +191,10 @@ Semua field kolom mendukung parameter berikut:
 
 ## Sinkronisasi Struktur Database
 
-Saat plugin pertama kali diaktifkan, sistem akan secara otomatis menyinkronkan konfigurasi Collection dengan struktur database. Jika plugin sudah terinstal dan sedang berjalan, setelah menambah atau memodifikasi Collection perlu menjalankan command upgrade secara manual:
+Saat plugin pertama kali diaktifkan, sistem akan secara otomatis menyinkronkan konfigurasi Collection dengan struktur database. Jika plugin sudah terinstal dan sedang berjalan, setelah menambah atau memodifikasi Collection perlu menjalankan command upgrade untuk menyinkronkan struktur database:
 
 ```bash
-yarn nocobase upgrade
-```
-
-Jika terjadi exception atau data kotor selama proses sinkronisasi, dapat membangun ulang struktur tabel dengan menginstal ulang aplikasi:
-
-```bash
-yarn nocobase install -f
+nb app upgrade
 ```
 
 Jika upgrade plugin perlu melakukan migrasi pada data yang ada — seperti rename field, split tabel, mengisi nilai default, dll. — harus ditangani melalui [Migration Skrip Upgrade](./migration.md), bukan dengan mengubah database secara manual.

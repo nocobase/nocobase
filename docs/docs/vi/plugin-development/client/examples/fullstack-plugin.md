@@ -40,20 +40,26 @@ Chúng ta sẽ tạo một plugin quản lý dữ liệu "Việc cần làm", ba
 Toàn bộ source code xem tại [@nocobase-example/plugin-custom-table-block-resource](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-custom-table-block-resource). Nếu bạn muốn chạy thử trực tiếp ở local:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-custom-table-block-resource
+nb plugin enable @nocobase-example/plugin-custom-table-block-resource
 ```
 
 Sau đây ta sẽ xây dựng plugin này từ đầu, từng bước một.
 
 ## Bước 1: Tạo khung plugin
 
-Tại thư mục gốc của repo, chạy:
+Tại thư mục gốc của project hoặc thư mục `source/`, chạy:
 
 ```bash
-yarn pm create @my-project/plugin-custom-table-block-resource
+nb scaffold plugin @my-project/plugin-custom-table-block-resource
 ```
 
 Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
+
+Sau đó chạy chế độ phát triển để các thay đổi mã của bạn được hot-reload:
+
+```bash
+nb source dev
+```
 
 ## Bước 2: Định nghĩa collection (phía server)
 
@@ -458,7 +464,7 @@ Một số điểm chính:
 ## Bước 9: Bật plugin
 
 ```bash
-yarn pm enable @my-project/plugin-custom-table-block-resource
+nb plugin enable @my-project/plugin-custom-table-block-resource
 ```
 
 Sau khi bật:

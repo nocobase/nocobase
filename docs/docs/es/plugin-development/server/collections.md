@@ -1,10 +1,16 @@
-# Colecciones
+---
+title: "Definición de Collections"
+description: "Definición de Collections en plugins NocoBase: defineCollection, extendCollection, fields, convención del directorio src/server/collections."
+keywords: "Collections,defineCollection,extendCollection,tabla de datos,definición de Collection,NocoBase"
+---
 
-En el desarrollo de **plugins** de NocoBase, la **colección (tabla de datos)** es uno de los conceptos centrales. Usted puede añadir o modificar estructuras de tablas de datos en sus **plugins** definiendo o extendiendo **colecciones**. A diferencia de las tablas de datos creadas a través de la interfaz de gestión de **fuentes de datos**, las **colecciones** definidas en el código suelen ser tablas de metadatos a nivel de sistema y no aparecerán en la lista de gestión de **fuentes de datos**.
+# Collections - tablas de datos
 
-## Definición de Colecciones
+En el desarrollo de plugins de NocoBase, la **Collection (tabla de datos)** es uno de los conceptos más fundamentales. Puede agregar o modificar la estructura de tablas en un plugin definiendo o extendiendo Collections. A diferencia de las tablas creadas a través de la interfaz de "Gestión de fuentes de datos", **las Collections definidas por código suelen ser tablas de metadatos a nivel de sistema** y no aparecen en la lista de gestión de fuentes de datos.
 
-Siguiendo la estructura de directorios convencional, los archivos de **colección** deben ubicarse en el directorio `./src/server/collections`. Para crear nuevas tablas, utilice `defineCollection()`, y para extender tablas existentes, utilice `extendCollection()`.
+## Definir una tabla
+
+Según la convención de directorios, los archivos de Collection deben ubicarse en `./src/server/collections`. Para crear una nueva tabla, utilice `defineCollection()`; para extender una tabla existente, utilice `extendCollection()`.
 
 ```ts
 import { defineCollection } from '@nocobase/database';
@@ -29,11 +35,11 @@ export default defineCollection({
 
 En el ejemplo anterior:
 
-- `name`: Nombre de la tabla (se generará automáticamente una tabla con el mismo nombre en la base de datos).
-- `title`: Nombre de visualización de la tabla en la interfaz.
-- `fields`: Colección de campos; cada campo incluye atributos como `type`, `name`, entre otros.
+- `name`: nombre de la tabla (se genera automáticamente una tabla con el mismo nombre en la base de datos).  
+- `title`: nombre de visualización de la tabla en la interfaz.  
+- `fields`: conjunto de campos; cada campo contiene propiedades como `type`, `name`, etc.  
 
-Cuando necesite añadir campos o modificar configuraciones para las **colecciones** de otros **plugins**, puede utilizar `extendCollection()`:
+Cuando necesite agregar campos o modificar la configuración de la Collection de otro plugin, utilice `extendCollection()`:
 
 ```ts
 import { extendCollection } from '@nocobase/database';
@@ -50,26 +56,169 @@ export default extendCollection({
 });
 ```
 
-Después de activar el **plugin**, el sistema añadirá automáticamente el campo `isPublished` a la tabla `articles` existente.
+Una vez activado el plugin, el sistema agrega automáticamente el campo `isPublished` a la tabla `articles` existente.
 
-:::tip
-El directorio convencional se cargará completamente antes de que se ejecuten los métodos `load()` de todos los **plugins**, evitando así problemas de dependencia causados por la falta de carga de algunas tablas de datos.
+:::tip Nota
+
+Los directorios convencionales se cargan antes de que se ejecute el método `load()` de todos los plugins, lo que evita problemas de dependencia causados por tablas que aún no se han cargado.
+
 :::
 
-## Sincronización de la Estructura de la Base de Datos
+## Referencia rápida de tipos de campo
 
-Cuando un **plugin** se activa por primera vez, el sistema sincronizará automáticamente las configuraciones de la **colección** con la estructura de la base de datos. Si el **plugin** ya está instalado y en ejecución, después de añadir o modificar **colecciones**, deberá ejecutar manualmente el comando de actualización:
+En los `fields` de `defineCollection`, el `type` determina el tipo de columna en la base de datos. A continuación se muestran todos los tipos de campo integrados:
 
-```bash
-yarn nocobase upgrade
+### Texto
+
+| type | Tipo en base de datos | Descripción | Parámetros específicos |
+|------|----------------------|-------------|------------------------|
+| `string` | VARCHAR(255) | Texto corto | `length?: number` (longitud personalizada), `trim?: boolean` |
+| `text` | TEXT | Texto largo | `length?: 'tiny' \| 'medium' \| 'long'` (solo MySQL) |
+
+### Numérico
+
+| type | Tipo en base de datos | Descripción | Parámetros específicos |
+|------|----------------------|-------------|------------------------|
+| `integer` | INTEGER | Entero | — |
+| `bigInt` | BIGINT | Entero grande | — |
+| `float` | FLOAT | Punto flotante | — |
+| `double` | DOUBLE | Doble precisión | — |
+| `decimal` | DECIMAL(p,s) | Punto fijo | `precision: number`, `scale: number` |
+
+### Booleano
+
+| type | Tipo en base de datos | Descripción |
+|------|----------------------|-------------|
+| `boolean` | BOOLEAN | Valor booleano |
+
+### Fecha y hora
+
+| type | Tipo en base de datos | Descripción | Parámetros específicos |
+|------|----------------------|-------------|------------------------|
+| `date` | DATE(3) | Fecha y hora (con milisegundos) | `defaultToCurrentTime?`, `onUpdateToCurrentTime?` |
+| `dateOnly` | DATEONLY | Solo fecha, sin hora | — |
+| `time` | TIME | Solo hora | — |
+| `unixTimestamp` | BIGINT | Marca de tiempo Unix | `accuracy?: 'second' \| 'millisecond'` |
+
+:::tip Nota
+
+`date` es el tipo de fecha más utilizado. Si necesita distinguir el manejo de zonas horarias, también dispone de `datetimeTz` (con zona horaria) y `datetimeNoTz` (sin zona horaria).
+
+:::
+
+### Datos estructurados
+
+| type | Tipo en base de datos | Descripción | Parámetros específicos |
+|------|----------------------|-------------|------------------------|
+| `json` | JSON / JSONB | Datos JSON | `jsonb?: boolean` (usa JSONB en PostgreSQL) |
+| `jsonb` | JSONB / JSON | Prioriza JSONB | — |
+| `array` | ARRAY / JSON | Arreglo | En PostgreSQL se puede usar el tipo ARRAY nativo |
+
+### Generación de ID
+
+| type | Tipo en base de datos | Descripción | Parámetros específicos |
+|------|----------------------|-------------|------------------------|
+| `uid` | VARCHAR(255) | ID corto generado automáticamente | `prefix?: string` |
+| `uuid` | UUID | UUID v4 | `autoFill?: boolean` (true por defecto) |
+| `nanoid` | VARCHAR(255) | NanoID | `size?: number` (12 por defecto), `customAlphabet?: string` |
+| `snowflakeId` | BIGINT | Snowflake ID | `autoFill?: boolean` (true por defecto) |
+
+### Tipos especiales
+
+| type | Tipo en base de datos | Descripción |
+|------|----------------------|-------------|
+| `password` | VARCHAR(255) | Almacenado automáticamente con hash y sal |
+| `virtual` | sin columna real | Campo virtual, no crea columna en la base de datos |
+| `context` | configurable | Se completa automáticamente desde el contexto de la solicitud (por ejemplo `currentUser.id`) |
+
+### Tipos de relación
+
+Los campos de relación no crean columnas en la base de datos, sino que establecen relaciones entre tablas a nivel ORM:
+
+| type | Descripción | Parámetros clave |
+|------|-------------|-----------------|
+| `belongsTo` | Muchos a uno | `target` (tabla destino), `foreignKey` (clave foránea) |
+| `hasOne` | Uno a uno | `target`, `foreignKey` |
+| `hasMany` | Uno a muchos | `target`, `foreignKey` |
+| `belongsToMany` | Muchos a muchos | `target`, `through` (tabla intermedia), `foreignKey`, `otherKey` |
+
+Ejemplos de uso de campos de relación:
+
+```ts
+export default defineCollection({
+  name: 'articles',
+  fields: [
+    { type: 'string', name: 'title' },
+    // Muchos a uno: un artículo pertenece a un autor
+    {
+      type: 'belongsTo',
+      name: 'author',
+      target: 'users',
+      foreignKey: 'authorId',
+    },
+    // Uno a muchos: un artículo tiene varios comentarios
+    {
+      type: 'hasMany',
+      name: 'comments',
+      target: 'comments',
+      foreignKey: 'articleId',
+    },
+    // Muchos a muchos: un artículo tiene varias etiquetas
+    {
+      type: 'belongsToMany',
+      name: 'tags',
+      target: 'tags',
+      through: 'articlesTags',  // Nombre de la tabla intermedia
+    },
+  ],
+});
 ```
 
-Si se producen excepciones o datos inconsistentes durante la sincronización, puede reconstruir la estructura de la tabla reinstalando la aplicación:
+### Parámetros comunes
+
+Todos los campos de columna admiten los siguientes parámetros:
+
+| Parámetro | Tipo | Descripción |
+|-----------|------|-------------|
+| `name` | `string` | Nombre del campo (obligatorio) |
+| `defaultValue` | `any` | Valor por defecto |
+| `allowNull` | `boolean` | Si se permite null |
+| `unique` | `boolean` | Si es único |
+| `primaryKey` | `boolean` | Si es clave primaria |
+| `autoIncrement` | `boolean` | Si es autoincremental |
+| `index` | `boolean` | Si se crea índice |
+| `comment` | `string` | Comentario del campo |
+
+## Sincronizar la estructura de la base de datos
+
+Al activar el plugin por primera vez, el sistema sincroniza automáticamente la configuración de las Collections con la estructura de la base de datos. Si el plugin ya está instalado y en ejecución, después de agregar o modificar Collections es necesario ejecutar el comando de actualización para sincronizar la estructura de la base de datos:
 
 ```bash
-yarn nocobase install -f
+nb app upgrade
 ```
 
-## Generación Automática de Recursos
+Si la actualización del plugin requiere migrar datos existentes, por ejemplo renombrar un campo, dividir una tabla o rellenar valores por defecto, debe hacerse mediante [scripts de migración](./migration.md), en lugar de modificar la base de datos manualmente.
 
-Después de definir una **colección**, el sistema generará automáticamente un recurso correspondiente, sobre el cual podrá realizar directamente operaciones CRUD (crear, leer, actualizar, eliminar) a través de la API. Consulte [Gestor de Recursos](./resource-manager.md) para más información.
+## Hacer que una Collection aparezca en la lista de tablas de la UI
+
+Una tabla definida mediante `defineCollection` es una tabla interna del servidor; **por defecto no aparece** en la lista de "Gestión de fuentes de datos" ni en la lista de selección de tablas al "Agregar un bloque".
+
+**Enfoque recomendado**: agregue la tabla correspondiente a través de "[Gestión de fuentes de datos](../../data-sources/data-source-main/index.md)" en la interfaz de NocoBase; una vez configurados los campos y los tipos de interfaz, la tabla aparecerá automáticamente en la lista de selección de tablas de los bloques.
+
+![Seleccionar su propia tabla al agregar un bloque](https://static-docs.nocobase.com/20260409143839.png)
+
+Si realmente necesita registrarla en el código del plugin (por ejemplo, en un escenario de demostración), puede registrarla manualmente en el plugin del cliente mediante `addCollection`. Tenga en cuenta que debe hacerse a través del modo `eventBus`; no puede llamarlo directamente en `load()` -- `ensureLoaded()` limpiará y restablecerá todas las collections después de `load()`. Vea el ejemplo completo en [Construir un plugin de gestión de datos front-end + back-end](../client/examples/fullstack-plugin.md).
+
+## Recursos generados automáticamente
+
+Una vez definida la Collection, NocoBase genera automáticamente los recursos REST API correspondientes: las operaciones CRUD listas para usar (`list`, `get`, `create`, `update`, `destroy`) no requieren código adicional. Si las operaciones CRUD integradas no son suficientes, por ejemplo si necesita una API de "importación masiva" o "resumen estadístico", puede registrar una acción personalizada mediante `resourceManager`. Consulte [ResourceManager - gestión de recursos](./resource-manager.md) para más detalles.
+
+## Enlaces relacionados
+
+- [Database](./database.md) -- CRUD, Repository, transacciones y eventos de base de datos
+- [DataSourceManager - gestión de fuentes de datos](./data-source-manager.md) -- Gestionar múltiples fuentes de datos y sus colecciones
+- [Migración de datos](./migration.md) -- Scripts de migración de datos durante la actualización de un plugin
+- [Plugin](./plugin.md) -- Ciclo de vida de la clase del plugin, métodos miembro y objeto `app`
+- [ResourceManager - gestión de recursos](./resource-manager.md) -- API REST personalizadas y handlers de acciones
+- [Construir un plugin de gestión de datos front-end + back-end](../client/examples/fullstack-plugin.md) -- Ejemplo completo de defineCollection + addCollection
+- [Estructura del proyecto](../project-structure.md) -- Detalle de la convención del directorio `src/server/collections`

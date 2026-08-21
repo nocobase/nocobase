@@ -80,7 +80,7 @@ Asumsikan kita ingin menggunakan SMS gateway suatu platform untuk menambahkan fi
 
 ### Pembuatan Plugin
 
-1. Jalankan command pembuatan plugin `yarn pm add @nocobase/plugin-notification-example`
+1. Jalankan command pembuatan plugin `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Pengembangan Client-side
 
@@ -271,8 +271,8 @@ export default PluginNotificationExampleServer;
 
 ### Registrasi dan Aktivasi Plugin
 
-1. Jalankan command registrasi `yarn p add @nocobase/plugin-notification-example`
-2. Jalankan command aktivasi `yarn pm enable @nocobase/plugin-notification-example`
+1. Jalankan command registrasi `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Jalankan command aktivasi `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Konfigurasi Channel
 

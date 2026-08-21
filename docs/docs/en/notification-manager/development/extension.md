@@ -79,7 +79,7 @@ Suppose we want to add SMS notification to NocoBase using a platform's SMS gatew
 
 ### Plugin Creation
 
-1. Run the command to create the plugin `yarn pm add @nocobase/plugin-notification-example`
+1. Run the command to create the plugin `nb scaffold plugin @nocobase/plugin-notification-example`
 
 ### Client Development
 
@@ -275,8 +275,8 @@ export default PluginNotificationExampleServer;
 
 ### Plugin Registration and Launch
 
-1. Run the registration command: `yarn pm add @nocobase/plugin-notification-example`
-2. Run the enable command: `yarn pm enable @nocobase/plugin-notification-example`
+1. Run the registration command: `nb scaffold plugin @nocobase/plugin-notification-example`
+2. Run the enable command: `nb plugin enable @nocobase/plugin-notification-example`
 
 ### Channel Configuration
 

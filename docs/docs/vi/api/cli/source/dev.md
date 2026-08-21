@@ -6,7 +6,7 @@ keywords: "nb source dev,NocoBase CLI,Chế độ dev,Hot reload"
 
 # nb source dev
 
-Khởi động chế độ dev trong env có source npm hoặc Git. Với env Docker, hãy dùng [`nb app logs`](../app/logs.md) để xem log runtime.
+Khởi động chế độ dev trong env có source npm hoặc Git. Cần thực thi trong thư mục source (`<app-path>/source/`). Với env Docker, hãy dùng [`nb app logs`](../app/logs.md) để xem log runtime.
 
 ## Cách dùng
 

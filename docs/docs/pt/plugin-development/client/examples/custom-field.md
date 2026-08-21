@@ -37,20 +37,26 @@ Após ativar o plugin, em um bloco de tabela encontre uma coluna do tipo texto d
 O código-fonte completo está em [@nocobase-example/plugin-field-simple](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-field-simple). Se quiser executar localmente para ver o resultado:
 
 ```bash
-yarn pm enable @nocobase-example/plugin-field-simple
+nb plugin enable @nocobase-example/plugin-field-simple
 ```
 
 A seguir, montamos esse plugin do zero, passo a passo.
 
 ## Passo 1: criar o esqueleto do plugin
 
-Na raiz do repositório, execute:
+No diretório raiz do projeto ou no diretório `source/`, execute:
 
 ```bash
-yarn pm create @my-project/plugin-field-simple
+nb scaffold plugin @my-project/plugin-field-simple
 ```
 
 Para mais detalhes, veja [Escreva seu primeiro plugin](../../write-your-first-plugin).
+
+Em seguida, inicie o modo de desenvolvimento para que suas alterações de código sejam recarregadas a quente:
+
+```bash
+nb source dev
+```
 
 ## Passo 2: criar o modelo de campo
 
@@ -140,7 +146,7 @@ export default PluginFieldSimpleClient;
 ## Passo 5: ativar o plugin
 
 ```bash
-yarn pm enable @my-project/plugin-field-simple
+nb plugin enable @my-project/plugin-field-simple
 ```
 
 Após ativar, em um bloco de tabela encontre uma coluna do tipo texto de linha única, clique no botão de configuração da coluna e, no menu suspenso "Componente de campo", troque para esse componente de exibição personalizado.

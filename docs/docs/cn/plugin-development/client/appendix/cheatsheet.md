@@ -10,7 +10,7 @@ keywords: "速查表,Cheatsheet,注册方式,文件位置,NocoBase"
 
 ## 插件目录结构
 
-通过 `yarn pm create @my-project/plugin-name` 创建插件，会自动生成以下目录结构。不要手动创建目录，避免遗漏注册步骤导致插件不生效。详见 [编写第一个插件](../../write-your-first-plugin)。
+通过 `nb scaffold plugin @my-project/plugin-name` 创建插件，会自动生成以下目录结构。不要手动创建目录，避免遗漏注册步骤导致插件不生效。详见 [编写第一个插件](../../write-your-first-plugin)。
 
 ```bash
 plugin-name/

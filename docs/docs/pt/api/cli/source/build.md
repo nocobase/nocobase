@@ -6,7 +6,7 @@ keywords: "nb source build,NocoBase CLI,build,código-fonte"
 
 # nb source build
 
-Compila o projeto local do código-fonte do NocoBase. Este comando encaminha a execução do fluxo de build legado do NocoBase a partir da raiz do repositório.
+Compila o projeto local de código-fonte do NocoBase. Deve ser executado no diretório de código-fonte (`<app-path>/source/`). Para aplicações source gerenciadas pelo CLI, antes da construção, os plugins no diretório `plugins/` serão automaticamente sincronizados para `source/packages/plugins/`.
 
 ## Uso
 
@@ -22,17 +22,22 @@ nb source build [packages...] [flags]
 | `--cwd`, `-c` | string | Diretório de trabalho |
 | `--no-dts` | boolean | Não gera arquivos de declaração `.d.ts` |
 | `--sourcemap` | boolean | Gera sourcemap |
+| `--tar` | boolean | Após a construção, empacota automaticamente como arquivo `.tgz` |
 | `--verbose` | boolean | Exibe a saída detalhada do comando |
 
 ## Exemplos
 
 ```bash
 nb source build
+nb source build @my-project/plugin-hello
+nb source build @my-project/plugin-hello --tar
 nb source build --no-dts
 nb source build --sourcemap
-nb source build @nocobase/acl
-nb source build @nocobase/acl @nocobase/actions
 ```
+
+## Explicação
+
+Ao usar `--tar`, após a construção, o plugin especificado será empacotado como arquivo `.tgz` e salvo no diretório `source/storage/tar/`. Ao concluir, o comando imprimirá o caminho completo do tarball.
 
 ## Comandos relacionados
 

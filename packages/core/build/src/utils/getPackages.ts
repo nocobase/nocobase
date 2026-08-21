@@ -23,38 +23,42 @@ import { toUnixPath } from './utils';
  * yarn build => all packages
  */
 function getPackagesPath(pkgs: string[]) {
-  const allPackageJson = fg
-    .sync(['*/*/package.json', '*/*/*/package.json'], {
-      cwd: PACKAGES_PATH,
-      absolute: true,
-      onlyFiles: true,
-    });
+  const allPackageJson = fg.sync(['*/*/package.json', '*/*/*/package.json'], {
+    cwd: PACKAGES_PATH,
+    absolute: true,
+    onlyFiles: true,
+  });
 
   if (pkgs.length === 0) {
-    return allPackageJson
-      .map(toUnixPath).map(item => path.dirname(item));
+    return allPackageJson.map(toUnixPath).map((item) => path.dirname(item));
   }
   const allPackageInfo = allPackageJson
-    .map(packageJsonPath => ({ name: require(packageJsonPath).name, path: path.dirname(toUnixPath(packageJsonPath)) }))
+    .map((packageJsonPath) => ({
+      name: require(packageJsonPath).name,
+      path: path.dirname(toUnixPath(packageJsonPath)),
+    }))
     .reduce((acc, cur) => {
       acc[cur.name] = cur.path;
       return acc;
     }, {});
   const allPackagePaths: string[] = Object.values(allPackageInfo);
 
-  const pkgNames = pkgs.filter(item => allPackageInfo[item]);
-  const relativePaths = pkgNames.length ? pkgs.filter(item => !pkgNames.includes(item)) : pkgs;
-  const pkgPaths = pkgs.map(item => allPackageInfo[item])
-  const absPaths = allPackagePaths.filter(absPath => relativePaths.some((relativePath) => absPath.endsWith(relativePath)));
+  const pkgNames = pkgs.filter((item) => allPackageInfo[item]);
+  const relativePaths = pkgNames.length ? pkgs.filter((item) => !pkgNames.includes(item)) : pkgs;
+  const pkgPaths = pkgs.map((item) => allPackageInfo[item]);
+  const absPaths = allPackagePaths.filter((absPath) =>
+    relativePaths.some((relativePath) => absPath.endsWith(relativePath)),
+  );
   const dirPaths = fg.sync(pkgs, { onlyDirectories: true, absolute: true, cwd: ROOT_PATH });
-  const dirMatchPaths = allPackagePaths.filter(pkgPath => dirPaths.some(dirPath => pkgPath.startsWith(dirPath)));
+  const dirMatchPaths = allPackagePaths.filter((pkgPath) => dirPaths.some((dirPath) => pkgPath.startsWith(dirPath)));
   return [...new Set([...pkgPaths, ...absPaths, ...dirMatchPaths])];
 }
 
 export function getPackages(pkgs: string[]) {
   const packagePaths = getPackagesPath(pkgs);
+  const packageMap = new Map(getPackagesSync(ROOT_PATH).map((pkg) => [toUnixPath(pkg.location), pkg] as const));
 
-  const packages = getPackagesSync(ROOT_PATH).filter((pkg) => packagePaths.includes(toUnixPath(pkg.location)));
+  const packages = packagePaths.map((packagePath) => packageMap.get(packagePath) ?? Package.lazy(packagePath));
 
   return sortPackages(packages);
 }
@@ -66,7 +70,7 @@ export function sortPackages(packages: Package[]): Package[] {
     if (pkg.name === '@nocobase/docs') {
       continue;
     }
-    const pkgJson = require(`${pkg.location}/package.json`,);
+    const pkgJson = require(`${pkg.location}/package.json`);
     const after = Object.keys({ ...pkgJson.dependencies, ...pkgJson.devDependencies, ...pkgJson.peerDependencies });
     sorter.add(pkg, { after, group: pkg.name });
   }
@@ -98,9 +102,7 @@ export function groupPackagesByTopoLevel(packages: Package[]): Package[][] {
     }
   }
 
-  const remainingDeps = new Map(
-    Array.from(dependencyMap.entries()).map(([name, deps]) => [name, new Set(deps)]),
-  );
+  const remainingDeps = new Map(Array.from(dependencyMap.entries()).map(([name, deps]) => [name, new Set(deps)]));
   const pending = new Set(filteredPackages.map((pkg) => pkg.name));
   const layers: Package[][] = [];
 

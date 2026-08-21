@@ -28,7 +28,20 @@ A continuación se enumeran todas las cosas que la AI puede hacer por usted actu
 
 - **Indíquele explícitamente a la AI que va a crear o modificar un plugin de NocoBase y proporcione el nombre del plugin**: por ejemplo, «Ayúdame a desarrollar un plugin de NocoBase utilizando el skill nocobase-plugin-development, llamado @my-scope/plugin-rating». Si no proporciona el nombre del plugin, la AI puede no saber dónde generar el código.
 - **Especifique en el prompt el uso del skill nocobase-plugin-development**: por ejemplo, «Ayúdame a desarrollar un plugin de NocoBase utilizando el skill nocobase-plugin-development...». De este modo, el Agent de AI puede leer directamente las capacidades del Skill, evitando entrar en modo plan e ignorar los Skills.
-- **Ejecute el Agent de AI en el directorio raíz del repositorio del código fuente de NocoBase**: así la AI podrá localizar automáticamente la estructura del proyecto, las dependencias y los plugins existentes. Si no se encuentra en el directorio raíz del código fuente, deberá indicarle adicionalmente al Agent de AI la ruta del repositorio.
+- **Ejecute el AI Agent en el directorio raíz del proyecto creado por `nb init`** -- se recomienda usar la fuente Git para crear el proyecto, así la AI puede consultar directamente el código fuente del núcleo de NocoBase, lo que mejora los resultados de desarrollo. Si no se encuentra en el directorio raíz del proyecto, deberá indicarle adicionalmente al AI Agent la ruta del proyecto.
+
+La estructura de directorios del proyecto creado por `nb init` es la siguiente (es decir, `<app-path>`):
+
+```bash
+<app-path>/
+├── .nb/                  # Metadatos guardados por la CLI para el env actual
+├── source/               # Proyecto de código fuente (núcleo de NocoBase + plugins integrados)
+├── storage/              # Directorio de datos de ejecución
+├── plugins/              # Código fuente de tus plugins (nb scaffold plugin genera aquí)
+└── .env                  # Archivo de variables de entorno de la aplicación
+```
+
+Todos los ejemplos de prompts a continuación asumen que usted ejecuta el AI Agent en `<app-path>`.
 
 ## Índice rápido
 
@@ -49,16 +62,16 @@ A continuación se enumeran todas las cosas que la AI puede hacer por usted actu
 
 La AI puede generar una estructura completa de directorios de un plugin de NocoBase a partir de la descripción de sus necesidades, incluyendo los archivos de entrada de frontend y backend, las definiciones de tipos y la configuración básica.
 
-Ejemplo de prompt:
+Abra el AI Agent en el directorio raíz del proyecto (`<app-path>`) y envíe el prompt:
 
 ```
 Ayúdame a crear un plugin de NocoBase llamado @my-scope/plugin-todo.
 ```
 
-La AI ejecutará `yarn pm create @my-scope/plugin-todo` y generará la estructura de directorios estándar:
+La AI ejecutará `nb scaffold plugin @my-scope/plugin-todo` y generará la estructura de directorios estándar:
 
 ```
-packages/plugins/@my-scope/plugin-todo/
+plugins/@my-scope/plugin-todo/
 ├── src/
 │   ├── server/
 │   │   └── plugin.ts
