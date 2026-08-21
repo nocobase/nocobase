@@ -53,7 +53,7 @@ import { FlowExitAllException } from './utils/exceptions';
 import { buildFlowModelResolveDescriptor, enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
-import { getDirtyAwareApiClient } from './utils/dirtyAwareApiClient';
+import { getDirtyAwareApiClient, PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS } from './utils/dirtyAwareApiClient';
 import { inferRecordRef, inferViewRecordRef } from './utils/variablesParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './runjs-context/registry';
@@ -4598,6 +4598,49 @@ function __mergeRunJSDocMeta(base: any, patch: any): RunJSDocMeta {
   return out as RunJSDocMeta;
 }
 export class FlowRunJSContext extends FlowContext {
+  [PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS](
+    action: { actionName: string; dataSourceKey?: string; resourceName: string; resourceOf?: unknown },
+    params: Record<string, unknown> | undefined,
+  ) {
+    if (
+      action.actionName.toLowerCase() !== 'create' ||
+      !params ||
+      Array.isArray(params) ||
+      Object.prototype.hasOwnProperty.call(params, 'updateAssociationValues') ||
+      !this.form ||
+      typeof this.blockModel?.submitFromRunJs !== 'function'
+    ) {
+      return params;
+    }
+
+    const resource = this.resource;
+    const currentResourceName = resource?.getResourceName?.();
+    const currentDataSourceKey = resource?.getDataSourceKey?.() || 'main';
+    if (action.resourceName !== currentResourceName || (action.dataSourceKey || 'main') !== currentDataSourceKey) {
+      return params;
+    }
+
+    const currentSourceId = resource?.getSourceId?.();
+    if (
+      currentResourceName?.includes('.') &&
+      currentSourceId !== null &&
+      typeof currentSourceId !== 'undefined' &&
+      String(action.resourceOf ?? '') !== String(currentSourceId)
+    ) {
+      return params;
+    }
+
+    const updateAssociationValues = resource?.getUpdateAssociationValues?.();
+    if (!Array.isArray(updateAssociationValues) || updateAssociationValues.length === 0) {
+      return params;
+    }
+
+    return {
+      ...params,
+      updateAssociationValues: [...updateAssociationValues],
+    };
+  }
+
   constructor(delegate: FlowContext) {
     super();
     this.addDelegate(delegate);
