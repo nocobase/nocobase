@@ -42,7 +42,17 @@ type ResourceRequestOptions = RequestOptions & {
 type DirtyResourceAction = {
   dataSourceKey?: string;
   resourceName: string;
+  resourceOf?: unknown;
   actionName: string;
+};
+
+export const PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS = Symbol('prepareContextResourceActionParams');
+
+type ContextResourceActionParamsPreparer = {
+  [PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS]?: (
+    action: DirtyResourceAction,
+    params: ActionParams | undefined,
+  ) => ActionParams | undefined;
 };
 
 type ApiUrlProvider = {
@@ -328,6 +338,7 @@ function resolveDirtyResourceActionFromResource(
 
   return {
     resourceName: normalizedResourceName,
+    resourceOf,
     actionName: normalizedActionName,
   };
 }
@@ -442,6 +453,18 @@ function createDirtyAwareResource(
       return async (...args: Parameters<ResourceActionFn>) => {
         const actionOptions = isObjectRecord(args[1]) ? args[1] : undefined;
         const dirtyResourceAction = resolveDirtyResourceActionFromResource(resourceName, resourceOf, prop, context);
+        const prepareParams = (context as ContextResourceActionParamsPreparer)[PREPARE_CONTEXT_RESOURCE_ACTION_PARAMS];
+        const actionParams =
+          dirtyResourceAction && typeof prepareParams === 'function'
+            ? prepareParams.call(
+                context,
+                {
+                  ...dirtyResourceAction,
+                  dataSourceKey: dirtyResourceAction.dataSourceKey || getDataSourceKeyFromHeaders(headers),
+                },
+                args[0],
+              )
+            : args[0];
         const requestKey = getDirtyResourceActionDispatchKey(dirtyResourceAction, headers);
         const resourceKey = getResourceDispatchKey(resourceName, resourceOf, headers);
         const inheritedToken =
@@ -459,13 +482,13 @@ function createDirtyAwareResource(
         const forwardedArgs: Parameters<ResourceActionFn> =
           actionOptions || args[1] == null
             ? [
-                args[0],
+                actionParams,
                 {
                   ...actionOptions,
                   [DIRTY_DISPATCH_TOKEN]: token,
                 },
               ]
-            : args;
+            : [actionParams, args[1]];
         let actionResult: Promise<unknown>;
         requestTokenStack.push({ key: requestKey, token });
         try {
