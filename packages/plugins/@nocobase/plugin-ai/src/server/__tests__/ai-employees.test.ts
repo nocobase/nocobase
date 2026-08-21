@@ -89,7 +89,11 @@ describe('aiEmployees.create', () => {
 
     await create(ctx, vi.fn() as Next);
 
-    expect(values).toEqual({ username: 'sales-assistant_2', nickname: '销售助理 2' });
+    expect(values).toEqual({
+      username: 'sales-assistant_2',
+      nickname: '销售助理 2',
+      knowledgeBase: { retrievalStrategy: 'onDemand' },
+    });
     expect(findOne).toHaveBeenCalledWith({ filter: { username: 'sales-assistant_2' } });
     expect(actionCreate).toHaveBeenCalledOnce();
   });

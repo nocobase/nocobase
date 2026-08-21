@@ -99,6 +99,7 @@ type SettingsAIEmployee = ChatAIEmployee & {
     topK?: number;
     score?: string | number;
     knowledgeBaseKeys?: string[];
+    retrievalStrategy?: 'always' | 'onDemand';
   };
   missingKnowledgeBaseKeys?: string[];
 };
@@ -286,7 +287,15 @@ export async function listKnowledgeBases(apiClient: APIClientLike): Promise<Know
   return Array.isArray(data) ? data.filter(isKnowledgeBaseOption) : [];
 }
 
-const createInitialEmployeeValues = (t: ReturnType<typeof useT>): EmployeeFormValues => ({
+export const normalizeKnowledgeBaseSettingsForForm = (
+  knowledgeBase: SettingsAIEmployee['knowledgeBase'] | undefined,
+  defaultStrategy: 'always' | 'onDemand',
+): NonNullable<SettingsAIEmployee['knowledgeBase']> => ({
+  ...(knowledgeBase ?? {}),
+  retrievalStrategy: knowledgeBase?.retrievalStrategy === 'onDemand' ? 'onDemand' : defaultStrategy,
+});
+
+export const createInitialEmployeeValues = (t: ReturnType<typeof useT>): EmployeeFormValues => ({
   username: randomId(),
   enabled: true,
   enableKnowledgeBase: false,
@@ -294,6 +303,7 @@ const createInitialEmployeeValues = (t: ReturnType<typeof useT>): EmployeeFormVa
     knowledgeBaseKeys: [],
     topK: 3,
     score: '0.6',
+    retrievalStrategy: 'onDemand',
   },
   knowledgeBasePrompt: t('knowledge Base Prompt default'),
   avatar: defaultAvatar,
@@ -509,6 +519,12 @@ export const buildEmployeeSubmitValues = (
   };
   if (isRecord(allValues.modelSettings)) {
     submitValues.modelSettings = normalizeModelSettings(allValues.modelSettings);
+  }
+  if (allValues.knowledgeBase) {
+    submitValues.knowledgeBase = allValues.knowledgeBase;
+  }
+  if (typeof allValues.knowledgeBasePrompt === 'string') {
+    submitValues.knowledgeBasePrompt = allValues.knowledgeBasePrompt;
   }
   return submitValues;
 };
@@ -1035,7 +1051,7 @@ const ToolSettings: React.FC<{ builtIn?: boolean }> = observer(({ builtIn }) => 
   );
 });
 
-const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClient }) => {
+export const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClient }) => {
   const t = useT();
   const form = Form.useFormInstance<EmployeeFormValues>();
   const enableKnowledgeBase = Form.useWatch('enableKnowledgeBase', form);
@@ -1078,6 +1094,45 @@ const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClie
         <Switch />
       </Form.Item>
       <Form.Item
+        name={['knowledgeBase', 'knowledgeBaseKeys']}
+        label={formLabel(t('Knowledge Base'))}
+        extra={t(
+          'Actual retrieval is limited to knowledge bases accessible to the roles of the user using this AI employee. Inaccessible knowledge bases are excluded.',
+        )}
+        preserve
+      >
+        <Select
+          disabled={!enableKnowledgeBase}
+          fieldNames={{ label: 'name', value: 'key' }}
+          loading={loading}
+          mode="multiple"
+          placeholder={t('Leave blank to retrieve from all knowledge bases')}
+          options={options}
+        />
+      </Form.Item>
+      <Form.Item name={['knowledgeBase', 'retrievalStrategy']} label={formLabel(t('Retrieval strategy'))} preserve>
+        <Radio.Group disabled={!enableKnowledgeBase} aria-label={t('Retrieval strategy')}>
+          <Space direction="vertical">
+            <Radio value="onDemand">
+              <Space direction="vertical" size={0}>
+                <span>{t('Retrieve on demand')}</span>
+                <Typography.Text type="secondary">
+                  {t('The AI employee retrieves knowledge-base content only when it determines that it is needed.')}
+                </Typography.Text>
+              </Space>
+            </Radio>
+            <Radio value="always">
+              <Space direction="vertical" size={0}>
+                <span>{t('Automatically retrieve for every question')}</span>
+                <Typography.Text type="secondary">
+                  {t('Retrieve before every user question, then answer with the retrieved content.')}
+                </Typography.Text>
+              </Space>
+            </Radio>
+          </Space>
+        </Radio.Group>
+      </Form.Item>
+      <Form.Item
         name="knowledgeBasePrompt"
         label={formLabel(t('Knowledge Base Prompt'))}
         rules={[{ required: true }]}
@@ -1086,23 +1141,21 @@ const KnowledgeBaseSettings: React.FC<{ apiClient: APIClientLike }> = ({ apiClie
         <Input.TextArea disabled={!enableKnowledgeBase} autoSize={{ minRows: 5 }} />
       </Form.Item>
       <Form.Item
-        name={['knowledgeBase', 'knowledgeBaseKeys']}
-        label={formLabel(t('Knowledge Base'))}
-        rules={[{ required: !!enableKnowledgeBase }]}
+        name={['knowledgeBase', 'topK']}
+        label={formLabel(t('Top K'))}
+        extra={t('Maximum number of knowledge-base entries returned for each retrieval.')}
+        rules={[{ required: true }]}
         preserve
       >
-        <Select
-          disabled={!enableKnowledgeBase}
-          fieldNames={{ label: 'name', value: 'key' }}
-          loading={loading}
-          mode="multiple"
-          options={options}
-        />
-      </Form.Item>
-      <Form.Item name={['knowledgeBase', 'topK']} label={formLabel(t('Top K'))} rules={[{ required: true }]} preserve>
         <InputNumber disabled={!enableKnowledgeBase} min={1} max={100} />
       </Form.Item>
-      <Form.Item name={['knowledgeBase', 'score']} label={formLabel(t('Score'))} rules={[{ required: true }]} preserve>
+      <Form.Item
+        name={['knowledgeBase', 'score']}
+        label={formLabel(t('Score'))}
+        extra={t('Minimum similarity score for knowledge-base content to be included in retrieval results.')}
+        rules={[{ required: true }]}
+        preserve
+      >
         <InputNumber disabled={!enableKnowledgeBase} min={0} max={1} step={0.1} />
       </Form.Item>
     </>
@@ -1471,6 +1524,7 @@ const AIEmployeeDrawerContent: React.FC<{
     initialValuesRef.current = editingRecord
       ? {
           ...editingRecord,
+          knowledgeBase: normalizeKnowledgeBaseSettingsForForm(editingRecord.knowledgeBase, 'always'),
           _aboutMode: editingRecord.builtIn ? (editingRecord.about ? 'custom' : 'system') : undefined,
         }
       : createInitialEmployeeValues(t);

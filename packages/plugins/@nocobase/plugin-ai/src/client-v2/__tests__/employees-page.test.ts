@@ -12,12 +12,14 @@ import {
   EMPLOYEE_PROMPT_VARIABLE_NAMESPACES,
   buildEmployeeSubmitValues,
   createAIEmployee,
+  createInitialEmployeeValues,
   deleteAIEmployee,
   isAIEmployeeUsernameConflictError,
   isKnowledgeBaseEnabled,
   listAIEmployees,
   listKnowledgeBases,
   moveAIEmployee,
+  normalizeKnowledgeBaseSettingsForForm,
   normalizeSkillSettings,
   updateAIEmployee,
   updateAIEmployeeEnabled,
@@ -27,6 +29,41 @@ import { isValidAIEmployeeNickname, isValidAIEmployeeUsername } from '../../comm
 describe('EmployeesPage request helpers', () => {
   it('keeps the role prompt editor wired to v2 variable namespaces', () => {
     expect(EMPLOYEE_PROMPT_VARIABLE_NAMESPACES).toEqual(['user', 'roleName', 'locale', 'now', 'timestamp']);
+  });
+
+  it('defaults new employee knowledge-base retrieval to onDemand and displays legacy records as always', () => {
+    const initialValues = createInitialEmployeeValues(((key: string) => key) as never);
+    expect(initialValues.knowledgeBase?.retrievalStrategy).toBe('onDemand');
+    expect(normalizeKnowledgeBaseSettingsForForm({ knowledgeBaseKeys: ['handbook'] }, 'always')).toEqual({
+      knowledgeBaseKeys: ['handbook'],
+      retrievalStrategy: 'always',
+    });
+  });
+
+  it('keeps retrieval strategy and empty knowledge-base selection when submitting', () => {
+    const values = buildEmployeeSubmitValues(
+      { username: 'atlas', nickname: 'Atlas' },
+      {
+        username: 'atlas',
+        nickname: 'Atlas',
+        knowledgeBase: {
+          retrievalStrategy: 'onDemand',
+          knowledgeBaseKeys: [],
+          topK: 3,
+          score: '0.6',
+        },
+        knowledgeBasePrompt: 'Use retrieved content.',
+      },
+    );
+    expect(values).toMatchObject({
+      knowledgeBase: {
+        retrievalStrategy: 'onDemand',
+        knowledgeBaseKeys: [],
+        topK: 3,
+        score: '0.6',
+      },
+      knowledgeBasePrompt: 'Use retrieved content.',
+    });
   });
 
   it('lists employees with the selected category filter', async () => {
