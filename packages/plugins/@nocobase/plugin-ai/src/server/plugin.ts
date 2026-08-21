@@ -58,7 +58,7 @@ import {
 import { KnowledgeBaseManager } from './ai-employees/ai-knowledge-base';
 import { LLMStreamCachedManager } from './manager/llm-stream-manager';
 import { appendAIFileAttachmentSource } from './attachments';
-
+import { withDefaultKnowledgeBaseRetrievalStrategy } from './ai-employees/ai-knowledge-base';
 type MCPClientModel = Model<{ useUserContext?: boolean }>;
 type TransactionOptions = {
   transaction?: Transaction;
@@ -119,8 +119,10 @@ export class PluginAIServer extends Plugin {
     this.app.on('afterUpgrade', async () => {
       await this.resetConversationThreadsWhenCheckpointsEmpty();
     });
+    this.db.on('aiEmployees.beforeCreate', (employee: Model) => {
+      employee.set('knowledgeBase', withDefaultKnowledgeBaseRetrievalStrategy(employee.get('knowledgeBase')));
+    });
   }
-
   private async resetConversationThreadsWhenCheckpointsEmpty() {
     const [checkpointCount, checkpointWriteCount, checkpointBlobCount, conversationsWithThreadCount] =
       await Promise.all([

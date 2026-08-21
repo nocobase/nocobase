@@ -143,5 +143,11 @@ describe('AI plugin Swagger', () => {
     expect(schemas.AIEmployee.properties?.builtIn).toMatchObject({ type: 'boolean' });
     expect(schemas.AIEmployee.properties?.category).toMatchObject({ type: 'string' });
     expect(schemas.AIEmployee.properties?.deprecated).toMatchObject({ type: 'boolean' });
+    expect(create.properties?.knowledgeBase?.properties?.retrievalStrategy).toEqual({
+      type: 'string',
+      enum: ['always', 'onDemand'],
+      description:
+        'Knowledge-base retrieval mode. Defaults to onDemand for new employees; omitted or invalid legacy values run as always.',
+    });
   });
 });

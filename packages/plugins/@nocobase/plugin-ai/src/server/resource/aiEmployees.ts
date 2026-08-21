@@ -24,7 +24,7 @@ import {
   isValidAIEmployeeUsername,
   normalizeAIEmployeeName,
 } from '../../common/ai-employee-validation';
-
+import { withDefaultKnowledgeBaseRetrievalStrategy } from '../ai-employees/ai-knowledge-base';
 const isUniqueConstraintError = (error: unknown) =>
   error instanceof UniqueConstraintError ||
   (typeof error === 'object' && error !== null && 'name' in error && error.name === 'SequelizeUniqueConstraintError');
@@ -65,8 +65,16 @@ const validateAndNormalizeProfileValues = (ctx: Context) => {
   }
 };
 
+const setDefaultKnowledgeBaseRetrievalStrategy = (ctx: Context) => {
+  const values = ctx.action.params.values;
+  if (isRecord(values)) {
+    values.knowledgeBase = withDefaultKnowledgeBaseRetrievalStrategy(values.knowledgeBase);
+  }
+};
+
 export const create = async (ctx: Context, next: Next) => {
   validateAndNormalizeProfileValues(ctx);
+  setDefaultKnowledgeBaseRetrievalStrategy(ctx);
   const username = ctx.action.params.values?.username;
 
   if (typeof username === 'string') {

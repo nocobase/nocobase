@@ -52,4 +52,10 @@ export type DocumentSegmentedWithScore = DocumentSegmented & {
   score: number;
 };
 
-export type SearchOptions = { knowledgeBaseKeys: string[]; query: string; topK?: number; score?: string };
+export type SearchOptions = {
+  knowledgeBaseKeys?: string[];
+  query: string;
+  topK?: number;
+  score?: string;
+  roleNames?: string[];
+};
