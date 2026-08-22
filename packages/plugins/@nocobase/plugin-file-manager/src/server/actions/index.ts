@@ -32,7 +32,7 @@ export default function (plugin) {
       },
     ],
   });
-  app.resourcer.use(createMiddleware, { tag: 'createMiddleware', after: 'auth' });
+  app.resourcer.use(createMiddleware, { tag: 'createMiddleware', after: ['auth', 'setCurrentRole'] });
   app.resourcer.registerActionHandler('upload', actions.create);
   app.resourcer.use(
     async (ctx, next) => {
