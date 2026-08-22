@@ -59,6 +59,43 @@ describe('aiFiles access', () => {
     const otherAgent = await app.agent().login(otherUser.id);
     const otherPreviewResponse = await otherAgent.get(previewUrl);
 
-    expect(otherPreviewResponse.statusCode).toBe(403);
+    expect(otherPreviewResponse.statusCode).toBe(404);
+  });
+
+  it('uses aiFiles view ACL when serving file URLs', async () => {
+    const owner = await app.db.getRepository('users').create({
+      values: {
+        nickname: 'AI file ACL owner',
+        username: 'ai-file-acl-owner',
+        email: 'ai-file-acl-owner@example.com',
+      },
+    });
+    const ownerAgent = await app.agent().login(owner.id);
+    const createResponse = await ownerAgent.resource('aiFiles').create({
+      values: {
+        title: 'acl-preview',
+        filename: 'acl-preview.png',
+        mimetype: 'image/png',
+      },
+    });
+    const previewUrl = createResponse.body.data.preview;
+
+    await app.db.getRepository('roles').create({
+      values: {
+        name: 'ai-file-no-view',
+        title: 'AI file no view',
+      },
+    });
+    await app.db.getRepository('rolesUsers').create({
+      values: {
+        userId: owner.id,
+        roleName: 'ai-file-no-view',
+      },
+    });
+    await app.cache.del(`roles:${owner.id}`);
+
+    const deniedResponse = await ownerAgent.set('X-Role', 'ai-file-no-view').get(previewUrl);
+
+    expect(deniedResponse.statusCode).toBe(403);
   });
 });
