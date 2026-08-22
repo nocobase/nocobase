@@ -68,6 +68,16 @@ nb app autostart run
 - 如果准备接反向代理，env 里已经保存了 `appPort`
 - 如果准备正式对外开放，已经规划好域名、入口端口和 HTTPS 方案
 
+:::warning 注意
+
+如果要部署多个彼此独立的 NocoBase 服务，请为每个服务使用不同的 `hostname`（比如不同的子域名），不要只通过端口区分服务。浏览器 cookie 不按端口隔离，同一 `hostname` 下的不同服务可能互相覆盖登录状态，并影响[稳定 URL](../../file-manager/stable-url.md)的文件访问鉴权。
+
+同一个 NocoBase 部署环境内的子应用会按应用名区分 cookie，不需要为每个子应用配置独立的 `hostname`。不过，如果同一 `hostname` 的另一个端口运行了另一个 NocoBase 服务，并且其中存在同名主应用或子应用，cookie 仍可能冲突。
+
+比如，推荐使用 `app1.example.com` 和 `app2.example.com`，不要使用 `example.com:13000` 和 `example.com:14000`。
+
+:::
+
 如果你还没有完成 CLI 安装或 env 初始化，先回到 [使用 CLI 安装应用](../installation/cli.md)。
 
 如果命令提示 env 缺少 `appPort`，先执行 [`nb env update`](../../api/cli/env/update.md) 补上。

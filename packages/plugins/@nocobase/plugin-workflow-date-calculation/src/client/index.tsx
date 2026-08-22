@@ -1,5 +1,14 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { Plugin } from '@nocobase/client';
-import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/plugin-workflow/client';
+import WorkflowPlugin from '@nocobase/plugin-workflow/client';
 
 import DateCalculationInstruction from './DateCalculationInstruction';
 
@@ -11,9 +20,8 @@ export class PluginWorkflowDateCalculationClient extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    console.log(this.app);
     const workflow = this.app.pm.get('workflow') as WorkflowPlugin;
-    workflow.registerInstruction('dateCalculation', DateCalculationInstruction);
+    workflow?.registerInstruction?.('dateCalculation', DateCalculationInstruction);
   }
 }
 

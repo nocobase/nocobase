@@ -11,6 +11,8 @@ import Database, { Model, Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
 import CleanOrphanFlowRouteModelsMigration from '../migrations/202605121200-clean-orphan-flow-route-models';
 
+const DEFAULT_ADMIN_UI_LAYOUT_UID = 'admin-layout-model';
+
 describe('desktopRoutes:listAccessible', () => {
   let app: MockServer;
   let db: Database;
@@ -29,17 +31,20 @@ describe('desktopRoutes:listAccessible', () => {
         {
           type: 'page',
           title: 'page1',
-          children: [{ type: 'tab', title: 'tab1' }],
+          uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID],
+          children: [{ type: 'tab', title: 'tab1', uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID] }],
         },
         {
           type: 'page',
           title: 'page2',
-          children: [{ type: 'tab', title: 'tab2' }],
+          uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID],
+          children: [{ type: 'tab', title: 'tab2', uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID] }],
         },
         {
           type: 'page',
           title: 'page3',
-          children: [{ type: 'tab', title: 'tab3' }],
+          uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID],
+          children: [{ type: 'tab', title: 'tab3', uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID] }],
         },
       ],
     });
@@ -145,14 +150,15 @@ describe('desktopRoutes:listAccessible', () => {
       values: {
         type: 'page',
         title: 'page4',
+        uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID],
       },
     });
 
     // 创建两个子路由
     await db.getRepository('desktopRoutes').create({
       values: [
-        { type: 'tab', title: 'tab4-1', parentId: page4.id },
-        { type: 'tab', title: 'tab4-2', parentId: page4.id },
+        { type: 'tab', title: 'tab4-1', parentId: page4.id, uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID] },
+        { type: 'tab', title: 'tab4-2', parentId: page4.id, uiLayouts: [DEFAULT_ADMIN_UI_LAYOUT_UID] },
       ],
     });
 

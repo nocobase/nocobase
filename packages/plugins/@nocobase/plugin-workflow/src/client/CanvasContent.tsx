@@ -21,6 +21,8 @@ import { lang } from './locale';
 import useStyles from './style';
 import { TriggerConfig } from './triggers';
 import { useWorkflowExecuted } from './hooks';
+import { BranchRenderContext } from '../client-v2/canvas/BranchRenderContext';
+import { Node } from './nodes';
 
 export function CanvasContent({ entry }) {
   const { styles } = useStyles();
@@ -36,41 +38,43 @@ export function CanvasContent({ entry }) {
   return (
     <div className="workflow-canvas-wrapper">
       <ErrorBoundary FallbackComponent={ErrorFallback} onError={console.error}>
-        <div className="workflow-canvas" style={{ zoom: zoom / 100 }}>
-          <div
-            className={cx(
-              styles.branchBlockClass,
-              css`
-                margin-top: 0 !important;
-              `,
-            )}
-          >
-            <div className={styles.branchClass}>
-              {executed ? (
-                <Alert
-                  type="warning"
-                  message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}
-                  showIcon
-                  className={css`
-                    margin-bottom: 1em;
-                  `}
-                />
-              ) : null}
-              <TriggerConfig />
-              <div
-                className={cx(
-                  styles.branchBlockClass,
-                  css`
-                    margin-top: 0 !important;
-                  `,
-                )}
-              >
-                <Branch entry={entry} />
+        <BranchRenderContext.Provider value={Node}>
+          <div className="workflow-canvas" style={{ zoom: zoom / 100 }}>
+            <div
+              className={cx(
+                styles.branchBlockClass,
+                css`
+                  margin-top: 0 !important;
+                `,
+              )}
+            >
+              <div className={styles.branchClass}>
+                {executed ? (
+                  <Alert
+                    type="warning"
+                    message={lang('Executed workflow cannot be modified. Could be copied to a new version to modify.')}
+                    showIcon
+                    className={css`
+                      margin-bottom: 1em;
+                    `}
+                  />
+                ) : null}
+                <TriggerConfig />
+                <div
+                  className={cx(
+                    styles.branchBlockClass,
+                    css`
+                      margin-top: 0 !important;
+                    `,
+                  )}
+                >
+                  <Branch entry={entry} />
+                </div>
+                <div className={styles.terminalClass}>{lang('End')}</div>
               </div>
-              <div className={styles.terminalClass}>{lang('End')}</div>
             </div>
           </div>
-        </div>
+        </BranchRenderContext.Provider>
       </ErrorBoundary>
       {copiedNode ? (
         <div className={styles.clipboardPreviewClass}>

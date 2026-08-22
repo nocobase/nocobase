@@ -1,0 +1,401 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { Form } from 'antd';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  createLLMService,
+  deleteLLMService,
+  deleteLLMServices,
+  LLMServiceForm,
+  listLLMProviders,
+  listLLMServices,
+  listProviderModels,
+  moveLLMService,
+  normalizeEnabledModels,
+  testLLMServiceFlight,
+  updateLLMService,
+  updateLLMServiceEnabled,
+} from '../pages/LLMServicesPage';
+
+type CapturedSelectProps = {
+  popupClassName?: string;
+  popupMatchSelectWidth?: boolean;
+};
+
+const capturedSelectProps = vi.hoisted(() => ({ current: undefined as CapturedSelectProps | undefined }));
+
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('antd')>();
+  const ReactModule = await import('react');
+
+  return {
+    ...actual,
+    Select: (props: CapturedSelectProps) => {
+      capturedSelectProps.current = props;
+      return ReactModule.createElement('div', { 'data-testid': 'provider-select' });
+    },
+  };
+});
+
+vi.mock('@nocobase/client-v2', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@nocobase/client-v2')>()),
+  EnvVariableInput: () => null,
+  useApp: () => ({ pm: { get: () => undefined } }),
+}));
+
+vi.mock('../locale', () => ({
+  useT: () => (key: string) => key,
+}));
+
+describe('LLMServicesPage request helpers', () => {
+  it('constrains the provider popup to the select width', () => {
+    render(
+      React.createElement(
+        Form,
+        null,
+        React.createElement(LLMServiceForm, {
+          editing: false,
+          providers: [
+            {
+              key: 'openai-completions',
+              value: 'openai-completions',
+              label: 'OpenAI (completions)',
+              supportedModel: ['LLM', 'EMBEDDING'],
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(capturedSelectProps.current?.popupMatchSelectWidth).toBe(true);
+    expect(capturedSelectProps.current?.popupClassName).toBeTruthy();
+  });
+
+  it('validates each model ID on submit and keeps the edited input mounted', async () => {
+    const onFinish = vi.fn();
+    render(
+      React.createElement(
+        Form,
+        {
+          initialValues: {
+            provider: 'openai-completions',
+            enabledModels: {
+              mode: 'custom',
+              models: [
+                { label: 'Model 1', value: '1' },
+                { label: 'Model 2', value: '1' },
+              ],
+            },
+          },
+          onFinish,
+        },
+        React.createElement(LLMServiceForm, {
+          editing: false,
+          providers: [
+            {
+              key: 'openai-completions',
+              value: 'openai-completions',
+              label: 'OpenAI (completions)',
+              supportedModel: ['LLM'],
+            },
+          ],
+        }),
+        React.createElement('button', { type: 'submit' }, 'Submit'),
+      ),
+    );
+    const modelIdInputs = screen.getAllByPlaceholderText('Model id');
+
+    expect(modelIdInputs[0]).not.toHaveAttribute('aria-invalid', 'true');
+    expect(modelIdInputs[1]).not.toHaveAttribute('aria-invalid', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(modelIdInputs[1]).toHaveAttribute('aria-invalid', 'true');
+    });
+    expect(modelIdInputs[0]).not.toHaveAttribute('aria-invalid', 'true');
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(await screen.findByText('Model ID already exists')).toBeInTheDocument();
+    screen.getAllByPlaceholderText('Display name').forEach((input) => {
+      expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
+
+    const secondModelIdInput = modelIdInputs[1];
+    fireEvent.change(secondModelIdInput, { target: { value: '12' } });
+
+    expect(screen.getAllByPlaceholderText('Model id')[1]).toBe(secondModelIdInput);
+    expect(secondModelIdInput).toHaveValue('12');
+    await waitFor(() => {
+      expect(secondModelIdInput).not.toHaveAttribute('aria-invalid', 'true');
+      expect(screen.queryByText('Model ID already exists')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => {
+      expect(onFinish).toHaveBeenCalledTimes(1);
+    });
+    expect(onFinish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabledModels: {
+          mode: 'custom',
+          models: [
+            { label: 'Model 1', value: '1' },
+            { label: 'Model 2', value: '12' },
+          ],
+        },
+      }),
+    );
+  });
+
+  it('normalizes legacy enabledModels values', () => {
+    expect(normalizeEnabledModels(undefined)).toEqual({ mode: 'recommended', models: [] });
+    expect(normalizeEnabledModels(['gpt-4o'])).toEqual({
+      mode: 'custom',
+      models: [{ label: 'gpt-4o', value: 'gpt-4o' }],
+    });
+    expect(normalizeEnabledModels({ mode: 'provider', models: [{ label: 'GPT-4o', value: 'gpt-4o' }] })).toEqual({
+      mode: 'provider',
+      models: [{ label: 'GPT-4o', value: 'gpt-4o' }],
+    });
+  });
+
+  it('lists LLM services from llmServices.list', async () => {
+    const list = vi.fn().mockResolvedValue({
+      data: {
+        data: [{ name: 'v_openai' }, { title: 'invalid' }],
+        count: 1,
+      },
+    });
+    const apiClient = {
+      resource: () => ({ list }),
+    };
+
+    await expect(listLLMServices(apiClient)).resolves.toEqual({
+      data: [{ name: 'v_openai' }],
+      total: 1,
+    });
+    expect(list).toHaveBeenCalledWith(
+      {
+        sort: ['sort'],
+      },
+      undefined,
+    );
+  });
+
+  it('moves LLM services by name and the sortable sort field', async () => {
+    const move = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ move }),
+    };
+
+    await moveLLMService(apiClient, 'v_openai', 'v_kimi');
+
+    expect(move).toHaveBeenCalledWith(
+      {
+        sourceId: 'v_openai',
+        targetId: 'v_kimi',
+        sortField: 'sort',
+      },
+      undefined,
+    );
+  });
+
+  it('creates an LLM service through llmServices.create', async () => {
+    const create = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ create }),
+    };
+
+    await createLLMService(apiClient, {
+      name: 'v_openai',
+      title: 'OpenAI',
+      provider: 'openai',
+      options: {
+        apiKey: 'secret',
+        baseURL: '',
+      },
+      enabledModels: {
+        mode: 'custom',
+        models: [{ value: ' gpt-4o ', label: ' GPT 4o ' }],
+      },
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      {
+        values: {
+          name: 'v_openai',
+          title: 'OpenAI',
+          provider: 'openai',
+          options: {
+            apiKey: 'secret',
+          },
+          enabledModels: {
+            mode: 'custom',
+            models: [{ value: 'gpt-4o', label: 'GPT 4o' }],
+          },
+        },
+      },
+      undefined,
+    );
+  });
+
+  it('updates an LLM service by name', async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ update }),
+    };
+
+    await updateLLMService(apiClient, {
+      name: 'v_openai',
+      title: 'OpenAI',
+      provider: 'openai',
+      options: {
+        apiKey: 'secret',
+        baseURL: ' https://api.example.com/v1/ ',
+      },
+    });
+
+    expect(update).toHaveBeenCalledWith(
+      {
+        values: {
+          name: 'v_openai',
+          title: 'OpenAI',
+          provider: 'openai',
+          options: {
+            apiKey: 'secret',
+            baseURL: 'https://api.example.com/v1/',
+          },
+        },
+        filterByTk: 'v_openai',
+      },
+      undefined,
+    );
+  });
+
+  it('deletes one or more LLM services by name', async () => {
+    const destroy = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ destroy }),
+    };
+
+    await deleteLLMService(apiClient, 'v_openai');
+    await deleteLLMServices(apiClient, ['v_openai', 'v_kimi']);
+
+    expect(destroy).toHaveBeenNthCalledWith(1, { filterByTk: 'v_openai' }, undefined);
+    expect(destroy).toHaveBeenNthCalledWith(2, { filterByTk: ['v_openai', 'v_kimi'] }, undefined);
+  });
+
+  it('updates enabled state by name', async () => {
+    const update = vi.fn().mockResolvedValue({});
+    const apiClient = {
+      resource: () => ({ update }),
+    };
+
+    await updateLLMServiceEnabled(apiClient, 'v_openai', false);
+
+    expect(update).toHaveBeenCalledWith(
+      {
+        values: { enabled: false },
+        filterByTk: 'v_openai',
+      },
+      undefined,
+    );
+  });
+
+  it('loads provider options and compiles titles', async () => {
+    const listLLMProvidersAction = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            name: 'openai',
+            title: '{{t("OpenAI")}}',
+            supportedModel: ['LLM'],
+          },
+        ],
+      },
+    });
+    const apiClient = {
+      resource: () => ({ listLLMProviders: listLLMProvidersAction }),
+    };
+
+    await expect(listLLMProviders(apiClient, (value) => `compiled:${value}`)).resolves.toEqual([
+      {
+        key: 'openai',
+        value: 'openai',
+        label: 'compiled:{{t("OpenAI")}}',
+        supportedModel: ['LLM'],
+      },
+    ]);
+  });
+
+  it('loads provider models with skipNotify', async () => {
+    const listProviderModelsAction = vi.fn().mockResolvedValue({
+      data: {
+        data: [{ id: 'gpt-4o' }, { id: 'gpt-4o' }, { name: 'invalid' }],
+      },
+    });
+    const apiClient = {
+      resource: () => ({ listProviderModels: listProviderModelsAction }),
+    };
+
+    await expect(
+      listProviderModels(apiClient, {
+        provider: 'openai',
+        options: { apiKey: '{{ $env.OPENAI_API_KEY }}', baseURL: '   ' },
+        model: 'gpt',
+      }),
+    ).resolves.toEqual(['gpt-4o']);
+    expect(listProviderModelsAction).toHaveBeenCalledWith(
+      {
+        values: {
+          provider: 'openai',
+          options: { apiKey: '{{ $env.OPENAI_API_KEY }}' },
+          model: 'gpt',
+        },
+      },
+      { skipNotify: true },
+    );
+  });
+
+  it('runs LLM test flight through ai.testFlight', async () => {
+    const testFlight = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          code: 0,
+          message: 'ok',
+        },
+      },
+    });
+    const apiClient = {
+      resource: () => ({ testFlight }),
+    };
+
+    await expect(
+      testLLMServiceFlight(apiClient, {
+        provider: 'openai',
+        options: { apiKey: 'secret', baseURL: ' https://api.example.com/v1/ ' },
+        model: 'gpt-4o',
+      }),
+    ).resolves.toEqual({ code: 0, message: 'ok' });
+    expect(testFlight).toHaveBeenCalledWith(
+      {
+        values: {
+          provider: 'openai',
+          options: { apiKey: 'secret', baseURL: 'https://api.example.com/v1/' },
+          model: 'gpt-4o',
+        },
+      },
+      undefined,
+    );
+  });
+});

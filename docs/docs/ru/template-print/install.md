@@ -1,10 +1,10 @@
 ### Установка плагинов
 
-Обратитесь к документации по [установке и обновлению коммерческих плагинов](#).
+Подробные инструкции по установке и обновлению см. в: [Руководство по активации коммерческих плагинов](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ### Установка LibreOffice (необязательно)
 
-Для генерации PDF-файлов необходимо установить LibreOffice. [Загрузите его с официального сайта](https://www.libreoffice.org/download/download-libreoffice). Для версии Docker вы можете создать скрипт прямо в директории `./storage/scripts`.
+Для генерации PDF требуется LibreOffice. [Скачайте его с официального сайта](https://www.libreoffice.org/download/download-libreoffice). В Docker-версии можно создать скрипт в каталоге `./storage/scripts`.
 
 ```bash
 mkdir ./storage/scripts
@@ -12,18 +12,18 @@ cd ./storage/scripts
 vim install-libreoffice.sh
 ```
 
-Содержимое файла `install-libreoffice.sh` следующее:
+Содержимое `install-libreoffice.sh`:
 
 ```sh
 #!/bin/bash
 
-# Определение переменных
+# Определяем переменные
 INSTALL_DIR="/opt/libreoffice24.8"
 DOWNLOAD_URL="https://downloadarchive.documentfoundation.org/libreoffice/old/24.8.5.2/deb/x86_64/LibreOffice_24.8.5.2_Linux_x86-64_deb.tar.gz"
 
-# Проверка, установлен ли LibreOffice
+# Проверяем, установлен ли уже LibreOffice
 if [ -d "$INSTALL_DIR" ]; then
-    echo "LibreOffice уже установлен, пропуск установки."
+    echo "LibreOffice is already installed, skipping installation."
     exit 0
 fi
 
@@ -39,7 +39,7 @@ deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
 deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
 EOF
 
-# Обновление APT и установка зависимостей
+# Обновляем APT и устанавливаем зависимости
 apt-get update
 
 apt-get install -y \
@@ -62,45 +62,45 @@ rm -rf /var/lib/apt/lists/*
 
 cd /app/nocobase/storage/scripts
 
-# Загрузка и установка LibreOffice, если он еще не установлен
+# Скачиваем и устанавливаем LibreOffice, если он еще не загружен
 if [ ! -d "./libreoffice" ]; then
     rm -rf libreoffice.tar.gz
     wget --no-check-certificate -O libreoffice.tar.gz $DOWNLOAD_URL
     if [ $? -ne 0 ]; then
-        echo "Не удалось загрузить LibreOffice."
+        echo "Failed to download LibreOffice."
         exit 1
     fi
     rm -rf libreoffice && mkdir libreoffice
     tar -zxvf libreoffice.tar.gz -C ./libreoffice --strip-components=1
     if [ $? -ne 0 ]; then
-        echo "Не удалось извлечь LibreOffice."
+        echo "Failed to extract LibreOffice."
         exit 1
     fi
 fi
 
-# Установка LibreOffice
+# Устанавливаем LibreOffice
 dpkg -i libreoffice/DEBS/*.deb
 
 ln -s /opt/libreoffice24.8/program/soffice.bin /usr/bin/libreoffice
 libreoffice --version
 
 if [ $? -ne 0 ]; then
-    echo "Не удалось установить LibreOffice."
+    echo "Failed to install LibreOffice."
     exit 1
 fi
 
-echo "Установка LibreOffice успешно завершена."
+echo "LibreOffice installation completed successfully."
 ```
 
 Перезапустите контейнер `app`:
 
 ```bash
 docker compose restart app
-# Просмотр логов
+# Просматриваем логи
 docker compose logs app
 ```
 
-Убедитесь, что установка прошла успешно:
+Проверьте, что установка прошла успешно:
 
 ```bash
 $ docker compose exec app bash -c "libreoffice --version"

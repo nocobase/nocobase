@@ -1,5 +1,5 @@
-# Конфигурация FlowModel
+# Конфигурация модели потока
 
-## EventDefinition
+## Определение событий
 
-## ActionDefinition/StepDefinition
+## Определение действий/шагов

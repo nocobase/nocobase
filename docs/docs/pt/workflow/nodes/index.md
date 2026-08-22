@@ -6,7 +6,7 @@ Um **fluxo de trabalho** geralmente é composto por várias etapas operacionais 
 O gatilho de um **fluxo de trabalho** não é um nó. Ele é exibido apenas como um ponto de entrada no fluxograma, mas é um conceito diferente de um nó. Para mais detalhes, consulte o conteúdo sobre [Gatilhos](../triggers/index.md).
 :::
 
-Do ponto de vista funcional, os nós atualmente implementados podem ser divididos em várias categorias principais (totalizando 29 tipos de nós):
+Do ponto de vista funcional, os nós atualmente implementados podem ser divididos em várias categorias principais (totalizando 30 tipos de nós):
 
 - Inteligência Artificial
   - [Grande Modelo de Linguagem](../../ai-employees/workflow/nodes/llm/chat.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-llm)
@@ -32,6 +32,7 @@ Do ponto de vista funcional, os nós atualmente implementados podem ser dividido
   - [Consultar Dados](./query.md)
   - [Consulta Agregada](./aggregate.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-aggregate)
   - [Ação SQL](./sql.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-sql)
+  - [Transação de banco de dados](./transaction.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-transaction)
 - Tratamento Manual
   - [Tratamento Manual](./manual.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-manual)
   - [Aprovação](./approval.md) (fornecido pelo **plugin** @nocobase/plugin-workflow-approval)

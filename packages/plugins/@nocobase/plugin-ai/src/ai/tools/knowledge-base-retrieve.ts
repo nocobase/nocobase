@@ -10,6 +10,7 @@
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
 import { getAIPlugin } from './sub-agents/shared';
+import { getCurrentRoleNames } from '../../server/ai-employees/ai-knowledge-base';
 // @ts-ignore
 import pkg from '../../../package.json';
 
@@ -61,6 +62,7 @@ export default defineTools({
     const content = await plugin.knowledgeBaseManager.retrievePrompt({
       username,
       query,
+      roleNames: getCurrentRoleNames(ctx.state),
     });
     return {
       status: 'success',

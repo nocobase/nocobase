@@ -190,6 +190,10 @@ import { TypedVariableInput } from '@nocobase/client-v2';
 <Form.Item name={['options', 'secure']} label={t('Secure')} initialValue={true}>
   <TypedVariableInput types={['boolean']} namespaces={['$env']} />
 </Form.Item>
+
+// Inject a custom variable tree (e.g. a workflow node's upstream outputs,
+// which are not in the global registry)
+<TypedVariableInput types={['string', 'number']} metaTree={workflowMetaTree} />
 ```
 
 Key props:
@@ -197,6 +201,7 @@ Key props:
 - `types`: allowed constant types. Shape mirrors v1 `useTypedConstant` — pass bare type names (`['number', 'boolean']`) or `[type, editorProps]` tuples (`[['number', { min, max, step }]]`) to forward props to the underlying antd editor. Defaults to `['string', 'number', 'boolean', 'date']`. **Even when only one type is allowed, the `Constant` entry still expands into a typed submenu** (Number / Boolean / Date / String) — matches v1 so users can see what type the constant is
 - `namespaces`: restrict the variable picker to specific top-level namespaces (e.g. `['$env']`). Omit to expose every namespace registered on `flowEngine.context`
 - `extraNodes`: static leaves appended after the namespace-filtered nodes
+- `metaTree`: **inject the variable tree directly** instead of reading the global `flowEngine.context` meta tree. When set, `namespaces`/`extraNodes` are ignored and this tree is used verbatim — for context-scoped variable sources that are not in the global registry (typically a workflow node's upstream outputs, `$jobsMapByNodeKey`). Nodes whose `children` is a thunk (`() => Promise<MetaTreeNode[]>`) are **lazy-loaded on expand** (via flow-engine's `loadMetaTreeChildren`)
 - `nullable`: whether to expose the `Null` switcher entry. Default `true`. Combined with `Form.Item.rules={[{ required: true }]}`, the user can explicitly clear the field but submission is still blocked by validation — mirrors v1's "Null + required" pairing
 - `delimiters`: variable-token delimiters, default `['{{', '}}']` — same as `VariableInput`
 - `value` / `onChange` / `placeholder` / `disabled` / `style` / `className`: standard controlled-input props
@@ -212,9 +217,10 @@ When **not** to use it:
 - **Pure literal fields** (users will never pass a variable) → use the antd primitive directly (`InputNumber` / `Select` / `DatePicker` / `Input`) and skip the Cascader column overhead
 - **Pure variable fields** (users will never pass a literal) → use `EnvVariableInput` (`$env`-only, with optional password masking) or `VariableInput` (general-purpose)
 
+Supported constant types: `string` / `number` / `boolean` / `date` / `object`. The `object` (JSON) type renders an inline monospace textarea (2 rows by default, drag-resizable) — it keeps the raw text as a draft while editing and `JSON.parse`s it back into an object on blur. On a parse failure it shows the raw `JSON.parse` message (e.g. `Expected property name or '}' in JSON at position …`, matching v1) on its own row below the input, and does not emit. Mirrors v1 `useTypedConstant`'s object form (default value `{}`).
+
 Capabilities skipped (present in v1, not yet ported to v2):
 
-- `object` constant type (JSON editor) — v2 has no inline "JSON editor + Cascader switcher" yet; add when there's a concrete caller
 - Async `loadChildren` cascading — most MetaTree namespaces are already eagerly resolved by `useFilteredMetaTree`, so this hasn't been needed
 
 #### FileSizeInput

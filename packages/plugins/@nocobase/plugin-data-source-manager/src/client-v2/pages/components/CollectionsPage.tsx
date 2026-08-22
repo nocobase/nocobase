@@ -13,17 +13,15 @@ import {
   ExclamationCircleFilled,
   FilterOutlined,
   ImportOutlined,
-  MenuOutlined,
   PlusOutlined,
   ReloadOutlined,
   SyncOutlined,
 } from '@ant-design/icons';
-import { DndContext, DragOverlay, MouseSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core';
-import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
   DEFAULT_PAGE_SIZE,
   DrawerFormLayout,
   FilterContent,
+  SortableCategoryTabs,
   Table,
   normalizeCollectionTemplateFields,
 } from '@nocobase/client-v2';
@@ -34,7 +32,6 @@ import type { FilterGroupType } from '@nocobase/utils/client';
 import { useRequest } from 'ahooks';
 import {
   App,
-  Badge,
   Button,
   Card,
   Checkbox,
@@ -48,7 +45,6 @@ import {
   Select,
   Space,
   Spin,
-  Tabs,
   Tag,
   theme,
   Transfer,
@@ -64,6 +60,7 @@ import { compileLegacyTemplate, preferLegacyTemplateTitle } from '../../utils/co
 import { getErrorMessage, isFormValidationError } from '../../utils/error';
 import { getCollectionFieldActionUrl } from './collectionFieldApi';
 import FieldsPage from './FieldsPage';
+import { getCollectionRecordUniqueKey, RecordUniqueKeyWarningIcon } from './RecordUniqueKey';
 
 interface CollectionsPageProps {
   dataSourceKey: string;
@@ -127,138 +124,6 @@ const colorLabels: Record<string, string> = {
   blue: 'Blue',
   purple: 'Purple',
 };
-
-function DraggableCategoryTab(props: { children: React.ReactNode; item: CollectionCategoryRecord }) {
-  const { attributes, listeners, setNodeRef } = useDraggable({
-    id: String(props.item.id),
-    data: props.item,
-  });
-
-  return (
-    <div ref={setNodeRef} {...listeners} {...attributes}>
-      {props.children}
-    </div>
-  );
-}
-
-function DroppableCategoryTab(props: { children: React.ReactNode; item: CollectionCategoryRecord }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: String(props.item.id),
-    data: props.item,
-  });
-
-  return (
-    <div ref={setNodeRef} style={isOver ? { color: 'green' } : undefined}>
-      {props.children}
-    </div>
-  );
-}
-
-function CategoryTabContent(props: {
-  item: CollectionCategoryRecord;
-  onDelete: (category: CollectionCategoryRecord) => void;
-  onEdit: (category: CollectionCategoryRecord) => void;
-}) {
-  const t = useT();
-
-  return (
-    <Space size={6}>
-      <Badge color={props.item.color === 'default' ? undefined : props.item.color} />
-      {compileLegacyTemplate(props.item.name || props.item.id, t)}
-      <Dropdown
-        menu={{
-          items: [
-            { key: 'edit', label: t('Edit category') },
-            { key: 'delete', label: t('Delete category') },
-          ],
-          onClick({ key, domEvent }) {
-            domEvent.stopPropagation();
-            if (key === 'edit') {
-              props.onEdit(props.item);
-              return;
-            }
-            props.onDelete(props.item);
-          },
-        }}
-        trigger={['click']}
-      >
-        <Button
-          aria-label={t('Edit category')}
-          icon={<MenuOutlined />}
-          size="small"
-          type="text"
-          onClick={(event) => event.stopPropagation()}
-        />
-      </Dropdown>
-    </Space>
-  );
-}
-
-function SortableCategoryTab(props: {
-  item: CollectionCategoryRecord;
-  onDelete: (category: CollectionCategoryRecord) => void;
-  onEdit: (category: CollectionCategoryRecord) => void;
-}) {
-  return (
-    <DroppableCategoryTab item={props.item}>
-      <DraggableCategoryTab item={props.item}>
-        <CategoryTabContent item={props.item} onDelete={props.onDelete} onEdit={props.onEdit} />
-      </DraggableCategoryTab>
-    </DroppableCategoryTab>
-  );
-}
-
-function CategoryTabsDndProvider(props: {
-  children: React.ReactNode;
-  onSort: (from: CollectionCategoryRecord, to: CollectionCategoryRecord) => Promise<void>;
-}) {
-  const { children, onSort } = props;
-  const [activeTab, setActiveTab] = useState<CollectionCategoryRecord>();
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
-    }),
-  );
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveTab(event.active.data.current as CollectionCategoryRecord | undefined);
-  }, []);
-
-  const handleDragEnd = useCallback(
-    async (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveTab(undefined);
-
-      if (!over || over.id === active.id) {
-        return;
-      }
-
-      const source = active.data.current as CollectionCategoryRecord | undefined;
-      const target = over.data.current as CollectionCategoryRecord | undefined;
-      if (!source || !target) {
-        return;
-      }
-
-      await onSort(source, target);
-    },
-    [onSort],
-  );
-
-  return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      {children}
-      <DragOverlay dropAnimation={null}>
-        {activeTab ? (
-          <span style={{ whiteSpace: 'nowrap' }}>
-            <CategoryTabContent item={activeTab} onDelete={() => undefined} onEdit={() => undefined} />
-          </span>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
-  );
-}
 
 function createEmptyFilter(): FilterGroupValue {
   return observable({ logic: '$and', items: [] }) as FilterGroupValue;
@@ -431,31 +296,6 @@ function renderCategoryTags(value: CollectionCategoryRecord[] | undefined, t: (k
       ))}
     </Space>
   );
-}
-
-function normalizeFilterTargetKey(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.filter(Boolean).map(String);
-  }
-
-  return value ? [String(value)] : undefined;
-}
-
-function getCollectionFilterTargetKey(collection: Record<string, any>) {
-  const configuredFilterTargetKey = normalizeFilterTargetKey(collection.filterTargetKey);
-  if (configuredFilterTargetKey?.length) {
-    return configuredFilterTargetKey;
-  }
-
-  if (!Array.isArray(collection.fields)) {
-    return undefined;
-  }
-
-  const primaryKeys = collection.fields
-    .filter((field) => field?.primaryKey && field?.name)
-    .map((field) => String(field.name));
-
-  return primaryKeys.length === 1 ? primaryKeys : undefined;
 }
 
 const CollectionFilterItem: FC<{ value: CollectionFilterItemValue }> = observer(
@@ -1145,7 +985,7 @@ function CollectionEditDrawer(props: {
   const filterTargetKeyOptions = useMemo(() => {
     const fields =
       Array.isArray(collection.fields) && collection.fields.length ? collection.fields : fieldsRequest.data || [];
-    const selectedFilterTargetKeys = getCollectionFilterTargetKey(collection) || [];
+    const selectedFilterTargetKeys = getCollectionRecordUniqueKey(collection, collection.fields) || [];
     const options = fields
       .filter((field) => {
         return !!field.name;
@@ -1175,7 +1015,7 @@ function CollectionEditDrawer(props: {
       category: Array.isArray(collection.category) ? collection.category.map((item) => String(item.id)) : [],
       description: collection.description,
       simplePaginate: collection.simplePaginate,
-      filterTargetKey: getCollectionFilterTargetKey(collection),
+      filterTargetKey: getCollectionRecordUniqueKey(collection, collection.fields),
       databaseView: getDatabaseViewFormValue(collection),
       schema: collection.schema,
       viewName: collection.viewName || collection.name,
@@ -1411,7 +1251,7 @@ function CollectionsPage(props: CollectionsPageProps) {
   const allowCustomCollectionDeletion = Boolean(
     !isMainDataSource && !configureFieldsDisabled && dataSourceType?.allowCollectionDeletion && DeleteCollection,
   );
-  const collectionTemplates = useMemo(() => plugin.getCollectionTemplates(), [plugin]);
+  const collectionTemplates = useMemo(() => plugin.getCreatableCollectionTemplates(), [plugin]);
   const categoryRequest = useRequest(
     async () => {
       if (!isMainDataSource) {
@@ -1874,27 +1714,40 @@ function CollectionsPage(props: CollectionsPageProps) {
     });
   }, [availableTables, tableSearchValue]);
 
-  const categoryTabs = useMemo(
-    () => [
-      {
-        key: 'all',
-        label: t('All collections'),
-        closable: false,
-      },
-      ...categories.map((item) => ({
-        key: String(item.id),
-        label: <SortableCategoryTab item={item} onDelete={handleDeleteCategory} onEdit={openEditCategoryModal} />,
-        closable: false,
+  const categoryTabItems = useMemo(
+    () =>
+      categories.map((item) => ({
+        id: item.id,
+        label: compileLegacyTemplate(item.name || item.id, t),
+        color: item.color,
       })),
-    ],
-    [categories, handleDeleteCategory, openEditCategoryModal, t],
+    [categories, t],
+  );
+
+  const findCategoryById = useCallback(
+    (id: string | number) => categories.find((item) => String(item.id) === String(id)),
+    [categories],
   );
 
   const columns = useMemo<ColumnsType<Record<string, any>>>(() => {
     const nextColumns: ColumnsType<Record<string, any>> = [
       {
         title: t('Collection display name'),
-        render: (record) => compileLegacyTemplate(record.title || record.name, t),
+        render: (record) => (
+          <Space size={4}>
+            <RecordUniqueKeyWarningIcon
+              collection={record}
+              dataSourceKey={props.dataSourceKey}
+              fields={record.fields}
+              onSaved={(values) => {
+                Object.assign(record, values);
+                request.mutate(updateCollectionListRecord(request.data, record.name, values));
+                request.refresh();
+              }}
+            />
+            <span>{compileLegacyTemplate(record.title || record.name, t)}</span>
+          </Space>
+        ),
       },
       { title: t('Collection name'), dataIndex: 'name', ellipsis: true },
       {
@@ -1980,19 +1833,33 @@ function CollectionsPage(props: CollectionsPageProps) {
   return (
     <Card title={compileLegacyTemplate(props.title, t)} variant="borderless">
       {isMainDataSource ? (
-        <CategoryTabsDndProvider onSort={handleSortCategory}>
-          <Tabs
-            activeKey={activeCategoryKey}
-            type="editable-card"
-            items={categoryTabs}
-            onChange={handleCategoryChange}
-            onEdit={(_, action) => {
-              if (action === 'add') {
-                openCategoryModal();
-              }
-            }}
-          />
-        </CategoryTabsDndProvider>
+        <SortableCategoryTabs
+          activeKey={activeCategoryKey}
+          onChange={handleCategoryChange}
+          allTab={{ key: 'all', label: t('All collections') }}
+          categories={categoryTabItems}
+          onAdd={openCategoryModal}
+          onEdit={(id) => {
+            const category = findCategoryById(id);
+            if (category) {
+              openEditCategoryModal(category);
+            }
+          }}
+          onDelete={(id) => {
+            const category = findCategoryById(id);
+            if (category) {
+              handleDeleteCategory(category);
+            }
+          }}
+          onSort={(sourceId, targetId) => {
+            const from = findCategoryById(sourceId);
+            const to = findCategoryById(targetId);
+            if (from && to) {
+              return handleSortCategory(from, to);
+            }
+          }}
+          menuLabels={{ edit: t('Edit category'), delete: t('Delete category') }}
+        />
       ) : null}
       <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
         <CollectionFilterPopover

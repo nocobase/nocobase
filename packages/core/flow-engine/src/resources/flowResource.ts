@@ -47,6 +47,7 @@ export class ResourceError extends Error {
   constructor(error) {
     const data = toErrMessages(error).shift();
     super(data.message);
+    this.data = data;
     this.name = 'ResponseError';
   }
 

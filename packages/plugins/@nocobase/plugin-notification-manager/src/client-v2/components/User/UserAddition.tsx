@@ -13,8 +13,8 @@ import React, { useCallback, useState } from 'react';
 import { useNotificationTranslation } from '../../locale';
 
 export type UserAdditionProps = {
-  value?: any[];
-  onChange?: (next: any[]) => void;
+  value?: Array<number | string | { filter?: Record<string, unknown> }>;
+  onChange?: (next: Array<number | string | { filter?: Record<string, unknown> }>) => void;
   disabled?: boolean;
 };
 
@@ -24,7 +24,7 @@ export function UserAddition(props: UserAdditionProps) {
   const [open, setOpen] = useState(false);
 
   const append = useCallback(
-    (item: any) => {
+    (item: string | { filter?: Record<string, unknown> }) => {
       onChange?.([...value, item]);
       setOpen(false);
     },

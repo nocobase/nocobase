@@ -1,6 +1,6 @@
 # EventDefinition
 
-`EventDefinition` определяет логику обработки событий в рабочем процессе, используемую для реагирования на определённые события. События — это важный механизм в FlowEngine для запуска выполнения рабочих процессов.
+Определение события (`EventDefinition`) определяет логику обработки событий в потоке и используется для реакции на конкретные триггеры событий. События — важный механизм в движке потоков для запуска выполнения потока.
 
 ## Определение типа
 
@@ -8,16 +8,16 @@
 type EventDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> = ActionDefinition<TModel, TCtx>;
 ```
 
-`EventDefinition` по сути, является псевдонимом для `ActionDefinition` и, следовательно, обладает теми же свойствами и методами.
+`EventDefinition` фактически является алиасом для `ActionDefinition`, поэтому имеет те же свойства и методы.
 
-## Способы регистрации
+## Способ регистрации
 
 ```ts
 // Глобальная регистрация (через FlowEngine)
 const engine = new FlowEngine();
 engine.registerEvent({
   name: 'clickEvent',
-  title: 'Click Event',
+  title: 'Событие клика',
   handler: async (ctx, params) => {
     // Логика обработки события
   }
@@ -27,13 +27,13 @@ engine.registerEvent({
 class MyModel extends FlowModel {}
 MyModel.registerEvent({
   name: 'submitEvent',
-  title: 'Submit Event',
+  title: 'Событие отправки',
   handler: async (ctx, params) => {
     // Логика обработки события
   }
 });
 
-// Использование в рабочем процессе
+// Использование в flow
 MyModel.registerFlow({
   key: 'formFlow',
   on: 'submitEvent',  // Ссылка на зарегистрированное событие
@@ -53,7 +53,7 @@ MyModel.registerFlow({
 **Обязательно**: Да  
 **Описание**: Уникальный идентификатор события.
 
-Используется для ссылки на событие в рабочем процессе через свойство `on`.
+Используется для ссылки на событие в flow через свойство `on`.
 
 **Пример**:
 ```ts
@@ -66,9 +66,9 @@ name: 'customEvent'
 
 **Тип**: `string`  
 **Обязательно**: Нет  
-**Описание**: Отображаемое название события.
+**Описание**: Отображаемый заголовок события.
 
-Используется для отображения в пользовательском интерфейсе и отладки.
+Используется для отображения в UI и отладки.
 
 **Пример**:
 ```ts
@@ -83,7 +83,7 @@ title: 'Data Change'
 **Обязательно**: Да  
 **Описание**: Функция-обработчик события.
 
-Основная логика события, которая принимает контекст и параметры, а затем возвращает результат обработки.
+Базовая логика события, которая принимает контекст и параметры и возвращает результат обработки.
 
 **Пример**:
 ```ts
@@ -91,14 +91,14 @@ handler: async (ctx, params) => {
   const { model, flowEngine } = ctx;
   
   try {
-    // Выполнить логику обработки события
+    // Выполнение логики обработки события
     const result = await handleEvent(params);
     
-    // Вернуть результат
+    // Возврат результата
     return {
       success: true,
       data: result,
-      message: 'Event handled successfully'
+      message: 'Событие успешно обработано'
     };
   } catch (error) {
     return {
@@ -148,9 +148,9 @@ defaultParams: async (ctx) => {
 
 **Тип**: `Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>)`  
 **Обязательно**: Нет  
-**Описание**: Схема конфигурации пользовательского интерфейса для события.
+**Описание**: Схема UI-конфигурации события.
 
-Определяет способ отображения события и конфигурацию формы в пользовательском интерфейсе.
+Определяет способ отображения события в UI и конфигурацию его формы.
 
 **Пример**:
 ```ts
@@ -162,13 +162,13 @@ uiSchema: {
   properties: {
     preventDefault: {
       type: 'boolean',
-      title: 'Предотвратить действие по умолчанию',
+      title: 'Отменять действие по умолчанию',
       'x-component': 'Switch',
       'x-decorator': 'FormItem'
     },
     stopPropagation: {
       type: 'boolean',
-      title: 'Остановить распространение',
+      title: 'Останавливать всплытие',
       'x-component': 'Switch',
       'x-decorator': 'FormItem'
     },
@@ -198,23 +198,23 @@ uiSchema: {
 
 **Тип**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Обязательно**: Нет  
-**Описание**: Функция-хук, выполняемая перед сохранением параметров.
+**Описание**: Хук-функция, выполняемая перед сохранением параметров.
 
-Выполняется перед сохранением параметров события и может использоваться для их валидации или преобразования.
+Выполняется перед сохранением параметров события; может использоваться для валидации или преобразования параметров.
 
 **Пример**:
 ```ts
 beforeParamsSave: (ctx, params, previousParams) => {
   // Валидация параметров
   if (!params.eventType) {
-    throw new Error('Event type is required');
+    throw new Error('Тип события обязателен');
   }
   
   // Преобразование параметров
   params.eventType = params.eventType.toLowerCase();
   
-  // Запись изменений
-  console.log('Event params changed:', {
+  // Логирование изменений
+  console.log('Параметры события изменены:', {
     from: previousParams,
     to: params
   });
@@ -225,15 +225,15 @@ beforeParamsSave: (ctx, params, previousParams) => {
 
 **Тип**: `(ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>`  
 **Обязательно**: Нет  
-**Описание**: Функция-хук, выполняемая после сохранения параметров.
+**Описание**: Хук-функция, выполняемая после сохранения параметров.
 
-Выполняется после сохранения параметров события и может использоваться для запуска других операций.
+Выполняется после сохранения параметров события; может использоваться для запуска других действий.
 
 **Пример**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Запись в журнал
-  console.log('Event params saved:', params);
+  // Логирование
+  console.log('Параметры события сохранены:', params);
   
   // Запуск события
   ctx.model.emitter.emit('eventConfigChanged', {
@@ -251,15 +251,15 @@ afterParamsSave: (ctx, params, previousParams) => {
 
 **Тип**: `StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>)`  
 **Обязательно**: Нет  
-**Описание**: Режим отображения события в пользовательском интерфейсе.
+**Описание**: Режим отображения UI для события.
 
-Контролирует способ отображения события в пользовательском интерфейсе.
+Управляет тем, как событие отображается в UI.
 
 **Поддерживаемые режимы**:
-- `'dialog'` - режим диалогового окна
+- `'dialog'` - режим диалога
 - `'drawer'` - режим выдвижной панели
-- `'embed'` - встроенный режим
-- Или пользовательский объект конфигурации
+- `'embed'` - режим встраивания
+- либо пользовательский объект конфигурации
 
 **Пример**:
 ```ts
@@ -283,18 +283,18 @@ uiMode: (ctx) => {
 
 ## Встроенные типы событий
 
-FlowEngine включает следующие встроенные типы событий:
+В движке потоков встроены следующие распространённые типы событий:
 
-- `'click'` - Событие клика
-- `'submit'` - Событие отправки
-- `'reset'` - Событие сброса
-- `'remove'` - Событие удаления
-- `'openView'` - Событие открытия представления
-- `'dropdownOpen'` - Событие открытия выпадающего списка
-- `'popupScroll'` - Событие прокрутки всплывающего окна
-- `'search'` - Событие поиска
-- `'customRequest'` - Событие пользовательского запроса
-- `'collapseToggle'` - Событие переключения сворачивания/разворачивания
+- `'click'` - событие клика
+- `'submit'` - событие отправки
+- `'reset'` - событие сброса
+- `'remove'` - событие удаления
+- `'openView'` - событие открытия представления
+- `'dropdownOpen'` - событие открытия выпадающего списка
+- `'popupScroll'` - событие прокрутки popup
+- `'search'` - событие поиска
+- `'customRequest'` - событие пользовательского запроса
+- `'collapseToggle'` - событие переключения collapse
 
 ## Полный пример
 
@@ -311,7 +311,7 @@ FormModel.registerEvent({
     try {
       // Валидация данных формы
       if (validation && !validateFormData(formData)) {
-        throw new Error('Form validation failed');
+        throw new Error('Ошибка валидации формы');
       }
       
       // Обработка отправки формы
@@ -320,7 +320,7 @@ FormModel.registerEvent({
       return {
         success: true,
         data: result,
-        message: 'Form submitted successfully'
+        message: 'Форма успешно отправлена'
       };
     } catch (error) {
       return {
@@ -346,14 +346,14 @@ FormModel.registerEvent({
       },
       preventDefault: {
         type: 'boolean',
-        title: 'Предотвратить действие по умолчанию',
+        title: 'Отменять действие по умолчанию',
         'x-component': 'Switch',
         'x-decorator': 'FormItem',
         default: true
       },
       stopPropagation: {
         type: 'boolean',
-        title: 'Остановить распространение',
+        title: 'Останавливать всплытие',
         'x-component': 'Switch',
         'x-decorator': 'FormItem',
         default: false
@@ -383,7 +383,7 @@ FormModel.registerEvent({
   },
   beforeParamsSave: (ctx, params) => {
     if (params.validation && !params.formData) {
-      throw new Error('Form data is required when validation is enabled');
+      throw new Error('Данные формы обязательны, когда включена валидация');
     }
   },
   afterParamsSave: (ctx, params) => {
@@ -400,7 +400,7 @@ FormModel.registerEvent({
     const { field, oldValue, newValue } = params;
     
     try {
-      // Запись изменения данных
+      // Логирование изменения данных
       await logDataChange({
         field,
         oldValue,
@@ -418,7 +418,7 @@ FormModel.registerEvent({
       
       return {
         success: true,
-        message: 'Data change logged successfully'
+        message: 'Изменение данных успешно зафиксировано'
       };
     } catch (error) {
       return {
@@ -435,7 +435,7 @@ FormModel.registerEvent({
   uiMode: 'embed'
 });
 
-// Использование событий в рабочем процессе
+// Использование событий в flow
 FormModel.registerFlow({
   key: 'formProcessing',
   title: 'Обработка формы',
@@ -443,17 +443,17 @@ FormModel.registerFlow({
   steps: {
     validate: {
       use: 'validateFormAction',
-      title: 'Валидация формы',
+      title: 'Проверить форму',
       sort: 0
     },
     process: {
       use: 'processFormAction',
-      title: 'Обработка формы',
+      title: 'Обработать форму',
       sort: 1
     },
     save: {
       use: 'saveFormAction',
-      title: 'Сохранение формы',
+      title: 'Сохранить форму',
       sort: 2
     }
   }

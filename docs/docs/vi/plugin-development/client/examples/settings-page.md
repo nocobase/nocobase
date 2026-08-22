@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-settings-page
 
 Lệnh này sẽ sinh cấu trúc file cơ bản tại `packages/plugins/@my-project/plugin-settings-page`, bao gồm các thư mục `src/client-v2/`, `src/server/`, `src/locale/`, v.v. Chi tiết xem tại [Viết Plugin đầu tiên](../../write-your-first-plugin).
 
+Tiếp theo, hãy khởi động chế độ phát triển để những thay đổi code sau đó được hot-reload — với dự án tạo bằng `nb init`, chạy `nb source dev` tại thư mục gốc dự án (`<app-path>`); với repo source code NocoBase bạn tự clone, chạy `yarn dev` tại thư mục gốc source code.
+
 ## Bước 2: Đăng ký trang cài đặt
 
 Chỉnh sửa `src/client-v2/plugin.tsx`, trong `load()` dùng `this.pluginSettingsManager` để đăng ký trang cài đặt. Chia làm hai bước — trước tiên dùng `addMenuItem()` để đăng ký mục menu, sau đó dùng `addPageTabItem()` để đăng ký trang thực tế:

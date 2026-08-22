@@ -75,6 +75,12 @@ interface DragState {
   generatedIds: Map<string, string>;
 }
 
+const MOBILE_GRID_DISABLED_DROP_SLOT_TYPES = new Set<LayoutSlot['type']>(['column-edge', 'item-edge', 'empty-column']);
+
+const filterMobileGridDragSlots = (slots: LayoutSlot[]) => {
+  return slots.filter((slot) => !MOBILE_GRID_DISABLED_DROP_SLOT_TYPES.has(slot.type));
+};
+
 const getClientPoint = (event: any): { x: number; y: number } | null => {
   if (!event) {
     return null;
@@ -625,7 +631,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       return;
     }
     const snapshot = buildLayoutSnapshot({ container: this.getDragContainer() });
-    this.dragState.slots = snapshot.slots;
+    this.dragState.slots = this.context.isMobileLayout ? filterMobileGridDragSlots(snapshot.slots) : snapshot.slots;
     this.dragState.containerRect = snapshot.containerRect;
   }
 
@@ -1135,7 +1141,7 @@ GridModel.registerFlow({
 /**
  * 将多列栅格 rows 转换为移动端单列 rows。
  * 遍历原 rows 的行与列顺序，把每个原列（过滤空白列后）变成一个新行（仅一列）。
- * 行 key 使用 uid() 生成，保持插入顺序即可。
+ * 行 key 使用原 rowId 与 columnIndex 生成，避免每次渲染产生随机 key 导致移动端滚动位置丢失。
  * @param rows 原始多列 rows
  * @returns 单列 rows
  */
@@ -1145,13 +1151,38 @@ export function transformRowsToSingleColumn(
 ): Record<string, string[][]> {
   const emptyColumnUid = options?.emptyColumnUid ?? EMPTY_COLUMN_UID;
   const singleColumnRows: Record<string, string[][]> = {};
+
+  const getAvailableRowId = (baseRowId: string) => {
+    if (!singleColumnRows[baseRowId]) {
+      return baseRowId;
+    }
+
+    let duplicateIndex = 1;
+    let rowId = `${baseRowId}:duplicate:${duplicateIndex}`;
+    while (singleColumnRows[rowId]) {
+      duplicateIndex += 1;
+      rowId = `${baseRowId}:duplicate:${duplicateIndex}`;
+    }
+    return rowId;
+  };
+
   Object.keys(rows).forEach((rowId) => {
     const columns = rows[rowId];
-    columns.forEach((column) => {
-      const filtered = column.filter((id) => id !== emptyColumnUid);
-      if (filtered.length > 0) {
-        singleColumnRows[uid()] = [filtered];
-      }
+    const effectiveColumns = columns
+      .map((column, columnIndex) => ({
+        columnIndex,
+        items: column.filter((id) => id !== emptyColumnUid),
+      }))
+      .filter((column) => column.items.length > 0);
+
+    if (effectiveColumns.length === 1 && effectiveColumns[0].columnIndex === 0) {
+      singleColumnRows[getAvailableRowId(rowId)] = [effectiveColumns[0].items];
+      return;
+    }
+
+    effectiveColumns.forEach((column) => {
+      const generatedRowId = `mobile:${encodeURIComponent(rowId)}:${column.columnIndex}`;
+      singleColumnRows[getAvailableRowId(generatedRowId)] = [column.items];
     });
   });
   return singleColumnRows;

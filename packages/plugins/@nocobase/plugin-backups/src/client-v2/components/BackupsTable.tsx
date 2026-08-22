@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { css } from '@emotion/css';
 import { Table, useCurrentAppInfo } from '@nocobase/client-v2';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
@@ -43,6 +44,14 @@ export const BackupsTable = () => {
   const ctx = useFlowContext();
   const currentAppInfo = useCurrentAppInfo<AppInfo>();
   const { token } = theme.useToken();
+  const backupsTableClassName = useMemo(
+    () => css`
+      .ant-table-tbody > tr > td {
+        line-height: ${token.controlHeight - token.paddingXXS}px;
+      }
+    `,
+    [token.controlHeight, token.paddingXXS],
+  );
   const { modal, message } = App.useApp();
   const { data, loading, refreshAsync: refresh } = useBackupsContext();
   const { runAsync: destroy } = useRequest<BackupFile[] | undefined, [string]>(
@@ -101,6 +110,7 @@ export const BackupsTable = () => {
         title: t('Backup list'),
         dataIndex: 'name',
         width: 400,
+        ellipsis: true,
         onCell: (record) => {
           return record.inProgress
             ? {
@@ -152,5 +162,13 @@ export const BackupsTable = () => {
     [handleDestroy, handleDownload, t, token.colorText],
   );
 
-  return <Table<BackupFile> rowKey="name" dataSource={data?.data} loading={loading} columns={columns} />;
+  return (
+    <Table<BackupFile>
+      rowKey="name"
+      className={backupsTableClassName}
+      dataSource={data?.data}
+      loading={loading}
+      columns={columns}
+    />
+  );
 };

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { createForm } from '@formily/core';
 import { observer, useForm } from '@formily/react';
 
@@ -32,161 +32,17 @@ import { uid } from '@nocobase/utils/client';
 import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
-import { useBranchContext } from './BranchContext';
-import { useNodeDragContext } from './NodeDragContext';
-import { useNodeClipboardContext } from './NodeClipboardContext';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import { useMemoizedFn } from 'ahooks';
+export { AddNodeSlot } from '../client-v2/canvas/AddNodeSlot';
+import { PresetDialogForm } from '../client-v2/canvas/AddNodeContext';
+import { AddNodeContext, useAddNodeContext } from '../client-v2/canvas/AddNodeContext.shared';
+import { createNodeAndMaybeReparent, resolveAddNodeDecision } from '../client-v2/canvas/addNodeController';
 
 interface AddButtonProps {
   upstream;
   branchIndex?: number | null;
   [key: string]: any;
-}
-
-function AddButtonPlaceholder() {
-  const { styles } = useStyles();
-  return (
-    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      <span className="ant-btn-placeholder" />
-    </div>
-  );
-}
-
-export function AddButton(props: AddButtonProps) {
-  const { upstream, branchIndex = null } = props;
-  const { styles } = useStyles();
-  const { workflow } = useFlowContext() ?? {};
-  const addNodeContext = useAddNodeContext();
-  const executed = useWorkflowExecuted();
-  const branchContext = useBranchContext();
-
-  const onOpen = useCallback(
-    () =>
-      addNodeContext?.onMenuOpen?.({
-        upstream,
-        branchIndex,
-        branchContext: {
-          syncOnly: branchContext?.syncOnly ?? false,
-        },
-      }),
-    [addNodeContext, upstream, branchIndex, branchContext?.syncOnly],
-  );
-
-  if (!workflow || !addNodeContext || branchContext?.addable === false) {
-    return <AddButtonPlaceholder />;
-  }
-
-  return (
-    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      {executed ? (
-        <span className="ant-btn-placeholder" />
-      ) : (
-        <Button
-          aria-label={props['aria-label'] || 'add-button'}
-          shape="circle"
-          icon={<PlusOutlined />}
-          loading={
-            addNodeContext.creating?.upstreamId == upstream?.id && addNodeContext.creating?.branchIndex === branchIndex
-          }
-          size="small"
-          onClick={onOpen}
-          className={cx({
-            anchoring:
-              addNodeContext.anchor?.upstream === upstream && addNodeContext.anchor?.branchIndex === branchIndex,
-          })}
-        />
-      )}
-    </div>
-  );
-}
-
-function AddNodeDropZone(props: AddButtonProps) {
-  const { upstream, branchIndex = null } = props;
-  const branchContext = useBranchContext();
-  const { styles } = useStyles();
-  const dragContext = useNodeDragContext();
-  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
-  const impact = dragContext?.getDropImpact?.(target);
-  const status = impact?.status ?? 'disabled';
-  const disabled = branchContext?.addable === false || status === 'disabled';
-  const registerDropZone = dragContext?.registerDropZone;
-  const getDropKey = dragContext?.getDropKey;
-  const dropKey = getDropKey?.(target);
-  const isActive = Boolean(dropKey && dragContext?.activeDropKey === dropKey);
-  const zoneRef = React.useRef<HTMLDivElement | null>(null);
-
-  React.useEffect(() => {
-    if (!registerDropZone || !zoneRef.current || disabled) {
-      return;
-    }
-    return registerDropZone(target, zoneRef.current);
-  }, [registerDropZone, disabled, target]);
-
-  return (
-    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      <div
-        role="button"
-        aria-label={props['aria-label'] || 'drop-zone'}
-        ref={zoneRef}
-        className={cx(styles.dropZoneClass, {
-          'drop-safe': status === 'safe',
-          'drop-warning': status === 'warning',
-          'drop-active': isActive,
-          'drop-disabled': disabled,
-        })}
-      />
-    </div>
-  );
-}
-
-function AddNodePasteZone(props: AddButtonProps) {
-  const { upstream, branchIndex = null } = props;
-  const branchContext = useBranchContext();
-  const { styles } = useStyles();
-  const clipboard = useNodeClipboardContext();
-  const target = useMemo(() => ({ upstream, branchIndex }), [upstream, branchIndex]);
-  const impact = clipboard?.getPasteImpact?.(target);
-  const status = impact?.status ?? 'disabled';
-  const disabled = branchContext?.addable === false || status === 'disabled';
-
-  const onClick = useCallback(() => {
-    if (!disabled) {
-      clipboard?.pasteNode?.(target);
-    }
-  }, [clipboard, disabled, target]);
-
-  return (
-    <div className={cx(styles.addButtonClass, 'workflow-add-node-button')}>
-      <Button
-        aria-label={props['aria-label'] || 'paste-zone'}
-        shape="circle"
-        icon={<SnippetsOutlined />}
-        size="small"
-        disabled={disabled}
-        onClick={onClick}
-        className={cx(styles.pasteButtonClass, {
-          'paste-safe': status === 'safe',
-          'paste-warning': status === 'warning',
-        })}
-      />
-    </div>
-  );
-}
-
-export function AddNodeSlot(props: AddButtonProps) {
-  const branchContext = useBranchContext();
-  const dragContext = useNodeDragContext();
-  const clipboard = useNodeClipboardContext();
-  const executed = useWorkflowExecuted();
-  if (branchContext?.addable === false) {
-    return <AddButtonPlaceholder />;
-  }
-  if (dragContext?.dragging) {
-    return <AddNodeDropZone {...props} />;
-  }
-  if (clipboard?.clipboard && !executed) {
-    return <AddNodePasteZone {...props} />;
-  }
-  return <AddButton {...props} />;
 }
 
 function useAddNodeSubmitAction() {
@@ -238,12 +94,6 @@ function useAddNodeSubmitAction() {
       }
     },
   };
-}
-
-const AddNodeContext = createContext(null);
-
-export function useAddNodeContext() {
-  return useContext(AddNodeContext);
 }
 
 const defaultBranchingOptions = [
@@ -416,6 +266,7 @@ function NodeMenu() {
 export function AddNodeContextProvider(props) {
   const api = useAPIClient();
   const compile = useCompile();
+  const flowEngine = useFlowEngine();
   const engine = usePlugin(WorkflowPlugin);
   const [anchor, setAnchor] = useState(null);
   const [creating, setCreating] = useState(null);
@@ -460,49 +311,90 @@ export function AddNodeContextProvider(props) {
     [api, refresh, workflow.id],
   );
 
-  const onCreate = useCallback(
-    async ({ type, upstream, branchIndex, branchContext }) => {
-      const instruction = engine.instructions.get(type);
-      if (!instruction) {
-        console.error(`Instruction "${type}" not found`);
-        return;
-      }
-
-      const unavailableMessage = getInstructionAvailable(instruction, {
-        engine,
-        workflow,
-        upstream,
-        branchIndex,
-        branchContext,
+  const createModernNode = useMemoizedFn(async (anchor, instruction, presetValues) => {
+    const { downstreamBranchIndex, config: presetConfig } = presetValues ?? {};
+    const values = {
+      key: uid(),
+      type: instruction.type,
+      upstreamId: anchor.upstream?.id ?? null,
+      branchIndex: anchor.branchIndex ?? null,
+      title: flowEngine.context.t(instruction.title),
+      config: { ...(instruction.createDefaultConfig?.() ?? {}), ...(presetConfig ?? {}) },
+    };
+    setCreating(values);
+    try {
+      await createNodeAndMaybeReparent({
+        workflowId: workflow.id,
+        api,
+        refresh,
+        values,
+        downstreamBranchIndex,
       });
-      if (unavailableMessage) {
-        return;
-      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setCreating(null);
+    }
+  });
 
-      const data = {
-        key: uid(),
-        type,
-        upstreamId: upstream?.id ?? null,
-        branchIndex,
-        title: compile(instruction.title),
-        config: instruction.createDefaultConfig?.() ?? {},
-      };
-      const downstream = upstream?.id
-        ? nodes.find((item) => item.upstreamId === data.upstreamId && item.branchIndex === data.branchIndex)
-        : nodes.find((item) => item.upstreamId === null);
-      if (
-        instruction.presetFieldset ||
-        ((typeof instruction.branching === 'function' ? instruction.branching(data.config) : instruction.branching) &&
-          downstream)
-      ) {
-        setPresetting({ data, instruction });
-        return;
-      }
+  const onCreate = useMemoizedFn(async ({ type, upstream, branchIndex, branchContext }) => {
+    const decision = resolveAddNodeDecision({
+      type,
+      anchor: { upstream, branchIndex, branchContext },
+      runtime: {
+        workflow,
+        nodes: nodes ?? [],
+        getInstruction: (instructionType) => engine.instructions.get(instructionType),
+        getInstructionAvailable: (instruction, context) =>
+          getInstructionAvailable(instruction, {
+            ...context,
+            engine,
+          }),
+        translateTitle: (title) => compile(title),
+      },
+    });
 
-      await create(data);
-    },
-    [compile, create, engine.instructions, nodes],
-  );
+    if (decision.kind === 'missing') {
+      console.error(`Instruction "${type}" not found`);
+      return;
+    }
+    if (decision.kind === 'blocked') {
+      return;
+    }
+
+    // Preset dispatch (ADR-0003), v1-first like the card/drawer surfaces: a legacy `presetFieldset` (with entries)
+    // keeps the Formily preset modal; only a node that dropped it falls through to the inherited `PresetFieldsetLoader`
+    // and the v2 antd preset dialog (`ctx.viewer.dialog`), maintained once in client-v2.
+    if (decision.kind === 'legacy-preset') {
+      setPresetting({ data: decision.draft, instruction: decision.instruction });
+      return;
+    }
+
+    if (decision.kind === 'modern-preset') {
+      flowEngine.context.viewer.dialog({
+        width: 520,
+        closable: true,
+        content: () => (
+          <PresetDialogForm
+            instruction={decision.instruction}
+            hasDownstream={decision.hasDownstream}
+            onSubmit={(values) => createModernNode(decision.anchor, decision.instruction, values)}
+          />
+        ),
+      });
+      return;
+    }
+
+    // No preset form on either side — still show the v1 branch-preservation modal when the node branches into an
+    // existing downstream.
+    if (decision.kind === 'branch-fallback') {
+      setPresetting({ data: decision.draft, instruction: decision.instruction });
+      return;
+    }
+
+    await create(decision.draft);
+  });
 
   return (
     <AddNodeContext.Provider

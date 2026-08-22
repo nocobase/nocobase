@@ -13,6 +13,7 @@ import {
   FlowModelRenderer,
   type CollectionField,
   type MetaTreeNode,
+  type VariableInputProps,
   useFlowContext,
   EditableItemModel,
   FlowModelContext,
@@ -68,7 +69,11 @@ interface Props {
    * @deprecated Date 已作为独立一级变量提供，此参数仅为调用兼容保留。
    */
   enableDateVariableAsConstant?: boolean;
+  /** 是否允许在变量选择器中使用 RunJS。默认 true，保持历史行为。 */
+  allowRunJS?: boolean;
   maxAssociationFieldDepth?: number;
+  disabled?: boolean;
+  variableConverters?: VariableInputProps['converters'];
 }
 
 type ResolvedFieldContext = {
@@ -438,7 +443,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   operatorMetaList,
   preferFormItemFieldModel,
   associationFieldNamesOverride,
+  allowRunJS = true,
   maxAssociationFieldDepth = 2,
+  disabled = false,
+  variableConverters,
 }) => {
   const flowCtx = useFlowContext<FlowModelContext>();
   const normalizeEventValue = React.useCallback((eventOrValue: unknown) => {
@@ -752,7 +760,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       fm.setStepParams('selectSettings', 'fieldNames', { label: overrideLabel });
     }
     fm?.setProps?.({
-      disabled: false,
+      disabled,
       readPretty: false,
       pattern: 'editable',
       updateAssociation: false,
@@ -815,6 +823,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     preferFormItemFieldModel,
     associationFieldNamesOverride?.label,
     associationFieldNamesOverride?.value,
+    disabled,
   ]);
 
   // 当传入 operator / operatorMetaList 时，按 operator schema 适配临时字段的输入组件与 props。
@@ -867,6 +876,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       React.useEffect(() => {
         const coercedValue = coerceEmptyValueForRenderer(inputProps?.value);
         const handleChange = (ev: any) => {
+          if (inputProps?.disabled) {
+            return;
+          }
           const nextRaw = normalizeEventValue(ev);
           const normalizedForStore = operator ? normalizeFilterValueByOperator(operator, nextRaw) : nextRaw;
           const nextValue = coerceEmptyValueForRenderer(normalizedForStore);
@@ -898,6 +910,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             value={inputProps?.value}
             onChange={(e) => inputProps?.onChange?.(normalizeEventValue(e))}
             placeholder={placeholder}
+            disabled={inputProps?.disabled}
             style={withFullWidthStyle(wrapperStyle)}
           />
         );
@@ -921,7 +934,12 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
   const RunJSComponent = React.useMemo(() => {
     const C: React.FC<any> = (inputProps) => (
-      <RunJSValueEditor t={flowCtx.t} value={inputProps?.value} onChange={inputProps?.onChange} />
+      <RunJSValueEditor
+        t={flowCtx.t}
+        value={inputProps?.value}
+        onChange={inputProps?.onChange}
+        disabled={inputProps?.disabled}
+      />
     );
     return C;
   }, [flowCtx]);
@@ -953,6 +971,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       dateComponentProps={dateVariableComponentProps}
       style={{ width: '100%' }}
       clearValue={''}
+      allowRunJS={allowRunJS}
+      disabled={disabled}
+      converters={variableConverters}
     />
   );
 };

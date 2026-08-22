@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "Логирование",
+    "label": "Логер",
     "items": [
       {
         "type": "custom-link",
-        "label": "Серверные логи",
+        "label": "Логи сервера",
         "link": "/log-and-monitor/logger/"
       },
       {
         "type": "custom-link",
-        "label": "Серверные логи, журнал аудита, история записей",
+        "label": "Логи сервера, журналы аудита, история записей",
         "link": "/log-and-monitor/logger/overview"
       }
     ]
@@ -21,12 +21,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Инструкция по использованию",
+        "label": "Руководство",
         "link": "/log-and-monitor/telemetry/"
       },
       {
         "type": "custom-link",
-        "label": "Экспортеры",
+        "label": "Экспортер",
         "items": [
           {
             "type": "custom-link",

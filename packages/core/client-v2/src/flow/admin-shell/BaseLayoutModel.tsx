@@ -20,6 +20,7 @@ import {
   type BaseLayoutRouteCoordinatorOptions,
   type RoutePageMeta,
 } from './BaseLayoutRouteCoordinator';
+import { NocoBaseDesktopRouteType } from '../../flow-compat';
 import type { LayoutDefinition } from '../../layout-manager/types';
 import { isLayoutContentRouteName } from '../../layout-manager/utils';
 
@@ -328,6 +329,18 @@ export class BaseLayoutModel<
     if (!pageUid) {
       return {
         type: 'notFound',
+        pathname,
+        basePathname,
+        relativePath,
+      };
+    }
+
+    const routeRepository = this.flowEngine.context.routeRepository;
+    const schemaRoute = routeRepository?.getRouteBySchemaUid?.(pageUid);
+    const route = schemaRoute ? undefined : routeRepository?.getRouteById?.(pageUid);
+    if (!schemaRoute && route?.type === NocoBaseDesktopRouteType.group) {
+      return {
+        type: 'root',
         pathname,
         basePathname,
         relativePath,

@@ -6,7 +6,7 @@
 ワークフローのトリガーはノードではありません。フローチャート上ではエントリーポイントのノードとして表示されますが、ノードとは異なる概念です。詳細については、[トリガー](../triggers/index.md)のコンテンツをご参照ください。
 :::
 
-機能的な観点から、現在実装されているノードはいくつかの主要なカテゴリに分類できます（全29種類のノード）。
+機能的な観点から、現在実装されているノードはいくつかの主要なカテゴリに分類できます（全30種類のノード）。
 
 - 人工知能
   - [大規模言語モデル](../../ai-employees/workflow/nodes/llm/chat.md)（@nocobase/plugin-workflow-llm プラグインが提供）
@@ -32,6 +32,7 @@
   - [データ照会](./query.md)
   - [集計クエリ](./aggregate.md)（@nocobase/plugin-workflow-aggregate プラグインが提供）
   - [SQL操作](./sql.md)（@nocobase/plugin-workflow-sql プラグインが提供）
+  - [データベーストランザクション](./transaction.md)（@nocobase/plugin-workflow-transaction プラグインが提供）
 - 手動処理
   - [手動処理](./manual.md)（@nocobase/plugin-workflow-manual プラグインが提供）
   - [承認](./approval.md)（@nocobase/plugin-workflow-approval プラグインが提供）

@@ -95,6 +95,7 @@ services:
 - `NOCOBASE_PROXY_UPSTREAM_HOST=app` memungkinkan kontainer Nginx mengakses layanan `app` melalui jaringan Compose
 - `./storage` harus dimount ke `app` dan `nginx` agar konfigurasi proxy, aset statis, dan file unggahan bisa dipakai bersama
 - Kontainer `nginx` perlu menunggu sampai `nocobase.conf` dibuat, lalu menautkannya ke `/etc/nginx/conf.d/default.conf` dengan `ln -sf`
+- Konfigurasi yang dibuat otomatis meneruskan rute `/files/` di bawah `APP_PUBLIC_PATH` dan rute `/files/` di root ke NocoBase untuk pratinjau dan unduhan file yang memerlukan autentikasi
 - Jika menggunakan kontainer Nginx eksternal, biarkan kontainer `nginx` menangani mapping port host. Untuk pengujian, Anda bisa mulai dengan `13000:80`; di produksi, biasanya langsung ekspos port host `80` dan `443`, sementara layanan `app` tidak perlu membuka port ke host
 
 ## Jika menggunakan Nginx lokal di host
@@ -169,6 +170,8 @@ sudo systemctl reload nginx
 ```
 
 Jika Nginx lokal Anda tidak menggunakan direktori `conf.d`, ganti target link dengan path konfigurasi Anda sendiri. Biasanya lebih aman membiarkan `nocobase.conf` tetap sebagai file yang di-include dari konteks `http {}` daripada menyalin isinya secara manual.
+
+Jika Anda mengelola Nginx sendiri dan tidak menggunakan konfigurasi yang dibuat otomatis, pastikan `/files/` serta rute terkait di bawah `APP_PUBLIC_PATH` diteruskan ke NocoBase sebelum rule fallback SPA. Lihat [Reverse proxy Nginx](../../nocobase-cli/production/reverse-proxy/nginx.md) untuk contoh lengkap.
 
 ## Tautan terkait
 

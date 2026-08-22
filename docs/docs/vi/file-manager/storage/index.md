@@ -24,30 +24,6 @@ Hiện tại NocoBase tích hợp sẵn các loại engine sau:
 - [S3 Pro](./s3-pro)
 
 Khi cài đặt hệ thống, một Local Storage engine sẽ được tự động thêm và có thể sử dụng ngay. Bạn cũng có thể thêm engine mới hoặc chỉnh sửa các tham số của engine đã có.
-
-
-Nếu bạn đang dùng storage engine chỉ hỗ trợ truy cập công khai và muốn di chuyển file lịch sử sang S3 Pro, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).
-
-## Khả năng truy cập file
-
-Mỗi storage engine hỗ trợ kiểm soát truy cập file khác nhau. Trước khi cấu hình, hãy xác nhận file có cần truy cập riêng tư hay không:
-
-| Storage engine | Khả năng truy cập file |
-| --- | --- |
-| [Local Storage](./local) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
-| [Amazon S3](./amazon-s3) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
-| [Aliyun OSS](./aliyun-oss) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
-| [Tencent COS](./tencent-cos) | Chỉ hỗ trợ truy cập công khai; không hỗ trợ truy cập riêng tư |
-| [S3 Pro](./s3-pro) | Hỗ trợ truy cập riêng tư qua URL ký tạm thời |
-
-:::warning Lưu ý
-
-Local Storage, Amazon S3, Aliyun OSS và Tencent COS không kiểm tra đăng nhập khi truy cập file và không tạo URL ký tạm thời. Sau khi file được upload, bất kỳ ai có URL truy cập file đều có thể truy cập trực tiếp.
-
-Nếu cần lưu hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc các file không nên công khai, hãy dùng [S3 Pro](./s3-pro) và bật truy cập riêng tư.
-
-:::
-
 ## Tham số chung
 
 Ngoài các tham số riêng của từng loại engine, các phần dưới đây là tham số chung (lấy Local Storage làm ví dụ):
@@ -87,11 +63,75 @@ Sau khi tích chọn sẽ được đặt làm storage engine mặc định củ
 Sau khi tích chọn, khi bản ghi dữ liệu của bảng attachment hoặc bảng file bị xóa, file đã upload trong storage engine vẫn được giữ lại. Mặc định không tích chọn, tức là khi xóa bản ghi sẽ xóa file trong storage engine cùng lúc.
 
 :::info{title=Mẹo}
-Sau khi upload file, đường dẫn truy cập cuối cùng sẽ được nối từ một số phần:
+Khi chọn "URL gốc", địa chỉ storage cuối cùng được ghép từ nhiều phần:
 
 ```
 <URL truy cập cơ sở>/<đường dẫn>/<tên file><phần mở rộng>
 ```
 
 Ví dụ: `https://cdn.nocobase.com/app/user/avatar/20240529115151.png`.
+
+Khi chọn "URL NocoBase", bản ghi file trả về đường dẫn NocoBase theo định dạng `/files/...`. Cấu hình phía trên vẫn được sử dụng khi truy cập dịch vụ storage.
 :::
+
+## URL file và kiểm soát truy cập
+
+Storage engine có thể trả về URL NocoBase hoặc URL gốc của dịch vụ storage. URL NocoBase được dùng mặc định. Chỉ chọn URL gốc khi một dịch vụ bên ngoài bắt buộc phải sử dụng trực tiếp địa chỉ storage.
+
+Cấu hình này áp dụng theo từng storage engine. Sau khi lưu, cả file hiện có và file mới upload trong engine đó đều trả về URL theo định dạng đã chọn. File không bị di chuyển hoặc upload lại.
+
+![Cấu hình URL file](https://static-docs.nocobase.com/20260723221234.png)
+
+### URL NocoBase
+
+Bản ghi file trả về đường dẫn truy cập do NocoBase cung cấp, ví dụ:
+
+```text
+/files/main/main/attachments/1.png
+```
+
+Request đến URL này trước tiên đi qua NocoBase và tuân theo quyền xem được cấu hình cho bản ghi file tương ứng. Chỉ sau khi kiểm tra quyền thành công, NocoBase mới đọc file hoặc chuyển hướng đến địa chỉ do dịch vụ storage tạo ra.
+
+Đây là lựa chọn mặc định được khuyến nghị. Bản ghi file trả về đường dẫn NocoBase, vì vậy bên gọi không cần biết đang sử dụng Local Storage hay cloud storage.
+
+### URL gốc
+
+Bản ghi file trả về trực tiếp địa chỉ do dịch vụ storage tạo ra, ví dụ:
+
+```text
+https://storage.example.com/path/to/file.png
+```
+
+URL này không đi qua NocoBase và không kiểm tra quyền xem của bản ghi file. Với Local Storage, đây là địa chỉ file tĩnh cục bộ. Với cloud storage, đây thường là địa chỉ Object Storage hoặc CDN.
+
+Chỉ chọn URL gốc khi Markdown, trang bên ngoài hoặc dịch vụ bên thứ ba bắt buộc phải sử dụng trực tiếp địa chỉ storage.
+
+:::warning Lưu ý
+
+Sau khi chọn URL gốc, bất kỳ ai có URL hợp lệ đều có thể bỏ qua kiểm tra quyền của NocoBase và truy cập file. Nếu URL không có chữ ký hoặc thời hạn, hãy đảm bảo bucket và file cho phép đọc công khai.
+
+:::
+
+### Cho phép truy cập công khai
+
+"Cho phép truy cập công khai" chỉ có hiệu lực khi chọn "URL NocoBase". Khi tích chọn, storage engine vẫn trả về URL NocoBase nhưng NocoBase không còn kiểm tra quyền của bản ghi file khi URL được truy cập. Bất kỳ ai có URL đều có thể truy cập file.
+
+Tùy chọn này không thay đổi cấu hình đọc công khai của chính dịch vụ storage. Nó chỉ kiểm soát việc NocoBase có kiểm tra quyền của bản ghi file hay không.
+
+### Cách chọn
+
+| Tình huống sử dụng | URL file | Cho phép truy cập công khai |
+| --- | --- | --- |
+| File cần tuân theo quyền role và quyền dữ liệu | URL NocoBase | Không tích chọn |
+| Cần địa chỉ file NocoBase có thể chia sẻ công khai | URL NocoBase | Tích chọn |
+| Markdown, trang bên ngoài hoặc dịch vụ bên thứ ba phải đọc trực tiếp địa chỉ storage | URL gốc | Không áp dụng |
+
+:::warning Lưu ý
+
+[Local Storage](./local), [Amazon S3](./amazon-s3), [Aliyun OSS](./aliyun-oss) và [Tencent COS](./tencent-cos) không tạo URL có chữ ký tạm thời. Ngay cả khi sử dụng URL NocoBase và quyền của bản ghi file, người đã có địa chỉ gốc của dịch vụ storage vẫn có thể truy cập trực tiếp file.
+
+Với hợp đồng, giấy tờ định danh, tài liệu nội bộ hoặc file không nên công khai, hãy dùng [S3 Pro](./s3-pro) và tham khảo cấu hình kiểm soát truy cập riêng của nó.
+
+:::
+
+Nếu bạn đang sử dụng storage engine công khai và muốn di chuyển file hiện có sang S3 Pro, hãy xem [Di chuyển sang S3 Pro](./migrate-to-s3-pro.md).

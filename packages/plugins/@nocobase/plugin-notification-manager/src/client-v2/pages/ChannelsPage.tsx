@@ -49,7 +49,7 @@ function normalizeListResponse(response: any) {
   };
 }
 
-function ChannelFormView(props: {
+export function ChannelFormView(props: {
   mode: 'create' | 'edit';
   notificationType: string;
   plugin: PluginNotificationManagerClientV2;
@@ -94,6 +94,7 @@ function ChannelFormView(props: {
         const merged: ChannelRecord = {
           ...cloneDeep(props.record),
           ...raw,
+          name: props.record.name,
           options: { ...(props.record.options || {}), ...(raw.options || {}) },
         };
         await resource.update({ filterByTk: props.record.name, values: merged });
@@ -119,11 +120,21 @@ function ChannelFormView(props: {
           name="name"
           label={t('Channel name')}
           extra={t(
-            'Randomly generated and can not be modified. Support letters, numbers and underscores, must start with a letter.',
+            'Randomly generated and can be modified when creating. Support letters, numbers and underscores, must start with a letter.',
           )}
-          rules={[{ required: true, message: t('The field value is required') }]}
+          rules={[
+            { required: true, message: t('The field value is required') },
+            ...(props.mode === 'create'
+              ? [
+                  {
+                    pattern: /^[A-Za-z][A-Za-z0-9_]*$/,
+                    message: t('Support letters, numbers and underscores, must start with a letter.'),
+                  },
+                ]
+              : []),
+          ]}
         >
-          <Input disabled />
+          <Input disabled={props.mode === 'edit'} />
         </Form.Item>
         <Form.Item
           name="title"

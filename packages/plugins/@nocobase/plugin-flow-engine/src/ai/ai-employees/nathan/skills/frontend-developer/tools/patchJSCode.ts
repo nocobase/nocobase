@@ -15,8 +15,8 @@ export default defineTools({
   execution: 'frontend',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: `{{t("ai.tools.patchJSCode.title")}}`,
-    about: `{{t("ai.tools.patchJSCode.about")}}`,
+    title: `{{t("ai.tools.patchJSCode.title", { ns: "@nocobase/plugin-ai" })}}`,
+    about: `{{t("ai.tools.patchJSCode.about", { ns: "@nocobase/plugin-ai" })}}`,
   },
   definition: {
     name: 'patchJSCode',

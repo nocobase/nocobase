@@ -8,14 +8,15 @@
  */
 
 import { isEmbedRoutePathname } from '../client-v2/route';
+import { restoreEmbedSessionToken, type EmbedSessionAppLike } from '../client-v2/embedSession';
 
 const EMBED_UNAUTHORIZED_USER_ID = '__nocobase_embed_unauthorized__';
 const EMBED_UNAUTHORIZED_USER_FLAG = '__nocobaseEmbedUnauthorized';
 
 const registeredApiClients = new WeakSet<object>();
 
-type EmbedAppLike = {
-  apiClient: {
+type EmbedAppLike = EmbedSessionAppLike & {
+  apiClient: EmbedSessionAppLike['apiClient'] & {
     axios: {
       interceptors: {
         response: {
@@ -24,10 +25,6 @@ type EmbedAppLike = {
       };
     };
   };
-  router?: {
-    getBasename?: () => string | undefined;
-  };
-  getPublicPath?: () => string;
   getRouteUrl?: (pathname: string) => string;
 };
 
@@ -115,11 +112,13 @@ function handleEmbedAuthCheckError(app: EmbedAppLike, error: unknown) {
     throw error;
   }
 
-  if (!isAuthCheckRequest(errorLike.config)) {
+  if (!isEmbedRoutePathname(app, window.location.pathname)) {
     throw error;
   }
 
-  if (!isEmbedRoutePathname(app, window.location.pathname)) {
+  restoreEmbedSessionToken(app);
+
+  if (!isAuthCheckRequest(errorLike.config)) {
     throw error;
   }
 

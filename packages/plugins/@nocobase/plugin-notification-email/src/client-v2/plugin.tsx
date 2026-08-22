@@ -7,13 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * TODO (deferred to follow-up v2 migrations):
- *   - MessageConfigForm / ContentConfigForm: depend on `@nocobase/plugin-workflow`
- *     v2 (workflow injects `variableOptions` into both forms). Will be added when
- *     workflow's client-v2 lands.
- */
-
 import { Plugin } from '@nocobase/client-v2';
 import type { Application } from '@nocobase/client-v2';
 import PluginNotificationManagerClientV2 from '@nocobase/plugin-notification-manager/client-v2';
@@ -30,6 +23,7 @@ export class PluginNotificationEmailClientV2 extends Plugin<Record<string, never
         title: tExpr('Email'),
         components: {
           ChannelConfigFormLoader: () => import('./forms/ChannelConfigForm'),
+          MessageConfigFormLoader: () => import('./forms/MessageConfigForm'),
         },
         meta: {
           creatable: true,

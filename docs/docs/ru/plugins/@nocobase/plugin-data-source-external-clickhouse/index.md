@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external ClickHouse databases as data sources.
+  Внешние базы ClickHouse в качестве источников данных.
 isFree: false
 builtIn: false
 defaultEnabled: false

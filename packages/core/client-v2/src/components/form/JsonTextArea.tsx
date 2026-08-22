@@ -117,6 +117,10 @@ const JsonTextAreaComponent = React.forwardRef<TextAreaRef, JsonTextAreaProps>((
   return (
     <>
       <Input.TextArea
+        autoSize={{
+          minRows: 5,
+          maxRows: 10,
+        }}
         {...textAreaProps}
         ref={ref}
         value={text}

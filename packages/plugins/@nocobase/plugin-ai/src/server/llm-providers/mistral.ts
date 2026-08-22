@@ -12,7 +12,14 @@ import { AIMessage, AIMessageChunk } from '@langchain/core/messages';
 import { ChatMistralAI, MistralAIEmbeddings } from '@langchain/mistralai';
 import { checkUrlAgainstWhitelist, serverRequest } from '@nocobase/utils';
 import { AttachmentModel } from '@nocobase/plugin-file-manager';
-import { EmbeddingProvider, LLMProvider, LLMProviderInvokeOptions } from './provider';
+import {
+  EmbeddingProvider,
+  LLMProvider,
+  LLMProviderInvokeOptions,
+  ReasoningMode,
+  ReasoningOptions,
+  ResolvedReasoningOptions,
+} from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { AIChatContext, AIMessageInput } from '../types/ai-chat-conversation.type';
 import { Model } from '@nocobase/database';
@@ -20,11 +27,19 @@ import { Model } from '@nocobase/database';
 const MISTRAL_URL = 'https://api.mistral.ai';
 const MISTRAL_REASONING_EFFORT = 'high';
 const MISTRAL_REASONING_MODELS = new Set(['mistral-small-latest', 'mistral-medium-3-5']);
+const MISTRAL_REASONING_EFFORTS = new Set<ReasoningMode>(['off', 'low', 'medium', 'high']);
+const MISTRAL_REASONING_MODE_KEY = '__nb_reasoning_mode';
 
 type MistralCallOptions = LLMProviderInvokeOptions & {
   response_format?: {
     type: 'text' | 'json_object';
   };
+};
+
+type MistralRequestBody = Record<string, unknown> & {
+  model?: string;
+  reasoning_effort?: string;
+  [MISTRAL_REASONING_MODE_KEY]?: ReasoningMode;
 };
 
 type MistralBeforeRequestHook = (request: Request) => Request | void | Promise<Request | void>;
@@ -33,6 +48,10 @@ type MistralContentChunk = {
   type?: string;
   text?: string;
   thinking?: MistralContentChunk[];
+};
+
+type ReasoningChatMistralAIFields = ConstructorParameters<typeof ChatMistralAI>[0] & {
+  [MISTRAL_REASONING_MODE_KEY]?: ReasoningMode;
 };
 
 function omitDisabledNumberOptions(options: Record<string, unknown>) {
@@ -79,23 +98,69 @@ export const injectMistralReasoningEffort: MistralBeforeRequestHook = async (req
   const body = (await request
     .clone()
     .json()
-    .catch(() => null)) as Record<string, unknown> | null;
+    .catch(() => null)) as MistralRequestBody | null;
   if (!body || typeof body !== 'object') {
     return;
   }
+  const reasoningMode = body[MISTRAL_REASONING_MODE_KEY];
+  delete body[MISTRAL_REASONING_MODE_KEY];
+  const shouldRewriteBody = reasoningMode != null;
   if (typeof body.model !== 'string' || !MISTRAL_REASONING_MODELS.has(body.model)) {
+    if (shouldRewriteBody) {
+      const headers = new Headers(request.headers);
+      headers.delete('content-length');
+      return new Request(request, {
+        headers,
+        body: JSON.stringify(body),
+      });
+    }
     return;
   }
+  if (reasoningMode === 'off') {
+    delete body.reasoning_effort;
+    const headers = new Headers(request.headers);
+    headers.delete('content-length');
+    return new Request(request, {
+      headers,
+      body: JSON.stringify(body),
+    });
+  }
+  if (body.reasoning_effort && !shouldRewriteBody) {
+    return;
+  }
+  const reasoningEffort = reasoningMode && reasoningMode !== 'default' ? reasoningMode : MISTRAL_REASONING_EFFORT;
   const headers = new Headers(request.headers);
   headers.delete('content-length');
   return new Request(request, {
     headers,
     body: JSON.stringify({
       ...body,
-      reasoning_effort: MISTRAL_REASONING_EFFORT,
+      reasoning_effort: reasoningEffort,
     }),
   });
 };
+
+class ReasoningChatMistralAI extends ChatMistralAI {
+  private readonly reasoningMode?: ReasoningMode;
+
+  constructor(fields: ReasoningChatMistralAIFields) {
+    const { [MISTRAL_REASONING_MODE_KEY]: reasoningMode, ...modelFields } = fields;
+    super(modelFields);
+    this.reasoningMode = reasoningMode;
+  }
+
+  invocationParams(options?: MistralCallOptions) {
+    const params = super.invocationParams(options);
+    const mode = this.reasoningMode;
+    if (!mode || mode === 'default') {
+      return params;
+    }
+    return {
+      ...params,
+      [MISTRAL_REASONING_MODE_KEY]: mode,
+    };
+  }
+}
 
 export class MistralProvider extends LLMProvider {
   declare chatModel: ChatMistralAI;
@@ -111,14 +176,30 @@ export class MistralProvider extends LLMProvider {
     const beforeRequestHooks = Array.isArray(modelOptions.beforeRequestHooks)
       ? ([injectMistralReasoningEffort, ...modelOptions.beforeRequestHooks] as MistralBeforeRequestHook[])
       : [injectMistralReasoningEffort];
+    const reasoningOptions = this.resolveReasoningOptions(this.modelReasoningOptions);
 
-    return new ChatMistralAI({
+    return new ReasoningChatMistralAI({
       apiKey,
       ...modelOptions,
+      ...(reasoningOptions.modelRequestParams || {}),
       beforeRequestHooks,
       serverURL: this.getResolvedServerURL(),
       verbose: false,
     });
+  }
+
+  protected resolveReasoningOptions(reasoning?: ReasoningOptions): ResolvedReasoningOptions {
+    if (!reasoning || reasoning.mode === 'default') {
+      return {};
+    }
+    if (!MISTRAL_REASONING_EFFORTS.has(reasoning.mode)) {
+      return {};
+    }
+    return {
+      modelRequestParams: {
+        [MISTRAL_REASONING_MODE_KEY]: reasoning.mode,
+      },
+    };
   }
 
   async stream(context: AIChatContext, options?: MistralCallOptions) {

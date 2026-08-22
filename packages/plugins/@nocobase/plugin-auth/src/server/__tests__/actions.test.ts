@@ -9,6 +9,7 @@
 
 import Database, { Repository } from '@nocobase/database';
 import { createMockServer, MockServer } from '@nocobase/test';
+import { getAuthCookieName } from '@nocobase/utils';
 
 describe('actions', () => {
   describe('authenticators', () => {
@@ -104,6 +105,13 @@ describe('actions', () => {
     let db: Database;
     let agent;
 
+    function getCookieValue(cookies: string[], name: string) {
+      return cookies
+        .find((cookie) => cookie.startsWith(`${name}=`))
+        ?.split(';')[0]
+        .slice(name.length + 1);
+    }
+
     beforeEach(async () => {
       process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
       process.env.INT_ROOT_USERNAME = 'test';
@@ -163,6 +171,139 @@ describe('actions', () => {
       res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
       expect(res.body.data.id).toBeDefined();
       expect(res.body.data.password).toBeUndefined();
+    });
+
+    it('should set auth cookies when signing in and clear auth cookies when signing out', async () => {
+      const res = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+      expect(res.statusCode).toEqual(200);
+
+      const token = res.body.data.token;
+      const cookies = res.headers['set-cookie'].join('; ');
+      const normalizedCookies = cookies.toLowerCase();
+      expect(cookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+      expect(cookies).toContain(`${getAuthCookieName('authenticator', app.name)}=basic`);
+      expect(cookies).toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+      expect(normalizedCookies).toContain('httponly');
+      expect(normalizedCookies).toContain('samesite=lax');
+      expect(normalizedCookies).toContain('path=/');
+
+      const signOutRes = await agent
+        .post('/auth:signOut')
+        .set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
+      expect(signOutRes.statusCode).toEqual(200);
+
+      const clearedCookies = signOutRes.headers['set-cookie'].join('; ');
+      expect(clearedCookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+      expect(clearedCookies).toContain(`${getAuthCookieName('authenticator', app.name)}=`);
+      expect(clearedCookies).toContain(`${getAuthCookieName('role', app.name)}=`);
+      expect(clearedCookies).toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+      expect(clearedCookies.toLowerCase()).toContain('expires=thu, 01 jan 1970 00:00:00 gmt');
+    });
+
+    it('should reject cross-site sign-in origins', async () => {
+      const originalWhitelist = process.env.CORS_ORIGIN_WHITELIST;
+      delete process.env.CORS_ORIGIN_WHITELIST;
+
+      try {
+        const res = await agent
+          .post('/auth:signIn')
+          .set({ 'X-Authenticator': 'basic', Origin: 'https://evil.example' })
+          .send({
+            account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+            password: process.env.INIT_ROOT_PASSWORD,
+          });
+
+        expect(res.statusCode).toEqual(403);
+      } finally {
+        if (originalWhitelist === undefined) {
+          delete process.env.CORS_ORIGIN_WHITELIST;
+        } else {
+          process.env.CORS_ORIGIN_WHITELIST = originalWhitelist;
+        }
+      }
+    });
+
+    it('should allow same-origin sign-in origins', async () => {
+      const res = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic', Host: 'example.com', Origin: 'http://example.com' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+
+      expect(res.statusCode).toEqual(200);
+    });
+
+    it('should sync auth cookies from an existing authorization token', async () => {
+      const signInRes = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+      const token = signInRes.body.data.token;
+
+      const res = await app
+        .agent()
+        .post('/auth:syncCookies')
+        .set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic', 'X-Role': 'root' });
+
+      expect(res.statusCode).toEqual(200);
+      const cookies = res.headers['set-cookie'].join('; ');
+      expect(cookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+      expect(cookies).toContain(`${getAuthCookieName('authenticator', app.name)}=basic`);
+      expect(cookies).toContain(`${getAuthCookieName('role', app.name)}=root`);
+      expect(cookies).toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+    });
+
+    it('should set secure auth cookies behind an HTTPS reverse proxy', async () => {
+      const res = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic', 'X-Forwarded-Proto': 'https, http' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+
+      expect(res.statusCode).toEqual(200);
+      const cookies = res.headers['set-cookie'].join('; ').toLowerCase();
+      expect(cookies).toContain('secure');
+    });
+
+    it('should use APP_PUBLIC_PATH as auth cookie path', async () => {
+      const originalPath = process.env.APP_PUBLIC_PATH;
+      process.env.APP_PUBLIC_PATH = '/nocobase';
+
+      try {
+        const res = await agent
+          .post('/auth:signIn')
+          .set({ 'X-Authenticator': 'basic' })
+          .send({
+            account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+            password: process.env.INIT_ROOT_PASSWORD,
+          });
+
+        expect(res.statusCode).toEqual(200);
+        const cookies = res.headers['set-cookie'].join('; ');
+        expect(cookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+        expect(cookies).toContain(`${getAuthCookieName('authenticator', app.name)}=basic`);
+        expect(cookies).toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+        expect(cookies.toLowerCase()).toContain('path=/nocobase');
+      } finally {
+        if (originalPath === undefined) {
+          delete process.env.APP_PUBLIC_PATH;
+        } else {
+          process.env.APP_PUBLIC_PATH = originalPath;
+        }
+      }
     });
 
     it('should disable sign up', async () => {
@@ -491,6 +632,35 @@ describe('actions', () => {
       expect(res2.statusCode).toEqual(401);
       expect(res2.text).toBe('User password changed, please signin again.');
       expect(res2.headers['x-new-token']).toBeUndefined();
+    });
+
+    it('should refresh auth cookies without rotating csrf cookie when renewing token', async () => {
+      await app.authManager.tokenController.setConfig({
+        tokenExpirationTime: '1s',
+        sessionExpirationTime: '1d',
+        expiredTokenRenewLimit: '1d',
+      });
+
+      const signInRes = await agent
+        .post('/auth:signIn')
+        .set({ 'X-Authenticator': 'basic' })
+        .send({
+          account: process.env.INIT_ROOT_USERNAME || process.env.INIT_ROOT_EMAIL,
+          password: process.env.INIT_ROOT_PASSWORD,
+        });
+      const token = signInRes.body.data.token;
+      const csrfToken = getCookieValue(signInRes.headers['set-cookie'], getAuthCookieName('csrfToken', app.name));
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.headers['x-new-token']).toBeDefined();
+      const renewedCookies = res.headers['set-cookie'].join('; ');
+      expect(renewedCookies).toContain(`${getAuthCookieName('authToken', app.name)}=`);
+      expect(renewedCookies).not.toContain(`${getAuthCookieName('csrfToken', app.name)}=`);
+      expect(csrfToken).toBeDefined();
     });
   });
 });

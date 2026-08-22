@@ -9,7 +9,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JSRunner, shouldPreprocessRunJSTemplates } from '../JSRunner';
-import { createSafeWindow } from '../utils';
 
 describe('JSRunner', () => {
   let originalSearch: string;
@@ -68,7 +67,7 @@ describe('JSRunner', () => {
 
     const runner = new JSRunner({
       globals: {
-        window: createSafeWindow(),
+        window,
       },
     });
 
@@ -84,7 +83,7 @@ describe('JSRunner', () => {
 
     const runner = new JSRunner({
       globals: {
-        window: createSafeWindow(),
+        window,
         Blob: explicitBlob,
       },
     });
@@ -97,7 +96,7 @@ describe('JSRunner', () => {
   it('auto-lifts URL from injected window to top-level globals', async () => {
     const runner = new JSRunner({
       globals: {
-        window: createSafeWindow(),
+        window,
       },
     });
 
@@ -114,7 +113,7 @@ describe('JSRunner', () => {
 
     const runner = new JSRunner({
       globals: {
-        window: createSafeWindow(),
+        window,
         URL: explicitURL,
       },
     });

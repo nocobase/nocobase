@@ -122,7 +122,7 @@ Si vous souhaitez ajouter une configuration Nginx au niveau du site, telle qu'un
 
 Si votre application n'est pas hébergée par CLI ou si vous souhaitez explicitement conserver vous-même la configuration complète de Nginx, vous pouvez également l'écrire à la main.
 
-Cependant, pour NocoBase, le proxy inverse de production est généralement plus qu'un simple `proxy_pass`. En plus de transmettre les requêtes API à l'application backend, une configuration complète et utilisable doit généralement gérer le répertoire de téléchargement, les ressources statiques frontales, WebSocket, la route `.well-known` et la page de secours SPA.
+Cependant, pour NocoBase, le proxy inverse de production est généralement plus qu'un simple `proxy_pass`. En plus de transmettre les requêtes API à l'application backend, une configuration complète et utilisable doit généralement gérer le répertoire de téléversement, les ressources statiques frontales, la route d'accès aux fichiers `/files/`, WebSocket, la route `.well-known` et les pages de secours de la SPA.
 
 En prenant `test2` comme exemple, les fichiers et répertoires clés liés à Nginx incluent généralement :
 
@@ -138,6 +138,7 @@ En d’autres termes, la configuration manuscrite doit généralement couvrir au
 - `uploads` : exposez le répertoire de téléchargement via `alias`
 - `dist` : exposez le répertoire du produit de build frontal via `alias`
 - `well-known` : gérer les chemins de découverte liés à OAuth/OpenID
+- `files` : transmettre les requêtes d'accès aux fichiers sous `/files/` à l'application backend
 - `api` : transmettre la requête `/api/` à l'application backend
 - `ws` : transmettre les requêtes WebSocket à l'application backend
 - `spa` : fournit une entrée frontale et une solution de repli `try_files` pour `/` et `/v/`
@@ -176,6 +177,11 @@ server {
 
     location ~ ^/\\.well-known/(?<well_known>oauth-authorization-server|openid-configuration)/(?<resource_path>.+)$ {
         rewrite ^ /$resource_path/.well-known/$well_known break;
+        proxy_pass http://127.0.0.1:56575;
+        include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
+    }
+
+    location ^~ /files/ {
         proxy_pass http://127.0.0.1:56575;
         include NB_CLI_ROOT/.nocobase/proxy/nginx/snippets/proxy-location.conf;
     }
@@ -229,7 +235,15 @@ Une approche plus prudente est généralement la suivante :
 2. Confirmez la structure de routage et le chemin réel en fonction des résultats générés.
 3. Effectuez ensuite des ajustements manuels en fonction de votre nom de domaine, de votre mode d'exécution et du chemin de montage.
 
-Il est généralement moins probable de manquer des détails liés aux WebSockets, aux ressources statiques, aux répertoires de téléchargement ou aux pages de secours SPA que d'écrire manuellement une configuration à partir de zéro.
+Il est généralement moins probable de manquer des détails liés à `/files/`, aux WebSockets, aux ressources statiques, aux répertoires de téléversement ou aux pages de secours de la SPA que d'écrire une configuration à partir de zéro.
+
+:::warning Attention
+
+`/files/` est une route applicative qui doit passer par l'autorisation NocoBase. Ne la traitez pas comme un répertoire statique et ne la laissez pas atteindre le fallback de la SPA. Transmettez-la au backend NocoBase et placez la règle avant `location /` et les autres règles de fallback du front-end.
+
+Si `APP_PUBLIC_PATH=/nocobase/` est configuré, transmettez également `/nocobase/files/`. Conservez la règle `/files/` à la racine pour assurer la compatibilité avec les URL de fichiers existantes.
+
+:::
 
 ## Comment gérer HTTPS
 

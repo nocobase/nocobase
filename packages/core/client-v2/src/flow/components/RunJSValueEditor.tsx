@@ -15,6 +15,7 @@ export interface RunJSValueEditorProps {
   t?: (key: string) => string;
   value?: unknown;
   onChange?: (value: RunJSValue) => void;
+  disabled?: boolean;
   height?: string;
   scene?: string;
   containerStyle?: React.CSSProperties;
@@ -25,6 +26,7 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     t,
     value,
     onChange,
+    disabled,
     height = '200px',
     scene = 'formValue',
     containerStyle = { flex: 1, minWidth: 0 },
@@ -38,9 +40,15 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     <div style={containerStyle}>
       <CodeEditor
         value={current.code}
-        onChange={(code) => onChange?.({ ...current, code })}
+        onChange={(code) => {
+          if (disabled) {
+            return;
+          }
+          onChange?.({ ...current, code });
+        }}
         version={current.version}
         height={height}
+        readonly={disabled}
         enableLinter
         placeholder={placeholderText}
         scene={scene}

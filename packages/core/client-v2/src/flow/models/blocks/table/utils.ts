@@ -67,6 +67,13 @@ export function extractIds(data) {
   return ids;
 }
 
+export function extractRowKeys(data: Record<string, unknown>[], key: string | string[]) {
+  return data.flatMap((item) => {
+    const children = Array.isArray(item.children) ? extractRowKeys(item.children, key) : [];
+    return [getRowKey(item, key), ...children];
+  });
+}
+
 /**
  * 生成表格行唯一 key
  * @param record 当前行数据

@@ -36,7 +36,15 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey, useBlockHeight } from './utils';
+import {
+  extractIndex,
+  adjustColumnOrder,
+  setNestedValue,
+  extractIds,
+  extractRowKeys,
+  getRowKey,
+  useBlockHeight,
+} from './utils';
 import { resolveTableSorterField } from './sortUtils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BulkDeleteActionModel } from '../../actions/BulkDeleteActionModel';
@@ -180,10 +188,20 @@ const AddFieldColumn = ({ model }: { model: TableBlockModel }) => {
       ].filter(Boolean)}
       keepDropdownOpen
     >
-      <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
+      {renderTableSettingsButton(model, 'Fields')}
     </AddSubModelButton>
   );
 };
+
+function renderTableSettingsButton(model: TableBlockModel, title: string) {
+  const label = model.translate(title);
+
+  return (
+    <FlowSettingsButton aria-label={label} icon={<SettingOutlined />}>
+      {model.context.isMobileLayout ? null : label}
+    </FlowSettingsButton>
+  );
+}
 
 type CustomTableBlockModelClassesEnum = {
   CollectionActionGroupModel?: string;
@@ -210,6 +228,22 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   get resource() {
     return super.resource as MultiRecordResource;
+  }
+
+  resetAfterFilterChange() {
+    if (!this.props.treeTable) {
+      return;
+    }
+
+    const expandAll = !!this.props.defaultExpandAllRows;
+    const expandedRowKeys = expandAll ? extractRowKeys(this.resource.getData(), this.collection.filterTargetKey) : [];
+
+    this.setProps('expandedRowKeys', expandedRowKeys);
+    this.mapSubModels('actions', (action) => {
+      if ('setExpandFlag' in action && typeof action.setExpandFlag === 'function') {
+        action.setExpandFlag(expandAll);
+      }
+    });
   }
 
   private readonly columns = observable.ref([]);
@@ -268,7 +302,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       cols.push({
         key: 'addColumn',
         fixed: 'right',
-        width: 100,
+        ...(this.context.isMobileLayout ? {} : { width: 100 }),
         title: <AddFieldColumn model={this} />,
       } as any);
     }
@@ -520,7 +554,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         subModelBaseClass={this.getModelClassName('CollectionActionGroupModel')}
         subModelKey="actions"
       >
-        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+        {renderTableSettingsButton(this, 'Actions')}
       </AddSubModelButton>
     );
   }

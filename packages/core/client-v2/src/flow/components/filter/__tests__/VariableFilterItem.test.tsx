@@ -11,7 +11,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VariableFilterItem, VariableFilterItemValue } from '../VariableFilterItem';
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, type Converters, type MetaTreeNode } from '@nocobase/flow-engine';
 import { observable } from '@formily/reactive';
 import { createMockFlowApp, TestCollectionFieldInterface } from '../../../__tests__/helpers/mockFlowApp';
 
@@ -46,6 +46,10 @@ vi.mock('@nocobase/flow-engine', async () => {
   };
   return { ...actual, VariableInput: MockVariableInput };
 });
+
+vi.mock('../../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent', () => ({
+  DateFilterDynamicComponent: () => <div data-testid="date-filter-dynamic-component" />,
+}));
 
 const getRenderedSelectTexts = (root: ParentNode = document.body) =>
   Array.from(root.querySelectorAll('.ant-select-selection-item')).map((node) => (node.textContent || '').trim());
@@ -156,6 +160,196 @@ describe('VariableFilterItem', () => {
     const input = await screen.findByPlaceholderText('Enter value');
     fireEvent.change(input, { target: { value: 'abc' } });
     expect(value.value).toBe('abc');
+  });
+
+  it.each([
+    { operator: '$includes', xComponent: 'Input' },
+    { operator: '$eq', xComponent: 'Select' },
+    { operator: '$in', xComponent: 'Select' },
+  ])('uses a silent app registry lookup for the local $xComponent control', async ({ operator, xComponent }) => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'status';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': xComponent,
+        enum: [{ label: 'Draft', value: 'draft' }],
+        'x-filter-operators': [
+          {
+            value: operator,
+            label: 'Operator',
+            selected: true,
+            schema: {
+              'x-component': xComponent,
+              'x-component-props': xComponent === 'Select' ? { mode: operator === '$in' ? 'tags' : null } : {},
+            },
+          },
+        ],
+      },
+      paths: ['collection', 'status'],
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe(operator);
+    });
+    if (xComponent === 'Select' && operator === '$eq') {
+      expect(getComponent).not.toHaveBeenCalled();
+    } else {
+      expect(getComponent).toHaveBeenCalledWith(xComponent, false);
+    }
+  });
+
+  it('silently handles the DatePicker field schema before the date operator component takes over', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'createdAt';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'createdAt',
+      uiSchema: {
+        'x-component': 'DatePicker',
+        'x-filter-operators': [
+          {
+            value: '$dateOn',
+            label: 'Is',
+            selected: true,
+            schema: {
+              'x-component': 'DateFilterDynamicComponent',
+              'x-component-props': { isRange: false },
+            },
+          },
+        ],
+      },
+      paths: ['collection', 'createdAt'],
+      name: 'createdAt',
+      title: 'Created at',
+      type: 'date',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$dateOn');
+    });
+    expect(getComponent).toHaveBeenCalledWith('DatePicker', false);
+    expect(await screen.findByTestId('date-filter-dynamic-component')).toBeInTheDocument();
+  });
+
+  it('continues resolving plugin-provided keyword controls from the app registry', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as VariableFilterItemValue;
+    const model = CreateModel();
+    const app = model.context.app as unknown as ReturnType<typeof createMockFlowApp>;
+    const MultipleKeywordsInput: React.FC = () => <div data-testid="multiple-keywords-input" />;
+    app.addComponents({ MultipleKeywordsInput });
+    const getComponent = vi.spyOn(app, 'getComponent');
+
+    (globalThis as { __TEST_PATH__?: string }).__TEST_PATH__ = 'name';
+    (globalThis as { __TEST_META__?: MetaTreeNode }).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': 'Input',
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'Is any of',
+            selected: true,
+            schema: { 'x-component': 'MultipleKeywordsInput' },
+          },
+        ],
+      },
+      paths: ['collection', 'name'],
+      name: 'name',
+      title: 'Name',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    expect(await screen.findByTestId('multiple-keywords-input')).toBeTruthy();
+    expect(getComponent).toHaveBeenCalledWith('MultipleKeywordsInput');
+  });
+
+  it('passes disabled through to the left selector, operator select, and right variable input', async () => {
+    const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
+    const model = CreateModel();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable disabled />);
+
+    const leftVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    expect(leftVariableInputProps.disabled).toBe(true);
+
+    fireEvent.click(screen.getAllByTestId('variable-input')[0]);
+
+    const variableInputs = screen.getAllByTestId('variable-input');
+    expect(variableInputs.length).toBeGreaterThanOrEqual(2);
+    const rightVariableInputProps = (globalThis as any).__LAST_VARIABLE_INPUT_PROPS__;
+    expect(rightVariableInputProps.disabled).toBe(true);
+
+    const operatorSelect = document.body.querySelector('.ant-select') as HTMLDivElement | null;
+    expect(operatorSelect).not.toBeNull();
+    expect(operatorSelect).toHaveClass('ant-select-disabled');
+  });
+
+  it('composes custom right variable converters with constant, null, and core fallbacks', () => {
+    const value: VariableFilterItemValue = {
+      path: 'name',
+      operator: '$eq',
+      value: '{{$context.data.id}}',
+    };
+    const model = CreateModel();
+    const rightVariableConverters: Pick<Converters, 'resolvePathFromValue' | 'resolveValueFromPath'> = {
+      resolvePathFromValue: (input) => (input === '{{$context.data.id}}' ? ['$context', 'data', 'id'] : undefined),
+      resolveValueFromPath: (metaTreeNode) =>
+        metaTreeNode.paths?.[0] === '$context' ? `{{${metaTreeNode.paths.join('.')}}}` : undefined,
+    };
+
+    render(
+      <VariableFilterItem
+        value={value}
+        model={model}
+        rightAsVariable
+        rightVariableConverters={rightVariableConverters}
+      />,
+    );
+
+    const variableInputProps = (
+      globalThis as {
+        __LAST_VARIABLE_INPUT_PROPS__?: {
+          converters?: Converters;
+          value?: unknown;
+        };
+      }
+    ).__LAST_VARIABLE_INPUT_PROPS__;
+    const converters = variableInputProps?.converters;
+    const constantNode: MetaTreeNode = { name: 'constant', title: 'Constant', type: 'string', paths: ['constant'] };
+    const nullNode: MetaTreeNode = { name: 'null', title: 'Null', type: 'object', paths: ['null'] };
+    const workflowNode: MetaTreeNode = {
+      name: 'id',
+      title: 'ID',
+      type: 'number',
+      paths: ['$context', 'data', 'id'],
+    };
+
+    expect(variableInputProps?.value).toBe('{{$context.data.id}}');
+    expect(converters?.resolvePathFromValue?.('{{$context.data.id}}')).toEqual(['$context', 'data', 'id']);
+    expect(converters?.resolvePathFromValue?.('{{ ctx.$context.data.id }}')).toEqual(['$context', 'data', 'id']);
+    expect(converters?.resolveValueFromPath?.(constantNode)).toBe('');
+    expect(converters?.resolveValueFromPath?.(nullNode)).toBeNull();
+    expect(converters?.resolveValueFromPath?.(workflowNode)).toBe('{{$context.data.id}}');
   });
 
   it('uses scoped context dataSourceManager when app dataSourceManager has no field interface manager', async () => {

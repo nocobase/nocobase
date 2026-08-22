@@ -44,5 +44,11 @@ describe('static file security', () => {
       'Content-Security-Policy': 'sandbox',
       'X-Content-Type-Options': 'nosniff',
     });
+
+    expect(getStorageUploadSecurityHeaders('/storage/uploads/a.txt?download=1')).toEqual({
+      'Content-Disposition': 'attachment',
+      'Content-Security-Policy': 'sandbox',
+      'X-Content-Type-Options': 'nosniff',
+    });
   });
 });

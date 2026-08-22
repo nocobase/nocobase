@@ -5,6 +5,235 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.0](https://github.com/nocobase/nocobase/compare/v2.1.45...v2.2.0) - 2026-08-22
+
+# NocoBase 2.2.0 Release Notes
+
+**NocoBase 2.2 further completes the end-to-end V2 experience.** With the independent `/v/` frontend entry and the new mobile experience now available, V2 is no longer just a redesigned page experience—it is becoming a more independent and lightweight frontend runtime. This release also upgrades the file access mechanism and continues to improve the comment block, AI knowledge base, workflows, and V2 compatibility across core plugins.
+
+If your application already relies primarily on V2 pages, 2.2 provides a more complete and lightweight V2 experience. If your application still mainly uses V1 pages, we recommend migrating your pages and plugins before switching to the new `/v/` entry.
+
+## New features
+
+### New independent `/v/` frontend entry
+
+`/v/` is a new, independently built frontend entry. NocoBase 2.0 introduced a major frontend refactor while retaining compatibility with V1 modules and pages. The `/v/` build removes this legacy V1 compatibility: it can no longer create or render V1 pages and blocks and includes only V2 capabilities. It also delivers significant performance improvements and will become the primary target for future NocoBase development.
+
+> If your production application already consists entirely of V2 pages, you can consider adopting the `/v/` entry.
+>
+> If your application mainly uses V2 pages but still contains a small number of V1 pages, migrate those pages to V2 first.
+>
+> If your application still mainly uses V1 pages, we do not recommend switching directly to `/v/`. Migrate the pages and related plugins first.
+
+In most cases, you can enter the new frontend by adding the `/v/` prefix to an existing path:
+
+```text
+# Original path
+https://nocobase.example.com/admin/1xl0epqn6q3
+
+# Independent V2 entry
+https://nocobase.example.com/v/admin/1xl0epqn6q3
+```
+
+#### Set the default application entry
+
+Use the `APP_CLIENT_ENTRY_MODE` environment variable to control the application entry mode:
+
+- `legacy-default`: both `/` and `/v/` are available; `/` is the default entry
+- `modern-default`: both `/` and `/v/` are available; `/v/` is the default entry
+- `modern-only`: only `/v/` is available
+
+#### Current status of `/v/`
+
+The `/v/` entry is being introduced progressively. It has several notable differences:
+
+1. Pages created with Page V1 are no longer displayed under `/v/`. Pages created with Page V2 continue to work normally.
+2. Plugins adapted only for `client-v1` are not loaded under `/v/`. The `/v/` entry loads only plugins adapted for `client-v2`. See the [client plugin development documentation](https://docs.nocobase.com/plugin-development/client/) for details.
+
+Most built-in NocoBase plugins have been adapted and migrated to client-v2 in this release, so most features are ready to use. A small number of plugins have not yet been migrated and will be handled progressively. Some plugin capabilities will receive future updates only under `/v/`. Current differences include:
+
+- The plugin list no longer shows deprecated plugins or plugins that support only NocoBase 1.x
+- New Page V1 pages can no longer be created
+- Public forms distinguish between V1 and V2, and V1 public forms are not displayed under `/v/`
+- Approval workflows require their related UI to be reconfigured before they can be used under `/v/`
+- The new mobile experience is available only under `/v/`
+- The “AI employees / Data sources” tab has been removed
+- Comment, calendar, expression, and external data collections have been removed
+- Workflow manual nodes are not yet supported under `/v/`
+- Badge counts cannot yet be added to menus
+
+Plan the migration to `/v/` according to your production environment and current use of V1 and V2 features.
+
+Related documentation:
+
+- [Client plugin development](https://docs.nocobase.com/plugin-development/client/)
+
+### File access upgrade: stable URLs, permission checks, and deployment changes
+
+NocoBase 2.2 introduces an important upgrade to the access mechanism for NocoBase-managed files. By default, attachments and files no longer expose local storage paths, object storage URLs, or presigned URLs as their business URLs. Instead, they use stable NocoBase URLs:
+
+```text
+/files/<app>/<dataSource>/<collection>/<id><extname>
+```
+
+For example:
+
+```text
+/files/main/main/attachments/42.pdf
+```
+
+If `APP_PUBLIC_PATH=/nocobase` is configured, the corresponding subpath is added automatically:
+
+```text
+/nocobase/files/main/main/attachments/42.pdf
+```
+
+When a stable URL is accessed, the request first goes to NocoBase. NocoBase checks the current user, role, view permission, and data scope for the target attachment or file collection. Once the check succeeds, NocoBase responds with a `302` redirect to the actual URL generated by the storage engine.
+
+```text
+Stable URL → NocoBase identity and permission checks → 302 → Local or object storage URL
+```
+
+This separates business content from physical storage addresses. If you change a bucket, CDN domain, signing strategy, or thumbnail rule, stable URLs already stored in business fields usually do not need to be updated. The everyday workflows for uploading attachments, displaying images, previewing files, and downloading files remain essentially unchanged.
+
+#### Configure file URLs and public access independently
+
+For file storage engines, **NocoBase URL** is the recommended default so that file access follows NocoBase role and data permissions. NocoBase 2.2 also provides separate options for scenarios that require direct storage URLs or public access:
+
+- **Original URL**: returns the storage engine URL directly, without NocoBase permission checks
+- **Allow public access**: continues to return a NocoBase URL but skips file-record permission checks when the URL is accessed
+
+![](https://static-docs.nocobase.com/20260723221234.png)
+
+Both Original URL and Allow public access expand the scope from which files can be accessed, so configure them carefully for your use case. After the settings are saved, the API response behavior changes for both existing and new files under the same storage engine, but no files are moved or uploaded again.
+
+#### Check deployment configuration before upgrading
+
+`/files/` is an authenticated NocoBase application route. It must not be handled as a static directory or fall through to the frontend SPA's `index.html` fallback. Nginx and Caddy configurations generated by the current NocoBase CLI include the required rules automatically. If you maintain your reverse proxy manually, verify that:
+
+- `/files/` is forwarded to NocoBase and evaluated before the SPA fallback rule
+- When `APP_PUBLIC_PATH` is configured, the corresponding subpath `/files/` route is also forwarded, while the root `/files/` route remains available for compatibility
+- The `302 Location` returned by a stable URL is not cached
+- When a page accesses the API cross-origin, its origin is included in `CORS_ORIGIN_WHITELIST`
+- All cluster nodes and replicas are upgraded together so that `/files/` requests cannot reach an older node
+- When using an external NocoBase data source, the consuming instance and its related plugins are upgraded before the source instance
+
+> **Note:** Existing `/storage/uploads/...`, CDN, and object storage URLs stored in historical Markdown, rich text, or business fields are not rewritten automatically. Once the new version is running, newly uploaded files and newly edited content may contain `/files/...` URLs, which older versions do not recognize. Environments with strict rollback requirements should retain a database snapshot before reopening write access and verify the reverse proxy configuration in advance.
+
+#### Security boundaries
+
+Stable URLs provide a permission check before access, but NocoBase does not continuously proxy the file content. After permission checks succeed, the browser can still see the final storage URL. If that URL points to a public bucket, a public CDN, or an openly accessible local static directory, anyone who obtains it may still bypass NocoBase.
+
+For sensitive files such as contracts, identity documents, and internal materials, use storage-side controls such as private storage, short-lived signed URLs, or CDN authentication. For online Office previews, NocoBase issues a short-lived URL bound to the current file after the user's permissions are validated. This URL is valid for 10 minutes by default and must not be stored or distributed as a long-term sharing link.
+
+Related documentation:
+
+- [File manager: Stable URLs](https://docs.nocobase.com/file-manager/stable-url)
+- [File storage engines and access control](https://docs.nocobase.com/file-manager/storage/)
+- [Environment variables](https://docs.nocobase.com/get-started/installation/env)
+- [Production deployment](https://docs.nocobase.com/get-started/deployment/production)
+- [Nginx reverse proxy](https://docs.nocobase.com/nocobase-cli/production/reverse-proxy/nginx)
+- [Caddy reverse proxy](https://docs.nocobase.com/nocobase-cli/production/reverse-proxy/caddy)
+
+### New mobile experience (`/v/` only)
+
+The new mobile experience provides a `/v/mobile` entry with a dedicated mobile layout.
+
+Mobile and desktop layouts share the same data sources and business data, while their menus, routes, and page content can be configured independently. This makes it possible to reorganize pages around mobile usage patterns and use a bottom tab bar as the primary navigation, which is better suited to mobile devices.
+
+NocoBase 2.2 further improves interactions such as mobile tab bars, scrolling in half-screen panels, embedded pages, and permission controls, making data entry, queries, approvals, and task processing more reliable.
+
+![](https://static-docs.nocobase.com/2026-07-10-08-04-59.png)
+
+Related documentation:
+
+- [Mobile layout](https://docs.nocobase.com/interface-builder/ui-layout/mobile)
+
+### New comment block
+
+The new comment block is no longer limited to the comments collection in the main data source and no longer needs to be used as a relationship block. You can add it to a record detail page or popup for tasks, articles, tickets, customers, and other records, allowing users to view, reply to, and add comments in the context of the current record.
+
+![](https://static-docs.nocobase.com/Comments-07-01-2026_12_02_PM.png)
+
+Related documentation:
+
+- [Comment block](https://docs.nocobase.com/interface-builder/blocks/data-blocks/comment)
+
+### AI knowledge base enhancements
+
+The AI knowledge base has been migrated to client-v2 and now offers improved knowledge base and vector storage configuration:
+
+- When a workflow creates a knowledge base document, it can overwrite an existing document with the same document key
+- Vector databases can be configured and managed
+- Configuration entries are available for external knowledge bases and external vector storage extensions, allowing developers to use plugins to integrate vector databases or third-party retrieval services that NocoBase does not yet support out of the box
+
+![](https://static-docs.nocobase.com/20260728222404.png)
+
+Related documentation:
+
+- [AI knowledge base](https://docs.nocobase.com/ai-employees/knowledge-base/knowledge-base/)
+- [Vector database](https://docs.nocobase.com/ai-employees/knowledge-base/vector-database)
+- [External knowledge base plugin](https://docs.nocobase.com/ai-employees/dev/knowledge-base/external-knowledge-base)
+
+### Workflow: Database transaction node
+
+The new database transaction node runs a group of database operations within the same transaction. It is designed for scenarios in which multiple data-processing steps must either all succeed or all roll back—for example, creating an order, reducing inventory, writing order line items, and updating the order status.
+
+![](https://static-docs.nocobase.com/20260610205505.png)
+
+Related documentation:
+
+- [Database transaction node](https://docs.nocobase.com/workflow/nodes/transaction)
+
+## V2 compatibility and experience improvements
+
+In addition to the new features above, NocoBase 2.2 continues to migrate and improve the V2 interfaces and interactions of commonly used features:
+
+- User, department, and permission settings
+- User data synchronization
+- DingTalk authentication, synchronization, and notification settings
+- WeCom authentication, synchronization, and notification settings
+- Email management
+- Form drafts
+- Public forms
+- Backup management
+- Data source management
+- Translation testing tools
+
+This release also fixes a range of issues affecting mobile devices, embedded pages, sub-application SSO, printing, and exporting, further improving the stability and consistency of the V2 entry.
+
+Related documentation:
+
+- [User data synchronization](https://docs.nocobase.com/users-permissions/sync/)
+- [Synchronize user data from DingTalk](https://docs.nocobase.com/users-permissions/sync/sources/dingtalk)
+- [Synchronize user data from WeCom](https://docs.nocobase.com/users-permissions/sync/sources/wecom)
+
+## Plugins that no longer support V2 (deprecated but not yet removed)
+
+Some plugins were deprecated in earlier releases. A number of them can still be used for now, but they will be removed entirely in NocoBase 3.
+
+| Plugin | Replacement | Notes |
+| --- | --- | --- |
+| `@nocobase/plugin-audit-logs` | `@nocobase/plugin-audit-logger` | Deprecated since 1.0 |
+| `@nocobase/plugin-backup-restore` | `@nocobase/plugin-backups` | Deprecated since 1.0 |
+| `@nocobase/plugin-block-multi-step-form` | JS Block | Deprecated since 2.0 |
+| `@nocobase/plugin-charts` | `@nocobase/plugin-data-visualization` | Deprecated since 2.0 |
+| `@nocobase/plugin-collection-fdw` | Database synchronization | Deprecated since 2.2 |
+| `@nocobase/plugin-comments` | `@nocobase/plugin-block-comment` | Deprecated since 2.2 |
+| `@nocobase/plugin-custom-variables` | Event flow | Deprecated since 2.2 |
+| `@nocobase/plugin-data-visualization-echarts` | `@nocobase/plugin-data-visualization` | Deprecated since 2.0 |
+| `@nocobase/plugin-disable-pm-add` | None | Deprecated since 2.2 |
+| `@nocobase/plugin-field-component-mask` | RunJS | Deprecated since 2.0 |
+| `@nocobase/plugin-graph-collection-manager` | None | Deprecated since 2.2 |
+| `@nocobase/plugin-mobile-client` | `@nocobase/plugin-ui-layout` | Deprecated since 2.0 |
+| `@nocobase/plugin-mobile` | `@nocobase/plugin-ui-layout` | Deprecated since 2.0 |
+| `@nocobase/plugin-mock-collections` | AI-powered app building | Deprecated since 2.0 |
+| `@nocobase/plugin-multi-app-manager` | `@nocobase/plugin-app-supervisor` | Deprecated since 2.0 |
+| `@nocobase/plugin-multi-app-share-collection` | None | Deprecated since 1.0 |
+| `@nocobase/plugin-notifications` | `@nocobase/plugin-notification-manager` | Deprecated since 1.0 |
+| `@nocobase/plugin-snapshot-field` | None | Deprecated since 1.0 |
+
+
 ## [v2.1.44](https://github.com/nocobase/nocobase/compare/v2.1.43...v2.1.44) - 2026-08-20
 
 ### 🎉 New Features

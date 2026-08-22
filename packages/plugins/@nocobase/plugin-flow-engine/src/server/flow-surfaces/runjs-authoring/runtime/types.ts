@@ -40,7 +40,6 @@ export type RunJsScanResult = RunJsAstInspection & {
   directDomAliases: Array<{ alias: string; index: number }>;
   directDomWrites: Array<IndexedEntry & { match: string }>;
   dynamicCtxAccesses: IndexedEntry[];
-  forbiddenBareGlobals: Array<IndexedEntry & { name: string }>;
   functionRanges: SourceRange[];
   invalidCtxLibMemberAccesses: InvalidCtxLibMemberAccess[];
   invalidReactRuntimeBindings: InvalidReactRuntimeBinding[];
@@ -55,8 +54,6 @@ export type RunJsScanResult = RunJsAstInspection & {
   topLevelReactHookCalls: Array<IndexedEntry & { hook: string; match: string }>;
   topLevelReturns: IndexedEntry[];
   unboundReactCreateElementCalls: IndexedEntry[];
-  windowDocumentNavigatorAliases: Array<{ alias: string; index: number; root: string }>;
-  windowDocumentNavigatorUses: Array<IndexedEntry & { member: string; root: string }>;
 };
 
 export type RunJsInspectionRuntime = {

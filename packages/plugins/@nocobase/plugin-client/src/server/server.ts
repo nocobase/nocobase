@@ -13,9 +13,11 @@ import { tval } from '@nocobase/utils';
 import _ from 'lodash';
 import * as process from 'node:process';
 import { resolve } from 'path';
+import { listAppPortals } from './appPortals';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import { filterLocaleResources } from './localeResources';
 
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
@@ -67,6 +69,7 @@ export class PluginClientServer extends Plugin {
     });
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
+    this.app.acl.allow('app', 'getPortals', 'loggedIn');
     this.app.acl.registerSnippet({
       name: 'app',
       actions: ['app:restart', 'app:refresh', 'app:clearCache', 'app:publishEvent'],
@@ -113,11 +116,15 @@ export class PluginClientServer extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
-          const resources = await ctx.app.localeManager.get(lang);
+          const resources = filterLocaleResources(await ctx.app.localeManager.get(lang), ctx.request.query.ns);
           ctx.body = {
             lang,
             ...resources,
           };
+          await next();
+        },
+        getPortals: async (ctx, next) => {
+          ctx.body = await listAppPortals(ctx.app?.name);
           await next();
         },
         async clearCache(ctx, next) {
@@ -201,7 +208,7 @@ export class PluginClientServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.desktopRoutes`,
-      actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
+      actions: ['roles.desktopRoutes:*'],
     });
 
     this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');

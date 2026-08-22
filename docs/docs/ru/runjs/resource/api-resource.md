@@ -1,67 +1,67 @@
 # APIResource
 
-**Универсальный API-ресурс** для выполнения запросов на основе URL, подходящий для любых HTTP-интерфейсов. Он наследуется от базового класса `FlowResource` и расширяет его конфигурацией запроса и методом `refresh()`. В отличие от [MultiRecordResource](./multi-record-resource.md) и [SingleRecordResource](./single-record-resource.md), `APIResource` не зависит от имени ресурса; он выполняет запросы напрямую по URL, что делает его подходящим для кастомных интерфейсов, сторонних API и других сценариев.
+**Универсальный API-ресурс**, отправляющий запросы по URL; подходит для любых HTTP-конечных точек. Наследуется от `FlowResource`, добавляет конфигурацию запроса и `refresh()`. В отличие от [MultiRecordResource](./multi-record-resource.md) и [SingleRecordResource](./single-record-resource.md), `APIResource` не зависит от имени ресурса и делает запросы напрямую по URL; удобен для пользовательских API, сторонних сервисов и т. д.
 
-**Способ создания**: `ctx.makeResource('APIResource')` или `ctx.initResource('APIResource')`. Перед использованием необходимо вызвать `setURL()`. В контексте RunJS `ctx.api` (APIClient) внедряется автоматически, поэтому нет необходимости вызывать `setAPIClient` вручную.
+**Создание:** `ctx.makeResource('APIResource')` или `ctx.initResource('APIResource')`. Перед использованием вызовите `setURL()`. В контексте RunJS `ctx.api` (`APIClient`) подставляется автоматически, поэтому `setAPIClient` обычно не нужен.
 
 ---
 
 ## Сценарии использования
 
 | Сценарий | Описание |
-|------|------|
-| **Кастомный интерфейс** | Вызов нестандартных API ресурсов (например, `/api/custom/stats`, `/api/reports/summary`). |
-| **Сторонний API** | Запрос к внешним сервисам по полному URL (требуется поддержка CORS со стороны целевого сервиса). |
-| **Разовый запрос** | Временное получение данных, которые не нужно привязывать к `ctx.resource`. |
-| **Выбор между APIResource и ctx.request** | Используйте `APIResource`, когда требуются реактивные данные, события или управление состояниями ошибок; используйте `ctx.request()` для простых разовых запросов. |
+|----------|----------|
+| **Пользовательские API** | Вызов нестандартных resource API (например, `/api/custom/stats`, `/api/reports/summary`) |
+| **Сторонние API** | Запрос внешних сервисов по полному URL (целевой сервис должен поддерживать CORS) |
+| **Разовые запросы** | Временное получение данных без привязки к `ctx.resource` |
+| **Сравнение с ctx.request** | `APIResource` используйте, когда нужны реактивные данные, события и состояние ошибки; `ctx.request()` — для простых разовых запросов |
 
 ---
 
-## Возможности базового класса (FlowResource)
+## Основа (`FlowResource`)
 
-Все ресурсы обладают следующими возможностями:
+Все ресурсы поддерживают:
 
 | Метод | Описание |
-|------|------|
-| `getData()` | Получить текущие данные. |
-| `setData(value)` | Установить данные (только локально). |
-| `hasData()` | Проверить наличие данных. |
-| `getMeta(key?)` / `setMeta(meta)` | Чтение/запись метаданных. |
-| `getError()` / `setError(err)` / `clearError()` | Управление состоянием ошибки. |
-| `on(event, callback)` / `once` / `off` / `emit` | Подписка на события и их вызов. |
+|-------|----------|
+| `getData()` | Текущие данные |
+| `setData(value)` | Установить данные (локально) |
+| `hasData()` | Есть ли данные |
+| `getMeta(key?)` / `setMeta(meta)` | Чтение/запись метаданных |
+| `getError()` / `setError(err)` / `clearError()` | Состояние ошибки |
+| `on(event, callback)` / `once` / `off` / `emit` | Подписка и генерация событий |
 
 ---
 
 ## Конфигурация запроса
 
 | Метод | Описание |
-|------|------|
-| `setAPIClient(api)` | Установить экземпляр APIClient (обычно внедряется автоматически в RunJS). |
-| `getURL()` / `setURL(url)` | URL запроса. |
-| `loading` | Чтение/запись состояния загрузки (get/set). |
-| `clearRequestParameters()` | Очистить параметры запроса. |
-| `setRequestParameters(params)` | Объединить и установить параметры запроса. |
-| `setRequestMethod(method)` | Установить метод запроса (например, `'get'`, `'post'`, по умолчанию `'get'`). |
-| `addRequestHeader(key, value)` / `removeRequestHeader(key)` | Заголовки запроса. |
-| `addRequestParameter(key, value)` / `getRequestParameter(key)` / `removeRequestParameter(key)` | Добавление, удаление или получение отдельного параметра. |
-| `setRequestBody(data)` | Тело запроса (используется для POST/PUT/PATCH). |
-| `setRequestOptions(key, value)` / `getRequestOptions()` | Общие опции запроса. |
+|-------|----------|
+| `setAPIClient(api)` | Задать экземпляр `APIClient` (в RunJS обычно подставляется автоматически) |
+| `getURL()` / `setURL(url)` | URL запроса |
+| `loading` | Состояние загрузки (get/set) |
+| `clearRequestParameters()` | Очистить параметры запроса |
+| `setRequestParameters(params)` | Объединить параметры запроса |
+| `setRequestMethod(method)` | Метод запроса (например, `'get'`, `'post'`, по умолчанию `'get'`) |
+| `addRequestHeader(key, value)` / `removeRequestHeader(key)` | Заголовки |
+| `addRequestParameter(key, value)` / `getRequestParameter(key)` / `removeRequestParameter(key)` | Добавить/прочитать/удалить отдельный параметр |
+| `setRequestBody(data)` | Тело запроса (для POST/PUT/PATCH) |
+| `setRequestOptions(key, value)` / `getRequestOptions()` | Общие параметры запроса |
 
 ---
 
 ## Формат URL
 
-- **Стиль ресурса**: Поддерживает сокращенную запись ресурсов NocoBase, например `users:list` или `posts:get`, которые будут объединены с `baseURL`.
-- **Относительный путь**: Например, `/api/custom/endpoint`, объединяется с `baseURL` приложения.
-- **Полный URL**: Используйте полные адреса для кросс-доменных запросов; целевой сервис должен иметь настроенный CORS.
+- **Стиль ресурса**: поддерживается краткий формат NocoBase, например `users:list`, `posts:get`; объединяется с baseURL.
+- **Относительный путь**: например, `/api/custom/endpoint`; объединяется с baseURL приложения.
+- **Полный URL**: для междоменных запросов используйте полный адрес; целевой сервер должен настроить CORS.
 
 ---
 
-## Получение данных
+## Загрузка данных
 
 | Метод | Описание |
-|------|------|
-| `refresh()` | Инициирует запрос на основе текущего URL, метода, параметров, заголовков и данных. Записывает ответ в `setData(data)` и вызывает событие `'refresh'`. В случае ошибки устанавливает `setError(err)` и выбрасывает `ResourceError`, не вызывая событие `refresh`. Требует предварительной настройки `api` и URL. |
+|-------|----------|
+| `refresh()` | Отправляет запрос с текущими URL, method, params, headers, data; записывает `response.data` в `setData(data)` и генерирует `'refresh'`. При ошибке выполняет `setError(err)`, выбрасывает `ResourceError` и не генерирует `refresh`. Требуются `api` и URL. |
 
 ---
 
@@ -87,25 +87,25 @@ await res.refresh();
 const rows = res.getData()?.data ?? [];
 ```
 
-### POST-запрос (с телом запроса)
+### POST-запрос (с телом)
 
 ```js
 const res = ctx.makeResource('APIResource');
 res.setURL('/api/custom/submit');
 res.setRequestMethod('post');
-res.setRequestBody({ name: 'тест', type: 'report' });
+res.setRequestBody({ name: 'Test', type: 'report' });
 await res.refresh();
 const result = res.getData();
 ```
 
-### Прослушивание события refresh
+### Подписка на событие обновления refresh
 
 ```js
 const res = ctx.makeResource('APIResource');
 res.setURL('/api/stats');
 res.on('refresh', () => {
   const data = res.getData();
-  ctx.render(<div>Статистика: {JSON.stringify(data)}</div>);
+  ctx.render(<div>Stats: {JSON.stringify(data)}</div>);
 });
 await res.refresh();
 ```
@@ -120,11 +120,11 @@ try {
   const data = res.getData();
 } catch (e) {
   const err = res.getError();
-  ctx.message.error(err?.message ?? 'Ошибка запроса');
+  ctx.message.error(err?.message ?? 'Request failed');
 }
 ```
 
-### Кастомные заголовки запроса
+### Пользовательские заголовки
 
 ```js
 const res = ctx.makeResource('APIResource');
@@ -138,18 +138,18 @@ await res.refresh();
 
 ## Примечания
 
-- **Зависимость от ctx.api**: В RunJS `ctx.api` внедряется средой выполнения; ручной вызов `setAPIClient` обычно не требуется. Если ресурс используется вне контекста, вы должны установить его самостоятельно.
-- **Refresh означает запрос**: Метод `refresh()` инициирует запрос на основе текущей конфигурации; метод, параметры, данные и т. д. должны быть настроены до вызова.
-- **Ошибки не обновляют данные**: При сбое запроса `getData()` сохраняет свое предыдущее значение; информацию об ошибке можно получить через `getError()`.
-- **Сравнение с ctx.request**: Используйте `ctx.request()` для простых разовых запросов; используйте `APIResource`, когда требуется реактивность данных, события и управление состоянием ошибок.
+- **Зависимость от ctx.api**: в RunJS `ctx.api` подставляется автоматически; обычно `setAPIClient` вызывать не нужно. Вне контекста задавайте вручную.
+- **refresh = запрос**: `refresh()` отправляет один запрос с текущей конфигурацией; method, params, data и т. д. должны быть настроены заранее.
+- **Ошибка не обновляет data**: при ошибке `getData()` сохраняет предыдущее значение; информацию об ошибке смотрите через `getError()`.
+- **Сравнение с ctx.request**: `ctx.request()` подходит для простых разовых запросов; `APIResource` — когда нужны реактивные данные, события и управление состоянием ошибки.
 
 ---
 
-## Связанные разделы
+## Связанные материалы
 
-- [ctx.resource](../context/resource.md) — Экземпляр ресурса в текущем контексте
-- [ctx.initResource()](../context/init-resource.md) — Инициализация и привязка к `ctx.resource`
-- [ctx.makeResource()](../context/make-resource.md) — Создание нового экземпляра ресурса без привязки
-- [ctx.request()](../context/request.md) — Универсальный HTTP-запрос, подходящий для простых разовых вызовов
-- [MultiRecordResource](./multi-record-resource.md) — Для коллекций/списков, поддерживает CRUD и пагинацию
-- [SingleRecordResource](./single-record-resource.md) — Для отдельных записей
+- [ctx.resource](../context/resource.md) - экземпляр ресурса текущего контекста
+- [ctx.initResource()](../context/init-resource.md) - инициализация и привязка к ctx.resource
+- [ctx.makeResource()](../context/make-resource.md) - создание экземпляра ресурса без привязки
+- [ctx.request()](../context/request.md) - generic HTTP-запросы для простых one-off сценариев
+- [MultiRecordResource](./multi-record-resource.md) - для таблиц/списков, CRUD, пагинации
+- [SingleRecordResource](./single-record-resource.md) - для одиночных записей

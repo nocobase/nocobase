@@ -7,27 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import { Application, Plugin } from '@nocobase/client-v2';
 import { EMBED_LAYOUT_MODEL_CLASS, EMBED_LAYOUT_MODEL_UID } from './constants';
 import { registerCopyEmbedLinkFlow } from './copyEmbedLinkFlow';
-import { isEmbedRoutePathname } from './route';
+import { EmbedSessionProvider, syncEmbedSessionFromLocation } from './embedSession';
 
 const EMBED_ROUTE_PREFIX = '/embed';
 
 export class PluginEmbedClientV2 extends Plugin<any, Application> {
   async beforeLoad() {
-    const url = new URL(window.location.href);
-    const token = url.searchParams.get('token');
-
-    if (token && isEmbedRoutePathname(this.app, window.location.pathname)) {
-      this.app.apiClient.storagePrefix = `${uid().toUpperCase()}_`;
-      this.app.apiClient.storage = this.app.apiClient.createStorage('sessionStorage');
-      this.app.apiClient.auth.setToken(token);
-    }
+    syncEmbedSessionFromLocation(this.app);
   }
 
   async load() {
+    this.app.providers.unshift([EmbedSessionProvider, {}]);
     this.app.flowEngine.registerModelLoaders({
       [EMBED_LAYOUT_MODEL_CLASS]: {
         loader: () => import('./EmbedLayoutModel'),

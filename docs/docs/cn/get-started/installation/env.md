@@ -92,6 +92,39 @@ API_BASE_PATH=/api/
 
 ### API_BASE_URL
 
+前端页面访问 NocoBase API 使用的基础地址，默认为空，表示使用与页面同源的 `${APP_PUBLIC_PATH}api/`。
+
+```bash
+API_BASE_URL=
+```
+
+只有当页面和 API 服务不同源（协议、域名、端口任一不同）时，才需要配置为 API 的完整地址：
+
+```bash
+API_BASE_URL=https://api.example.com/api/
+```
+
+:::warning{title="跨源部署注意"}
+NocoBase 使用 cookie 维持登录状态和[文件稳定 URL](../../file-manager/stable-url.md)的访问权限。当 `API_BASE_URL` 与页面不同源时：
+
+- 必须把页面来源加入 [`CORS_ORIGIN_WHITELIST`](#cors_origin_whitelist)，否则浏览器会忽略 API 响应中的 `Set-Cookie`，登录 cookie 无法写入，文件预览、下载等依赖 cookie 的功能会鉴权失败（403）。
+- cookie 按 `hostname` 存储。如果页面和 API 使用完全不同的域名，浏览器从页面域名访问 `/files/` 稳定 URL 时不会携带 API 域名下的登录 cookie，文件访问仍会失败。
+
+因此推荐优先通过反向代理让页面与 API 保持同源，并将 `API_BASE_URL` 留空。
+:::
+
+### CORS_ORIGIN_WHITELIST
+
+允许跨源携带凭证（cookie）访问 API 的来源白名单，多个来源以逗号分隔，默认为空。
+
+```bash
+CORS_ORIGIN_WHITELIST=https://www.example.com,https://admin.example.com
+```
+
+- 未配置时，只有与 API 同源的请求会被视为可信来源；跨源请求仍可匿名调用 API，但浏览器不允许其读写 cookie。
+- 配置后，白名单中的来源会获得精确回显的 `Access-Control-Allow-Origin` 和 `Access-Control-Allow-Credentials: true` 响应头，浏览器才会在跨源请求中发送并保存登录 cookie。
+- 登录接口会校验请求的 `Origin` / `Referer` 是否可信，来自白名单之外的跨源登录请求会被拒绝（403）。
+
 ### CLUSTER_MODE
 
 > `v1.6.0+`

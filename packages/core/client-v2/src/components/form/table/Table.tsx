@@ -9,11 +9,11 @@
 
 import { DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { cx } from '@emotion/css';
+import { css, cx, injectGlobal } from '@emotion/css';
 import { DndProvider } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, type TableProps as AntdTableProps } from 'antd';
-import type { ColumnsType, ColumnType, GetRowKey } from 'antd/es/table/interface';
+import { Table as AntdTable, theme, type TableProps as AntdTableProps } from 'antd';
+import type { ColumnsType, ColumnGroupType, ColumnType, GetRowKey } from 'antd/es/table/interface';
 import type { RenderedCell } from 'rc-table/lib/interface';
 import React, { useMemo, useState } from 'react';
 import { SortableRow, SortHandle } from './dnd/SortableRow';
@@ -23,6 +23,20 @@ import { indexSwapClassName, selectionGutterClassName, tableScrollClassName } fr
 import { readRowKey, snapshotSourceRow, type RowKey, type RowSnapshot } from './utils';
 
 type RowSelectionRenderCellResult<RecordType> = React.ReactNode | RenderedCell<RecordType>;
+
+const DEFAULT_COLUMN_CONTENT_CLASS_NAME = 'nb-table-default-column-content';
+const DEFAULT_COLUMN_CONTENT_MAX_WIDTH_PROPERTY = '--nb-table-default-column-content-max-width';
+
+// Zero specificity lets caller classes remain authoritative regardless of stylesheet insertion order. The max-width
+// value itself comes from a token-derived private CSS variable set by each Table instance.
+injectGlobal`
+  :where(.${DEFAULT_COLUMN_CONTENT_CLASS_NAME}) {
+    max-width: var(${DEFAULT_COLUMN_CONTENT_MAX_WIDTH_PROPERTY});
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+`;
 
 /**
  * Default initial page size for `Table`. Exposed so consumers can seed their
@@ -48,6 +62,54 @@ export const PAGE_SIZE_OPTIONS: readonly number[] = [5, 10, 20, 50, 100, 200];
  */
 function isRenderedCell<RecordType>(value: unknown): value is RenderedCell<RecordType> {
   return typeof value === 'object' && value !== null && !React.isValidElement(value) && 'children' in value;
+}
+
+function isColumnGroup<RecordType>(
+  column: ColumnGroupType<RecordType> | ColumnType<RecordType>,
+): column is ColumnGroupType<RecordType> {
+  return 'children' in column && Array.isArray(column.children) && column.children.length > 0;
+}
+
+function addDefaultColumnContentClassName<RecordType>(
+  columns: ColumnsType<RecordType>,
+  defaultClassName: string,
+): ColumnsType<RecordType> {
+  return columns.map((column) => {
+    if (column === AntdTable.EXPAND_COLUMN || column === AntdTable.SELECTION_COLUMN) {
+      return column;
+    }
+
+    if (isColumnGroup(column)) {
+      return {
+        ...column,
+        children: addDefaultColumnContentClassName(column.children, defaultClassName),
+      };
+    }
+
+    if (column.width !== undefined || column.ellipsis || column.fixed) {
+      return column;
+    }
+
+    const originalOnCell = column.onCell;
+    const originalOnHeaderCell = column.onHeaderCell;
+    return {
+      ...column,
+      onCell: (record, index) => {
+        const cellProps = originalOnCell?.(record, index) ?? {};
+        return {
+          ...cellProps,
+          className: cx(defaultClassName, cellProps.className),
+        };
+      },
+      onHeaderCell: (headerColumn) => {
+        const cellProps = originalOnHeaderCell?.(headerColumn) ?? {};
+        return {
+          ...cellProps,
+          className: cx(defaultClassName, cellProps.className),
+        };
+      },
+    };
+  });
 }
 
 export interface TableProps<RecordType extends object = any> extends AntdTableProps<RecordType> {
@@ -108,6 +170,7 @@ export interface TableProps<RecordType extends object = any> extends AntdTablePr
  * plus the index swap, so it is safe as the default table on any page.
  */
 export function Table<RecordType extends object = any>(props: TableProps<RecordType>) {
+  const { token } = theme.useToken();
   const {
     rowKey,
     showIndex = true,
@@ -142,6 +205,17 @@ export function Table<RecordType extends object = any>(props: TableProps<RecordT
 
   const showHandleInSelection = isDraggable && showSortHandle && !!rowSelection;
   const showStandaloneHandleColumn = isDraggable && showSortHandle && !rowSelection;
+
+  const defaultColumnContentClassName = useMemo(
+    () =>
+      cx(
+        DEFAULT_COLUMN_CONTENT_CLASS_NAME,
+        css`
+          ${DEFAULT_COLUMN_CONTENT_MAX_WIDTH_PROPERTY}: ${token.screenXS - token.paddingXL * 3 + token.padding * 2}px;
+        `,
+      ),
+    [token.padding, token.paddingXL, token.screenXS],
+  );
 
   const itemKeys = useMemo<string[]>(() => {
     if (!isDraggable || !dataSource) return [];
@@ -191,15 +265,16 @@ export function Table<RecordType extends object = any>(props: TableProps<RecordT
   // selection cell — see `augmentedRowSelection` below.
   const augmentedColumns = useMemo<ColumnsType<RecordType>>(() => {
     const baseColumns: ColumnsType<RecordType> = columns ?? [];
-    if (!showStandaloneHandleColumn) return baseColumns;
+    const styledColumns = addDefaultColumnContentClassName(baseColumns, defaultColumnContentClassName);
+    if (!showStandaloneHandleColumn) return styledColumns;
     const handleColumn: ColumnType<RecordType> = {
       key: '__sort__',
       width: sortHandleColumnWidth,
       align: 'center',
       render: () => <SortHandle />,
     };
-    return [handleColumn, ...baseColumns];
-  }, [columns, showStandaloneHandleColumn, sortHandleColumnWidth]);
+    return [handleColumn, ...styledColumns];
+  }, [columns, defaultColumnContentClassName, showStandaloneHandleColumn, sortHandleColumnWidth]);
 
   const augmentedRowSelection = useMemo(() => {
     if (!rowSelection) return rowSelection;

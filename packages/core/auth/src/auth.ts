@@ -46,6 +46,7 @@ interface IAuth {
   signIn(): Promise<any>;
   signUp(): Promise<any>;
   signOut(): Promise<any>;
+  syncCookies(): Promise<unknown>;
 }
 
 export abstract class Auth implements IAuth {
@@ -71,14 +72,26 @@ export abstract class Auth implements IAuth {
     if (this.ctx.skipAuthCheck === true) {
       return true;
     }
-    const token = this.ctx.getBearerToken();
-    if (!token && this.ctx.app.options.acl === false) {
-      return true;
-    }
     const { resourceName, actionName } = this.ctx.action;
     const acl = this.ctx.dataSource.acl;
     const isPublic = await acl.allowManager.isPublic(resourceName, actionName, this.ctx);
-    return isPublic;
+    if (isPublic) {
+      return true;
+    }
+
+    const hasExplicitToken = Boolean(this.ctx.get('Authorization') || this.ctx.query.token);
+    if (!hasExplicitToken && this.ctx.app.options.acl === false && this.ctx.state?.optionalAuth !== true) {
+      return true;
+    }
+
+    const token = this.ctx.getBearerToken();
+    if (!token && this.ctx.state?.optionalAuth === true) {
+      return true;
+    }
+    if (!token && this.ctx.app.options.acl === false) {
+      return true;
+    }
+    return false;
   }
 
   // The abstract methods are required to be implemented by all authentications.
@@ -96,4 +109,7 @@ export abstract class Auth implements IAuth {
   async signIn(): Promise<any> {}
   async signUp(): Promise<any> {}
   async signOut(): Promise<any> {}
+  async syncCookies(): Promise<unknown> {
+    return undefined;
+  }
 }

@@ -1,17 +1,17 @@
 ---
 title: "Migration manager"
 keywords: "System management"
-displayName: "Migration manager"
+displayName: "Менеджер миграций"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to migrate configuration content between application environments.
+  Используется для переноса конфигурации между средами приложения.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Migration manager
+# Менеджер миграций

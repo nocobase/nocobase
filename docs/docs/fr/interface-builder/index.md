@@ -12,11 +12,9 @@ Mode d'édition :
 
 ![20251023215951](https://static-docs.nocobase.com/20251023215951.png)
 
-## Modèle de mise en page
+## Mise en page de l'interface
 
-NocoBase inclut un modèle de mise en page par défaut : la navigation est située en haut et à gauche, tandis que la zone de contenu se trouve à droite.
-
-![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
+NocoBase propose une mise en page bureau et une mise en page mobile. La mise en page bureau convient aux opérations courantes d'administration et adapte aussi la navigation et le contenu des pages sur les téléphones. La mise en page mobile offre une navigation et des pages propres aux appareils mobiles. Consultez [Mise en page de l'interface](./ui-layout/index.md) pour plus de détails.
 
 ## Options de configuration
 
@@ -41,3 +39,7 @@ Options de configuration de l'action :
 Options de configuration de la colonne de tableau :
 
 ![20251023221814](https://static-docs.nocobase.com/20251023221814.png)
+
+## Liens connexes
+
+- [Mise en page de l'interface](./ui-layout/index.md) — découvrir les mises en page bureau et mobile

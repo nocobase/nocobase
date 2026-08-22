@@ -25,6 +25,7 @@ type SanitizeAdditionalKwargsOptions = {
 type SanitizeAdditionalKwargsResult = {
   changed: boolean;
   additionalKwargs?: AdditionalKwargs;
+  malformedToolCalls?: unknown[];
 };
 
 const hasRawToolCalls = (additionalKwargs?: AdditionalKwargs) =>
@@ -78,6 +79,7 @@ export const sanitizeAdditionalKwargsForToolCalls = (
   return {
     changed: true,
     additionalKwargs: Object.keys(sanitized).length > 0 ? sanitized : undefined,
+    malformedToolCalls: rawToolCalls,
   };
 };
 

@@ -13,12 +13,18 @@ import React from 'react';
 
 export type PropsRules = Record<string, any>;
 
+export interface FileCollectionReference {
+  dataSourceKey: string;
+  collectionName: string;
+}
+
 export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   onChange?: (fileList: UploadFile | UploadFile[]) => void;
   serviceErrorMessage?: string;
   value?: any;
   size?: string;
   rules?: PropsRules;
+  fileCollection?: FileCollectionReference;
   toValueItem?: function;
 };
 

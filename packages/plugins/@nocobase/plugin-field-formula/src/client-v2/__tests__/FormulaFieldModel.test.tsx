@@ -13,7 +13,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { Form } from 'antd';
 import { dayjs } from '@nocobase/utils/client';
 
-import { FormulaResult } from '../models/FormulaFieldModel';
+import { FormulaFieldModel, FormulaResult } from '../models/FormulaFieldModel';
 
 vi.mock('@nocobase/client-v2', () => ({
   FieldModel: class FieldModel {
@@ -50,7 +50,12 @@ vi.mock('@nocobase/client-v2', () => ({
 vi.mock('@nocobase/evaluators/client', () => ({
   evaluators: {
     get: () => ({
-      evaluate: (expression: string, scope: Record<string, any>) => scope?.[expression],
+      evaluate: (expression: string, scope: Record<string, any>) => {
+        if (expression === 'throws') {
+          throw new Error('failed');
+        }
+        return scope?.[expression];
+      },
     }),
   },
 }));
@@ -203,6 +208,336 @@ function DateFormulaScopeHarness({ onForm }: { onForm: (form: any) => void }) {
 }
 
 describe('FormulaFieldModel', () => {
+  it('renders through the model context', () => {
+    const model = Object.create(FormulaFieldModel.prototype) as FormulaFieldModel;
+    (model as any).props = {
+      value: 'from model',
+    };
+    (model as any).context = {
+      collectionField: {
+        options: {
+          dataType: 'string',
+        },
+      },
+      form: {
+        readPretty: true,
+      },
+    };
+
+    render(model.render());
+
+    expect(screen.getByText('from model')).toBeInTheDocument();
+  });
+
+  it('renders nothing without collection field metadata', () => {
+    const { container } = render(<FormulaResult value="ignored" form={{ readPretty: true }} />);
+
+    expect(container.textContent).toBe('');
+  });
+
+  it('does not write back when the calculated value is already current', async () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <FormulaResult
+        value={0}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+            engine: 'math.js',
+            expression: 'total',
+          },
+        }}
+        form={{
+          values: {
+            total: 10,
+          },
+          getFieldValue: () => 10,
+          setFieldValue,
+        }}
+        id="formula"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('10')).toBeInTheDocument();
+    });
+    await new Promise((resolve) => setTimeout(resolve));
+    expect(setFieldValue).not.toHaveBeenCalled();
+  });
+
+  it('calculates scope from dotted id paths', async () => {
+    const setFieldValue = vi.fn();
+
+    render(
+      <FormulaResult
+        value={0}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+            engine: 'math.js',
+            expression: 'total',
+          },
+        }}
+        form={{
+          values: {
+            items: [
+              {
+                total: 12,
+                formula: 0,
+              },
+            ],
+          },
+          setFieldValue,
+        }}
+        id="items.0.formula"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('12')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(setFieldValue).toHaveBeenCalledWith(['items', 0, 'formula'], 12);
+    });
+  });
+
+  it('falls back to root values when a parent path points to a primitive value', async () => {
+    render(
+      <FormulaResult
+        value={0}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+            engine: 'math.js',
+            expression: 'total',
+          },
+        }}
+        form={{
+          values: {
+            total: 10,
+          },
+        }}
+        id="total.formula"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('10')).toBeInTheDocument();
+    });
+  });
+
+  it('falls back to null when formula evaluation fails', async () => {
+    const { container } = render(
+      <FormulaResult
+        value={1}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+            engine: 'math.js',
+            expression: 'throws',
+          },
+        }}
+        form={{
+          values: {},
+        }}
+        id="formula"
+      />,
+    );
+
+    await waitFor(() => {
+      expect(container.textContent).toBe('');
+    });
+  });
+
+  it('renders editable values in filter and default-value contexts', async () => {
+    const onChange = vi.fn();
+    const filterForm = {
+      props: {
+        'x-flag': {
+          isInFilterFormBlock: true,
+        },
+      },
+    };
+    const { rerender } = render(
+      <FormulaResult
+        value={true}
+        collectionField={{
+          options: {
+            dataType: 'boolean',
+          },
+        }}
+        form={filterForm}
+        onChange={onChange}
+      />,
+    );
+
+    expect(screen.getByRole('checkbox')).toBeChecked();
+
+    rerender(
+      <FormulaResult
+        value={12}
+        collectionField={{
+          options: {
+            dataType: 'double',
+          },
+        }}
+        form={filterForm}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByRole('spinbutton')).toHaveValue('12');
+
+    rerender(
+      <FormulaResult
+        value="hello"
+        collectionField={{
+          options: {
+            dataType: 'string',
+          },
+        }}
+        form={filterForm}
+        onChange={onChange}
+      />,
+    );
+    expect(screen.getByRole('textbox')).toHaveValue('hello');
+
+    rerender(
+      <FormulaResult
+        value="2026-06-03"
+        collectionField={{
+          options: {
+            dataType: 'date',
+          },
+        }}
+        form={{
+          props: {
+            'x-flag': {
+              isInSetDefaultValueDialog: true,
+            },
+          },
+        }}
+        dateOnly
+      />,
+    );
+    expect(screen.getByDisplayValue('2026-06-03')).toBeInTheDocument();
+  });
+
+  it('renders read-pretty formula values by data type', () => {
+    const readPrettyForm = {
+      readPretty: true,
+    };
+    const { rerender, container } = render(
+      <FormulaResult
+        value={false}
+        collectionField={{
+          options: {
+            dataType: 'boolean',
+          },
+        }}
+        form={readPrettyForm}
+        showUnchecked
+      />,
+    );
+
+    expect(container.querySelector('svg')).toBeTruthy();
+
+    rerender(
+      <FormulaResult
+        value={123}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+          },
+        }}
+        form={readPrettyForm}
+        addonBefore="$"
+        addonAfter="USD"
+      />,
+    );
+    expect(container.textContent).toContain('$');
+    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(container.textContent).toContain('USD');
+
+    rerender(
+      <FormulaResult
+        value="2026-06-03"
+        collectionField={{
+          options: {
+            dataType: 'date',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(screen.getByText('2026-06-03')).toBeInTheDocument();
+
+    rerender(
+      <FormulaResult
+        value="plain text"
+        collectionField={{
+          options: {
+            dataType: 'string',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(screen.getByText('plain text')).toBeInTheDocument();
+
+    rerender(
+      <FormulaResult
+        value={true}
+        collectionField={{
+          options: {
+            dataType: 'boolean',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(container.querySelector('svg')).toBeTruthy();
+
+    rerender(
+      <FormulaResult
+        value="not-a-date"
+        collectionField={{
+          options: {
+            dataType: 'date',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(screen.getByText('not-a-date')).toBeInTheDocument();
+
+    rerender(
+      <FormulaResult
+        value=""
+        collectionField={{
+          options: {
+            dataType: 'string',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(container.textContent).toBe('');
+
+    rerender(
+      <FormulaResult
+        value={null}
+        collectionField={{
+          options: {
+            dataType: 'integer',
+          },
+        }}
+        form={readPrettyForm}
+      />,
+    );
+    expect(container.textContent).toBe('');
+  });
+
   it('does not subscribe to form changes when rendering editable date values', () => {
     const useWatchSpy = vi.spyOn(Form, 'useWatch');
     useWatchSpy.mockClear();

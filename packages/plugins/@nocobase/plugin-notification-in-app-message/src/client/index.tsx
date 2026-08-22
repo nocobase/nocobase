@@ -36,6 +36,7 @@ export class PluginNotificationInAppClient extends Plugin {
         ChannelConfigForm: () => null,
         MessageConfigForm,
         ContentConfigForm,
+        MessageConfigFormLoader: () => import('../client-v2/components/MessageConfigForm'),
       },
       meta: {
         editable: true,

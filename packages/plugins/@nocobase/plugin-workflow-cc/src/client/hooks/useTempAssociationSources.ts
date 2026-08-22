@@ -11,6 +11,19 @@ import { useMemo } from 'react';
 import { usePlugin } from '@nocobase/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 
+function getWorkflowTempAssociationSource(workflow) {
+  const collection = workflow?.config?.collection;
+  if (typeof collection !== 'string' || !collection || workflow?.id == null) {
+    return null;
+  }
+  return {
+    collection,
+    nodeId: workflow.id,
+    nodeKey: 'workflow',
+    nodeType: 'workflow',
+  };
+}
+
 export function useTempAssociationSources(workflow, upstreams = []) {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
 
@@ -18,9 +31,10 @@ export function useTempAssociationSources(workflow, upstreams = []) {
     if (!workflow) return [];
     const trigger = workflowPlugin.triggers.get(workflow.type);
     const triggerSource = trigger?.useTempAssociationSource?.(workflow.config, workflow);
+    const workflowSource = triggerSource ? null : getWorkflowTempAssociationSource(workflow);
     const nodeSources = (upstreams || [])
       .map((item) => workflowPlugin.instructions.get(item.type)?.useTempAssociationSource?.(item))
       .filter(Boolean);
-    return triggerSource ? [triggerSource, ...nodeSources] : nodeSources;
+    return triggerSource || workflowSource ? [triggerSource || workflowSource, ...nodeSources] : nodeSources;
   }, [workflow, upstreams, workflowPlugin]);
 }

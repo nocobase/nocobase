@@ -1,8 +1,8 @@
-# Кэш
+# Cache - Кэш
 
-## Основные методы
+## Базовые методы
 
-Ознакомьтесь с документацией <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
+Обратитесь к документации <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>.
 
 - `get()`
 - `set()`
@@ -19,7 +19,7 @@
 
 ### `wrapWithCondition()`
 
-Этот метод аналогичен `wrap()`, но позволяет вам условно решать, использовать ли кэш.
+Похож на `wrap()`, но позволяет по условию решать, использовать ли кэш.
 
 ```ts
 async wrapWithCondition<T>(
@@ -28,7 +28,7 @@ async wrapWithCondition<T>(
   options?: {
     // Внешний параметр для управления использованием кэшированного результата
     useCache?: boolean;
-    // Принимает решение о кэшировании на основе полученных данных
+    // Решение о кэшировании на основе результата данных 
     isCacheable?: (val: unknown) => boolean | Promise<boolean>;
     ttl?: Milliseconds;
   },
@@ -37,7 +37,7 @@ async wrapWithCondition<T>(
 
 ### `setValueInObject()`
 
-Когда кэшированное содержимое является объектом, этот метод изменяет значение определённого ключа.
+Когда содержимое кэша является объектом, изменяет значение указанного ключа.
 
 ```ts
 async setValueInObject(key: string, objectKey: string, value: unknown)
@@ -45,7 +45,7 @@ async setValueInObject(key: string, objectKey: string, value: unknown)
 
 ### `getValueInObject()`
 
-Когда кэшированное содержимое является объектом, этот метод получает значение определённого ключа.
+Когда содержимое кэша является объектом, получает значение указанного ключа.
 
 ```ts
 async getValueInObject(key: string, objectKey: string)
@@ -53,7 +53,7 @@ async getValueInObject(key: string, objectKey: string)
 
 ### `delValueInObject()`
 
-Когда кэшированное содержимое является объектом, этот метод удаляет определённый ключ.
+Когда содержимое кэша является объектом, удаляет указанный ключ.
 
 ```ts
 async delValueInObject(key: string, objectKey: string)

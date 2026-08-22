@@ -22,7 +22,7 @@ import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -32,6 +32,7 @@ import {
   normalizeAssociationFieldNames,
   resolveOptions,
   toSelectValue,
+  useAssociationValueHydration,
   type AssociationOption,
   type LazySelectProps,
 } from './recordSelectShared';
@@ -40,81 +41,6 @@ import { BlockSceneEnum } from '../../base/BlockModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
 import { EditFormModel } from '../../blocks';
 import { hasAncestorModel } from './recordSelectSettingsUtils';
-
-function isPlainObject(val: unknown): val is Record<string, any> {
-  return !!val && typeof val === 'object' && !Array.isArray(val);
-}
-
-type HydrateStatus = 'pending' | 'done';
-
-type HydrationCandidate = {
-  item: AssociationOption;
-  tk: any;
-  tkKey: string;
-};
-
-export function collectAssociationHydrationCandidates(options: {
-  value: LazySelectProps['value'];
-  isMultiple: boolean;
-  valueKey: string;
-  labelKey: string;
-  statusMap: Map<string, HydrateStatus>;
-}): HydrationCandidate[] {
-  const { value, isMultiple, valueKey, labelKey, statusMap } = options;
-  const list = isMultiple ? (Array.isArray(value) ? value : []) : value != null ? [value] : [];
-
-  const activeTkKeys = new Set<string>();
-  for (const item of list) {
-    if (!isPlainObject(item)) continue;
-    const tk = item?.[valueKey];
-    if (tk == null) continue;
-    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
-    if (!tkKey) continue;
-    activeTkKeys.add(tkKey);
-  }
-
-  for (const key of Array.from(statusMap.keys())) {
-    if (!activeTkKeys.has(key)) {
-      statusMap.delete(key);
-    }
-  }
-
-  const candidates: HydrationCandidate[] = [];
-  for (const item of list) {
-    if (!isPlainObject(item)) continue;
-    const tk = item?.[valueKey];
-    if (tk == null) continue;
-    if (item?.[labelKey] != null) continue;
-
-    const tkKey = typeof tk === 'object' ? JSON.stringify(tk) : String(tk);
-    if (!tkKey) continue;
-
-    const status = statusMap.get(tkKey);
-    if (status === 'pending' || status === 'done') continue;
-
-    statusMap.set(tkKey, 'pending');
-    candidates.push({ item, tk, tkKey });
-  }
-
-  return candidates;
-}
-
-export function getAssociationHydrationNamePath(model: any) {
-  return model?.context?.fieldPathArray ?? model?.context?.fieldPath ?? model?.props?.name;
-}
-
-export function getAssociationHydrationSetterContext(model: any) {
-  if (typeof model?.context?.setFormValue === 'function') {
-    return model.context;
-  }
-
-  return model?.context?.blockModel?.context;
-}
-
-function markAssociationHydrationDone(statusMap: Map<string, HydrateStatus>, tkKey: string | null | undefined) {
-  if (!tkKey) return;
-  statusMap.set(tkKey, 'done');
-}
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -281,66 +207,13 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   };
   const isConfigMode = !!model.context.flowSettingsEnabled;
   const { t } = useTranslation();
-  const hydrateStatusRef = useRef<Map<string, HydrateStatus>>(new Map());
-
-  useEffect(() => {
-    const resource: any = model?.resource;
-    if (!resource || typeof resource.get !== 'function') return;
-    const valueKey = normalizedFieldNames.value;
-    const labelKey = normalizedFieldNames.label;
-    if (!valueKey || !labelKey) return;
-
-    const current = value;
-    const candidates = collectAssociationHydrationCandidates({
-      value: current,
-      isMultiple,
-      valueKey,
-      labelKey,
-      statusMap: hydrateStatusRef.current,
-    });
-    if (!candidates.length) return;
-
-    const namePath = getAssociationHydrationNamePath(model);
-    const setterCtx: any = getAssociationHydrationSetterContext(model);
-
-    candidates.forEach(({ item, tk, tkKey }) => {
-      void (async () => {
-        try {
-          const record = await resource.get(tk);
-          if (!record || typeof record !== 'object') {
-            return;
-          }
-
-          const merge = { ...(item as any), ...(record as any) };
-          if (merge?.[labelKey] == null) {
-            return;
-          }
-
-          const nextValue = isMultiple
-            ? (Array.isArray(current) ? current : []).map((v: any) => {
-                if (!isPlainObject(v)) return v;
-                return v?.[valueKey] === tk ? merge : v;
-              })
-            : merge;
-
-          if (setterCtx && typeof setterCtx.setFormValue === 'function' && namePath != null) {
-            await setterCtx.setFormValue(namePath, nextValue, {
-              source: 'default',
-              markExplicit: false,
-              triggerEvent: false,
-            });
-            return;
-          }
-
-          onChange(nextValue as any);
-        } catch (error) {
-          // ignore
-        } finally {
-          markAssociationHydrationDone(hydrateStatusRef.current, tkKey);
-        }
-      })();
-    });
-  }, [isMultiple, model, normalizedFieldNames.label, normalizedFieldNames.value, onChange, value]);
+  useAssociationValueHydration({
+    model,
+    value,
+    isMultiple,
+    fieldNames: normalizedFieldNames,
+    onChange,
+  });
 
   const QuickAddContent = ({ searchText }) => {
     return (

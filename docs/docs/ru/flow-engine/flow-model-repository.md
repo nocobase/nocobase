@@ -1,12 +1,12 @@
 # Персистентность FlowModel
 
-FlowEngine предоставляет полноценную систему персистентности.
+Движок потоков предоставляет полноценную систему персистентности.
 
 ![20251008231338](https://static-docs.nocobase.com/20251008231338.png)
 
-## IFlowModelRepository
+## Репозиторий FlowModel (`IFlowModelRepository`)
 
-`IFlowModelRepository` — это интерфейс персистентности моделей для FlowEngine, который определяет такие операции, как удаленная загрузка, сохранение и удаление моделей. Реализовав этот интерфейс, вы сможете сохранять данные модели в серверной базе данных, API или других хранилищах данных, что позволяет обеспечить синхронизацию данных между фронтендом и бэкендом.
+`IFlowModelRepository` — это интерфейс персистентности модели для движка потоков, который определяет операции удалённой загрузки, сохранения и удаления моделей. Реализация этого интерфейса позволяет сохранять данные модели в серверную базу, API или другое хранилище и синхронизировать данные между фронтендом и бэкендом.
 
 ### Основные методы
 
@@ -19,7 +19,7 @@ FlowEngine предоставляет полноценную систему пе
 - **destroy(uid: string): Promise<boolean\>**  
   Удаляет модель из удаленного хранилища по `uid`.
 
-### Пример FlowModelRepository
+### Пример репозитория FlowModel (`FlowModelRepository`)
 
 ```ts
 class FlowModelRepository implements IFlowModelRepository<FlowModel> {
@@ -27,53 +27,53 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
 
   async findOne(query) {
     const { uid, parentId } = query;
-    // Реализация: Получить модель по uid
+    // Реализация: получение модели по uid
     return null;
   }
 
   async save(model: FlowModel) {
     console.log('Saving model:', model);
-    // Реализация: Сохранить модель
+    // Реализация: сохранение модели
     return model;
   }
 
   async destroy(uid: string) {
-    // Реализация: Удалить модель по uid
+    // Реализация: удаление модели по uid
     return true;
   }
 }
 ```
 
-### Установка FlowModelRepository
+### Установка репозитория FlowModel (`FlowModelRepository`)
 
 ```ts
 flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ```
 
-## Методы управления моделями, предоставляемые FlowEngine
+## Методы управления моделями в движке потоков
 
 ### Локальные методы
 
 ```ts
-await flowEngine.createModelAsync(options); // Создает локальный экземпляр модели
-flowEngine.getModel(uid);        // Получает локальный экземпляр модели
-flowEngine.removeModel(uid);     // Удаляет локальный экземпляр модели
+flowEngine.createModel(options); // Создать локальный экземпляр модели
+flowEngine.getModel(uid);        // Получить локальный экземпляр модели
+flowEngine.removeModel(uid);     // Удалить локальный экземпляр модели
 ```
 
-### Удаленные методы (реализуемые ModelRepository)
+### Удаленные методы (реализуются в ModelRepository)
 
 ```ts
-await flowEngine.loadModel(uid);     // Загружает модель из удаленного источника
-await flowEngine.saveModel(model);   // Сохраняет модель в удаленное хранилище
-await flowEngine.destroyModel(uid);  // Удаляет модель из удаленного хранилища
+await flowEngine.loadModel(uid);     // Загрузить модель с удаленного источника
+await flowEngine.saveModel(model);   // Сохранить модель в удаленный источник
+await flowEngine.destroyModel(uid);  // Удалить модель в удаленном источнике
 ```
 
 ## Методы экземпляра модели
 
 ```ts
-const model = await this.flowEngine.createModelAsync({
+const model = this.flowEngine.createModel({
   use: 'FlowModel',
 });
-await model.save();     // Сохраняет в удаленное хранилище
-await model.destroy();  // Удаляет из удаленного хранилища
+await model.save();     // Сохранить в удаленный источник
+await model.destroy();  // Удалить из удаленного источника
 ```

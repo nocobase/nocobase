@@ -1,7 +1,7 @@
 ---
 title: "Collection: Tree"
 keywords: "Collections"
-displayName: "Collection: Tree"
+displayName: "Коллекция: Древовидная коллекция"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
   Provides tree collection template
@@ -11,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection: Tree
+# Коллекция: Древовидная коллекция

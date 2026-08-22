@@ -22,8 +22,8 @@
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "向指定 URL 发送 HTTP 请求。可以使用上游节点里的变量作为请求头、参数和请求体。",
   "Status code": "状态码",
   "Timeout": "超时设置",
-  "Timeout config": "Timeout config",
+  "Timeout config": "超时配置",
   "URL": "地址",
   "Use variable": "使用变量",
-  "ms": "ms"
+  "ms": "毫秒"
 }

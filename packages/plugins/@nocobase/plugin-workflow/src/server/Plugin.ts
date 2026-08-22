@@ -10,7 +10,7 @@
 import path from 'path';
 
 import { Snowflake } from 'nodejs-snowflake';
-import { Transactionable } from 'sequelize';
+import { col, fn, Transactionable } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { LRUCache } from 'lru-cache';
 
@@ -49,6 +49,27 @@ import type { Transaction } from '@nocobase/database';
 
 type ID = number | string;
 type TransactionWithSequelize = Transaction & { sequelize?: Sequelize };
+type TaskStats = { pending: number; all: number };
+export type TaskStatsRow = {
+  userId: number;
+  workflowKey: string;
+  type: string;
+  pending: number;
+  all: number;
+};
+export type RepairTaskStatsOptions = {
+  userIds?: number[];
+  workflowKeys?: string[];
+  types?: string[];
+  transaction?: Transaction;
+  silent?: boolean;
+};
+export type TaskStatsProvider = {
+  collectTaskStats: (
+    options: RepairTaskStatsOptions,
+    context: { plugin: PluginWorkflowServer },
+  ) => Promise<TaskStatsRow[]>;
+};
 
 export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
@@ -70,6 +91,7 @@ export default class PluginWorkflowServer extends Plugin {
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
   private checker: NodeJS.Timeout | null = null;
+  private taskStatsProviders = new Map<string, TaskStatsProvider>();
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -437,6 +459,7 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.acl.allow('userWorkflowTasks', 'listMine', 'loggedIn');
+    this.app.acl.allow('userWorkflowTaskStats', 'listMine', 'loggedIn');
 
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterCreate', this.onAfterCreate);
@@ -631,17 +654,350 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  public registerTaskStatsProvider(type: string, provider: TaskStatsProvider) {
+    this.taskStatsProviders.set(type, provider);
+  }
+
+  public async getWorkflowIdsByKey(workflowKey: string, transaction?: Transaction) {
+    const WorkflowRepo = this.db.getRepository('workflows');
+    const workflows = await WorkflowRepo.find({
+      filter: {
+        key: workflowKey,
+      },
+      fields: ['id'],
+      transaction,
+    });
+
+    return workflows.map((workflow) => workflow.id);
+  }
+
+  private buildTaskStatsFilter(options: RepairTaskStatsOptions) {
+    const filter: Record<string, unknown> = {};
+    if (options.userIds?.length) {
+      filter.userId = options.userIds;
+    }
+    if (options.workflowKeys?.length) {
+      filter.workflowKey = options.workflowKeys;
+    }
+    if (options.types?.length) {
+      filter.type = options.types;
+    }
+    return filter;
+  }
+
+  private normalizeTaskStats(stats: Partial<TaskStats> = {}): TaskStats {
+    return {
+      pending: Number(stats.pending) || 0,
+      all: Number(stats.all) || 0,
+    };
+  }
+
+  private async upsertTaskStatsRow(row: TaskStatsRow, transaction?: Transaction) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const values = {
+      userId: row.userId,
+      workflowKey: row.workflowKey,
+      type: row.type,
+      ...this.normalizeTaskStats(row),
+    };
+    const record = await repository.findOne({
+      filter: {
+        userId: row.userId,
+        workflowKey: row.workflowKey,
+        type: row.type,
+      },
+      transaction,
+    });
+
+    if (record) {
+      await record.update(values, { transaction });
+      return record;
+    }
+
+    return repository.create({
+      values,
+      transaction,
+    });
+  }
+
+  public async refreshUserWorkflowTaskTypeStats(userId: number, type: string, { transaction }: Transactionable = {}) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const rows = await repository.find({
+      filter: {
+        userId,
+        type,
+      },
+      fields: ['pending', 'all'],
+      transaction,
+    });
+    const stats = rows.reduce(
+      (result, row) => ({
+        pending: result.pending + (Number(row.pending) || 0),
+        all: result.all + (Number(row.all) || 0),
+      }),
+      { pending: 0, all: 0 },
+    );
+
+    await this.updateTasksStats(userId, type, stats, { transaction });
+    return stats;
+  }
+
+  public async refreshUserWorkflowTaskWorkflowStats(
+    userId: number,
+    workflowKey: string,
+    { transaction }: Transactionable = {},
+  ) {
+    const repository = this.db.getRepository('userWorkflowTaskStats');
+    const rows = await repository.find({
+      filter: {
+        userId,
+        workflowKey,
+      },
+      fields: ['pending', 'all'],
+      transaction,
+    });
+
+    return rows.reduce(
+      (result, row) => ({
+        pending: result.pending + (Number(row.pending) || 0),
+        all: result.all + (Number(row.all) || 0),
+      }),
+      { pending: 0, all: 0 },
+    );
+  }
+
+  private sendTaskWorkflowStatsUpdated(userId: number, workflowKey: string, stats: TaskStats) {
+    if (!userId) {
+      return;
+    }
+    this.app.emit('ws:sendToUser', {
+      userId,
+      message: {
+        type: 'workflow:taskWorkflowStats:updated',
+        payload: {
+          userId,
+          workflowKey,
+          stats,
+        },
+      },
+    });
+  }
+
+  public async updateTaskStatsByWorkflow(
+    input: {
+      userId: number;
+      workflowKey: string;
+      type: string;
+      stats: TaskStats;
+    },
+    { transaction }: Transactionable = {},
+  ) {
+    await this.upsertTaskStatsRow(
+      {
+        userId: input.userId,
+        workflowKey: input.workflowKey,
+        type: input.type,
+        ...this.normalizeTaskStats(input.stats),
+      },
+      transaction,
+    );
+
+    await this.refreshUserWorkflowTaskTypeStats(input.userId, input.type, { transaction });
+    const workflowStats = await this.refreshUserWorkflowTaskWorkflowStats(input.userId, input.workflowKey, {
+      transaction,
+    });
+    this.sendTaskWorkflowStatsUpdated(input.userId, input.workflowKey, workflowStats);
+  }
+
+  public async repairTaskStats(options: RepairTaskStatsOptions = {}) {
+    const run = async (transaction: Transaction) => {
+      const repository = this.db.getRepository('userWorkflowTaskStats');
+      const TaskStatsModel = this.db.getModel('userWorkflowTaskStats');
+      const filter = this.buildTaskStatsFilter(options);
+      const existedRows = await repository.find({
+        filter,
+        fields: ['userId', 'workflowKey', 'type'],
+        transaction,
+      });
+      const providers = Array.from(this.taskStatsProviders.entries()).filter(([type]) => {
+        return !options.types?.length || options.types.includes(type);
+      });
+      const legacyRows = providers.length
+        ? await this.db.getRepository('userWorkflowTasks').find({
+            filter: {
+              ...(options.userIds?.length ? { userId: options.userIds } : {}),
+              type: providers.map(([type]) => type),
+            },
+            fields: ['userId', 'type'],
+            transaction,
+          })
+        : [];
+      const collectedRows = (
+        await Promise.all(
+          providers.map(([, provider]) => provider.collectTaskStats({ ...options, transaction }, { plugin: this })),
+        )
+      ).flat();
+      const rows = collectedRows.filter((row) => {
+        if (options.userIds?.length && !options.userIds.includes(row.userId)) {
+          return false;
+        }
+        if (options.workflowKeys?.length && !options.workflowKeys.includes(row.workflowKey)) {
+          return false;
+        }
+        if (options.types?.length && !options.types.includes(row.type)) {
+          return false;
+        }
+        return true;
+      });
+
+      await repository.destroy({
+        filter,
+        transaction,
+      });
+
+      const batchSize = 1000;
+      for (let offset = 0; offset < rows.length; offset += batchSize) {
+        await TaskStatsModel.bulkCreate(rows.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
+      }
+
+      const typePairs = new Set<string>();
+      const workflowPairs = new Set<string>();
+      if (options.userIds?.length) {
+        for (const userId of options.userIds) {
+          for (const [type] of providers) {
+            typePairs.add(`${userId}\0${type}`);
+          }
+          for (const workflowKey of options.workflowKeys ?? []) {
+            workflowPairs.add(`${userId}\0${workflowKey}`);
+          }
+        }
+      }
+      for (const row of legacyRows) {
+        typePairs.add(`${row.userId}\0${row.type}`);
+      }
+      for (const row of [...existedRows, ...rows]) {
+        typePairs.add(`${row.userId}\0${row.type}`);
+        workflowPairs.add(`${row.userId}\0${row.workflowKey}`);
+      }
+
+      const affectedUserIds = Array.from(typePairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedTypes = Array.from(typePairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const categorizedRows = typePairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: ['userId', 'type', [fn('SUM', col('pending')), 'pending'], [fn('SUM', col('all')), 'all']],
+            where: {
+              userId: Array.from(new Set(affectedUserIds)),
+              type: Array.from(new Set(affectedTypes)),
+            },
+            group: ['userId', 'type'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<TaskStatsRow>)
+        : [];
+      const categorizedMap = new Map(
+        categorizedRows.map((row) => [
+          `${row.userId}\0${row.type}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
+      const categorizedValues = Array.from(typePairs, (pair) => {
+        const separatorIndex = pair.indexOf('\0');
+        return {
+          userId: Number(pair.slice(0, separatorIndex)),
+          type: pair.slice(separatorIndex + 1),
+          stats: categorizedMap.get(pair) ?? { pending: 0, all: 0 },
+        };
+      });
+      const categorizedUserIds = Array.from(new Set(affectedUserIds));
+      const categorizedTypes = Array.from(new Set(affectedTypes));
+      if (categorizedUserIds.length && categorizedTypes.length) {
+        await this.db.getRepository('userWorkflowTasks').destroy({
+          filter: {
+            userId: categorizedUserIds,
+            type: categorizedTypes,
+          },
+          transaction,
+        });
+      }
+      const UserTasksModel = this.db.getModel('userWorkflowTasks');
+      for (let offset = 0; offset < categorizedValues.length; offset += batchSize) {
+        await UserTasksModel.bulkCreate(categorizedValues.slice(offset, offset + batchSize), {
+          returning: false,
+          transaction,
+        });
+      }
+
+      if (options.silent) {
+        return;
+      }
+
+      for (const value of categorizedValues) {
+        if (!value.userId) {
+          continue;
+        }
+        this.app.emit('ws:sendToUser', {
+          userId: value.userId,
+          message: { type: 'workflow:tasks:updated', payload: value },
+        });
+      }
+
+      const affectedWorkflowUserIds = Array.from(workflowPairs, (pair) => Number(pair.slice(0, pair.indexOf('\0'))));
+      const affectedWorkflowKeys = Array.from(workflowPairs, (pair) => pair.slice(pair.indexOf('\0') + 1));
+      const workflowRows = workflowPairs.size
+        ? ((await TaskStatsModel.findAll({
+            attributes: [
+              'userId',
+              'workflowKey',
+              [fn('SUM', col('pending')), 'pending'],
+              [fn('SUM', col('all')), 'all'],
+            ],
+            where: {
+              userId: Array.from(new Set(affectedWorkflowUserIds)),
+              workflowKey: Array.from(new Set(affectedWorkflowKeys)),
+            },
+            group: ['userId', 'workflowKey'],
+            raw: true,
+            transaction,
+          })) as unknown as Array<Omit<TaskStatsRow, 'type'>>)
+        : [];
+      const workflowMap = new Map(
+        workflowRows.map((row) => [
+          `${row.userId}\0${row.workflowKey}`,
+          this.normalizeTaskStats({ pending: row.pending, all: row.all }),
+        ]),
+      );
+      for (const pair of workflowPairs) {
+        const separatorIndex = pair.indexOf('\0');
+        const userId = Number(pair.slice(0, separatorIndex));
+        const workflowKey = pair.slice(separatorIndex + 1);
+        this.sendTaskWorkflowStatsUpdated(userId, workflowKey, workflowMap.get(pair) ?? { pending: 0, all: 0 });
+      }
+    };
+
+    if (options.transaction) {
+      await run(options.transaction);
+      return;
+    }
+
+    await this.db.sequelize.transaction(run);
+  }
+
   /**
    * @experimental
+   * @deprecated Use updateTaskStatsByWorkflow() when workflowKey is available.
    */
   public async updateTasksStats(
     userId: number,
     type: string,
-    stats: { pending: number; all: number } = { pending: 0, all: 0 },
+    stats: TaskStats = { pending: 0, all: 0 },
     { transaction }: Transactionable,
   ) {
     const { db } = this.app;
     const repository = db.getRepository('userWorkflowTasks');
+    const normalizedStats = this.normalizeTaskStats(stats);
     let record = await repository.findOne({
       filter: {
         userId,
@@ -652,7 +1008,7 @@ export default class PluginWorkflowServer extends Plugin {
     if (record) {
       await record.update(
         {
-          stats,
+          stats: normalizedStats,
         },
         { transaction },
       );
@@ -661,7 +1017,7 @@ export default class PluginWorkflowServer extends Plugin {
         values: {
           userId,
           type,
-          stats,
+          stats: normalizedStats,
         },
         transaction,
       });

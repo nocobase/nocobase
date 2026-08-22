@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  OIDC (OpenID Connect) authentication.
+  Аутентификация по OIDC.
 isFree: false
 builtIn: false
 defaultEnabled: false

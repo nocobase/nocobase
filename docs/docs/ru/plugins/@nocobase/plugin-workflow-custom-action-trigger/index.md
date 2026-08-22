@@ -1,17 +1,17 @@
 ---
 title: "Workflow: Custom action event"
 keywords: "Workflow"
-displayName: "Workflow: Custom action event"
+displayName: "Рабочий процесс: пользовательское событие действия"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggers after click a custom action button.
+  Срабатывает после нажатия пользовательской кнопки действия.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Custom action event
+# Рабочий процесс: пользовательское событие действия

@@ -27,7 +27,7 @@ describe('AI message tool call sanitizer', () => {
     },
   };
 
-  it('should drop malformed raw tool calls when converting LangChain AI messages to stored messages', () => {
+  it('should move malformed raw tool calls to diagnostics when converting LangChain AI messages to stored messages', () => {
     const logger = { warn: vi.fn() };
     const aiMessage = new AIMessage({
       id: 'ai_bad',
@@ -53,6 +53,9 @@ describe('AI message tool call sanitizer', () => {
     expect(values.metadata.additional_kwargs).toEqual({
       reasoning_content: 'keep this reasoning',
     });
+    expect(values.metadata.diagnostics).toEqual({
+      malformedToolCalls: [rawToolCall],
+    });
     expect(logger.warn).toHaveBeenCalledWith(
       'Discard malformed raw tool calls from AI message',
       expect.objectContaining({
@@ -67,8 +70,8 @@ describe('AI message tool call sanitizer', () => {
     expect(JSON.stringify(logger.warn.mock.calls[0][1])).not.toContain('reference_reply');
   });
 
-  it('should drop malformed raw tool calls when formatting stored assistant messages', () => {
-    const { additionalKwargs } = sanitizeAdditionalKwargsForToolCalls(
+  it('should remove malformed raw tool calls from additional kwargs while returning diagnostics', () => {
+    const { additionalKwargs, malformedToolCalls } = sanitizeAdditionalKwargsForToolCalls(
       {
         tool_calls: [rawToolCall],
         reasoning_content: 'keep this reasoning',
@@ -79,6 +82,7 @@ describe('AI message tool call sanitizer', () => {
     expect(additionalKwargs).toEqual({
       reasoning_content: 'keep this reasoning',
     });
+    expect(malformedToolCalls).toEqual([rawToolCall]);
   });
 
   it('should keep raw tool calls when parsed tool calls are present', () => {
@@ -91,6 +95,7 @@ describe('AI message tool call sanitizer', () => {
     );
 
     expect(result.changed).toBe(false);
+    expect(result.malformedToolCalls).toBeUndefined();
     expect(result.additionalKwargs).toEqual({
       tool_calls: [rawToolCall],
       reasoning_content: 'keep this reasoning',

@@ -12,7 +12,7 @@ keywords: "FAQ,常见问题,排错指南,Troubleshooting,NocoBase,构建,部署,
 
 ### 插件创建后在管理器里看不到
 
-确认执行了 `yarn pm create` 而不是手动创建目录。`yarn pm create` 除了生成文件，还会把插件注册到数据库的 `applicationPlugins` 表里。如果手动创建了目录，可以执行 `yarn nocobase upgrade` 重新扫描。
+确认执行了 `yarn pm create` 而不是手动创建目录。`yarn pm create` 除了生成文件，还会更新 `tsconfig.paths.json` 并执行 `yarn postinstall`——后者把插件链接到 `node_modules` 并重新生成客户端插件索引，插件因此能被应用扫描到。手动创建的目录缺了这一步，可以执行 `yarn nocobase upgrade` 重新扫描并登记到 `applicationPlugins` 表。
 
 ### 插件启用后页面没有变化
 

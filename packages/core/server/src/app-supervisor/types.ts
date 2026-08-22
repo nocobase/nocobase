@@ -82,6 +82,8 @@ export type AppModel = {
   options: AppModelOptions;
 };
 
+export type AppManifestValue = unknown;
+
 export type AppCondition = {
   filter?: Record<string, any>;
   match?: (appModel: AppModel) => boolean;
@@ -145,11 +147,17 @@ export interface AppDiscoveryAdapter {
     condition: AppCondition,
     options?: GetAppsByConditionOptions,
   ): Promise<string[]>;
+  listAppModels?(): Promise<AppModel[]>;
   addAppsToCondition?(conditionName: string, environmentName: string, appNames: string[]): Promise<void>;
   removeAppsFromCondition?(conditionName: string, environmentName: string, appNames: string[]): Promise<void>;
   addAppModel?(appModel: AppModel): Promise<void>;
   getAppModel?(appName: string): Promise<AppModel>;
   removeAppModel?(appName: string): Promise<void>;
+  setAppManifestItem?(appName: string, namespace: string, itemKey: string, item: AppManifestValue): Promise<void>;
+  removeAppManifestItem?(appName: string, namespace: string, itemKey: string): Promise<void>;
+  removeAppManifest?(appName: string, namespace: string): Promise<void>;
+  getAppManifestItems?<T = AppManifestValue>(appName: string, namespace: string): Promise<T[]>;
+  getAppManifests?<T = AppManifestValue>(namespace: string, appNames: string[]): Promise<Record<string, T[]>>;
   getAppNameByCName?(cname: string): Promise<string | null>;
   registerEnvironment?(environment: EnvironmentInfo): Promise<boolean>;
   unregisterEnvironment?(): Promise<void>;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Modal, Button } from 'antd';
 import { saveAs } from 'file-saver';
 
@@ -15,7 +15,7 @@ import { Plugin, attachmentFileTypes } from '@nocobase/client';
 import { filePreviewTypes, wrapWithModalPreviewer } from '@nocobase/plugin-file-manager/client';
 // Core office logic + inline previewer live in client-v2; v1 reuses them via relative path
 // so there is a single implementation shared by both runtimes.
-import { getOfficePreviewUrl, isOfficeFile } from '../client-v2/utils';
+import { isOfficeFile } from '../client-v2/utils';
 import { OfficeInlinePreviewer } from '../client-v2/OfficeInlinePreviewer';
 import { useT } from './locale';
 
@@ -28,20 +28,24 @@ interface OfficeModalPreviewerFile {
 interface OfficeModalPreviewerProps {
   index: number;
   list: OfficeModalPreviewerFile[];
+  fileCollection?: {
+    dataSourceKey: string;
+    collectionName: string;
+  };
   onSwitchIndex: (index: number | null) => void;
 }
 
-function OfficeModalPreviewer({ index, list, onSwitchIndex }: OfficeModalPreviewerProps) {
+function OfficeModalPreviewer({ index, list, fileCollection, onSwitchIndex }: OfficeModalPreviewerProps) {
   const t = useT();
   const file = list[index];
-  const url = useMemo(() => {
-    return getOfficePreviewUrl(file);
-  }, [file]);
+  const [url, setUrl] = useState('');
   const onOpen = useCallback(
     (e: React.MouseEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(url);
+      if (url) {
+        window.open(url);
+      }
     },
     [url],
   );
@@ -62,7 +66,7 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }: OfficeModalPreview
       title={file.title}
       onCancel={onClose}
       footer={[
-        <Button key="open" onClick={onOpen}>
+        <Button key="open" onClick={onOpen} disabled={!url}>
           {t('Open in new window')}
         </Button>,
         <Button key="download" onClick={onDownload}>
@@ -84,14 +88,14 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }: OfficeModalPreview
           flexDirection: 'column',
         }}
       >
-        <iframe
-          src={url}
-          style={{
-            width: '100%',
-            height: '100%',
-            flex: '1 1 auto',
-            border: 'none',
-          }}
+        <OfficeInlinePreviewer
+          file={file}
+          index={index}
+          list={list}
+          fileCollection={fileCollection}
+          onDownload={() => saveAs(file.url, `${file.title}${file.extname}`)}
+          onSwitchIndex={onSwitchIndex}
+          onPreviewUrlChange={setUrl}
         />
       </div>
     </Modal>

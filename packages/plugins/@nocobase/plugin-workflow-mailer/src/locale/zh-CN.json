@@ -15,6 +15,7 @@
   "Password": "密码",
   "Plain text": "纯文本",
   "Port": "端口",
+  "Please enter at least one email address": "请至少输入一个邮件地址",
   "Secure": "安全模式",
   "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "发送邮件。可以使用上游节点中的变量作为邮件的接收者、主题和内容。",
   "SMTP host": "SMTP 服务主机名",

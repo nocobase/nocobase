@@ -10,6 +10,7 @@
 import { getModernClientPrefix, getV2EffectiveBasePath } from '../../../authRedirect';
 import type { BaseApplication } from '../../../BaseApplication';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '../../../flow-compat';
+import type { LayoutDefinition } from '../../../layout-manager/types';
 
 export type AdminRouteNavigationMode = 'spa' | 'document';
 export type AdminRouteRuntimeTargetReason =
@@ -32,6 +33,8 @@ type LocationLike = {
   hash?: string;
 };
 
+export type AdminLayoutRoutePathLike = Pick<LayoutDefinition, 'routePath'>;
+
 type ResolveAdminRouteRuntimeTargetOptions = {
   app: Pick<BaseApplication<any>, 'getPublicPath'> & {
     router?: {
@@ -39,12 +42,14 @@ type ResolveAdminRouteRuntimeTargetOptions = {
     };
   };
   route?: NocoBaseDesktopRoute;
+  layout?: AdminLayoutRoutePathLike;
   location?: LocationLike;
   preserveLocationState?: boolean;
   log?: (message?: any, ...optionalParams: any[]) => void;
 };
 
 const LOG_PREFIX = '[NocoBase] Admin route runtime target:';
+export const DEFAULT_ADMIN_LAYOUT_ROUTE_PATH = '/admin';
 
 const EMPTY_TARGET: AdminRouteRuntimeTarget = {
   runtimePath: null,
@@ -59,6 +64,25 @@ function normalizeRootRelativePath(pathname: string) {
     return normalized.replace(/\/+$/g, '');
   }
   return normalized;
+}
+
+export function getAdminLayoutRoutePath(layout?: AdminLayoutRoutePathLike | null) {
+  const routePath = typeof layout?.routePath === 'string' ? layout.routePath.trim() : '';
+  return routePath.startsWith('/') ? normalizeRootRelativePath(routePath) : DEFAULT_ADMIN_LAYOUT_ROUTE_PATH;
+}
+
+export function joinAdminLayoutRoutePath(
+  layout: AdminLayoutRoutePathLike | null | undefined,
+  pathname?: string | number | null,
+) {
+  const layoutRoutePath = getAdminLayoutRoutePath(layout);
+  const routePath = pathname == null ? '' : String(pathname).replace(/^\/+/, '');
+
+  if (!routePath) {
+    return layoutRoutePath;
+  }
+
+  return normalizeRootRelativePath(`${layoutRoutePath}/${routePath}`);
 }
 
 function normalizePublicPath(value = '/') {
@@ -104,8 +128,12 @@ function joinRootRelativePath(basePath: string, pathname: string) {
   return normalizeRootRelativePath(`${normalizedBasePath}${normalizedPathname.slice(1)}`);
 }
 
-function getV2AdminPath(app: ResolveAdminRouteRuntimeTargetOptions['app'], schemaUid: string) {
-  return joinRootRelativePath(getV2EffectiveBasePath(app), `/admin/${schemaUid}`);
+function getV2AdminPath(
+  app: ResolveAdminRouteRuntimeTargetOptions['app'],
+  schemaUid: string,
+  layout?: AdminLayoutRoutePathLike,
+) {
+  return joinRootRelativePath(getV2EffectiveBasePath(app), joinAdminLayoutRoutePath(layout, schemaUid));
 }
 
 function appendLocationState(pathname: string, location?: LocationLike) {
@@ -212,7 +240,7 @@ function resolvePageRuntimeTarget(
 
   if (route.type === NocoBaseDesktopRouteType.flowPage) {
     return {
-      runtimePath: getV2AdminPath(app, route.schemaUid),
+      runtimePath: getV2AdminPath(app, route.schemaUid, options.layout),
       navigationMode: 'spa' as const,
       isLegacy: false,
       reason: 'ok' as const,
@@ -229,8 +257,8 @@ function resolvePageRuntimeTarget(
   return {
     runtimePath:
       preserveLocationState && location
-        ? appendLocationState(getV2AdminPath(app, route.schemaUid), location)
-        : getV2AdminPath(app, route.schemaUid),
+        ? appendLocationState(getV2AdminPath(app, route.schemaUid, options.layout), location)
+        : getV2AdminPath(app, route.schemaUid, options.layout),
     navigationMode: 'spa' as const,
     isLegacy: false,
     reason: 'ok' as const,

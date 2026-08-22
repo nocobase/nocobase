@@ -7,7 +7,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
+  Шаблон коллекции комментариев и блок для комментирования записей любой коллекции.
 isFree: true
 builtIn: true
 defaultEnabled: false

@@ -52,6 +52,8 @@ yarn pm create @my-project/plugin-settings-page
 
 这会在 `packages/plugins/@my-project/plugin-settings-page` 下生成基础文件结构，包括 `src/client-v2/`、`src/server/`、`src/locale/` 等目录。详细说明见 [编写第一个插件](../../write-your-first-plugin)。
 
+接着启动开发模式，之后修改代码就能热更新——`nb init` 创建的项目在项目根目录（`<app-path>`）下执行 `nb source dev`，自己 clone 的源码仓库在源码根目录下执行 `yarn dev`。
+
 ## 第二步：注册设置页
 
 编辑 `src/client-v2/plugin.tsx`，在 `load()` 里用 `this.pluginSettingsManager` 注册设置页。分两步——先用 `addMenuItem()` 注册菜单入口，再用 `addPageTabItem()` 注册实际页面：

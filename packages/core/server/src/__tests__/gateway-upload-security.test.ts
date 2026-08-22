@@ -75,4 +75,17 @@ describe('gateway upload security', () => {
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.text).toBe('safe text');
   });
+
+  it('forces non-active uploaded files to download when requested', async () => {
+    await writeFile(path.join(storagePath, 'uploads', 'notes.txt'), 'safe text');
+
+    const response = await supertest
+      .agent(Gateway.getInstance().getCallback())
+      .get('/console/storage/uploads/notes.txt?download=1');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-disposition']).toContain('attachment');
+    expect(response.headers['content-security-policy']).toBe('sandbox');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+  });
 });

@@ -1,17 +1,17 @@
 ---
 title: "Workflow: JavaScript"
 keywords: "Workflow"
-displayName: "Workflow: JavaScript"
+displayName: "Рабочий процесс: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Execute a piece of JavaScript in an isolated Node.js environment.
+  Выполняет фрагмент JavaScript в изолированной среде Node.js.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: JavaScript
+# Рабочий процесс: JavaScript

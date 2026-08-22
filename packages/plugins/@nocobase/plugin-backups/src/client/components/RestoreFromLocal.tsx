@@ -121,13 +121,13 @@ export const RestoreFromLocal = () => {
           </Form.Item>
           {['postgres', 'kingbase'].includes(dialect) && (
             <Form.Item
-              label={<strong>{t('Confirm the application database schema')}</strong>}
+              label={t('Confirm the application database schema')}
               help={t('Required if application database schema is different with the backup', { currentDbSchemaTips })}
             >
               <Input autoComplete="new-password" value={dbSchema} onChange={(e) => setDbSchema(e.target.value)} />
             </Form.Item>
           )}
-          <Form.Item colon={true} label={<strong>{t('Restore password')}</strong>}>
+          <Form.Item colon={true} label={t('Restore password')}>
             <Input.Password
               autoComplete="new-password"
               value={password}

@@ -249,6 +249,11 @@
             "type": "custom-link",
             "label": "Thao tác SQL",
             "link": "/workflow/nodes/sql"
+          },
+          {
+            "type": "custom-link",
+            "label": "Giao dịch cơ sở dữ liệu",
+            "link": "/workflow/nodes/transaction"
           }
         ]
       },
@@ -354,6 +359,11 @@
         "type": "custom-link",
         "label": "Tham chiếu API",
         "link": "/workflow/development/api"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn di chuyển v1 sang v2",
+        "link": "/workflow/development/migration"
       }
     ]
   }

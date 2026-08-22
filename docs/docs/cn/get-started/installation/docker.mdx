@@ -633,7 +633,7 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 下面这份配置把域名请求代理到 `http://127.0.0.1:13000/`：
 
-```bash
+```nginx
 server {
     listen 80;
     server_name your_domain.com;  # 把 your_domain.com 替换成你的域名
@@ -664,6 +664,8 @@ server {
 
 如果你还要启用 HTTPS，可以继续在宿主机 Nginx 上配置 `443` 和证书。NocoBase 容器本身不需要额外处理证书。
 
+这份根路径配置中的 `location /` 会同时代理 `/api/`、`/ws` 和 `/files/`。如果你拆分了静态资源和应用路由，仍需要确保 `/files/` 被转发到 NocoBase，不能把它当作静态目录处理。
+
 ### 子路径部署
 
 如果你要把应用部署到子路径，比如 `https://your_domain.com/nocobase/`，那么需要先配置 `APP_PUBLIC_PATH` 环境变量：
@@ -680,7 +682,7 @@ services:
 
 接着把宿主机 Nginx 配置成同样的子路径代理：
 
-```bash
+```nginx
 server {
     listen 80;
     server_name your_domain.com;  # 把 your_domain.com 替换成你的域名
@@ -706,10 +708,32 @@ server {
         send_timeout 600;
         proxy_buffering off;
     }
+
+    # 兼容根路径形式的文件访问 URL。
+    location ^~ /files/ {
+        proxy_pass http://127.0.0.1:13000;
+        proxy_http_version 1.1;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $final_host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+
+        add_header Cache-Control "no-cache, no-store" always;
+
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
 }
 ```
 
-关键点只有一个——`APP_PUBLIC_PATH` 和 `proxy_pass` 里的路径必须保持一致。只要其中一边少了 `/nocobase/`，静态资源和路由通常就会不正常。
+其中：
+
+- `APP_PUBLIC_PATH` 和 `proxy_pass` 里的路径必须保持一致。只要其中一边少了 `/nocobase/`，静态资源和路由通常就会不正常
+- `/nocobase/files/` 会由 `location /nocobase/` 转发；根路径的 `/files/` 兼容入口需要单独转发到 NocoBase
 
 ### 其他方案
 

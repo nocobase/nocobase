@@ -20,6 +20,7 @@ import {
   SingleRecordResource,
   createCurrentRecordMetaFactory,
   createRecordResolveOnServerWithLocal,
+  observer,
   tExpr,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
@@ -154,8 +155,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
           simple
           pageSize={1}
           showSizeChanger={false}
-          defaultCurrent={resource.getPage()}
-          total={resource.getTotalPage()}
+          current={resource.getPage()}
+          total={resource.getCount()}
           onChange={this.handlePageChange}
           style={{ display: 'inline-block' }}
         />
@@ -225,6 +226,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     );
   }
 }
+
+export const DetailsPagination = observer(({ model }: { model: DetailsBlockModel }) => model.renderPagination());
 
 const DetailsBlockContent = ({
   model,
@@ -297,7 +300,9 @@ const DetailsBlockContent = ({
           model={gridModel}
           showFlowSettings={false}
         />
-        <div ref={paginationRef}>{model.renderPagination()}</div>
+        <div ref={paginationRef}>
+          <DetailsPagination model={model} />
+        </div>
       </div>
     </FormComponent>
   );

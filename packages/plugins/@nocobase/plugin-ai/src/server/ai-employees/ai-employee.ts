@@ -21,6 +21,11 @@ import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
 import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
 import {
+  getCurrentRoleNames,
+  getKnowledgeBaseBackgroundPrompt,
+  normalizeKnowledgeBaseRetrievalStrategy,
+} from './ai-knowledge-base';
+import {
   conversationMiddleware,
   skillToolBindingMiddleware,
   toolCallSanitizerMiddleware,
@@ -47,6 +52,13 @@ import {
   getMessageAttachmentLookupKey,
   shouldSkipAttachmentSourceLookup,
 } from '../attachments';
+import { EXECUTE_FRONTEND_TOOL_NAME, LOAD_FRONTEND_TOOL_NAME } from '../../common/frontend-tools';
+import {
+  listCurrentFrontendTools,
+  prepareToolsForFrontendConversation,
+  shouldAutoExecuteFrontendTool,
+} from '../frontend-tools';
+import { isReasoningFinishChunk, ReasoningStreamState, StreamConversation } from './reasoning-stream-state';
 
 export interface ModelRef {
   llmService: string;
@@ -89,6 +101,7 @@ export class AIEmployee {
   employee: Model;
   aiChatConversation: AIChatConversation;
   skillSettings?: Record<string, any>;
+  userMessageCount = 0;
   private plugin: PluginAIServer;
   private db: Database;
 
@@ -160,6 +173,9 @@ export class AIEmployee {
     return this.chatSettings.enableTools !== false;
   }
 
+  private getAIEmployeeRecord(): AIEmployeeType {
+    return this.employee.toJSON() as AIEmployeeType;
+  }
   async getFormatMessages(userMessages: AIMessageInput[]) {
     const { provider } = await this.plugin.aiManager.getLLMService({
       ...this.model,
@@ -182,7 +198,9 @@ export class AIEmployee {
 
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
+    const toolCallMessage = messages.findLast((message) => message.toolCalls?.length);
     return {
+      messageId: toolCallMessage?.messageId,
       lastMessageIndex: {
         lastHumanMessageIndex: messages.filter((m) => m.role === 'user').length,
         lastAIMessageIndex: messages.filter((m) => m.role === this.employee.username).length,
@@ -250,6 +268,7 @@ export class AIEmployee {
     const { provider, model, service } = await this.plugin.aiManager.getLLMService({
       ...this.model,
     });
+    this.userMessageCount = (userMessages ?? []).filter((message) => message.role === 'user').length;
     const { historyMessages, tools, resolvedTools, middleware, config, state } = await this.initSession({
       messageId,
       provider,
@@ -513,10 +532,21 @@ export class AIEmployee {
     const aiMessageIdMap = new Map<string, string>();
     const { signal, providerName, llmService, model, provider, responseMetadata, allowEmpty = false } = options;
 
-    let isReasoning = false;
+    const reasoningState = new ReasoningStreamState();
+    const stopReasoning = async (conversation: StreamConversation) => {
+      if (reasoningState.stop(conversation)) {
+        await this.protocol.with(conversation).stopReasoning();
+      }
+    };
+    const stopAllReasoning = async () => {
+      for (const conversation of reasoningState.drain()) {
+        await this.protocol.with(conversation).stopReasoning();
+      }
+    };
     let gathered: any;
     signal.addEventListener('abort', async () => {
       try {
+        await stopAllReasoning();
         if (gathered?.type === 'ai') {
           const values = convertAIMessage({
             aiEmployee: this,
@@ -560,30 +590,32 @@ export class AIEmployee {
           const { currentConversation } = metadata;
           if (chunk.type === 'ai') {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
-            if (chunk.content) {
-              if (isReasoning) {
-                isReasoning = false;
-                await this.protocol.with(currentConversation).stopReasoning();
-              }
-              const parsedContent = provider.parseResponseChunk(chunk.content);
-              if (parsedContent) {
-                await this.protocol.with(currentConversation).content(parsedContent);
-              }
+
+            const reasoningContent = provider.parseReasoningContent(chunk);
+            if (reasoningContent) {
+              reasoningState.start(currentConversation);
+              await this.protocol.with(currentConversation).reasoning(reasoningContent);
+            }
+
+            const parsedContent = chunk.content ? provider.parseResponseChunk(chunk.content) : null;
+            if (parsedContent) {
+              await stopReasoning(currentConversation);
+              await this.protocol.with(currentConversation).content(parsedContent);
             }
 
             if (chunk.tool_call_chunks?.length) {
+              await stopReasoning(currentConversation);
               await this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
+              await stopReasoning(currentConversation);
               await this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
-            const reasoningContent = provider.parseReasoningContent(chunk);
-            if (reasoningContent) {
-              isReasoning = true;
-              await this.protocol.with(currentConversation).reasoning(reasoningContent);
+            if (isReasoningFinishChunk(chunk)) {
+              await stopReasoning(currentConversation);
             }
           }
         } else if (mode === 'updates') {
@@ -640,6 +672,7 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
+            await stopReasoning(currentConversation);
             await this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
@@ -703,6 +736,7 @@ export class AIEmployee {
         }
       }
 
+      await stopAllReasoning();
       if (this.protocol.statistics.sent === 0 && !signal.aborted && !allowEmpty) {
         this.sendErrorResponse('Empty message');
         return;
@@ -710,6 +744,7 @@ export class AIEmployee {
 
       await this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
+      await stopAllReasoning();
       this.ctx.log.error(err);
       if (err.name === 'GraphRecursionError') {
         this.sendSpecificError({ name: err.name, message: err.message });
@@ -831,7 +866,18 @@ export class AIEmployee {
     if (this.systemPromptMode === 'raw') {
       return about;
     }
-
+    const employee = this.getAIEmployeeRecord();
+    const knowledgeBaseManager = this.plugin.knowledgeBaseManager;
+    const knowledgeBaseEnabled = await knowledgeBaseManager.isEnabledKnowledgeBase(employee);
+    const roleNames = getCurrentRoleNames(this.ctx.state);
+    const hasAccessibleKnowledgeBase = knowledgeBaseEnabled
+      ? await knowledgeBaseManager.hasAccessibleKnowledgeBase({ employee, roleNames })
+      : false;
+    const knowledgeBaseAccessDenied = knowledgeBaseEnabled && !hasAccessibleKnowledgeBase;
+    const knowledgeBaseOnDemand =
+      knowledgeBaseEnabled &&
+      hasAccessibleKnowledgeBase &&
+      normalizeKnowledgeBaseRetrievalStrategy(employee.knowledgeBase?.retrievalStrategy) === 'onDemand';
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id ?? 0,
@@ -859,22 +905,24 @@ export class AIEmployee {
     }
 
     let knowledgeBase: string | undefined;
-    const { knowledgeBaseManager } = this.plugin;
-    const employee: AIEmployeeType = this.employee.toJSON();
-    if (
-      (await knowledgeBaseManager.isEnabledKnowledgeBase(employee)) &&
-      employee.knowledgeBasePrompt &&
-      userMessages?.length
-    ) {
+    if (knowledgeBaseEnabled && hasAccessibleKnowledgeBase && !knowledgeBaseOnDemand && userMessages?.length) {
       const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
       if (lastUserMessage) {
         knowledgeBase = await knowledgeBaseManager.retrievePrompt({
           employee,
           query: lastUserMessage.content.content as string,
+          roleNames,
         });
       }
     }
-
+    const knowledgeBaseBackgroundPrompt = getKnowledgeBaseBackgroundPrompt({
+      accessDenied: knowledgeBaseAccessDenied,
+      onDemand: knowledgeBaseOnDemand,
+      preRetrieved: Boolean(knowledgeBase),
+    });
+    if (knowledgeBaseBackgroundPrompt) {
+      background = `${background}\n${knowledgeBaseBackgroundPrompt}`;
+    }
     const availableSkills = await this.getAvailableSkills();
     const availableAIEmployees = await this.getAvailableAIEmployees();
 
@@ -896,6 +944,7 @@ export class AIEmployee {
       knowledgeBase,
       availableSkills,
       availableAIEmployees,
+      webSearch: this.webSearch,
     });
 
     const { important } = this.ctx.action?.params?.values || {};
@@ -916,16 +965,22 @@ If information is missing, clearly state it in the summary.</Important>`;
     toolCalls: {
       id: string;
       name: string;
-      args: any;
+      args: unknown;
     }[],
   ): Promise<Model<AIToolMessage>[]> {
     const nowTime = new Date();
     const toolMap = await this.getToolsMap();
+    const currentFrontendTools = toolCalls.some((toolCall) => toolCall.name === EXECUTE_FRONTEND_TOOL_NAME)
+      ? await listCurrentFrontendTools(this.ctx, this.sessionId)
+      : [];
     return await this.aiToolMessagesRepo.create({
       values: toolCalls.map((toolCall) => {
         const toolsExisted = toolMap.has(toolCall.name);
         const tools = toolMap.get(toolCall.name);
-        const auto = this.isAutoCall(tools);
+        const auto =
+          toolCall.name === EXECUTE_FRONTEND_TOOL_NAME
+            ? toolsExisted && shouldAutoExecuteFrontendTool(currentFrontendTools, toolCall.args)
+            : this.isAutoCall(tools);
         return {
           id: this.plugin.snowflake.generate(),
           sessionId: this.sessionId,
@@ -1327,19 +1382,20 @@ If information is missing, clearly state it in the summary.</Important>`;
         });
         continue;
       }
+      const additionalKwargs = sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
+        onDiscard: (info) => {
+          this.logger.warn('Discard malformed raw tool calls from AI message', {
+            phase: 'formatMessages',
+            messageId: msg.metadata?.id,
+            ...info,
+          });
+        },
+      }).additionalKwargs;
       formattedMessages.push({
         role: 'assistant',
         content,
         tool_calls: msg.toolCalls,
-        additional_kwargs: sanitizeAdditionalKwargsForToolCalls(msg.metadata?.additional_kwargs, msg.toolCalls, {
-          onDiscard: (info) => {
-            this.logger.warn('Discard malformed raw tool calls from AI message', {
-              phase: 'formatMessages',
-              messageId: msg.metadata?.id,
-              ...info,
-            });
-          },
-        }).additionalKwargs,
+        additional_kwargs: provider.prepareStoredAssistantAdditionalKwargs(additionalKwargs),
       });
     }
 
@@ -1398,11 +1454,32 @@ If information is missing, clearly state it in the summary.</Important>`;
     return result;
   }
 
+  private async getKnowledgeBaseRetrieveTool(): Promise<ToolsEntry | undefined> {
+    const employee = this.getAIEmployeeRecord();
+    const knowledgeBaseManager = this.plugin.knowledgeBaseManager;
+    if (!(await knowledgeBaseManager.isEnabledKnowledgeBase(employee))) {
+      return undefined;
+    }
+    const hasAccessibleKnowledgeBase = await knowledgeBaseManager.hasAccessibleKnowledgeBase({
+      employee,
+      roleNames: getCurrentRoleNames(this.ctx.state),
+    });
+    if (!hasAccessibleKnowledgeBase) {
+      return undefined;
+    }
+    return await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, { ctx: this.ctx });
+  }
+
   private async getAIEmployeeTools() {
     if (!this.areToolsEnabled()) {
       return [];
     }
+    const currentFrontendTools = await listCurrentFrontendTools(this.ctx, this.sessionId);
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
+    const getSkill = await this.toolsManager.getTools(SYSTEM_TOOLS.GET_SKILL, { ctx: this.ctx });
+    if (getSkill) {
+      tools.push(getSkill);
+    }
     if (this.webSearch === true) {
       const subAgentWebSearch = await this.toolsManager.getTools(SYSTEM_TOOLS.WEB_SEARCH, { ctx: this.ctx });
       tools.push(subAgentWebSearch);
@@ -1411,13 +1488,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     const toolMap = await this.getToolsMap();
     const settingsTools = this.employee.skillSettings?.tools ?? [];
     const employeeTools = [...settingsTools, ...this.tools];
-    if (await this.plugin.knowledgeBaseManager.isEnabledKnowledgeBase(this.employee.toJSON() as AIEmployeeType)) {
-      const knowledgeBaseRetrieveTool = await this.toolsManager.getTools(SYSTEM_TOOLS.KNOWLEDGE_BASE, {
-        ctx: this.ctx,
-      });
-      if (knowledgeBaseRetrieveTool) {
-        employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
-      }
+    const knowledgeBaseRetrieveTool = await this.getKnowledgeBaseRetrieveTool();
+    if (knowledgeBaseRetrieveTool) {
+      employeeTools.push({ name: SYSTEM_TOOLS.KNOWLEDGE_BASE });
     }
     for (const toolSetting of employeeTools) {
       if (generalToolsNameSet.has(toolSetting.name)) {
@@ -1429,21 +1502,29 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
       tools.push(tool);
     }
-    const systemTools = listSystemTools();
+    const systemTools = [...listSystemTools(), LOAD_FRONTEND_TOOL_NAME, EXECUTE_FRONTEND_TOOL_NAME];
     if (!this.skillSettings) {
-      return tools;
+      return prepareToolsForFrontendConversation(tools, currentFrontendTools);
     } else if (!this.skillSettings.toolsVersion) {
       const toolFilter = this.skillSettings.tools ?? [];
-      return tools.filter(
-        (t) =>
-          toolFilter.length === 0 || systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name),
+      return prepareToolsForFrontendConversation(
+        tools.filter(
+          (t) =>
+            toolFilter.length === 0 ||
+            systemTools.includes(t.definition.name) ||
+            toolFilter.includes(t.definition.name),
+        ),
+        currentFrontendTools,
       );
     } else {
       const toolFilter = this.skillSettings.tools;
       if (_.isArray(toolFilter)) {
-        return tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name));
+        return prepareToolsForFrontendConversation(
+          tools.filter((t) => systemTools.includes(t.definition.name) || toolFilter.includes(t.definition.name)),
+          currentFrontendTools,
+        );
       } else {
-        return tools;
+        return prepareToolsForFrontendConversation(tools, currentFrontendTools);
       }
     }
   }
@@ -1490,6 +1571,9 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
     const baseTools = await this.getAIEmployeeTools();
     const toolMap = await this.getToolsMap();
+    for (const tool of baseTools) {
+      toolMap.set(tool.definition.name, tool);
+    }
     const availableSkills = await this.getAvailableSkills();
     const skillOwnedToolNames = new Set(availableSkills.flatMap((it) => it.tools ?? []));
     const baseToolNames = new Set(

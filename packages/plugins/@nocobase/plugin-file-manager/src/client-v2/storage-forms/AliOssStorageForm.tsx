@@ -20,6 +20,7 @@ import {
   PathField,
   RenameModeField,
   TitleField,
+  UseOriginalUrlField,
 } from '../components';
 import { useT } from '../locale';
 
@@ -60,6 +61,7 @@ export default function AliOssStorageForm() {
       </Form.Item>
       <PathField />
       <RenameModeField />
+      <UseOriginalUrlField />
       <FileSizeField />
       <MimetypeField />
       <DefaultField />

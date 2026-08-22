@@ -38,20 +38,19 @@ type ExportFieldsCascaderProps = Omit<
 
 export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
   const { optionsCache, value, onChange, onDropdownVisibleChange, onSearch, notFoundContent, ...others } = props;
-  const [cascaderOptions, setCascaderOptions] = React.useState(() => createExportFieldsOptionsSnapshot(optionsCache));
+  const [, setOptionsVersion] = React.useState(0);
   const [searchOptions, setSearchOptions] = React.useState<ExportFieldOption[]>([]);
   const [searchStatus, setSearchStatus] = React.useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
-  const lastPreloadedValueRef = React.useRef<string | null>(null);
   const searchAbortControllerRef = React.useRef<AbortController>();
   const searchTimerRef = React.useRef<ReturnType<typeof setTimeout>>();
   const searchValueRef = React.useRef('');
   const optionsCacheRef = React.useRef(optionsCache);
   const mountedRef = React.useRef(false);
-  const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value) || undefined, [value]);
+  const cascaderValue = React.useMemo(() => normalizeExportFieldValue(value), [value]);
 
   const refreshOptions = React.useCallback(() => {
-    setCascaderOptions(createExportFieldsOptionsSnapshot(optionsCache));
-  }, [optionsCache]);
+    setOptionsVersion((version) => version + 1);
+  }, []);
 
   React.useEffect(() => {
     optionsCacheRef.current = optionsCache;
@@ -64,8 +63,7 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
     }
     setSearchOptions([]);
     setSearchStatus('idle');
-    refreshOptions();
-  }, [optionsCache, refreshOptions]);
+  }, [optionsCache]);
 
   React.useEffect(() => {
     mountedRef.current = true;
@@ -85,6 +83,9 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
     return path.map((item) => item?.name ?? item).join('.');
   }, []);
 
+  optionsCache.preloadPath(cascaderValue);
+  const cascaderOptions = createExportFieldsOptionsSnapshot(optionsCache);
+
   const loadData = React.useCallback(
     (selectedOptions) => {
       const targetOption = selectedOptions?.[selectedOptions.length - 1];
@@ -100,26 +101,14 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
     [optionsCache, refreshOptions],
   );
 
-  const preloadSelectedPath = React.useCallback(() => {
-    const valueKey = getValueKey(value);
-    if (!valueKey || lastPreloadedValueRef.current === valueKey) {
-      return;
-    }
-    lastPreloadedValueRef.current = valueKey;
-    const changed = optionsCache.preloadPath(value);
-    if (changed) {
-      refreshOptions();
-    }
-  }, [getValueKey, optionsCache, refreshOptions, value]);
-
   const handleDropdownVisibleChange = React.useCallback(
     (open) => {
       if (open) {
-        preloadSelectedPath();
+        refreshOptions();
       }
       onDropdownVisibleChange?.(open);
     },
-    [onDropdownVisibleChange, preloadSelectedPath],
+    [onDropdownVisibleChange, refreshOptions],
   );
 
   const handleChange = React.useCallback(
@@ -211,7 +200,7 @@ export const ExportFieldsCascader = (props: ExportFieldsCascaderProps) => {
     <Cascader
       key={valueKey}
       {...others}
-      value={cascaderValue}
+      value={cascaderValue || undefined}
       fieldNames={exportFieldNames}
       options={searchIsActive ? searchOptions : cascaderOptions}
       loadData={loadData}

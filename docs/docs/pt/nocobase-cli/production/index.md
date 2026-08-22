@@ -69,6 +69,16 @@ Se acontecer de você ficar preso aqui "Por que você precisa de `nb app autosta
 - Se você for se conectar ao proxy reverso, `appPort` foi salvo no env
 - Se você está pronto para abri-lo oficialmente para o mundo exterior, você já planejou o nome de domínio, a porta de entrada e a solução HTTPS.
 
+:::warning Atenção
+
+Use um `hostname` diferente, como um subdomínio separado, para cada serviço NocoBase independente. Não diferencie os serviços apenas pela porta. Os cookies do navegador não são isolados por porta, portanto serviços sob o mesmo `hostname` podem sobrescrever o estado de login e afetar a autorização das [URLs estáveis](../../file-manager/stable-url.md).
+
+Os subaplicativos na mesma implantação do NocoBase são diferenciados pelo nome do aplicativo e não precisam de hostnames separados. No entanto, se outro serviço NocoBase independente for executado em outra porta sob o mesmo `hostname` e contiver um aplicativo principal ou subaplicativo com o mesmo nome, os cookies ainda poderão entrar em conflito.
+
+Por exemplo, use `app1.example.com` e `app2.example.com` em vez de `example.com:13000` e `example.com:14000`.
+
+:::
+
 Se você não concluiu a instalação da CLI ou a inicialização do ambiente, volte para [Instalação usando CLI (recomendado)](../installation/cli.md).
 
 Se o comando solicitar que env está faltando `appPort`, primeiro execute [`nb env update`](../../api/cli/env/update.md) para preenchê-lo.

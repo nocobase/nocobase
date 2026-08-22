@@ -12,9 +12,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, waitFor } from '@nocobase/test/client';
 import { FieldAssignValueInput } from '../FieldAssignValueInput';
 
-const { mockUseFlowContext, mockGetDefaultBindingByField } = vi.hoisted(() => ({
+const { mockUseFlowContext, mockGetDefaultBindingByField, mockVariableInput } = vi.hoisted(() => ({
   mockUseFlowContext: vi.fn(),
   mockGetDefaultBindingByField: vi.fn(),
+  mockVariableInput: vi.fn(() => <div data-testid="variable-input" />),
 }));
 
 vi.mock('@nocobase/flow-engine', async () => {
@@ -25,7 +26,7 @@ vi.mock('@nocobase/flow-engine', async () => {
   return {
     ...actual,
     useFlowContext: () => mockUseFlowContext(),
-    VariableInput: () => <div data-testid="variable-input" />,
+    VariableInput: mockVariableInput,
     FlowModelRenderer: () => <div data-testid="flow-model-renderer" />,
     EditableItemModel: MockEditableItemModel,
   };
@@ -130,5 +131,86 @@ describe('FieldAssignValueInput context', () => {
       expect(engine.createModel).toHaveBeenCalled();
     });
     expect(engine.createModel).toHaveBeenCalledWith(expect.any(Object), { delegate: sourceContext });
+  });
+
+  it('lets callers override variable path parsing for domain-specific stored formats', async () => {
+    mockVariableInput.mockClear();
+    const sourceContext = {
+      dataSourceManager: {
+        getDataSource: vi.fn(() => ({})),
+      },
+      t: (key: string) => key,
+    };
+    const fieldModel = {
+      props: {},
+      setProps: vi.fn(),
+      dispatchEvent: vi.fn(),
+      remove: vi.fn(),
+    };
+    const tempRoot = {
+      context: {
+        defineProperty: vi.fn(),
+      },
+      subModels: {
+        fields: [fieldModel],
+      },
+      setProps: vi.fn(),
+      remove: vi.fn(),
+    };
+    const engine = {
+      createModel: vi.fn(() => tempRoot),
+    };
+    const collectionField = {
+      name: 'status',
+      interface: 'input',
+      uiSchema: { 'x-component': 'Input' },
+      isAssociationField: () => false,
+      getComponentProps: () => ({}),
+    };
+    const collection = {
+      dataSourceKey: 'main',
+      name: 'tasks',
+      getField: (name: string) => (name === 'status' ? collectionField : null),
+      getFields: () => [collectionField],
+    };
+    const formModel = {
+      context: { ...sourceContext, engine, collection, blockModel: null as any },
+      collection,
+      subModels: {},
+    };
+    formModel.context.blockModel = formModel;
+
+    mockGetDefaultBindingByField.mockReturnValue({ modelName: 'InputFieldModel' });
+    mockUseFlowContext.mockReturnValue({
+      model: formModel,
+      t: (key: string) => key,
+      getPropertyMetaTree: vi.fn(async () => []),
+    });
+
+    const variableConverters = {
+      resolvePathFromValue: vi.fn((value: string) =>
+        value === '{{$context.data.updatedAt}}' ? ['$context', 'data', 'updatedAt'] : undefined,
+      ),
+      resolveValueFromPath: vi.fn(() => undefined),
+    };
+
+    render(
+      <FieldAssignValueInput
+        targetPath="status"
+        value="{{$context.data.updatedAt}}"
+        onChange={vi.fn()}
+        variableConverters={variableConverters}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(engine.createModel).toHaveBeenCalled();
+    });
+    const latestVariableInputCall = mockVariableInput.mock.calls.at(-1)?.[0];
+    expect(latestVariableInputCall.converters.resolvePathFromValue('{{$context.data.updatedAt}}')).toEqual([
+      '$context',
+      'data',
+      'updatedAt',
+    ]);
   });
 });

@@ -46,9 +46,17 @@ async function applyActualActionPermission(ctx: Context, actionName: ActualActio
     ctx.throw(403, 'No permissions');
   }
 
-  ctx.action.params = lodash.cloneDeep(originalParams);
-  await ctx.acl.applyActionParams(ctx, can, resourceName, actionName);
+  const resolved = await ctx.acl.resolveActionParams(ctx, {
+    actionName,
+    params: originalParams,
+    resourceName: ctx.action.resourceName,
+    useCurrentRepository: true,
+  });
+  ctx.action.params = resolved.mergedParams;
   ctx.permission.can = can;
+  ctx.permission.parsedParams = resolved.parsedParams;
+  ctx.permission.rawParams = resolved.rawParams;
+  ctx.permission.mergedParams = lodash.cloneDeep(resolved.mergedParams);
   ctx.permission.actualActionName = actionName;
   ctx.permission.deferred = false;
 }

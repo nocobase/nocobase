@@ -1,30 +1,30 @@
 # JSX
 
-RunJS поддерживает синтаксис JSX, что позволяет писать код так же, как компоненты React. JSX автоматически компилируется перед выполнением.
+RunJS поддерживает JSX: вы можете писать код как React-компоненты, а JSX компилируется перед выполнением.
 
-## Примечания по компиляции
+## Компиляция
 
-- Для преобразования JSX используется [sucrase](https://github.com/alangpierce/sucrase).
-- JSX компилируется в `ctx.libs.React.createElement` и `ctx.libs.React.Fragment`.
-- **Нет необходимости импортировать React**: вы можете писать JSX напрямую; после компиляции он автоматически будет использовать `ctx.libs.React`.
-- При загрузке внешнего React через `ctx.importAsync('react@x.x.x')`, JSX переключится на использование метода `createElement` из этого конкретного экземпляра.
+- JSX преобразуется с помощью [sucrase](https://github.com/alangpierce/sucrase)
+- JSX компилируется в `ctx.libs.React.createElement` и `ctx.libs.React.Fragment`
+- **React импортировать не нужно**: пишите JSX напрямую, компилятор использует `ctx.libs.React`
+- При загрузке внешнего React через `ctx.importAsync('react@x.x.x')` JSX использует `createElement` этого экземпляра
 
 ## Использование встроенного React и компонентов
 
-RunJS содержит встроенный React и популярные библиотеки пользовательского интерфейса. Вы можете обращаться к ним напрямую через `ctx.libs` без использования `import`:
+RunJS включает React и распространенные UI-библиотеки; используйте их через `ctx.libs` без `import`:
 
 - **ctx.libs.React** — ядро React
-- **ctx.libs.ReactDOM** — ReactDOM (можно использовать с `createRoot`, если необходимо)
+- **ctx.libs.ReactDOM** — ReactDOM (например, для createRoot)
 - **ctx.libs.antd** — компоненты Ant Design
 - **ctx.libs.antdIcons** — иконки Ant Design
 
 ```tsx
 const { Button } = ctx.libs.antd;
 
-ctx.render(<Button>Нажать</Button>);
+ctx.render(<Button>Click</Button>);
 ```
 
-При написании JSX напрямую вам не нужно деструктурировать React. Деструктуризация из `ctx.libs` требуется только при использовании **хуков** (таких как `useState`, `useEffect`) или **фрагментов** (`<>...</>`):
+Для обычного JSX не нужно деструктурировать React; берите его из `ctx.libs` только при использовании **хуков** (например, `useState`, `useEffect`) или **фрагмента** (`<>...</>`):
 
 ```tsx
 const { React } = ctx.libs;
@@ -32,43 +32,43 @@ const { useState } = React;
 
 const Counter = () => {
   const [count, setCount] = useState(0);
-  return <div>Счетчик: {count}</div>;
+  return <div>Count: {count}</div>;
 };
 
 ctx.render(<Counter />);
 ```
 
-**Примечание**: Встроенный React и внешний React, импортированный через `ctx.importAsync()`, **нельзя смешивать**. Если вы используете внешнюю библиотеку пользовательского интерфейса, React также должен быть импортирован из того же внешнего источника.
+**Примечание**: встроенный React и React, загруженный через `ctx.importAsync()`, **нельзя смешивать**. Если используете внешнюю UI-библиотеку, импортируйте React из того же внешнего источника.
 
 ## Использование внешнего React и компонентов
 
-При загрузке определенной версии React и библиотек пользовательского интерфейса через `ctx.importAsync()`, JSX будет использовать этот экземпляр React:
+Когда вы загружаете React и UI-библиотеку через `ctx.importAsync()`, JSX использует именно этот экземпляр React:
 
 ```tsx
 const React = await ctx.importAsync('react@19.2.4');
 const { Button } = await ctx.importAsync('antd@6.2.2?bundle');
 
-ctx.render(<Button>Нажать</Button>);
+ctx.render(<Button>Click</Button>);
 ```
 
-Если antd зависит от react/react-dom, вы можете указать ту же версию через `deps`, чтобы избежать создания нескольких экземпляров:
+Если antd зависит от react/react-dom, используйте `deps`, чтобы зафиксировать одинаковую версию и избежать нескольких экземпляров:
 
 ```tsx
 const React = await ctx.importAsync('react@18.2.0');
 const { Button } = await ctx.importAsync('antd@5.29.3?bundle&deps=react@18.2.0,react-dom@18.2.0');
 
-ctx.render(<Button>Кнопка</Button>);
+ctx.render(<Button>Button</Button>);
 ```
 
-**Примечание**: При использовании внешнего React библиотеки пользовательского интерфейса, такие как antd, также должны быть импортированы через `ctx.importAsync()`. Не смешивайте их с `ctx.libs.antd`.
+**Примечание**: при внешнем React загружайте antd и другие UI-библиотеки через `ctx.importAsync()`; не смешивайте с `ctx.libs.antd`.
 
-## Основные моменты синтаксиса JSX
+## Основы JSX
 
-- **Компоненты и пропсы**: `<Button type="primary">Текст</Button>`
-- **Фрагмент**: `<>...</>` или `<React.Fragment>...</React.Fragment>` (при использовании фрагмента необходимо выполнить деструктуризацию `const { React } = ctx.libs`)
-- **Выражения**: используйте `{выражение}` в JSX для вставки переменных или операций, например `{ctx.user.name}` или `{count + 1}`. Не используйте синтаксис шаблонов `{{ }}`.
-- **Условный рендеринг**: `{flag && <span>Контент</span>}` или `{flag ? <A /> : <B />}`
-- **Рендеринг списков**: используйте `array.map()` для возврата списка элементов и убедитесь, что у каждого элемента есть стабильный `key`.
+- **Компоненты и свойства**: `<Button type="primary">Text</Button>`
+- **Фрагмент**: `<>...</>` или `<React.Fragment>...</React.Fragment>` (деструктурируйте `const { React } = ctx.libs` при использовании фрагмента)
+- **Выражения**: используйте `{выражение}` в JSX для переменных и выражений, например `{ctx.user.name}`, `{count + 1}`; не используйте шаблонный синтаксис `{{ }}`
+- **Условный рендер**: `{flag && <span>Content</span>}` или `{flag ? <A /> : <B />}`
+- **Рендер списка**: используйте `array.map()` и задавайте каждому элементу стабильный `key`
 
 ```tsx
 const { React } = ctx.libs;

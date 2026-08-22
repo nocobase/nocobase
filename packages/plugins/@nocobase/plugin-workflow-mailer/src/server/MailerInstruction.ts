@@ -346,7 +346,7 @@ export default class MailerInstruction extends Instruction {
 
     const { workflow } = processor.execution as ExecutionModel & { workflow: WorkflowModel };
     const currentWorkflow = workflow?.options || workflow?.get?.('options') ? workflow : await node.getWorkflow();
-    const sync = this.workflow.isWorkflowSync(currentWorkflow);
+    const sync = processor.isInstructionSync(node);
     const workflowOptions = currentWorkflow?.options ?? currentWorkflow?.get?.('options') ?? {};
     const workflowTimeout = Number(workflowOptions.timeout ?? 0);
 

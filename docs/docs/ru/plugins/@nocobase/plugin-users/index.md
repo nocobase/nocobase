@@ -4,7 +4,7 @@ keywords: "Users & permissions"
 displayName: "Users"
 packageName: '@nocobase/plugin-users'
 description: |
-  Provides basic user model, as well as created by and updated by fields.
+  Базовая модель пользователя, а также поля «кто создал» и «кто обновил».
 isFree: true
 builtIn: true
 defaultEnabled: false

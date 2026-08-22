@@ -1,17 +1,17 @@
 ---
 title: "Workflow: Custom variable"
 keywords: "Workflow"
-displayName: "Workflow: Custom variable"
+displayName: "Рабочий процесс: пользовательская переменная"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
+  Создание пользовательских переменных и присваивание значений в рабочем процессе для временных данных процесса.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Custom variable
+# Рабочий процесс: пользовательская переменная
