@@ -61,10 +61,15 @@ export function compoundAction(actionName: CompoundActionName) {
     // preserve the repository action behavior; once ACL is present, the
     // server-generated deferred marker is mandatory.
     if (!ctx.acl) {
-      ctx.body = await repository[actionName]({
-        ...lodash.pick(ctx.action.params, [...createParamKeys, 'filterKeys']),
+      const compoundParams = {
+        filterKeys: ctx.action.params.filterKeys,
+        values: ctx.action.params.values,
         context: ctx,
-      });
+      };
+      ctx.body =
+        actionName === 'firstOrCreate'
+          ? await repository.firstOrCreate(compoundParams)
+          : await repository.updateOrCreate(compoundParams);
       ctx.status = 200;
       await next();
       return;
@@ -77,15 +82,17 @@ export function compoundAction(actionName: CompoundActionName) {
     const originalParams = lodash.cloneDeep(ctx.action.params);
     const { filterKeys, values } = originalParams;
     const filter = Repository.valuesToFilter(values, filterKeys);
-    const database = repository.database || repository.db;
-
-    ctx.body = await database.sequelize.transaction(async (transaction) => {
+    ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
       const instance = await repository.findOne({ filter, transaction, context: ctx });
 
       if (!instance) {
         await applyActualActionPermission(ctx, 'create', originalParams);
         return repository.create({
-          ...lodash.pick(ctx.action.params, createParamKeys),
+          values: ctx.action.params.values,
+          ...lodash.pick(
+            ctx.action.params,
+            createParamKeys.filter((key) => key !== 'values'),
+          ),
           transaction,
           context: ctx,
         });
@@ -111,7 +118,11 @@ export function compoundAction(actionName: CompoundActionName) {
 
       await applyActualActionPermission(ctx, 'update', originalParams);
       const result = await repository.update({
-        ...lodash.pick(ctx.action.params, updateParamKeys),
+        values: ctx.action.params.values,
+        ...lodash.pick(
+          ctx.action.params,
+          updateParamKeys.filter((key) => key !== 'values'),
+        ),
         filterByTk,
         transaction,
         context: ctx,
