@@ -514,10 +514,15 @@ function WorkflowTaskNavigationMenu(props: {
   } = useWorkflowTaskFilterContext();
   const [searchValue, setSearchValue] = useState(search);
   const typeMenuKey = currentTypeKey ? `type:${currentTypeKey}` : undefined;
+  const [openKeys, setOpenKeys] = useState<string[]>(typeMenuKey ? [typeMenuKey] : []);
 
   useEffect(() => {
     setSearchValue(search);
   }, [search]);
+
+  useEffect(() => {
+    setOpenKeys(typeMenuKey ? [typeMenuKey] : []);
+  }, [typeMenuKey]);
 
   const handleWorkflowSelect = useCallback(
     (workflow: WorkflowTaskStatsItem | null) => {
@@ -554,18 +559,19 @@ function WorkflowTaskNavigationMenu(props: {
   );
 
   const handleOpenChange = useCallback<NonNullable<MenuProps['onOpenChange']>>(
-    (openKeys) => {
-      const nextTypeMenuKey = [...openKeys].reverse().find((key) => key.startsWith('type:') && key !== typeMenuKey);
+    (nextOpenKeys) => {
+      const nextTypeMenuKey = [...nextOpenKeys].reverse().find((key) => key.startsWith('type:') && key !== typeMenuKey);
       if (!nextTypeMenuKey) {
-        selectWorkflow(null);
+        setOpenKeys([]);
         return;
       }
+      setOpenKeys([nextTypeMenuKey]);
       const nextType = nextTypeMenuKey.slice('type:'.length);
       if (nextType !== currentTypeKey) {
         onTaskTypeSelect(nextType);
       }
     },
-    [currentTypeKey, onTaskTypeSelect, selectWorkflow, typeMenuKey],
+    [currentTypeKey, onTaskTypeSelect, typeMenuKey],
   );
 
   const workflowMenuItems: NonNullable<MenuProps['items']> = [
@@ -615,8 +621,11 @@ function WorkflowTaskNavigationMenu(props: {
       mode="inline"
       inlineIndent={token.padding}
       expandIcon={null}
-      openKeys={typeMenuKey ? [typeMenuKey] : []}
-      selectedKeys={[selectedWorkflow ? `workflow:${selectedWorkflow.workflowKey}` : 'workflow:all']}
+      openKeys={openKeys}
+      selectedKeys={[
+        ...(typeMenuKey ? [typeMenuKey] : []),
+        selectedWorkflow ? `workflow:${selectedWorkflow.workflowKey}` : 'workflow:all',
+      ]}
       onClick={handleMenuClick}
       onOpenChange={handleOpenChange}
       items={taskTypes.map((type) => ({
