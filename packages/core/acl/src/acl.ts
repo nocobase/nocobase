@@ -466,67 +466,19 @@ export class ACL extends EventEmitter {
 
         ctx.log?.debug && ctx.log.debug('ctx permission', permission);
 
+        if (['firstOrCreate', 'updateOrCreate'].includes(actionName)) {
+          permission.deferred = true;
+          await next();
+          return;
+        }
+
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
           return;
         }
 
-        const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
-
-        ctx.log?.debug && ctx.log.debug('acl params', params);
-
         try {
-          if (params && resourcerAction.mergeParams) {
-            const db = ctx.database ?? ctx.db;
-            const collection = db?.getCollection?.(resourceName);
-            checkFilterParams(collection, params?.filter);
-            const parsedFilter = await parseJsonTemplate(params.filter, {
-              state: ctx.state,
-              timezone: getTimezone(ctx),
-              userProvider: createUserProvider({
-                db: ctx.db,
-                currentUser: ctx.state?.currentUser,
-              }),
-            });
-            const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
-
-            ctx.permission.parsedParams = parsedParams;
-            ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
-            ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-
-            if (parsedParams.appends && resourcerAction.params.fields) {
-              for (const queryField of resourcerAction.params.fields) {
-                if (parsedParams.appends.indexOf(queryField) !== -1) {
-                  // move field to appends
-                  if (!resourcerAction.params.appends) {
-                    resourcerAction.params.appends = [];
-                  }
-                  resourcerAction.params.appends.push(queryField);
-                  resourcerAction.params.fields = resourcerAction.params.fields.filter((f) => f !== queryField);
-                }
-              }
-            }
-
-            const isEmptyFields = resourcerAction.params.fields && resourcerAction.params.fields.length === 0;
-
-            resourcerAction.mergeParams(parsedParams, {
-              appends: (x, y) => {
-                if (!x) {
-                  return [];
-                }
-                if (!y) {
-                  return x;
-                }
-                return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
-              },
-            });
-
-            if (isEmptyFields) {
-              resourcerAction.params.fields = [];
-            }
-
-            ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
-          }
+          await acl.applyActionParams(ctx, permission.can, resourceName, actionName);
         } catch (e) {
           if (e instanceof NoPermissionError) {
             ctx.throw(403, 'No permissions');
@@ -543,6 +495,70 @@ export class ACL extends EventEmitter {
         group: 'core',
       },
     );
+  }
+
+  /**
+   * Applies the same ACL parameter parsing and merging used by the core middleware.
+   * @internal
+   */
+  async applyActionParams(ctx, can: CanResult, resourceName: string, actionName: string) {
+    const resourcerAction: Action = ctx.action;
+    const params = can?.params || this.fixedParamsManager.getParams(resourceName, actionName);
+
+    ctx.log?.debug && ctx.log.debug('acl params', params);
+
+    if (!params || !resourcerAction.mergeParams) {
+      return;
+    }
+
+    const db = ctx.database ?? ctx.db;
+    const collection = db?.getCollection?.(resourceName);
+    checkFilterParams(collection, params?.filter);
+    const parsedFilter = await parseJsonTemplate(params.filter, {
+      state: ctx.state,
+      timezone: getTimezone(ctx),
+      userProvider: createUserProvider({
+        db: ctx.db,
+        currentUser: ctx.state?.currentUser,
+      }),
+    });
+    const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
+
+    ctx.permission.parsedParams = parsedParams;
+    ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
+    ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
+
+    if (parsedParams.appends && resourcerAction.params.fields) {
+      for (const queryField of resourcerAction.params.fields) {
+        if (parsedParams.appends.indexOf(queryField) !== -1) {
+          if (!resourcerAction.params.appends) {
+            resourcerAction.params.appends = [];
+          }
+          resourcerAction.params.appends.push(queryField);
+          resourcerAction.params.fields = resourcerAction.params.fields.filter((field) => field !== queryField);
+        }
+      }
+    }
+
+    const isEmptyFields = resourcerAction.params.fields && resourcerAction.params.fields.length === 0;
+
+    resourcerAction.mergeParams(parsedParams, {
+      appends: (requested, allowed) => {
+        if (!requested) {
+          return [];
+        }
+        if (!allowed) {
+          return requested;
+        }
+        return requested.filter((field) => allowed.includes(field.split('.').shift()));
+      },
+    });
+
+    if (isEmptyFields) {
+      resourcerAction.params.fields = [];
+    }
+
+    ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
   }
 
   protected isAvailableAction(actionName: string) {
