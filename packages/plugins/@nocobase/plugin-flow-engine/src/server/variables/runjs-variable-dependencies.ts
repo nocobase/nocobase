@@ -9,15 +9,20 @@
 
 import { isAstFunctionLike, unwrapAstChainExpression } from '../flow-surfaces/runjs-authoring/ast/bindings';
 import { maskJavaScriptComments } from '../flow-surfaces/runjs-authoring/ast/source';
-import { collectAstIdentifierBindingsFromAst } from '../flow-surfaces/runjs-authoring/ast/static-bindings';
+import {
+  collectAstIdentifierBindingsFromAst,
+  collectStaticFilterValueBindingsFromAst,
+} from '../flow-surfaces/runjs-authoring/ast/static-bindings';
 import {
   collectAstPatternBindingIdentifiers,
   getAstMemberRootIdentifier,
   getAstStaticPropertyName,
   hasAstActiveBinding,
   isUnshadowedCtxIdentifier,
+  resolveAstAliasBinding,
   resolveAstStaticStringValue,
 } from '../flow-surfaces/runjs-authoring/ast/static-values';
+import type { AstIdentifierBinding, StaticFilterValueBinding } from '../flow-surfaces/runjs-authoring/internal-types';
 import { parseRunJsAuthoringAst } from '../flow-surfaces/runjs-authoring/ast/parser';
 import { walkAstAncestor, walkAstSimple } from '../flow-surfaces/runjs-authoring/ast/walk';
 import {
@@ -25,7 +30,7 @@ import {
   MAX_RUNJS_SOURCE_LENGTH,
   MAX_RUNJS_TOTAL_SOURCE_LENGTH,
 } from '../flow-surfaces/runjs-authoring/runtime/constants';
-import { analyzeVariableTemplate } from '../template/variable-expression';
+import { analyzeVariableTemplate, type VariablePathRef } from '../template/variable-expression';
 
 type PersistedRunJsValue = Readonly<{
   code: string;
@@ -39,6 +44,8 @@ type AstNode = Readonly<{
   computed?: boolean;
   elements?: readonly unknown[];
   expressions?: readonly unknown[];
+  id?: unknown;
+  init?: unknown;
   kind?: string;
   key?: unknown;
   left?: unknown;
@@ -49,6 +56,7 @@ type AstNode = Readonly<{
   params?: readonly unknown[];
   properties?: readonly unknown[];
   property?: unknown;
+  quasis?: readonly Readonly<{ value?: Readonly<{ cooked?: string | null; raw?: string }> }>[];
   shorthand?: boolean;
   start?: number;
   type?: string;
@@ -74,10 +82,19 @@ type EnumerableDataEntry = readonly [key: string, value: unknown];
 export type PreparedFlowModelVariableSource =
   | Readonly<{
       ok: true;
+      runJsPathPatterns: readonly RunJsVariablePathPattern[];
       runJsTemplates: readonly string[];
       templateSource: unknown;
     }>
   | Readonly<{ ok: false }>;
+
+type RunJsVariablePathSegmentPattern =
+  | Readonly<{ kind: 'dynamic'; parts: readonly string[] }>
+  | Readonly<{ kind: 'static'; value: string | number }>;
+
+export type RunJsVariablePathPattern = Readonly<{
+  segments: readonly RunJsVariablePathSegmentPattern[];
+}>;
 
 const RUNJS_VALUE_KEYS = new Set(['code', 'version']);
 const RUNJS_PATH_SUFFIXES = new Set(['stepParams.jsSettings.runJs', 'stepParams.clickSettings.runJs']);
@@ -284,8 +301,8 @@ function hasCtxMutation(ast: unknown, identifierBindings: ReturnType<typeof coll
   return mutated;
 }
 
-function createValidatedGetVarTemplate(value: unknown, code: string): string | undefined {
-  const path = resolveAstStaticStringValue(value, code)?.trim();
+function analyzeValidatedGetVarPath(value: string): Readonly<{ path: string; ref: VariablePathRef }> | undefined {
+  const path = value.trim();
   if (!path) return;
   const template = `{{${path}}}`;
   const analysis = analyzeVariableTemplate(template, { mode: 'flow-model' });
@@ -306,23 +323,285 @@ function createValidatedGetVarTemplate(value: unknown, code: string): string | u
   ) {
     return;
   }
-  return `{{ ${path} }}`;
+  return { path, ref: variablePath };
 }
 
-function resolveStaticJsonValue(node: unknown, code: string): StaticJsonResult {
+function createValidatedGetVarTemplateFromPath(value: string): string | undefined {
+  const validated = analyzeValidatedGetVarPath(value);
+  return validated ? `{{ ${validated.path} }}` : undefined;
+}
+
+function createValidatedGetVarTemplate(
+  value: unknown,
+  code: string,
+  staticValueBindings: StaticFilterValueBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): string | undefined {
+  const path = resolveConstString(value, code, staticValueBindings, identifierBindings);
+  return typeof path === 'string' ? createValidatedGetVarTemplateFromPath(path) : undefined;
+}
+
+function resolveConstString(
+  value: unknown,
+  code: string,
+  staticValueBindings: StaticFilterValueBinding[],
+  identifierBindings: AstIdentifierBinding[],
+  seen: Set<StaticFilterValueBinding> = new Set(),
+): string | undefined {
+  const valueNode = unwrapAstChainExpression(value) as AstNode | undefined;
+  if (!valueNode) return;
+  const directValue = resolveAstStaticStringValue(valueNode, code);
+  if (typeof directValue === 'string') return directValue;
+  if (valueNode.type !== 'Identifier' || !valueNode.name) return;
+  const binding = resolveAstAliasBinding(valueNode.name, valueNode.start || 0, staticValueBindings, identifierBindings);
+  if (!binding || seen.has(binding)) return;
+  seen.add(binding);
+  return resolveConstString(binding.valueNode, code, staticValueBindings, identifierBindings, seen);
+}
+
+function collectConstIdentifierValueBindings(
+  ast: unknown,
+  code: string,
+  identifierBindings: AstIdentifierBinding[],
+): StaticFilterValueBinding[] {
+  const simpleInitializers = new WeakMap<object, Set<string>>();
+  walkAstAncestor(ast, {
+    VariableDeclarator(node: AstNode, ancestors: AstNode[]) {
+      const declaration = ancestors[ancestors.length - 2];
+      const id = unwrapAstChainExpression(node.id) as AstNode | undefined;
+      const initializer = unwrapAstChainExpression(node.init);
+      if (
+        declaration?.type !== 'VariableDeclaration' ||
+        declaration.kind !== 'const' ||
+        id?.type !== 'Identifier' ||
+        !initializer ||
+        typeof initializer !== 'object'
+      ) {
+        return;
+      }
+      if (!id.name) return;
+      const names = simpleInitializers.get(initializer) || new Set<string>();
+      names.add(id.name);
+      simpleInitializers.set(initializer, names);
+    },
+  });
+  return collectStaticFilterValueBindingsFromAst(ast, code, identifierBindings).filter((binding) => {
+    const valueNode = unwrapAstChainExpression(binding.valueNode);
+    return !!valueNode && typeof valueNode === 'object' && simpleInitializers.get(valueNode)?.has(binding.name);
+  });
+}
+
+function resolveDynamicTemplateLiteral(
+  node: unknown,
+  staticValueBindings: StaticFilterValueBinding[],
+  identifierBindings: AstIdentifierBinding[],
+  seen: Set<StaticFilterValueBinding> = new Set(),
+): AstNode | undefined {
+  const valueNode = unwrapAstChainExpression(node) as AstNode | undefined;
+  if (!valueNode) return;
+  if (valueNode.type === 'TemplateLiteral' && valueNode.expressions?.length) return valueNode;
+  if (valueNode.type !== 'Identifier' || !valueNode.name) return;
+
+  const binding = resolveAstAliasBinding(valueNode.name, valueNode.start || 0, staticValueBindings, identifierBindings);
+  if (!binding || seen.has(binding)) return;
+  seen.add(binding);
+  return resolveDynamicTemplateLiteral(binding.valueNode, staticValueBindings, identifierBindings, seen);
+}
+
+function createDynamicPathSentinel(index: number, parts: readonly string[]) {
+  let suffix = 0;
+  let sentinel = `__nocobase_dynamic_path_${index}_${suffix}__`;
+  while (parts.some((part) => part.includes(sentinel))) {
+    suffix += 1;
+    sentinel = `__nocobase_dynamic_path_${index}_${suffix}__`;
+  }
+  return sentinel;
+}
+
+function getDynamicOnlyBracketValue(value: string, sentinels: readonly string[]) {
+  const matchedSentinels = new Set<string>();
+  const dynamicParts: string[] = [];
+  let cursor = 0;
+  while (cursor < value.length) {
+    if (/\s/.test(value[cursor])) {
+      cursor += 1;
+      continue;
+    }
+    const sentinel = sentinels.find(
+      (candidate) => !matchedSentinels.has(candidate) && value.startsWith(candidate, cursor),
+    );
+    if (!sentinel) return;
+    matchedSentinels.add(sentinel);
+    dynamicParts.push(sentinel);
+    cursor += sentinel.length;
+  }
+  return dynamicParts.length ? dynamicParts.join('') : undefined;
+}
+
+function quoteDynamicOnlyBracketSegments(value: string, sentinels: readonly string[]) {
+  const brackets: Array<{ end: number; start: number }> = [];
+  const bracketStarts: number[] = [];
+  let quote: '"' | "'" | undefined;
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    if (quote) {
+      if (character === '\\') {
+        index += 1;
+      } else if (character === quote) {
+        quote = undefined;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+      continue;
+    }
+    if (character === '[') {
+      bracketStarts.push(index);
+      continue;
+    }
+    if (character !== ']' || !bracketStarts.length) continue;
+    brackets.push({ start: bracketStarts.pop() as number, end: index });
+  }
+
+  let candidate = value;
+  for (const bracket of brackets.sort((left, right) => right.start - left.start)) {
+    const dynamicValue = getDynamicOnlyBracketValue(candidate.slice(bracket.start + 1, bracket.end), sentinels);
+    if (!dynamicValue) continue;
+    candidate = `${candidate.slice(0, bracket.start + 1)}${JSON.stringify(dynamicValue)}${candidate.slice(
+      bracket.end,
+    )}`;
+  }
+  return candidate;
+}
+
+function createPathSegmentPattern(
+  value: string | number,
+  sentinels: readonly string[],
+  matchedSentinels: Set<string>,
+): RunJsVariablePathSegmentPattern | undefined {
+  if (typeof value === 'number') return Object.freeze({ kind: 'static', value });
+
+  const occurrences = sentinels
+    .map((sentinel) => ({ index: value.indexOf(sentinel), sentinel }))
+    .filter((occurrence) => occurrence.index >= 0)
+    .sort((left, right) => left.index - right.index);
+  if (!occurrences.length) return Object.freeze({ kind: 'static', value });
+
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const occurrence of occurrences) {
+    if (
+      matchedSentinels.has(occurrence.sentinel) ||
+      value.indexOf(occurrence.sentinel, occurrence.index + occurrence.sentinel.length) >= 0 ||
+      occurrence.index < cursor
+    ) {
+      return;
+    }
+    parts.push(value.slice(cursor, occurrence.index));
+    cursor = occurrence.index + occurrence.sentinel.length;
+    matchedSentinels.add(occurrence.sentinel);
+  }
+  parts.push(value.slice(cursor));
+  return Object.freeze({ kind: 'dynamic', parts: Object.freeze(parts) });
+}
+
+function getFunctionParameterEnvironmentNames(ancestors: readonly AstNode[]) {
+  const names = new Set<string>();
+  for (let index = 0; index < ancestors.length - 1; index += 1) {
+    const ancestor = ancestors[index];
+    if (!isAstFunctionLike(ancestor)) continue;
+    if (!(ancestor.params || []).includes(ancestors[index + 1])) continue;
+    for (const parameter of ancestor.params || []) {
+      collectAstPatternBindingIdentifiers(parameter, (name: string) => names.add(name));
+    }
+  }
+  return names;
+}
+
+function hasFunctionParameterBindingInArgument(argument: unknown, ancestors: readonly AstNode[]) {
+  const parameterNames = getFunctionParameterEnvironmentNames(ancestors);
+  if (!parameterNames.size || !argument) return false;
+  let matched = false;
+  walkAstAncestor(argument, {
+    Identifier(node: AstNode, argumentAncestors: AstNode[]) {
+      const parent = argumentAncestors[argumentAncestors.length - 2];
+      if (!isNonReferenceIdentifier(node, parent) && node.name && parameterNames.has(node.name)) matched = true;
+    },
+  });
+  return matched;
+}
+
+function createValidatedGetVarPathPattern(
+  value: unknown,
+  staticValueBindings: StaticFilterValueBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): RunJsVariablePathPattern | undefined {
+  const templateLiteral = resolveDynamicTemplateLiteral(value, staticValueBindings, identifierBindings);
+  if (!templateLiteral) return;
+
+  const parts = (templateLiteral.quasis || []).map((quasi) => quasi.value?.cooked ?? quasi.value?.raw ?? '');
+  if (parts.length !== (templateLiteral.expressions?.length || 0) + 1) return;
+  parts[0] = parts[0].trimStart();
+  parts[parts.length - 1] = parts[parts.length - 1].trimEnd();
+  const sentinels = parts.slice(0, -1).map((_part, index) => createDynamicPathSentinel(index, parts));
+
+  let candidate = parts[0];
+  for (let index = 0; index < parts.length - 1; index += 1) {
+    candidate += sentinels[index] + parts[index + 1];
+  }
+  candidate = quoteDynamicOnlyBracketSegments(candidate, sentinels);
+  const validated = analyzeValidatedGetVarPath(candidate);
+  if (!validated) return;
+  if (sentinels.some((sentinel) => validated.ref.varName.includes(sentinel))) return;
+  const matchedSentinels = new Set<string>();
+  const segments = [validated.ref.varName, ...validated.ref.runtimeSegments].map((segment) =>
+    createPathSegmentPattern(segment, sentinels, matchedSentinels),
+  );
+  if (segments.some((segment) => !segment) || matchedSentinels.size !== sentinels.length) return;
+  return Object.freeze({
+    segments: Object.freeze(segments as RunJsVariablePathSegmentPattern[]),
+  });
+}
+
+export function matchesRunJsVariablePathPattern(pathRef: VariablePathRef, pattern: RunJsVariablePathPattern) {
+  const values = [pathRef.varName, ...pathRef.runtimeSegments];
+  if (values.length !== pattern.segments.length) return false;
+  return pattern.segments.every((segment, index) => {
+    const value = values[index];
+    if (segment.kind === 'static') return value === segment.value;
+    if (typeof value === 'number') return segment.parts.every((part) => part.length === 0);
+    if (!value.startsWith(segment.parts[0])) return false;
+
+    let cursor = segment.parts[0].length;
+    for (let partIndex = 1; partIndex < segment.parts.length - 1; partIndex += 1) {
+      const nextIndex = value.indexOf(segment.parts[partIndex], cursor);
+      if (nextIndex < 0) return false;
+      cursor = nextIndex + segment.parts[partIndex].length;
+    }
+    const suffix = segment.parts[segment.parts.length - 1];
+    const suffixStart = value.length - suffix.length;
+    return suffixStart >= cursor && value.startsWith(suffix, suffixStart);
+  });
+}
+
+function resolveStaticJsonValue(
+  node: unknown,
+  code: string,
+  staticValueBindings: StaticFilterValueBinding[],
+  identifierBindings: AstIdentifierBinding[],
+): StaticJsonResult {
   const valueNode = unwrapAstChainExpression(node) as AstNode | undefined;
   if (!valueNode) return { ok: false };
+  const stringValue = resolveConstString(valueNode, code, staticValueBindings, identifierBindings);
+  if (typeof stringValue === 'string') return { ok: true, value: stringValue };
+  if (valueNode.type === 'Identifier') return { ok: false };
   if (valueNode.type === 'Literal') {
     const literalValue = valueNode.value;
     if (literalValue === null) return { ok: true, value: null };
-    if (typeof literalValue === 'string') return { ok: true, value: literalValue };
     if (typeof literalValue === 'boolean') return { ok: true, value: literalValue };
     if (typeof literalValue === 'number' && Number.isFinite(literalValue)) return { ok: true, value: literalValue };
     return { ok: false };
-  }
-  if (valueNode.type === 'TemplateLiteral' && !valueNode.expressions?.length) {
-    const value = resolveAstStaticStringValue(valueNode, code);
-    return typeof value === 'string' ? { ok: true, value } : { ok: false };
   }
   if (valueNode.type === 'UnaryExpression' && valueNode.operator === '-') {
     const argument = unwrapAstChainExpression(valueNode.argument) as AstNode | undefined;
@@ -334,7 +613,7 @@ function resolveStaticJsonValue(node: unknown, code: string): StaticJsonResult {
     const value: StaticJsonValue[] = [];
     for (const element of valueNode.elements || []) {
       if (!element || (element as AstNode).type === 'SpreadElement') return { ok: false };
-      const resolved = resolveStaticJsonValue(element, code);
+      const resolved = resolveStaticJsonValue(element, code, staticValueBindings, identifierBindings);
       if (!resolved.ok) return resolved;
       value.push(resolved.value);
     }
@@ -364,7 +643,7 @@ function resolveStaticJsonValue(node: unknown, code: string): StaticJsonResult {
     if (typeof key !== 'string' || key === '__proto__' || Object.prototype.hasOwnProperty.call(value, key)) {
       return { ok: false };
     }
-    const resolved = resolveStaticJsonValue(property.value, code);
+    const resolved = resolveStaticJsonValue(property.value, code, staticValueBindings, identifierBindings);
     if (!resolved.ok) return resolved;
     value[key] = resolved.value;
   }
@@ -391,33 +670,60 @@ function collectValidatedResolveJsonTemplates(value: StaticJsonValue): string[] 
   return Array.from(templates);
 }
 
-function extractStaticVariableTemplates(code: string): string[] {
+function extractStaticVariableDependencies(code: string): Readonly<{
+  pathPatterns: readonly RunJsVariablePathPattern[];
+  templates: readonly string[];
+}> {
   const parsed = parseRunJsAuthoringAst(code);
-  if (!parsed.ast) return [];
+  if (!parsed.ast) return { pathPatterns: [], templates: [] };
 
   const identifierBindings = collectAstIdentifierBindingsFromAst(parsed.ast, code);
   if (hasUnsafeCtxUsage(parsed.ast, identifierBindings) || hasCtxMutation(parsed.ast, identifierBindings)) {
-    return [];
+    return { pathPatterns: [], templates: [] };
   }
 
+  const staticValueBindings = collectConstIdentifierValueBindings(parsed.ast, code, identifierBindings);
   const functionCtxParameterCache = new WeakMap<object, boolean>();
+  const pathPatterns = new Map<string, RunJsVariablePathPattern>();
   const templates = new Set<string>();
   walkAstAncestor(parsed.ast, {
     CallExpression(node: AstNode, ancestors: AstNode[]) {
       const methodName = getDirectCtxMethodName(node.callee, identifierBindings);
-      if (hasCtxParameterInFunctionAncestors(ancestors, functionCtxParameterCache)) return;
+      if (
+        hasCtxParameterInFunctionAncestors(ancestors, functionCtxParameterCache) ||
+        hasFunctionParameterBindingInArgument(node.arguments?.[0], ancestors)
+      ) {
+        return;
+      }
       if (methodName === 'getVar') {
-        const template = createValidatedGetVarTemplate(node.arguments?.[0], code);
+        const pathPattern = createValidatedGetVarPathPattern(
+          node.arguments?.[0],
+          staticValueBindings,
+          identifierBindings,
+        );
+        if (pathPattern) {
+          pathPatterns.set(JSON.stringify(pathPattern), pathPattern);
+          return;
+        }
+        const template = createValidatedGetVarTemplate(
+          node.arguments?.[0],
+          code,
+          staticValueBindings,
+          identifierBindings,
+        );
         if (template) templates.add(template);
         return;
       }
       if (methodName !== 'resolveJsonTemplate' || node.arguments?.length !== 1) return;
-      const resolved = resolveStaticJsonValue(node.arguments[0], code);
+      const resolved = resolveStaticJsonValue(node.arguments[0], code, staticValueBindings, identifierBindings);
       if (!resolved.ok) return;
       collectValidatedResolveJsonTemplates(resolved.value).forEach((template) => templates.add(template));
     },
   });
-  return Array.from(templates);
+  return {
+    pathPatterns: Array.from(pathPatterns.values()),
+    templates: Array.from(templates),
+  };
 }
 
 export function prepareFlowModelVariableSource(
@@ -425,6 +731,7 @@ export function prepareFlowModelVariableSource(
   options: Readonly<{ isRunJsValuePath?: (pathTail: readonly string[]) => boolean }> = {},
 ): PreparedFlowModelVariableSource {
   try {
+    const pathPatterns = new Map<string, RunJsVariablePathPattern>();
     const templates = new Set<string>();
     const seen = new WeakSet<object>();
     const root: Record<string, unknown> = Object.create(null);
@@ -490,7 +797,9 @@ export function prepareFlowModelVariableSource(
             entryKey === 'code' ? (runJs.version === 'v2' ? '' : maskJavaScriptComments(runJs.code)) : entryValue;
           defineTraversalValue(output, entryKey, preparedEntryValue);
         }
-        extractStaticVariableTemplates(runJs.code).forEach((template) => templates.add(template));
+        const dependencies = extractStaticVariableDependencies(runJs.code);
+        dependencies.templates.forEach((template) => templates.add(template));
+        dependencies.pathPatterns.forEach((pattern) => pathPatterns.set(JSON.stringify(pattern), pattern));
         continue;
       }
 
@@ -510,7 +819,12 @@ export function prepareFlowModelVariableSource(
       }
     }
 
-    return { ok: true, runJsTemplates: Array.from(templates), templateSource: root.value };
+    return {
+      ok: true,
+      runJsPathPatterns: Array.from(pathPatterns.values()),
+      runJsTemplates: Array.from(templates),
+      templateSource: root.value,
+    };
   } catch {
     return { ok: false };
   }

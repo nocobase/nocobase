@@ -9,6 +9,7 @@
 
 import type { Application } from '@nocobase/server';
 import type { AnalyzedTemplate } from '../template/variable-expression';
+import type { RunJsVariablePathPattern } from './runjs-variable-dependencies';
 import {
   getRecordSlotResolverRegistry,
   type RecordSlotResolved,
@@ -20,6 +21,7 @@ export type RecordSlotPolicy = RecordSlotResolved;
 export type RecordSlotPolicies = ReadonlyMap<string, RecordSlotPolicy>;
 
 export type FlowModelVariableContract = Readonly<{
+  allowedPathPatterns: readonly RunJsVariablePathPattern[];
   allowedPaths: ReadonlySet<string>;
   recordSlots: RecordSlotPolicies;
 }>;
@@ -93,6 +95,7 @@ export async function createFlowModelVariableContract(
   options: CompileRecordSlotPoliciesOptions,
 ): Promise<FlowModelVariableContract> {
   return Object.freeze({
+    allowedPathPatterns: [],
     allowedPaths: new Set(analysis.paths.map((path) => path.canonicalKey)),
     recordSlots: await compileRecordSlotPolicies(analysis, options),
   });

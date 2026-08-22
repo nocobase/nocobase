@@ -19,6 +19,7 @@ import {
   MAX_FLOW_MODEL_VARIABLE_SOURCE_NODES,
   MAX_FLOW_MODEL_VARIABLE_STRING_LENGTH,
   MAX_FLOW_MODEL_VARIABLE_TOTAL_STRING_LENGTH,
+  matchesRunJsVariablePathPattern,
   prepareFlowModelVariableSource,
 } from '../variables/runjs-variable-dependencies';
 
@@ -30,6 +31,12 @@ function createRunJsOptions(code: string, version: string | null = 'v2', setting
       },
     },
   };
+}
+
+function parseVariablePath(path: string) {
+  const ref = analyzeVariableTemplate(`{{ ${path} }}`, { mode: 'flow-model' }).paths[0];
+  if (!ref) throw new Error(`Expected a valid variable path: ${path}`);
+  return ref;
 }
 
 describe('persisted RunJS variable dependencies', () => {
@@ -52,7 +59,130 @@ describe('persisted RunJS variable dependencies', () => {
     expect(templates).toEqual(['{{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
   });
 
-  it('collects static JSON templates from direct unshadowed ctx.resolveJsonTemplate calls', () => {
+  it('collects ctx.getVar and ctx.resolveJsonTemplate paths from const string alias chains', () => {
+    expect(
+      collectPersistedRunJsVariableTemplates(
+        createRunJsOptions(`
+          const path = 'ctx.record.ccw';
+          const pathAlias = path;
+          const template = '{{ ctx.record.name }}';
+          const templateAlias = template;
+          await ctx.getVar(path);
+          await ctx.getVar(pathAlias);
+          await ctx.resolveJsonTemplate(template);
+          await ctx.resolveJsonTemplate(templateAlias);
+        `),
+      ),
+    ).toEqual(['{{ ctx.record.ccw }}', '{{ ctx.record.name }}']);
+  });
+
+  it('collects constrained dynamic ctx.getVar path patterns', () => {
+    const prepared = prepareFlowModelVariableSource(
+      createRunJsOptions(`
+        const a = 'ccw';
+        await ctx.getVar(\`ctx.record.\${a}\`);
+        const index = 0;
+        const path = \`ctx.popup.record.plan_task[\${index}].containment_handler.name_ad\`;
+        await ctx.getVar(path);
+      `),
+    );
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([
+      {
+        segments: [
+          { kind: 'static', value: 'record' },
+          { kind: 'dynamic', parts: ['', ''] },
+        ],
+      },
+      {
+        segments: [
+          { kind: 'static', value: 'popup' },
+          { kind: 'static', value: 'record' },
+          { kind: 'static', value: 'plan_task' },
+          { kind: 'dynamic', parts: ['', ''] },
+          { kind: 'static', value: 'containment_handler' },
+          { kind: 'static', value: 'name_ad' },
+        ],
+      },
+    ]);
+
+    const [recordFieldPattern, taskPattern] = prepared.runJsPathPatterns;
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record.ccw'), recordFieldPattern)).toBe(true);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record[0]'), recordFieldPattern)).toBe(true);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.user.ccw'), recordFieldPattern)).toBe(false);
+    expect(matchesRunJsVariablePathPattern(parseVariablePath('ctx.record.ccw.name'), recordFieldPattern)).toBe(false);
+
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task["task-a"].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(true);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(true);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.user.record.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.user.plan_task[0].containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].containment_handler.other'),
+        taskPattern,
+      ),
+    ).toBe(false);
+    expect(
+      matchesRunJsVariablePathPattern(
+        parseVariablePath('ctx.popup.record.plan_task[0].extra.containment_handler.name_ad'),
+        taskPattern,
+      ),
+    ).toBe(false);
+  });
+
+  it.each([
+    ['dot root', 'await ctx.getVar(`ctx.${root}.id`);'],
+    ['bracket root', 'await ctx.getVar(`ctx[${root}].id`);'],
+  ])('does not collect a dynamic ctx.getVar path pattern from a %s', (_title, code) => {
+    const prepared = prepareFlowModelVariableSource(createRunJsOptions(code));
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+  });
+
+  it.each([
+    ['let binding', 'let path = `ctx.record.${field}`; await ctx.getVar(path);'],
+    ['call result', 'const path = createPath(`ctx.record.${field}`); await ctx.getVar(path);'],
+    ['object member', 'const holder = { path: `ctx.record.${field}` }; await ctx.getVar(holder.path);'],
+    [
+      'destructuring',
+      'const holder = { path: `ctx.record.${field}` }; const { path } = holder; await ctx.getVar(path);',
+    ],
+  ])('rejects a dynamic ctx.getVar path from a %s', (_title, code) => {
+    const prepared = prepareFlowModelVariableSource(createRunJsOptions(code));
+
+    expect(prepared.ok).toBe(true);
+    if (!prepared.ok) return;
+    expect(prepared.runJsTemplates).toEqual([]);
+    expect(prepared.runJsPathPatterns).toEqual([]);
+  });
+
+  it('collects direct object and array literals passed to ctx.resolveJsonTemplate', () => {
     expect(
       collectPersistedRunJsVariableTemplates(
         createRunJsOptions(`
@@ -60,15 +190,51 @@ describe('persisted RunJS variable dependencies', () => {
             role: '{{ ctx.record.roles[0].name }}',
             nested: ['Role: {{ ctx.popup.record.name }}'],
           });
+          await ctx.resolveJsonTemplate([{ owner: '{{ ctx.record.owner.id }}' }]);
           const userId = await ctx['resolveJsonTemplate'](\`{{ ctx.user.id }}\`);
           ctx.render(data.role + userId);
         `),
       ),
-    ).toEqual(['{{ ctx.record.roles[0].name }}', 'Role: {{ ctx.popup.record.name }}', '{{ ctx.user.id }}']);
+    ).toEqual([
+      '{{ ctx.record.roles[0].name }}',
+      'Role: {{ ctx.popup.record.name }}',
+      '{{ ctx.record.owner.id }}',
+      '{{ ctx.user.id }}',
+    ]);
   });
 
   it.each([
-    ['dynamic identifier', `const template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    [
+      'object identifier alias',
+      `const template = { name: '{{ ctx.user.id }}' };
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+    [
+      'array identifier alias',
+      `const template = ['{{ ctx.user.id }}'];
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+    ['let string alias', `let template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
+    [
+      'call result alias',
+      `const template = createTemplate('{{ ctx.user.id }}'); await ctx.resolveJsonTemplate(template);`,
+    ],
+    [
+      'object member alias',
+      `const holder = { template: '{{ ctx.user.id }}' }; await ctx.resolveJsonTemplate(holder.template);`,
+    ],
+    [
+      'destructured alias',
+      `const holder = { template: '{{ ctx.user.id }}' };
+       const { template } = holder;
+       await ctx.resolveJsonTemplate(template);`,
+    ],
+  ])('rejects ctx.resolveJsonTemplate dependencies from a %s', (_title, code) => {
+    expect(collectPersistedRunJsVariableTemplates(createRunJsOptions(code))).toEqual([]);
+  });
+
+  it.each([
+    ['mutable identifier', `let template = '{{ ctx.user.id }}'; await ctx.resolveJsonTemplate(template);`],
     ['call result', `await ctx.resolveJsonTemplate(createTemplate('{{ ctx.user.id }}'));`],
     ['shadowed ctx', `(ctx) => ctx.resolveJsonTemplate('{{ ctx.user.id }}');`],
     ['comment', `// ctx.resolveJsonTemplate('{{ ctx.user.id }}')`],
@@ -85,8 +251,12 @@ describe('persisted RunJS variable dependencies', () => {
 
   it.each([
     {
-      title: 'dynamic arguments',
-      value: createRunJsOptions(`const path = 'ctx.popup.record.name'; await ctx.getVar(path);`),
+      title: 'mutable arguments',
+      value: createRunJsOptions(`let path = 'ctx.popup.record.name'; await ctx.getVar(path);`),
+    },
+    {
+      title: 'call result arguments',
+      value: createRunJsOptions(`const path = createPath('ctx.popup.record.name'); await ctx.getVar(path);`),
     },
     {
       title: 'shadowed ctx parameters',
