@@ -1,11 +1,11 @@
 {
   "name": "@nocobase/sdk",
-  "version": "3.0.0-alpha.10",
+  "version": "3.0.0-alpha.11",
   "license": "Apache-2.0",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "dependencies": {
-    "@nocobase/utils": "3.0.0-alpha.10",
+    "@nocobase/utils": "3.0.0-alpha.11",
     "axios": "^1.7.0",
     "qs": "^6.10.1"
   },
