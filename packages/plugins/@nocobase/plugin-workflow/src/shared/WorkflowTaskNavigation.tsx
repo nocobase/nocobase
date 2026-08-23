@@ -560,7 +560,7 @@ function WorkflowTaskNavigationMenu(props: {
 
   const handleOpenChange = useCallback<NonNullable<MenuProps['onOpenChange']>>(
     (nextOpenKeys) => {
-      const nextTypeMenuKey = [...nextOpenKeys].reverse().find((key) => key.startsWith('type:') && key !== typeMenuKey);
+      const nextTypeMenuKey = [...nextOpenKeys].reverse().find((key) => key.startsWith('type:'));
       if (!nextTypeMenuKey) {
         setOpenKeys([]);
         return;
@@ -571,7 +571,7 @@ function WorkflowTaskNavigationMenu(props: {
         onTaskTypeSelect(nextType);
       }
     },
-    [currentTypeKey, onTaskTypeSelect, typeMenuKey],
+    [currentTypeKey, onTaskTypeSelect],
   );
 
   const workflowMenuItems: NonNullable<MenuProps['items']> = [

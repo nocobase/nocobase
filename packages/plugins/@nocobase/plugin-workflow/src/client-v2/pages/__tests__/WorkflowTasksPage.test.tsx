@@ -234,7 +234,7 @@ describe('WorkflowTasksPage', () => {
     });
   });
 
-  it('collapses the current task type when its menu title is clicked again and keeps it selected', async () => {
+  it('toggles the current task type while keeping it selected', async () => {
     const { registry } = createTaskTypes();
     const demoTasks = {
       listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }),
@@ -259,6 +259,11 @@ describe('WorkflowTasksPage', () => {
     fireEvent.click(menuTitle);
 
     await waitFor(() => expect(submenu).not.toHaveClass('ant-menu-submenu-open'));
+    expect(submenu).toHaveClass('ant-menu-submenu-selected');
+
+    fireEvent.click(menuTitle);
+
+    await waitFor(() => expect(submenu).toHaveClass('ant-menu-submenu-open'));
     expect(submenu).toHaveClass('ant-menu-submenu-selected');
     expect(holder.navigate).not.toHaveBeenCalled();
   });
