@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.2.1](https://github.com/nocobase/nocobase/compare/v2.2.0...v2.2.1) - 2026-08-23
+
+### 🐛 修复
+
+- **[UI 布局]** 修复升级后桌面端路由可能为空的问题 ([#10405](https://github.com/nocobase/nocobase/pull/10405)) by @zhangzhonghe
+
+- **[操作：导出记录 Pro]** 修复 Pro 导出字段变更后拖拽排序可能崩溃的问题。 by @katherinehhh
+
 ## [v2.2.0](https://github.com/nocobase/nocobase/compare/v2.1.45...v2.2.0) - 2026-08-22
 
 # NocoBase 2.2.0 发布日志
