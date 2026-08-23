@@ -12,6 +12,10 @@ import { DEFAULT_ADMIN_UI_LAYOUT, DEFAULT_MOBILE_UI_LAYOUT } from '../../constan
 import BackfillAdminLayoutDesktopRoutesMigration from '../migrations/20260615090000-backfill-admin-layout-desktop-routes';
 import BackfillLateAdminLayoutDesktopRoutesMigration from '../migrations/20260823160000-backfill-late-admin-layout-desktop-routes';
 
+const UI_LAYOUT_MIGRATION_NAMESPACE = '@nocobase/plugin-ui-layout';
+const EARLY_ADMIN_ROUTE_MIGRATION_NAME = `20260615090000-backfill-admin-layout-desktop-routes/${UI_LAYOUT_MIGRATION_NAMESPACE}`;
+const LATE_ADMIN_ROUTE_MIGRATION_NAME = `20260823160000-backfill-late-admin-layout-desktop-routes/${UI_LAYOUT_MIGRATION_NAMESPACE}`;
+
 describe('plugin-ui-layout migrations', () => {
   let app: MockServer | undefined;
 
@@ -120,4 +124,114 @@ describe('plugin-ui-layout migrations', () => {
       'The desktopRoutes collection is required to backfill late AdminLayout routes',
     );
   });
+
+  it.runIf(process.env.DB_DIALECT === 'postgres')(
+    'should discover and run the late backfill through the real upgrade lifecycle',
+    async () => {
+      app = await createMockServer({
+        registerActions: true,
+        acl: true,
+        plugins: [
+          'error-handler',
+          'users',
+          'auth',
+          'client',
+          'field-sort',
+          'acl',
+          'ui-schema-storage',
+          'system-settings',
+          'data-source-main',
+          'data-source-manager',
+          'ui-layout',
+        ],
+      });
+
+      const lateRoute = await app.db.getRepository('desktopRoutes').create({
+        values: {
+          type: 'page',
+          title: 'late route repaired by upgrade',
+          schemaUid: 'late-route-repaired-by-upgrade',
+        },
+      });
+      const routeId = lateRoute.get('id');
+      await app.db.getRepository('migrations').create({
+        values: {
+          name: EARLY_ADMIN_ROUTE_MIGRATION_NAME,
+        },
+      });
+
+      const rootUserBeforeUpgrade = await app.db.getRepository('users').findOne({
+        filter: {
+          'roles.name': 'root',
+        },
+      });
+      const agentBeforeUpgrade = await app.agent().login(rootUserBeforeUpgrade);
+      const managementResponseBeforeUpgrade = await agentBeforeUpgrade.resource('desktopRoutes').list({
+        filter: {
+          id: routeId,
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+        paginate: false,
+        sort: ['sort'],
+        tree: true,
+      });
+      const accessibleResponseBeforeUpgrade = await agentBeforeUpgrade.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        filter: {
+          id: routeId,
+        },
+      });
+      const pendingMigrationBeforeUpgrade = await app.db.getRepository('migrations').findOne({
+        filterByTk: LATE_ADMIN_ROUTE_MIGRATION_NAME,
+      });
+
+      expect(managementResponseBeforeUpgrade.status).toBe(200);
+      expect(accessibleResponseBeforeUpgrade.status).toBe(200);
+      expect(managementResponseBeforeUpgrade.body.data).toEqual([]);
+      expect(accessibleResponseBeforeUpgrade.body.data).toEqual([]);
+      expect(pendingMigrationBeforeUpgrade).toBeNull();
+
+      await app.upgrade();
+
+      const [executedMigration, repairedRoute, rootUserAfterUpgrade] = await Promise.all([
+        app.db.getRepository('migrations').findOne({
+          filterByTk: LATE_ADMIN_ROUTE_MIGRATION_NAME,
+        }),
+        app.db.getRepository('desktopRoutes').findOne({
+          filterByTk: routeId,
+          appends: ['uiLayouts'],
+        }),
+        app.db.getRepository('users').findOne({
+          filter: {
+            'roles.name': 'root',
+          },
+        }),
+      ]);
+      const agentAfterUpgrade = await app.agent().login(rootUserAfterUpgrade);
+      const managementResponseAfterUpgrade = await agentAfterUpgrade.resource('desktopRoutes').list({
+        filter: {
+          id: routeId,
+          'uiLayouts.uid': DEFAULT_ADMIN_UI_LAYOUT.uid,
+        },
+        paginate: false,
+        sort: ['sort'],
+        tree: true,
+      });
+      const accessibleResponseAfterUpgrade = await agentAfterUpgrade.get('/desktopRoutes:listAccessible').query({
+        layout: DEFAULT_ADMIN_UI_LAYOUT.uid,
+        filter: {
+          id: routeId,
+        },
+      });
+
+      expect(executedMigration?.get('name')).toBe(LATE_ADMIN_ROUTE_MIGRATION_NAME);
+      expect(
+        repairedRoute?.get('uiLayouts').map((layout: { get: (field: string) => unknown }) => layout.get('uid')),
+      ).toEqual([DEFAULT_ADMIN_UI_LAYOUT.uid]);
+      expect(managementResponseAfterUpgrade.status).toBe(200);
+      expect(accessibleResponseAfterUpgrade.status).toBe(200);
+      expect(managementResponseAfterUpgrade.body.data.map((route: { id: number }) => route.id)).toEqual([routeId]);
+      expect(accessibleResponseAfterUpgrade.body.data.map((route: { id: number }) => route.id)).toEqual([routeId]);
+    },
+  );
 });
