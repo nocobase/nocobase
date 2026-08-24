@@ -171,6 +171,8 @@
   "Knowledge Base": "知识库",
   "Knowledge Base Prompt": "提示词（引用知识库）",
   "Knowledge Base Prompt placeholder": "",
+  "Include {knowledgeBaseData} in the prompt to insert the retrieved knowledge-base content.": "请在提示词中加入 {knowledgeBaseData}，用于指定知识库检索内容的插入位置。",
+  "The Knowledge Base Prompt must include {knowledgeBaseData} before you can save it.": "保存前，请在知识库提示词中加入 {knowledgeBaseData}。",
   "KnowledgeBase": "知识库",
   "Retrieval strategy": "召回策略",
   "Automatically retrieve for every question": "每次提问自动召回",
