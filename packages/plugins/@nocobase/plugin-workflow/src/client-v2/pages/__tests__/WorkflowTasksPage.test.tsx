@@ -234,6 +234,40 @@ describe('WorkflowTasksPage', () => {
     });
   });
 
+  it('toggles the current task type while keeping it selected', async () => {
+    const { registry } = createTaskTypes();
+    const demoTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: { data: [], meta: { count: 0 } } }),
+    };
+    const userWorkflowTasks = {
+      listMine: vi.fn().mockResolvedValue({ data: [{ type: 'demo', stats: { pending: 1, all: 1 } }] }),
+    };
+    holder.ctx = makeCtx(registry, { demoTasks, userWorkflowTasks });
+
+    renderWithApp(<WorkflowTasksPage />);
+
+    await screen.findByTestId('workflow-task-navigation-menu');
+    const menuTitle = screen
+      .getByTestId('workflow-task-navigation-menu')
+      .querySelector<HTMLElement>('.ant-menu-submenu-title');
+    if (!menuTitle) {
+      throw new Error('Expected the task type submenu title to be rendered');
+    }
+    const submenu = menuTitle.closest('.ant-menu-submenu');
+    expect(submenu).toHaveClass('ant-menu-submenu-open', 'ant-menu-submenu-selected');
+
+    fireEvent.click(menuTitle);
+
+    await waitFor(() => expect(submenu).not.toHaveClass('ant-menu-submenu-open'));
+    expect(submenu).toHaveClass('ant-menu-submenu-selected');
+
+    fireEvent.click(menuTitle);
+
+    await waitFor(() => expect(submenu).toHaveClass('ant-menu-submenu-open'));
+    expect(submenu).toHaveClass('ant-menu-submenu-selected');
+    expect(holder.navigate).not.toHaveBeenCalled();
+  });
+
   it('searches and incrementally loads workflow groups', async () => {
     const { registry } = createTaskTypes();
     const demoTasks = {

@@ -99,7 +99,7 @@ https://storage.example.com/path/to/file.png
 
 This URL does not pass through NocoBase and does not check the file record's view permissions. For local storage, it is a local static file address. For cloud storage, it is usually an object storage or CDN address.
 
-Select Original URL only when Markdown, an external page, or a third-party service must use the storage address directly.
+Select Original URL only when the caller cannot use a NocoBase URL—for example, when it cannot follow `302` redirects or explicitly requires an object storage or CDN address.
 
 :::warning Note
 
@@ -113,13 +113,15 @@ Allow public access only takes effect when NocoBase URL is selected. When checke
 
 This option does not change the storage service's own public-read configuration. It only controls whether NocoBase checks file record permissions.
 
+Markdown, external pages, and third-party services can also use a public NocoBase URL. For external use, convert the path returned by the API into an absolute URL that includes the NocoBase domain, and make sure the caller can follow `302` redirects.
+
 ### How to choose
 
 | Use case | File URL | Allow public access |
 | --- | --- | --- |
 | Files must follow role and data permissions | NocoBase URL | Unchecked |
-| A publicly shareable NocoBase file address is required | NocoBase URL | Checked |
-| Markdown, an external page, or a third-party service must read the storage address directly | Original URL | Not applicable |
+| Markdown, an external page, or a third-party service needs public file access | NocoBase URL | Checked |
+| The caller cannot follow `302` redirects or must use the storage address directly | Original URL | Not applicable |
 
 :::warning Note
 

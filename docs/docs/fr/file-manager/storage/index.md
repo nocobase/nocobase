@@ -97,7 +97,7 @@ https://storage.example.com/path/to/file.png
 
 Cette URL ne passe pas par NocoBase et ne vérifie pas les autorisations de consultation de l’enregistrement. Pour le stockage local, il s’agit d’une adresse de fichier statique local. Pour le stockage cloud, il s’agit généralement d’une adresse de stockage objet ou de CDN.
 
-Sélectionnez l’URL d’origine uniquement lorsque Markdown, une page externe ou un service tiers doit utiliser directement l’adresse de stockage.
+Sélectionnez l’URL d’origine uniquement lorsque l’appelant ne peut pas utiliser une URL NocoBase, par exemple s’il ne peut pas suivre les redirections `302` ou s’il a explicitement besoin d’une adresse de stockage objet ou de CDN.
 
 :::warning Remarque
 
@@ -111,13 +111,15 @@ Après avoir sélectionné l’URL d’origine, toute personne disposant d’une
 
 Cette option ne modifie pas la configuration de lecture publique du service de stockage. Elle contrôle uniquement si NocoBase vérifie les autorisations de l’enregistrement du fichier.
 
+Markdown, les pages externes et les services tiers peuvent également utiliser une URL NocoBase publique. Pour une utilisation externe, complétez le chemin renvoyé par l’API en une URL absolue incluant le domaine NocoBase et assurez-vous que l’appelant peut suivre les redirections `302`.
+
 ### Comment choisir
 
 | Cas d’utilisation | URL du fichier | Autoriser l’accès public |
 | --- | --- | --- |
 | Les fichiers doivent respecter les autorisations de rôle et de données | URL NocoBase | Non coché |
-| Une adresse de fichier NocoBase partageable publiquement est requise | URL NocoBase | Coché |
-| Markdown, une page externe ou un service tiers doit lire directement l’adresse de stockage | URL d’origine | Non applicable |
+| Markdown, une page externe ou un service tiers nécessite un accès public au fichier | URL NocoBase | Coché |
+| L’appelant ne peut pas suivre les redirections `302` ou doit utiliser directement l’adresse de stockage | URL d’origine | Non applicable |
 
 :::warning Remarque
 
