@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer } from '@nocobase/test';
+import { SequelizeDataSource } from '@nocobase/data-source-manager';
+import { createMockDatabase, MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
 describe('compound actions with ACL', () => {
@@ -162,5 +163,68 @@ describe('compound actions with ACL', () => {
     expect(outsideScope.statusCode).toBe(403);
     const unchanged = await app.db.getRepository('posts').findOne({ filter: { slug: 'outside-scope' } });
     expect(unchanged.get('title')).toBe('original');
+  });
+
+  it('enforces actual action permissions for external data sources', async () => {
+    const database = await createMockDatabase({ tablePrefix: 'compound_acl_ds_' });
+    const dataSource = new SequelizeDataSource({
+      name: 'compound-acl-ds',
+      resourceManager: { prefix: app.resourcer.options.prefix },
+      collectionManager: { database },
+    });
+    dataSource.collectionManager.defineCollection({
+      name: 'externalPosts',
+      fields: [
+        { type: 'string', name: 'slug', unique: true },
+        { type: 'string', name: 'title' },
+      ],
+    });
+    await dataSource.collectionManager.sync();
+    await app.dataSourceManager.add(dataSource);
+
+    const role = dataSource.acl.define({ role: 'external-create-only' });
+    role.grantAction('externalPosts:create', {});
+    let externalRoleName = 'external-create-only';
+    dataSource.resourceManager.use(
+      (ctx, next) => {
+        ctx.state.currentRole = externalRoleName;
+        ctx.state.currentRoles = [externalRoleName];
+        return next();
+      },
+      { before: 'acl', after: 'auth' },
+    );
+
+    const repository = dataSource.collectionManager.getRepository('externalPosts');
+    const existing = await repository.create({ values: { slug: 'existing', title: 'private' } });
+    const agent = await app.agent().login(userId);
+
+    const readResponse = await agent
+      .resource('externalPosts')
+      .firstOrCreate({ filterKeys: ['slug'], values: { slug: 'existing' } })
+      .set('x-data-source', 'compound-acl-ds');
+    expect(readResponse.statusCode).toBe(403);
+
+    const updateResponse = await agent
+      .resource('externalPosts')
+      .updateOrCreate({ filterKeys: ['slug'], values: { slug: 'existing', title: 'overwritten' } })
+      .set('x-data-source', 'compound-acl-ds');
+    expect(updateResponse.statusCode).toBe(403);
+    await existing.reload();
+    expect(existing.get('title')).toBe('private');
+
+    const created = await agent
+      .resource('externalPosts')
+      .updateOrCreate({ filterKeys: ['slug'], values: { slug: 'created', title: 'allowed' } })
+      .set('x-data-source', 'compound-acl-ds');
+    expect(created.statusCode).toBe(200);
+
+    dataSource.acl.define({ role: 'external-no-access' });
+    externalRoleName = 'external-no-access';
+    const deniedCreate = await agent
+      .resource('externalPosts')
+      .updateOrCreate({ filterKeys: ['slug'], values: { slug: 'denied', title: 'forbidden' } })
+      .set('x-data-source', 'compound-acl-ds');
+    expect(deniedCreate.statusCode).toBe(403);
+    expect(await repository.count({ filter: { slug: 'denied' } })).toBe(0);
   });
 });

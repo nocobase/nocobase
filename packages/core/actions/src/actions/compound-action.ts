@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Repository } from '@nocobase/database';
+import { Repository, Transaction } from '@nocobase/database';
 import lodash from 'lodash';
 import { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
@@ -27,8 +27,23 @@ const updateParamKeys = [
   'targetCollection',
 ];
 
-function getTargetCollection(repository) {
+function getTargetCollection(repository: Repository & { targetCollection?: Repository['collection'] }) {
   return repository.targetCollection || repository.collection;
+}
+
+function getCompoundActionRepository(ctx: Context): Repository {
+  return ctx.getCurrentRepository ? ctx.getCurrentRepository() : getRepositoryFromParams(ctx);
+}
+
+async function withCurrentTransaction<T>(
+  ctx: Context,
+  callback: (transaction?: Transaction) => Promise<T>,
+): Promise<T> {
+  const database = ctx.database ?? ctx.db;
+  if (!database?.sequelize) {
+    return callback();
+  }
+  return database.sequelize.transaction(callback);
 }
 
 async function applyActualActionPermission(ctx: Context, actionName: ActualActionName, originalParams) {
@@ -63,15 +78,14 @@ async function applyActualActionPermission(ctx: Context, actionName: ActualActio
 
 export function compoundAction(actionName: CompoundActionName) {
   return async function compoundActionHandler(ctx: Context, next) {
-    const repository = getRepositoryFromParams(ctx);
+    const repository = getCompoundActionRepository(ctx);
 
     // The actions package can be used without ACL middleware. In that case,
     // preserve the repository action behavior; once ACL is present, the
     // server-generated deferred marker is mandatory.
     if (!ctx.acl) {
       const compoundParams = {
-        filterKeys: ctx.action.params.filterKeys,
-        values: ctx.action.params.values,
+        ...lodash.pick(ctx.action.params, [...createParamKeys, 'filterKeys']),
         context: ctx,
       };
       ctx.body =
@@ -90,7 +104,7 @@ export function compoundAction(actionName: CompoundActionName) {
     const originalParams = lodash.cloneDeep(ctx.action.params);
     const { filterKeys, values } = originalParams;
     const filter = Repository.valuesToFilter(values, filterKeys);
-    ctx.body = await ctx.db.sequelize.transaction(async (transaction) => {
+    ctx.body = await withCurrentTransaction(ctx, async (transaction) => {
       const instance = await repository.findOne({ filter, transaction, context: ctx });
 
       if (!instance) {
