@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Repository, Transaction } from '@nocobase/database';
+import { CreateOptions, FirstOrCreateOptions, Repository, Transaction } from '@nocobase/database';
 import lodash from 'lodash';
 import { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
 
 type CompoundActionName = 'firstOrCreate' | 'updateOrCreate';
 type ActualActionName = 'get' | 'create' | 'update';
+type CompoundRepositoryOptions = FirstOrCreateOptions &
+  Pick<CreateOptions, 'whitelist' | 'blacklist'> & { targetCollection?: string };
 
 const findParamKeys = ['fields', 'appends', 'except', 'filter', 'targetCollection'];
 const createParamKeys = ['values', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'];
@@ -84,8 +86,13 @@ export function compoundAction(actionName: CompoundActionName) {
     // preserve the repository action behavior; once ACL is present, the
     // server-generated deferred marker is mandatory.
     if (!ctx.acl) {
-      const compoundParams = {
-        ...lodash.pick(ctx.action.params, [...createParamKeys, 'filterKeys']),
+      const compoundParams: CompoundRepositoryOptions = {
+        filterKeys: ctx.action.params.filterKeys,
+        values: ctx.action.params.values,
+        whitelist: ctx.action.params.whitelist,
+        blacklist: ctx.action.params.blacklist,
+        updateAssociationValues: ctx.action.params.updateAssociationValues,
+        targetCollection: ctx.action.params.targetCollection,
         context: ctx,
       };
       ctx.body =
