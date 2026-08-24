@@ -621,6 +621,26 @@ describe('workflow > triggers > collection', () => {
   });
 
   describe('config.appends', () => {
+    it('loads trigger data by record id when appends is omitted', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: false,
+        sync: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await plugin.execute(workflow, { data: post.id });
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(execution.context.data.title).toBe('t1');
+    });
+
     it('non-appended association could not be accessed', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
