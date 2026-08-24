@@ -97,7 +97,7 @@ https://storage.example.com/path/to/file.png
 
 Esta URL no pasa por NocoBase ni comprueba los permisos de visualización del registro. En el almacenamiento local, es una dirección de archivo estático local. En el almacenamiento en la nube, suele ser una dirección de almacenamiento de objetos o CDN.
 
-Seleccione la URL original solo cuando Markdown, una página externa o un servicio de terceros deba utilizar directamente la dirección del almacenamiento.
+Seleccione la URL original solo cuando el consumidor no pueda usar una URL de NocoBase, por ejemplo, si no puede seguir redirecciones `302` o necesita explícitamente una dirección de almacenamiento de objetos o CDN.
 
 :::warning Nota
 
@@ -111,13 +111,15 @@ Después de seleccionar la URL original, cualquier persona que tenga una URL vá
 
 Esta opción no cambia la configuración de lectura pública del propio servicio de almacenamiento. Solo controla si NocoBase comprueba los permisos del registro del archivo.
 
+Markdown, las páginas externas y los servicios de terceros también pueden usar una URL pública de NocoBase. Para usarla externamente, convierta la ruta devuelta por la API en una URL absoluta que incluya el dominio de NocoBase y asegúrese de que el consumidor pueda seguir redirecciones `302`.
+
 ### Cómo elegir
 
 | Caso de uso | URL del archivo | Permitir acceso público |
 | --- | --- | --- |
 | Los archivos deben respetar los permisos de rol y de datos | URL de NocoBase | Sin marcar |
-| Se necesita una dirección de archivo de NocoBase que se pueda compartir públicamente | URL de NocoBase | Marcado |
-| Markdown, una página externa o un servicio de terceros debe leer directamente la dirección del almacenamiento | URL original | No aplicable |
+| Markdown, una página externa o un servicio de terceros necesita acceso público al archivo | URL de NocoBase | Marcado |
+| El consumidor no puede seguir redirecciones `302` o debe usar directamente la dirección del almacenamiento | URL original | No aplicable |
 
 :::warning Nota
 

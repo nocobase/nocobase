@@ -97,7 +97,7 @@ https://storage.example.com/path/to/file.png
 
 Diese URL durchläuft NocoBase nicht und prüft die Leseberechtigungen des Dateidatensatzes nicht. Bei lokalem Speicher handelt es sich um eine lokale statische Dateiadresse, bei Cloud-Speicher normalerweise um eine Objekt-Speicher- oder CDN-Adresse.
 
-Wählen Sie die ursprüngliche URL nur aus, wenn Markdown, eine externe Seite oder ein Drittanbieterdienst die Speicheradresse direkt verwenden muss.
+Wählen Sie die ursprüngliche URL nur aus, wenn der Aufrufer keine NocoBase-URL verwenden kann, zum Beispiel weil er `302`-Weiterleitungen nicht folgen kann oder ausdrücklich eine Objektspeicher- beziehungsweise CDN-Adresse benötigt.
 
 :::warning Hinweis
 
@@ -111,13 +111,15 @@ Nach Auswahl der ursprünglichen URL kann jeder mit einer gültigen URL die Noco
 
 Diese Option ändert nicht die Konfiguration für öffentlichen Lesezugriff im Speicherdienst. Sie steuert nur, ob NocoBase die Berechtigungen des Dateidatensatzes prüft.
 
+Markdown, externe Seiten und Drittanbieterdienste können ebenfalls eine öffentliche NocoBase-URL verwenden. Ergänzen Sie für die externe Nutzung den von der API zurückgegebenen Pfad zu einer absoluten URL mit der NocoBase-Domain und stellen Sie sicher, dass der Aufrufer `302`-Weiterleitungen folgen kann.
+
 ### Auswahlhilfe
 
 | Anwendungsfall | Datei-URL | Öffentlichen Zugriff erlauben |
 | --- | --- | --- |
 | Dateien müssen Rollen- und Datenberechtigungen folgen | NocoBase-URL | Nicht aktiviert |
-| Eine öffentlich teilbare NocoBase-Dateiadresse wird benötigt | NocoBase-URL | Aktiviert |
-| Markdown, eine externe Seite oder ein Drittanbieterdienst muss die Speicheradresse direkt lesen | Ursprüngliche URL | Nicht anwendbar |
+| Markdown, eine externe Seite oder ein Drittanbieterdienst benötigt öffentlichen Dateizugriff | NocoBase-URL | Aktiviert |
+| Der Aufrufer kann `302`-Weiterleitungen nicht folgen oder muss die Speicheradresse direkt verwenden | Ursprüngliche URL | Nicht anwendbar |
 
 :::warning Hinweis
 
