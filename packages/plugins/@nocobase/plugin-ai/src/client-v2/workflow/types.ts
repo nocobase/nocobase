@@ -124,6 +124,7 @@ export type AIEmployeeInstructionConfig = {
   userId?: string | number | Array<string | number>;
   message?: AIEmployeeTaskMessage;
   files?: AIEmployeeFileInput[];
+  fileUrlOrigin?: string;
   skillSettings?: SkillSettings;
   webSearch?: boolean;
   structuredOutput?: AIEmployeeStructuredOutputConfig;

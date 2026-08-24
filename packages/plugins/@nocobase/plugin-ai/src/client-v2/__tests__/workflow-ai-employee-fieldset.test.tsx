@@ -18,6 +18,7 @@ import { FeedbackSettings } from '../workflow/nodes/employee/components/Feedback
 import { SkillSettings } from '../workflow/nodes/employee/components/SkillSettings';
 import { StructuredOutput } from '../workflow/nodes/employee/components/StructuredOutput';
 import { UserInput } from '../workflow/nodes/employee/components/UserInput';
+import { FileInputs } from '../workflow/nodes/employee/components/FileInputs';
 
 const { useWorkflowVariableOptions } = vi.hoisted(() => ({
   useWorkflowVariableOptions: vi.fn((_options?: { types?: Array<(field: unknown) => boolean> }) => []),
@@ -162,6 +163,8 @@ type FormValues = {
       skills?: string[];
       tools?: string[];
     };
+    files?: Array<{ type: string; value?: string }>;
+    fileUrlOrigin?: string;
   };
 };
 
@@ -207,6 +210,28 @@ describe('AI employee workflow fieldset', () => {
 
     fireEvent.click(selector);
     expect(onChange).toHaveBeenCalledWith('{{$context.user.id}}');
+  });
+
+  it('submits the current browser origin for file URL same-origin checks', async () => {
+    const submitted: FormValues[] = [];
+
+    render(
+      <FormHarness
+        initialValues={{
+          config: {
+            files: [{ type: 'file_url', value: '{{$context.data.url}}' }],
+          },
+        }}
+        onFinish={(values) => submitted.push(values)}
+      >
+        <FileInputs />
+      </FormHarness>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
+
+    await waitFor(() => expect(submitted).toHaveLength(1));
+    expect(submitted[0].config?.fileUrlOrigin).toBe(window.location.origin);
   });
 
   it('keeps structured output and normalized approval mode under config when submitted', async () => {
