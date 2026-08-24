@@ -105,7 +105,7 @@ https://storage.example.com/path/to/file.png
 
 该 URL 不经过 NocoBase，也不会检查文件记录的查看权限。对于本地存储，它是本地静态文件地址；对于云存储，它通常是对象存储或 CDN 地址。
 
-只有当 Markdown、外部页面或第三方服务必须直接使用存储地址时，才建议选择原始 URL。
+只有当调用方无法使用 NocoBase URL——比如不能跟随 `302` 重定向，或明确需要对象存储 / CDN 地址时，才建议选择原始 URL。
 
 :::warning 注意
 
@@ -119,13 +119,15 @@ https://storage.example.com/path/to/file.png
 
 这个选项不会修改存储服务自身的公开读取配置。它只控制请求经过 NocoBase 时是否检查文件记录权限。
 
+Markdown、外部页面或第三方服务也可以使用公开的 NocoBase URL。外部使用时，需要将接口返回的路径补全为包含 NocoBase 域名的绝对 URL，并确保调用方支持跟随 `302` 重定向。
+
 ### 如何选择
 
 | 使用场景 | 文件 URL | 允许公开访问 |
 | --- | --- | --- |
 | 文件需要遵循角色和数据权限 | NocoBase URL | 不勾选 |
-| 需要提供一个可公开分享的 NocoBase 文件地址 | NocoBase URL | 勾选 |
-| Markdown、外部页面或第三方服务必须直接读取存储地址 | 原始 URL | 不适用 |
+| Markdown、外部页面或第三方服务需要公开读取文件 | NocoBase URL | 勾选 |
+| 调用方不能跟随 `302` 重定向，或必须直接使用存储地址 | 原始 URL | 不适用 |
 
 :::warning 注意
 

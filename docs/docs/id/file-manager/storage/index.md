@@ -104,7 +104,7 @@ https://storage.example.com/path/to/file.png
 
 URL ini tidak melewati NocoBase dan tidak memeriksa izin melihat record file. Untuk local storage, URL ini adalah alamat file statis lokal. Untuk cloud storage, URL ini biasanya merupakan alamat object storage atau CDN.
 
-Pilih URL asli hanya ketika Markdown, halaman eksternal, atau service pihak ketiga harus menggunakan alamat storage secara langsung.
+Pilih URL asli hanya jika pemanggil tidak dapat menggunakan URL NocoBase, misalnya karena tidak dapat mengikuti pengalihan `302` atau secara khusus memerlukan alamat object storage atau CDN.
 
 :::warning Perhatian
 
@@ -118,13 +118,15 @@ Setelah URL asli dipilih, siapa pun yang memiliki URL valid dapat melewati pemer
 
 Opsi ini tidak mengubah konfigurasi baca publik milik service storage. Opsi ini hanya mengontrol apakah NocoBase memeriksa izin record file.
 
+Markdown, halaman eksternal, dan service pihak ketiga juga dapat menggunakan URL NocoBase publik. Untuk penggunaan eksternal, ubah path yang dikembalikan API menjadi URL absolut yang menyertakan domain NocoBase, dan pastikan pemanggil dapat mengikuti pengalihan `302`.
+
 ### Cara memilih
 
 | Skenario penggunaan | URL file | Izinkan akses publik |
 | --- | --- | --- |
 | File harus mengikuti izin role dan data | URL NocoBase | Tidak dicentang |
-| Diperlukan alamat file NocoBase yang dapat dibagikan secara publik | URL NocoBase | Dicentang |
-| Markdown, halaman eksternal, atau service pihak ketiga harus membaca alamat storage secara langsung | URL asli | Tidak berlaku |
+| Markdown, halaman eksternal, atau service pihak ketiga memerlukan akses publik ke file | URL NocoBase | Dicentang |
+| Pemanggil tidak dapat mengikuti pengalihan `302` atau harus menggunakan alamat storage secara langsung | URL asli | Tidak berlaku |
 
 :::warning Perhatian
 
