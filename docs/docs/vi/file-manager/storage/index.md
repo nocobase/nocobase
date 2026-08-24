@@ -104,7 +104,7 @@ https://storage.example.com/path/to/file.png
 
 URL này không đi qua NocoBase và không kiểm tra quyền xem của bản ghi file. Với Local Storage, đây là địa chỉ file tĩnh cục bộ. Với cloud storage, đây thường là địa chỉ Object Storage hoặc CDN.
 
-Chỉ chọn URL gốc khi Markdown, trang bên ngoài hoặc dịch vụ bên thứ ba bắt buộc phải sử dụng trực tiếp địa chỉ storage.
+Chỉ chọn URL gốc khi bên gọi không thể sử dụng URL NocoBase, chẳng hạn như không thể theo chuyển hướng `302` hoặc cần rõ ràng một địa chỉ Object Storage hay CDN.
 
 :::warning Lưu ý
 
@@ -118,13 +118,15 @@ Sau khi chọn URL gốc, bất kỳ ai có URL hợp lệ đều có thể bỏ
 
 Tùy chọn này không thay đổi cấu hình đọc công khai của chính dịch vụ storage. Nó chỉ kiểm soát việc NocoBase có kiểm tra quyền của bản ghi file hay không.
 
+Markdown, trang bên ngoài và dịch vụ bên thứ ba cũng có thể sử dụng URL NocoBase công khai. Khi sử dụng bên ngoài, hãy bổ sung domain NocoBase vào path do API trả về để tạo URL tuyệt đối, đồng thời bảo đảm bên gọi có thể theo chuyển hướng `302`.
+
 ### Cách chọn
 
 | Tình huống sử dụng | URL file | Cho phép truy cập công khai |
 | --- | --- | --- |
 | File cần tuân theo quyền role và quyền dữ liệu | URL NocoBase | Không tích chọn |
-| Cần địa chỉ file NocoBase có thể chia sẻ công khai | URL NocoBase | Tích chọn |
-| Markdown, trang bên ngoài hoặc dịch vụ bên thứ ba phải đọc trực tiếp địa chỉ storage | URL gốc | Không áp dụng |
+| Markdown, trang bên ngoài hoặc dịch vụ bên thứ ba cần truy cập file công khai | URL NocoBase | Tích chọn |
+| Bên gọi không thể theo chuyển hướng `302` hoặc phải sử dụng trực tiếp địa chỉ storage | URL gốc | Không áp dụng |
 
 :::warning Lưu ý
 
