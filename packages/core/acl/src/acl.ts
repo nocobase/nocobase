@@ -72,6 +72,24 @@ interface CanArgs {
   roles?: string[];
 }
 
+export interface ResolveActionParamsOptions {
+  resourceName: string;
+  actionName: string;
+  rawResourceName?: string;
+  params?: any;
+  useCurrentRepository?: boolean;
+}
+
+export interface ResolvedActionParams {
+  actionName: string;
+  resourceName: string;
+  rawResourceName: string;
+  can: CanResult | null;
+  rawParams: any;
+  parsedParams?: any;
+  mergedParams: any;
+}
+
 export class ACL extends EventEmitter {
   /**
    * @internal
@@ -442,6 +460,58 @@ export class ACL extends EventEmitter {
     await compose(this.middlewares.nodes)(ctx, async () => {});
   }
 
+  async resolveActionParams(ctx, options: ResolveActionParamsOptions): Promise<ResolvedActionParams> {
+    const rawResourceName = options.rawResourceName || options.resourceName;
+    const resourceName = resolveResourceName(ctx, options.resourceName, options.useCurrentRepository === true);
+    const can = ctx.can({
+      resource: resourceName,
+      action: options.actionName,
+      rawResourceName,
+    });
+    const rawParams = lodash.cloneDeep(options.params || {});
+
+    if (!can || typeof can !== 'object') {
+      throw new NoPermissionError('No permissions');
+    }
+
+    const params = can.params || this.fixedParamsManager.getParams(resourceName, options.actionName);
+    ctx.log?.debug && ctx.log.debug('acl params', params);
+
+    if (!params) {
+      return {
+        actionName: options.actionName,
+        can,
+        mergedParams: rawParams,
+        rawParams,
+        rawResourceName,
+        resourceName,
+      };
+    }
+
+    const db = ctx.database ?? ctx.db;
+    const collection = db?.getCollection?.(resourceName);
+    checkFilterParams(collection, params?.filter);
+    const parsedFilter = await parseJsonTemplate(params.filter, {
+      state: ctx.state,
+      timezone: getTimezone(ctx),
+      userProvider: createUserProvider({
+        db: ctx.db,
+        currentUser: ctx.state?.currentUser,
+      }),
+    });
+    const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
+
+    return {
+      actionName: options.actionName,
+      can,
+      mergedParams: mergeActionParams(rawParams, parsedParams),
+      parsedParams,
+      rawParams,
+      rawResourceName,
+      resourceName,
+    };
+  }
+
   addGeneralFixedParams(merger: GeneralMerger) {
     this.fixedParamsManager.addGeneralParams(merger);
   }
@@ -465,6 +535,12 @@ export class ACL extends EventEmitter {
         const permission = ctx.permission;
 
         ctx.log?.debug && ctx.log.debug('ctx permission', permission);
+
+        if (['firstOrCreate', 'updateOrCreate'].includes(actionName)) {
+          permission.deferred = true;
+          await next();
+          return;
+        }
 
         if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
           ctx.throw(403, 'No permissions');
@@ -524,7 +600,6 @@ export class ACL extends EventEmitter {
             if (isEmptyFields) {
               resourcerAction.params.fields = [];
             }
-
             ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
           }
         } catch (e) {
@@ -548,6 +623,60 @@ export class ACL extends EventEmitter {
   protected isAvailableAction(actionName: string) {
     return this.availableActions.has(this.resolveActionAlias(actionName));
   }
+}
+
+function resolveResourceName(ctx: any, rawResourceName: string, useCurrentRepository: boolean) {
+  if (useCurrentRepository && ctx.getCurrentRepository) {
+    const repository = ctx.getCurrentRepository();
+    const collection = repository?.targetCollection || repository?.collection;
+    if (collection?.name) {
+      return collection.name;
+    }
+  }
+
+  return rawResourceName.includes('.') ? rawResourceName.split('.').pop() : rawResourceName;
+}
+
+function mergeActionParams(rawParams: any, parsedParams: any) {
+  const mergedParams = lodash.cloneDeep(rawParams || {});
+
+  if (parsedParams.appends && mergedParams.fields) {
+    for (const queryField of mergedParams.fields) {
+      if (parsedParams.appends.indexOf(queryField) !== -1) {
+        if (!mergedParams.appends) {
+          mergedParams.appends = [];
+        }
+        mergedParams.appends.push(queryField);
+        mergedParams.fields = mergedParams.fields.filter((f) => f !== queryField);
+      }
+    }
+  }
+
+  const isEmptyFields = mergedParams.fields && mergedParams.fields.length === 0;
+
+  assign(mergedParams, parsedParams, {
+    appends: (x, y) => {
+      if (!x) {
+        return [];
+      }
+      if (!y) {
+        return x;
+      }
+      return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+    },
+    blacklist: 'intersect',
+    except: 'union',
+    fields: 'intersect',
+    filter: 'andMerge',
+    sort: 'overwrite',
+    whitelist: 'intersect',
+  });
+
+  if (isEmptyFields) {
+    mergedParams.fields = [];
+  }
+
+  return mergedParams;
 }
 
 function getTimezone(ctx: any) {
