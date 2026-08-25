@@ -35,6 +35,12 @@ type WorkflowVariableTree = ReturnType<typeof useWorkflowVariableOptions>;
 export type AssignedFieldFilter = (field: AssignedField) => boolean;
 
 const VARIABLE_EXPRESSION_FIELD_TYPES: ReadonlySet<string> = new Set(['string', 'text']);
+const OPTION_FIELD_INTERFACES: ReadonlySet<string> = new Set([
+  'select',
+  'multipleSelect',
+  'radioGroup',
+  'checkboxGroup',
+]);
 
 const fieldItemClassName = css`
   position: relative;
@@ -93,6 +99,10 @@ function normalizeAssignedValues(values: AssignedValues | undefined): AssignedVa
 
 function normalizeVariableExpressionValue(value: unknown): string {
   return typeof value === 'string' ? value : '';
+}
+
+function supportsVariableExpression(field: AssignedField): boolean {
+  return VARIABLE_EXPRESSION_FIELD_TYPES.has(field.type ?? '') && !OPTION_FIELD_INTERFACES.has(field.interface ?? '');
 }
 
 function getFieldTitle(field: AssignedField, t: (key: string) => string) {
@@ -215,7 +225,7 @@ export function AssignedFieldsEditor({
               layout="vertical"
               colon
             >
-              {VARIABLE_EXPRESSION_FIELD_TYPES.has(field.type ?? '') ? (
+              {supportsVariableExpression(field) ? (
                 <VariableHybridInput
                   value={normalizeVariableExpressionValue(normalizedValue[field.name])}
                   onChange={(nextValue) => updateValue(field.name, nextValue)}
