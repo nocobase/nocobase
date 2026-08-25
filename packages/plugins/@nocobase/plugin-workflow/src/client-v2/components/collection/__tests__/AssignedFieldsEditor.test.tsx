@@ -28,6 +28,9 @@ const {
     getFields: vi.fn(() => [
       { name: 'title', type: 'string', uiSchema: { title: 'Title' }, interface: 'input' },
       { name: 'status', type: 'string', uiSchema: { title: 'Status' }, interface: 'select' },
+      { name: 'priority', type: 'string', uiSchema: { title: 'Priority' }, interface: 'radioGroup' },
+      { name: 'categories', type: 'array', uiSchema: { title: 'Categories' }, interface: 'multipleSelect' },
+      { name: 'features', type: 'array', uiSchema: { title: 'Features' }, interface: 'checkboxGroup' },
       { name: 'body', type: 'text', uiSchema: { title: 'Body' }, interface: 'textarea' },
       { name: 'website', type: 'text', uiSchema: { title: 'Website' }, interface: 'url' },
       { name: 'metadata', type: 'json', uiSchema: { title: 'Metadata' }, interface: 'textarea' },
@@ -175,6 +178,31 @@ describe('AssignedFieldsEditor', () => {
         expect.anything(),
       );
     });
+  });
+
+  it('keeps field-aware selectors for option fields regardless of their storage type', async () => {
+    render(
+      <AssignedFieldsEditor
+        collection="posts"
+        value={{ status: 'open', priority: 'high', categories: ['news'], features: ['featured'] }}
+        onChange={() => undefined}
+      />,
+    );
+
+    await waitFor(() => {
+      for (const [targetPath, value] of [
+        ['status', 'open'],
+        ['priority', 'high'],
+        ['categories', ['news']],
+        ['features', ['featured']],
+      ]) {
+        expect(mockFieldAssignValueInput).toHaveBeenCalledWith(
+          expect.objectContaining({ targetPath, value }),
+          expect.anything(),
+        );
+      }
+    });
+    expect(mockVariableHybridInput).not.toHaveBeenCalled();
   });
 
   it('adds unassigned collection fields with constant empty values', async () => {
