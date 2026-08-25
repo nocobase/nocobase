@@ -482,6 +482,12 @@ export class ACL extends EventEmitter {
 
         ctx.log?.debug && ctx.log.debug('ctx permission', permission);
 
+        if (['firstOrCreate', 'updateOrCreate'].includes(actionName)) {
+          permission.deferred = true;
+          await next();
+          return;
+        }
+
         try {
           const result = await acl.resolvePermissionParams(ctx, {
             actionName,
