@@ -634,7 +634,7 @@ describe('workflow > triggers > collection', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await plugin.execute(workflow, { data: post.id });
+      await plugin.execute(workflow, { data: post.id }, { manually: true });
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
