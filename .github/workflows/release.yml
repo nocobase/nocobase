@@ -116,26 +116,44 @@ jobs:
             exit 1
           fi
 
-          DEFAULT_BRANCH=$(gh api -H "Accept: application/vnd.github+json" "/repos/$GITHUB_REPOSITORY" --jq '.default_branch')
-          STABLE_VERSION=$(
-            gh api -H "Accept: application/vnd.github+json" "/repos/$GITHUB_REPOSITORY/contents/lerna.json?ref=$DEFAULT_BRANCH" --jq '.content' \
-              | tr -d '\n' \
-              | base64 --decode \
-              | jq -r '.version'
-          )
-          if [[ ! "$STABLE_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-            echo "Failed to parse stable version from $STABLE_VERSION on $DEFAULT_BRANCH." >&2
-            exit 1
-          fi
-          STABLE_MAJOR="${BASH_REMATCH[1]}"
-          STABLE_MINOR="${BASH_REMATCH[2]}"
-          STABLE_PATCH="${BASH_REMATCH[3]}"
-
           IS_MAINTENANCE_RELEASE=false
-          if (( RELEASE_MAJOR < STABLE_MAJOR \
-            || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR < STABLE_MINOR) \
-            || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR == STABLE_MINOR && RELEASE_PATCH < STABLE_PATCH) )); then
-            IS_MAINTENANCE_RELEASE=true
+          DEFAULT_BRANCH=unknown
+          STABLE_VERSION=unavailable
+          if [[ "$TARGET_REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            github_api_with_retry() {
+              local attempt
+              local output
+              for attempt in 1 2 3; do
+                if output=$(gh api -H "Accept: application/vnd.github+json" "$@" 2>&1); then
+                  printf '%s\n' "$output"
+                  return 0
+                fi
+                echo "GitHub API request failed (attempt $attempt/3): $output" >&2
+                if (( attempt < 3 )); then
+                  sleep $((attempt * 2))
+                fi
+              done
+              return 1
+            }
+
+            if DEFAULT_BRANCH=$(github_api_with_retry "/repos/$GITHUB_REPOSITORY" --jq '.default_branch') \
+              && STABLE_CONTENT=$(github_api_with_retry "/repos/$GITHUB_REPOSITORY/contents/lerna.json?ref=$DEFAULT_BRANCH" --jq '.content') \
+              && STABLE_VERSION=$(printf '%s' "$STABLE_CONTENT" | tr -d '\n' | base64 --decode | jq -r '.version') \
+              && [[ "$STABLE_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              STABLE_MAJOR="${BASH_REMATCH[1]}"
+              STABLE_MINOR="${BASH_REMATCH[2]}"
+              STABLE_PATCH="${BASH_REMATCH[3]}"
+
+              if (( RELEASE_MAJOR < STABLE_MAJOR \
+                || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR < STABLE_MINOR) \
+                || (RELEASE_MAJOR == STABLE_MAJOR && RELEASE_MINOR == STABLE_MINOR && RELEASE_PATCH < STABLE_PATCH) )); then
+                IS_MAINTENANCE_RELEASE=true
+              fi
+            else
+              echo "Unable to determine the stable version from the default branch; treating $TARGET_REF as a non-maintenance release." >&2
+            fi
+          else
+            echo "Prerelease tag $TARGET_REF is not considered a maintenance release."
           fi
 
           PUBLISH_FLOATING_DOCKER_TAG=true
@@ -205,10 +223,17 @@ jobs:
       - prepare-release
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     with:
-      # Maintenance releases may predate newer plugin repositories, so only select repos that carry the release tag.
+      # Ad-hoc non-maintenance reruns select existing tags. Maintenance releases select the whole maintenance branch,
+      # then validate below that every selected repository has the tag.
       require_tag: >-
-        ${{ (github.event_name == 'workflow_dispatch' || needs.prepare-release.outputs.is_maintenance_release == 'true')
-          && needs.prepare-release.outputs.target_ref || '' }}
+        ${{ github.event_name == 'workflow_dispatch'
+        && needs.prepare-release.outputs.is_v1 != 'true'
+        && needs.prepare-release.outputs.is_maintenance_release != 'true'
+        && needs.prepare-release.outputs.target_ref || '' }}
+      require_branch: >-
+        ${{ needs.prepare-release.outputs.is_v1 == 'true' && 'v1'
+        || needs.prepare-release.outputs.is_maintenance_release == 'true' && format('v{0}', needs.prepare-release.outputs.major_minor_version)
+        || '' }}
     secrets: inherit
 
   publish-packages:
@@ -227,7 +252,11 @@ jobs:
       - name: Get info
         id: get-info
         shell: bash
+        env:
+          ALL_PLUGINS: ${{ needs.get-plugins.outputs.all-plugins }}
+          CUSTOM_PLUGINS: ${{ needs.get-plugins.outputs.custom-plugins }}
         run: |
+          set -euo pipefail
           echo "defaultTag=${{ needs.prepare-release.outputs.default_tag }}" >> "$GITHUB_OUTPUT"
 
           if [[ "${{ needs.prepare-release.outputs.run_pro_package_release }}" != 'true' ]]; then
@@ -235,8 +264,9 @@ jobs:
             exit 0
           fi
 
-          if [[ "$TARGET_REF" =~ ^v1\. ]]; then
-            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.all-plugins }}')" >> "$GITHUB_OUTPUT"
+          if [[ "${{ needs.prepare-release.outputs.is_maintenance_release }}" == 'true' || "$TARGET_REF" =~ ^v1\. ]]; then
+            PRO_REPOS=$(jq -cn --argjson all "$ALL_PLUGINS" --argjson custom "$CUSTOM_PLUGINS" '$all - $custom')
+            echo "proRepos=$PRO_REPOS" >> "$GITHUB_OUTPUT"
           elif [[ "$TARGET_REF" =~ beta ]]; then
             echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> "$GITHUB_OUTPUT"
           elif [[ "$TARGET_REF" =~ alpha ]]; then
@@ -247,7 +277,7 @@ jobs:
           fi
       - uses: actions/create-github-app-token@v1
         id: validate-token
-        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
+        if: ${{ (needs.prepare-release.outputs.is_v1 == 'true' || needs.prepare-release.outputs.is_maintenance_release == 'true') && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         with:
           app-id: ${{ vars.NOCOBASE_APP_ID }}
           private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
@@ -267,8 +297,8 @@ jobs:
             echo "NPM_TAG_ARG=" >> "$GITHUB_ENV"
           fi
 
-      - name: Validate v1 tag exists in all selected repos
-        if: ${{ needs.prepare-release.outputs.is_v1 == 'true' && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
+      - name: Validate maintenance tag exists in all selected repos
+        if: ${{ (needs.prepare-release.outputs.is_v1 == 'true' || needs.prepare-release.outputs.is_maintenance_release == 'true') && needs.prepare-release.outputs.run_pro_package_release == 'true' }}
         shell: bash
         run: |
           set -euo pipefail

@@ -48,7 +48,8 @@ jobs:
             echo "Main stable version is invalid: $MAIN_VERSION" >&2
             exit 1
           fi
-          MAIN_BASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          MAIN_MAJOR="${BASH_REMATCH[1]}"
+          MAIN_MINOR="${BASH_REMATCH[2]}"
 
           if [[ "$INPUT_BASE_VERSION" =~ ^([0-9]+)$ ]]; then
             INPUT_MAJOR="${BASH_REMATCH[1]}"
@@ -62,12 +63,6 @@ jobs:
             TAG_REGEX="^v($BASE_VERSION\.[0-9]+)$"
           else
             echo "Base version must be a major or major.minor line, for example 1 or 2.1." >&2
-            exit 1
-          fi
-
-          if [[ -n "${BASE_VERSION:-}" && "$BASE_VERSION" == "$MAIN_BASE_VERSION" ]]; then
-            echo "Maintenance line $BASE_VERSION matches Main version $MAIN_VERSION." >&2
-            echo "Use the Main release workflow for the current stable line." >&2
             exit 1
           fi
 
@@ -96,9 +91,15 @@ jobs:
             BASE_VERSION="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
           fi
 
-          if [[ "$BASE_VERSION" == "$MAIN_BASE_VERSION" ]]; then
-            echo "Maintenance line $BASE_VERSION matches Main version $MAIN_VERSION." >&2
-            echo "Use the Main release workflow for the current stable line." >&2
+          if [[ ! "$BASE_VERSION" =~ ^([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Failed to parse maintenance line $BASE_VERSION." >&2
+            exit 1
+          fi
+          BASE_MAJOR="${BASH_REMATCH[1]}"
+          BASE_MINOR="${BASH_REMATCH[2]}"
+          if (( BASE_MAJOR > MAIN_MAJOR || (BASE_MAJOR == MAIN_MAJOR && BASE_MINOR >= MAIN_MINOR) )); then
+            echo "Maintenance line $BASE_VERSION is not older than Main version $MAIN_VERSION." >&2
+            echo "Only release lines older than Main may use the maintenance release workflow." >&2
             exit 1
           fi
 
@@ -130,7 +131,7 @@ jobs:
     outputs:
       plugins: ${{ steps.select.outputs.plugins }}
     steps:
-      - name: Select plugins for release channel
+      - name: Select all plugins on the maintenance branch
         id: select
         env:
           ALL_PLUGINS: ${{ needs.get-plugins.outputs.all-plugins }}
@@ -296,8 +297,12 @@ jobs:
             repo="${repo_names[$i]}"
             repo_dir="${repo_dirs[$i]}"
             if git -C "$repo_dir" rev-parse --verify --quiet "refs/tags/$TAG^{commit}" >/dev/null; then
-              if ! git -C "$repo_dir" merge-base --is-ancestor "refs/tags/$TAG^{commit}" "$MAINTENANCE_BRANCH"; then
-                echo "ERROR: Existing tag $TAG in nocobase/$repo is not part of branch $MAINTENANCE_BRANCH." >&2
+              tag_commit=$(git -C "$repo_dir" rev-parse "refs/tags/$TAG^{commit}")
+              branch_commit=$(git -C "$repo_dir" rev-parse "refs/heads/$MAINTENANCE_BRANCH^{commit}")
+              if [[ "$tag_commit" != "$branch_commit" ]]; then
+                echo "ERROR: Existing tag $TAG in nocobase/$repo does not point to the current head of branch $MAINTENANCE_BRANCH." >&2
+                echo "Tag commit: $tag_commit" >&2
+                echo "Branch head: $branch_commit" >&2
                 exit 1
               fi
               exist+=("$repo")
