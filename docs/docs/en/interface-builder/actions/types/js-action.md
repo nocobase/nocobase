@@ -35,7 +35,7 @@ JS Action is used to execute JavaScript when a button is clicked, allowing for c
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
 
-- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
+- You can use AI employees to generate/modify scripts: [AI Employee · Nathan: Frontend Engineer](/ai-employees/built-in/)
 
 ## Common Usage (Simplified Examples)
 
@@ -93,5 +93,5 @@ else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refres
 ## Related Documents
 
 - [Variables and Context](/interface-builder/variables)
-- [Linkage Rules](/interface-builder/linkage-rule)
-- [Views and Pop-ups](/interface-builder/actions/types/view)
+- [Linkage rule](/interface-builder/linkage-rule)
+- [Views and Pop-up](/interface-builder/actions/types/view)

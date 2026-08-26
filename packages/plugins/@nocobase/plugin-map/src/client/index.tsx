@@ -14,10 +14,8 @@ import { mapActionInitializers, mapActionInitializers_deprecated } from './block
 import { mapBlockSettings } from './block/MapBlock.Settings';
 import { useMapBlockProps } from './block/MapBlockProvider';
 import { Configuration, Map } from './components';
-import * as fieldModes from './models/fieldModels';
-import { setDefaultZoomLevel } from './models/fieldModels/setDefaultZoomLevel';
-import { MapActionGroupModel } from './models/MapActionGroupModel';
-import { MapBlockModel } from './models/MapBlockModel';
+import * as fieldModes from '../client-v2/models/fieldModels';
+import { setDefaultZoomLevel } from '../client-v2/models/fieldModels/setDefaultZoomLevel';
 // 懒加载会把 Map.Designer 的值变成 undefined，进而导致地图字段不显示 settings
 // const { Configuration, Map } = lazy(() => import('./components'), 'Configuration', 'Map');
 
@@ -68,10 +66,16 @@ export class PluginMapClient extends Plugin {
       useMapBlockProps,
     });
     this.flowEngine.registerActions({ setDefaultZoomLevel });
+    this.flowEngine.registerModelLoaders({
+      MapActionGroupModel: {
+        loader: () => import('../client-v2/models/MapActionGroupModel'),
+      },
+      MapBlockModel: {
+        loader: () => import('../client-v2/models/MapBlockModel'),
+      },
+    });
     this.flowEngine.registerModels({
       ...fieldModes,
-      MapActionGroupModel,
-      MapBlockModel,
     });
   }
 }

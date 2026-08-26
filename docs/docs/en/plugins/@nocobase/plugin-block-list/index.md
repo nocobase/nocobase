@@ -1,4 +1,6 @@
 ---
+title: "Block: List"
+keywords: "Blocks"
 displayName: "Block: List"
 packageName: '@nocobase/plugin-block-list'
 description: |

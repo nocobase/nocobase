@@ -5,8 +5,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Resumen",
-        "link": "/multi-app/multi-app"
+        "label": "Visión general",
+        "link": "/multi-app/multi-app/"
       },
       {
         "type": "custom-link",
@@ -17,12 +17,27 @@
         "type": "custom-link",
         "label": "Modo multi-entorno",
         "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloque de aplicaciones y selector",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "SSO de aplicaciones",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "Llamar APIs de subaplicaciones",
+        "link": "/multi-app/multi-app/sub-app-api"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Multi-space",
-    "link": "/multi-app/multi-space"
+    "label": "Multiespacio",
+    "link": "/multi-app/multi-space/"
   }
 ]

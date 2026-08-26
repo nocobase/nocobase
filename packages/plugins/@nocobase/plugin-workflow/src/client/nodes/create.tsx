@@ -57,6 +57,9 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`;
   icon = (<FileAddOutlined style={{}} />);
+  presetFieldset = {
+    collection,
+  };
   fieldset = {
     collection: {
       ...collection,

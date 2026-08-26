@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Nach-Aktions-Ereignis
@@ -179,7 +175,7 @@ Wenn das Ereignis im globalen Modus konfiguriert ist, müssen Sie den URL-Parame
 
 Wie in der Abbildung unten gezeigt:
 
-![Aktionsausführungsreihenfolge](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Aktionsausführungsreihenfolge](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Unterschied zum Sammlungsereignis
 

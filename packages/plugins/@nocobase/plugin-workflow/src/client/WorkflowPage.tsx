@@ -37,7 +37,7 @@ export const WorkflowPage = () => {
                   action: 'get',
                   params: {
                     filter: { id: params.id },
-                    appends: ['nodes', 'stats.executed', 'versionStats.executed'],
+                    appends: ['nodes', 'stats.executed', 'versionStats.executed', 'createdBy', 'updatedBy'],
                   },
                 },
               },

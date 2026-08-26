@@ -1,0 +1,63 @@
+#root {
+  width: 100%;
+  height: 100%;
+}
+/* width */
+.win ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Track */
+.win ::-webkit-scrollbar-track {
+  background: var(--colorBgScrollTrack);
+}
+
+/* Handle */
+.win ::-webkit-scrollbar-thumb {
+  background: var(--colorBgScrollBar);
+  border-radius: 4px;
+}
+
+/* Handle on hover */
+.win ::-webkit-scrollbar-thumb:hover {
+  background: var(--colorBgScrollBarHover);
+}
+
+.win ::-webkit-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive);
+}
+
+.win .rc-virtual-list-scrollbar-thumb {
+  background: var(--colorBgScrollBar);
+}
+.win .rc-virtual-list-scrollbar-thumb:hover {
+  background: var(--colorBgScrollBarHover);
+}
+.win .rc-virtual-list-scrollbar-thumb:active {
+  background: var(--colorBgScrollBarActive);
+}
+
+body a {
+  color: var(--colorPrimaryText);
+}
+
+body a:hover {
+  color: var(--colorPrimaryTextHover);
+}
+
+body a:active {
+  color: var(--colorPrimaryTextActive);
+}
+
+.ant-btn-link {
+  color: var(--colorPrimaryText);
+}
+
+.ant-btn-link:hover {
+  color: var(--colorPrimaryTextHover);
+}
+
+.ant-btn-link:active {
+  color: var(--colorPrimaryTextActive);
+}

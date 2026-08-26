@@ -68,8 +68,25 @@ describe('auth-manager', () => {
     await expect(authManager.get('any', {} as Context)).rejects.toThrowError('AuthManager.storer is not set.');
   });
 
+  it('should get built-in authenticator before storer', async () => {
+    authManager.registerTypes('basic', { auth: BasicAuth });
+    authManager.registerBuiltInAuthenticator({
+      name: 'builtin-basic',
+      authType: 'basic',
+      options: {
+        builtin: true,
+      },
+    });
+
+    const auth = (await authManager.get('builtin-basic', {} as Context)) as any;
+
+    expect(auth).toBeInstanceOf(BasicAuth);
+    expect(auth.options).toEqual({ builtin: true });
+  });
+
   it('should list types', () => {
     authManager.registerTypes('basic', { auth: BasicAuth, title: 'Basic' });
+    authManager.registerTypes('builtin', { auth: BasicAuth, title: 'Builtin', hidden: true });
     expect(authManager.listTypes()).toEqual([{ name: 'basic', title: 'Basic' }]);
   });
 

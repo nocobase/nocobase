@@ -3,13 +3,18 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const vditor = path.dirname(require.resolve('vditor'));
+const vditorTargets = ['dist/client/vditor/dist', 'dist/client-v2/vditor/dist'];
 
 export default defineConfig({
   afterBuild: async (log) => {
-    log('coping vditor dist');
-    await fs.cp(vditor, path.resolve(__dirname, 'dist/client/vditor/dist'), {
-      recursive: true,
-      force: true,
-    });
+    log('copying vditor dist');
+    await Promise.all(
+      vditorTargets.map((target) =>
+        fs.cp(vditor, path.resolve(__dirname, target), {
+          recursive: true,
+          force: true,
+        }),
+      ),
+    );
   },
 });

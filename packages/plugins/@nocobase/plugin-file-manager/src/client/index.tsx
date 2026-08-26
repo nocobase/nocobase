@@ -17,9 +17,9 @@ import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks'
 import { useStorageCfg } from './hooks/useStorageUploadProps';
 import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
-import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
-import { UploadFieldModel } from './models/UploadFieldModel';
-import { UploadActionModel } from './models/UploadActionModel';
+import { DisplayPreviewFieldModel } from '../client-v2/models/DisplayPreviewFieldModel';
+import { UploadFieldModel } from '../client-v2/models/UploadFieldModel';
+import { UploadActionModel } from '../client-v2/models/UploadActionModel';
 import { FilePreviewRenderer, getDownloadFileName, getFileUrl, isPdfFile } from './previewer/filePreviewTypes';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
@@ -137,13 +137,14 @@ export class PluginFileManagerClient extends Plugin {
     storageRules?: {
       size: number;
     };
+    dataSourceKey?: string;
     query?: Record<string, any>; // ⭐️ 新增可选 query 参数
   }): Promise<{ errorMessage?: string; data?: any }> {
     if (!options?.file) {
       return { errorMessage: 'Missing file' };
     }
 
-    const { file, storageType, storageId, storageRules, query = {} } = options;
+    const { file, storageType, storageId, storageRules, dataSourceKey, query = {} } = options;
     const fileCollectionName = options?.fileCollectionName || 'attachments';
 
     const storageTypeObj = this.getStorageType(storageType);
@@ -156,6 +157,7 @@ export class PluginFileManagerClient extends Plugin {
         storageType,
         storageId,
         storageRules,
+        dataSourceKey,
         fileCollectionName,
         query,
       });
@@ -174,6 +176,7 @@ export class PluginFileManagerClient extends Plugin {
         url,
         method: 'post',
         data: formData,
+        headers: dataSourceKey && dataSourceKey !== 'main' ? { 'x-data-source': dataSourceKey } : {},
       });
 
       return { data: res.data?.data };
@@ -187,6 +190,6 @@ export class PluginFileManagerClient extends Plugin {
 
 export { filePreviewTypes, wrapWithModalPreviewer } from './previewer/filePreviewTypes';
 export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
-export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
+export { CardUpload, UploadFieldModel } from '../client-v2/models/UploadFieldModel';
 
 export default PluginFileManagerClient;

@@ -1,4 +1,6 @@
 ---
+title: "Backup manager"
+keywords: "System management"
 displayName: "Backup manager"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
@@ -6,10 +8,10 @@ supportedVersions:
   - 2.x
 description: |
   Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-editionLevel: 2
+editionLevel: 0
 ---
 
 # Backup manager

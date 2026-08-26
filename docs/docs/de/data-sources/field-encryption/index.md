@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Verschlüsselung
 
@@ -30,7 +26,7 @@ Wenn das Plugin von einer Sub-Anwendung aktiviert wird, wird der Schlüssel stan
 
 Es wird die Umschlag-Verschlüsselung (Envelope Encryption) verwendet.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Schlüsselgenerierungsprozess
 1.  Wenn ein verschlüsseltes Feld zum ersten Mal erstellt wird, generiert das System automatisch einen 32-Bit `Anwendungsschlüssel`, der Base64-kodiert im Standardspeicherverzeichnis abgelegt wird.

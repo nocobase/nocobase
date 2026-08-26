@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Abhängigkeitsverwaltung
 
 Bei der Entwicklung von NocoBase-Plugins unterscheiden wir zwei Arten von Abhängigkeiten: **Plugin-Abhängigkeiten** und **globale Abhängigkeiten**.

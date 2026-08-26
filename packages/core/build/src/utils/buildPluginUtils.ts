@@ -9,6 +9,7 @@
 
 import fs from 'fs';
 import chalk from 'chalk';
+import fg from 'fast-glob';
 import { builtinModules } from 'module';
 import path from 'path';
 
@@ -22,7 +23,7 @@ export function isNotBuiltinModule(packageName: string) {
 }
 
 export const isValidPackageName = (str: string) => {
-  const pattern = /^(?:@[a-zA-Z0-9_-]+\/)?[a-zA-Z0-9_-]+$/;
+  const pattern = /^(?:@[a-zA-Z0-9._-]+\/)?[a-zA-Z0-9._-]+$/;
   return pattern.test(str);
 };
 
@@ -73,6 +74,18 @@ export function getPackagesFromFiles(files: string[]): string[] {
   return [...new Set(packageNames)];
 }
 
+export function getPluginBrowserSourcePackages(cwds: string[], excludeFiles: string[]): string[] {
+  const files = cwds.flatMap((cwd) =>
+    fg.globSync(['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/server/**', ...excludeFiles], {
+      cwd,
+      absolute: true,
+    }),
+  );
+  const source = files.map((item) => fs.readFileSync(item, 'utf-8'));
+
+  return getPackagesFromFiles(source);
+}
+
 export function getSourcePackages(fileSources: string[]): string[] {
   return getPackagesFromFiles(fileSources);
 }
@@ -94,7 +107,7 @@ export function getPackageJsonPackages(packageJson: Record<string, any>): string
   ];
 }
 
-export function checkEntryExists(cwd: string, entry: 'server' | 'client', log: Log) {
+export function checkEntryExists(cwd: string, entry: 'server' | 'client' | 'client-v2', log: Log) {
   const srcDir = path.join(cwd, 'src', entry);
   if (!fs.existsSync(srcDir)) {
     log('Missing %s. Please create it.', chalk.red(`src/${entry}`));
@@ -119,7 +132,7 @@ export function checkDependencies(packageJson: Record<string, any>, log: Log) {
 type CheckOptions = {
   cwd: string;
   log: Log;
-  entry: 'server' | 'client';
+  entry: 'server' | 'client' | 'client-v2';
   files: string[];
   packageJson: Record<string, any>;
 };

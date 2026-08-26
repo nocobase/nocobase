@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const NAMESPACE = 'action-import';
+export { NAMESPACE } from '../client-v2/locale';

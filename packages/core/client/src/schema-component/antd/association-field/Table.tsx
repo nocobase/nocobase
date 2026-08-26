@@ -24,25 +24,24 @@ import _, { omit } from 'lodash';
 import React, { useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { DndContext, useDesignable, useTableSize } from '../..';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  useCollection,
-  useCollectionParentRecordData,
-  useDataBlockProps,
-  useDataBlockRequest,
-  useFlag,
-  useSchemaInitializerRender,
-  useTableSelectorContext,
-} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useTableSelectorContext } from '../../../block-provider/TableSelectorProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
+import { useDataBlockRequest } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
+import { DndContext } from '../../common/dnd-context';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useTableSize } from '../../hooks/useBlockSize';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';

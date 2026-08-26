@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-action-trigger'
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Событие после действия
 
@@ -178,7 +174,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 Как показано на рисунке ниже:
 
-![Порядок выполнения действий](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Порядок выполнения действий](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Отличие от события коллекции
 

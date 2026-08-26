@@ -1,0 +1,67 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu nhanh",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "NocoBase hoạt động như thế nào",
+        "link": "/get-started/how-nocobase-works"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yêu cầu hệ điều hành",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Môi trường production",
+            "link": "/get-started/system-requirements"
+          },
+          {
+            "type": "custom-link",
+            "label": "Thiết lập phát triển cục bộ",
+            "link": "/ai/local-development-setup"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "type": "custom-link",
+        "label": "So sánh các phương thức cài đặt và phiên bản",
+        "link": "/get-started/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt ứng dụng NocoBase",
+        "link": "/ai/install-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp ứng dụng NocoBase",
+        "link": "/ai/upgrade-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp từ 2.0 lên 2.1",
+        "link": "/ai/upgrade-from-2-0-to-2-1"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn tích hợp AI Agent",
+        "link": "/ai/quick-start"
+      },
+      {
+        "type": "custom-link",
+        "label": "NocoBase CLI",
+        "proxy": false,
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bắt đầu (phiên bản cũ)",
+        "proxy": false,
+        "link": "/get-started/how-nocobase-works"
+      }
+    ]
+  }
+]

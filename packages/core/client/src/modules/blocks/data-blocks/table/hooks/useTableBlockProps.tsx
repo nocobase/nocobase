@@ -11,7 +11,7 @@ import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { isEqual } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../../../block-provider/TableBlockContextBasicValue';
 import { findFilterTargets } from '../../../../../block-provider/hooks';
 import { useDataBlockRequest } from '../../../../../data-source/data-block/DataBlockRequestProvider';
 import { useDataBlockResource } from '../../../../../data-source/data-block/DataBlockResourceProvider';

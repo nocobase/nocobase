@@ -10,10 +10,42 @@
 import { css } from '@emotion/css';
 import { ISchema, useFieldSchema } from '@formily/react';
 import { Action, ActionContextProvider, PopupSettingsProvider, SchemaComponent, useCompile } from '@nocobase/client';
+import { Alert } from 'antd';
 import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
 import { useTranslation } from 'react-i18next';
 import { UploadOutlined } from '@ant-design/icons';
+
+const ImportErrorAlert = ({ errorMessage }: { errorMessage?: string }) => {
+  const { t } = useTranslation(NAMESPACE);
+  if (!errorMessage) {
+    return null;
+  }
+  return (
+    <Alert
+      type="error"
+      showIcon
+      message={t('Import failed')}
+      description={
+        <div
+          className={css`
+            max-height: min(42vh, 420px);
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            line-height: 1.6;
+            padding-right: 8px;
+          `}
+        >
+          {errorMessage}
+        </div>
+      }
+      className={css`
+        margin-bottom: 16px;
+      `}
+    />
+  );
+};
 
 const importFormSchema: ISchema = {
   type: 'void',
@@ -37,6 +69,14 @@ const importFormSchema: ISchema = {
       type: 'void',
       'x-component': 'FormLayout',
       properties: {
+        importError: {
+          type: 'void',
+          'x-component': 'ImportErrorAlert',
+          'x-visible': '{{ !!importErrorMessage }}',
+          'x-component-props': {
+            errorMessage: '{{ importErrorMessage }}',
+          },
+        },
         warning: {
           type: 'void',
           'x-component': 'ImportWarning',
@@ -122,19 +162,28 @@ const importFormSchema: ISchema = {
 
 export const ImportAction = (props) => {
   const [visible, setVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const compile = useCompile();
 
   const fieldSchema = useFieldSchema();
+  const openImportModal = () => {
+    setErrorMessage('');
+    setVisible(true);
+  };
 
   return (
-    <ActionContextProvider value={{ visible, setVisible, fieldSchema }}>
+    <ActionContextProvider value={{ visible, setVisible, fieldSchema, errorMessage, setErrorMessage } as any}>
       <Action
         icon={props.icon || 'uploadoutlined'}
         title={compile(fieldSchema?.title || "t('Import')")}
         {...props}
-        onClick={() => setVisible(true)}
+        onClick={openImportModal}
       />
-      <SchemaComponent schema={importFormSchema} />
+      <SchemaComponent
+        schema={importFormSchema}
+        components={{ ImportErrorAlert }}
+        scope={{ importErrorMessage: errorMessage }}
+      />
     </ActionContextProvider>
   );
 };

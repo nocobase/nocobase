@@ -8,7 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { Registry } from '@nocobase/utils';
+import { Registry, storagePathJoin } from '@nocobase/utils';
 import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
@@ -23,6 +23,11 @@ export interface Authenticator {
   [key: string]: any;
 }
 
+export type BuiltInAuthenticator = Authenticator & {
+  name: string;
+  enabled?: boolean;
+};
+
 export interface Storer {
   get: (name: string) => Promise<Authenticator>;
 }
@@ -36,6 +41,7 @@ export type AuthManagerOptions = {
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
   title?: string; // The display name of the authentication type.
+  hidden?: boolean; // Whether to hide from the authenticator type list.
   getPublicOptions?: (options: Record<string, any>) => Record<string, any>; // Get the public options.
 };
 
@@ -50,6 +56,7 @@ export class AuthManager {
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
+  protected builtInAuthenticators = new Map<string, BuiltInAuthenticator>();
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
@@ -62,6 +69,34 @@ export class AuthManager {
 
   setStorer(storer: Storer) {
     this.storer = storer;
+  }
+
+  registerBuiltInAuthenticator(authenticator: BuiltInAuthenticator) {
+    this.builtInAuthenticators.set(authenticator.name, {
+      enabled: true,
+      options: {},
+      ...authenticator,
+    });
+  }
+
+  unregisterBuiltInAuthenticator(name: string) {
+    this.builtInAuthenticators.delete(name);
+  }
+
+  getBuiltInAuthenticator(name: string) {
+    const authenticator = this.builtInAuthenticators.get(name);
+    if (!authenticator?.enabled) {
+      return null;
+    }
+    return authenticator;
+  }
+
+  private createAuth(authenticator: Authenticator, ctx: Context) {
+    const { auth } = this.authTypes.get(authenticator.authType) || {};
+    if (!auth) {
+      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
+    }
+    return new auth({ authenticator, options: authenticator.options, ctx });
   }
 
   setTokenBlacklistService(service: ITokenBlacklistService) {
@@ -85,10 +120,12 @@ export class AuthManager {
   }
 
   listTypes() {
-    return Array.from(this.authTypes.getEntities()).map(([authType, authConfig]) => ({
-      name: authType,
-      title: authConfig.title,
-    }));
+    return Array.from(this.authTypes.getEntities())
+      .filter(([, authConfig]) => !authConfig.hidden)
+      .map(([authType, authConfig]) => ({
+        name: authType,
+        title: authConfig.title,
+      }));
   }
 
   getAuthConfig(authType: string) {
@@ -102,6 +139,11 @@ export class AuthManager {
    * @return authenticator instance.
    */
   async get(name: string, ctx: Context) {
+    const builtInAuthenticator = this.getBuiltInAuthenticator(name);
+    if (builtInAuthenticator) {
+      return this.createAuth(builtInAuthenticator, ctx);
+    }
+
     if (!this.storer) {
       throw new Error('AuthManager.storer is not set.');
     }
@@ -109,11 +151,7 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const { auth } = this.authTypes.get(authenticator.authType) || {};
-    if (!auth) {
-      throw new Error(`AuthType [${authenticator.authType}] is not found.`);
-    }
-    return new auth({ authenticator, options: authenticator.options, ctx });
+    return this.createAuth(authenticator, ctx);
   }
 
   /**
@@ -155,7 +193,7 @@ export class AuthManager {
     if (process.env.UNSAFE_USE_DEFAULT_JWT_SECRET === 'true') {
       return process.env.APP_KEY;
     }
-    const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
+    const jwtSecretPath = storagePathJoin('apps', 'main', 'jwt_secret.dat');
     const jwtSecretExists = fs.existsSync(jwtSecretPath);
     if (jwtSecretExists) {
       const key = fs.readFileSync(jwtSecretPath);

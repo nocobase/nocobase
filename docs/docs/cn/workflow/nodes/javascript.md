@@ -11,7 +11,7 @@ keywords: "工作流,JavaScript,脚本,自定义逻辑,服务端脚本,NocoBase"
 
 JavaScript 脚本节点允许用户在工作流中执行一段自定义的服务端 JavaScript 脚本。脚本中可以使用流程上游的变量作为参数，并且可以将脚本的返回值提供给下游节点使用。
 
-脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（isolated-vm）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
+脚本会在 NocoBase 应用的服务端开启一个工作线程执行，默认使用安全沙箱（基于 WebAssembly 的 QuickJS）运行，不支持 `require` 和 Node.js 内置 API，详见 [执行引擎](#执行引擎)和[特性列表](#特性列表)。
 
 ## 创建节点
 
@@ -53,7 +53,7 @@ JavaScript 脚本节点支持两种执行引擎，通过环境变量 `WORKFLOW_S
 
 ### 安全模式（默认）
 
-当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [isolated-vm](https://github.com/laverdet/isolated-vm) 引擎执行。该引擎在独立的 V8 隔离环境中运行代码，具备以下特点：
+当**未配置** `WORKFLOW_SCRIPT_MODULES` 环境变量时，脚本使用 [QuickJS](https://bellard.org/quickjs/)（基于 WebAssembly）引擎执行。该引擎在隔离的 JavaScript 运行时中运行代码，具备以下特点：
 
 - **不支持** `require`，无法引入任何模块
 - **不支持** Node.js 内置 API（如 `process`、`Buffer`、`global` 等）

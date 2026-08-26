@@ -10,7 +10,7 @@ At the bottom of the login page:
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-Position 1 can be configured via the Logo option in [System Settings](/system-management/system-settings/). Positions 2 and 3 can be configured using this plugin.
+Position 1 can be configured via the Logo option in [System Settings](/system-management/system-settings/index.md). Positions 2 and 3 can be configured using this plugin.
 
 ## Usage Instructions
 
@@ -32,4 +32,3 @@ Setting website favicon
 
 
 ![20250601143958_rec_](https://static-docs.nocobase.com/20250601143958_rec_.gif)
-

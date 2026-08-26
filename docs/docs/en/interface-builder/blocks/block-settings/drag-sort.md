@@ -1,39 +1,30 @@
-# Drag-and-drop sorting
+# Drag-and-Drop Sorting
 
 ## Introduction
 
-Drag-and-drop sorting relies on a sorting field and is used to manually order block records. 
-
+Drag-and-drop sorting relies on a sort field to manually reorder records within a block.
 
 :::info{title=Tip}
-* When the same sorting field is used across multiple blocks, mixing drag operations may break existing order.
-* For table drag-and-drop sorting, the sorting field must not use grouping rules.
-* Tree tables only support sorting nodes at the same level.
-
+* When the same sort field is used for drag-and-drop sorting across multiple blocks, it may disrupt the existing order.
+* When using drag-and-drop sorting in a table, the sort field cannot have grouping rules configured.
+* Tree tables only support sorting nodes within the same level.
 :::
 
+## Configuration
 
-## Drag-sort setup
-
-Create a "Sort" field. Sorting fields are no longer created automatically when building a table, so you need to create one manually.
+Add a "Sort" type field. Sort fields are no longer automatically generated when creating a collection; they must be created manually.
 
 ![](https://static-docs.nocobase.com/470891c7bb34c506328c1f3824a6cf20.png)
 
-When enabling drag-and-drop sorting in a table, select the sorting field.
+When enabling drag-and-drop sorting for a table, you need to select a sort field.
 
 ![](https://static-docs.nocobase.com/Orders-02-12-2026_07_50_AM.png)
 
-
-
-## Drag sorting table rows
-
+## Drag-and-Drop Sorting for Table Rows
 
 ![](https://static-docs.nocobase.com/drag-sort.2026-02-12%2008_19_00.gif)
 
-
-
-## Sorting rules
-
+## Sorting Rules Explanation
 
 Assume the current order is:
 
@@ -41,13 +32,13 @@ Assume the current order is:
 [1,2,3,4,5,6,7,8,9]
 ```
 
-When one item (for example, 5) moves forward to position 3, only 3, 4, and 5 change their order values: 5 takes position 3, and 3 and 4 each shift back by one.
+When an element (e.g., 5) is moved forward to the position of 3, only the sort values of 3, 4, and 5 will change: 5 takes the position of 3, and 3 and 4 each move back one position.
 
 ```
 [1,2,5,3,4,6,7,8,9]
 ```
 
-Then move 6 back to position 8. 6 takes position 8, and 7 and 8 each shift forward by one.
+If you then move 6 backward to the position of 8, 6 takes the position of 8, and 7 and 8 each move forward one position.
 
 ```
 [1,2,5,3,4,7,8,6,9]

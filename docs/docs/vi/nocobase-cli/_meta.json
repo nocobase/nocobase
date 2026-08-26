@@ -1,0 +1,113 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "bắt đầu nhanh",
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt NocoBase",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Cài đặt bằng CLI (được khuyến nghị)",
+            "link": "/nocobase-cli/installation/cli"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kết nối các phương pháp cài đặt cũ với AI và di chuyển",
+            "link": "/nocobase-cli/installation/migration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cấu hình ứng dụng và .env",
+            "link": "/nocobase-cli/installation/env"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cài đặt plug-in của bên thứ ba",
+            "link": "/nocobase-cli/plugins/third-party"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Triển khai môi trường sản xuất",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tổng quan",
+            "link": "/nocobase-cli/production/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ứng dụng tự động khởi động",
+            "link": "/nocobase-cli/production/autostart"
+          },
+          {
+            "type": "custom-link",
+            "label": "proxy ngược",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Tổng quan",
+                "link": "/nocobase-cli/production/reverse-proxy/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Nginx",
+                "link": "/nocobase-cli/production/reverse-proxy/nginx"
+              },
+              {
+                "type": "custom-link",
+                "label": "caddie",
+                "link": "/nocobase-cli/production/reverse-proxy/caddy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Vận hành, bảo trì và phát hành",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ứng dụng quản lý",
+            "link": "/nocobase-cli/operations/manage-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Quản lý nhiều môi trường",
+            "link": "/nocobase-cli/operations/multi-environment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sao lưu và khôi phục",
+            "link": "/nocobase-cli/operations/backup-restore"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Ghi chú thiết kế CLI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ý định thiết kế ứng dụng nb",
+            "link": "/nocobase-cli/cli-design/nb-app-design-intent"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ý định thiết kế của proxy nb",
+            "link": "/nocobase-cli/cli-design/nb-proxy-design-intent"
+          }
+        ]
+      }
+    ]
+  }
+]

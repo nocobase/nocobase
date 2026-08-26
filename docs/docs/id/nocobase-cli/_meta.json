@@ -1,0 +1,113 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "mulai cepat",
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instal NocoBase",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Instal menggunakan CLI (disarankan)",
+            "link": "/nocobase-cli/installation/cli"
+          },
+          {
+            "type": "custom-link",
+            "label": "Menghubungkan metode instalasi lama ke AI dan melakukan migrasi",
+            "link": "/nocobase-cli/installation/migration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Konfigurasi aplikasi dan .env",
+            "link": "/nocobase-cli/installation/env"
+          },
+          {
+            "type": "custom-link",
+            "label": "Instalasi plug-in pihak ketiga",
+            "link": "/nocobase-cli/plugins/third-party"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Penerapan lingkungan produksi",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ringkasan",
+            "link": "/nocobase-cli/production/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aplikasi dimulai secara otomatis",
+            "link": "/nocobase-cli/production/autostart"
+          },
+          {
+            "type": "custom-link",
+            "label": "proksi terbalik",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Ringkasan",
+                "link": "/nocobase-cli/production/reverse-proxy/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Nginx",
+                "link": "/nocobase-cli/production/reverse-proxy/nginx"
+              },
+              {
+                "type": "custom-link",
+                "label": "Caddy",
+                "link": "/nocobase-cli/production/reverse-proxy/caddy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Pengoperasian, pemeliharaan, dan pelepasan",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Aplikasi manajemen",
+            "link": "/nocobase-cli/operations/manage-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Berbagai manajemen lingkungan",
+            "link": "/nocobase-cli/operations/multi-environment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cadangkan dan pulihkan",
+            "link": "/nocobase-cli/operations/backup-restore"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Catatan desain CLI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb maksud desain aplikasi",
+            "link": "/nocobase-cli/cli-design/nb-app-design-intent"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tujuan desain dari nb proxy",
+            "link": "/nocobase-cli/cli-design/nb-proxy-design-intent"
+          }
+        ]
+      }
+    ]
+  }
+]

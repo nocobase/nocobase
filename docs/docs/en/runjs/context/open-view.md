@@ -1,17 +1,17 @@
 # ctx.openView()
 
-Opens a configured view (drawer, dialog, embed, etc.) programmatically. Provided by FlowModelContext; used in JSBlock, table cells, event flow, etc. to open ChildPage or PopupAction views.
+Programmatically open a specified view (drawer, dialog, embedded page, etc.). Provided by `FlowModelContext`, it is used to open configured `ChildPage` or `PopupAction` views in scenarios such as `JSBlock`, table cells, and workflows.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock** | Button opens detail/edit dialog; pass current row `filterByTk` |
-| **Table cell** | Button in cell opens row detail dialog |
-| **Event flow / JSAction** | Open next view or dialog after action success |
-| **Association field** | `ctx.runAction('openView', params)` for select/edit dialog |
+|------|------|
+| **JSBlock** | Open a detail/edit dialog after a button click, passing the current row's `filterByTk`. |
+| **Table Cell** | Render a button within a cell that opens a row detail dialog when clicked. |
+| **Workflow / JSAction** | Open the next view or a dialog after a successful operation. |
+| **Association Field** | Open a selection/edit dialog via `ctx.runAction('openView', params)`. |
 
-> Note: `ctx.openView` requires a FlowModel context; if no model exists for the uid, a PopupActionModel is created and persisted.
+> Note: `ctx.openView` is available in a RunJS environment where a `FlowModel` context exists. If the model corresponding to the `uid` does not exist, a `PopupActionModel` will be automatically created and persisted.
 
 ## Signature
 
@@ -23,46 +23,46 @@ openView(uid: string, options?: OpenViewOptions): Promise<void>
 
 ### uid
 
-Unique id of the view model. If missing, it is created and saved. Use a stable uid (e.g. `${ctx.model.uid}-detail`) so the same popup can be reused.
+The unique identifier of the view model. If it does not exist, it will be automatically created and saved. It is recommended to use a stable UID, such as `${ctx.model.uid}-detail`, so that the configuration can be reused when opening the same dialog multiple times.
 
-### options (common fields)
+### Common options Fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `mode` | `drawer` / `dialog` / `embed` | How to open: drawer, dialog, embed; default `drawer` |
-| `size` | `small` / `medium` / `large` | Dialog/drawer size; default `medium` |
-| `title` | `string` | View title |
-| `params` | `Record<string, any>` | Arbitrary params passed to the view |
-| `filterByTk` | `any` | Primary key for single-record detail/edit |
-| `sourceId` | `string` | Source record id (associations) |
-| `dataSourceKey` | `string` | Data source |
-| `collectionName` | `string` | Collection name |
-| `associationName` | `string` | Association field name |
-| `navigation` | `boolean` | Use route navigation; forced `false` when passing `defineProperties` / `defineMethods` |
-| `preventClose` | `boolean` | Prevent close |
-| `defineProperties` | `Record<string, PropertyOptions>` | Inject properties into view models |
-| `defineMethods` | `Record<string, Function>` | Inject methods into view models |
+|------|------|------|
+| `mode` | `drawer` / `dialog` / `embed` | Opening method: drawer, dialog, or embedded. Defaults to `drawer`. |
+| `size` | `small` / `medium` / `large` | Size of the dialog or drawer. Defaults to `medium`. |
+| `title` | `string` | View title. |
+| `params` | `Record<string, any>` | Arbitrary parameters passed to the view. |
+| `filterByTk` | `any` | Primary key value, used for single record detail/edit scenarios. |
+| `sourceId` | `string` | Source record ID, used in association scenarios. |
+| `dataSourceKey` | `string` | Data source. |
+| `collectionName` | `string` | Collection name. |
+| `associationName` | `string` | Association field name. |
+| `navigation` | `boolean` | Whether to use route navigation. If `defineProperties` or `defineMethods` are provided, this is forced to `false`. |
+| `preventClose` | `boolean` | Whether to prevent closing. |
+| `defineProperties` | `Record<string, PropertyOptions>` | Dynamically inject properties into the model within the view. |
+| `defineMethods` | `Record<string, Function>` | Dynamically inject methods into the model within the view. |
 
 ## Examples
 
-### Basic: open drawer
+### Basic Usage: Open a Drawer
 
 ```ts
 const popupUid = `${ctx.model.uid}-detail`;
 await ctx.openView(popupUid, {
   mode: 'drawer',
   size: 'medium',
-  title: ctx.t('Detail'),
+  title: ctx.t('Details'),
 });
 ```
 
-### Pass current row context
+### Passing Current Row Context
 
 ```ts
 const primaryKey = ctx.collection?.primaryKey || 'id';
 await ctx.openView(`${ctx.model.uid}-1`, {
   mode: 'dialog',
-  title: ctx.t('Row detail'),
+  title: ctx.t('Row Details'),
   params: {
     filterByTk: ctx.record?.[primaryKey],
     record: ctx.record,
@@ -72,7 +72,7 @@ await ctx.openView(`${ctx.model.uid}-1`, {
 
 ### Open via runAction
 
-When the model has an openView action (e.g. association field, clickable field):
+When a model is configured with an `openView` action (such as association fields or clickable fields), you can call:
 
 ```ts
 await ctx.runAction('openView', {
@@ -83,7 +83,7 @@ await ctx.runAction('openView', {
 });
 ```
 
-### Inject custom context
+### Injecting Custom Context
 
 ```ts
 await ctx.openView(`${ctx.model.uid}-edit`, {
@@ -98,23 +98,23 @@ await ctx.openView(`${ctx.model.uid}-edit`, {
 });
 ```
 
-## Relation to ctx.viewer, ctx.view
+## Relationship with ctx.viewer and ctx.view
 
-| Use | Recommended |
-|-----|-------------|
-| **Open configured flow view** | `ctx.openView(uid, options)` |
+| Purpose | Recommended Usage |
+|------|----------|
+| **Open a configured flow view** | `ctx.openView(uid, options)` |
 | **Open custom content (no flow)** | `ctx.viewer.dialog()` / `ctx.viewer.drawer()` |
-| **Operate current view** | `ctx.view.close()`, `ctx.view.inputArgs` |
+| **Operate on the currently open view** | `ctx.view.close()`, `ctx.view.inputArgs` |
 
-`ctx.openView` opens a FlowPage (ChildPageModel) with a full flow; `ctx.viewer` opens arbitrary React content.
+`ctx.openView` opens a `FlowPage` (`ChildPageModel`), which renders a complete flow page internally; `ctx.viewer` opens arbitrary React content.
 
 ## Notes
 
-- Prefer uids related to `ctx.model.uid` (e.g. `${ctx.model.uid}-xxx`) to avoid conflicts between blocks.
-- When passing `defineProperties` / `defineMethods`, `navigation` is forced to `false` so context is not lost on refresh.
-- Inside a popup, `ctx.view` is the current view and `ctx.view.inputArgs` holds the params passed when opening.
+- It is recommended to associate the `uid` with `ctx.model.uid` (e.g., `${ctx.model.uid}-xxx`) to avoid conflicts between multiple blocks.
+- When `defineProperties` or `defineMethods` are passed, `navigation` is forced to `false` to prevent context loss after a refresh.
+- Inside the dialog, `ctx.view` refers to the current view instance, and `ctx.view.inputArgs` can be used to read the parameters passed during opening.
 
 ## Related
 
-- [ctx.view](./view.md): current view instance
-- [ctx.model](./model.md): current model; use for stable popupUid
+- [ctx.view](./view.md): The currently open view instance.
+- [ctx.model](./model.md): The current model, used to construct a stable `popupUid`.

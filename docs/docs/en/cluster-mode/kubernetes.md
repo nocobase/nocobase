@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Kubernetes Deployment"
+description: "Deploy a NocoBase cluster on K8s or K3s: ConfigMap, Deployment, shared PVC, Redis or PostgreSQL middleware, load balancing, and health checks."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,cluster deployment,NocoBase"
+---
+
 # Kubernetes Deployment
 
 This article aims to guide users in quickly deploying NocoBase in cluster mode in a Kubernetes environment. It assumes that the reader is familiar with Kubernetes and has completed the steps in [Preparations](./preparations.md).

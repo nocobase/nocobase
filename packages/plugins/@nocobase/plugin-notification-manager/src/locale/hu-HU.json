@@ -29,6 +29,7 @@
   "Notification Management": "Értesítés kezelés",
   "Notification manager": "Értesítés kezelő",
   "Notification type": "Értesítés típusa",
+  "Notification type {{type}} is not registered.": "A(z) {{type}} értesítési típus nincs regisztrálva.",
   "Query users": "Felhasználók lekérdezése",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Véletlenszerűen generált és nem módosítható. Betűk, számok és aláhúzások támogatottak, betűvel kell kezdődnie.",
   "Reason": "Ok",

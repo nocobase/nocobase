@@ -1327,6 +1327,11 @@ export default {
                   description: 'Maximum recursive trigger depth. Executions beyond this limit are skipped. Default: 1.',
                   default: 1,
                 },
+                timeout: {
+                  type: 'integer',
+                  description: 'Execution timeout in milliseconds. `0` means unlimited.',
+                  default: 0,
+                },
               },
             },
             categories: {
@@ -1482,6 +1487,23 @@ export default {
           output: {
             type: 'object',
             description: 'Output node results',
+          },
+          parentExecutionId: {
+            type: 'integer',
+            nullable: true,
+            description: 'Direct parent execution ID when triggered by a subflow.',
+          },
+          startedAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Time when the execution really entered processor execution.',
+          },
+          expiresAt: {
+            type: 'string',
+            format: 'date-time',
+            nullable: true,
+            description: 'Execution timeout deadline. `null` means unlimited.',
           },
           jobs: {
             type: 'array',

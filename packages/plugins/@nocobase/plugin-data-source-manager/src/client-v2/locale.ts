@@ -1,0 +1,25 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { tExpr as _tExpr, useFlowEngine } from '@nocobase/flow-engine';
+// @ts-ignore
+import pkg from '../../package.json';
+
+export const NAMESPACE = pkg.name;
+export const DATA_SOURCE_MANAGER_SETTINGS_KEY = 'data-source-manager';
+
+export function tExpr(key: string) {
+  return _tExpr(key, { ns: [NAMESPACE, 'client'] });
+}
+
+export function useT() {
+  const engine = useFlowEngine();
+  return (key: string, options?: Record<string, unknown>) =>
+    engine.context.t(key, { ns: [NAMESPACE, 'client'], ...options });
+}

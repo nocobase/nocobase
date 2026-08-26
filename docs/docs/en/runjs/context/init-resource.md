@@ -1,12 +1,12 @@
 # ctx.initResource()
 
-**Initializes** the current context’s resource: if `ctx.resource` does not exist, creates one of the given type and binds it; otherwise uses the existing one. After that you can use `ctx.resource`.
+**Initializes** the resource for the current context. If `ctx.resource` does not already exist, it creates one of the specified type and binds it to the context; if it already exists, it is used directly. Afterward, it can be accessed via `ctx.resource`.
 
 ## Use Cases
 
-Typically used only in **JSBlock** (standalone block). Most blocks and popups already have `ctx.resource`; JSBlock does not, so call `ctx.initResource(type)` first, then use `ctx.resource`.
+Generally used in **JSBlock** (independent block) scenarios. Most blocks, popups, and other components have `ctx.resource` pre-bound and do not require manual calls. JSBlock has no resource by default, so you must call `ctx.initResource(type)` before loading data via `ctx.resource`.
 
-## Type
+## Type Definition
 
 ```ts
 initResource(
@@ -18,18 +18,18 @@ initResource(
 |-----------|------|-------------|
 | `type` | `string` | Resource type: `'APIResource'`, `'SingleRecordResource'`, `'MultiRecordResource'`, `'SQLResource'` |
 
-**Returns**: The resource instance in the current context (i.e. `ctx.resource`).
+**Returns**: The resource instance in the current context (i.e., `ctx.resource`).
 
-## Relation to ctx.makeResource()
+## Difference from ctx.makeResource()
 
 | Method | Behavior |
 |--------|----------|
-| `ctx.initResource(type)` | Creates and binds if `ctx.resource` is missing; otherwise returns existing. Ensures `ctx.resource` is set |
-| `ctx.makeResource(type)` | Creates a new instance and returns it; **does not** set `ctx.resource`. Use when you need multiple resources or a temporary one |
+| `ctx.initResource(type)` | Creates and binds if `ctx.resource` does not exist; returns the existing one if it does. Ensures `ctx.resource` is available. |
+| `ctx.makeResource(type)` | Only creates and returns a new instance, does **not** write to `ctx.resource`. Suitable for scenarios requiring multiple independent resources or temporary use. |
 
 ## Examples
 
-### List data (MultiRecordResource)
+### List Data (MultiRecordResource)
 
 ```ts
 ctx.initResource('MultiRecordResource');
@@ -39,17 +39,17 @@ const rows = ctx.resource.getData();
 ctx.render(<pre>{JSON.stringify(rows, null, 2)}</pre>);
 ```
 
-### Single record (SingleRecordResource)
+### Single Record (SingleRecordResource)
 
 ```ts
 ctx.initResource('SingleRecordResource');
 ctx.resource.setResourceName('users');
-ctx.resource.setFilterByTk(1);
+ctx.resource.setFilterByTk(1); // Specify primary key
 await ctx.resource.refresh();
 const record = ctx.resource.getData();
 ```
 
-### Specify data source
+### Specify Data Source
 
 ```ts
 ctx.initResource('MultiRecordResource');
@@ -60,15 +60,15 @@ await ctx.resource.refresh();
 
 ## Notes
 
-- In most blocks (form, table, detail, etc.) and popups, `ctx.resource` is already bound; no need to call `ctx.initResource`.
-- Only in contexts like JSBlock that have no resource by default do you need to initialize.
-- After init, call `setResourceName(name)` and then `refresh()` to load data.
+- In most block scenarios (Forms, Tables, Details, etc.) and popups, `ctx.resource` is already pre-bound by the runtime environment, so calling `ctx.initResource` is unnecessary.
+- Manual initialization is only required in contexts like JSBlock where there is no default resource.
+- After initialization, you must call `setResourceName(name)` to specify the collection, and then call `refresh()` to load the data.
 
 ## Related
 
-- [ctx.resource](./resource.md): resource in current context
-- [ctx.makeResource()](./make-resource.md): create resource without binding to `ctx.resource`
-- [MultiRecordResource](../resource/multi-record-resource.md)
-- [SingleRecordResource](../resource/single-record-resource.md)
-- [APIResource](../resource/api-resource.md)
-- [SQLResource](../resource/sql-resource.md)
+- [ctx.resource](./resource.md) — The resource instance in the current context
+- [ctx.makeResource()](./make-resource.md) — Creates a new resource instance without binding it to `ctx.resource`
+- [MultiRecordResource](../resource/multi-record-resource.md) — Multiple records/List
+- [SingleRecordResource](../resource/single-record-resource.md) — Single record
+- [APIResource](../resource/api-resource.md) — General API resource
+- [SQLResource](../resource/sql-resource.md) — SQL query resource

@@ -1,8 +1,13 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "Sistema de Gestão Empresarial Integrado"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
-    "label": "Ticketing Solution"
+    "label": "Sistema de Chamados"
   },
   {
     "type": "dir",

@@ -9,9 +9,7 @@
 
 import { Database, Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import compose from 'koa-compose';
-import { parseFieldAndAssociations, queryData } from '../actions/query';
-import { createQueryParser } from '../query-parser';
+import { queryData } from '../actions/query';
 
 describe('api', () => {
   let app: MockServer;
@@ -92,9 +90,9 @@ describe('api', () => {
         },
       },
     } as any;
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
-    expect(ctx.action.params.values.data).toBeDefined();
+    ctx.get = () => '';
+    await queryData(ctx, async () => {});
+    expect(ctx.body).toBeDefined();
   });
 
   test('query with sort', async () => {
@@ -127,9 +125,9 @@ describe('api', () => {
         },
       },
     } as any;
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData])(ctx, async () => {});
-    expect(ctx.action.params.values.data).toBeDefined();
-    expect(ctx.action.params.values.data).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
+    ctx.get = () => '';
+    await queryData(ctx, async () => {});
+    expect(ctx.body).toBeDefined();
+    expect(ctx.body).toMatchObject([{ createdAt: '2023-01' }, { createdAt: '2023-02' }]);
   });
 });

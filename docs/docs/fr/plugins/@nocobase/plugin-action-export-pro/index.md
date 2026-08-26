@@ -1,4 +1,6 @@
 ---
+title: "Action: Export records Pro"
+keywords: "Actions"
 displayName: "Action: Export records Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

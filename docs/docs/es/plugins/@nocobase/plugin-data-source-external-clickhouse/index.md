@@ -1,4 +1,6 @@
 ---
+title: "Data source: External ClickHouse"
+keywords: "Data sources"
 displayName: "Data source: External ClickHouse"
 packageName: '@nocobase/plugin-data-source-external-clickhouse'
 supportedVersions:

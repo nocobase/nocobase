@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Estender Provedor de SMS
 
 Este artigo explica como estender a funcionalidade de provedor de SMS no recurso de [Verificação: SMS](../sms) através de um **plugin**.

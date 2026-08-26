@@ -1,4 +1,6 @@
 ---
+title: "Telemetry"
+keywords: "Logging and monitoring"
 displayName: "Telemetry"
 packageName: '@nocobase/plugin-telemetry'
 supportedVersions:

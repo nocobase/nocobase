@@ -23,15 +23,12 @@ import { Table, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';
-import { DndContext } from '../..';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  useCollectionParentRecordData,
-  useCollectionRecordData,
-  useRequest,
-  useSchemaInitializerRender,
-} from '../../../';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useCollectionRecordData } from '../../../data-source';
+import { useRequest } from '../../../api-client';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 
 const isColumnComponent = (schema: Schema) => {

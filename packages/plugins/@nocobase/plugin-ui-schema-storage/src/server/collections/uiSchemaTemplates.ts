@@ -13,6 +13,7 @@ export default defineCollection({
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'uiSchemaTemplates',
+  dataCategory: 'system',
   autoGenId: false,
   fields: [
     {

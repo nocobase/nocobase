@@ -39,6 +39,12 @@ describe('migration - add unsafe injection flag', () => {
 
   afterEach(() => app.destroy());
 
+  it('should not restrict by app version', async () => {
+    const migration = new Migration({ db: app.db, app } as any);
+
+    expect(migration.appVersion).toBeFalsy();
+  });
+
   it('should mark node with variables as unsafeInjection', async () => {
     const n1 = await workflow.createNode({
       type: 'sql',

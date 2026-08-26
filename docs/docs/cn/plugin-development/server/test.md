@@ -6,7 +6,7 @@ keywords: "插件测试,单元测试,集成测试,服务端测试,NocoBase"
 
 # Test 测试
 
-NocoBase 提供了一套完整的测试工具，帮助开发者在插件开发过程中快速验证数据库逻辑、API 接口和功能实现的正确性。本文将介绍如何编写、运行和组织这些测试。
+NocoBase 提供了一套完整的测试工具，帮助你在插件开发过程中快速验证数据库逻辑、API 接口和功能实现的正确性。
 
 ## 为什么要编写测试
 
@@ -28,7 +28,7 @@ NocoBase 提供两个核心测试工具：
 
 ## 使用 `createMockDatabase` 进行数据库测试
 
-`createMockDatabase` 适合测试与数据库直接相关的功能，例如模型定义、字段类型、关系、CRUD 操作等。
+`createMockDatabase` 适合测试与数据库直接相关的功能，比如模型定义、字段类型、关系、CRUD 操作等。
 
 ### 基础示例
 
@@ -80,11 +80,11 @@ const Posts = db.collection({
 });
 await db.sync();
 
-// Create
+// 创建
 const post = await db.getRepository('posts').create({ values: { title: 'Initial Title' } });
 expect(post.get('title')).toBe('Initial Title');
 
-// Update
+// 更新
 await db.getRepository('posts').update({
   filterByTk: post.get('id'),
   values: { title: 'Updated Title' },
@@ -127,7 +127,7 @@ expect(result.get('posts')).toHaveLength(1);
 
 ## 使用 `createMockServer` 进行 API 测试
 
-`createMockServer` 会自动创建一个包含数据库、插件、API 路由的完整应用实例，非常适合测试插件接口。
+`createMockServer` 会自动创建一个包含数据库、插件、API 路由的完整应用实例，适合测试插件接口。
 
 ### 基础示例
 
@@ -159,11 +159,11 @@ describe('User API test', () => {
 ### 测试接口的查询与更新
 
 ```ts
-// Query user list
+// 查询用户列表
 const list = await app.agent().get('/users:list');
 expect(list.body.rows.length).toBeGreaterThan(0);
 
-// Update user
+// 更新用户
 const update = await app.agent().post(`/users:update/${id}`).send({ username: 'newname' });
 expect(update.body.username).toBe('newname');
 ```
@@ -189,7 +189,7 @@ await app
   .get('/protected-endpoint');
 ```
 
-也可以使用更简单的 `login()` 方法
+也可以用更简单的 `login()` 方法：
 
 ```ts
 await app.agent().login(userOrId);
@@ -201,18 +201,26 @@ await app.agent().login(userOrId);
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
-├── src/                     # Source code directory
-│   └── server/              # Server-side code
-│       ├── __tests__/       # Test files directory
-│       │   ├── db.test.ts   # Database related tests (using createMockDatabase)
-│       │   └── api.test.ts  # API related tests
+├── src/                     # 源代码目录
+│   └── server/              # 服务端代码
+│       ├── __tests__/       # 测试文件目录
+│       │   ├── db.test.ts   # 数据库相关测试（使用 createMockDatabase）
+│       │   └── api.test.ts  # API 相关测试
 ```
 
 ## 运行测试
 
 ```bash
-# Specify directory
+# 指定目录
 yarn test packages/plugins/@my-project/plugin-hello/src/server
-# Specify file
+# 指定文件
 yarn test packages/plugins/@my-project/plugin-hello/src/server/__tests__/db.test.ts
 ```
+
+## 相关链接
+
+- [Plugin 插件](./plugin.md) — 插件生命周期与核心 API
+- [Collections 数据表](./collections.md) — 数据表的定义与配置
+- [Database 数据库](./database.md) — 数据库操作与 Repository API
+- [服务端开发概述](./index.md) — 服务端各模块一览
+- [插件开发概述](../index.md) — 插件开发整体介绍

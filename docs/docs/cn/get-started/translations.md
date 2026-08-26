@@ -85,7 +85,7 @@ https://github.com/nocobase/nocobase/tree/next/docs
 
 ### 2.1 文档结构
 
-文档使用 [Rspress](https://rspress.dev/) 作为静态站点生成器，支持 22 种语言。结构组织如下：
+文档使用 [Rspress](https://rspress.dev/) 作为静态站点生成器，支持 8 种语言。结构组织如下：
 
 ```
 docs/
@@ -93,25 +93,11 @@ docs/
 │   ├── en/                    # 英语（源语言）
 │   ├── cn/                    # 简体中文
 │   ├── ja/                    # 日语
-│   ├── ko/                    # 韩语
 │   ├── de/                    # 德语
 │   ├── fr/                    # 法语
 │   ├── es/                    # 西班牙语
 │   ├── pt/                    # 葡萄牙语
 │   ├── ru/                    # 俄语
-│   ├── it/                    # 意大利语
-│   ├── tr/                    # 土耳其语
-│   ├── uk/                    # 乌克兰语
-│   ├── vi/                    # 越南语
-│   ├── id/                    # 印度尼西亚语
-│   ├── th/                    # 泰语
-│   ├── pl/                    # 波兰语
-│   ├── nl/                    # 荷兰语
-│   ├── cs/                    # 捷克语
-│   ├── ar/                    # 阿拉伯语
-│   ├── he/                    # 希伯来语
-│   ├── hi/                    # 印地语
-│   ├── sv/                    # 瑞典语
 │   └── public/                # 共享资源（图片等）
 ├── theme/                     # 自定义主题
 ├── rspress.config.ts          # Rspress 配置

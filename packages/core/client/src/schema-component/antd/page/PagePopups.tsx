@@ -18,7 +18,7 @@ import { AppNotFound } from '../../../common/AppNotFound';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContextProvider } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
-import { SchemaComponent } from '../../core';
+import { SchemaComponent } from '../../core/SchemaComponent';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';

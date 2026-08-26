@@ -13,9 +13,10 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettings } from '../../../../application/schema-settings/SchemaSettings';
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollectionField } from '../../../../data-source';
-import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../../schema-component';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useFieldModeOptions } from '../../../../schema-component/hooks/useFieldModeOptions';
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
-import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useIsAddNewForm, useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
 import { setTheDataScope } from '../Select/selectComponentFieldSettings';
 

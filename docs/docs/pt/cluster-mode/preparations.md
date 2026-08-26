@@ -1,6 +1,9 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Preparação para implantação em cluster"
+description: "Preparação para implantação em cluster: licenças de plugins comerciais (adaptadores PubSub, Queue, Lock, Worker ID), banco de dados, middleware Redis ou RabbitMQ, armazenamento compartilhado e balanceamento de carga."
+keywords: "preparação cluster,licença comercial,Redis,RabbitMQ,armazenamento compartilhado,balanceamento de carga,Nginx,NocoBase"
+---
 
 # Preparação
 
@@ -115,7 +118,7 @@ Para implantações de alta disponibilidade, recomenda-se:
 
 ## Configuração de Variáveis de Ambiente
 
-Todos os nós no cluster devem usar a mesma configuração de variáveis de ambiente. Além das [variáveis de ambiente](/api/cli/env) básicas do NocoBase, você também precisará configurar as seguintes variáveis de ambiente relacionadas ao middleware.
+Todos os nós no cluster devem usar a mesma configuração de variáveis de ambiente. Além das [variáveis de ambiente](../api/app/env) básicas do NocoBase, você também precisará configurar as seguintes variáveis de ambiente relacionadas ao middleware.
 
 ### Segredos principais
 

@@ -1,4 +1,6 @@
 ---
+title: "Workflow: mailer node"
+keywords: "NocoBase,Workflow,SMTP,email"
 displayName: "Workflow: mailer node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

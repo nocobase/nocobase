@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Источник данных - KingbaseES
 
@@ -45,7 +41,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -76,7 +72,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -102,7 +98,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e DB_DATABASE=kingbase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 ### Использование в качестве внешней базы данных
@@ -121,5 +117,5 @@ yarn nocobase upgrade
 
 ## Руководство пользователя
 
-- Основная база данных: См. [Основной источник данных](/data-sources/data-source-main/)
+- Основная база данных: См. [Основной источник данных](../data-source-main/index.md)
 - Внешняя база данных: См. [Источник данных / Внешняя база данных](/data-sources/data-source-manager/external-database)

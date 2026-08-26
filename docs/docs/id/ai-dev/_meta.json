@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/ai-dev/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Praktik: Pengembangan Plugin Watermark",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kemampuan yang Didukung",
+    "link": "/ai-dev/capabilities"
+  }
+]

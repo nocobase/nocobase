@@ -97,6 +97,51 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
+    it('workflow timeout should abort delayed execution', async () => {
+      workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        options: {
+          timeout: 300,
+        },
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      await workflow.createNode({
+        type: 'delay',
+        config: {
+          duration: 2,
+          unit: 1000,
+          endStatus: JOB_STATUS.RESOLVED,
+        },
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(200);
+
+      let [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
+      expect(execution.startedAt).toBeTruthy();
+      expect(execution.expiresAt).toBeTruthy();
+
+      for (let i = 0; i < 10; i++) {
+        [execution] = await workflow.getExecutions();
+        if (execution.status === EXECUTION_STATUS.ABORTED) {
+          break;
+        }
+        await sleep(100);
+      }
+
+      [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.ABORTED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.ABORTED);
+    });
+
     it('duration by variable', async () => {
       const n1 = await workflow.createNode({
         type: 'echoVariable',
@@ -228,6 +273,47 @@ describe('workflow > instructions > delay', () => {
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const [j2] = await e2.getJobs();
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+    });
+  });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = (app as any).agent();
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when endStatus is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { endStatus: 99 } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should reject when unit is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { unit: 999 } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid endStatus and unit', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: { endStatus: JOB_STATUS.RESOLVED, unit: 1000 } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with empty config', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'delay', config: {} },
+      });
+      expect(status).toBe(200);
     });
   });
 });

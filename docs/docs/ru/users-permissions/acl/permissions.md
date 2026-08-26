@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-acl'
 ---
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
 
 # Настройка прав доступа
 
@@ -26,7 +22,7 @@ pkg: '@nocobase/plugin-acl'
 
 ## Права на операции с коллекциями
 
-![](https://static-docs.nocobase.com/6a6e0281713cecdea5b5218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

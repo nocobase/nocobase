@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-user-data-sync'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Benutzerdatensynchronisation
 

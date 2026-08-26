@@ -95,7 +95,7 @@ const Options: React.FC = () => {
                       'x-component-props': {
                         step: 0.5,
                         min: 0.0,
-                        max: 1.0,
+                        max: 0.95,
                       },
                     },
                     responseFormat: {

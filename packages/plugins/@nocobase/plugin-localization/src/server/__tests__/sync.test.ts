@@ -9,8 +9,8 @@
 
 import { Repository } from '@nocobase/database';
 import { MockServer, createMockServer } from '@nocobase/test';
-import PluginLocalizationServer from '../plugin';
 import { NAMESPACE_COLLECTIONS } from '../constants';
+import { buildFindTextsOptions } from '../translation-scope';
 
 describe('sync', () => {
   let app: MockServer;
@@ -46,7 +46,7 @@ describe('sync', () => {
   });
 
   it('should sync local resources', async () => {
-    vi.spyOn(app.localeManager, 'getResources').mockResolvedValue({
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
       test: {
         'sync.local.test1': 'Test1',
         'sync.local.test2': 'Test2',
@@ -73,9 +73,134 @@ describe('sync', () => {
     expect(texts[1].translations[0].translation).toBe('Test2');
   });
 
+  it('should normalize official plugin package name when syncing local resources', async () => {
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
+      '@nocobase/plugin-ai': {
+        'sync.local.ai1': 'AI1',
+      },
+      ai: {
+        'sync.local.ai2': 'AI2',
+      },
+    });
+    const res = await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+      },
+    });
+    expect(res.status).toBe(200);
+    const texts = await repo.find({
+      filter: {
+        text: {
+          $in: ['sync.local.ai1', 'sync.local.ai2'],
+        },
+      },
+      sort: ['text'],
+    });
+    expect(texts.map((text) => text.module)).toEqual(['resources.ai', 'resources.ai']);
+
+    const legacyTexts = await repo.find({
+      filter: {
+        module: 'resources.@nocobase/plugin-ai',
+      },
+    });
+    expect(legacyTexts.length).toBe(0);
+
+    const textIds = texts.map((text) => text.id);
+    const builtInCount = await repo.count(
+      await buildFindTextsOptions({
+        app,
+        mode: 'incremental',
+        locale: 'ja-JP',
+        scope: 'builtIn',
+        textIds,
+      }),
+    );
+    const customCount = await repo.count(
+      await buildFindTextsOptions({
+        app,
+        mode: 'incremental',
+        locale: 'ja-JP',
+        scope: 'custom',
+        textIds,
+      }),
+    );
+    expect(builtInCount).toBe(2);
+    expect(customCount).toBe(0);
+  });
+
+  it('should normalize official plugin package name when adding new texts', async () => {
+    const plugin = app.pm.get('localization') as any;
+    await plugin.addNewTexts([
+      {
+        module: 'resources.@nocobase/plugin-workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    ]);
+
+    const normalizedText = await repo.findOne({
+      filter: {
+        module: 'resources.workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    });
+    const legacyText = await repo.findOne({
+      filter: {
+        module: 'resources.@nocobase/plugin-workflow-cc',
+        text: 'Missing workflow cc text',
+      },
+    });
+
+    expect(normalizedText).toBeTruthy();
+    expect(legacyText).toBeFalsy();
+  });
+
+  it('should reset existing local resource translations', async () => {
+    vi.spyOn(app.localeManager, 'getBuiltInResources').mockResolvedValue({
+      test: {
+        'sync.local.test1': 'Test1',
+      },
+    });
+    await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+      },
+    });
+    const text = await repo.findOne({
+      filter: {
+        text: 'sync.local.test1',
+        module: 'resources.test',
+      },
+    });
+    const translationRepo = app.db.getRepository('localizationTranslations');
+    await translationRepo.update({
+      filter: {
+        locale: 'en-US',
+        textId: text.id,
+      },
+      values: {
+        translation: 'Custom Test1',
+      },
+    });
+
+    await agent.resource('localization').sync({
+      values: {
+        types: ['local'],
+        resetTranslations: true,
+      },
+    });
+
+    const translation = await translationRepo.findOne({
+      filter: {
+        locale: 'en-US',
+        textId: text.id,
+      },
+    });
+    expect(translation.translation).toBe('Test1');
+    expect(app.localeManager.getBuiltInResources).toBeCalledWith('en-US');
+  });
+
   it('should get texts from db', async () => {
-    const plugin = app.pm.get('localization') as PluginLocalizationServer;
-    const source = plugin.sourceManager.sources.get('db');
+    const source = app.localeManager.sources.get('db');
     await app.db.getRepository('collections').create({
       values: {
         key: 'test-collection',

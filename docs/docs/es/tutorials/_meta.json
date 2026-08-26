@@ -1,0 +1,13 @@
+[
+  {
+    "type": "dir",
+    "name": "v2",
+    "label": "Tutorial V2 (Sistema de tickets de TI)"
+  },
+  {
+    "type": "dir",
+    "name": "v1",
+    "label": "Tutorial V1 (versión anterior)",
+    "collapsed": true
+  }
+]

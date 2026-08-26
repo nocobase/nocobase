@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Visión general del sistema de gestión de tareas"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Capítulo 1: Primer contacto con NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Capítulo 2: Diseño del sistema de gestión de tareas"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Capítulo 3: Gestión de datos de tareas"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Capítulo 4: Plugins de tareas y comentarios"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Capítulo 5: Pestañas y bloques dinámicos"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Capítulo 6: Usuarios y permisos"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Capítulo 7: Workflow"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Visión general de la plataforma de gestión de proyectos"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Capítulo 8: Base de conocimiento - Tabla de árbol"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Capítulo 9: Tablero de tareas y gráficos"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Capítulo 10: Filtros y condiciones del tablero"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Capítulo 11: Subtareas y cálculo de horas de trabajo"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Capítulo 12: Reserva de salas de reuniones y workflow"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Implementar la revisión del registro de usuarios"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "Implementar la conversión de leads en CRM"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Consejos para bloques Markdown"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "Visión general de las funciones de CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Seguimiento de leads y gestión de estados"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "Sistema CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Obtener datos usando API Keys"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Uso de variables en plantillas Markdown"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "Cómo desplegar NocoBase más rápido"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "Visualización del pipeline de ventas en CRM"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "Guía de despliegue del Demo de CRM"
+  }
+]

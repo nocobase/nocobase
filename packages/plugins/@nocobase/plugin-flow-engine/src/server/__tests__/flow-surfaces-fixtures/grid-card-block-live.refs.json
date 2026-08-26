@@ -1,0 +1,15 @@
+{
+  "block.gridCard1": {
+    "uid": "f38e8dc8ccf"
+  },
+  "node.GridCardItemModel1": {
+    "uid": "776d0db5dad"
+  },
+  "node.DetailsGridModel1": {
+    "uid": "d8f08bf1948"
+  },
+  "page.route": {
+    "routeId": 355812088348672,
+    "schemaUid": "nhpj3e672ci"
+  }
+}

@@ -8,7 +8,7 @@
  */
 
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppStatus, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import Application, { AppStatus, AppSupervisor, Gateway, Plugin, getHostname } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
@@ -216,7 +216,8 @@ export class PluginMultiAppManagerServer extends Plugin {
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;
 
-      if (!ctx.resolvedAppName && req.headers['x-hostname']) {
+      const hostname = req.headers['x-hostname'] || getHostname(req);
+      if (!ctx.resolvedAppName && hostname) {
         const repository = this.db.getRepository('applications');
         if (!repository) {
           await next();
@@ -225,7 +226,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         const appInstance = await repository.findOne({
           filter: {
-            cname: req.headers['x-hostname'],
+            cname: hostname,
           },
         });
 

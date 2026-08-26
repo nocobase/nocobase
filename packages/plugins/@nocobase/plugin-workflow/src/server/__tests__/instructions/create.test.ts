@@ -166,4 +166,53 @@ describe('workflow > instructions > create', () => {
       expect(p2s[0].published).toBe(true);
     });
   });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = app.agent();
+      const WorkflowModel = db.getCollection('workflows').model;
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when collection is not provided', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'create', config: {} },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should reject when collection does not exist', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'create', config: { collection: 'nonexistent_xyz' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept when collection exists', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'create', config: { collection: 'posts' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with data source prefix', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'create', config: { collection: 'main:posts' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject with nonexistent data source', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'create', config: { collection: 'bad_ds:posts' } },
+      });
+      expect(status).toBe(400);
+    });
+  });
 });

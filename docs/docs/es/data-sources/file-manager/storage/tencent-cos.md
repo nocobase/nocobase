@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Tencent COS
 
 Un motor de almacenamiento basado en Tencent Cloud COS. Antes de usarlo, necesita preparar la cuenta y los permisos correspondientes.

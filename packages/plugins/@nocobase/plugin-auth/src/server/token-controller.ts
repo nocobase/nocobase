@@ -84,7 +84,7 @@ export class TokenController implements TokenControlService {
     });
   }
 
-  async add({ userId }: { userId: number }) {
+  async add({ userId, authenticator }: { userId: number; authenticator?: string }) {
     const jti = randomUUID();
     const currTS = Date.now();
     const data = {
@@ -93,6 +93,7 @@ export class TokenController implements TokenControlService {
       signInTime: currTS,
       renewed: false,
       userId,
+      authenticator,
     };
     await this.setTokenInfo(jti, data);
 

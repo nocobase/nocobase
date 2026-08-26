@@ -12,6 +12,7 @@ import { ChatOpenAICompletions } from '@langchain/openai';
 import type OpenAI from 'openai';
 
 export const REASONING_MAP_KEY = '__nb_reasoning_map';
+export const MODEL_KWARGS_KEY = '__nb_model_kwargs';
 
 export const collectReasoningMap = (messages: BaseMessage[]) => {
   const reasoningMap = new Map<string, string>();
@@ -46,6 +47,13 @@ export const patchRequestMessagesReasoning = (request: any, reasoningMap?: Map<s
       message.reasoning_content = reasoningContent;
     }
   }
+};
+
+export const patchRequestModelKwargs = (request: any, modelKwargs?: Record<string, any>) => {
+  if (!modelKwargs || typeof modelKwargs !== 'object') {
+    return;
+  }
+  Object.assign(request, modelKwargs);
 };
 
 export class ReasoningChatOpenAI extends ChatOpenAICompletions {
@@ -105,7 +113,9 @@ export class ReasoningChatOpenAI extends ChatOpenAICompletions {
     requestOptions?: OpenAI.RequestOptions,
   ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk> | OpenAI.Chat.Completions.ChatCompletion> {
     const reasoningMap = requestOptions?.[REASONING_MAP_KEY] as Map<string, string> | undefined;
+    const modelKwargs = requestOptions?.[MODEL_KWARGS_KEY] as Record<string, any> | undefined;
     patchRequestMessagesReasoning(request, reasoningMap);
+    patchRequestModelKwargs(request, modelKwargs);
     if (request.stream) {
       return super.completionWithRetry(request as OpenAI.Chat.ChatCompletionCreateParamsStreaming, requestOptions);
     }

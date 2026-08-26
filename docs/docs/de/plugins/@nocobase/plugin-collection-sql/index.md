@@ -1,4 +1,6 @@
 ---
+title: "Collection: SQL"
+keywords: "Collections"
 displayName: "Collection: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |

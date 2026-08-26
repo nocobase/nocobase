@@ -1,0 +1,113 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Install NocoBase",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Install using CLI",
+            "link": "/nocobase-cli/installation/cli"
+          },
+          {
+            "type": "custom-link",
+            "label": "Connect old installation methods to AI and migrate",
+            "link": "/nocobase-cli/installation/migration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Application configuration and .env",
+            "link": "/nocobase-cli/installation/env"
+          },
+          {
+            "type": "custom-link",
+            "label": "Third-party plugin installation",
+            "link": "/nocobase-cli/plugins/third-party"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Production deployment",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Overview",
+            "link": "/nocobase-cli/production/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Application autostart",
+            "link": "/nocobase-cli/production/autostart"
+          },
+          {
+            "type": "custom-link",
+            "label": "Reverse proxy",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Overview",
+                "link": "/nocobase-cli/production/reverse-proxy/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Nginx",
+                "link": "/nocobase-cli/production/reverse-proxy/nginx"
+              },
+              {
+                "type": "custom-link",
+                "label": "Caddy",
+                "link": "/nocobase-cli/production/reverse-proxy/caddy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Operations and release",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Manage application",
+            "link": "/nocobase-cli/operations/manage-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Multiple environment management",
+            "link": "/nocobase-cli/operations/multi-environment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Backup and restore",
+            "link": "/nocobase-cli/operations/backup-restore"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "CLI design notes",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "The design intent of nb app",
+            "link": "/nocobase-cli/cli-design/nb-app-design-intent"
+          },
+          {
+            "type": "custom-link",
+            "label": "The design intent of nb proxy",
+            "link": "/nocobase-cli/cli-design/nb-proxy-design-intent"
+          }
+        ]
+      }
+    ]
+  }
+]

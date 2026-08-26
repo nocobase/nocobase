@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-attachment-url"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Datenfeld: Anhang (URL)

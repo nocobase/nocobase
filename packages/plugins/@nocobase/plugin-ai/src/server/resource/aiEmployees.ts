@@ -19,9 +19,16 @@ export const list = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const builtInManager = plugin.builtInManager;
 
+  const filter = ctx.action.params.filter || {};
+  ctx.action.mergeParams({
+    filter: {
+      ...filter,
+      deprecated: false,
+    },
+  });
+
   await actions.list(ctx as Context, () => {});
 
-  const locale = ctx.getCurrentLocale();
   let data;
   if (paginate === 'false' || paginate === false) {
     ctx.body = ctx.body.map((it) => it.toJSON());
@@ -54,7 +61,7 @@ export const list = async (ctx: Context, next: Next) => {
 
   data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row);
+      builtInManager.setupBuiltInInfo(ctx, row);
     }
   });
 
@@ -63,6 +70,7 @@ export const list = async (ctx: Context, next: Next) => {
 
 export const listByUser = async (ctx: Context, next: Next) => {
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const skills = await plugin.ai.skillsManager.listSkills({ scope: 'GENERAL' });
   const tools = await plugin.ai.toolsManager.listTools({ scope: 'GENERAL' });
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
@@ -110,23 +118,31 @@ export const listByUser = async (ctx: Context, next: Next) => {
     ],
   });
 
-  const locale = ctx.getCurrentLocale();
   rows.forEach((row) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row as unknown as AIEmployee);
+      builtInManager.setupBuiltInInfo(ctx, row as unknown as AIEmployee);
     }
   });
 
   ctx.body = rows.map((row) => {
-    const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    const skillSettings: { skills: string[]; tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? {
+      skills: [],
+      tools: [],
+    };
     if (!_.isArray(skillSettings.skills)) {
       skillSettings.skills = [];
     }
+    if (!_.isArray(skillSettings.tools)) {
+      skillSettings.tools = [];
+    }
     for (const tool of tools) {
-      skillSettings.skills.push({
+      skillSettings.tools.push({
         name: tool.definition.name,
-        auto: tool.defaultPermission === 'ALLOW',
+        autoCall: tool.defaultPermission === 'ALLOW',
       });
+    }
+    for (const { name } of skills) {
+      skillSettings.skills.push(name);
     }
     return {
       username: row.username,
@@ -139,8 +155,11 @@ export const listByUser = async (ctx: Context, next: Next) => {
         prompt: row.userConfigs?.[0]?.prompt,
       },
       skillSettings,
+      chatSettings: row.chatSettings,
+      modelSettings: row.modelSettings,
       builtIn: row.builtIn,
       category: row.category,
+      deprecated: row.deprecated,
     };
   });
   await next();

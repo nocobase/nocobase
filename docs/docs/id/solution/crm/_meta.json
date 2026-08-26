@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Pengantar Solusi"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Desain Detail"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Cara Instalasi"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "Panduan Penggunaan"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Riwayat Pembaruan"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "CRM Versi Lama (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Konten Lainnya"
+  }
+]

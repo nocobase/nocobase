@@ -6,10 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { Plugin } from '../Plugin';
+import type { PluginClass } from '../PluginManager';
 import { useApp } from './useApp';
 
-export function usePlugin<T extends typeof Plugin = any>(plugin: T): InstanceType<T>;
+export function usePlugin<T extends PluginClass<any, any> = any>(plugin: T): InstanceType<T>;
 export function usePlugin<T extends {}>(name: string): T;
 export function usePlugin(name: any) {
   const app = useApp();

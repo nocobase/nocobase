@@ -25,7 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { uid } from '@formily/shared';
 import { NAMESPACE } from '../locale';
 
-export const CreateAndSelectSort = (props) => {
+export const CreateAndSelectSort = (props: any) => {
   const { sortFields, collectionFields, groupField, collectionName, dataSource, ...others } = props;
   const field: any = useField();
   const compile = useCompile();
@@ -33,11 +33,11 @@ export const CreateAndSelectSort = (props) => {
   const { t } = useTranslation();
   const { theme } = useGlobalTheme();
   const options = useContext(SchemaOptionsContext);
-  const integerfields = collectionFields?.filter((v) => {
+  const integerfields = collectionFields?.filter((v: any) => {
     return v.interface === 'integer';
   });
-  const ScopekeyDescription = ({ scopeKey }) => {
-    const field = scopeKey && collectionFields.find((v) => v.name === scopeKey);
+  const ScopekeyDescription = ({ scopeKey }: { scopeKey?: string }) => {
+    const field = scopeKey && collectionFields.find((v: any) => v.name === scopeKey);
     const result = scopeKey && compile(field?.['uiSchema']?.['title']);
     return (
       <span style={{ color: 'rgba(0, 0, 0, 0.25)' }}>
@@ -53,7 +53,7 @@ export const CreateAndSelectSort = (props) => {
   //仅支持主数据源
   const handleCreateSortField = async () => {
     const values = await FormDialog(
-      t('Create sort field'),
+      t('Create sort field', { ns: NAMESPACE }),
       () => {
         return (
           <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
@@ -113,7 +113,7 @@ export const CreateAndSelectSort = (props) => {
   //第三方数据源
   const handleUpdateSortField = async () => {
     const values = await FormDialog(
-      t('Create sort field'),
+      t('Create sort field', { ns: NAMESPACE }),
       () => {
         return (
           <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
@@ -127,7 +127,7 @@ export const CreateAndSelectSort = (props) => {
                       required: true,
                       'x-decorator': 'FormItem',
                       'x-component': 'Select',
-                      enum: integerfields.map((v) => {
+                      enum: integerfields.map((v: any) => {
                         return {
                           value: v.name,
                           label: compile(v['uiSchema']?.['title'] || v.name),

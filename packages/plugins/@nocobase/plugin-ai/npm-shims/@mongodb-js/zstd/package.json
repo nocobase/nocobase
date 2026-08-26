@@ -1,0 +1,9 @@
+{
+  "name": "@mongodb-js/zstd",
+  "version": "7.0.0",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": "./index.js"
+  }
+}

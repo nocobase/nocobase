@@ -1,8 +1,13 @@
 [
   {
     "type": "dir",
+    "name": "all-in-one",
+    "label": "Единая система управления бизнесом"
+  },
+  {
+    "type": "dir",
     "name": "ticket-system",
-    "label": "Ticketing Solution"
+    "label": "Система заявок"
   },
   {
     "type": "dir",

@@ -1,1 +1,6 @@
-{}
+{
+  "Grouped sorting": "分组排序",
+  "Sort": "排序",
+  "Used for drag and drop sorting scenarios, supporting grouping sorting": "用于拖拽排序场景，支持分组排序",
+  "When a field is selected for grouping, it will be grouped first before sorting.": "选择分组字段后，会先按该字段分组，再在组内排序。"
+}

@@ -1,4 +1,6 @@
 ---
+title: "Multi-app manager (deprecated)"
+keywords: "system"
 displayName: "Multi-app manager (deprecated)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

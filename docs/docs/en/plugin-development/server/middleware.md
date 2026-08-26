@@ -1,6 +1,12 @@
+---
+title: "Middleware"
+description: "NocoBase server-side middleware: app.use, Koa middleware, request interception, resource middleware."
+keywords: "Middleware,app.use,Koa,request interception,resource middleware,NocoBase"
+---
+
 # Middleware
 
-NocoBase Server middleware is essentially **Koa middleware**. You can operate the `ctx` object to handle requests and responses just like in Koa. However, since NocoBase needs to manage logic at different business layers, if all middleware is placed together, it becomes very difficult to maintain and manage.
+NocoBase Server middleware is essentially **Koa middleware**. You can operate the `ctx` object to handle requests and responses just like in Koa. However, since NocoBase needs to manage logic at different business layers, if all middleware is placed together, it becomes very difficult to maintain.
 
 For this reason, NocoBase divides middleware into **four layers**:
 
@@ -83,10 +89,10 @@ app.use(m4, { before: 'restApi' });
 app.resourceManager.use(m5, { after: 'parseToken', before: 'checkRole' });
 ```
 
-:::tip
+:::tip Tip
 
-If no position is specified, the default execution order for newly added middleware is:  
-`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`  
+If no position is specified, the default execution order for newly added middleware is:
+`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`
 
 :::
 
@@ -140,9 +146,18 @@ Output examples for different interfaces:
 
 ## Summary
 
-- NocoBase Middleware is an extension of Koa Middleware  
+- NocoBase Middleware is an extension of Koa Middleware
 - Four layers: Application -> Data Source -> Resource -> Permission
-- Can use `before` / `after` / `tag` to flexibly control execution order  
-- Follows Koa onion model, ensuring middleware is composable and nestable  
+- Can use `before` / `after` / `tag` to flexibly control execution order
+- Follows Koa onion model, ensuring middleware is composable and nestable
 - Data source level middleware only affects specified data source requests, resource level middleware only affects defined resource requests
+
+## Related Links
+
+- [Context](./context.md) -- Full API of the `ctx` object in middleware
+- [ResourceManager](./resource-manager.md) -- Resource-level middleware registration and resource definitions
+- [ACL](./acl.md) -- Permission-level middleware usage and access control logic
+- [Plugin](./plugin.md) -- Registering middleware in the plugin's `load` method
+- [DataSourceManager](./data-source-manager.md) -- Use cases for data source level middleware
+- [Server Development Overview](./index.md) -- Overall server architecture and how middleware fits in
 

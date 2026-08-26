@@ -28,7 +28,7 @@ import {
   workbenchActionSettingsCustomRequest,
 } from './WorkbenchCustomRequestActionSchemaInitializerItem';
 import { lazy } from '@nocobase/client';
-import models from './models';
+import models from '../client-v2/models';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     const { QRCodeScanner } = lazy(() => import('./components/qrcode-scanner'), 'QRCodeScanner');

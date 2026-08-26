@@ -9,6 +9,9 @@
 
 export * from './middlewares/setCurrentRole';
 export * from './middlewares/with-acl-meta';
+export * from './middlewares/check-association-operate';
+export * from './middlewares/check-change-with-association';
+export * from './query/apply-query-permission';
 export { RoleResourceActionModel } from './model/RoleResourceActionModel';
 export { RoleResourceModel } from './model/RoleResourceModel';
 export * from './constants';

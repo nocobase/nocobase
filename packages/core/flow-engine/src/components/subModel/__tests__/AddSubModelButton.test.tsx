@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { act, fireEvent, render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { vi, beforeEach } from 'vitest';
 import {
   AddSubModelButton,
@@ -21,11 +21,13 @@ import {
 import { SubModelItem, mergeSubModelItems, transformItems } from '../AddSubModelButton';
 import { App, ConfigProvider } from 'antd';
 
+const getSubmenuTitle = (label: string) => screen.getByText(label).closest('.ant-dropdown-menu-submenu-title');
+
 describe('AddSubModelButton - preset settings open on add', () => {
   test('calls openFlowSettings with preset=true for subModel with preset steps', async () => {
     // Arrange: set up engine and models
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ParentModel extends FlowModel {}
 
@@ -99,12 +101,70 @@ describe('AddSubModelButton - preset settings open on add', () => {
   });
 });
 
+describe('AddSubModelButton - model loader integration', () => {
+  test('resolves model loaders before creating sub models', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+
+    class ParentModel extends FlowModel {}
+    class ChildModel extends FlowModel {}
+
+    const childLoader = vi.fn(async () => ({ ChildModel }));
+
+    engine.registerModels({ ParentModel });
+    engine.registerModelLoaders({
+      ChildModel: {
+        loader: childLoader,
+      },
+    });
+
+    const parent = engine.createModel<ParentModel>({ use: 'ParentModel', uid: 'parent-loader' });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="items"
+              items={[
+                {
+                  key: 'child',
+                  label: 'Add Child',
+                  createModelOptions: { use: 'ChildModel' },
+                },
+              ]}
+            >
+              Add SubModel
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Add SubModel'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Add Child')).toBeInTheDocument());
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Add Child'));
+    });
+
+    await waitFor(() => expect(childLoader).toHaveBeenCalledTimes(1));
+    const items = parent.subModels.items as FlowModel[];
+    expect(Array.isArray(items)).toBe(true);
+    expect(items[0]).toBeInstanceOf(ChildModel);
+  });
+});
+
 describe('AddSubModelButton - async group children (nested)', () => {
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
   it('renders group and nested async group leaf items', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p1' });
@@ -157,12 +217,74 @@ describe('AddSubModelButton - async group children (nested)', () => {
     await waitFor(() => expect(screen.getByText('Nested-Leaf-1')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByText('Nested-Leaf-2')).toBeInTheDocument());
   });
+
+  it('keeps root dropdown open while only the current nested group stays expanded', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-multi-open' });
+
+    const items = [
+      {
+        key: 'group-a',
+        label: 'Group A',
+        children: [
+          { key: 'a-1', label: 'A-1', createModelOptions: { use: 'Parent' } },
+          { key: 'a-2', label: 'A-2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'group-b',
+        label: 'Group B',
+        children: [
+          { key: 'b-1', label: 'B-1', createModelOptions: { use: 'Parent' } },
+          { key: 'b-2', label: 'B-2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open Menu
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Open Menu'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Group A')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Group B')).toBeInTheDocument());
+
+    await act(async () => {
+      await userEvent.hover(screen.getByText('Group A'));
+    });
+    await waitFor(() => expect(screen.getByText('A-1')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Group A')).toHaveAttribute('aria-expanded', 'true'));
+    expect(getSubmenuTitle('Group B')).toHaveAttribute('aria-expanded', 'false');
+
+    await act(async () => {
+      await userEvent.hover(screen.getByText('Group B'));
+    });
+    await waitFor(() => expect(screen.getByText('B-1')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Group B')).toHaveAttribute('aria-expanded', 'true'));
+    expect(getSubmenuTitle('Group A')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('Group A')).toBeInTheDocument();
+    expect(screen.getByText('Group B')).toBeInTheDocument();
+  });
 });
 
 describe('transformItems - searchable flags', () => {
   it('preserves searchable + placeholder on non-group submenu items', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent' });
@@ -191,7 +313,7 @@ describe('transformItems - searchable flags', () => {
 
   it('filters searchable field menus by display label instead of item key', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     const parent = engine.createModel<FlowModel>({ use: FlowModel });
     const user = userEvent.setup();
 
@@ -232,12 +354,265 @@ describe('transformItems - searchable flags', () => {
     await user.type(searchInput, 'display');
     await waitFor(() => expect(screen.getByText('Field display name')).toBeInTheDocument());
   });
+
+  it('keeps searchable submenu children during IME composition', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    const input = screen.getByRole('textbox');
+    await user.click(input);
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: 'zzzz' }, nativeEvent: { isComposing: true } });
+    fireEvent.mouseLeave(screen.getByText('Fields'));
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(input).toHaveValue('zzzz');
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
+    expect(screen.getByText('Field 2')).toBeInTheDocument();
+
+    fireEvent.compositionEnd(input);
+    fireEvent.change(input, { target: { value: 'zzzz' } });
+
+    await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
+  });
+
+  it('closes searchable submenu after focus without input', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    await user.click(screen.getByRole('textbox'));
+    fireEvent.mouseLeave(screen.getByText('Fields'));
+
+    await waitFor(() => expect(screen.queryByText('Field 1')).not.toBeInTheDocument());
+  });
+
+  it('closes active searchable submenu after outside click', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Field' } });
+    expect(screen.getByText('Field 1')).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+
+    await waitFor(() => expect(screen.queryByText('Fields')).not.toBeInTheDocument());
+  });
+
+  it('switches away from active searchable submenu and resets its input', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: 'Fields',
+        searchable: true,
+        children: [
+          { key: 'f1', label: 'Field 1', createModelOptions: { use: 'Parent' } },
+          { key: 'f2', label: 'Field 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'blocks',
+        label: 'Blocks',
+        searchable: true,
+        children: [
+          { key: 'b1', label: 'Block 1', createModelOptions: { use: 'Parent' } },
+          { key: 'b2', label: 'Block 2', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    await waitFor(() => expect(screen.getByText('Fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'zzzz' } });
+    await waitFor(() => expect(screen.getAllByText('No data').length).toBeGreaterThan(0));
+
+    await user.hover(screen.getByText('Blocks'));
+    await waitFor(() => expect(screen.getByText('Block 1')).toBeInTheDocument());
+    expect(screen.queryByText('No data')).not.toBeInTheDocument();
+
+    await user.hover(screen.getByText('Fields'));
+    await waitFor(() => expect(screen.getByText('Field 1')).toBeInTheDocument());
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+
+  it('keeps root group search value when hovering a sibling submenu', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'fields',
+        label: '',
+        type: 'group' as const,
+        searchable: true,
+        searchPlaceholder: 'Search fields',
+        children: [
+          { key: 'nickname', label: 'Nickname', createModelOptions: { use: 'Parent' } },
+          { key: 'email', label: 'Email', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+      {
+        key: 'association-fields',
+        label: 'Display association fields',
+        children: [{ key: 'author', label: 'Author', createModelOptions: { use: 'Parent' } }],
+      },
+    ];
+
+    const user = userEvent.setup();
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton model={parent} subModelKey="items" items={items as any}>
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await user.click(screen.getByText('Open'));
+    const searchInput = await screen.findByPlaceholderText('Search fields');
+    await user.type(searchInput, 'nick');
+    await waitFor(() => expect(screen.queryByText('Email')).not.toBeInTheDocument());
+
+    await user.hover(screen.getByText('Display association fields'));
+
+    await waitFor(() => expect(screen.getByText('Author')).toBeInTheDocument());
+    expect(searchInput).toHaveValue('nick');
+    expect(screen.getByText('Nickname')).toBeInTheDocument();
+  });
 });
 
 describe('transformItems - hide', () => {
   it('filters items by hide flag/function recursively', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide' });
@@ -283,7 +658,7 @@ describe('transformItems - hide', () => {
 
   it('removes group when all children are hidden (even with async hide)', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-empty-group' });
@@ -316,7 +691,7 @@ describe('transformItems - hide', () => {
 
   it('supports async hide functions and disables cache', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-async-hide' });
@@ -344,7 +719,7 @@ describe('transformItems - hide', () => {
 
   it('shows items when hide function throws (conservative fallback)', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}
     engine.registerModels({ Parent });
     const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide-throws' });
@@ -375,15 +750,15 @@ describe('transformItems - toggleable items', () => {
   class ToggleParent extends FlowModel {}
   class ToggleChild extends FlowModel {}
 
-  const setupEngine = () => {
+  const setupEngine = async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ToggleParent, ToggleChild });
     return engine;
   };
 
   it('marks toggleable item as active when matching sub model exists', async () => {
-    const engine = setupEngine();
+    const engine = await setupEngine();
     const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-on' });
     const child = engine.createModel<ToggleChild>({ use: 'ToggleChild', uid: 'toggle-child-on' });
     parent.addSubModel('items', child);
@@ -415,7 +790,7 @@ describe('transformItems - toggleable items', () => {
   });
 
   it('infers useModel from createModelOptions when toggleable is enabled', async () => {
-    const engine = setupEngine();
+    const engine = await setupEngine();
     const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-infer' });
     const child = engine.createModel<ToggleChild>({ use: 'ToggleChild', uid: 'toggle-child-infer' });
     parent.addSubModel('items', child);
@@ -441,7 +816,7 @@ describe('transformItems - toggleable items', () => {
   });
 
   it('keeps toggleable item off when sub model missing', async () => {
-    const engine = setupEngine();
+    const engine = await setupEngine();
     const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-off' });
 
     const definition: SubModelItem[] = [
@@ -464,7 +839,7 @@ describe('transformItems - toggleable items', () => {
   });
 
   it('respects keepDropdownOpen override on toggleable items', async () => {
-    const engine = setupEngine();
+    const engine = await setupEngine();
     const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-keep' });
 
     const definition: SubModelItem[] = [
@@ -487,7 +862,7 @@ describe('transformItems - toggleable items', () => {
 
   it('removes object sub model via default remove handler when toggleDetector provided', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ObjectParent extends FlowModel {}
     class ObjectChild extends FlowModel {}
@@ -524,6 +899,8 @@ describe('transformItems - toggleable items', () => {
         </ConfigProvider>
       </FlowEngineProvider>,
     );
+
+    await waitFor(() => expect(screen.getByText('Toggle Menu')).toBeInTheDocument());
 
     await act(async () => {
       await userEvent.click(screen.getByText('Toggle Menu'));
@@ -563,16 +940,16 @@ describe('transformItems - caching behaviour', () => {
   class CacheParent extends FlowModel {}
   class CacheChild extends FlowModel {}
 
-  const setupEngine = () => {
+  const setupEngine = async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ CacheParent, CacheChild });
     const parent = engine.createModel<CacheParent>({ use: 'CacheParent', uid: 'cache-parent' });
     return { engine, parent };
   };
 
   it('reuses cached result when no toggleable items exist', async () => {
-    const { parent } = setupEngine();
+    const { parent } = await setupEngine();
     const definition: SubModelItem[] = [{ key: 'basic', label: 'Basic', createModelOptions: { use: 'CacheChild' } }];
 
     const factory = transformItems(definition, parent, 'items', 'array');
@@ -585,7 +962,7 @@ describe('transformItems - caching behaviour', () => {
   });
 
   it('refreshes toggle state after new sub model is added', async () => {
-    const { parent, engine } = setupEngine();
+    const { parent, engine } = await setupEngine();
     const createDefinition = (): SubModelItem[] => [
       {
         key: 'toggleable',
@@ -614,7 +991,7 @@ describe('transformItems - caching behaviour', () => {
 describe('AddSubModelButton - refreshTargets linkage', () => {
   it('clicking an item with refreshTargets triggers toggle recomputation on target branch', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class Parent extends FlowModel {}
     class ToggleModel extends FlowModel {}
@@ -686,7 +1063,7 @@ describe('AddSubModelButton - base class menu groups', () => {
 
   it('renders async children provided by subModelBaseClasses', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class Parent extends FlowModel {}
     class AsyncLeaf extends FlowModel {}
@@ -731,7 +1108,7 @@ describe('AddSubModelButton - base class menu groups', () => {
 
   it('skips base class groups whose children resolve to empty', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class Parent extends FlowModel {}
     class EmptyLeaf extends FlowModel {}
@@ -783,7 +1160,7 @@ describe('AddSubModelButton - base class menu groups', () => {
 
   it('renders submenu base class with children and respects meta.sort', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class Parent extends FlowModel {}
     class Leaf extends FlowModel {}
@@ -847,7 +1224,7 @@ describe('AddSubModelButton - base class menu groups', () => {
 
   it('merges explicit items with base class and grouped sources', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class Parent extends FlowModel {}
     class BaseChild extends FlowModel {}
@@ -906,7 +1283,7 @@ describe('AddSubModelButton - base class menu groups', () => {
 describe('AddSubModelButton - toggle interactions', () => {
   it('removes existing toggleable sub model and triggers callbacks', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ToggleParent extends FlowModel {}
     const destroySpy = vi.fn();
@@ -970,7 +1347,7 @@ describe('AddSubModelButton - toggle interactions', () => {
 
   it('creates toggleable sub model and runs lifecycle callbacks', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ToggleParent extends FlowModel {}
     const saveSpy = vi.fn();
@@ -1042,7 +1419,7 @@ describe('AddSubModelButton - toggle interactions', () => {
 
   it('updates toggle state after external sub model removal', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ToggleParent extends FlowModel {}
     class ToggleChild extends FlowModel {}
@@ -1107,9 +1484,9 @@ describe('AddSubModelButton toggleable behavior', () => {
     duplicate = vi.fn().mockResolvedValue(null);
   }
 
-  function setup() {
+  async function setup() {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ToggleModel });
     engine.setModelRepository(new FakeRepo());
 
@@ -1162,7 +1539,7 @@ describe('AddSubModelButton toggleable behavior', () => {
   });
 
   test('keeps dropdown open and preserves loaded children on toggle add/remove', async () => {
-    const { engine, ui } = setup();
+    const { engine, ui } = await setup();
     const user = userEvent.setup();
 
     render(ui);
@@ -1209,7 +1586,7 @@ describe('AddSubModelButton toggleable behavior', () => {
   });
 
   test('toggle state updates without menu closing', async () => {
-    const { ui } = setup();
+    const { ui } = await setup();
     const user = userEvent.setup();
 
     render(ui);
@@ -1227,7 +1604,7 @@ describe('AddSubModelButton toggleable behavior', () => {
 
   test('nested submenu (static items) toggle keeps menu open and reflects state', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ToggleModel });
     const parent = engine.createModel<FlowModel>({ use: FlowModel });
 
@@ -1309,7 +1686,7 @@ describe('AddSubModelButton toggleable behavior', () => {
 
   test('submenu (second-level) toggleable stays open and updates state', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ToggleModel });
     engine.setModelRepository(new FakeRepo());
     vi.spyOn(engine.flowSettings, 'open').mockResolvedValue(false as any);
@@ -1357,18 +1734,81 @@ describe('AddSubModelButton toggleable behavior', () => {
     // click leaf toggle to add
     await user.click(screen.getByText('Leaf Toggle'));
 
-    // menu should remain visible; submenu parent still visible
+    // menu and submenu should remain visible after toggling a submenu leaf
     expect(screen.getByText('Fields')).toBeInTheDocument();
-
-    // 由于点击叶子项后二级子菜单可能被收起，这里先重新展开再断言开关状态
-    await user.hover(screen.getByText('Fields'));
     await waitFor(() => expect(screen.getByText('Leaf Toggle')).toBeInTheDocument());
     await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
   });
 
+  test('keepDropdownOpen keeps root menu visible after clicking a nested relation-style leaf', async () => {
+    const engine = new FlowEngine();
+    await engine.flowSettings.forceEnable();
+
+    class Parent extends FlowModel {}
+    class RelationLeafModel extends FlowModel {}
+
+    engine.registerModels({ Parent, RelationLeafModel });
+    engine.setModelRepository(new FakeRepo());
+    vi.spyOn(engine.flowSettings, 'open').mockResolvedValue(false as any);
+
+    const parent = engine.createModel<FlowModel>({ use: 'Parent' });
+
+    const items = [
+      {
+        key: 'relation-fields',
+        label: 'Display association fields',
+        children: [
+          {
+            key: 'users',
+            label: 'Users',
+            type: 'group' as const,
+            children: [
+              {
+                key: 'user-name',
+                label: 'User name',
+                createModelOptions: { use: 'RelationLeafModel' },
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              items={items as any}
+              subModelType="array"
+              subModelKey="subs"
+              keepDropdownOpen
+            >
+              Open
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Open'));
+
+    await waitFor(() => expect(screen.getByText('Display association fields')).toBeInTheDocument());
+    await user.hover(screen.getByText('Display association fields'));
+    await waitFor(() => expect(screen.getByText('Users')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Display association fields')).toHaveAttribute('aria-expanded', 'true'));
+
+    await user.click(screen.getByText('User name'));
+
+    await waitFor(() => expect(screen.getByText('Display association fields')).toBeInTheDocument());
+    await waitFor(() => expect(getSubmenuTitle('Display association fields')).toHaveAttribute('aria-expanded', 'true'));
+  });
+
   test('top-level toggle updates after opening a second-level branch', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ToggleModel });
     engine.setModelRepository(new FakeRepo());
     vi.spyOn(engine.flowSettings, 'open').mockResolvedValue(false as any);

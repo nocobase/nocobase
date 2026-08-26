@@ -202,7 +202,7 @@ describe('PluginSettingsManager', () => {
     expect(app.router.getRoutesTree()[0]).toMatchInlineSnapshot(`
       {
         "children": undefined,
-        "element": <AppNotFound />,
+        "element": <Component />,
         "handle": {
           "path": "*",
         },

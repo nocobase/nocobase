@@ -34,6 +34,6 @@ export const useAPITokenVariable = ({
     /** 变量配置项 */
     apiTokenSettings,
     /** 变量的值 */
-    apiTokenCtx: apiClient.auth?.token,
+    apiTokenCtx: apiClient?.auth?.token,
   };
 };

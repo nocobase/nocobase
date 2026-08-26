@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-file-manager"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Champ de pièce jointe
 

@@ -1,33 +1,39 @@
+---
+title: 'Install and Upgrade Plugins'
+description: 'NocoBase Quick Start: Install and Upgrade Plugins'
+keywords: 'install,upgrade,plugins,NocoBase'
+---
+
 # Install and Upgrade Plugins
 
 ## Built-in Plugins
 
-NocoBase built-in plugins are automatically updated with the core version and require no manual action.
+NocoBase built-in plugins are automatically updated along with the core version, with no manual action required.
 
 ## Commercial Plugins
 
-For detailed installation and upgrade instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
+For detailed activation and upgrade methods, please refer to: [Commercial Plugin Activation and Upgrade](../api/cli/license/index.md)
 
 ## Third-party Plugins
 
-### Installing Plugins via Command Line
+### Install Plugins via Command Line
 
 ```bash
 yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
 yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
 ```
 
-If the plugin is already installed and needs to be upgraded, run the following command:
+If the plugin is already installed in the application and needs to be upgraded, run:
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### Manual Upload and Extraction
+### Manually Upload and Extract
 
-Please download the plugin package to your local machine first, then manually upload and extract it to the `./storage/plugins` directory. If the plugin is already enabled, execute the following command to complete the plugin upgrade after uploading and extracting.
+First download the plugin package locally, then manually upload and extract it to the `./storage/plugins` directory. If the plugin is already enabled, run the following command after uploading and extracting to complete the plugin upgrade.
 
-> ⚠️ **Note**: To avoid cache issues, please ensure that the NocoBase application is stopped before execution.
+> ⚠️ **Note**: To avoid cache issues, make sure the NocoBase application has been stopped before executing.
 
 ```bash
 yarn nocobase upgrade --skip-code-update
@@ -44,13 +50,13 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-This command will extract the plugin to the specified directory without creating an extra `package` directory layer.
+This command extracts the plugin to the specified directory without creating an extra `package` directory level.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
 ```
 
-### Example of a Correct Directory Structure
+### Example of Correct Directory Structure
 
 ```bash
 ./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js

@@ -1,4 +1,6 @@
 ---
+title: "Redis lock adapter"
+keywords: "Architecture"
 displayName: "Redis lock adapter"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

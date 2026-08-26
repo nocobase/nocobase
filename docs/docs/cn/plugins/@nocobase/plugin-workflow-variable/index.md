@@ -1,8 +1,8 @@
 ---
-displayName: "工作流：自定义变量节点"
-packageName: '@nocobase/plugin-workflow-variable'
 title: "工作流：自定义变量节点"
 keywords: "工作流：自定义变量节点,插件,NocoBase"
+displayName: "工作流：自定义变量节点"
+packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x

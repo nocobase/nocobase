@@ -31,7 +31,7 @@ describe('chatbox model recovery', () => {
     const result = await ensureModel({
       api,
       aiConfigRepository: aiConfigRepository as any,
-      username: 'orin',
+      aiEmployee: { username: 'orin' },
       currentOverride: null,
       onResolved,
     });
@@ -62,7 +62,90 @@ describe('chatbox model recovery', () => {
     const result = await ensureModel({
       api,
       aiConfigRepository: aiConfigRepository as any,
-      username: 'orin',
+      aiEmployee: { username: 'orin' },
+      currentOverride,
+      onResolved,
+    });
+
+    expect(result).toEqual(currentOverride);
+    expect(onResolved).not.toHaveBeenCalled();
+  });
+
+  it('uses employee dedicated model before current model', async () => {
+    const aiConfigRepository = {
+      getLLMServices: vi.fn(() => [
+        {
+          llmService: 'svc-openai',
+          llmServiceTitle: 'OpenAI',
+          enabledModels: [{ label: 'GPT-4o', value: 'gpt-4o' }],
+        },
+        {
+          llmService: 'svc-anthropic',
+          llmServiceTitle: 'Anthropic',
+          enabledModels: [{ label: 'Claude', value: 'claude' }],
+        },
+      ]),
+    };
+    const api = {
+      storage: {
+        getItem: vi.fn(() => null),
+      },
+    };
+    const onResolved = vi.fn();
+
+    const result = await ensureModel({
+      api,
+      aiConfigRepository: aiConfigRepository as any,
+      aiEmployee: {
+        username: 'lina',
+        modelSettings: {
+          enabled: true,
+          llmService: 'svc-anthropic',
+          model: 'claude',
+        },
+      },
+      currentOverride: { llmService: 'svc-openai', model: 'gpt-4o' },
+      onResolved,
+    });
+
+    expect(result).toEqual({ llmService: 'svc-anthropic', model: 'claude' });
+    expect(onResolved).toHaveBeenCalledWith({ llmService: 'svc-anthropic', model: 'claude' });
+  });
+
+  it('keeps current model when it is inside employee dedicated model list', async () => {
+    const aiConfigRepository = {
+      getLLMServices: vi.fn(() => [
+        {
+          llmService: 'svc-openai',
+          llmServiceTitle: 'OpenAI',
+          enabledModels: [
+            { label: 'GPT-4o', value: 'gpt-4o' },
+            { label: 'GPT-4o mini', value: 'gpt-4o-mini' },
+          ],
+        },
+      ]),
+    };
+    const api = {
+      storage: {
+        getItem: vi.fn(() => null),
+      },
+    };
+    const onResolved = vi.fn();
+    const currentOverride = { llmService: 'svc-openai', model: 'gpt-4o-mini' };
+
+    const result = await ensureModel({
+      api,
+      aiConfigRepository: aiConfigRepository as any,
+      aiEmployee: {
+        username: 'lina',
+        modelSettings: {
+          enabled: true,
+          models: [
+            { llmService: 'svc-openai', model: 'gpt-4o' },
+            { llmService: 'svc-openai', model: 'gpt-4o-mini' },
+          ],
+        },
+      },
       currentOverride,
       onResolved,
     });

@@ -13,6 +13,7 @@ import { issuedTokensCollectionName } from '../../constants';
 
 export default defineCollection({
   name: issuedTokensCollectionName,
+  dataCategory: 'business',
   migrationRules: ['schema-only'],
   autoGenId: false,
   createdAt: true,
@@ -45,6 +46,11 @@ export default defineCollection({
       type: 'bigInt',
       name: 'userId',
       allowNull: false,
+    },
+    {
+      type: 'string',
+      name: 'authenticator',
+      index: true,
     },
   ],
 });

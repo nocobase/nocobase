@@ -19,6 +19,7 @@ export class LLMInstruction extends Instruction {
   title = 'LLM';
   type = 'llm';
   group = 'ai';
+  async = true;
   // @ts-ignore
   icon = (<RobotOutlined />);
   fieldset = {
@@ -57,10 +58,6 @@ export class LLMInstruction extends Instruction {
     Settings,
     Chat,
   };
-
-  isAvailable({ engine, workflow }) {
-    return !engine.isWorkflowSync(workflow);
-  }
 
   useVariables(node, options) {
     return {

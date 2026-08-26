@@ -93,10 +93,24 @@ export type DumpRules =
 
 export type MigrationRule = 'overwrite' | 'skip' | 'upsert' | 'schema-only' | 'insert-ignore' | (string & {}) | null;
 
+/**
+ * `dataCategory = system` marks data that is foundational to system operation and should be treated as core runtime data.
+ * `dataCategory = business` marks data owned by plugin features and used as part of the plugin's business domain.
+ * `dataCategory = runtime` excludes the collection's data from backup snapshots.
+ */
+export type DataCategory = 'system' | 'business' | 'runtime';
+export type DataCategories = DataCategory | DataCategory[];
+export const TAG = {
+  basic: 'basic',
+  business: 'business',
+  ignoredBackup: 'ignored:backup',
+};
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   title?: string;
   namespace?: string;
+  dataCategory?: DataCategories;
   migrationRules?: MigrationRule[];
   dumpRules?: DumpRules;
   tableName?: string;
@@ -178,6 +192,10 @@ export class Collection<
 
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  get dataCategory() {
+    return this.options.dataCategory;
   }
 
   get underscored() {

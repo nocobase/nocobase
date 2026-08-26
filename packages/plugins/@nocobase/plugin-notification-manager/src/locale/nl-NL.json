@@ -29,6 +29,7 @@
   "Notification Management": "Notificatiebeheerder",
   "Notification manager": "Notificatiebeheerder",
   "Notification type": "Notificatietype",
+  "Notification type {{type}} is not registered.": "Notificatietype {{type}} is niet geregistreerd.",
   "Query users": "Gebruikers zoeken",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Willekeurig gegenereerd en kan niet worden gewijzigd. Ondersteunende letters, cijfers en underscores, moeten beginnen met een letter.",
   "Reason": "Reden",

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-workflow-mailer'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Envío de correos electrónicos
 

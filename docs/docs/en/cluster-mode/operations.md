@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Cluster Operations"
+description: "Cluster operations: first startup order, version upgrade (stop, backup, update, verify), and in-app maintenance (plugins, backup) reduced to a single node."
+keywords: "cluster operations,upgrade,in-app maintenance,plugin management,backup,rolling upgrade,NocoBase"
+---
+
 # Maintenance Procedures
 
 ## Initial Application Startup

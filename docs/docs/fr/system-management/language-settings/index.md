@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Paramètres de langue
 
 Dans les « Paramètres système », vous pouvez ajuster l'environnement linguistique global du système en configurant les « Langues activées ». La première langue de la liste sera la langue par défaut.
@@ -12,6 +8,6 @@ Lorsque plusieurs langues sont activées, les utilisateurs peuvent définir leur
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-Si l'environnement linguistique que vous utilisez manque de traductions, vous pouvez utiliser le plugin « [Gestion de la localisation](/system-management/localization/) » pour les ajouter ou les modifier.
+Si l'environnement linguistique que vous utilisez manque de traductions, vous pouvez utiliser le plugin « [Gestion de la localisation](/system-management/localization/index.md) » pour les ajouter ou les modifier.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

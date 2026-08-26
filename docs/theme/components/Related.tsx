@@ -1,5 +1,5 @@
 import { Link } from "@rspress/core/theme";
-import { usePages } from "@rspress/runtime";
+import { usePages } from '@rspress/core/runtime';
 
 export function Related(props: { pkg: string }) {
   const { pages } = usePages();

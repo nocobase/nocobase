@@ -115,6 +115,14 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     await this.apps[appName].runCommand('upgrade');
   }
 
+  async dispatchAppEvent(appName: string, event: string, payload?: any, _context?: { requestId: string }) {
+    const app = await this.getApp(appName, { withOutBootStrap: true });
+    if (!app) {
+      return;
+    }
+    await app.emitAsync(event, payload);
+  }
+
   async removeAllApps() {
     return this.removeApp('main');
   }

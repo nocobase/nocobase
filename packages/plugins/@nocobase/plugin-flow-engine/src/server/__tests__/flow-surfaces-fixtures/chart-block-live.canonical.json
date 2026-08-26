@@ -1,0 +1,31 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "ChartBlockModel"
+  },
+  "tree": {
+    "alias": "block.chart1",
+    "use": "ChartBlockModel",
+    "stepParams": {
+      "chartSettings": {
+        "configure": {
+          "query": {
+            "mode": "builder"
+          },
+          "chart": {
+            "option": {
+              "mode": "basic"
+            }
+          }
+        }
+      }
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  }
+}

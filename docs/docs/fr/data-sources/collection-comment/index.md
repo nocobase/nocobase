@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-comments"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 # Collection de commentaires
 

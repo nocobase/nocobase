@@ -1,8 +1,8 @@
 {
   "UI templates": "UI 模板",
-  "Block templates (v2)": "区块模板 (v2)",
-  "Popup templates (v2)": "弹窗模板 (v2)",
   "Actions": "操作",
+  "Collection": "数据表",
+  "Data source": "数据源",
   "Are you sure you want to delete this item? This action cannot be undone.": "确定要删除此项吗？此操作不可撤销。",
   "Block UID": "区块 UID",
   "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
@@ -15,6 +15,7 @@
   "Edit": "编辑",
   "Edit template": "编辑模板",
   "Mode": "模式",
+  "Operation failed": "操作失败",
   "Other blocks": "其他区块",
   "Please configure target block": "请先配置目标区块",
   "Reference": "引用",

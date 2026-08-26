@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, RefObject } from 'react';
 
 const APP_CONTAINER_SELECTOR = '#nocobase-app-container';
+const MENU_SUBMENU_POPUP_SELECTOR = '.ant-menu-submenu-popup';
 const DRAWER_CONTENT_WRAPPER_SELECTOR = '.ant-drawer-content-wrapper';
 const DRAWER_CONTENT_SELECTOR = '.ant-drawer-content';
 const DRAWER_ROOT_SELECTOR = '.ant-drawer-root';
@@ -77,6 +78,7 @@ const createAbsolutePortalHostConfig = (element: HTMLElement): ToolbarPortalHost
 });
 
 const popupPortalHostResolvers: Array<(hostEl: HTMLElement | null) => HTMLElement | null> = [
+  (hostEl) => getClosestElement(hostEl, MENU_SUBMENU_POPUP_SELECTOR),
   (hostEl) => getClosestElement(hostEl, DRAWER_CONTENT_WRAPPER_SELECTOR),
   (hostEl) => getClosestElement(hostEl, MODAL_WRAP_SELECTOR),
   (hostEl) => getClosestElement(hostEl, MODAL_SELECTOR),

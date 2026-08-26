@@ -13,7 +13,7 @@ import { deprecatedDuplicateActionSettings, duplicateActionSettings } from './Du
 import { DuplicateActionDecorator } from './DuplicateActionDecorator';
 import { DuplicateActionInitializer } from './DuplicateActionInitializer';
 import { DuplicatePluginProvider } from './DuplicatePluginProvider';
-import { DuplicateActionModel } from './models/DuplicateActionModel';
+import { DuplicateActionModel } from '../client-v2/DuplicateActionModel';
 
 export class PluginActionDuplicateClient extends Plugin {
   async load() {
@@ -51,3 +51,4 @@ export class PluginActionDuplicateClient extends Plugin {
 
 export default PluginActionDuplicateClient;
 export * from './DuplicateAction';
+export { DuplicateActionModel } from '../client-v2/DuplicateActionModel';

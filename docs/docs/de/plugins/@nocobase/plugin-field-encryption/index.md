@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Encryption"
+keywords: "Collection fields"
 displayName: "Collection field: Encryption"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:

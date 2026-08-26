@@ -17,30 +17,35 @@ import {
   useFieldSchema,
 } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
+import { useUpdate } from 'ahooks';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { createDesignable, DndContext, SchemaComponentContext, SortableItem, useDesignable, useDesigner } from '../..';
+import { useAPIClient } from '../../../api-client/hooks/useAPIClient';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { useParseURLAndParams } from '../../../block-provider/hooks';
 import {
-  Icon,
   NocoBaseRecursionField,
-  useAllAccessDesktopRoutes,
-  useAPIClient,
-  useParseURLAndParams,
-  useSchemaInitializerRender,
-} from '../../../';
+  useRefreshComponent,
+  useRefreshFieldSchema,
+} from '../../../formily/NocoBaseRecursionField';
 import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
+import { Icon } from '../../../icon/Icon';
+import { useAllAccessDesktopRoutes } from '../../../route-switch/antd/admin-layout/route-runtime';
+import { DndContext } from '../../common/dnd-context';
+import { SortableItem } from '../../common/sortable-item/SortableItem';
+import { SchemaComponentContext } from '../../context';
+import { createDesignable, useDesignable } from '../../hooks/useDesignable';
+import { useDesigner } from '../../hooks/useDesigner';
 import { useProps } from '../../hooks/useProps';
 import { useMenuTranslation } from './locale';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
-
-import { useUpdate } from 'ahooks';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 
 const subMenuDesignerCss = css`
   position: relative;
@@ -228,52 +233,61 @@ export const useParentRoute = () => {
  */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
   const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const resource = api.resource(collectionName);
+  const { routeRepository } = useFlowEngineContext();
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+  const isDesktopRoutes = collectionName === 'desktopRoutes';
 
   const createRoute = useCallback(
     async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
-      const res = await resource.create({
-        values,
-      });
-      refreshAfterCreate && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.createRoute(values, {
+            refreshAfterMutation: refreshAfterCreate,
+          })
+        : await resource.create({ values });
       return res;
     },
-    [resource, refreshRoutes],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const updateRoute = useCallback(
     async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
-      const res = await resource.update(
-        Array.isArray(filterByTk)
-          ? {
-              filter: {
-                id: {
-                  $in: filterByTk,
+      const res = isDesktopRoutes
+        ? await routeRepository.updateRoute(filterByTk, values, {
+            refreshAfterMutation: refreshAfterUpdate,
+          })
+        : await resource.update(
+            Array.isArray(filterByTk)
+              ? {
+                  filter: {
+                    id: {
+                      $in: filterByTk,
+                    },
+                  },
+                  values,
+                }
+              : {
+                  filterByTk,
+                  values,
                 },
-              },
-              values,
-            }
-          : {
-              filterByTk,
-              values,
-            },
-      );
-      refreshAfterUpdate && refreshRoutes();
+          );
       return res;
     },
-    [resource, refreshRoutes],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const deleteRoute = useCallback(
     async (filterByTk: any, refreshAfterDelete = true) => {
-      const res = await resource.destroy({
-        filterByTk,
-      });
-      refreshAfterDelete && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.deleteRoute(filterByTk, {
+            refreshAfterMutation: refreshAfterDelete,
+          })
+        : await resource.destroy({
+            filterByTk,
+          });
       return res;
     },
-    [refreshRoutes, resource],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const moveRoute = useCallback(
@@ -294,14 +308,30 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       /**
        * Insertion type - specifies whether to insert before or after the target element
        */
-      method?: 'insertAfter' | 'prepend';
+      method?: 'insertBefore' | 'insertAfter' | 'prepend';
       refreshAfterMove?: boolean;
     }) => {
-      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
-      refreshAfterMove && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.moveRoute({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+            refreshAfterMove,
+          })
+        : await resource.move({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+          });
       return res;
     },
-    [refreshRoutes, resource],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   return { createRoute, updateRoute, deleteRoute, moveRoute };

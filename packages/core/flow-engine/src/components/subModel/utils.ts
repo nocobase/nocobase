@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 import type { Collection } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';
@@ -232,6 +232,7 @@ export interface BuildFieldChildrenOptions {
   fieldUseModel?: string | ((field: any) => string);
   collection?: Collection;
   associationPathName?: string;
+  maxAssociationFieldDepth?: number;
   /**
    * 点击这些子项后，除自身路径外，还需要联动刷新的其他菜单路径前缀
    */
@@ -239,13 +240,17 @@ export interface BuildFieldChildrenOptions {
 }
 
 export function buildWrapperFieldChildren(ctx: FlowModelContext, options: BuildFieldChildrenOptions) {
-  const { useModel, fieldUseModel, associationPathName, refreshTargets } = options;
+  const { useModel, fieldUseModel, associationPathName, refreshTargets, maxAssociationFieldDepth = 2 } = options;
   const collection: Collection = options.collection || ctx.model['collection'] || ctx.collection;
   const fields = collection.getFields();
   const defaultItemKeys = ['fieldSettings', 'init'];
   const children: SubModelItem[] = [];
+  const associationDepth = associationPathName ? associationPathName.split('.').filter(Boolean).length : 0;
   for (const f of fields) {
     if (!f?.options?.interface) continue;
+    if (associationDepth >= maxAssociationFieldDepth && (f.isAssociationField?.() || f.target || f.targetCollection)) {
+      continue;
+    }
     const fieldPath = associationPathName ? `${associationPathName}.${f.name}` : f.name;
 
     const childUse = typeof fieldUseModel === 'function' ? fieldUseModel(f) : fieldUseModel ?? 'FieldModel';

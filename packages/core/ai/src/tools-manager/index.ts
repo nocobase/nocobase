@@ -17,17 +17,17 @@ export class DefaultToolsManager implements ToolsManager {
     private readonly dynamicTools: DynamicToolsProvider[] = [],
   ) {}
 
-  async getTools(toolName: string): Promise<ToolsEntry> {
+  async getTools(toolName: string, filter?: ToolsFilter): Promise<ToolsEntry> {
     const target = this.tools.get(toolName);
     if (target) {
       return target;
     }
-    const dynamicTools = await this.syncDynamicTools();
+    const dynamicTools = await this.syncDynamicTools(filter);
     return dynamicTools.find((x) => x.definition.name === toolName);
   }
 
   async listTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
-    const toolsList = await this.getToolsList();
+    const toolsList = await this.getToolsList(filter);
     return toolsList.filter((x) => {
       if (!filter) {
         return true;
@@ -50,10 +50,21 @@ export class DefaultToolsManager implements ToolsManager {
     });
   }
 
+  isToolsExisted(toolName: string): boolean {
+    const target = this.tools.get(toolName);
+    if (target) {
+      return true;
+    }
+    return false;
+  }
+
   registerTools(options: ToolsOptions | ToolsOptions[]): void {
     const list = _.isArray(options) ? options : [options];
     for (const item of list) {
       const toolsEntry = { ...item } as ToolsEntry;
+      if (!toolsEntry.from) {
+        toolsEntry.from = 'loader';
+      }
       if (!toolsEntry.execution) {
         toolsEntry.execution = 'backend';
       }
@@ -74,18 +85,18 @@ export class DefaultToolsManager implements ToolsManager {
     this.dynamicTools.push(provider);
   }
 
-  private async getToolsList(): Promise<ToolsEntry[]> {
-    const dynamicTools = await this.syncDynamicTools();
+  private async getToolsList(filter?: ToolsFilter): Promise<ToolsEntry[]> {
+    const dynamicTools = await this.syncDynamicTools(filter);
     return [...this.tools.getValues(), ...dynamicTools];
   }
 
-  private async syncDynamicTools(): Promise<ToolsEntry[]> {
+  private async syncDynamicTools(filter?: ToolsFilter): Promise<ToolsEntry[]> {
     if (this.dynamicTools.length === 0) {
       return [];
     }
     const registry = new Registry<ToolsEntry>();
     const ephemeral = new DefaultToolsManager(registry);
-    await Promise.all(this.dynamicTools.map((register) => register(ephemeral)));
+    await Promise.all(this.dynamicTools.map((register) => register(ephemeral, filter)));
     return [...registry.getValues()];
   }
 }
@@ -93,5 +104,13 @@ export class DefaultToolsManager implements ToolsManager {
 export function defineTools(options: ToolsOptions) {
   return options;
 }
+
+export const SYSTEM_TOOLS = {
+  WEB_SEARCH: 'subAgentWebSearch',
+  KNOWLEDGE_BASE: 'knowledge-base-retrieve',
+  WORK_FLOW_TASK_OUTPUT: 'aiEmployeeWorkflowTaskOutput',
+};
+
+export const listSystemTools = () => Object.values(SYSTEM_TOOLS);
 
 export * from './types';

@@ -189,4 +189,170 @@ describe('FlowEngine', () => {
       expect(mounted?.uid).toBe('c3');
     });
   });
+
+  describe('getSubclassesOfAsync', () => {
+    it('should return async-loaded subclasses matching extends declaration', async () => {
+      class AsyncSubModelD extends BaseModel {}
+      class AsyncSubModelE extends BaseModel {}
+
+      engine.registerModelLoaders({
+        AsyncSubModelD: {
+          extends: 'BaseModel',
+          loader: async () => ({ AsyncSubModelD }),
+        },
+        AsyncSubModelE: {
+          extends: 'BaseModel',
+          loader: async () => ({ AsyncSubModelE }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync(BaseModel);
+
+      // Sync-registered subclasses
+      expect(result.has('SubModelA')).toBe(true);
+      expect(result.has('SubModelB')).toBe(true);
+      expect(result.has('SubModelC')).toBe(true);
+      // Async-loaded subclasses
+      expect(result.has('AsyncSubModelD')).toBe(true);
+      expect(result.has('AsyncSubModelE')).toBe(true);
+      // Base class excluded
+      expect(result.has('BaseModel')).toBe(false);
+    });
+
+    it('should merge sync-registered and async-loaded subclasses', async () => {
+      class AsyncSubModel extends BaseModel {}
+
+      engine.registerModelLoaders({
+        AsyncSubModel: {
+          extends: 'BaseModel',
+          loader: async () => ({ AsyncSubModel }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync('BaseModel');
+
+      // Sync: SubModelA, SubModelB, SubModelC
+      expect(result.has('SubModelA')).toBe(true);
+      expect(result.has('SubModelB')).toBe(true);
+      expect(result.has('SubModelC')).toBe(true);
+      // Async
+      expect(result.has('AsyncSubModel')).toBe(true);
+      expect(result.size).toBe(4);
+    });
+
+    it('should support extends as string array (multiple parents)', async () => {
+      class AnotherBase extends FlowModel {}
+      class MultiParentModel extends BaseModel {}
+
+      engine.registerModels({ AnotherBase });
+      engine.registerModelLoaders({
+        MultiParentModel: {
+          extends: ['BaseModel', 'AnotherBase'],
+          loader: async () => ({ MultiParentModel }),
+        },
+      });
+
+      const resultBase = await engine.getSubclassesOfAsync(BaseModel);
+      expect(resultBase.has('MultiParentModel')).toBe(true);
+
+      // Also found by AnotherBase (even though actual inheritance is from BaseModel, not AnotherBase)
+      // The extends declaration triggers loading, but isInheritedFrom validation will exclude it from AnotherBase results
+      const resultAnother = await engine.getSubclassesOfAsync(AnotherBase);
+      expect(resultAnother.has('MultiParentModel')).toBe(false);
+    });
+
+    it('should support extends as ModelConstructor', async () => {
+      class AsyncCtorSubModel extends BaseModel {}
+
+      engine.registerModelLoaders({
+        AsyncCtorSubModel: {
+          extends: BaseModel,
+          loader: async () => ({ AsyncCtorSubModel }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync(BaseModel);
+      expect(result.has('AsyncCtorSubModel')).toBe(true);
+    });
+
+    it('should validate actual inheritance and warn on mismatch', async () => {
+      class UnrelatedModel extends FlowModel {}
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      engine.registerModelLoaders({
+        UnrelatedModel: {
+          extends: 'BaseModel',
+          loader: async () => ({ UnrelatedModel }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync(BaseModel);
+      expect(result.has('UnrelatedModel')).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("declares extends 'BaseModel' but does not actually inherit from it"),
+      );
+
+      warnSpy.mockRestore();
+    });
+
+    it('should resolve base class from loaders if not in _modelClasses', async () => {
+      const freshEngine = new FlowEngine();
+
+      class LazyBase extends FlowModel {}
+      class LazySub extends LazyBase {}
+
+      freshEngine.registerModelLoaders({
+        LazyBase: {
+          loader: async () => ({ LazyBase }),
+        },
+        LazySub: {
+          extends: 'LazyBase',
+          loader: async () => ({ LazySub }),
+        },
+      });
+
+      const result = await freshEngine.getSubclassesOfAsync('LazyBase');
+      expect(result.has('LazySub')).toBe(true);
+      expect(result.size).toBe(1);
+    });
+
+    it('should return empty Map when base class cannot be found', async () => {
+      const result = await engine.getSubclassesOfAsync('NonExistentModel');
+      expect(result.size).toBe(0);
+    });
+
+    it('should support filter parameter on both sync and async sources', async () => {
+      class FilteredAsyncModel extends BaseModel {}
+
+      engine.registerModelLoaders({
+        FilteredAsyncModel: {
+          extends: 'BaseModel',
+          loader: async () => ({ FilteredAsyncModel }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync(BaseModel, (_ModelClass, name) => name.startsWith('SubModelA'));
+
+      // Only SubModelA passes the filter (SubModelB, SubModelC, FilteredAsyncModel excluded)
+      expect(result.has('SubModelA')).toBe(true);
+      expect(result.has('SubModelB')).toBe(false);
+      expect(result.has('SubModelC')).toBe(false);
+      expect(result.has('FilteredAsyncModel')).toBe(false);
+    });
+
+    it('should not include loaders without extends declaration', async () => {
+      class NoExtendsModel extends BaseModel {}
+
+      engine.registerModelLoaders({
+        NoExtendsModel: {
+          loader: async () => ({ NoExtendsModel }),
+        },
+      });
+
+      const result = await engine.getSubclassesOfAsync(BaseModel);
+      // Only sync-registered subclasses; NoExtendsModel has no extends, so not discovered
+      expect(result.has('NoExtendsModel')).toBe(false);
+      expect(result.has('SubModelA')).toBe(true);
+    });
+  });
 });

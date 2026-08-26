@@ -13,6 +13,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'flowModelTemplates',
+  dataCategory: 'system',
   autoGenId: false,
   timestamps: true,
   fields: [

@@ -1,4 +1,6 @@
 ---
+title: "Block: Tree"
+keywords: "Blocks"
 displayName: "Block: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:

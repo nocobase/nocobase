@@ -19,6 +19,7 @@ import {
   GeneralSchemaDesigner,
   getPageMenuSchema,
   isVariable,
+  NocoBaseDesktopRouteType,
   SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
@@ -28,7 +29,6 @@ import {
   useURLAndHTMLSchema,
 } from '../../../';
 import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
-import { NocoBaseDesktopRouteType } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 
 const insertPositionToMethod = {
   beforeBegin: 'insertBefore',

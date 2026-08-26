@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Nodo de Cálculo
 
 El nodo de Cálculo le permite evaluar una expresión. El resultado de esta evaluación se guarda en el propio nodo, quedando disponible para su uso en nodos posteriores del flujo de trabajo. Es una herramienta potente para calcular, procesar y transformar datos. En cierta medida, puede reemplazar la funcionalidad de llamar a una función sobre un valor y asignar el resultado a una variable, como se haría en lenguajes de programación.
@@ -10,7 +6,7 @@ El nodo de Cálculo le permite evaluar una expresión. El resultado de esta eval
 
 En la interfaz de configuración del flujo de trabajo, haga clic en el botón de signo más ("+") dentro del flujo para añadir un nodo de "Cálculo":
 
-![Nodo de Cálculo_Añadir](https://static-docs.nocobase.com/58a45540d26945251cd143eb4b16579.png)
+![Nodo de Cálculo_Añadir](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## Configuración del nodo
 

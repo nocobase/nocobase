@@ -4,6 +4,15 @@
 # 设置最大并发数（可根据 CPU 核心数调整）
 MAX_JOBS=${MAX_JOBS:-4}
 
+# 先校对 _meta.json 侧边栏链接：自动修 missingSlash / explicitIndex 等
+# 可纠正项；如有真死链（unresolved）则在此处提前失败，避免后续 build 浪费时间。
+echo "Normalizing _meta.json sidebar links..."
+node scripts/normalize-doc-links.mjs --write
+if [ $? -ne 0 ]; then
+  echo "✗ Sidebar link check failed (dead sidebar links remain)"
+  exit 1
+fi
+
 # 构建英文版本
 echo "Building en (default)..."
 yarn build

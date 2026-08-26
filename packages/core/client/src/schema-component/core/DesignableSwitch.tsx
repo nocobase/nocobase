@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '..';
 import { useToken } from '../../style';
 import { useMobileLayout } from '../../route-switch/antd/admin-layout';
+import { useFlowEngine } from '@nocobase/flow-engine';
 
 const designableStyle = {
   backgroundColor: 'var(--colorSettings) !important',
@@ -30,6 +31,7 @@ export const DesignableSwitch: FC<{ style?: React.CSSProperties }> = (props) => 
   const { token } = useToken();
   const style = designable ? designableStyle : unDesignableStyle;
   const { isMobileLayout } = useMobileLayout();
+  const flowEngine = useFlowEngine();
 
   // 快捷键切换编辑状态
   useHotkeys('Ctrl+Shift+U', () => setDesignable(!designable), [designable]);
@@ -47,8 +49,15 @@ export const DesignableSwitch: FC<{ style?: React.CSSProperties }> = (props) => 
         title={t('UI Editor')}
         // subtitle={'Ctrl+Shift+U'}
         style={{ ...style, ...props.style }}
-        onClick={() => {
-          setDesignable(!designable);
+        onClick={async () => {
+          const newDesignable = !designable;
+          setDesignable(newDesignable);
+          // 移动端中不允许配置 UI；非设计态也无需启用 flow settings
+          if (isMobileLayout || !newDesignable) {
+            await flowEngine.flowSettings.disable();
+          } else {
+            await flowEngine.flowSettings.enable();
+          }
         }}
       />
     </Tooltip>

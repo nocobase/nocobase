@@ -19,7 +19,7 @@ import { AttachmentModel } from '@nocobase/plugin-file-manager';
 
 export class KimiProvider extends LLMProvider {
   declare chatModel: ReasoningChatOpenAI;
-  private _documentLoader: CachedDocumentLoader;
+  private _documentLoader: CachedDocumentLoader | undefined;
 
   get baseURL() {
     return 'https://api.moonshot.cn/v1';
@@ -28,12 +28,12 @@ export class KimiProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
-    const responseFormatOptions = {
+    const { name, schema } = structuredOutput || {};
+    const responseFormatOptions: Record<string, any> = {
       type: responseFormat ?? 'text',
     };
     if (responseFormat === 'json_schema' && schema) {
-      responseFormatOptions['json_schema'] = schema;
+      responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
     }
     return new ReasoningChatOpenAI({
       apiKey,

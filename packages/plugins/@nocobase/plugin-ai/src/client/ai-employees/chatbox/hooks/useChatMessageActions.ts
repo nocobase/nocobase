@@ -7,53 +7,85 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useChatMessagesStore } from '../stores/chat-messages';
-import { useCallback, useEffect, useRef } from 'react';
-import { useAPIClient, useApp, usePlugin, useRequest } from '@nocobase/client';
+import { useChat } from '../hooks/useChat';
+import { useCallback } from 'react';
+import { useAPIClient, useApp } from '@nocobase/client';
 import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
-import PluginAIClient from '../../..';
 import { uid } from '@formily/shared';
 import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
-import { parseWorkContext } from '../utils';
+import { flattenMessages, parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
-import { ensureModel } from '../model';
+import { ensureModel, getAllModels, isSameModel, isValidModel } from '../model';
 import { ContextItem } from '../../types';
 import { FlowUtils } from '../../flow';
 import { UploadFieldModel } from '@nocobase/plugin-file-manager/client';
+
+const STREAM_UPDATE_INTERVAL = 50;
+
+type MessagesResponse = {
+  data: Message[];
+  meta: {
+    cursor?: string;
+    hasMore?: boolean;
+  };
+};
 
 export const useChatMessageActions = () => {
   const app = useApp();
   const t = useT();
   const api = useAPIClient();
-  const plugin = usePlugin('ai') as PluginAIClient;
   const aiConfigRepository = useAIConfigRepository();
 
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
   const setModel = useChatBoxStore.use.setModel();
 
-  const messages = useChatMessagesStore.use.messages();
-  const setMessages = useChatMessagesStore.use.setMessages();
-  const addMessage = useChatMessagesStore.use.addMessage();
-  const addMessages = useChatMessagesStore.use.addMessages();
-  const updateLastMessage = useChatMessagesStore.use.updateLastMessage();
-  const setResponseLoading = useChatMessagesStore.use.setResponseLoading();
-  const setAbortController = useChatMessagesStore.use.setAbortController();
-  const setAttachments = useChatMessagesStore.use.setAttachments();
-  const addAttachments = useChatMessagesStore.use.addAttachments();
-  const setContextItems = useChatMessagesStore.use.setContextItems();
-  const setWebSearching = useChatMessagesStore.use.setWebSearching();
-
-  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const currentConversation = useChatConversationsStore.use.currentConversation?.();
   const currentWebSearch = useChatConversationsStore.use.webSearch();
+  const setConversationUnreadCount = useChatConversationsStore.use.setUnreadCount();
+  const chat = useChat(currentConversation);
+  const messages = chat.use.messages();
+  const abortController = chat.use.abortController();
+  const setMessages = chat.setMessages;
+  const setResponseLoading = chat.setResponseLoading;
+  const setAbortController = chat.setAbortController;
+  const setAttachments = chat.setAttachments;
+  const setContextItems = chat.setContextItems;
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
-
+  const getSessionChat = useCallback((sessionId?: string) => chat.for(sessionId).getState(), [chat]);
+  const getConversationModel = useCallback(
+    (messages: Message[], services: Awaited<ReturnType<typeof aiConfigRepository.getLLMServices>>) => {
+      for (let i = messages.length - 1; i >= 0; i -= 1) {
+        const metadata = messages[i]?.content?.metadata;
+        if (metadata?.llmService && metadata?.model) {
+          return {
+            llmService: metadata.llmService,
+            model: metadata.model,
+          };
+        }
+        if (metadata?.provider && metadata?.model) {
+          const candidates = services
+            .filter((service) => service.provider === metadata.provider)
+            .filter((service) => service.enabledModels.some((model) => model.value === metadata.model));
+          if (candidates.length === 1) {
+            return {
+              llmService: candidates[0].llmService,
+              model: metadata.model,
+            };
+          }
+        }
+      }
+      return null;
+    },
+    [aiConfigRepository],
+  );
   const ensureModelFromStore = useCallback(
     async (username?: string) => {
       const state = useChatBoxStore.getState();
@@ -64,7 +96,8 @@ export const useChatMessageActions = () => {
       return ensureModel({
         api,
         aiConfigRepository,
-        username: targetUsername,
+        aiEmployee:
+          state.currentEmployee?.username === targetUsername ? state.currentEmployee : { username: targetUsername },
         currentOverride: state.model,
         onResolved: setModel,
       });
@@ -74,6 +107,7 @@ export const useChatMessageActions = () => {
 
   const syncContextAttachments = useCallback(
     (items: ContextItem | ContextItem[]) => {
+      const sessionChat = getSessionChat(useChatConversationsStore.getState().currentConversation);
       const contextItems = Array.isArray(items) ? items : [items];
       for (const item of contextItems.filter((it) => it.type?.startsWith('flow-model'))) {
         const model = app.flowEngine.getModel(item.uid, true);
@@ -86,262 +120,496 @@ export const useChatMessageActions = () => {
             subModel.props?.value?.length &&
             typeof subModel.props.value !== 'string'
           ) {
-            addAttachments(subModel.props.value.map((it) => ({ ...it, status: 'done' })));
+            sessionChat.addAttachments(subModel.props.value.map((it) => ({ ...it, status: 'done' })));
           }
         });
       }
     },
-    [app, addAttachments],
+    [app, getSessionChat],
   );
 
-  const messagesService = useRequest<{
-    data: Message[];
-    meta: {
-      cursor?: string;
-      hasMore?: boolean;
-    };
-  }>(
-    (sessionId, cursor?: string) =>
-      api
-        .resource('aiConversations')
-        .getMessages({
+  const loadMessages = useCallback(
+    async (sessionId?: string, cursor?: string) => {
+      if (!sessionId) {
+        return;
+      }
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setMessagesLoading(true);
+      sessionChat.setMessagesError(null);
+      try {
+        const activeConversation = useChatConversationsStore.getState().currentConversation;
+        const chatBoxOpen = useChatBoxStore.getState().open;
+        const res = await api.resource('aiConversations').getMessages({
           sessionId,
           cursor,
           paginate: false,
-        })
-        .then((res) => {
-          const data = res?.data;
-          if (!data?.data) {
-            return;
+          updateRead: sessionId === activeConversation && chatBoxOpen,
+        });
+
+        const data = res?.data as MessagesResponse | undefined;
+        if (!data?.data) {
+          sessionChat.setMessagesMeta({});
+          return;
+        }
+        const newMessages = [...data.data].reverse();
+        const services = !cursor ? await aiConfigRepository.getLLMServices() : [];
+        const conversationModel = !cursor ? getConversationModel(newMessages, services) : null;
+        if (conversationModel) {
+          const currentModel = useChatBoxStore.getState().model;
+          const allModels = getAllModels(services);
+          if (isValidModel(conversationModel, allModels) && !isSameModel(currentModel, conversationModel)) {
+            setModel(conversationModel);
           }
-          const newMessages = [...data.data].reverse();
-
-          // [AI_DEBUG] backend tool results
-          for (const msg of newMessages) {
-            const toolCalls = msg.content?.tool_calls;
-            if (toolCalls?.length) {
-              for (const tc of toolCalls) {
-                if (tc.willInterrupt) {
-                  updateToolCallInvokeStatus(msg.content.messageId, tc.id, tc.invokeStatus);
-                }
-                if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
-                  const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
-                  aiDebugLogger.log(sessionId, 'tool_result', {
-                    toolCallId: tc.id,
-                    toolName: tc.name,
-                    args: tc.args,
-                    status: tc.status,
-                    invokeStatus: tc.invokeStatus,
-                    auto: tc.auto,
-                    execution: 'backend',
-                    contentPreview: contentStr?.slice(0, 500),
-                  });
-                }
-              }
-            }
-          }
-
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            const result = cursor ? [...newMessages, ...prev] : newMessages;
-            if (last?.role === 'error') {
-              result.push(last);
-            }
-            return result;
-          });
-        }),
-    {
-      manual: true,
-    },
-  );
-  const messagesServiceRef = useRef<any>();
-  messagesServiceRef.current = messagesService;
-
-  const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
-    const reader = stream.getReader();
-    const decoder = new TextDecoder();
-    let result = '';
-    let error = false;
-
-    try {
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done || error) {
-          setResponseLoading(false);
-          setWebSearching(null);
-          break;
         }
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(Boolean);
-
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line.replace(/^data: /, ''));
-            if (data.type === 'stream_start') {
-              console.log('stream_start', sessionId);
-            }
-            if (data.type === 'stream_end') {
-              console.log('stream_end', sessionId);
-            }
-            if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
-              // [AI_DEBUG] stream_reasoning
-              aiDebugLogger.log(sessionId, 'stream_reasoning', {
-                phase: 'delta',
-                preview: data.body.content?.slice?.(0, 120) || '',
-              });
-              updateLastMessage((last) => ({
-                ...last,
-                content: {
-                  ...last.content,
-                  reasoning: {
-                    status: data.body.status,
-                    content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
-                  },
-                },
-                loading: false,
-              }));
-            }
-            if (data.type === 'content' && data.body && typeof data.body === 'string') {
-              // [AI_DEBUG] stream_text
-              aiDebugLogger.log(sessionId, 'stream_text', {
-                preview: data.body?.slice?.(0, 100) || '',
-              });
-              updateLastMessage((last) => ({
-                ...last,
-                content: {
-                  ...last.content,
-                  content: (last.content as any).content + data.body,
-                },
-                loading: false,
-              }));
-            }
-            if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
-              // [AI_DEBUG] stream_delta
-              aiDebugLogger.log(sessionId, 'stream_delta', {
-                chunk: (data.body.toolCalls ?? [])[0],
-              });
-              updateLastMessage((last) => {
-                const toolCalls = last.content.tool_calls || [];
-                const toolCallChunk = data.body[0];
-                if (toolCallChunk.name) {
-                  toolCalls.push(toolCallChunk);
-                } else if (toolCalls.length > 0) {
-                  toolCalls[toolCalls.length - 1].args += data.body[0].args;
-                }
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: toolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
-              updateLastMessage((last) => {
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: data.body.toolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'tool_call_status') {
-              if (data.body?.toolCall) {
-                const { toolCall, invokeStatus } = data.body;
-                if (toolCall.willInterrupt) {
-                  updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
-                }
+        // [AI_DEBUG] backend tool results
+        for (const msg of newMessages) {
+          const toolCalls = msg.content?.tool_calls;
+          if (toolCalls?.length) {
+            for (const tc of toolCalls) {
+              if (tc.willInterrupt) {
+                updateToolCallInvokeStatus(sessionId, msg.content.messageId, tc.id, tc.invokeStatus);
               }
-              updateLastMessage((last) => {
-                const toolCalls = last.content.tool_calls || [];
-                const toolCallId = data.body?.toolCall?.id;
-                const nextToolCalls = toolCalls.map((t) =>
-                  t.id === toolCallId
-                    ? {
-                        ...t,
-                        invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
-                        status: data.body?.status ?? t.status,
-                      }
-                    : t,
-                );
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: nextToolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'web_search' && data.body?.length) {
-              // [AI_DEBUG] stream_search
-              aiDebugLogger.log(sessionId, 'stream_search', {
-                actions: data.body,
-              });
-              for (const item of data.body) {
-                setWebSearching(item);
+              if (tc.invokeStatus === 'done' || tc.invokeStatus === 'confirmed') {
+                const contentStr = typeof tc.content === 'string' ? tc.content : JSON.stringify(tc.content);
+                aiDebugLogger.log(sessionId, 'tool_result', {
+                  toolCallId: tc.id,
+                  toolName: tc.name,
+                  args: tc.args,
+                  status: tc.status,
+                  invokeStatus: tc.invokeStatus,
+                  auto: tc.auto,
+                  execution: 'backend',
+                  contentPreview: contentStr?.slice(0, 500),
+                });
               }
             }
-            if (data.type === 'new_message') {
-              // [AI_DEBUG] stream_start
-              aiDebugLogger.log(sessionId, 'stream_start', {});
-              addMessage({
-                key: uid(),
-                role: aiEmployee.username,
-                content: { type: 'text', content: '' },
-                loading: true,
-              });
+          }
+          if (msg.content?.subAgentConversations?.length) {
+            for (const conversation of msg.content.subAgentConversations) {
+              for (const subMessage of conversation.messages ?? []) {
+                const subMessageId = subMessage.content?.messageId;
+                const subToolCalls = subMessage.content?.tool_calls;
+                if (!subMessageId || !subToolCalls?.length) {
+                  continue;
+                }
+                for (const tc of subToolCalls) {
+                  if (tc.willInterrupt) {
+                    updateToolCallInvokeStatus(sessionId, subMessageId, tc.id, tc.invokeStatus);
+                  }
+                }
+              }
             }
-            if (data.type === 'error') {
-              // [AI_DEBUG] stream_error
-              aiDebugLogger.log(sessionId, 'stream_error', {
-                message: data.body,
-              });
-              error = true;
-              result = data.errorName ? data.errorName : data.body;
-            }
-          } catch (e) {
-            console.error('Error parsing stream data:', e);
           }
         }
+
+        sessionChat.setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          const result = cursor ? [...newMessages, ...prev] : newMessages;
+          if (last?.role === 'error') {
+            result.push(last);
+          }
+          return result;
+        });
+        sessionChat.setMessagesMeta(data.meta || {});
+      } catch (error) {
+        sessionChat.setMessagesError(error);
+      } finally {
+        sessionChat.setMessagesLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      if (err.name !== 'AbortError') {
+    },
+    [api, aiConfigRepository, getConversationModel, getSessionChat, setModel, updateToolCallInvokeStatus],
+  );
+
+  const getConversationLLMActiveState = useCallback(
+    async (sessionId: string): Promise<string | undefined> => {
+      const res = await api.resource('aiConversations').get({
+        filter: { sessionId },
+      });
+      return res.data?.data?.llmActiveState;
+    },
+    [api],
+  );
+
+  const processStreamResponse = useCallback(
+    async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setBackgroundWorking(false);
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+      let error = false;
+      let streamBuffer = '';
+
+      type MessagesStore = {
+        addMessage: (msg: Message) => void;
+        updateLast: (updater: (msg: Message) => Message) => void;
+      };
+
+      type PendingStreamUpdate = {
+        updateLast: MessagesStore['updateLast'];
+        content: string;
+        reasoningContent: string;
+        reasoningStatus?: string;
+        from?: Message['content']['from'];
+        timer?: ReturnType<typeof setTimeout>;
+      };
+
+      const pendingStreamUpdates = new Map<string, PendingStreamUpdate>();
+
+      const flushPendingStreamUpdate = (key: string) => {
+        const pending = pendingStreamUpdates.get(key);
+        if (!pending) {
+          return;
+        }
+        pendingStreamUpdates.delete(key);
+        pending.updateLast((last) => {
+          const nextContent = { ...last.content };
+          if (pending.from) {
+            nextContent.from = pending.from;
+          }
+          if (pending.content) {
+            nextContent.content = `${(last.content as any).content ?? ''}${pending.content}`;
+          }
+          if (pending.reasoningContent) {
+            nextContent.reasoning = {
+              status: pending.reasoningStatus,
+              content: `${last.content.reasoning?.content ?? ''}${pending.reasoningContent}`,
+            };
+          }
+          return {
+            ...last,
+            createdAt: new Date().toISOString(),
+            content: nextContent,
+            loading: false,
+          };
+        });
+      };
+
+      const flushAllPendingStreamUpdates = () => {
+        for (const key of Array.from(pendingStreamUpdates.keys())) {
+          const pending = pendingStreamUpdates.get(key);
+          if (pending?.timer) {
+            clearTimeout(pending.timer);
+          }
+          flushPendingStreamUpdate(key);
+        }
+      };
+
+      const clearAllPendingStreamUpdates = () => {
+        for (const pending of pendingStreamUpdates.values()) {
+          if (pending.timer) {
+            clearTimeout(pending.timer);
+          }
+        }
+        pendingStreamUpdates.clear();
+      };
+
+      const enqueueStreamUpdate = (
+        key: string,
+        store: MessagesStore,
+        update: Pick<PendingStreamUpdate, 'content' | 'reasoningContent' | 'reasoningStatus' | 'from'>,
+      ) => {
+        const pending = pendingStreamUpdates.get(key) ?? {
+          updateLast: store.updateLast,
+          content: '',
+          reasoningContent: '',
+        };
+        pending.updateLast = store.updateLast;
+        if (update.from === 'main-agent' || update.from === 'sub-agent') {
+          pending.from = update.from;
+        }
+        pending.content += update.content ?? '';
+        pending.reasoningContent += update.reasoningContent ?? '';
+        pending.reasoningStatus = update.reasoningStatus ?? pending.reasoningStatus;
+        if (!pending.timer) {
+          pending.timer = setTimeout(() => {
+            flushPendingStreamUpdate(key);
+          }, STREAM_UPDATE_INTERVAL);
+        }
+        pendingStreamUpdates.set(key, pending);
+      };
+
+      const getStreamUpdateKey = (data: any) =>
+        `${data.from || 'main-agent'}:${data.sessionId || sessionId}:${data.username || ''}`;
+
+      const processStreamStart = (data: any) => {
+        if (data.type === 'stream_start') {
+          console.debug('stream_start', data.from, data.sessionId);
+        }
+      };
+
+      const processStreamEnd = (data: any) => {
+        if (data.type === 'stream_end') {
+          console.debug('stream_end', data.from, data.sessionId);
+        }
+      };
+
+      const processResumeStreamUnavailable = (data: any) => {
+        if (data.type === 'chunks_cache_missing') {
+          sessionChat.setResumeStreamFailed(true);
+        }
+      };
+
+      const processReasoning = (data: any, store: MessagesStore) => {
+        if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
+          aiDebugLogger.log(data.sessionId, 'stream_reasoning', {
+            phase: 'delta',
+            preview: data.body.content?.slice?.(0, 120) || '',
+          });
+          enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+            from: data.from,
+            content: '',
+            reasoningContent: data.body.content,
+            reasoningStatus: data.body.status,
+          });
+        }
+      };
+
+      const processContent = (data: any, store: MessagesStore) => {
+        if (data.type === 'content' && data.body && typeof data.body === 'string') {
+          aiDebugLogger.log(data.sessionId, 'stream_text', {
+            preview: data.body?.slice?.(0, 100) || '',
+          });
+          enqueueStreamUpdate(getStreamUpdateKey(data), store, {
+            from: data.from,
+            content: data.body,
+            reasoningContent: '',
+          });
+        }
+      };
+
+      const processToolCallChunks = (data: any, store: MessagesStore) => {
+        if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+          aiDebugLogger.log(data.sessionId, 'stream_delta', {
+            chunk: (data.body.toolCalls ?? [])[0],
+          });
+          store.updateLast((last) => {
+            const toolCalls = last.content.tool_calls || [];
+            const toolCallChunk = data.body[0];
+            let nextToolCalls = toolCalls;
+            if (toolCallChunk.name) {
+              nextToolCalls = [...toolCalls, toolCallChunk];
+            } else if (toolCalls.length > 0) {
+              const lastToolCall = toolCalls[toolCalls.length - 1];
+              nextToolCalls = [
+                ...toolCalls.slice(0, -1),
+                {
+                  ...lastToolCall,
+                  args: `${lastToolCall.args ?? ''}${data.body[0].args ?? ''}`,
+                },
+              ];
+            }
+            return {
+              ...last,
+              createdAt: new Date().toISOString(),
+              content: {
+                ...last.content,
+                from: data.from,
+                tool_calls: nextToolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processToolCall = (data: any, store: MessagesStore) => {
+        if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
+          store.updateLast((last) => {
+            return {
+              ...last,
+              createdAt: new Date().toISOString(),
+              content: {
+                ...last.content,
+                from: data.from,
+                tool_calls: data.body.toolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processToolCallStatus = (data: any, store: MessagesStore) => {
+        if (data.type === 'tool_call_status') {
+          if (data.body?.toolCall) {
+            const { toolCall, invokeStatus } = data.body;
+            if (toolCall.willInterrupt) {
+              updateToolCallInvokeStatus(sessionId, toolCall.messageId, toolCall.id, invokeStatus);
+            }
+          }
+          store.updateLast((last) => {
+            const toolCalls = last.content.tool_calls || [];
+            const toolCallId = data.body?.toolCall?.id;
+            const nextToolCalls = toolCalls.map((t) =>
+              t.id === toolCallId
+                ? {
+                    ...t,
+                    invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
+                    status: data.body?.status ?? t.status,
+                    invokeStartTime: data.body?.invokeStartTime ?? t.invokeStartTime,
+                    invokeEndTime: data.body?.invokeEndTime ?? t.invokeEndTime,
+                    content: data.body?.content ?? t.content,
+                  }
+                : t,
+            );
+            return {
+              ...last,
+              content: {
+                ...last.content,
+                tool_calls: nextToolCalls,
+              },
+              loading: false,
+            };
+          });
+        }
+      };
+
+      const processWebSearch = (data: any) => {
+        if (data.type === 'web_search' && data.body?.length) {
+          aiDebugLogger.log(data.sessionId, 'stream_search', {
+            actions: data.body,
+          });
+          for (const item of data.body) {
+            sessionChat.setWebSearching(item);
+          }
+        }
+      };
+
+      const processNewMessage = (data: any, store: MessagesStore) => {
+        if (data.type === 'new_message') {
+          aiDebugLogger.log(data.sessionId, 'stream_start', {});
+          store.addMessage({
+            key: uid(),
+            role: aiEmployee.username,
+            createdAt: new Date().toISOString(),
+            content: { from: data.from, type: 'text', content: '' },
+            loading: true,
+          });
+        }
+      };
+
+      const processError = (data: any) => {
+        if (data.type === 'error') {
+          aiDebugLogger.log(data.sessionId, 'stream_error', {
+            message: data.body,
+          });
+          error = true;
+          result = data.errorName ? data.errorName : data.body;
+        }
+      };
+
+      const mainAgentMessageStore = {
+        addMessage: sessionChat.addMessage,
+        updateLast: sessionChat.updateLastMessage,
+      };
+
+      try {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done || error) {
+            flushAllPendingStreamUpdates();
+            sessionChat.setResponseLoading(false);
+            sessionChat.setWebSearching(null);
+            break;
+          }
+
+          streamBuffer += decoder.decode(value, { stream: true });
+          const parts = streamBuffer.split(/\r?\n/);
+          streamBuffer = parts.pop() ?? '';
+          const lines = parts.filter(Boolean);
+
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line.replace(/^data: /, ''));
+              processError(data);
+              processResumeStreamUnavailable(data);
+              if (data.from === 'main-agent') {
+                sessionChat.setBackgroundWorking(false);
+                if (sessionId !== data.sessionId) {
+                  console.warn('invalid session id, ignore chunks', data);
+                  continue;
+                }
+                processStreamStart(data);
+                processStreamEnd(data);
+                processNewMessage(data, mainAgentMessageStore);
+                processReasoning(data, mainAgentMessageStore);
+                processContent(data, mainAgentMessageStore);
+                processToolCallChunks(data, mainAgentMessageStore);
+                processToolCall(data, mainAgentMessageStore);
+                processToolCallStatus(data, mainAgentMessageStore);
+                processWebSearch({
+                  ...data,
+                  sessionId,
+                });
+              } else if (data.from === 'sub-agent') {
+                sessionChat.setBackgroundWorking(false);
+                const subAgentMessageStore = {
+                  addMessage: (msg: Message) => {
+                    msg.role = data.username;
+                    sessionChat.addSubAgentMessage(data.sessionId, msg);
+                  },
+                  updateLast: (updater: (msg: Message) => Message) => {
+                    sessionChat.updateLastSubAgentMessage(data.sessionId, data.username, updater);
+                  },
+                };
+
+                if (data.type === 'sub_agent_completed') {
+                  sessionChat.updateSubAgentConversationStatus(data.sessionId, 'completed');
+                }
+
+                processNewMessage(data, subAgentMessageStore);
+                processReasoning(data, subAgentMessageStore);
+                processContent(data, subAgentMessageStore);
+                processToolCallChunks(data, subAgentMessageStore);
+                processToolCall(data, subAgentMessageStore);
+                processToolCallStatus(data, subAgentMessageStore);
+                processWebSearch({
+                  ...data,
+                  sessionId,
+                });
+              }
+            } catch (e) {
+              console.error('Error parsing stream data:', e);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (err.name === 'AbortError') {
+          clearAllPendingStreamUpdates();
+          sessionChat.setResponseLoading(false);
+          sessionChat.setWebSearching(null);
+          return;
+        }
         error = true;
         result = err.message;
 
-        // [AI_DEBUG] error
         aiDebugLogger.log(sessionId, 'error', {
           message: err.message,
           stack: err.stack?.slice(0, 500),
           context: { phase: 'stream_processing' },
         });
       }
-    }
 
-    if (error) {
-      updateLastMessage((last) => ({
-        ...last,
-        role: 'error',
-        loading: false,
-        content: {
-          ...last.content,
-          content: t(result),
-        },
-      }));
-    }
+      if (error) {
+        sessionChat.updateLastMessage((last) => ({
+          ...last,
+          role: 'error',
+          loading: false,
+          content: {
+            ...last.content,
+            content: t(result),
+          },
+        }));
+      }
 
-    await messagesServiceRef.current.runAsync(sessionId);
-  };
+      await loadMessages(sessionId);
+    },
+    [getSessionChat, loadMessages, t, updateToolCallInvokeStatus],
+  );
 
   const sendMessages = async ({
     sessionId,
@@ -359,6 +627,10 @@ export const useChatMessageActions = () => {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
     if (!sendMsgs.length) return;
+    const draftSessionId = sessionId;
+    let targetSessionId = sessionId;
+    let sessionChat = getSessionChat(targetSessionId);
+    sessionChat.setBackgroundWorking(false);
 
     // Read model from store at call time to avoid stale closure
     const model = inputModel ?? useChatBoxStore.getState().model;
@@ -378,11 +650,13 @@ export const useChatMessageActions = () => {
       },
       { employeeId: aiEmployee?.username, employeeName: aiEmployee?.nickname },
     );
-
-    const last = messages[messages.length - 1];
+    const sessionMessages = sessionChat.messages;
+    const renderedSessionMessages = flattenMessages(sessionMessages);
+    const last = sessionMessages[sessionMessages.length - 1];
     if (last?.role === 'error') {
-      setMessages((prev) => prev.slice(0, -1));
+      sessionChat.setMessages((prev) => prev.slice(0, -1));
     }
+    const lastRenderedMessage = renderedSessionMessages.at(-1);
 
     const parsedWorkContext = await parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
@@ -392,38 +666,79 @@ export const useChatMessageActions = () => {
       attachments: index === 0 ? attachments : undefined,
       workContext: index === 0 ? parsedWorkContext : undefined,
     }));
-    addMessages(
-      sendMsgs.map((msg, index) => ({
-        key: uid(),
-        role: 'user',
-        content: {
-          ...msg,
-          attachments: index === 0 ? attachments : undefined,
-          workContext: index === 0 ? workContext : undefined,
-        },
-      })),
-    );
+    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
+      sessionChat.addSubAgentMessages(
+        lastRenderedMessage.key,
+        sendMsgs.map((msg, index) => ({
+          key: uid(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    } else {
+      sessionChat.addMessages(
+        sendMsgs.map((msg, index) => ({
+          key: uid(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    }
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage, skillSettings },
+        values: {
+          aiEmployee,
+          systemMessage,
+          skillSettings,
+          modelSettings: model
+            ? {
+                llmService: model.llmService,
+                model: model.model,
+              }
+            : undefined,
+        },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;
       sessionId = conversation.sessionId;
+      targetSessionId = sessionId;
+      chat.for(draftSessionId).migrateSessionState(sessionId);
+      if (draftSessionId) {
+        useChatToolCallStore.getState().migrateSessionState(draftSessionId, sessionId);
+      }
+      sessionChat = getSessionChat(sessionId);
       onConversationCreate?.(sessionId);
     }
+    sessionChat.setWebSearching(null);
+    sessionChat.setResponseLoading(true);
 
-    setResponseLoading(true);
-    addMessage({
-      key: uid(),
-      role: aiEmployee.username,
-      content: { type: 'text', content: '' },
-      loading: true,
-    });
+    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
+      sessionChat.addSubAgentMessage(lastRenderedMessage.key, {
+        key: uid(),
+        role: lastRenderedMessage.roleName,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    } else {
+      sessionChat.addMessage({
+        key: uid(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    }
 
     const controller = new AbortController();
-    setAbortController(controller);
+    sessionChat.setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:sendMessages',
@@ -445,26 +760,31 @@ export const useChatMessageActions = () => {
       });
 
       if (!sendRes?.data) {
-        setResponseLoading(false);
+        sessionChat.setResponseLoading(false);
         return;
       }
 
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        sessionChat.setResponseLoading(false);
+        sessionChat.setWebSearching(null);
         return;
       }
-      setResponseLoading(false);
+      sessionChat.setResponseLoading(false);
       throw err;
     } finally {
-      setAbortController(null);
+      sessionChat.setAbortController(null);
     }
   };
 
   const resendMessages = async ({ sessionId, messageId, aiEmployee, important }: ResendOptions) => {
-    const index = messages.findIndex((msg) => msg.key === messageId);
-    setResponseLoading(true);
-    setMessages((prev) => [
+    const sessionChat = getSessionChat(sessionId);
+    const index = sessionChat.messages.findIndex((msg) => msg.key === messageId);
+    sessionChat.setWebSearching(null);
+    sessionChat.setBackgroundWorking(false);
+    sessionChat.setResponseLoading(true);
+    sessionChat.setMessages((prev) => [
       ...prev.slice(0, index),
       {
         key: uid(),
@@ -485,7 +805,7 @@ export const useChatMessageActions = () => {
     }
 
     const controller = new AbortController();
-    setAbortController(controller);
+    sessionChat.setAbortController(controller);
     try {
       const sendRes = await api.request({
         url: 'aiConversations:resendMessages',
@@ -499,24 +819,78 @@ export const useChatMessageActions = () => {
       });
 
       if (!sendRes?.data) {
-        setResponseLoading(false);
+        sessionChat.setResponseLoading(false);
         return;
       }
 
       await processStreamResponse(sendRes.data, sessionId, aiEmployee);
     } catch (err) {
       if (err.name === 'CanceledError') {
+        sessionChat.setResponseLoading(false);
+        sessionChat.setWebSearching(null);
         return;
       }
-      setResponseLoading(false);
+      sessionChat.setResponseLoading(false);
       throw err;
     } finally {
-      setAbortController(null);
+      sessionChat.setAbortController(null);
     }
   };
 
+  const resumeStream = useCallback(
+    async ({ sessionId, aiEmployee }: { sessionId: string; aiEmployee: AIEmployee }) => {
+      if (!sessionId || !aiEmployee) {
+        return;
+      }
+
+      const sessionChat = getSessionChat(sessionId);
+      const last = sessionChat.messages[sessionChat.messages.length - 1];
+
+      sessionChat.setBackgroundWorking(false);
+      sessionChat.setResponseLoading(true);
+
+      const controller = new AbortController();
+      sessionChat.setAbortController(controller);
+      try {
+        const sendRes = await api.request({
+          url: 'aiConversations:resumeStream',
+          method: 'POST',
+          headers: { Accept: 'text/event-stream' },
+          data: { sessionId },
+          responseType: 'stream',
+          adapter: 'fetch',
+          signal: controller.signal,
+          skipNotify: (err) => err.name === 'CanceledError',
+        });
+
+        if (!sendRes?.data) {
+          sessionChat.setResponseLoading(false);
+          return;
+        }
+
+        sessionChat.addMessage({
+          key: uid(),
+          role: aiEmployee.username,
+          content: { type: 'text', content: '' },
+          loading: true,
+        });
+
+        await processStreamResponse(sendRes.data, sessionId, aiEmployee);
+      } catch (err) {
+        if (err.name === 'CanceledError') {
+          return;
+        }
+        sessionChat.setResponseLoading(false);
+        throw err;
+      } finally {
+        sessionChat.setAbortController(null);
+      }
+    },
+    [api, getSessionChat, processStreamResponse],
+  );
+
   const cancelRequest = useCallback(async () => {
-    const controller = useChatMessagesStore.getState().abortController;
+    const controller = abortController;
     if (!controller) {
       return;
     }
@@ -529,9 +903,9 @@ export const useChatMessageActions = () => {
     });
     // sleep(500)
     await new Promise((resolve) => setTimeout(resolve, 500));
-    messagesServiceRef.current.run(currentConversation);
+    loadMessages(currentConversation);
     setResponseLoading(false);
-  }, [currentConversation]);
+  }, [abortController, api, currentConversation, loadMessages, setAbortController, setResponseLoading]);
 
   const resumeToolCall = useCallback(
     async ({
@@ -547,7 +921,10 @@ export const useChatMessageActions = () => {
       toolCallIds?: string[];
       toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
-      setResponseLoading(true);
+      const sessionChat = getSessionChat(sessionId);
+      sessionChat.setWebSearching(null);
+      sessionChat.setBackgroundWorking(false);
+      sessionChat.setResponseLoading(true);
       // Read model from store at call time to avoid stale closure.
       // If not ready yet, resolve it through shared model rules.
       let model = useChatBoxStore.getState().model;
@@ -555,7 +932,7 @@ export const useChatMessageActions = () => {
         model = await ensureModelFromStore(aiEmployee?.username);
       }
       const controller = new AbortController();
-      setAbortController(controller);
+      sessionChat.setAbortController(controller);
       try {
         const sendRes = await api.request({
           url: 'aiConversations:resumeToolCall',
@@ -568,70 +945,81 @@ export const useChatMessageActions = () => {
         });
 
         if (!sendRes?.data) {
-          setResponseLoading(false);
+          sessionChat.setResponseLoading(false);
           return;
         }
 
         await processStreamResponse(sendRes.data, sessionId, aiEmployee);
       } catch (err) {
         if (err.name === 'CanceledError') {
+          sessionChat.setResponseLoading(false);
+          sessionChat.setWebSearching(null);
           return;
         }
-        setResponseLoading(false);
+        sessionChat.setResponseLoading(false);
         throw err;
       } finally {
-        setAbortController(null);
+        sessionChat.setAbortController(null);
       }
     },
-    [currentWebSearch, ensureModelFromStore],
+    [api, currentWebSearch, ensureModelFromStore, getSessionChat, processStreamResponse],
   );
 
   const loadMoreMessages = useCallback(async () => {
-    const messagesService = messagesServiceRef.current;
-    if (messagesService.loading || !messagesService.data?.meta?.hasMore) {
+    const sessionChat = getSessionChat(currentConversation);
+    if (sessionChat.messagesLoading || !sessionChat.messagesMeta?.hasMore) {
       return;
     }
-    await messagesService.runAsync(currentConversation, messagesService.data?.meta?.cursor);
-  }, [currentConversation]);
+    await loadMessages(currentConversation, sessionChat.messagesMeta?.cursor);
+  }, [currentConversation, getSessionChat, loadMessages]);
   const { ref: lastMessageRef } = useLoadMoreObserver({ loadMore: loadMoreMessages });
 
-  const updateToolArgs = useCallback(async ({ sessionId, messageId, tool }) => {
-    const messagesService = messagesServiceRef.current;
-    await api.resource('aiConversations').updateToolArgs({
-      values: {
-        sessionId,
-        messageId,
-        tool,
-      },
-    });
-    messagesService.run(sessionId);
-  }, []);
+  const updateToolArgs = useCallback(
+    async ({ sessionId, messageId, tool }) => {
+      await api.resource('aiConversations').updateToolArgs({
+        values: {
+          sessionId,
+          messageId,
+          tool,
+        },
+      });
+      loadMessages(sessionId);
+    },
+    [api, loadMessages],
+  );
 
-  const startEditingMessage = useCallback((msg: any) => {
-    const index = messages.findIndex((m) => m.key === msg.messageId);
-    setIsEditingMessage(true);
-    setEditingMessageId(msg.messageId);
-    setMessages(messages.slice(0, index));
-    if (msg.attachments) {
-      setAttachments(msg.attachments);
-    }
-    if (msg.workContext) {
-      setContextItems(msg.workContext);
-    }
-  }, []);
+  const startEditingMessage = useCallback(
+    (msg: any) => {
+      const currentMessages = messages;
+      const index = currentMessages.findIndex((m) => m.key === msg.messageId);
+      setIsEditingMessage(true);
+      setEditingMessageId(msg.messageId);
+      setMessages(currentMessages.slice(0, index));
+      if (msg.attachments) {
+        setAttachments(msg.attachments);
+      }
+      if (msg.workContext) {
+        setContextItems(msg.workContext);
+      }
+    },
+    [messages, setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage, setMessages],
+  );
 
   const finishEditingMessage = useCallback(() => {
     setIsEditingMessage(false);
     setEditingMessageId(undefined);
     setAttachments([]);
     setContextItems([]);
-  }, []);
+  }, [setAttachments, setContextItems, setEditingMessageId, setIsEditingMessage]);
 
   return {
     syncContextAttachments,
-    messagesService,
+    loadMessages,
+    loadMoreMessages,
     sendMessages,
     resendMessages,
+    resumeStream,
+    getConversationLLMActiveState,
     cancelRequest,
     resumeToolCall,
     updateToolArgs,

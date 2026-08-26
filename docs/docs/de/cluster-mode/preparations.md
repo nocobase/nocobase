@@ -1,6 +1,9 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
+---
+pkg: "@nocobase/preset-cluster"
+title: "Vorbereitungen für die Cluster-Bereitstellung"
+description: "Vorbereitung der Cluster-Bereitstellung: kommerzielle Plugin-Lizenzen (PubSub-, Queue-, Lock- und Worker-ID-Adapter), Datenbank, Redis- oder RabbitMQ-Middleware, gemeinsamer Speicher und Lastverteilung."
+keywords: "Cluster Vorbereitung,kommerzielle Lizenz,Redis,RabbitMQ,gemeinsamer Speicher,Lastverteilung,Nginx,NocoBase"
+---
 
 # Vorbereitungen
 
@@ -115,7 +118,7 @@ Für Hochverfügbarkeits-Bereitstellungen wird empfohlen:
 
 ## Umgebungsvariablen-Konfiguration
 
-Alle Knoten im Cluster sollten dieselbe Umgebungsvariablen-Konfiguration verwenden. Zusätzlich zu den grundlegenden [Umgebungsvariablen](/api/cli/env) von NocoBase müssen auch die folgenden Middleware-bezogenen Umgebungsvariablen konfiguriert werden.
+Alle Knoten im Cluster sollten dieselbe Umgebungsvariablen-Konfiguration verwenden. Zusätzlich zu den grundlegenden [Umgebungsvariablen](../api/app/env) von NocoBase müssen auch die folgenden Middleware-bezogenen Umgebungsvariablen konfiguriert werden.
 
 ### Wichtige Schlüssel
 

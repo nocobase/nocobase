@@ -39,6 +39,7 @@ export type QueryParams = Partial<{
   dimensions: DimensionProps[];
   orders: OrderProps[];
   filter: any;
+  having: any;
   contextParams: Record<string, unknown>;
   limit: number;
   offset: number;

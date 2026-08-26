@@ -1,4 +1,6 @@
 ---
+title: "Block: Kanban"
+keywords: "Blocks"
 displayName: "Block: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |

@@ -1,5 +1,4 @@
-import { Badge } from '@rspress/core/theme';
-import { useLang } from '@rspress/runtime';
+import { useLang } from '@rspress/core/runtime';
 import React from 'react';
 
 export function PluginPrice({ points }: { points: number }) {

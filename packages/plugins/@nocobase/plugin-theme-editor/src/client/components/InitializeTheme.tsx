@@ -10,8 +10,8 @@
 import { defaultTheme as presetTheme, useAPIClient, useCurrentUserContext, useGlobalTheme } from '@nocobase/client';
 import { error } from '@nocobase/utils/client';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { changeAlgorithmFromFunctionToString } from '../utils/changeAlgorithmFromFunctionToString';
-import { changeAlgorithmFromStringToFunction } from '../utils/changeAlgorithmFromStringToFunction';
+import { changeAlgorithmFromFunctionToString } from '../../client-v2/utils/changeAlgorithmFromFunctionToString';
+import { changeAlgorithmFromStringToFunction } from '../../client-v2/utils/changeAlgorithmFromStringToFunction';
 import { useThemeListContext } from './ThemeListProvider';
 
 const ThemeIdContext = React.createContext<{

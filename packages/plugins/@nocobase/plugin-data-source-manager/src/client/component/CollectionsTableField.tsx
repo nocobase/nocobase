@@ -11,10 +11,11 @@ import React, { useCallback, useState, useMemo, useEffect, useRef } from 'react'
 import { Button, Table, Checkbox, Input, message, Tooltip } from 'antd';
 import { ReloadOutlined, QuestionCircleOutlined, ClearOutlined } from '@ant-design/icons';
 import { observer } from '@nocobase/flow-engine';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useCompile } from '@nocobase/client';
 
 const CollectionsTable = observer((tableProps: any) => {
   const api = useAPIClient();
+  const compile = useCompile();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [allCollections, setAllCollections] = useState([]);
@@ -36,11 +37,17 @@ const CollectionsTable = observer((tableProps: any) => {
     let filteredData = baseData;
 
     if (searchText.trim()) {
-      filteredData = filteredData.filter((item: any) => item.name?.toLowerCase().includes(searchText.toLowerCase()));
+      filteredData = filteredData.filter((item: any) => {
+        const keyword = searchText.toLowerCase();
+        const compiledDisplayName = item.displayName ? compile(item.displayName) : '';
+        const displayName =
+          typeof compiledDisplayName === 'string' ? compiledDisplayName : String(compiledDisplayName ?? '');
+        return item.name?.toLowerCase().includes(keyword) || displayName.toLowerCase().includes(keyword);
+      });
     }
 
     return filteredData;
-  }, [tableProps.value, allCollections, searchText]);
+  }, [tableProps.value, allCollections, searchText, compile]);
 
   const allData = useMemo(() => {
     return tableProps.value && tableProps.value.length > 0 ? tableProps.value : allCollections;
@@ -483,7 +490,10 @@ const CollectionsTable = observer((tableProps: any) => {
       />
     ));
 
-    const NameCell = React.memo(({ text }: any) => <span style={{ paddingLeft: '40px' }}>{text}</span>);
+    const NameCell = React.memo(({ text, record }: any) => {
+      const displayName = record.displayName ? compile(record.displayName) : text;
+      return <span style={{ paddingLeft: '40px' }}>{displayName}</span>;
+    });
 
     const baseColumns: any = [
       {
@@ -492,7 +502,7 @@ const CollectionsTable = observer((tableProps: any) => {
         key: 'name',
         align: 'left' as const,
         width: '50%',
-        render: (text: string) => <NameCell text={text} />,
+        render: (text: string, record: any) => <NameCell text={text} record={record} />,
       },
     ];
 
@@ -573,6 +583,7 @@ const CollectionsTable = observer((tableProps: any) => {
     selectedMap,
     enrichedDisplayCollections,
     handleReset,
+    compile,
   ]);
 
   return (

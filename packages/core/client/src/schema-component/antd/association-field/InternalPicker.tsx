@@ -26,7 +26,6 @@ import {
   NocoBaseRecursionField,
   RecordProvider,
   useCollectionRecordData,
-  useMobileLayout,
 } from '../../..';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
@@ -39,6 +38,7 @@ import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './ho
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 import { CollectionField } from '../../../data-source/collection-field/CollectionField';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { useSchemaOptionsContext } from '../../../schema-component';
 import Radio from '../radio/Radio';
 import Checkbox from '../checkbox/Checkbox';

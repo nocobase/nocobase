@@ -6,7 +6,7 @@
       {
         "type": "custom-link",
         "label": "概要",
-        "link": "/multi-app/multi-app"
+        "link": "/multi-app/multi-app/"
       },
       {
         "type": "custom-link",
@@ -17,12 +17,27 @@
         "type": "custom-link",
         "label": "マルチ環境モード",
         "link": "/multi-app/multi-app/remote"
+      },
+      {
+        "type": "custom-link",
+        "label": "アプリケーションブロックとアプリ切り替え",
+        "link": "/multi-app/multi-app/app-block-and-switcher"
+      },
+      {
+        "type": "custom-link",
+        "label": "アプリ SSO",
+        "link": "/multi-app/multi-app/app-sso"
+      },
+      {
+        "type": "custom-link",
+        "label": "サブアプリ API の呼び出し",
+        "link": "/multi-app/multi-app/sub-app-api"
       }
     ]
   },
   {
     "type": "custom-link",
     "label": "マルチスペース",
-    "link": "/multi-app/multi-space"
+    "link": "/multi-app/multi-space/"
   }
 ]

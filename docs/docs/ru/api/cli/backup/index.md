@@ -1,0 +1,46 @@
+---
+title: 'nb backup'
+description: 'Справка по команде nb backup: создайте резервную копию NocoBase и скачайте её локально или восстановите локальный файл резервной копии в целевой env.'
+keywords: 'nb backup,NocoBase CLI,резервная копия,восстановление,nbdata'
+---
+
+# nb backup
+
+Создаёт или восстанавливает резервную копию NocoBase. `nb backup create` создаёт удалённую резервную копию в целевом env, а затем скачивает файл резервной копии локально; `nb backup restore` загружает локальный файл резервной копии в целевой env и ждёт, пока приложение снова станет готово.
+
+## Использование
+
+```bash
+nb backup <command>
+```
+
+## Подкоманды
+
+| Команда                             | Описание                                                  |
+| ----------------------------------- | --------------------------------------------------------- |
+| [`nb backup create`](./create.md)   | Создать резервную копию и скачать её локально             |
+| [`nb backup restore`](./restore.md) | Восстановить локальный файл резервной копии в целевой env |
+
+## Примеры
+
+```bash
+nb backup create
+nb backup create --env app1 --output ./backups
+nb backup create --env app1 --output ./backups/result.nbdata
+nb backup restore --env app1 --file ./backups/backup_20260520_190408_8397.nbdata --yes --force
+```
+
+## Примечания
+
+Перед выполнением CLI сначала проверяет, предоставляет ли целевой env runtime-команды, связанные с резервным копированием. Если каких-то команд не хватает, runtime-кеш автоматически обновляется один раз; если после обновления возможность `nb api backup ...` всё ещё отсутствует, это означает, что в целевом env ещё не включены или не синхронизированы возможности backup/restore, и в таком случае сначала нужно разобраться с самим целевым приложением.
+
+А именно:
+
+- `nb backup create` зависит от `nb api backup create`, `nb api backup status` и `nb api backup download`
+- `nb backup restore` зависит от `nb api backup restore-upload`
+
+## Связанные команды
+
+- [`nb env update`](../env/update.md)
+- [`nb app restart`](../app/restart.md)
+- [`nb api`](../api/index.md)

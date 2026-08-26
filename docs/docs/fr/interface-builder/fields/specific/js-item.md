@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Élément JS
 
 ## Introduction
@@ -32,7 +28,7 @@ L'Élément JS est utilisé pour les "éléments personnalisés" (non liés à u
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Peut être utilisé avec l'Employé IA pour générer/modifier des scripts : [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/ai-coding)
+- Peut être utilisé avec l'Employé IA pour générer/modifier des scripts : [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/)
 
 ## Cas d'utilisation courants (Exemples simplifiés)
 

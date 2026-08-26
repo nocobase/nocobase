@@ -1,14 +1,22 @@
 [
   {
     "text": "Start",
-    "link": "/get-started/how-nocobase-works"
+    "link": "/ai/how-nocobase-works"
+  },
+  {
+    "text": "AI",
+    "link": "/ai/"
+  },
+  {
+    "text": "Tutorials",
+    "link": "/tutorials/v2/"
   },
   {
     "text": "Handbuch",
     "link": "/guide/"
   },
   {
-    "text": "Entwickler",
+    "text": "Entwicklung",
     "link": "/development/"
   },
   {

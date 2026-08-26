@@ -8,3 +8,9 @@
  */
 
 export const NAMESPACE = 'workflow';
+
+export const EXECUTION_REASON = {
+  TIMEOUT: 'timeout',
+  MANUAL_CANCEL: 'manual_cancel',
+  PARENT_ABORTED: 'parent_aborted',
+} as const;

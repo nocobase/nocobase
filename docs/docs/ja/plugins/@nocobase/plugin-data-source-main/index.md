@@ -1,4 +1,6 @@
 ---
+title: "Data source: Main"
+keywords: "Data sources"
 displayName: "Data source: Main"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

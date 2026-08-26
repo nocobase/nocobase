@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "概述",
-    "link": "/interface-builder"
+    "link": "/interface-builder/"
   },
   {
     "type": "custom-link",
@@ -11,7 +11,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/interface-builder/blocks"
+        "link": "/interface-builder/blocks/"
       },
       {
         "type": "custom-link",
@@ -47,6 +47,21 @@
             "type": "custom-link",
             "label": "图表",
             "link": "/interface-builder/blocks/data-blocks/chart"
+          },
+          {
+            "type": "custom-link",
+            "label": "日历",
+            "link": "/interface-builder/blocks/data-blocks/calendar"
+          },
+          {
+            "type": "custom-link",
+            "label": "地图",
+            "link": "/interface-builder/blocks/data-blocks/map"
+          },
+          {
+            "type": "custom-link",
+            "label": "看板",
+            "link": "/interface-builder/blocks/data-blocks/kanban"
           }
         ]
       },
@@ -59,6 +74,11 @@
             "type": "custom-link",
             "label": "表单",
             "link": "/interface-builder/blocks/filter-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "树",
+            "link": "/interface-builder/blocks/filter-blocks/tree"
           }
         ]
       },
@@ -160,7 +180,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/interface-builder/fields"
+        "link": "/interface-builder/fields/"
       },
       {
         "type": "custom-link",
@@ -313,6 +333,11 @@
           },
           {
             "type": "custom-link",
+            "label": "扫码录入",
+            "link": "/interface-builder/fields/field-settings/scan-input"
+          },
+          {
+            "type": "custom-link",
             "label": "标题字段",
             "link": "/interface-builder/fields/field-settings/title-field"
           },
@@ -337,7 +362,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/interface-builder/actions"
+        "link": "/interface-builder/actions/"
       },
       {
         "type": "custom-link",
@@ -483,8 +508,18 @@
           },
           {
             "type": "custom-link",
+            "label": "自定义请求",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

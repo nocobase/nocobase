@@ -1,16 +1,16 @@
 # ctx.off()
 
-Removes a listener registered with `ctx.on(eventName, handler)`. Use with [ctx.on](./on.md) and unsubscribe when appropriate to avoid leaks or duplicate triggers.
+Removes event listeners registered via `ctx.on(eventName, handler)`. It is often used in conjunction with [ctx.on](./on.md) to unsubscribe at the appropriate time, preventing memory leaks or duplicate triggers.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **React useEffect cleanup** | Call in `useEffect` cleanup; remove on unmount |
-| **JSField / JSEditableField** | Unsubscribe from `js-field:value-change` when doing two-way binding |
-| **resource** | Unsubscribe from `ctx.resource.on` (refresh, saved, etc.) |
+|------|------|
+| **React useEffect Cleanup** | Called within the `useEffect` cleanup function to remove listeners when the component unmounts. |
+| **JSField / JSEditableField** | Unsubscribe from `js-field:value-change` during two-way data binding for fields. |
+| **Resource Related** | Unsubscribe from listeners like `refresh` or `saved` registered via `ctx.resource.on`. |
 
-## Type
+## Type Definition
 
 ```ts
 off(eventName: string, handler: (event?: any) => void): void;
@@ -18,7 +18,7 @@ off(eventName: string, handler: (event?: any) => void): void;
 
 ## Examples
 
-### Pair with on in useEffect
+### Paired usage in React useEffect
 
 ```tsx
 React.useEffect(() => {
@@ -28,21 +28,21 @@ React.useEffect(() => {
 }, []);
 ```
 
-### Unsubscribe resource event
+### Unsubscribing from resource events
 
 ```ts
 const handler = () => { /* ... */ };
 ctx.resource?.on('refresh', handler);
-// Later
+// At the appropriate time
 ctx.resource?.off('refresh', handler);
 ```
 
 ## Notes
 
-1. **Same handler reference**: The `handler` passed to `ctx.off` must be the same reference as in `ctx.on`, or it will not be removed.
-2. **Clean up in time**: Call `ctx.off` before unmount or context destroy to avoid leaks.
+1. **Consistent handler reference**: The `handler` passed to `ctx.off` must be the same reference as the one used in `ctx.on`; otherwise, it cannot be correctly removed.
+2. **Timely cleanup**: Call `ctx.off` before the component unmounts or the context is destroyed to avoid memory leaks.
 
-## Related
+## Related Documents
 
-- [ctx.on](./on.md): subscribe to events
-- [ctx.resource](./resource.md): resource and its `on`/`off`
+- [ctx.on](./on.md) - Subscribe to events
+- [ctx.resource](./resource.md) - Resource instance and its `on`/`off` methods

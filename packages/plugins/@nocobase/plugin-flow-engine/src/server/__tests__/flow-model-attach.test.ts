@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
+import { MockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineMockServer } from './test-utils';
 
 describe('flow-model attach', () => {
   let app: MockServer;
@@ -19,7 +20,7 @@ describe('flow-model attach', () => {
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
+    app = await createFlowEngineMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
     });

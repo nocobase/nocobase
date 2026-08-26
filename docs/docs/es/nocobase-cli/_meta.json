@@ -1,0 +1,113 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase CLI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "inicio rápido",
+        "link": "/nocobase-cli/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalar NocoBase",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Instalar usando CLI (recomendado)",
+            "link": "/nocobase-cli/installation/cli"
+          },
+          {
+            "type": "custom-link",
+            "label": "Conexión de métodos de instalación antiguos a la IA y migración",
+            "link": "/nocobase-cli/installation/migration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Configuración de la aplicación y .env",
+            "link": "/nocobase-cli/installation/env"
+          },
+          {
+            "type": "custom-link",
+            "label": "Instalación de complementos de terceros",
+            "link": "/nocobase-cli/plugins/third-party"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Implementación del entorno de producción",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Descripción general",
+            "link": "/nocobase-cli/production/"
+          },
+          {
+            "type": "custom-link",
+            "label": "La aplicación se inicia automáticamente",
+            "link": "/nocobase-cli/production/autostart"
+          },
+          {
+            "type": "custom-link",
+            "label": "proxy inverso",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Descripción general",
+                "link": "/nocobase-cli/production/reverse-proxy/"
+              },
+              {
+                "type": "custom-link",
+                "label": "nginx",
+                "link": "/nocobase-cli/production/reverse-proxy/nginx"
+              },
+              {
+                "type": "custom-link",
+                "label": "Caddie",
+                "link": "/nocobase-cli/production/reverse-proxy/caddy"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Operación, mantenimiento y liberación.",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Aplicación de gestión",
+            "link": "/nocobase-cli/operations/manage-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gestión de múltiples entornos",
+            "link": "/nocobase-cli/operations/multi-environment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Copia de seguridad y restauración",
+            "link": "/nocobase-cli/operations/backup-restore"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Notas de diseño CLI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nb intención de diseño de la aplicación",
+            "link": "/nocobase-cli/cli-design/nb-app-design-intent"
+          },
+          {
+            "type": "custom-link",
+            "label": "La intención de diseño de nb proxy",
+            "link": "/nocobase-cli/cli-design/nb-proxy-design-intent"
+          }
+        ]
+      }
+    ]
+  }
+]

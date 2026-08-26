@@ -1,0 +1,83 @@
+[
+  {
+    "type": "section-header",
+    "label": "File Manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/file-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Storage Engine",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/file-manager/storage/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lưu trữ cục bộ",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aliyun OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "File Collection",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Field Attachment",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Xem trước file",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/file-manager/file-preview/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Xem trước file Office",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
+    "label": "Phát triển mở rộng",
+    "link": "/file-manager/development/"
+  }
+]

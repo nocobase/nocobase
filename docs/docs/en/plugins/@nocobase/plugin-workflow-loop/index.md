@@ -1,4 +1,6 @@
 ---
+title: "Workflow: Loop node"
+keywords: "Workflow"
 displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

@@ -1,4 +1,6 @@
 ---
+title: "Multi-app share collection"
+keywords: "System management"
 displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

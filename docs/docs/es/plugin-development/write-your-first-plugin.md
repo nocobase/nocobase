@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Escriba su primer plugin
 
 Esta guía le mostrará cómo crear un **plugin** de bloque desde cero que podrá utilizar en sus páginas. Le ayudará a comprender la estructura básica y el flujo de trabajo de desarrollo de los **plugins** de NocoBase.
@@ -116,6 +112,33 @@ Después de la activación, cree una nueva página "Modern page (v2)". Al añadi
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
+### Hacer que el plugin esté predefinido o habilitado por defecto (opcional)
+
+Lo anterior describe cómo activar un plugin de forma manual. Si está manteniendo su propia aplicación NocoBase y desea que ciertos plugins estén listos automáticamente tras ejecutar `nocobase install` (instalación inicial) o `nocobase upgrade` (actualización), puede usar dos variables de entorno para controlar el estado predeterminado de los plugins:
+
+- **`APPEND_PRESET_LOCAL_PLUGINS` (añadir plugins locales predefinidos por defecto)** — Agrega el plugin a la lista de plugins locales predefinidos; tras la instalación aparecerá en el «Administrador de complementos», pero no estará activado por defecto y deberá habilitarlo manualmente.
+- **`APPEND_PRESET_BUILT_IN_PLUGINS` (añadir plugins integrados por defecto)** — Agrega el plugin a la lista de plugins integrados; se activa automáticamente durante la instalación y, al ser un plugin integrado, **no puede desactivarse ni eliminarse desde el «Administrador de complementos»**.
+
+El valor de ambas variables es el nombre del paquete del plugin (el campo `name` en `package.json`); si son varios plugins, sepárelos con comas. Configure así en el archivo `.env`:
+
+```bash
+# Predefinido por defecto: aparece en la lista del Administrador de complementos, pero no se activa automáticamente
+APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+
+# Habilitado por defecto: se instala y activa automáticamente, y no puede desactivarse desde la interfaz
+APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-hello,@my-project/plugin-hello-world
+```
+
+En general, `yarn pm enable` es suficiente para el desarrollo y la depuración local. Estas dos variables son más adecuadas para escenarios de distribución «listas para usar», por ejemplo, cuando empaqueta una aplicación NocoBase con un conjunto fijo de plugins y desea que estén disponibles directamente tras la inicialización.
+
+:::tip Nota
+
+- El plugin debe estar descargado localmente y poder resolverse en `node_modules`; consulte [Estructura del proyecto](./project-structure.md).
+- Tras configurar las variables, deberá volver a ejecutar `nocobase install` o `nocobase upgrade` para que surtan efecto.
+- Consulte la descripción completa de variables de entorno en [Variables de Entorno](../get-started/installation/env.md#append_preset_local_plugins).
+
+:::
+
 ## Paso 4: Compile y empaquete
 
 Cuando esté listo para distribuir el **plugin** a otros entornos, primero deberá compilarlo y empaquetarlo:
@@ -134,3 +157,16 @@ Una vez completada la compilación, el archivo del paquete se encuentra por defe
 ## Paso 5: Suba a otra aplicación de NocoBase
 
 Suba y descomprima el archivo en el directorio `./storage/plugins` de la aplicación de destino. Para más detalles, consulte [Instalar y actualizar plugins](../get-started/install-upgrade-plugins.mdx).
+
+## Enlaces relacionados
+
+- [Descripción general del desarrollo de plugins](./index.md) — Conozca la arquitectura de micronúcleo de NocoBase y el ciclo de vida de los plugins
+- [Estructura del proyecto](./project-structure.md) — Convenciones de directorios, rutas de carga y prioridades de los plugins
+- [Descripción general del desarrollo en el servidor](./server/index.md) — Introducción general y conceptos clave de los plugins del lado del servidor
+- [Descripción general del desarrollo en el cliente](./client/index.md) — Introducción general y conceptos clave de los plugins del lado del cliente
+- [Compilación y empaquetado](./build.md) — Proceso de compilación, empaquetado y distribución de plugins
+- [Tests](./server/test.md) — Cómo escribir casos de prueba para plugins del lado del servidor
+- [Instalar usando create-nocobase-app](../get-started/installation/create-nocobase-app) — Una de las formas de instalar NocoBase
+- [Instalar desde el código fuente de Git](../get-started/installation/git) — Instalar NocoBase desde el código fuente
+- [Instalar y actualizar plugins](../get-started/install-upgrade-plugins.mdx) — Subir plugins empaquetados a otros entornos
+- [Variables de Entorno](../get-started/installation/env.md) — Configuración de variables de entorno para plugins predefinidos, integrados y otros

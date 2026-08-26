@@ -15,7 +15,7 @@ Para tipos de arquivo que não têm pré-visualização nativa, você pode habil
 
 Atualmente, o NocoBase fornece os seguintes plugins de pré-visualização de arquivos:
 
-* Plugin de pré-visualização de arquivos do Office
+* [Plugin de pré-visualização de arquivos do Office](../file-preview/ms-office.md)
 
 ## Pré-visualização de PDF com armazenamento externo
 

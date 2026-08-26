@@ -1,60 +1,60 @@
 # ctx.request()
 
-Sends authenticated HTTP requests from RunJS. Requests use the app’s baseURL, token, locale, role, etc., and the app’s interceptors and error handling.
+Initiate an authenticated HTTP request within RunJS. The request automatically carries the current application's `baseURL`, `Token`, `locale`, `role`, etc., and follows the application's request interception and error handling logic.
 
 ## Use Cases
 
-Use whenever RunJS needs to call a remote HTTP API: JSBlock, JSField, JSItem, JSColumn, event flow, linkage, JSAction, etc.
+Applicable to any scenario in RunJS where a remote HTTP request needs to be initiated, such as JSBlock, JSField, JSItem, JSColumn, Workflow, Linkage, JSAction, etc.
 
-## Type
+## Type Definition
 
 ```typescript
 request(options: RequestOptions): Promise<AxiosResponse<any>>;
 ```
 
-`RequestOptions` extends Axios `AxiosRequestConfig`:
+`RequestOptions` extends Axios's `AxiosRequestConfig`:
 
 ```typescript
 type RequestOptions = AxiosRequestConfig & {
-  skipNotify?: boolean | ((error: any) => boolean);  // Skip global error toast on failure
-  skipAuth?: boolean;                                 // Skip auth redirect (e.g. 401 → login)
+  skipNotify?: boolean | ((error: any) => boolean);  // Whether to skip global error prompts when the request fails
+  skipAuth?: boolean;                                 // Whether to skip authentication redirection (e.g., do not redirect to login page on 401)
 };
 ```
 
-## Common parameters
+## Common Parameters
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `url` | string | URL. Supports resource style (e.g. `users:list`, `posts:create`) or full URL |
-| `method` | 'get' \| 'post' \| 'put' \| 'patch' \| 'delete' | HTTP method; default `'get'` |
-| `params` | object | Query params (serialized to URL) |
-| `data` | any | Request body for post/put/patch |
-| `headers` | object | Custom headers |
-| `skipNotify` | boolean \| (error) => boolean | When true or function returns true, no global error message |
-| `skipAuth` | boolean | When true, 401 etc. do not trigger auth redirect (e.g. to login) |
+|------|------|------|
+| `url` | string | Request URL. Supports resource style (e.g., `users:list`, `posts:create`), or a full URL |
+| `method` | 'get' \| 'post' \| 'put' \| 'patch' \| 'delete' | HTTP method, defaults to `'get'` |
+| `params` | object | Query parameters, serialized into the URL |
+| `data` | any | Request body, used for post/put/patch |
+| `headers` | object | Custom request headers |
+| `skipNotify` | boolean \| (error) => boolean | If true or the function returns true, global error prompts will not pop up on failure |
+| `skipAuth` | boolean | If true, 401 errors etc. will not trigger authentication redirection (e.g., redirecting to the login page) |
 
-## Resource-style URL
+## Resource Style URL
 
-NocoBase resource API supports `resource:action` shorthand:
+NocoBase Resource API supports a shorthand `resource:action` format:
 
 | Format | Description | Example |
-|--------|-------------|---------|
-| `collection:action` | Single-table CRUD | `users:list`, `users:get`, `users:create`, `posts:update` |
-| `collection.relation:action` | Association (need `resourceOf` or primary key in URL) | `posts.comments:list` |
+|------|------|------|
+| `collection:action` | Single collection CRUD | `users:list`, `users:get`, `users:create`, `posts:update` |
+| `collection.relation:action` | Associated resources (requires passing the primary key via `resourceOf` or URL) | `posts.comments:list` |
 
-Relative URLs are joined with the app baseURL (usually `/api`). For cross-origin, use a full URL and ensure CORS on the target.
+Relative paths will be concatenated with the application's `baseURL` (usually `/api`); cross-origin requests must use a full URL, and the target service must be configured with CORS.
 
-## Response
+## Response Structure
 
-Returns Axios response. Common usage:
+The return value is an Axios response object. Common fields include:
 
-- `response.data`: response body
-- List APIs often have `data.data` (records) + `data.meta` (pagination)
-- Single/create/update often have `data.data` as one record
+- `response.data`: Response body
+- List interfaces usually return `data.data` (array of records) + `data.meta` (pagination, etc.)
+- Single record/create/update interfaces usually return the record in `data.data`
 
 ## Examples
 
-### List
+### List Query
 
 ```javascript
 const { data } = await ctx.request({
@@ -64,22 +64,22 @@ const { data } = await ctx.request({
 });
 
 const rows = Array.isArray(data?.data) ? data.data : [];
-const meta = data?.meta;
+const meta = data?.meta; // Pagination and other info
 ```
 
-### Create
+### Submit Data
 
 ```javascript
 const res = await ctx.request({
   url: 'users:create',
   method: 'post',
-  data: { nickname: 'John', email: 'john@example.com' },
+  data: { nickname: 'John Doe', email: 'johndoe@example.com' },
 });
 
 const newRecord = res?.data?.data;
 ```
 
-### Filter and sort
+### With Filtering and Sorting
 
 ```javascript
 const res = await ctx.request({
@@ -93,15 +93,16 @@ const res = await ctx.request({
 });
 ```
 
-### Skip error notify
+### Skip Error Notification
 
 ```javascript
 const res = await ctx.request({
   url: 'some:action',
   method: 'get',
-  skipNotify: true,
+  skipNotify: true,  // Do not pop up global message on failure
 });
 
+// Or decide whether to skip based on error type
 const res2 = await ctx.request({
   url: 'some:action',
   method: 'get',
@@ -109,9 +110,9 @@ const res2 = await ctx.request({
 });
 ```
 
-### Cross-origin
+### Cross-Origin Request
 
-For other domains, the target must allow CORS. For its own token, pass in headers:
+When using a full URL to request other domains, the target service must be configured with CORS to allow the current application's origin. If the target interface requires its own token, it can be passed via headers:
 
 ```javascript
 const res = await ctx.request({
@@ -123,12 +124,12 @@ const res2 = await ctx.request({
   url: 'https://api.other.com/items',
   method: 'get',
   headers: {
-    Authorization: 'Bearer <target-token>',
+    Authorization: 'Bearer <target_service_token>',
   },
 });
 ```
 
-### With ctx.render
+### Displaying with ctx.render
 
 ```javascript
 const { data } = await ctx.request({
@@ -140,7 +141,7 @@ const rows = Array.isArray(data?.data) ? data.data : [];
 
 ctx.render([
   '<div style="padding:12px">',
-  '<h4>' + ctx.t('User list') + '</h4>',
+  '<h4>' + ctx.t('User List') + '</h4>',
   '<ul>',
   ...rows.map((r) => '<li>' + (r.nickname ?? r.username ?? '') + '</li>'),
   '</ul>',
@@ -150,13 +151,13 @@ ctx.render([
 
 ## Notes
 
-- **Errors**: Failed requests throw; by default a global error message is shown. Use `skipNotify: true` to handle yourself.
-- **Auth**: Same-origin requests automatically send token, locale, role; cross-origin needs CORS and optional token in headers.
-- **ACL**: Requests are subject to ACL; only resources the user can access are available.
+- **Error Handling**: Request failure will throw an exception, and a global error prompt will pop up by default. Use `skipNotify: true` to catch and handle it yourself.
+- **Authentication**: Same-origin requests will automatically carry the current user's Token, locale, and role; cross-origin requests require the target to support CORS and pass the token in headers as needed.
+- **Resource Permissions**: Requests are subject to ACL constraints and can only access resources the current user has permission for.
 
 ## Related
 
-- [ctx.message](./message.md): short feedback after request
-- [ctx.notification](./notification.md): notification after request
-- [ctx.render](./render.md): render result in UI
-- [ctx.makeResource](./make-resource.md): build resource for chained loading (alternative to direct `ctx.request`)
+- [ctx.message](./message.md) - Display lightweight prompts after the request is completed
+- [ctx.notification](./notification.md) - Display notifications after the request is completed
+- [ctx.render](./render.md) - Render request results to the interface
+- [ctx.makeResource](./make-resource.md) - Construct a resource object for chained data loading (alternative to `ctx.request`)

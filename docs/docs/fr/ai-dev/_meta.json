@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Vue d'ensemble",
+    "link": "/ai-dev/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tutoriel : développer un plugin de filigrane",
+    "link": "/ai-dev/watermark-plugin"
+  },
+  {
+    "type": "custom-link",
+    "label": "Capacités prises en charge",
+    "link": "/ai-dev/capabilities"
+  }
+]

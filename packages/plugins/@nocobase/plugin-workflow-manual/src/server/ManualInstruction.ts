@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { Registry } from '@nocobase/utils';
 import WorkflowPlugin, { Processor, JOB_STATUS, Instruction } from '@nocobase/plugin-workflow';
 
@@ -129,7 +130,6 @@ export default class extends Instruction {
         status: JOB_STATUS.PENDING,
         title,
       })),
-      transaction: processor.mainTransaction,
     });
 
     return job;
@@ -144,7 +144,6 @@ export default class extends Instruction {
       where: {
         jobId: job.id,
       },
-      transaction: processor.mainTransaction,
     });
     const assignees = [];
     const distributionMap = tasks.reduce((result, item) => {

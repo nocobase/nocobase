@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Un-à-un
 
 Dans une relation entre des employés et des profils personnels, chaque employé ne peut avoir qu'un seul enregistrement de profil personnel, et chaque enregistrement de profil personnel ne peut correspondre qu'à un seul employé. On parle alors d'une relation un-à-un entre l'employé et le profil personnel.
@@ -28,7 +24,7 @@ Cela indique qu'un profil personnel appartient à un employé spécifique.
 
 Relation ER
 
-![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98573ca24ac72d.png)
+![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
 Configuration du champ
 

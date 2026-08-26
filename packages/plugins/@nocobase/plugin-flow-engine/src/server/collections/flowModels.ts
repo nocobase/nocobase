@@ -12,6 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'flowModels',
+  dataCategory: 'system',
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   timestamps: false,

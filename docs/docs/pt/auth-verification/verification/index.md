@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-verification"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 pkg: '@nocobase/plugin-verification'
@@ -23,7 +19,7 @@ A partir da versão `1.6.0-alpha.30`, o recurso original de **código de verific
 **O Centro de Gerenciamento de Verificação permite gerenciar e integrar diversos métodos de verificação de identidade do usuário.** Por exemplo:
 
 - Código de Verificação por SMS – Fornecido por padrão pelo **plugin** de verificação. Consulte: [Verificação: SMS](./sms)
-- Autenticador TOTP – Consulte: [Verificação: Autenticador TOTP](../verification-totp/)
+- Autenticador TOTP – Consulte: [Verificação: Autenticador TOTP](../verification-totp/index.md)
 
 Desenvolvedores também podem estender outros tipos de verificação através de **plugins**. Consulte: [Estendendo Tipos de Verificação](./dev/type)
 

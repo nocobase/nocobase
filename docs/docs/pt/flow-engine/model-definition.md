@@ -3,10 +3,6 @@ pkg: "@nocobase/plugin-china-region"
 title: Campo de Região da China
 description: O plugin Campo de Região da China (`field-china-region`) adiciona o tipo de campo "Região da China" ao NocoBase.
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 # Campo de Região da China
 

@@ -17,7 +17,7 @@ keywords: "企业微信,WeCom,用户同步,通讯录同步,AgentId,Secret,NocoBa
 
 首先需要在企业微信管理后台，创建企业微信自建应用，并获取**企业 ID**, **AgentId** 和 **Secret**.
 
-参考 [用户认证 - 企业微信](/auth-verification/auth-wecom/)。
+参考 [用户认证 - 企业微信](/auth-verification/auth-wecom/index.md)。
 
 ## 在 NocoBase 上添加同步数据源
 

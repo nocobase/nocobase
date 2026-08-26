@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
+import { TOOLBAR_DRAG_ACTIVITY_EVENT } from '../../../dnd';
 
 const TOOLBAR_HIDE_DELAY = 180;
 const CHILD_FLOAT_MENU_ACTIVITY_EVENT = 'nb-float-menu-child-activity';
@@ -75,18 +76,51 @@ export const useFloatToolbarVisibility = ({
   const [isHostHovered, setIsHostHovered] = useState(false);
   const [isToolbarHovered, setIsToolbarHovered] = useState(false);
   const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
+  const [isDraggingToolbarItem, setIsDraggingToolbarItem] = useState(false);
   const [isToolbarPinned, setIsToolbarPinned] = useState(false);
   const [isHidePending, setIsHidePending] = useState(false);
   const [activeChildToolbarIds, setActiveChildToolbarIds] = useState<string[]>([]);
   const hideToolbarTimerRef = useRef<number | null>(null);
   const reportedChildActivityToAncestorsRef = useRef(false);
+  const isHostHoveredRef = useRef(false);
+  const isToolbarHoveredRef = useRef(false);
+  const isDraggingToolbarRef = useRef(false);
+  const isDraggingToolbarItemRef = useRef(false);
+  const isToolbarPinnedRef = useRef(false);
+
+  const setHostHovered = useCallback((value: boolean) => {
+    isHostHoveredRef.current = value;
+    setIsHostHovered(value);
+  }, []);
+
+  const setToolbarHovered = useCallback((value: boolean) => {
+    isToolbarHoveredRef.current = value;
+    setIsToolbarHovered(value);
+  }, []);
+
+  const setDraggingToolbar = useCallback((value: boolean) => {
+    isDraggingToolbarRef.current = value;
+    setIsDraggingToolbar(value);
+  }, []);
+
+  const setDraggingToolbarItem = useCallback((value: boolean) => {
+    isDraggingToolbarItemRef.current = value;
+    setIsDraggingToolbarItem(value);
+  }, []);
+
+  const setToolbarPinned = useCallback((value: boolean) => {
+    isToolbarPinnedRef.current = value;
+    setIsToolbarPinned(value);
+  }, []);
 
   const hasActiveChildToolbar = activeChildToolbarIds.length > 0;
   const isToolbarVisible =
-    !hideMenu && !hasActiveChildToolbar && (isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned);
-  const shouldRenderToolbar = isToolbarVisible || isToolbarPinned || isDraggingToolbar;
+    !hideMenu &&
+    !hasActiveChildToolbar &&
+    (isHostHovered || isToolbarHovered || isDraggingToolbar || isDraggingToolbarItem || isToolbarPinned);
+  const shouldRenderToolbar = isToolbarVisible || isToolbarPinned || isDraggingToolbar || isDraggingToolbarItem;
   const isToolbarInteractionActive =
-    isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned || isHidePending;
+    isHostHovered || isToolbarHovered || isDraggingToolbar || isDraggingToolbarItem || isToolbarPinned || isHidePending;
 
   const clearHideToolbarTimer = useCallback(() => {
     if (hideToolbarTimerRef.current !== null) {
@@ -102,17 +136,20 @@ export const useFloatToolbarVisibility = ({
     hideToolbarTimerRef.current = window.setTimeout(() => {
       hideToolbarTimerRef.current = null;
       setIsHidePending(false);
-      if (isDraggingToolbar || isToolbarPinned) {
+      if (isDraggingToolbarRef.current || isDraggingToolbarItemRef.current || isToolbarPinnedRef.current) {
         return;
       }
-      setIsHostHovered(false);
-      setIsToolbarHovered(false);
+      setHostHovered(false);
+      setToolbarHovered(false);
     }, TOOLBAR_HIDE_DELAY);
-  }, [clearHideToolbarTimer, isDraggingToolbar, isToolbarPinned]);
+  }, [clearHideToolbarTimer, setHostHovered, setToolbarHovered]);
 
-  const handleSettingsMenuOpenChange = useCallback((open: boolean) => {
-    setIsToolbarPinned(open);
-  }, []);
+  const handleSettingsMenuOpenChange = useCallback(
+    (open: boolean) => {
+      setToolbarPinned(open);
+    },
+    [setToolbarPinned],
+  );
 
   useEffect(() => {
     const hostElement = containerRef.current;
@@ -145,6 +182,40 @@ export const useFloatToolbarVisibility = ({
       hostElement.removeEventListener(CHILD_FLOAT_MENU_ACTIVITY_EVENT, handleChildToolbarActivity as EventListener);
     };
   }, [containerRef]);
+
+  useEffect(() => {
+    const hostElement = containerRef.current;
+    const ownerDocument = hostElement?.ownerDocument;
+    if (!ownerDocument) {
+      return;
+    }
+
+    const handleToolbarDragActivity = (event: Event) => {
+      const customEvent = event as CustomEvent<{ active?: boolean; modelUid?: string }>;
+      if (customEvent.detail?.modelUid !== modelUid) {
+        return;
+      }
+
+      if (customEvent.detail?.active) {
+        clearHideToolbarTimer();
+        setDraggingToolbarItem(true);
+        return;
+      }
+
+      setDraggingToolbarItem(false);
+      if (isHostHoveredRef.current || isToolbarHoveredRef.current || isToolbarPinnedRef.current) {
+        clearHideToolbarTimer();
+        return;
+      }
+
+      scheduleHideToolbar();
+    };
+
+    ownerDocument.addEventListener(TOOLBAR_DRAG_ACTIVITY_EVENT, handleToolbarDragActivity as EventListener);
+    return () => {
+      ownerDocument.removeEventListener(TOOLBAR_DRAG_ACTIVITY_EVENT, handleToolbarDragActivity as EventListener);
+    };
+  }, [clearHideToolbarTimer, containerRef, modelUid, scheduleHideToolbar, setDraggingToolbarItem]);
 
   useEffect(() => {
     const hostElement = containerRef.current;
@@ -193,78 +264,87 @@ export const useFloatToolbarVisibility = ({
 
       if (isCurrentHostTarget) {
         clearHideToolbarTimer();
-        setIsHostHovered(true);
+        setHostHovered(true);
       }
 
       setHideMenu(!!childWithMenu && childWithMenu !== containerRef.current);
     },
-    [clearHideToolbarTimer, containerRef],
+    [clearHideToolbarTimer, containerRef, setHostHovered],
   );
 
   const handleHostMouseEnter = useCallback(() => {
     clearHideToolbarTimer();
     setHideMenu(false);
     updatePortalRect();
-    setIsHostHovered(true);
-  }, [clearHideToolbarTimer, updatePortalRect]);
+    setHostHovered(true);
+  }, [clearHideToolbarTimer, setHostHovered, updatePortalRect]);
 
   const handleHostMouseLeave = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (isToolbarPinned) {
-        setIsHostHovered(false);
+      if (isToolbarPinnedRef.current) {
+        setHostHovered(false);
         return;
       }
       if (isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
         clearHideToolbarTimer();
-        setIsHostHovered(false);
-        setIsToolbarHovered(true);
+        setHostHovered(false);
+        setToolbarHovered(true);
         return;
       }
       if (isNodeWithinDescendantFloatToolbar(e.relatedTarget, containerRef.current, modelUid)) {
         clearHideToolbarTimer();
         setHideMenu(false);
-        setIsHostHovered(true);
+        setHostHovered(true);
         return;
       }
       scheduleHideToolbar();
     },
-    [clearHideToolbarTimer, containerRef, isToolbarPinned, modelUid, scheduleHideToolbar, toolbarContainerRef],
+    [
+      clearHideToolbarTimer,
+      containerRef,
+      modelUid,
+      scheduleHideToolbar,
+      setHostHovered,
+      setToolbarHovered,
+      toolbarContainerRef,
+    ],
   );
 
   const handleToolbarMouseEnter = useCallback(() => {
     clearHideToolbarTimer();
     updatePortalRect();
-    setIsHostHovered(false);
-    setIsToolbarHovered(true);
-  }, [clearHideToolbarTimer, updatePortalRect]);
+    setHostHovered(false);
+    setToolbarHovered(true);
+  }, [clearHideToolbarTimer, setHostHovered, setToolbarHovered, updatePortalRect]);
 
   const handleToolbarMouseLeave = useCallback(
     (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (isToolbarPinned) {
-        setIsToolbarHovered(false);
+      if (isToolbarPinnedRef.current || isDraggingToolbarItemRef.current) {
+        clearHideToolbarTimer();
+        setToolbarHovered(false);
         return;
       }
-      setIsToolbarHovered(false);
+      setToolbarHovered(false);
       if (isNodeWithin(e.relatedTarget, containerRef.current)) {
         clearHideToolbarTimer();
-        setIsHostHovered(true);
+        setHostHovered(true);
         return;
       }
       scheduleHideToolbar();
     },
-    [clearHideToolbarTimer, containerRef, isToolbarPinned, scheduleHideToolbar],
+    [clearHideToolbarTimer, containerRef, scheduleHideToolbar, setHostHovered, setToolbarHovered],
   );
 
   const handleResizeDragStart = useCallback(() => {
     updatePortalRect();
-    setIsDraggingToolbar(true);
+    setDraggingToolbar(true);
     schedulePortalRectUpdate();
-  }, [schedulePortalRectUpdate, updatePortalRect]);
+  }, [schedulePortalRectUpdate, setDraggingToolbar, updatePortalRect]);
 
   const handleResizeDragEnd = useCallback(() => {
-    setIsDraggingToolbar(false);
+    setDraggingToolbar(false);
     schedulePortalRectUpdate();
-  }, [schedulePortalRectUpdate]);
+  }, [schedulePortalRectUpdate, setDraggingToolbar]);
 
   return {
     isToolbarVisible,

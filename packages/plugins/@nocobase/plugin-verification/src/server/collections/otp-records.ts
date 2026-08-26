@@ -15,6 +15,7 @@ export default defineCollection({
   },
   migrationRules: ['schema-only', 'skip'],
   name: 'otpRecords',
+  dataCategory: 'business',
   shared: true,
   fields: [
     {

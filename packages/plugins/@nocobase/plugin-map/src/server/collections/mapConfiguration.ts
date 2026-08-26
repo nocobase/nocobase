@@ -16,6 +16,7 @@ export default defineCollection({
   },
   migrationRules: ['overwrite', 'schema-only'],
   name: MapConfigurationCollectionName,
+  dataCategory: 'system',
   shared: true,
   fields: [
     {

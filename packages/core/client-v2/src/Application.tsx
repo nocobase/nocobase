@@ -7,340 +7,122 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { define, observable } from '@formily/reactive';
-import {
-  FlowEngine,
-  FlowEngineContext,
-  FlowEngineGlobalsContextProvider,
-  FlowEngineProvider,
-  FlowModel,
-  FlowModelRenderer,
-} from '@nocobase/flow-engine';
-import { APIClient, type APIClientOptions, getSubAppName } from '@nocobase/sdk';
+import { type APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
-import _ from 'lodash';
-import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { I18nextProvider } from 'react-i18next';
-import { Link, NavLink, Navigate } from 'react-router-dom';
-import type { Plugin } from './Plugin';
-import { PluginManager, type PluginType } from './PluginManager';
-import { type PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
-import { type ComponentTypeAndString, RouterManager, type RouterOptions } from './RouterManager';
-import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
-import { BlankComponent } from './components';
-import { compose, normalizeContainer } from './utils';
-import type { RequireJS } from './utils/requirejs';
-import { getRequireJs } from './utils/requirejs';
+import { initReactI18next } from 'react-i18next';
 
-declare global {
-  interface Window {
-    define: RequireJS['define'];
-  }
-}
+import { APIClient } from './APIClient';
+import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
+import { CollectionFieldInterfaceManager } from './collection-field-interface/CollectionFieldInterfaceManager';
+import type { PluginType } from './PluginManager';
+import { PluginManager } from './PluginManager';
+import { PluginSettingsManager } from './PluginSettingsManager';
+import type { RouterOptions } from './RouterManager';
+import { RouterManager } from './RouterManager';
+import type { WebSocketClientOptions } from './WebSocketClient';
+import CSSVariableProvider from './css-variable/CSSVariableProvider';
 
-export type DevDynamicImport = (packageName: string) => Promise<{ default: typeof Plugin }>;
-export type ComponentAndProps<T = any> = [ComponentType, T];
-export interface ApplicationOptions {
-  name?: string;
-  publicPath?: string;
+export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
+export { ApplicationModel } from './BaseApplication';
+
+export interface ApplicationOptions extends BaseApplicationOptions<PluginType> {
   apiClient?: APIClientOptions;
   ws?: WebSocketClientOptions | boolean;
   i18n?: i18next;
-  providers?: (ComponentType | ComponentAndProps)[];
   plugins?: PluginType[];
-  components?: Record<string, ComponentType>;
-  scopes?: Record<string, any>;
+  components?: BaseApplicationOptions<PluginType>['components'];
   router?: RouterOptions;
-  pluginSettings?: Record<string, PluginSettingOptions>;
-  designable?: boolean;
-  loadRemotePlugins?: boolean;
-  devDynamicImport?: DevDynamicImport;
-  disableAcl?: boolean;
 }
 
-export class Application {
-  public eventBus = new EventTarget();
-  public providers: ComponentAndProps[] = [];
-  public router: RouterManager;
-  public scopes: Record<string, any> = {};
-  public i18n: i18next;
-  public ws: WebSocketClient;
-  public apiClient: APIClient;
-  public components: Record<string, ComponentType<any> | any> = {
-    AppNotFound: () => <div>Not Found</div>,
-    AppError: () => <div>{this.error?.message}</div>,
-    AppSpin: () => <div>Loading</div>,
-    AppMaintaining: () => <div>Maintaining</div>,
-    AppMaintainingDialog: () => <div>Maintaining Dialog</div>,
-  };
-  public pluginManager: PluginManager;
-  public pluginSettingsManager: PluginSettingsManager;
-  public devDynamicImport: DevDynamicImport;
-  public requirejs: RequireJS;
-  public name: string;
-  public favicon: string;
-  public flowEngine: FlowEngine;
-  public context: FlowEngineContext & {
-    pluginSettingsRouter: PluginSettingsManager;
-    pluginManager: PluginManager;
-  };
-  maintained = false;
-  maintaining = false;
-  error = null;
+export class Application extends BaseApplication<
+  ApplicationOptions,
+  PluginManager,
+  RouterManager,
+  APIClient,
+  PluginSettingsManager
+> {
+  public declare dataSourceManager: any;
+  public hasLoadError = false;
 
-  model: ApplicationModel;
-
-  private wsAuthorized = false;
-  apps: {
-    Component?: ComponentType;
-  } = {
-    Component: null,
-  };
-
-  get pm() {
-    return this.pluginManager;
+  protected createApiClient(options: ApplicationOptions) {
+    return new APIClient({
+      ...options.apiClient,
+      appName: options.name || getSubAppName(options.publicPath),
+    });
   }
 
-  get disableAcl() {
-    return this.options.disableAcl;
-  }
-
-  get isWsAuthorized() {
-    return this.wsAuthorized;
-  }
-
-  updateFavicon(favicon?: string) {
-    let faviconLinkElement: HTMLLinkElement = document.querySelector('link[rel="shortcut icon"]');
-
-    if (favicon) {
-      this.favicon = favicon;
-    }
-
-    if (!faviconLinkElement) {
-      faviconLinkElement = document.createElement('link');
-      faviconLinkElement.rel = 'shortcut icon';
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
-      document.head.appendChild(faviconLinkElement);
-    } else {
-      faviconLinkElement.href = this.favicon || '/favicon/favicon.ico';
+  protected configureRuntimeAdapters() {
+    this.dataSourceManager = this.flowEngine.context.dataSourceManager;
+    this.dataSourceManager.setRequester(this.apiClient.request.bind(this.apiClient));
+    if (!this.dataSourceManager.collectionFieldInterfaceManager) {
+      this.dataSourceManager.setCollectionFieldInterfaceManager(
+        new CollectionFieldInterfaceManager(this.dataSourceManager),
+      );
     }
   }
 
-  setWsAuthorized(authorized: boolean) {
-    this.wsAuthorized = authorized;
+  protected createI18n(options: ApplicationOptions) {
+    if (options.i18n) {
+      return options.i18n;
+    }
+
+    const i18n = createInstance();
+
+    i18n.use(initReactI18next).init({
+      lng: 'en-US',
+      defaultNS: 'client',
+      resources: {},
+      keySeparator: false,
+      nsSeparator: false,
+    });
+
+    return i18n;
   }
 
-  constructor(protected options: ApplicationOptions = {}) {
-    this.initRequireJs();
-    define(this, {
-      maintained: observable.ref,
-      maintaining: observable.ref,
-      error: observable.ref,
-    });
-    this.devDynamicImport = options.devDynamicImport;
-    this.components = _.merge(this.components, options.components);
-    this.apiClient = new APIClient(options.apiClient);
-    this.i18n = options.i18n || createInstance();
-    this.router = new RouterManager(options.router, this);
-    this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
-    this.flowEngine = new FlowEngine();
-    this.flowEngine.registerModels({ ApplicationModel });
-    this.model = this.flowEngine.createModel<ApplicationModel>({
-      use: 'ApplicationModel',
-      uid: '__app_model__',
-    });
-    this.context = this.flowEngine.context as any;
-    this.context.defineProperty('pluginManager', {
-      get: () => this.pluginManager,
-    });
-    this.context.defineProperty('pluginSettingsRouter', {
-      get: () => this.pluginSettingsManager,
-    });
-    this.addDefaultProviders();
-    this.addReactRouterComponents();
-    this.addProviders(options.providers || []);
-    this.ws = new WebSocketClient(options.ws);
-    this.ws.app = this;
-    this.pluginSettingsManager = new PluginSettingsManager(options.pluginSettings, this);
-    this.addRoutes();
-    this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
-    this.i18n.on('languageChanged', (lng) => {
-      this.apiClient.auth.locale = lng;
-    });
-    this.initListeners();
-  }
-
-  private initListeners() {
-    this.eventBus.addEventListener('auth:tokenChanged', (event: CustomEvent) => {
-      this.setTokenInWebSocket(event.detail);
-    });
-
-    this.eventBus.addEventListener('maintaining:end', () => {
-      if (this.apiClient.auth.token) {
-        this.setTokenInWebSocket({
-          token: this.apiClient.auth.token,
-          authenticator: this.apiClient.auth.getAuthenticator(),
-        });
+  protected createRouterManager(options: ApplicationOptions) {
+    const router = new RouterManager(options.router, this);
+    if (options.router?.basename === undefined) {
+      const publicPath = this.getPublicPath();
+      const basename = publicPath === '/' ? undefined : publicPath.replace(/\/$/, '');
+      if (basename) {
+        router.setBasename(basename);
       }
-    });
-  }
-
-  protected setTokenInWebSocket(options: { token: string; authenticator: string }) {
-    const { token, authenticator } = options;
-    if (this.maintaining) {
-      return;
     }
-
-    this.ws.send(
-      JSON.stringify({
-        type: 'auth:token',
-        payload: {
-          token,
-          authenticator,
-        },
-      }),
-    );
+    return router;
   }
 
-  setMaintaining(maintaining: boolean) {
-    // if maintaining is the same, do nothing
-    if (this.maintaining === maintaining) {
-      return;
-    }
-
-    this.maintaining = maintaining;
-    if (!maintaining) {
-      this.eventBus.dispatchEvent(new Event('maintaining:end'));
-    }
+  protected createPluginManager(options: ApplicationOptions): PluginManager {
+    return new PluginManager(options.plugins || [], Boolean(options.loadRemotePlugins), this);
   }
 
-  private initRequireJs() {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    // 避免重复初始化 requirejs
-    if (window['requirejs']) {
-      this.requirejs = window['requirejs'];
-      return;
-    }
-    window['requirejs'] = this.requirejs = getRequireJs();
-    window.define = this.requirejs.define;
-  }
-
-  private addDefaultProviders() {
-    this.use(I18nextProvider, { i18n: this.i18n });
-    this.flowEngine.context.defineProperty('app', {
-      value: this,
-    });
-    this.flowEngine.context.defineProperty('api', {
-      value: this.apiClient,
-    });
-    this.flowEngine.context.defineProperty('i18n', {
-      value: this.i18n,
-    });
-    this.flowEngine.context.defineProperty('router', {
-      get: () => this.router.router,
-      cache: false,
-    });
-    this.flowEngine.context.defineProperty('documentTitle', {
-      get: () => document.title,
-    });
-    this.flowEngine.context.defineProperty('route', {
-      get: () => {},
-      observable: true,
-    });
-    this.flowEngine.context.defineProperty('location', {
-      get: () => location,
-      observable: true,
-    });
-    this.use(FlowEngineProvider, { engine: this.flowEngine });
-    this.use(FlowEngineGlobalsContextProvider);
-  }
-
-  private addReactRouterComponents() {
-    this.addComponents({
-      Link,
-      Navigate: Navigate as ComponentType,
-      NavLink: NavLink as ComponentType,
-    });
-  }
-
-  private addRoutes() {
-    this.router.add('not-found', {
-      path: '*',
-      Component: this.components['AppNotFound'],
-    });
-  }
-
-  getOptions() {
-    return this.options;
-  }
-
-  getName() {
-    return getSubAppName(this.getPublicPath()) || null;
-  }
-
-  getPublicPath() {
-    let publicPath = this.options.publicPath || '/';
-    if (!publicPath.endsWith('/')) {
-      publicPath += '/';
-    }
-    return publicPath;
-  }
-
-  getApiUrl(pathname = '') {
-    let baseURL = this.apiClient.axios['defaults']['baseURL'];
-    if (!baseURL.startsWith('http://') && !baseURL.startsWith('https://')) {
-      const { protocol, host } = window.location;
-      baseURL = `${protocol}//${host}${baseURL}`;
-    }
-    return baseURL.replace(/\/$/g, '') + '/' + pathname.replace(/^\//g, '');
-  }
-
-  getRouteUrl(pathname: string) {
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
-  }
-
-  getHref(pathname: string) {
-    const name = this.name;
-    if (name && name !== 'main') {
-      return this.getPublicPath() + 'apps/' + name + '/' + pathname.replace(/^\//g, '');
-    }
-    return this.getPublicPath() + pathname.replace(/^\//g, '');
-  }
-
-  /**
-   * @internal
-   */
-  getComposeProviders() {
-    const Providers = compose(...this.providers)(BlankComponent);
-    Providers.displayName = 'Providers';
-    return Providers;
-  }
-
-  use<T = any>(component: ComponentType, props?: T) {
-    return this.addProvider(component, props);
-  }
-
-  addProvider<T = any>(component: ComponentType, props?: T) {
-    return this.providers.push([component, props]);
-  }
-
-  addProviders(providers: (ComponentType | [ComponentType, any])[]) {
-    providers.forEach((provider) => {
-      if (Array.isArray(provider)) {
-        this.addProvider(provider[0], provider[1]);
-      } else {
-        this.addProvider(provider);
-      }
-    });
+  protected createPluginSettingsManager(_options: ApplicationOptions): PluginSettingsManager {
+    return new PluginSettingsManager(this);
   }
 
   async load() {
-    await this.loadWebSocket();
-    await this.pm.load();
-    await this.flowEngine.flowSettings.load();
+    try {
+      this.hasLoadError = false;
+      await this.loadWebSocket();
+      await this.pm.load();
+      await this.flowEngine.flowSettings.load();
+    } catch (error: any) {
+      this.hasLoadError = true;
+
+      if (error?.response?.data?.errors?.[0]?.code === 'BLOCKED_IP') {
+        this.hasLoadError = false;
+      }
+
+      if (this.ws.enabled) {
+        await new Promise((resolve) => {
+          setTimeout(() => resolve(null), 1000);
+        });
+      }
+      this.error = {
+        code: 'LOAD_ERROR',
+        ...this.apiClient.toErrMessages(error)?.[0],
+      };
+      console.error(error, this.error);
+    }
     this.updateFavicon();
   }
 
@@ -349,36 +131,34 @@ export class Application {
       this.setWsAuthorized(true);
     });
 
-    this.ws.on('message', (event) => {
+    this.ws.on('message', (event: { data?: string }) => {
       if (!event.data) {
         return;
       }
       const data = JSON.parse(event.data);
 
       if (data?.payload?.refresh) {
-        window.location.reload();
+        globalThis.window.location.reload();
         return;
       }
 
       if (data.type === 'notification') {
-        this.context.notification[data.payload?.type || 'info']({ message: data.payload?.message });
-        return;
-      }
-
-      if (this.error && data.payload.code === 'APP_RUNNING') {
-        this.maintained = true;
-        this.setMaintaining(false);
-        this.error = null;
-        window.location.reload();
+        const notification = this.context.notification as unknown as Record<
+          string,
+          (config: { message?: string }) => void
+        >;
+        notification[data.payload?.type || 'info']?.({ message: data.payload?.message });
         return;
       }
 
       const maintaining = data.type === 'maintaining' && data.payload.code !== 'APP_RUNNING';
-      console.log('ws:message', { maintaining, data });
       if (maintaining) {
         this.setMaintaining(true);
         this.error = data.payload;
       } else {
+        if (this.hasLoadError) {
+          globalThis.window.location.reload();
+        }
         this.setMaintaining(false);
         this.maintained = true;
         this.error = null;
@@ -409,131 +189,47 @@ export class Application {
     this.ws.connect();
   }
 
-  getComponent<T = any>(Component: ComponentTypeAndString<T>, isShowError = true): ComponentType<T> | undefined {
-    const showError = (msg: string) => isShowError && console.error(msg);
-    if (!Component) {
-      showError(`getComponent called with ${Component}`);
-      return;
-    }
-
-    // ClassComponent or FunctionComponent
-    if (typeof Component === 'function') return Component;
-
-    // Component is a string, try to get it from this.components
-    if (typeof Component === 'string') {
-      const res = _.get(this.components, Component) as ComponentType<T>;
-      if (!res) {
-        showError(`Component ${Component} not found`);
-        return;
-      }
-      return res;
-    }
-
-    showError(`Component ${Component} should be a string or a React component`);
-    return;
+  protected addCustomProviders() {
+    this.use(CSSVariableProvider);
   }
 
-  renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T, children?: ReactNode): ReactElement {
-    return React.createElement(this.getComponent(Component), props, children);
+  addFieldInterfaces(fieldInterfaceClasses: any[] = []) {
+    return this.dataSourceManager.addFieldInterfaces(fieldInterfaceClasses);
   }
 
-  private addComponent(component: ComponentType, name?: string) {
-    const componentName = name || component.displayName || component.name;
-    if (!componentName) {
-      console.error('Component must have a displayName or pass name as second argument');
-      return;
-    }
-    _.set(this.components, componentName, component);
+  addFieldInterfaceGroups(groups: Record<string, { label: string; order?: number }>) {
+    return this.dataSourceManager.addFieldInterfaceGroups(groups);
   }
 
-  addComponents(components: Record<string, ComponentType>) {
-    Object.keys(components).forEach((name) => {
-      this.addComponent(components[name], name);
-    });
+  addFieldInterfaceComponentOption(fieldName: string, componentOption: any) {
+    return this.dataSourceManager.addFieldInterfaceComponentOption(fieldName, componentOption);
   }
 
-  getRootComponent() {
-    const Root: FC<{ children?: React.ReactNode }> = () => (
-      <FlowEngineProvider engine={this.flowEngine}>
-        <FlowModelRenderer fallback={this.renderComponent('AppSpin')} model={this.model} />
-      </FlowEngineProvider>
-    );
-    return Root;
+  addFieldInterfaceOperator(name: string, operatorOption: any) {
+    return this.dataSourceManager.addFieldInterfaceOperator(name, operatorOption);
   }
 
-  mount(containerOrSelector: Element | ShadowRoot | string) {
-    const container = normalizeContainer(containerOrSelector);
-    if (!container) return;
-    const App = this.getRootComponent();
-    const root = createRoot(container);
-    root.render(<App />);
-    return root;
+  registerFieldFilterOperator(operator: any) {
+    return this.dataSourceManager.registerFieldFilterOperator(operator);
+  }
+
+  registerFieldFilterOperatorGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.registerFieldFilterOperatorGroup(name, operators);
+  }
+
+  addFieldFilterOperatorsToGroup(name: string, operators: any[] = []) {
+    return this.dataSourceManager.addFieldFilterOperatorsToGroup(name, operators);
+  }
+
+  registerFieldValidationConfigure(item: any) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigure?.(item);
+  }
+
+  registerFieldValidationConfigureGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.registerFieldValidationConfigureGroup?.(name, items);
+  }
+
+  addFieldValidationConfiguresToGroup(name: string, items: any[] = []) {
+    return this.dataSourceManager.collectionFieldInterfaceManager?.addFieldValidationConfiguresToGroup?.(name, items);
   }
 }
-
-class ApplicationModel extends FlowModel {
-  #providers: ComponentType;
-  #router: any;
-
-  get app() {
-    return this.context.app as Application;
-  }
-
-  getProviders() {
-    this.#providers = this.app.getComposeProviders();
-    return this.#providers;
-  }
-
-  getRouter() {
-    this.#router = this.app.router.getRouterComponent();
-    return this.#router;
-  }
-
-  render() {
-    console.log('render', {
-      maintaining: this.app.maintaining,
-      maintained: this.app.maintained,
-      error: this.app.error,
-    });
-    if (this.app.maintaining) {
-      return this.renderMaintaining();
-    }
-    if (this.app.error) {
-      return this.renderError();
-    }
-    return this.renderContent();
-  }
-
-  renderMaintaining() {
-    if (!this.app.maintained) {
-      return this.app.renderComponent('AppMaintaining');
-    }
-    return this.app.renderComponent('AppMaintainingDialog');
-  }
-
-  renderError() {
-    return this.app.renderComponent('AppError');
-  }
-
-  renderContent() {
-    const Router = this.getRouter();
-    const Providers = this.getProviders();
-    return <Router BaseLayout={Providers} />;
-  }
-}
-
-ApplicationModel.registerFlow({
-  key: 'appFlow',
-  steps: {
-    init: {
-      async handler(ctx, params) {
-        try {
-          await ctx.app.load();
-        } catch (err) {
-          ctx.model.app.error = err;
-          console.error(err);
-        }
-      },
-    },
-  },
-});

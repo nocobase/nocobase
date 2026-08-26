@@ -1,0 +1,1 @@
+Please provide the Chinese source text you would like me to translate. I am ready to apply all the rules and terminology specified in your instructions.

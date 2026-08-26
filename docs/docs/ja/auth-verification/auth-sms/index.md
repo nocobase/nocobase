@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-auth-sms'
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 # SMS認証
 
@@ -12,7 +8,7 @@ pkg: '@nocobase/plugin-auth-sms'
 
 SMS認証プラグインを使うと、ユーザーはSMSで登録し、NocoBaseにログインできるようになります。
 
-> この機能は、[`@nocobase/plugin-verification` プラグイン](/auth-verification/verification/)が提供するSMS認証コード機能と組み合わせて使用する必要があります。
+> この機能は、[`@nocobase/plugin-verification` プラグイン](/auth-verification/verification/index.md)が提供するSMS認証コード機能と組み合わせて使用する必要があります。
 
 ## SMS認証の追加
 

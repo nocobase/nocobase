@@ -1,0 +1,236 @@
+---
+title: "Cài đặt create-nocobase-app"
+description: "Bắt đầu nhanh với NocoBase: Cài đặt create-nocobase-app"
+keywords: "create, nocobase, app, NocoBase"
+---
+
+# Cài đặt create-nocobase-app
+
+:::tip Điều kiện tiên quyết
+
+- Đã cài Node.js >= 22, Yarn 1.22.x
+- Đã cấu hình và khởi động một trong các database cần thiết: MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- Do điều kiện mạng tại Trung Quốc, khuyến nghị bạn đổi sang npm mirror nội địa (không bắt buộc)
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
+
+:::
+
+## 1. Tạo dự án NocoBase
+
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và loại database, thực thi lệnh tương ứng.
+
+<Tabs>
+
+<Tab label="Phiên bản Latest">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Phiên bản Beta">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Phiên bản Alpha">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning Hướng dẫn biến môi trường
+
+- `TZ` dùng để cài đặt múi giờ của ứng dụng, mặc định là múi giờ hệ điều hành
+- `APP_KEY` là khóa bí mật của ứng dụng, dùng để tạo Token người dùng, v.v. (Nếu APP_KEY được sửa, các Token cũ cũng sẽ vô hiệu). Có thể là chuỗi ngẫu nhiên bất kỳ. **Vui lòng sửa thành khóa bí mật của riêng bạn và đảm bảo không tiết lộ ra ngoài**
+- `DB_*` là các cấu hình liên quan đến database, vui lòng sửa thành thông tin kết nối database thực tế của bạn
+
+:::
+
+## 2. Chuyển vào thư mục
+
+```bash
+cd my-nocobase-app
+```
+
+## 3. Cài đặt phụ thuộc
+
+Lưu ý: Do điều kiện mạng và cấu hình hệ thống, bước này có thể mất khoảng mười mấy phút.
+
+```bash
+yarn install
+```
+
+:::tip Mẹo cho môi trường sản xuất
+
+Khi triển khai môi trường sản xuất, để giảm dung lượng, có thể chỉ cài đặt các phụ thuộc cần thiết:
+
+```bash
+yarn install --production
+```
+
+:::
+
+## 4. Cài đặt NocoBase
+
+```bash
+yarn nocobase install --lang=zh-CN
+```
+
+Quá trình cài đặt sẽ tự động tạo cấu trúc bảng database và khởi tạo dữ liệu.
+
+## 5. Khởi động NocoBase
+
+**Môi trường phát triển**
+
+```bash
+yarn dev
+```
+
+**Môi trường sản xuất**
+
+```bash
+yarn start
+```
+
+## 6. Đăng nhập NocoBase
+
+Mở trình duyệt và truy cập [http://localhost:13000](http://localhost:13000), tài khoản và mật khẩu khởi tạo là `admin@nocobase.com` và `admin123`.
+
+:::warning Lưu ý bảo mật tài khoản
+
+Sau khi đăng nhập lần đầu, vui lòng đổi mật khẩu mặc định ngay để đảm bảo an toàn hệ thống.
+
+:::

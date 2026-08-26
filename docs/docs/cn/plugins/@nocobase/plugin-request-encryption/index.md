@@ -1,8 +1,8 @@
 ---
-displayName: "HTTP 请求加密"
-packageName: '@nocobase/plugin-request-encryption'
 title: "HTTP 请求加密"
 keywords: "HTTP 请求加密,插件,NocoBase"
+displayName: "HTTP 请求加密"
+packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x

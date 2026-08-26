@@ -32,7 +32,7 @@ export class DashscopeProvider extends LLMProvider {
   createModel() {
     const { apiKey } = this.serviceOptions || {};
     const { responseFormat, structuredOutput } = this.modelOptions || {};
-    const { schema } = structuredOutput || {};
+    const { name, schema } = structuredOutput || {};
 
     const modelKwargs: Record<string, any> = {};
 
@@ -43,7 +43,7 @@ export class DashscopeProvider extends LLMProvider {
         type: responseFormat,
       };
       if (responseFormat === 'json_schema' && schema) {
-        responseFormatOptions['json_schema'] = schema;
+        responseFormatOptions['json_schema'] = { schema, name: name ?? 'schema' };
       }
       modelKwargs['response_format'] = responseFormatOptions;
     } else {

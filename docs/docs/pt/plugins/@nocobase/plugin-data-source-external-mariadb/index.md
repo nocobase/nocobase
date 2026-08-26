@@ -1,4 +1,6 @@
 ---
+title: "Data source: External MariaDB"
+keywords: "Data sources"
 displayName: "Data source: External MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

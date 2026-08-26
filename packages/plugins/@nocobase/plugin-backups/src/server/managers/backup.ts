@@ -26,11 +26,14 @@ import {
   BACKUP_EXTENSION,
   BACKUP_TASKS_CACHE_NAME,
   FILE_ENCRYPTION_SALT,
+  METADATA_EXTENSION,
   PLUGIN_BACKUPS_NAME,
   getDBVersion,
   humanFileSize,
   resolvePathWithinBase,
 } from '../utils';
+
+const BACKUP_METADATA_VERSION = 1;
 
 export interface BackupSettings {
   storageId?: string;
@@ -39,13 +42,24 @@ export interface BackupSettings {
   keep?: number;
   scheduled: boolean;
   cron: string;
+  includeTables?: string[];
+  excludeTables?: string[];
+  description?: string;
+  createdBy?: BackupCreator;
 }
 
 export interface BackupFile {
   name: string;
   fileSize?: string;
   createdAt?: Date;
+  description?: string;
   inProgress: boolean;
+  createdBy?: BackupCreator;
+}
+
+export interface BackupCreator {
+  id: string;
+  username: string;
 }
 
 export interface BackupTaskResult {
@@ -58,6 +72,8 @@ export class BackupManager {
   ctx: ResourcerContext | null; // when triggered by cron job, ctx is null
   #settings: BackupSettings;
   #dbAdapter: DBAdapter;
+  #backupTasksCacheName: string;
+  #backupPrefix: string;
   #backupDir: string;
   #tempDir: string;
   #uploadDir: string;
@@ -68,10 +84,32 @@ export class BackupManager {
     this.ctx = ctx;
     this.#settings = settings;
     this.#dbAdapter = getDBAdapter(app.db.options);
+    this.#backupTasksCacheName = BACKUP_TASKS_CACHE_NAME;
+    this.#backupPrefix = 'backup_';
     this.#backupDir = storagePathJoin('backups', app.name);
     this.#tempDir = storagePathJoin('tmp', 'backups', app.name);
     this.#uploadDir = storagePathJoin('uploads');
     this.#aesKeyPath = storagePathJoin('apps', app.name, 'aes_key.dat');
+  }
+
+  protected set backupPrefix(backupPrefix: string) {
+    this.#backupPrefix = backupPrefix;
+  }
+
+  protected set backupDir(backupDir: string) {
+    this.#backupDir = backupDir;
+  }
+
+  protected set tempDir(tempDir: string) {
+    this.#tempDir = tempDir;
+  }
+
+  protected set uploadDir(uploadDir: string) {
+    this.#uploadDir = uploadDir;
+  }
+
+  protected set backupTasksCacheName(backupTasksCacheName: string) {
+    this.#backupTasksCacheName = backupTasksCacheName;
   }
 
   async createBackupName() {
@@ -82,14 +120,17 @@ export class BackupManager {
     return this.#generateFileBaseName();
   }
 
-  async backup(fileBaseName: string, opts: BackupSettings = this.#settings) {
+  async backup(fileBaseName: string, opts?: Partial<BackupSettings>) {
     const contentPath = path.join(this.#tempDir, fileBaseName);
-    return this.#runBackupTask(opts, fileBaseName, contentPath);
+    return this.#runBackupTask({ ...this.#settings, ...(opts ?? {}) }, fileBaseName, contentPath);
   }
 
   async destroy(fileName: string) {
     const filePath = this.#getValidatedFilePath(fileName);
+    const fileBaseName = path.basename(filePath, `.${BACKUP_EXTENSION}`);
+    const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
     await fsPromises.unlink(filePath);
+    await fsPromises.rm(metadataFilePath, { force: true });
   }
 
   async list() {
@@ -98,7 +139,7 @@ export class BackupManager {
     // clean up the lock files if the backup process done.
     // These files can be left behind if the backup process is interrupted for some reason
     const cleanStaleLockFiles = async () => {
-      const statusCache = this.app.cacheManager.getCache(BACKUP_TASKS_CACHE_NAME);
+      const statusCache = this.app.cacheManager.getCache(this.#backupTasksCacheName);
       for (const backup of inProgressBackups) {
         if (!(await statusCache.get(backup.name))) {
           await this.#removeLockFile(path.basename(backup.name, `.${BACKUP_EXTENSION}`));
@@ -135,7 +176,12 @@ export class BackupManager {
       // create content path to store the uncompressed backup files
       await this.#createContentPath(contentPath);
       // Backup the database
-      await this.#dbAdapter.backup(contentPath, !this.app.pm.has('collection-fdw'));
+      await this.#dbAdapter.backup({
+        dir: contentPath,
+        skipFdw: !this.app.pm.has('collection-fdw'),
+        includeTables: opts.includeTables,
+        excludeTables: opts.excludeTables,
+      });
       // save the metadata
       await this.#metadataBackup(opts, contentPath);
       // 3. compress the backup files
@@ -188,8 +234,11 @@ export class BackupManager {
       });
 
     const metadata = {
+      metadataVersion: BACKUP_METADATA_VERSION,
       enableFilesBackup: opts.enableFilesBackup,
       version: await this.app.version.get(),
+      description: opts.description,
+      createdBy: opts.createdBy,
       database: {
         dialect,
         underscored,
@@ -200,8 +249,7 @@ export class BackupManager {
       },
       plugins,
     };
-    // save the metadata to file _metadata.json
-    const metadataFilePath = path.join(dir, '_metadata.json');
+    const metadataFilePath = path.join(dir, METADATA_EXTENSION);
     try {
       await fsPromises.writeFile(metadataFilePath, JSON.stringify(metadata, null, 2));
     } catch (error) {
@@ -214,6 +262,8 @@ export class BackupManager {
       zlib: { level: 9 },
     });
     const filePath = path.join(this.#backupDir, `${fileBaseName}.${BACKUP_EXTENSION}`);
+    const sourceMetadataFilePath = path.join(dir, METADATA_EXTENSION);
+    const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
     const outputFileStream = fs.createWriteStream(filePath);
 
     try {
@@ -302,6 +352,7 @@ export class BackupManager {
 
       // Wait for the 'close' event
       await onClose;
+      await fsPromises.copyFile(sourceMetadataFilePath, metadataFilePath);
     } catch (error) {
       this.app.logger.error(`Error compressing files: ${error.message}`, { module: BACKUPS });
       throw new Error(this.#t('ERROR_COMPRESSING_FILES', error.message));
@@ -457,7 +508,7 @@ export class BackupManager {
   }
 
   #generateFileBaseName() {
-    return `backup_${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}`;
+    return `${this.#backupPrefix}${dayjs().format(`YYYYMMDD_HHmmss_${Math.floor(1000 + Math.random() * 9000)}`)}`;
   }
 
   async #listCompletedBackups(inProgressFiles: BackupFile[] = []): Promise<BackupFile[]> {
@@ -476,16 +527,37 @@ export class BackupManager {
     const backupPromises = files
       .filter((file) => file.endsWith(`.${BACKUP_EXTENSION}`) && !inProgressFileNames.includes(file))
       .map(async (file): Promise<BackupFile> => {
-        const stats = await fsPromises.stat(path.join(this.#backupDir, file));
+        const fileBaseName = path.basename(file, `.${BACKUP_EXTENSION}`);
+        const metadataFilePath = path.join(this.#backupDir, `${fileBaseName}${METADATA_EXTENSION}`);
+        const [stats, metadata] = await Promise.all([
+          fsPromises.stat(path.join(this.#backupDir, file)),
+          this.#readBackupDescription(metadataFilePath),
+        ]);
         return {
           name: file,
           fileSize: humanFileSize(stats.size),
           createdAt: stats.ctime,
+          description: metadata?.description,
+          createdBy: metadata?.createdBy,
           inProgress: false,
         };
       });
     const backups = await Promise.all(backupPromises);
     return backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async #readBackupDescription(
+    metadataFilePath: string,
+  ): Promise<{ description?: string; createdBy?: BackupCreator } | undefined> {
+    try {
+      const metadata = JSON.parse(await fsPromises.readFile(metadataFilePath, 'utf8'));
+      return {
+        description: metadata.description,
+        createdBy: metadata.createdBy,
+      };
+    } catch (_error) {
+      return undefined;
+    }
   }
 
   async #listProgressBackups(): Promise<BackupFile[]> {

@@ -6,12 +6,12 @@ keywords: "Cache,缓存,cacheManager,get,set,del,服务端缓存,NocoBase"
 
 # Cache 缓存
 
-NocoBase 的 Cache 模块基于 <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> 封装，为插件开发提供缓存功能。系统内置了两种缓存类型：
+NocoBase 的 Cache 模块基于 <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> 封装，为插件开发提供缓存功能。内置了两种缓存类型：
 
-- **memory** - 基于 lru-cache 的内存缓存，由 node-cache-manager 默认提供
-- **redis** - 基于 node-cache-manager-redis-yet 的 Redis 缓存
+- **memory**——基于 lru-cache 的内存缓存，由 node-cache-manager 默认提供
+- **redis**——基于 node-cache-manager-redis-yet 的 Redis 缓存
 
-更多缓存类型可以通过 API 进行扩展注册。
+更多缓存类型可以通过 API 扩展注册。
 
 ## 基本用法
 
@@ -49,7 +49,7 @@ async (ctx, next) => {
 
 ## 创建自定义缓存
 
-如果需要创建独立的缓存实例（例如不同的命名空间或配置），可以使用 `app.cacheManager.createCache()` 方法。
+如果需要创建独立的缓存实例（比如不同的命名空间或配置），可以使用 `app.cacheManager.createCache()` 方法。
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -87,7 +87,7 @@ const myCache = this.app.cacheManager.getCache('myPlugin');
 
 ## 缓存的基本方法
 
-Cache 实例提供了丰富的缓存操作方法，大部分方法继承自 node-cache-manager。
+Cache 实例提供了常用的缓存操作方法，大部分继承自 node-cache-manager。
 
 ### get / set
 
@@ -111,7 +111,7 @@ await cache.reset();
 
 ### wrap
 
-`wrap()` 方法是一个非常有用的工具，它会先尝试从缓存获取数据，如果缓存未命中，则执行函数并将结果存入缓存。
+`wrap()` 会先尝试从缓存获取数据，如果缓存未命中，则执行回调函数并将结果存入缓存。
 
 ```ts
 const data = await cache.wrap('user:1', async () => {
@@ -140,7 +140,7 @@ await cache.mdel(['key1', 'key2', 'key3']);
 ### keys / ttl
 
 ```ts
-// 获取所有 key（注意：某些 store 可能不支持）
+// 获取所有 key（注意：部分 store 可能不支持）
 const allKeys = await cache.keys();
 
 // 获取 key 的剩余过期时间（单位：秒）
@@ -151,7 +151,7 @@ const remainingTTL = await cache.ttl('key');
 
 ### wrapWithCondition
 
-`wrapWithCondition()` 类似 `wrap()`，但可以通过条件决定是否使用缓存。
+`wrapWithCondition()` 类似于 `wrap()`，不过可以通过条件决定是否使用缓存。
 
 ```ts
 const data = await cache.wrapWithCondition(
@@ -161,11 +161,11 @@ const data = await cache.wrapWithCondition(
   },
   {
     // 外部参数控制是否使用缓存结果
-    useCache: true, // 如果设为 false，即使有缓存也会重新执行函数
+    useCache: true, // 设为 false 时，即使有缓存也会重新执行函数
 
     // 通过数据结果决定是否缓存
     isCacheable: (value) => {
-      // 例如：只有成功的结果才缓存
+      // 比如：只有成功的结果才缓存
       return value && !value.error;
     },
 
@@ -192,7 +192,7 @@ await cache.delValueInObject('user:1', 'age');
 
 ## 注册自定义 Store
 
-如果需要使用其他缓存类型（如 Memcached、MongoDB 等），可以通过 `app.cacheManager.registerStore()` 注册。
+如果需要使用其他缓存类型（比如 Memcached、MongoDB 等），可以通过 `app.cacheManager.registerStore()` 注册。
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -200,7 +200,7 @@ import { redisStore, RedisStore } from 'cache-manager-redis-yet';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // 注册 Redis store（如果系统未注册）
+    // 注册 Redis store（如果尚未注册）
     this.app.cacheManager.registerStore({
       name: 'redis',
       store: redisStore,
@@ -228,3 +228,11 @@ export default class PluginCacheDemo extends Plugin {
 3. **Key 命名规范**：建议使用有意义的命名空间和前缀，如 `module:resource:id`。
 4. **TTL 设置**：根据数据更新频率合理设置 TTL，平衡性能和一致性。
 5. **Redis 连接**：使用 Redis 时，确保在生产环境中正确配置连接参数和密码。
+
+## 相关链接
+
+- [Context 请求上下文](./context.md) — 在中间件和 Action 中通过 `ctx.cache` 访问缓存
+- [Plugin 插件](./plugin.md) — 在插件中创建和管理自定义缓存实例
+- [服务端开发概述](./index.md) — 服务端整体架构与缓存模块的位置
+- [Middleware 中间件](./middleware.md) — 在中间件中结合缓存处理请求逻辑
+- [Database 数据库操作](./database.md) — 缓存常与数据库查询配合使用以提升性能

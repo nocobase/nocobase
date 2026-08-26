@@ -11,7 +11,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput, Spin } from 'antd';
 import React, { useMemo } from 'react';
-import { useGlobalTheme } from '../../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
 import { useStyles } from './style';

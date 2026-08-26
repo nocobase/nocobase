@@ -1,7 +1,3 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 # Variables de Entorno
 
 ## ¿Cómo configurar las variables de entorno?
@@ -306,7 +302,7 @@ Formato de impresión de los registros. El valor predeterminado es `console` en 
 LOGGER_FORMAT=json
 ```
 
-Referencia: [Formato de Registros](/log-and-monitor/logger/index.md#日志格式)
+Referencia: [Formato de Registros](/log-and-monitor/logger/index.md#formatos-de-registro)
 
 ### CACHE_DEFAULT_STORE
 
@@ -390,7 +386,8 @@ Se utiliza para añadir **plugins** locales preestablecidos no activados. El val
 
 1.  Asegúrese de que el **plugin** esté descargado localmente y pueda encontrarse en el directorio `node_modules`. Para más detalles, consulte [Estructura del proyecto de **plugins**](/plugin-development/project-structure).
 2.  Después de añadir la variable de entorno, el **plugin** solo aparecerá en la página del gestor de **plugins** tras una instalación inicial (`nocobase install`) o una actualización (`nocobase upgrade`).
-    :::
+
+:::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -404,7 +401,8 @@ Se utiliza para añadir **plugins** integrados que se instalan por defecto. El v
 
 1.  Asegúrese de que el **plugin** esté descargado localmente y pueda encontrarse en el directorio `node_modules`. Para más detalles, consulte [Estructura del proyecto de **plugins**](/plugin-development/project-structure).
 2.  Después de añadir la variable de entorno, el **plugin** se instalará o actualizará automáticamente durante la instalación inicial (`nocobase install`) o la actualización (`nocobase upgrade`).
-    :::
+
+:::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar

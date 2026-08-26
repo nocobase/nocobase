@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Gestor de Colecciones Gráficas

@@ -8,11 +8,13 @@
  */
 
 import { ConfigProvider } from 'antd';
-import { Popup } from 'antd-mobile';
 import React, { FC, ReactNode, useMemo } from 'react';
-import { CloseOutline } from 'antd-mobile-icons';
 import { useMobileActionDrawerStyle } from './MobilePopup.style';
 import { useTranslation } from 'react-i18next';
+import { lazy } from '../lazy-helper';
+
+const { Popup } = lazy(() => import('antd-mobile'), 'Popup');
+const { CloseOutline } = lazy(() => import('antd-mobile-icons'), 'CloseOutline');
 
 interface MobilePopupProps {
   title?: string;

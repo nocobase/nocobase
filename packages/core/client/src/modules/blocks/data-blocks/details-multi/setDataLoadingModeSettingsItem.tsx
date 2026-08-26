@@ -12,8 +12,9 @@ import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useDataBlockProps, useDataBlockRequestGetter } from '../../../../data-source';
-import { useDesignable } from '../../../../schema-component';
-import { SchemaSettingsModalItem, useCollectionState } from '../../../../schema-settings';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
+import { useCollectionState } from '../../../../schema-settings/DataTemplates/hooks/useCollectionState';
+import { SchemaSettingsModalItem } from '../../../../schema-settings/SchemaSettings';
 
 export const setDataLoadingModeSettingsItem = {
   name: 'setDataLoadingMode',

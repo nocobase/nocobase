@@ -10,7 +10,8 @@
 import { useAPIClient, usePlugin, useRequest } from '@nocobase/client';
 import PluginFileManagerClient from '@nocobase/plugin-file-manager/client';
 import { useAISettingsContext } from '../../AISettingsProvider';
-import { useChatMessagesStore } from '../stores/chat-messages';
+import { useChat } from '../hooks/useChat';
+import { useChatConversationsStore } from '../stores/chat-conversations';
 
 export function useStorage(storage: string) {
   const name = storage ?? '';
@@ -42,6 +43,8 @@ export function useStorageUploadProps(props: any) {
 
 export function useUploadProps(props: any) {
   const api = useAPIClient();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
   return {
     customRequest({ action, data, file, filename, headers, onError, onProgress, onSuccess, withCredentials }) {
@@ -78,7 +81,9 @@ export function useUploadProps(props: any) {
 }
 
 export const useUploadFiles = () => {
-  const setAttachments = useChatMessagesStore.use.setAttachments();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const setAttachments = chat.setAttachments;
 
   const uploadProps = {
     action: 'aiFiles:create',

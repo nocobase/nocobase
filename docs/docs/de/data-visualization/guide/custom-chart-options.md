@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Benutzerdefinierte Diagrammkonfiguration
 
 Im benutzerdefinierten Modus konfigurieren Sie Diagramme, indem Sie JavaScript im Code-Editor schreiben. Basierend auf `ctx.data` geben Sie eine vollständige ECharts `option` zurück. Dies eignet sich hervorragend für das Zusammenführen mehrerer Datenreihen, komplexe Tooltips und dynamische Stile. Theoretisch werden alle ECharts-Funktionen und Diagrammtypen unterstützt.

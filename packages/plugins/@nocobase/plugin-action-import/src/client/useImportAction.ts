@@ -26,9 +26,6 @@ import { NAMESPACE } from './constants';
 import { useImportContext } from './context';
 import { ImportStatus } from './ImportModal';
 import { useEffect } from 'react';
-import { useFields } from './useFields';
-import { initImportSettings } from './ImportActionInitializer';
-import { useImportActionContext } from './ImportActionContext';
 
 const useImportSchema = () => {
   const { fieldSchema: actionSchema } = useActionContext();
@@ -47,6 +44,37 @@ const toArr = (v: any) => {
     return [];
   }
   return v;
+};
+
+const getErrorMessageFromResponse = (payload: any): string => {
+  if (!payload) {
+    return '';
+  }
+  if (typeof payload === 'string') {
+    const element = document.createElement('div');
+    element.innerHTML = payload;
+    return element.textContent || element.innerText || payload;
+  }
+  if (typeof payload.message === 'string') {
+    return payload.message;
+  }
+  if (payload.error) {
+    return getErrorMessageFromResponse(payload.error);
+  }
+  const feedbacks = payload.errors || payload.messages;
+  if (Array.isArray(feedbacks)) {
+    return feedbacks.map(getErrorMessageFromResponse).filter(Boolean).join('\n');
+  }
+  return '';
+};
+
+const getImportErrorMessage = (error: any): string => {
+  return (
+    getErrorMessageFromResponse(error?.response?.data) ||
+    getErrorMessageFromResponse(error?.data) ||
+    error?.message ||
+    'Import failed'
+  );
 };
 
 export const useDownloadXlsxTemplateAction = () => {
@@ -107,14 +135,14 @@ export const useImportStartAction = () => {
   const { name } = useCollection_deprecated();
   const { schema: importSchema } = useImportSchema();
   const form = useForm();
-  const { setVisible } = useActionContext();
+  const { setVisible, setErrorMessage } = useActionContext() as any;
   const { setImportModalVisible, setImportStatus, setImportResult } = useImportContext();
   const { upload } = form.values;
   const newResource = useDataBlockResource();
 
   useEffect(() => {
     form.reset();
-  }, []);
+  }, [form]);
 
   return {
     async run() {
@@ -152,17 +180,22 @@ export const useImportStartAction = () => {
       const importMode = importSchema?.['x-action-settings']?.importMode || 'auto';
       const timeout = importSchema?.['x-action-settings']?.timeout || 10 * 60 * 1000;
 
+      setErrorMessage?.('');
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
 
       try {
-        const { data } = await (newResource as any).importXlsx({
-          values: formData,
-          mode: importMode,
-          timeout,
-        });
+        const { data } = await (newResource as any).importXlsx(
+          {
+            values: formData,
+            mode: importMode,
+            timeout,
+          },
+          { skipNotify: true },
+        );
 
+        setErrorMessage?.('');
         form.reset();
 
         if (!data.data.taskId) {
@@ -174,6 +207,7 @@ export const useImportStartAction = () => {
           setVisible(false);
         }
       } catch (error) {
+        setErrorMessage?.(getImportErrorMessage(error));
         setImportModalVisible(false);
         setVisible(true);
       }

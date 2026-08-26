@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-collection-view"
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 
 
 # Visão de Banco de Dados

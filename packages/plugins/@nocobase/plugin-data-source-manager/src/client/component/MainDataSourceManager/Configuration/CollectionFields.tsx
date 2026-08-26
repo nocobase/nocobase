@@ -297,7 +297,7 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
         false,
       );
     },
-    [record],
+    [getInterface, record, updateFieldHandler],
   );
 
   useEffect(() => {
@@ -754,7 +754,7 @@ const CollectionFieldsInternal = () => {
         content: t('Are you sure you want to delete it?'),
       },
     }),
-    [t],
+    [t, targetTemplate?.forbidDeletion],
   );
   const addProps = { type: 'primary', database };
   const syncProps = { type: 'primary' };

@@ -1,22 +1,37 @@
+---
+title: "Server-side Plugin Development Overview"
+description: "NocoBase server-side plugin development: Plugin class, app, db, resources, ACL, database, migration, middleware, events, CLI."
+keywords: "Server Plugin,Plugin class,app,db,ACL,migration,NocoBase"
+---
+
 # Overview
 
-NocoBase server-side plugin development provides various functionalities and capabilities to help developers customize and extend NocoBase's core features. The following are the main capabilities and related chapters of NocoBase server-side plugin development:
+NocoBase server-side plugins can do many things: define data tables, write custom APIs, manage permissions, listen to events, register scheduled tasks, and even extend CLI commands. All these capabilities are organized through a unified Plugin class.
 
-| Module                      | Description                                      | Related Chapter                              |
-| --------------------------- | ------------------------------------------------ | -------------------------------------------- |
-| **Plugin Class**            | Create and manage server-side plugins, extend core functionality | [plugin.md](plugin.md)                       |
-| **Database Operations**     | Provides interfaces for database operations, supporting CRUD and transaction management | [database.md](database.md)                    |
-| **Custom Collections**      | Customize collection structures based on business needs for flexible data model management | [collections.md](collections.md)              |
-| **Plugin Upgrade Data Compatibility** | Ensures plugin upgrades do not affect existing data by performing data migration and compatibility handling | [migration.md](migration.md)                  |
-| **External Data Source Management** | Integrate and manage external data sources to enable data interaction | [data-source-manager.md](data-source-manager.md) |
-| **Custom APIs**             | Extend API resource management by writing custom interfaces | [resource-manager.md](resource-manager.md)    |
-| **API Permission Management** | Customize API permissions for fine-grained access control | [acl.md](acl.md)                              |
-| **Request/Response Interception and Filtering** | Add request and response interceptors or middleware to handle tasks like logging, authentication, etc. | [context.md](context.md) and [middleware.md](middleware.md) |
-| **Event Listening**         | Listen to system events (e.g., from the application or database) and trigger corresponding handlers | [event.md](event.md)                          |
-| **Cache Management**        | Manage the cache to improve application performance and response speed | [cache.md](cache.md)                          |
-| **Scheduled Tasks**         | Create and manage scheduled tasks, such as periodic cleanup, data synchronization, etc. | [cron-job-manager.md](cron-job-manager.md)    |
-| **Multi-language Support**  | Integrate multi-language support to implement internationalization and localization | [i18n.md](i18n.md)                            |
-| **Log Output**              | Customize log formats and output methods to enhance debugging and monitoring capabilities | [logger.md](logger.md)                        |
-| **Custom Commands**         | Extend the NocoBase CLI by adding custom commands | [command.md](command.md)                      |
-| **Writing Test Cases**      | Write and run test cases to ensure plugin stability and functional accuracy | [test.md](test.md)                            |
+| I want to...                                        | Where to look                                           |
+| --------------------------------------------------- | ------------------------------------------------------- |
+| Understand the plugin class lifecycle and `app` members | [Plugin](./plugin.md)                                   |
+| Perform CRUD and transaction management on the database | [Database](./database.md)                               |
+| Define or extend data tables with code              | [Collections](./collections.md)                         |
+| Migrate data during plugin upgrades                 | [Migration](./migration.md)                             |
+| Manage multiple data sources                        | [DataSourceManager](./data-source-manager.md)           |
+| Register custom APIs and resource operations        | [ResourceManager](./resource-manager.md)                |
+| Configure API permissions                           | [ACL](./acl.md)                                         |
+| Add request/response interceptors or middleware     | [Context](./context.md) and [Middleware](./middleware.md) |
+| Listen to application or database events            | [Event](./event.md)                                     |
+| Use cache to improve performance                    | [Cache](./cache.md)                                     |
+| Register scheduled tasks                            | [CronJobManager](./cron-job-manager.md)                 |
+| Support multiple languages                          | [I18n](./i18n.md)                                       |
+| Customize log output                                | [Logger](./logger.md)                                   |
+| Extend CLI commands                                 | [Command](./command.md)                                 |
+| Write test cases                                    | [Test](./test.md)                                       |
 
+## Related Links
+
+- [Plugin](./plugin.md) - Plugin class lifecycle, member methods, and the `app` object
+- [Collections](./collections.md) - Define or extend data table structures with code
+- [Database](./database.md) - CRUD, Repository, transactions, and database events
+- [ResourceManager](./resource-manager.md) - Register custom APIs and resource operations
+- [ACL](./acl.md) - Role permissions, permission snippets, and access control
+- [Plugin Development Overview](../index.md) - Overall introduction to plugin development
+- [Write Your First Plugin](../write-your-first-plugin.md) - Create a complete plugin from scratch

@@ -1,6 +1,12 @@
+---
+title: "Server Plugin Testing"
+description: "NocoBase server plugin unit testing, integration testing, Mock, testing tools."
+keywords: "plugin testing,unit testing,integration testing,server testing,NocoBase"
+---
+
 # Test
 
-NocoBase provides a complete set of testing tools to help developers quickly verify the correctness of database logic, API interfaces, and feature implementations during plugin development. This guide will introduce how to write, run, and organize these tests.
+NocoBase provides a complete set of testing tools to help you quickly verify the correctness of database logic, API interfaces, and feature implementations during plugin development.
 
 ## Why Write Tests
 
@@ -121,7 +127,7 @@ expect(result.get('posts')).toHaveLength(1);
 
 ## Using `createMockServer` for API Testing
 
-`createMockServer` automatically creates a complete application instance including database, plugins, and API routes, making it ideal for testing plugin interfaces.
+`createMockServer` automatically creates a complete application instance including database, plugins, and API routes, suitable for testing plugin interfaces.
 
 ### Basic Example
 
@@ -183,7 +189,7 @@ await app
   .get('/protected-endpoint');
 ```
 
-You can also use the simpler `login()` method
+You can also use the simpler `login()` method:
 
 ```ts
 await app.agent().login(userOrId);
@@ -211,3 +217,10 @@ yarn test packages/plugins/@my-project/plugin-hello/src/server
 yarn test packages/plugins/@my-project/plugin-hello/src/server/__tests__/db.test.ts
 ```
 
+## Related Links
+
+- [Plugin](./plugin.md) — Plugin lifecycle and core APIs
+- [Collections](./collections.md) — Collection definition and configuration
+- [Database](./database.md) — Database operations and Repository API
+- [Server Development Overview](./index.md) — Overview of all server modules
+- [Plugin Development Overview](../index.md) — General introduction to plugin development

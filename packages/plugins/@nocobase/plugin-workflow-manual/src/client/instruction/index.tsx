@@ -196,9 +196,7 @@ export default class extends Instruction {
     AssigneesSelect,
     WorkflowVariableTextArea,
   };
+  async = true;
   useVariables = useVariables;
   useInitializers = useInitializers;
-  isAvailable({ engine, workflow, upstream, branchIndex }) {
-    return !engine.isWorkflowSync(workflow);
-  }
 }

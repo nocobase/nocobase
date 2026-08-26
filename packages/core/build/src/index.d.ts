@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-
+import type { RsbuildConfig } from '@rsbuild/core'
 import { Options as TsupConfig } from 'tsup'
-import { InlineConfig as ViteConfig } from 'vite'
 
 export type PkgLog = (msg: string, ...args: any[]) => void;
 
 interface UserConfig {
   modifyTsupConfig?: (config: TsupConfig) => TsupConfig;
-  modifyViteConfig?: (config: ViteConfig) => ViteConfig;
+  modifyRsbuildConfig?: (config: RsbuildConfig) => RsbuildConfig;
   beforeBuild?: (log: PkgLog) => void | Promise<void>;
   afterBuild?: (log: PkgLog) => void | Promise<void>;
 }

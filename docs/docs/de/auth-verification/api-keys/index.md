@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-api-keys'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # API-Schlüssel
 
@@ -18,7 +14,7 @@ https://example.com/admin/settings/api-keys
 
 ### API-Schlüssel hinzufügen
 
-![](https://static-docs.nocobase.com/46182fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **Wichtige Hinweise**
 

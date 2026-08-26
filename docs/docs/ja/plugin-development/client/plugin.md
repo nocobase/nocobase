@@ -1,31 +1,40 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+---
+title: "Plugin クライアントプラグイン"
+description: "NocoBase クライアントプラグインの入口：Plugin 基底クラスの継承、afterAdd/beforeLoad/load ライフサイクル、ルーティングと FlowModel の登録。"
+keywords: "Plugin,クライアントプラグイン,ライフサイクル,afterAdd,beforeLoad,load,NocoBase"
+---
+
+# Plugin プラグイン
+
+NocoBase では、**クライアントプラグイン（Client Plugin）** がフロントエンド機能を拡張・カスタマイズするための主要な手段です。プラグインディレクトリの `src/client-v2/plugin.tsx` で `@nocobase/client-v2` が提供する `Plugin` 基底クラスを継承し、`load()` などのライフサイクルでルーティングやモデルなどのリソースを登録します。
+
+ほとんどの場合、`load()` だけを意識すれば十分です。通常、コアロジックは `load()` フェーズで登録します。
+
+:::tip 前提条件
+
+クライアントプラグインの開発を始める前に、[最初のプラグインを作成する](../write-your-first-plugin.md) のセクションを読み、基本的なプラグインのディレクトリ構造とファイルを生成済みであることを確認してください。
+
 :::
 
-# プラグイン
-
-NocoBaseでは、**クライアントプラグイン（Client Plugin）** がフロントエンドの機能を拡張し、カスタマイズするための主要な方法です。`@nocobase/client` が提供する `Plugin` 基底クラスを継承することで、開発者はさまざまなライフサイクル段階でロジックを登録したり、ページコンポーネントを追加したり、メニューを拡張したり、サードパーティ機能を統合したりできます。
-
-## プラグインクラスの構造
-
-最も基本的なクライアントプラグインの構造は以下のとおりです。
+## 基本構造
 
 ```ts
-import { Plugin } from '@nocobase/client';
+// src/client-v2/plugin.tsx
+import { Plugin } from '@nocobase/client-v2';
 
 export class PluginHelloClient extends Plugin {
   async afterAdd() {
-    // プラグインが追加された後に実行されます
+    // プラグインが追加された後に実行
     console.log('Plugin added');
   }
 
   async beforeLoad() {
-    // プラグインがロードされる前に実行されます
-    console.log('Before plugin load');
+    // すべてのプラグインの load() の前に実行
+    console.log('Before load');
   }
 
   async load() {
-    // プラグインがロードされるときに実行されます（ルーティングやUIコンポーネントの登録など）
+    // プラグインの読み込み時に実行、ルーティングやモデルなどを登録
     console.log('Plugin loaded');
   }
 }
@@ -33,32 +42,92 @@ export class PluginHelloClient extends Plugin {
 export default PluginHelloClient;
 ```
 
-## ライフサイクルの説明
+## ライフサイクル
 
-ブラウザのリフレッシュ時やアプリケーションの初期化時に、各プラグインは以下のライフサイクルを順に経ます。
+ブラウザのリフレッシュやアプリケーションの初期化のたびに、プラグインは `afterAdd()` → `beforeLoad()` → `load()` の順で実行されます。
 
-| ライフサイクルメソッド | 実行タイミング | 説明 |
-|--------------------|----------------|------|
-| **afterAdd()**     | プラグインがプラグインマネージャーに追加された直後に実行されます | この時点ではプラグインインスタンスは作成されていますが、すべてのプラグインの初期化が完了しているわけではありません。設定の読み込みや基本的なイベントのバインディングなど、軽量な初期化に適しています。 |
-| **beforeLoad()**   | すべてのプラグインの `load()` の前に実行されます | 有効化されているすべてのプラグインインスタンス（`this.app.pm.get()`）にアクセスできます。他のプラグインに依存する準備ロジックの実行に適しています。 |
-| **load()**         | プラグインがロードされるときに実行されます | すべてのプラグインの `beforeLoad()` が完了した後にこのメソッドが実行されます。フロントエンドのルーティングやUIコンポーネントなどのコアロジックの登録に適しています。 |
+| メソッド           | 実行タイミング                       | 説明                                                                        |
+| -------------- | ------------------------------ | --------------------------------------------------------------------------- |
+| `afterAdd()`   | プラグインインスタンスの作成後                 | この時点ではすべてのプラグインの初期化が完了しているわけではありません。設定の読み込みなど、軽量な初期化に適しています。            |
+| `beforeLoad()` | すべてのプラグインの `load()` の前       | `this.app.pm.get()` で他の有効なプラグインインスタンスにアクセスできます。プラグイン間の依存処理に適しています。 |
+| `load()`       | すべての `beforeLoad()` 完了後 | **最もよく使うライフサイクルです。** ここでルーティングや FlowModel などのコアリソースを登録します。               |
 
-## 実行順序
+通常、クライアントプラグインの開発では `load()` を書くだけで十分です。
 
-ブラウザがリフレッシュされるたびに、`afterAdd()` → `beforeLoad()` → `load()` の順で実行されます。
+## load() で行うこと
 
-## プラグインコンテキストとFlowEngine
+`load()` はプラグイン機能を登録するためのコアエントリポイントです。よくある操作を紹介します。
 
-NocoBase 2.0 以降、クライアント側の拡張APIは主に **FlowEngine** に集約されています。プラグインクラス内では、`this.engine` を介してエンジンインスタンスを取得できます。
+**ページルーティングの登録：**
 
 ```ts
-// `load()` メソッド内でエンジンコンテキストにアクセスします
 async load() {
-  const { app, router, apiClient } = this.engine.context;
-  console.log('Current app:', app);
+  // 独立したページを登録
+  this.router.add('hello', {
+    path: '/hello',
+    componentLoader: () => import('./pages/HelloPage'),
+  });
+
+  // プラグイン設定ページを登録（メニュー + ページ）
+  this.pluginSettingsManager.addMenuItem({
+    key: 'hello-settings',
+    title: this.t('Hello 設定'),
+    icon: 'SettingOutlined',
+  });
+  this.pluginSettingsManager.addPageTabItem({
+    menuKey: 'hello-settings',
+    key: 'index',
+    title: this.t('Hello 設定'),
+    componentLoader: () => import('./pages/HelloSettingPage'),
+  });
 }
 ```
 
-詳細については、以下を参照してください。  
-- [FlowEngine](/flow-engine)  
-- [Context](./context.md)
+詳しい使い方は [Router ルーティング](./router) を参照してください。
+
+**FlowModel の登録：**
+
+```ts
+async load() {
+  this.flowEngine.registerModelLoaders({
+    HelloModel: {
+      // 動的インポート、このモデルが初めて使用される時に対応するモジュールが読み込まれます
+      loader: () => import('./HelloModel'),
+    },
+  });
+}
+```
+
+`registerModelLoaders` は遅延読み込み（動的インポート）を使用しており、モデルが初めて使用されるときに対応するモジュールが読み込まれます。これが推奨される登録方法です。詳しい使い方は [FlowEngine](./flow-engine/index.md) を参照してください。
+
+## プラグインの主要プロパティ
+
+プラグインクラス内で、以下のプロパティに `this` からアクセスできます。
+
+| プロパティ                        | 説明                                                     |
+| --------------------------- | -------------------------------------------------------- |
+| `this.router`               | ルーティングマネージャー、ページルーティングの登録に使用                             |
+| `this.pluginSettingsManager` | プラグイン設定ページマネージャー（`addMenuItem` + `addPageTabItem`）      |
+| `this.flowEngine`           | FlowEngine インスタンス、FlowModel の登録に使用                      |
+| `this.engine`               | `this.flowEngine` のエイリアス                                 |
+| `this.context`              | コンテキストオブジェクト、コンポーネントの `useFlowContext()` と同じオブジェクトを返します  |
+| `this.app`                  | Application インスタンス                                         |
+| `this.app.eventBus`         | アプリケーションレベルのイベントバス（`EventTarget`）、ライフサイクルイベントの監視に使用     |
+
+NocoBase のさらなる機能（`api`、`t`(i18n)、`logger` など）にアクセスする必要がある場合は、`this.context` から取得できます。
+
+```ts
+async load() {
+  const { api, t, logger } = this.context;
+}
+```
+
+その他のコンテキスト機能については [Context コンテキスト](./ctx/index.md) を参照してください。
+
+## 関連リンク
+
+- [Router ルーティング](./router) — ページルーティングとプラグイン設定ページの登録
+- [Component コンポーネント開発](./component/index.md) — ルーティングにマウントする React コンポーネントの書き方
+- [Context コンテキスト](./ctx/index.md) — コンテキストを通じた NocoBase 組み込み機能の利用
+- [FlowEngine](./flow-engine/index.md) — ブロック、フィールド、アクションなどビジュアル設定コンポーネントの登録
+- [最初のプラグインを作成する](../write-your-first-plugin.md) — ゼロからプラグインを作成

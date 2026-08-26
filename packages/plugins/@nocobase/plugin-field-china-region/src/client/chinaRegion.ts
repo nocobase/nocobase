@@ -7,56 +7,37 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { uid } from '@formily/shared';
 import { defaultProps, operators, CollectionFieldInterface } from '@nocobase/client';
+import {
+  CHINA_REGION_BASE_COMPONENT_PROPS,
+  CHINA_REGION_BASE_DEFAULT,
+  CHINA_REGION_FILTERABLE_CHILD_BASE,
+  CHINA_REGION_INTERFACE_NAME,
+  CHINA_REGION_LEVEL_OPTIONS,
+  initializeChinaRegionValues,
+} from '../client-v2/chinaRegionConstants';
 
 export class ChinaRegionFieldInterface extends CollectionFieldInterface {
-  name = 'chinaRegion';
+  name = CHINA_REGION_INTERFACE_NAME;
   type = 'object';
   group = 'choices';
   order = 7;
   title = '{{t("China region")}}';
   isAssociation = true;
   default = {
-    interface: 'chinaRegion',
-    type: 'belongsToMany',
-    target: 'chinaRegions',
-    targetKey: 'code',
-    sortBy: 'level',
+    ...CHINA_REGION_BASE_DEFAULT,
     uiSchema: {
-      type: 'array',
-      'x-component': 'Cascader',
+      ...CHINA_REGION_BASE_DEFAULT.uiSchema,
       'x-component-props': {
+        ...CHINA_REGION_BASE_COMPONENT_PROPS,
         useDataSource: '{{ useChinaRegionDataSource }}',
         useLoadData: '{{ useChinaRegionLoadData }}',
-        changeOnSelectLast: false,
-        labelInValue: true,
-        maxLevel: 3,
-        fieldNames: {
-          label: 'name',
-          value: 'code',
-          children: 'children',
-        },
       },
     },
   };
   availableTypes = ['belongsToMany'];
   initialize(values: any): void {
-    if (!values.through) {
-      values.through = `t_${uid()}`;
-    }
-    if (!values.foreignKey) {
-      values.foreignKey = `f_${uid()}`;
-    }
-    if (!values.otherKey) {
-      values.otherKey = `f_${uid()}`;
-    }
-    if (!values.sourceKey) {
-      values.sourceKey = 'id';
-    }
-    if (!values.targetKey) {
-      values.targetKey = 'id';
-    }
+    initializeChinaRegionValues(values);
   }
 
   properties = {
@@ -67,13 +48,7 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
       'x-decorator': 'FormItem',
       title: '{{t("Select level")}}',
       default: 3,
-      enum: [
-        { value: 1, label: '{{t("Province")}}' },
-        { value: 2, label: '{{t("City")}}' },
-        { value: 3, label: '{{t("Area")}}' },
-        { value: 4, label: '{{t("Street")}}', disabled: true },
-        { value: 5, label: '{{t("Village")}}', disabled: true },
-      ],
+      enum: CHINA_REGION_LEVEL_OPTIONS,
     },
     'uiSchema.x-component-props.changeOnSelectLast': {
       type: 'boolean',
@@ -86,14 +61,8 @@ export class ChinaRegionFieldInterface extends CollectionFieldInterface {
   filterable = {
     children: [
       {
-        name: 'name',
-        title: '{{t("Province/city/area name")}}',
+        ...CHINA_REGION_FILTERABLE_CHILD_BASE,
         operators: operators.string,
-        schema: {
-          title: '{{t("Province/city/area name")}}',
-          type: 'string',
-          'x-component': 'Input',
-        },
       },
     ],
   };

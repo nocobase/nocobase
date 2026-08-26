@@ -20,7 +20,7 @@ API `token`.
 
 ### `authenticator`
 
-The authenticator used for the current user's authentication. See [User Authentication](/auth-verification/auth/).
+The authenticator used for the current user's authentication. See [User Authentication](/auth-verification/auth/index.md).
 
 ## Class Methods
 

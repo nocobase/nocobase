@@ -14,9 +14,7 @@ The Approval plugin provides a dedicated workflow type (trigger) "Approval (even
 
 When creating a workflow, select the "Approval" type to create an approval workflow:
 
-
 ![Approval Trigger_Create Approval Workflow](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
-
 
 Afterward, in the workflow configuration interface, click the trigger to open a dialog for more configuration.
 
@@ -26,17 +24,67 @@ Afterward, in the workflow configuration interface, click the trigger to open a 
 
 ### Bind a Collection
 
-NocoBase's Approval plugin is designed for flexibility and can be used with any custom collection. This means the approval configuration does not need to reconfigure the data model but directly reuses an existing collection. Therefore, after entering the trigger configuration, you first need to select a collection to determine which collection's data creation or update will trigger this workflow:
+NocoBase's Approval plugin is designed for flexibility and can be used with any custom collection. This means the approval configuration does not need to reconfigure the data model but directly reuses an existing collection. Therefore, after entering the trigger configuration, you first need to select a collection to determine which collection's data the process will be for:
 
 ![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/20251226103223.png)
 
-### Withdraw
+### Trigger Method
 
-If an approval workflow allows the initiator to withdraw it, you need to enable the "Withdraw" button in the initiator's interface configuration:
+When initiating an approval for business data, you can choose from the following two trigger methods:
 
+*   **Before data is saved**
 
-![Approval Trigger_Trigger Configuration_Allow Withdraw](https://static-docs.nocobase.com/20251029232544.png)
+    Initiate the approval before the submitted data is saved. This is suitable for scenarios where data should only be saved after approval is granted. In this mode, the data at the time of initiation is temporary and will only be formally saved to the corresponding collection after approval.
 
+*   **After data is saved**
+
+    Initiate the approval after the submitted data is saved. This is suitable for scenarios where data can be saved first and then approved. In this mode, the data is already saved in the collection when the approval starts, and any modifications made during the approval process will also be saved.
+
+### Initiation Location
+
+You can choose where in the system the approval can be initiated:
+
+*   **Only in data blocks**
+
+    You can bind any form block's action for this collection to the workflow to initiate approvals. The process can be handled and tracked in the approval block of a single record. This is typically suitable for business data.
+
+*   **In both data blocks and the To-do Center**
+
+    In addition to data blocks, approvals can also be initiated and handled in the global To-do Center. This is typically suitable for administrative data.
+
+### Who can initiate
+
+You can configure permissions based on user scope to determine which users can initiate the approval:
+
+*   **All users**
+
+    All users in the system can initiate the approval.
+
+*   **Only selected users**
+
+    Only users within the specified scope are allowed to initiate the approval. Multiple selections are supported.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Initiator's Form Interface Configuration
+
+Finally, you need to configure the initiator's form interface. This interface will be used for submission actions when initiating from the approval center block and when re-initiating after a withdrawal. Click the configure button to open the dialog:
+
+![Approval Trigger_Trigger Configuration_Initiator Form](https://static-docs.nocobase.com/20251226130239.png)
+
+You can add a form for the initiator's interface based on the bound collection, or add descriptive text (Markdown) for prompts and guidance. Adding a form block is mandatory; otherwise, the initiator will not be able to perform any actions upon entering this interface.
+
+After adding a form block, just like in a regular form configuration interface, you can add field components from the corresponding collection and arrange them as needed to organize the content to be filled:
+
+![Approval Trigger_Trigger Configuration_Initiator Form_Field Configuration](https://static-docs.nocobase.com/20251226130339.png)
+
+In addition to the direct submit button, you can also add a "Save Draft" action button to support temporary storage processes:
+
+![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration_Save](https://static-docs.nocobase.com/20251226130512.png)
+
+If an approval workflow allows the initiator to withdraw, you need to enable the "Withdraw" button in the initiator's interface configuration:
+
+![Approval Trigger_Trigger Configuration_Allow Withdraw](https://static-docs.nocobase.com/20251226130637.png)
 
 Once enabled, an approval initiated by this workflow can be withdrawn by the initiator before any approver processes it. However, after any approver in a subsequent approval node has processed it, it can no longer be withdrawn.
 
@@ -44,49 +92,27 @@ Once enabled, an approval initiated by this workflow can be withdrawn by the ini
 After enabling or deleting the withdraw button, you need to click save and submit in the trigger configuration dialog for the changes to take effect.
 :::
 
-### Initiator's Form Interface Configuration
-
-Finally, you need to configure the initiator's form interface. This interface will be used for submission actions when initiating from the approval center block and when re-initiating after a withdrawal. Click the configure button to open the dialog:
-
-
-![Approval Trigger_Trigger Configuration_Initiator Form](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
-
-
-You can add a form for the initiator's interface based on the bound collection, or add descriptive text (Markdown) for prompts and guidance. The form is mandatory; otherwise, the initiator will not be able to perform any actions upon entering this interface.
-
-After adding a form block, just like in a regular form configuration interface, you can add field components from the corresponding collection and arrange them as needed to organize the content to be filled in the form:
-
-
-![Approval Trigger_Trigger Configuration_Initiator Form_Field Configuration](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
-
-
-In addition to the direct submit button, you can also add a "Save as Draft" action button to support a temporary storage process:
-
-
-![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
-
 ### "My application" Card <Badge>2.0+</Badge>
 
-Could be used to configure task card of "My application" in the tasks center.
+Used to configure the task cards in the "My Submissions" list of the To-do Center.
 
 ![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Any fields (unless association fields) in the business collection, or approval information could be configured freely to display on the card.
+You can freely configure the business fields (except association fields) or approval-related information you want to display on the card.
 
-After applied, the customized task card will show in the list of tasks center:
+After the approval request is created, the customized task card will be visible in the To-do Center list:
 
 ![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-### Record show mode in the flow
+### Record Display Mode in the Flow
 
 *   **Snapshot**
 
-    Applicant and approvers will see the record as it was when they entered, and after submitting, only see changed record by themself — not any later updates made by others.
+    The record state seen by the applicant and approvers when they enter the process. After submission, they only see the records they modified—they will not see updates made by others later.
 
 *   **Latest**
 
-    Applicant and approvers will always see the latest version of the record in the flow, no matter what it was before their action. After the flow is done, they will see the final version of the record.
-
+    The applicant and approvers always see the latest version of the record throughout the process, regardless of the record's state before their action. After the process ends, they will see the final version of the record.
 
 ## Approval Node
 
@@ -100,51 +126,39 @@ If an approval workflow does not contain any "Approval" nodes, the workflow will
 
 After configuring and enabling an approval workflow, you can bind it to the submit button of the corresponding collection's form, allowing users to initiate an approval upon submission:
 
+![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/20251226110710.png)
 
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
-
-
-After that, when a user submits this form, the corresponding approval workflow will be triggered. The submitted data is not only saved in the corresponding collection but is also snapshotted into the approval flow for subsequent approvers to review and use.
+After that, when a user submits this form, the corresponding approval workflow will be triggered. The submitted data is not only saved in the corresponding collection but is also snapshotted into the approval flow for subsequent approvers to review.
 
 :::info{title=Note}
-Currently, the button to initiate an approval only supports the "Submit" (or "Save") button in a create or update form. It does not support the "Trigger workflow" button (which can only be bound to "Custom action event').
+Currently, the button to initiate an approval only supports the "Submit" (or "Save") button in a create or update form. It does not support the "Trigger workflow" button (which can only be bound to "Custom action event").
 :::
 
 ## To-do Center
 
-The To-do Center provides a unified entry point for users to view and process their to-do tasks. Approvals initiated by the current user and their pending tasks can be accessed through the To-do Center in the top toolbar, and different types of to-do tasks can be viewed through the navigation on the left.
-
+The To-do Center provides a unified entry point for users to view and process tasks. Approvals initiated by the current user and pending tasks can be accessed through the To-do Center in the top toolbar, and different types of tasks can be viewed through the navigation on the left.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
-
 
 ### My Submissions
 
 #### View Submitted Approvals
 
-
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
-
 
 #### Directly Initiate a New Approval
 
-
 ![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
-
 
 ### My To-dos
 
 #### To-do List
 
-
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
-
 
 #### To-do Details
 
-
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
-
 
 ## HTTP API
 
@@ -163,16 +177,14 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Here, the URL parameter `triggerWorkflows` is the workflow's key; multiple workflow keys are separated by commas. This key can be obtained by hovering the mouse over the workflow name at the top of the workflow canvas:
-
+The URL parameter `triggerWorkflows` is the workflow's key; multiple workflow keys are separated by commas. This key can be obtained by hovering the mouse over the workflow name at the top of the workflow canvas:
 
 ![Workflow_Key_View_Method](https://static-docs.nocobase.com/20240426135108.png)
-
 
 Upon a successful call, the approval workflow for the corresponding `posts` collection will be triggered.
 
 :::info{title="Note"}
-Since external calls also need to be based on user identity, when calling via HTTP API, just like requests sent from the regular interface, authentication information must be provided, including the `Authorization` header or the `token` parameter (the token obtained upon login), and the `X-Role` header (the user's current role name).
+Since external calls also need to be based on user identity, when calling via HTTP API, authentication information must be provided, including the `Authorization` header or the `token` parameter (the token obtained upon login), and the `X-Role` header (the user's current role name).
 :::
 
 If you need to trigger an event for one-to-one related data in this action (one-to-many is not yet supported), you can use `!` in the parameter to specify the trigger data for the association field:
@@ -192,7 +204,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 Upon a successful call, the approval event for the corresponding `categories` collection will be triggered.
 
 :::info{title="Note"}
-When triggering an after-action event via HTTP API, you also need to pay attention to the workflow's enabled status and whether the collection configuration matches; otherwise, the call may not succeed or may result in an error.
+When triggering an after-action event via HTTP API, ensure the workflow is enabled and the collection configuration matches; otherwise, the call may not succeed or may result in an error.
 :::
 
 #### Initiate from Approval Center
@@ -210,12 +222,12 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parameters**
 
-*   `collectionName`: The name of the target collection for initiating the approval. Required.
-*   `workflowId`: The ID of the workflow used to initiate the approval. Required.
-*   `data`: The fields of the collection record created when initiating the approval. Required.
-*   `status`: The status of the record created when initiating the approval. Required. Possible values include:
-    *   `0`: Draft, indicates saving without submitting for approval.
-    *   `1`: Submit for approval, indicates the initiator submits the approval request, entering the approval process.
+* `collectionName`: The name of the target collection for initiating the approval. Required.
+* `workflowId`: The ID of the workflow used to initiate the approval. Required.
+* `data`: The fields of the collection record created when initiating the approval. Required.
+* `status`: The status of the record created when initiating the approval. Required. Possible values include:
+  * `0`: Draft, indicates saving without submitting for approval.
+  * `2`: Submit for approval, indicates the initiator submits the approval request, entering the approval process.
 
 #### Save and Submit
 
@@ -248,7 +260,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parameters**
 
-*   `<approval id>`: The ID of the approval record to be withdrawn. Required.
+* `<approval id>`: The ID of the approval record to be withdrawn. Required.
 
 ### Approver
 
@@ -286,14 +298,14 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameters**
 
-*   `<record id>`: The ID of the record to be approved. Required.
-*   `status`: The status of the approval process. `2` for "Approve", `-1` for "Reject". Required.
-*   `comment`: Remarks for the approval process. Optional.
-*   `data`: Modifications to the collection record at the current approval node after approval. Optional (only effective upon approval).
+* `<record id>`: The ID of the record to be processed. Required.
+* `status`: The status of the approval process. `2` for "Approve", `-1` for "Reject". Required.
+* `comment`: Remarks for the approval process. Optional.
+* `data`: Modifications to the collection record at the current approval node after approval. Optional (only effective upon approval).
 
 #### Return <Badge>v1.9.0+</Badge>
 
-Before v1.9.0, returning used the same API as 'Approve' and 'Reject', with `"status": 1` representing a return.
+Before v1.9.0, returning used the same API as "Approve" and "Reject," with `"status": 1` representing a return.
 
 Starting from v1.9.0, returning has a separate API:
 
@@ -307,8 +319,8 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameters**
 
-*   `<record id>`: The ID of the record to be approved. Required.
-*   `returnToNodeKey`: The key of the target node to return to. Optional. When a range of returnable nodes is configured in the node, this parameter can be used to specify which node to return to. If not configured, this parameter does not need to be passed, and it will default to returning to the starting point for the initiator to resubmit.
+* `<record id>`: The ID of the record to be processed. Required.
+* `returnToNodeKey`: The key of the target node to return to. Optional. When a range of returnable nodes is configured in the node, this parameter can be used to specify which node to return to. If not configured, this parameter does not need to be passed, and it will default to returning to the starting point for the initiator to resubmit.
 
 #### Delegate
 
@@ -322,8 +334,8 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameters**
 
-*   `<record id>`: The ID of the record to be approved. Required.
-*   `assignee`: The ID of the user to delegate to. Required.
+* `<record id>`: The ID of the record to be processed. Required.
+* `assignee`: The ID of the user to delegate to. Required.
 
 #### Add Signer
 
@@ -338,6 +350,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameters**
 
-*   `<record id>`: The ID of the record to be approved. Required.
-*   `assignees`: A list of user IDs to add as signers. Required.
-*   `order`: The order of the added signer. `-1` means before "me", `1` means after "me".
+* `<record id>`: The ID of the record to be processed. Required.
+* `assignees`: A list of user IDs to add as signers. Required.
+* `order`: The order of the added signer. `-1` means before "me", `1` means after "me".

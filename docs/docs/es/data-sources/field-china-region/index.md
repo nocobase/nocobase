@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 
 # Regiones administrativas de China

@@ -1,13 +1,26 @@
+---
+title: "Plugin - Client Plugin"
+description: "NocoBase client plugin entry: inherit from the Plugin base class, afterAdd/beforeLoad/load lifecycle, register routes and FlowModels."
+keywords: "Plugin,client plugin,lifecycle,afterAdd,beforeLoad,load,NocoBase"
+---
+
 # Plugin
 
-In NocoBase, **Client Plugin** is the main way to extend and customize frontend functionality. By extending the `Plugin` base class provided by `@nocobase/client`, developers can register logic, add page components, extend menus, or integrate third-party functionality at different lifecycle stages.
+In NocoBase, **Client Plugin** is the main way to extend and customize frontend functionality. You can inherit from the `Plugin` base class provided by `@nocobase/client-v2` in your plugin's `src/client-v2/plugin.tsx` file, then register routes, models, and other resources in lifecycle methods like `load()`.
 
-## Plugin Class Structure
+Most of the time, you only need to focus on `load()` -- typically, core logic is registered during the `load()` phase.
 
-A basic client-side plugin structure is as follows:
+:::tip Prerequisites
+
+Before developing a client plugin, make sure you have read the [Writing Your First Plugin](../write-your-first-plugin.md) section and generated the basic plugin directory structure and files.
+
+:::
+
+## Basic Structure
 
 ```ts
-import { Plugin } from '@nocobase/client';
+// src/client-v2/plugin.tsx
+import { Plugin } from '@nocobase/client-v2';
 
 export class PluginHelloClient extends Plugin {
   async afterAdd() {
@@ -16,12 +29,12 @@ export class PluginHelloClient extends Plugin {
   }
 
   async beforeLoad() {
-    // Executed before plugin loads
-    console.log('Before plugin load');
+    // Executed before all plugins' load()
+    console.log('Before load');
   }
 
   async load() {
-    // Executed when plugin loads, register routes, UI components, etc.
+    // Executed when plugin loads, register routes, models, etc.
     console.log('Plugin loaded');
   }
 }
@@ -29,33 +42,92 @@ export class PluginHelloClient extends Plugin {
 export default PluginHelloClient;
 ```
 
-## Lifecycle Description
+## Lifecycle
 
-Each plugin goes through the following lifecycle in sequence when the browser refreshes or the application initializes:
+Each time the browser refreshes or the application initializes, plugins execute `afterAdd()` -> `beforeLoad()` -> `load()` in sequence:
 
-| Lifecycle Method | Execution Timing | Description |
-| ---------------- | ---------------- | ----------- |
-| **afterAdd()**   | Executed immediately after the plugin is added to the plugin manager | The plugin instance has been created at this point, but not all plugins have finished initializing. Suitable for lightweight initialization, such as reading configuration or binding basic events. |
-| **beforeLoad()** | Executed before all plugins' `load()` | Can access all enabled plugin instances (`this.app.pm.get()`). Suitable for preparation logic that depends on other plugins. |
-| **load()**       | Executed when the plugin loads | This method is executed after all plugins' `beforeLoad()` completes. Suitable for registering frontend routes, UI components, and other core logic. |
+| Method         | Execution Timing                    | Description                                                                               |
+| -------------- | ----------------------------------- | ----------------------------------------------------------------------------------------- |
+| `afterAdd()`   | After plugin instance is created    | Not all plugins have finished initializing at this point. Suitable for lightweight initialization, such as reading configuration. |
+| `beforeLoad()` | Before all plugins' `load()`        | Can access other enabled plugin instances via `this.app.pm.get()`. Suitable for handling inter-plugin dependencies. |
+| `load()`       | After all `beforeLoad()` completes  | **The most commonly used lifecycle.** Register routes, FlowModels, and other core resources here. |
 
-## Execution Order
+Typically, developing a client plugin only requires writing `load()`.
 
-Every time the browser refreshes, `afterAdd()` → `beforeLoad()` → `load()` will be executed
+## What to Do in load()
 
-## Plugin Context and FlowEngine
+`load()` is the core entry point for registering plugin functionality. Common operations:
 
-Starting from NocoBase 2.0, client-side extension APIs are mainly concentrated in **FlowEngine**. In the plugin class, you can get the engine instance through `this.engine`.
+**Register page routes:**
 
 ```ts
-// Access engine context in load() method
 async load() {
-  const { app, router, apiClient } = this.engine.context;
-  console.log('Current app:', app);
+  // Register a standalone page
+  this.router.add('hello', {
+    path: '/hello',
+    componentLoader: () => import('./pages/HelloPage'),
+  });
+
+  // Register a plugin settings page (menu + page)
+  this.pluginSettingsManager.addMenuItem({
+    key: 'hello-settings',
+    title: this.t('Hello Settings'),
+    icon: 'SettingOutlined',
+  });
+  this.pluginSettingsManager.addPageTabItem({
+    menuKey: 'hello-settings',
+    key: 'index',
+    title: this.t('Hello Settings'),
+    componentLoader: () => import('./pages/HelloSettingPage'),
+  });
 }
 ```
 
-For more content, see:  
-- [FlowEngine](/flow-engine)  
-- [Context](./context.md)
+For detailed usage, see [Router](./router).
 
+**Register FlowModels:**
+
+```ts
+async load() {
+  this.flowEngine.registerModelLoaders({
+    HelloModel: {
+      // Dynamic import: the module is loaded only when the model is first used
+      loader: () => import('./HelloModel'),
+    },
+  });
+}
+```
+
+`registerModelLoaders` uses lazy loading (dynamic imports), loading the corresponding module only when the model is first used. This is the recommended registration method. For detailed usage, see [FlowEngine](./flow-engine/index.md).
+
+## Common Plugin Properties
+
+Within the plugin class, the following properties can be accessed directly via `this`:
+
+| Property                     | Description                                                      |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `this.router`                | Route manager for registering page routes                        |
+| `this.pluginSettingsManager` | Plugin settings page manager (`addMenuItem` + `addPageTabItem`)  |
+| `this.flowEngine`            | FlowEngine instance for registering FlowModels                   |
+| `this.engine`                | Alias for `this.flowEngine`                                      |
+| `this.context`               | Context object, same object returned by `useFlowContext()` in components |
+| `this.app`                   | Application instance                                             |
+| `this.app.eventBus`          | Application-level event bus (`EventTarget`) for listening to lifecycle events |
+
+If you need to access more NocoBase capabilities (such as `api`, `t` (i18n), `logger`), you can get them through `this.context`:
+
+```ts
+async load() {
+  const { api, t, logger } = this.context;
+}
+```
+
+For more context capabilities, see [Context](./ctx/index.md).
+
+## Related Links
+
+- [Router](./router) -- Register page routes and plugin settings pages
+- [Component](./component/index.md) -- How to write React components mounted by routes
+- [Context](./ctx/index.md) -- Use NocoBase built-in capabilities through context
+- [FlowEngine](./flow-engine/index.md) -- Register blocks, fields, actions, and other visually configurable components
+- [Writing Your First Plugin](../write-your-first-plugin.md) -- Create a plugin from scratch

@@ -6,12 +6,17 @@
       {
         "type": "custom-link",
         "label": "Обзор разработки плагинов",
-        "link": "/plugin-development"
+        "link": "/plugin-development/"
       },
       {
         "type": "custom-link",
         "label": "Создание первого плагина",
         "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI-разработка плагинов",
+        "link": "/plugin-development/ai-development"
       },
       {
         "type": "custom-link",
@@ -27,86 +32,91 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/plugin-development/server"
+        "link": "/plugin-development/server/"
       },
       {
         "type": "custom-link",
-        "label": "Плагин",
+        "label": "Plugin",
         "link": "/plugin-development/server/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Коллекции (таблицы данных)",
+        "label": "Collections — таблицы данных",
         "link": "/plugin-development/server/collections"
       },
       {
         "type": "custom-link",
-        "label": "Операции с базой данных",
+        "label": "Database — операции с базой данных",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "Управление источниками данных (DataSourceManager)",
+        "label": "DataSourceManager — управление источниками данных",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "Управление ресурсами (ResourceManager)",
+        "label": "ResourceManager — управление ресурсами",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "Контроль доступа (ACL)",
+        "label": "ACL — контроль доступа",
         "link": "/plugin-development/server/acl"
       },
       {
         "type": "custom-link",
-        "label": "Промежуточное ПО (Middleware)",
+        "label": "Middleware — промежуточное ПО",
         "link": "/plugin-development/server/middleware"
       },
       {
         "type": "custom-link",
-        "label": "Кэш",
+        "label": "Cache — кэш",
         "link": "/plugin-development/server/cache"
       },
       {
         "type": "custom-link",
-        "label": "Событие",
+        "label": "Event — события",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "Контекст запроса",
+        "label": "Context — контекст запроса",
         "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "Миграции",
+        "label": "Migration — скрипты обновления",
         "link": "/plugin-development/server/migration"
       },
       {
         "type": "custom-link",
-        "label": "Логгер",
+        "label": "Logger — логгер",
         "link": "/plugin-development/server/logger"
       },
       {
         "type": "custom-link",
-        "label": "Интернационализация (I18n)",
+        "label": "Telemetry — телеметрия",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "i18n — интернационализация",
         "link": "/plugin-development/server/i18n"
       },
       {
         "type": "custom-link",
-        "label": "Командная строка",
+        "label": "Command — командная строка",
         "link": "/plugin-development/server/command"
       },
       {
         "type": "custom-link",
-        "label": "Управление задачами Cron (CronJobManager)",
+        "label": "CronJobManager — управление задачами Cron",
         "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Тестирование",
+        "label": "Test — тестирование",
         "link": "/plugin-development/server/test"
       }
     ]
@@ -118,62 +128,137 @@
       {
         "type": "custom-link",
         "label": "Обзор",
-        "link": "/plugin-development/client"
+        "link": "/plugin-development/client/"
       },
       {
         "type": "custom-link",
-        "label": "Плагин",
+        "label": "Plugin",
         "link": "/plugin-development/client/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Контекст",
-        "link": "/plugin-development/client/context"
-      },
-      {
-        "type": "custom-link",
-        "label": "Маршрутизатор",
+        "label": "Router — маршрутизатор",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "Контроль доступа (ACL)",
-        "link": "/plugin-development/client/acl"
+        "label": "Component — разработка компонентов",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/plugin-development/client/component/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Styles & Themes — стили и темы",
+            "link": "/plugin-development/client/component/styles-themes"
+          },
+          {
+            "type": "custom-link",
+            "label": "i18n — интернационализация",
+            "link": "/plugin-development/client/component/i18n"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Управление источниками данных (DataSourceManager)",
-        "link": "/plugin-development/client/data-source-manager"
+        "label": "Context — контекст",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/plugin-development/client/ctx/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Часто используемые возможности",
+            "link": "/plugin-development/client/ctx/common-capabilities"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Ресурс",
-        "link": "/plugin-development/client/resource"
+        "label": "FlowEngine",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/plugin-development/client/flow-engine/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Расширение блоков",
+            "link": "/plugin-development/client/flow-engine/block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Расширение полей",
+            "link": "/plugin-development/client/flow-engine/field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Расширение действий",
+            "link": "/plugin-development/client/flow-engine/action"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Запрос",
-        "link": "/plugin-development/client/request"
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Стили и темы",
-        "link": "/plugin-development/client/styles-themes"
+        "label": "Практические примеры плагинов",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Обзор",
+            "link": "/plugin-development/client/examples/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создание страницы настроек плагина",
+            "link": "/plugin-development/client/examples/settings-page"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создание пользовательского блока отображения",
+            "link": "/plugin-development/client/examples/custom-block"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создание пользовательского компонента поля",
+            "link": "/plugin-development/client/examples/custom-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создание пользовательской кнопки действия",
+            "link": "/plugin-development/client/examples/custom-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "Создание fullstack-плагина управления данными",
+            "link": "/plugin-development/client/examples/fullstack-plugin"
+          }
+        ]
       },
       {
         "type": "custom-link",
-        "label": "Логгер",
-        "link": "/plugin-development/client/logger"
-      },
-      {
-        "type": "custom-link",
-        "label": "Интернационализация (I18n)",
-        "link": "/plugin-development/client/i18n"
-      },
-      {
-        "type": "custom-link",
-        "label": "Тестирование",
-        "link": "/plugin-development/client/test"
+        "label": "Приложения",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "FAQ и руководство по устранению неполадок",
+            "link": "/plugin-development/client/appendix/faq"
+          },
+          {
+            "type": "custom-link",
+            "label": "Шпаргалка по разработке плагинов",
+            "link": "/plugin-development/client/appendix/cheatsheet"
+          }
+        ]
       }
     ]
   },
@@ -181,11 +266,6 @@
     "type": "custom-link",
     "label": "Прочее",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "Руководство по обновлению плагинов",
-        "link": "/plugin-development/plugin-upgrade-guide"
-      },
       {
         "type": "custom-link",
         "label": "Список языков",
@@ -198,7 +278,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Сборка",
+        "label": "Сборка и упаковка",
         "link": "/plugin-development/build"
       }
     ]

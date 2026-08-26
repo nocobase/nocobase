@@ -33,10 +33,6 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Synchroniser les mises à jour via Git.
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 
 
 # Comparaison des méthodes d'installation et des versions
@@ -60,4 +56,9 @@ Vous pouvez installer NocoBase de différentes manières.
 | **Scénarios d'utilisation** | Utilisateurs sans code, ou souhaitant un déploiement rapide sur un serveur. | Développeurs front-end/full-stack, projets d'équipe, développement low-code. | Développeurs techniques, ou souhaitant tester des versions non encore publiées. |
 | **Exigences techniques** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Méthode de mise à jour** | Tirer la dernière image et redémarrer le conteneur. | Mettre à jour les dépendances avec yarn. | Synchroniser les mises à jour via Git. |
-| **Tutoriels** | [<code>Installation</code>](#) [<code>Mise à jour</code>](#) [<code>Déploiement</code>](#) | [<code>Installation</code>](#) [<code>Mise à jour</code>](#) [<code>Déploiement</code>](#) | [<code>Installation</code>](#) [<code>Mise à jour</code>](#) [<code>Déploiement</code>](#) |
+
+![2026-06-11-20-09-54](https://static-docs.nocobase.com/2026-06-11-20-09-54.png)
+
+## Et ensuite ?
+
+Si vous avez déjà choisi une méthode d'installation, l'étape suivante est [Installer l'application NocoBase](/ai/install-nocobase-app). Vous y installerez NocoBase CLI et terminerez l'installation ainsi que l'initialisation de l'application.

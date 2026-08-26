@@ -55,14 +55,25 @@ export class ErrorHandler {
       try {
         await next();
       } catch (err) {
-        ctx.log.error(err.message, { method: 'error-handler', err: err.stack, cause: err.cause });
-
         if (err.statusCode) {
           ctx.status = err.statusCode;
         }
 
         self.renderError(err, ctx);
+
+        const logMethod = getLogMethod(err);
+        ctx.log[logMethod](err.message, { method: 'error-handler', err: err.stack, cause: err.cause });
       }
     };
   }
+}
+
+const logMethods = ['trace', 'debug', 'info', 'warn', 'error'];
+
+function getLogMethod(err) {
+  if (logMethods.includes(err?.logLevel)) {
+    return err.logLevel;
+  }
+
+  return 'error';
 }

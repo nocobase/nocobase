@@ -2,12 +2,12 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Présentation de la solution"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Conception détaillée"
   },
   {
     "type": "file",
@@ -15,13 +15,23 @@
     "label": "Installation"
   },
   {
+    "type": "dir",
+    "name": "guide",
+    "label": "Guide d'utilisation"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Journal des modifications"
+  },
+  {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "Ancien CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Plus de contenu"
   }
 ]

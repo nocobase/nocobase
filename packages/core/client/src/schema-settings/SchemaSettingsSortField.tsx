@@ -11,7 +11,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../block-provider';
+import { useTableBlockContext } from '../block-provider/TableBlockProvider';
 import { useCollectionManager_deprecated } from '../collection-manager/hooks/useCollectionManager_deprecated';
 import { useCollection_deprecated } from '../collection-manager/hooks/useCollection_deprecated';
 import { useCompile } from '../schema-component/hooks/useCompile';

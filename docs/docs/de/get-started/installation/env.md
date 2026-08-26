@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Umgebungsvariablen
 
 ## Wie richte ich Umgebungsvariablen ein?
@@ -246,14 +242,6 @@ Die Methode zur Protokollausgabe. Mehrere Werte werden durch Kommas getrennt. De
 LOGGER_TRANSPORT=console,dailyRotateFile
 ```
 
-### LOGGER_BASE_PATH
-
-Der Speicherpfad für dateibasierte Protokolle. Der Standardwert ist `storage/logs`.
-
-```bash
-LOGGER_BASE_PATH=storage/logs
-```
-
 ### LOGGER_LEVEL
 
 Die Protokoll-Ausgabestufe. Der Standardwert in der Entwicklungsumgebung ist `debug`, in der Produktionsumgebung `info`. Optionen:
@@ -386,8 +374,10 @@ Unterstützte Formate:
 Dient zum Anhängen vordefinierter, nicht aktivierter **Plugins**. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** auf der **Plugin**-Manager-Seite erst nach einer Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) angezeigt.
+
 :::
 
 ```bash
@@ -399,8 +389,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Dient zum Anhängen integrierter **Plugins**, die standardmäßig installiert werden. Der Wert ist der Paketname (der `name`-Parameter in `package.json`), wobei mehrere **Plugins** durch Kommas getrennt werden.
 
 :::info
+
 1. Stellen Sie sicher, dass das **Plugin** lokal heruntergeladen wurde und im Verzeichnis `node_modules` gefunden werden kann. Weitere Details finden Sie unter [**Plugin**-Organisation](/plugin-development/project-structure).
 2. Nachdem Sie die Umgebungsvariable hinzugefügt haben, wird das **Plugin** bei der Erstinstallation (`nocobase install`) oder einem Upgrade (`nocobase upgrade`) automatisch installiert oder aktualisiert.
+
 :::
 
 ```bash

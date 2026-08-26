@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Sequence"
+keywords: "Collection fields"
 displayName: "Collection field: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |

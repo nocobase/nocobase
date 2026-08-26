@@ -14,7 +14,7 @@ import { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { CacheTransport } from '../cache-logger';
 import ScriptInstruction from '../ScriptInstruction';
 
-describe('workflow-javascript > security > isolated-vm (default engine)', () => {
+describe('workflow-javascript > security > quickjs (default engine)', () => {
   let transport: CacheTransport;
   let logger;
   let originalModules;
@@ -100,7 +100,7 @@ describe('workflow-javascript > security > isolated-vm (default engine)', () => 
 
   it('should support console.log', async () => {
     const script = `
-      console.log('isolated-vm-check');
+      console.log('quickjs-check');
       return 'ok';
     `;
 
@@ -108,7 +108,18 @@ describe('workflow-javascript > security > isolated-vm (default engine)', () => 
 
     expect(result.status).toBe(JOB_STATUS.RESOLVED);
     expect(result.result).toBe('ok');
-    expect(transport.getLogs()).toContain('isolated-vm-check\n');
+    expect(transport.getLogs()).toContain('quickjs-check\n');
+  });
+
+  it('should interrupt infinite loops via timeout', async () => {
+    const script = `
+      while (true) {}
+      return 'unreachable';
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger, timeout: 200 });
+
+    expect(result.status).toBe(JOB_STATUS.ERROR);
   });
 
   it('should handle arguments correctly', async () => {

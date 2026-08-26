@@ -8,7 +8,7 @@ pkg: '@nocobase/plugin-workflow-javascript'
 
 The JavaScript Script node allows users to execute a custom server-side JavaScript script within a workflow. The script can use variables from upstream in the workflow as parameters, and its return value can be provided to downstream nodes.
 
-The script runs in a worker thread on the NocoBase application's server. By default, it uses a secure sandbox (isolated-vm) that does not support `require` or Node.js built-in APIs. For details, see [Execution Engine](#execution-engine) and [Feature List](#feature-list).
+The script runs in a worker thread on the NocoBase application's server. By default, it uses a secure sandbox (QuickJS, powered by WebAssembly) that does not support `require` or Node.js built-in APIs. For details, see [Execution Engine](#execution-engine) and [Feature List](#feature-list).
 
 ## Create Node
 
@@ -50,7 +50,7 @@ The JavaScript script node supports two execution engines, automatically selecte
 
 ### Safe Mode (Default)
 
-When `WORKFLOW_SCRIPT_MODULES` is **not configured**, scripts run using the [isolated-vm](https://github.com/laverdet/isolated-vm) engine. This engine executes code in an isolated V8 environment with the following characteristics:
+When `WORKFLOW_SCRIPT_MODULES` is **not configured**, scripts run using the [QuickJS](https://bellard.org/quickjs/) engine compiled to WebAssembly. This engine executes code in an isolated JavaScript runtime with the following characteristics:
 
 - **Does not support** `require` — no modules can be imported
 - **Does not support** Node.js built-in APIs (such as `process`, `Buffer`, `global`, etc.)

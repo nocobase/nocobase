@@ -8,6 +8,8 @@
  */
 
 export { VariableInput } from './VariableInput';
+export { VariableHybridInput } from './VariableHybridInput';
+export type { VariableHybridInputProps, VariableHybridInputConverters } from './VariableHybridInput';
 export { SlateVariableEditor } from './SlateVariableEditor';
 export { VariableTag } from './VariableTag';
 export { InlineVariableTag } from './InlineVariableTag';

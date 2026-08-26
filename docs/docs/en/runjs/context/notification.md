@@ -1,57 +1,57 @@
 # ctx.notification
 
-Global notification API based on Ant Design Notification; shows notifications in the **top-right**. Compared to `ctx.message`, notifications can have title and description and stay longer.
+Based on Ant Design Notification, this global notification API is used to display notification panels in the **top-right corner** of the page. Compared to `ctx.message`, notifications can include a title and description, making them suitable for content that needs to be displayed for a longer period or requires user attention.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / action events** | Task done, batch result, export done |
-| **Event flow** | System notice after async flow ends |
-| **Longer content** | Full notification with title, description, actions |
+|------|------|
+| **JSBlock / Action Events** | Task completion notifications, batch operation results, export completion, etc. |
+| **FlowEngine** | System-level alerts after asynchronous processes end. |
+| **Content requiring longer display** | Full notifications with titles, descriptions, and action buttons. |
 
-## Type
+## Type Definition
 
 ```ts
 notification: NotificationInstance;
 ```
 
-`NotificationInstance` is the Ant Design notification API.
+`NotificationInstance` is the Ant Design notification interface, providing the following methods.
 
 ## Common Methods
 
 | Method | Description |
-|--------|-------------|
-| `open(config)` | Open with custom config |
-| `success(config)` | Success notification |
-| `info(config)` | Info notification |
-| `warning(config)` | Warning notification |
-| `error(config)` | Error notification |
-| `destroy(key?)` | Close notification by key; no key = close all |
+|------|------|
+| `open(config)` | Opens a notification with custom configuration |
+| `success(config)` | Displays a success notification |
+| `info(config)` | Displays an information notification |
+| `warning(config)` | Displays a warning notification |
+| `error(config)` | Displays an error notification |
+| `destroy(key?)` | Closes the notification with the specified key; if no key is provided, closes all notifications |
 
-**Config** (same as [Ant Design notification](https://ant.design/components/notification)):
+**Configuration Parameters** (Consistent with [Ant Design notification](https://ant.design/components/notification)):
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `message` | `ReactNode` | Title |
-| `description` | `ReactNode` | Description |
-| `duration` | `number` | Auto-close seconds; default 4.5; 0 = no auto-close |
-| `key` | `string` | Unique id for `destroy(key)` |
-| `onClose` | `() => void` | On close |
-| `placement` | `string` | `topLeft` \| `topRight` \| `bottomLeft` \| `bottomRight` |
+|------|------|------|
+| `message` | `ReactNode` | Notification title |
+| `description` | `ReactNode` | Notification description |
+| `duration` | `number` | Auto-close delay (seconds). Default is 4.5 seconds; set to 0 to disable auto-close |
+| `key` | `string` | Unique identifier for the notification, used for `destroy(key)` to close a specific notification |
+| `onClose` | `() => void` | Callback function triggered when the notification is closed |
+| `placement` | `string` | Position: `topLeft` \| `topRight` \| `bottomLeft` \| `bottomRight` |
 
 ## Examples
 
-### Basic
+### Basic Usage
 
 ```ts
 ctx.notification.open({
-  message: 'Success',
-  description: 'Data saved.',
+  message: 'Operation successful',
+  description: 'Data has been saved to the server.',
 });
 ```
 
-### By type
+### Shortcut Calls by Type
 
 ```ts
 ctx.notification.success({
@@ -61,7 +61,7 @@ ctx.notification.success({
 
 ctx.notification.error({
   message: ctx.t('Export failed'),
-  description: ctx.t('Check console for details'),
+  description: ctx.t('Please check the console for details'),
 });
 
 ctx.notification.warning({
@@ -70,36 +70,37 @@ ctx.notification.warning({
 });
 ```
 
-### Custom duration and key
+### Custom Duration and Key
 
 ```ts
 ctx.notification.open({
   key: 'task-123',
   message: ctx.t('Task in progress'),
   description: ctx.t('Please wait...'),
-  duration: 0,
+  duration: 0,  // Do not auto-close
 });
 
+// Manually close after task completion
 ctx.notification.destroy('task-123');
 ```
 
-### Close all
+### Close All Notifications
 
 ```ts
 ctx.notification.destroy();
 ```
 
-## ctx.message vs ctx.notification
+## Difference from ctx.message
 
-| | ctx.message | ctx.notification |
-|---|-------------|-------------------|
-| **Position** | Top center | Top right (configurable) |
-| **Structure** | Single line | Title + description |
-| **Use** | Short, auto-dismiss | Longer, can stay |
-| **Typical** | Success, validation, copy | Task done, system notice |
+| Feature | ctx.message | ctx.notification |
+|------|--------------|------------------|
+| **Position** | Top center of the page | Top right corner (configurable) |
+| **Structure** | Single-line light hint | Includes title + description |
+| **Purpose** | Temporary feedback, disappears automatically | Complete notification, can be displayed for a long time |
+| **Typical Scenarios** | Operation success, validation failure, copy success | Task completion, system messages, longer content requiring user attention |
 
 ## Related
 
-- [ctx.message](./message.md): top-center short messages
-- [ctx.modal](./modal.md): modal confirm
-- [ctx.t()](./t.md): i18n; often used with notification
+- [ctx.message](./message.md) - Top light hint, suitable for quick feedback
+- [ctx.modal](./modal.md) - Modal confirmation, blocking interaction
+- [ctx.t()](./t.md) - Internationalization, often used in conjunction with notifications

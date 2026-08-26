@@ -1,4 +1,6 @@
 ---
+title: "Calendar"
+keywords: "Collections,Blocks"
 displayName: "Calendar"
 packageName: '@nocobase/plugin-calendar'
 description: |

@@ -43,6 +43,6 @@
   {
     "type": "custom-link",
     "label": "字段加密",
-    "link": "/data-sources/field-encryption"
+    "link": "/data-sources/field-encryption/"
   }
 ]

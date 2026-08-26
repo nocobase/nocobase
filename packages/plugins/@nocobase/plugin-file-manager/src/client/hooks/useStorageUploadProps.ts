@@ -7,21 +7,32 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCollection, useCollectionField, useCollectionManager, usePlugin, useRequest } from '@nocobase/client';
+import {
+  getDataSourceHeaders,
+  useCollection,
+  useCollectionField,
+  useCollectionManager,
+  useDataSourceKey,
+  usePlugin,
+  useRequest,
+} from '@nocobase/client';
 import { useEffect } from 'react';
 import FileManagerPlugin from '../';
 
 export function useStorage(storage) {
   const name = storage ?? '';
   const url = `storages:getBasicInfo/${name}`;
+  const dataSourceKey = useDataSourceKey();
+  const headers = getDataSourceHeaders(dataSourceKey);
   const { loading, data, run } = useRequest<any>(
     {
       url,
+      headers,
     },
     {
       manual: true,
-      refreshDeps: [name],
-      cacheKey: url,
+      refreshDeps: [name, dataSourceKey],
+      cacheKey: `${dataSourceKey || 'main'}:${url}`,
     },
   );
   useEffect(() => {
@@ -46,11 +57,18 @@ export function useStorageCfg() {
   };
 }
 export function useStorageUploadProps(props) {
+  const dataSourceKey = useDataSourceKey();
   const { storage, storageType } = useStorageCfg();
   const useStorageTypeUploadProps = storageType?.useUploadProps;
   const storageTypeUploadProps = useStorageTypeUploadProps?.({ storage, rules: storage.rules, ...props }) || {};
+  const headers = {
+    ...getDataSourceHeaders(dataSourceKey),
+    ...storageTypeUploadProps.headers,
+  };
+
   return {
     rules: storage?.rules,
     ...storageTypeUploadProps,
+    headers,
   };
 }

@@ -43,6 +43,11 @@ describe('external data source', () => {
     adminAgent = await app.agent().login(adminUser);
   });
 
+  afterAll(async () => {
+    await app.db.clean({ drop: true });
+    await app.destroy();
+  });
+
   it('should check permission for external data source', async () => {
     await app.db.getRepository('roles').create({
       values: {
@@ -79,5 +84,30 @@ describe('external data source', () => {
     });
     await checkPermission(context, async () => {});
     expect(context.throw).not.toBeCalled();
+  });
+
+  it('should allow root role for external data source query', async () => {
+    const next = vi.fn();
+    const context = {
+      ...ctx,
+      state: {
+        currentRole: 'root',
+        currentRoles: ['root'],
+      },
+      action: {
+        params: {
+          values: {
+            dataSource: 'mockInstance1',
+            collection: 'posts',
+            measures: [{ field: ['title'] }],
+          },
+        },
+      },
+      throw: vi.fn(),
+    };
+
+    await checkPermission(context, next);
+    expect(context.throw).not.toBeCalled();
+    expect(next).toBeCalledTimes(1);
   });
 });

@@ -33,41 +33,44 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, isWriteEmailAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
+import { useAssociationNames } from '../../../block-provider/hooks';
+import { useTableSelectorContext } from '../../../block-provider/TableSelectorProvider';
+import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
+import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockContextBasicValue';
+import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+import { useCollection } from '../../../data-source/collection/CollectionProvider';
+import { useCollectionParentRecordData } from '../../../data-source/collection-record/CollectionRecordProvider';
+import { useDataBlockProps } from '../../../data-source/data-block/DataBlockProvider';
 import {
   BlockRequestLoadingContext,
-  FlagProvider,
-  RecordIndexProvider,
-  RecordProvider,
-  useAssociationNames,
-  useCollection,
-  useCollectionParentRecordData,
-  useDataBlockProps,
   useDataBlockRequest,
   useDataBlockRequestData,
   useDataBlockRequestGetter,
-  useFlag,
-  useSchemaInitializerRender,
-  useTableSelectorContext,
-} from '../../../';
-import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { useTableBlockContext, useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
-import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
+} from '../../../data-source/data-block/DataBlockRequestProvider';
 import {
   NocoBaseRecursionField,
   RefreshComponentProvider,
   useRefreshFieldSchema,
 } from '../../../formily/NocoBaseRecursionField';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { useSchemaInitializerRender } from '../../../application/schema-initializer/hooks/useSchemaInitializerRender';
+import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
 import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
+import { DndContext } from '../../common/dnd-context';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
 import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
+import { isBulkEditAction, isWriteEmailAction } from '../action/Action';
+import { usePopupSettings } from '../page/PopupSettingsProvider';
+import { useDesignable } from '../../hooks/useDesignable';
+import { useTableSize } from '../../hooks/useBlockSize';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
 

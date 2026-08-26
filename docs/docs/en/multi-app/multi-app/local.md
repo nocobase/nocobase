@@ -23,11 +23,11 @@ APP_PROCESS_ADAPTER=local
 
 ### Creating an Application
 
-In **System Settings**, click **App supervisor** to enter the application management page.
+In **System Settings**, click **App Supervisor** to enter the application management page.
 
 ![](https://static-docs.nocobase.com/202512291056215.png)
 
-Click **Add** to create a new application.
+Click **Add New** to create a new application.
 
 ![](https://static-docs.nocobase.com/202512291057696.png)
 
@@ -35,11 +35,11 @@ Click **Add** to create a new application.
 
 | Option                       | Description                                                                                                                                                                                                                                              |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Application display name** | Name shown in the UI                                                                                                                                                                                                                                     |
+| **Application name** | Name shown in the UI                                                                                                                                                                                                                                     |
 | **Application ID**           | Application identifier, globally unique                                                                                                                                                                                                                  |
 | **Start mode**               | - Start on first visit: starts when the app is first accessed via URL<br>- Start with main application: starts together with the main app (increases startup time)                                                                                       |
-| **Environments**             | In shared-memory mode, only the local environment is available (`local`)                                                                                                                                                                                 |
-| **Database**                 | Configures the main data source. Supported options:<br>- New database: reuse the current DB service and create a dedicated database<br>- New connection: connect to another DB service<br>- New schema: when using PostgreSQL, create a dedicated schema |
+| **Environment**             | In shared-memory mode, only the local environment is available (`local`)                                                                                                                                                                                 |
+| **Database connection**                 | Configures the main data source. Supported options:<br>- New database: reuse the current DB service and create a dedicated database<br>- New connection: connect to another DB service<br>- Schema mode: when using PostgreSQL, create a dedicated schema |
 | **Upgrade**                  | Whether to automatically upgrade existing lower-version NocoBase data to the current version                                                                                                                                                             |
 | **JWT Secret**               | Automatically generates an independent JWT secret to isolate sessions from the main app and other apps                                                                                                                                                   |
 | **Custom domain**            | Configure a dedicated access domain for the application                                                                                                                                                                                                  |

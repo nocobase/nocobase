@@ -1,8 +1,8 @@
 ---
-displayName: "区块：树"
-packageName: '@nocobase/plugin-block-tree'
 title: "区块：树"
 keywords: "区块：树,插件,NocoBase"
+displayName: "区块：树"
+packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |

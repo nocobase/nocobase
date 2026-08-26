@@ -14,16 +14,18 @@ import { Button, Tooltip } from 'antd';
 import { useT } from '../../locale';
 import { useUploadFiles } from './hooks/useUploadFiles';
 import { useChatBoxStore } from './stores/chat-box';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
+import { useChatConversationsStore } from './stores/chat-conversations';
 
-export const Upload: React.FC = () => {
+export const Upload: React.FC<{ disabled?: boolean }> = ({ disabled }) => {
   const t = useT();
   const uploadProps = useUploadFiles();
 
   const chatBoxRef = useChatBoxStore.use.chatBoxRef();
-  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
 
-  const attachments = useChatMessagesStore.use.attachments();
+  const attachments = chat.use.attachments();
 
   const items = useMemo(() => {
     return attachments?.map((item, index) => ({
@@ -37,7 +39,7 @@ export const Upload: React.FC = () => {
     }));
   }, [attachments]);
 
-  if (!currentEmployee) {
+  if (disabled) {
     return <Button type="text" icon={<PaperClipOutlined />} disabled={true} />;
   }
   return (

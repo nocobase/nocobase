@@ -116,11 +116,21 @@ export default class extends Trigger {
   sync = true;
   title = `{{t("Pre-action event", { ns: "${NAMESPACE}" })}}`;
   description = `{{t('Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.', { ns: "${NAMESPACE}" })}}`;
+  presetFieldset = {
+    collection: {
+      type: 'string',
+      title: '{{t("Collection")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'DataSourceCollectionCascader',
+    },
+  };
   fieldset = {
     collection: {
       type: 'string',
       title: '{{t("Collection")}}',
       required: true,
+      'x-disabled': true,
       'x-decorator': 'FormItem',
       'x-component': 'DataSourceCollectionCascader',
       ['x-reactions']: [

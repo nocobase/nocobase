@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Markdown(Vditor)"
+keywords: "Collection fields"
 displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

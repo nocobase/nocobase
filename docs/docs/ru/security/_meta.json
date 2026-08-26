@@ -43,6 +43,6 @@
   {
     "type": "custom-link",
     "label": "Шифрование полей",
-    "link": "/data-sources/field-encryption"
+    "link": "/data-sources/field-encryption/"
   }
 ]

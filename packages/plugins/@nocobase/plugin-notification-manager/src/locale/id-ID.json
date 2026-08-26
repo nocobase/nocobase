@@ -29,6 +29,7 @@
   "Notification Management": "Manajemen Notifikasi",
   "Notification manager": "Manajer notifikasi",
   "Notification type": "Tipe notifikasi",
+  "Notification type {{type}} is not registered.": "Tipe notifikasi {{type}} belum terdaftar.",
   "Query users": "Kueri pengguna",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Dihasilkan secara acak dan tidak dapat diubah. Mendukung huruf, angka, dan garis bawah, harus diawali dengan huruf.",
   "Reason": "Alasan",

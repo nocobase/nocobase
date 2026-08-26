@@ -22,3 +22,19 @@ export class SimpleRecordActionModel extends ActionModel {
 SimpleRecordActionModel.define({
   label: tExpr('Simple record action'),
 });
+
+SimpleRecordActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple record action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        const index = ctx.model.context.recordIndex;
+        const record = ctx.model.context.record;
+        const id = record?.id;
+        ctx.message.info(ctx.t('Record action clicked, record ID: {{id}}, row index: {{index}}', { id, index }));
+      },
+    },
+  },
+});

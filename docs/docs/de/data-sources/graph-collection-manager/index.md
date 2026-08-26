@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-graph-collection-manager"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 
 # Visuelle Sammlungsverwaltung

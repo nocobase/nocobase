@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip } from 'antd';
+import { Breadcrumb, Button, Dropdown, message, Modal, Result, Space, Spin, Tag, Tooltip, Typography } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -26,14 +26,21 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { DownOutlined, ExclamationCircleFilled, StopOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  DownOutlined,
+  ExclamationCircleFilled,
+  StopOutlined,
+  ReloadOutlined,
+  QuestionCircleOutlined,
+} from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
 import { StatusButton } from './components/StatusButton';
-import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { ExecutionReasonOptionsMap, ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
 import { FlowContext, useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
+import { LogCollapse } from './nodes';
 import useStyles from './style';
 import { getWorkflowDetailPath, getWorkflowExecutionsPath, linkNodes } from './utils';
 import { get } from 'lodash';
@@ -62,29 +69,44 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
 }
 
-function JobResult(props) {
-  const { viewJob } = useFlowContext();
-  const { data, loading } = useRequest({
-    resource: 'jobs',
-    action: 'get',
-    params: {
-      filterByTk: viewJob.id,
+function useJobData(id) {
+  return useRequest(
+    {
+      resource: 'jobs',
+      action: 'get',
+      params: {
+        filterByTk: id,
+      },
     },
-  });
+    {
+      cacheKey: `job-${id}`,
+    },
+  );
+}
 
+function JobResult({ jobData, loading, ...props }) {
   if (loading) {
     return <Spin />;
   }
-  const result = get(data, 'data.result');
+  const result = get(jobData, 'result');
   return <Input.JSON {...props} value={result} disabled />;
 }
 
-function JobModal() {
+function JobLog({ jobData, loading }) {
+  if (loading) {
+    return null;
+  }
+  const log = get(jobData, 'log');
+  return <LogCollapse value={log} />;
+}
+
+function JobModalContent({ job, setViewJob }) {
   const { instructions } = usePlugin(WorkflowPlugin);
   const compile = useCompile();
-  const { viewJob: job, setViewJob } = useFlowContext();
   const { styles } = useStyles();
 
+  const { data, loading } = useJobData(job.id);
+  const latestJob = get(data, 'data') ?? job;
   const { node = {} } = job ?? {};
   const instruction = instructions.get(node.type);
 
@@ -93,15 +115,20 @@ function JobModal() {
       <SchemaComponent
         components={{
           JobResult,
+          JobLog,
         }}
         schema={{
           type: 'void',
           properties: {
-            [`${job?.id}-${job?.updatedAt}-modal`]: {
+            [`${latestJob.id}-${latestJob.updatedAt}-modal`]: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                initialValue: job,
+                initialValue: {
+                  ...job,
+                  ...latestJob,
+                  node,
+                },
               },
               'x-component': 'Action.Modal',
               title: (
@@ -136,11 +163,21 @@ function JobModal() {
                   'x-decorator': 'FormItem',
                   'x-component': 'JobResult',
                   'x-component-props': {
+                    jobData: latestJob,
+                    loading,
                     className: styles.nodeJobResultClass,
                     autoSize: {
                       minRows: 4,
                       maxRows: 32,
                     },
+                  },
+                },
+                log: {
+                  type: 'string',
+                  'x-component': 'JobLog',
+                  'x-component-props': {
+                    jobData: latestJob,
+                    loading,
                   },
                 },
               },
@@ -150,6 +187,16 @@ function JobModal() {
       />
     </ActionContextProvider>
   );
+}
+
+function JobModal() {
+  const { viewJob: job, setViewJob } = useFlowContext();
+
+  if (!job) {
+    return null;
+  }
+
+  return <JobModalContent job={job} setViewJob={setViewJob} />;
 }
 
 function ExecutionsDropdown(props) {
@@ -347,7 +394,19 @@ export function ExecutionCanvas() {
           />
         </header>
         <aside>
-          <Tag color={statusOption.color}>{compile(statusOption.label)}</Tag>
+          <Tag color={statusOption.color}>
+            <Space>
+              {compile(statusOption.label)}
+              {execution.reason ? (
+                <Tooltip
+                  title={compile(ExecutionReasonOptionsMap[execution.reason]?.label ?? execution.reason)}
+                  placement="bottom"
+                >
+                  <QuestionCircleOutlined />
+                </Tooltip>
+              ) : null}
+            </Space>
+          </Tag>
           {execution.status ? null : (
             <Tooltip title={lang('Cancel the execution')}>
               <Button type="link" danger onClick={onCancel} shape="circle" size="small" icon={<StopOutlined />} />

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Hướng dẫn sử dụng"
+  },
+  {
+    "type": "file",
+    "name": "guide-overview",
+    "label": "Giới thiệu hệ thống và Dashboard"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "Quản lý Lead"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "Quản lý Cơ hội"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "Sản phẩm, Báo giá và Đơn hàng"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "Khách hàng, Liên hệ và Email"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "Vai trò và quyền"
+  }
+]

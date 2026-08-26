@@ -19,6 +19,9 @@ import { FlowModelRenderer } from '@nocobase/flow-engine';
 <FlowModelRenderer model={myModel} />
 ```
 
+```tsx file="./_demos/flow-model-renderer.tsx" preview
+```
+
 ### FieldModelRenderer
 
 对于受控的字段 Model，使用 FieldModelRenderer 渲染：

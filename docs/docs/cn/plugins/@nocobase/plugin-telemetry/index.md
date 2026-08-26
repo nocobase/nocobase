@@ -1,8 +1,8 @@
 ---
-displayName: "遥测"
-packageName: '@nocobase/plugin-telemetry'
 title: "遥测"
 keywords: "遥测,插件,NocoBase"
+displayName: "遥测"
+packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
 description: |

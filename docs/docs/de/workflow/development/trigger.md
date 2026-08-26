@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Trigger-Typen erweitern
 
 Jeder Workflow benötigt einen spezifischen Trigger. Dieser dient als Startpunkt für die Ausführung des Prozesses.

@@ -22,7 +22,7 @@ import {
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
-import { Conversations } from './Conversations';
+import { Conversations } from './conversations';
 import { Messages } from './Messages';
 import { Sender } from './Sender';
 import { useT } from '../../locale';

@@ -9,9 +9,11 @@
 
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Collection, useCollectionManager, useDataBlockProps } from '../../data-source';
+import { Collection } from '../../data-source/collection/Collection';
+import { useCollectionManager } from '../../data-source/collection/CollectionManagerProvider';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
-import { useCompile } from '../../schema-component';
+import { useDataBlockProps } from '../../data-source/data-block/DataBlockProvider';
+import { useCompile } from '../../schema-component/hooks/useCompile';
 import { SchemaToolbar } from '../../schema-settings/GeneralSchemaDesigner';
 import { useSchemaTemplate } from '../../schema-templates';
 import { useMobileLayout } from '../../route-switch/antd/admin-layout';

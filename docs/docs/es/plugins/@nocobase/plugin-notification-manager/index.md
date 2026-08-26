@@ -1,4 +1,6 @@
 ---
+title: "Notification manager"
+keywords: "Notification"
 displayName: "Notification manager"
 packageName: '@nocobase/plugin-notification-manager'
 description: |

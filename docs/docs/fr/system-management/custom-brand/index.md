@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Personnaliser la marque
 
 ## Introduction
@@ -14,7 +10,7 @@ En bas de la page de connexion :
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-Vous pouvez configurer l'emplacement 1 via l'option Logo dans les [Paramètres système](/system-management/system-settings/). Les emplacements 2 et 3 peuvent être configurés à l'aide de ce plugin.
+Vous pouvez configurer l'emplacement 1 via l'option Logo dans les [Paramètres système](/system-management/system-settings/index.md). Les emplacements 2 et 3 peuvent être configurés à l'aide de ce plugin.
 
 ## Instructions d'utilisation
 

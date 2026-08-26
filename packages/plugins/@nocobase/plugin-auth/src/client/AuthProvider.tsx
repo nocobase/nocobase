@@ -26,6 +26,7 @@ export const AuthProvider: React.FC = (props) => {
       app.apiClient.auth.setAuthenticator(authenticator);
 
       params.delete('token');
+      params.delete('authenticator');
       const newSearch = params.toString();
       navigate(
         {

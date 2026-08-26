@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Bloc JS
 
 ## Introduction
@@ -19,7 +15,7 @@ Le contexte d'exécution du Bloc JS intègre des fonctionnalités courantes que 
 - `ctx.useResource(...)` + `ctx.resource` : Accède aux données en tant que ressource.
 - `ctx.i18n.t()` / `ctx.t()` : Fonctionnalité d'internationalisation intégrée.
 - `ctx.onRefReady(ctx.ref, cb)` : Effectue le rendu une fois le conteneur prêt pour éviter les problèmes de synchronisation.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` : Bibliothèques génériques intégrées telles que React, ReactDOM, Ant Design, les icônes Ant Design et dayjs, utilisées pour le rendu JSX et la gestion des dates/heures. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sont conservés pour des raisons de compatibilité.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula` : Bibliothèques génériques intégrées telles que React, ReactDOM, Ant Design, les icônes Ant Design, dayjs, lodash, math.js et formula.js, utilisées pour le rendu JSX, la gestion des dates/heures, la manipulation de données et les calculs mathématiques. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sont conservés pour des raisons de compatibilité.)
 - `ctx.render(vnode)` : Rend un élément React, une chaîne HTML ou un nœud DOM dans le conteneur par défaut `ctx.element`. Les appels multiples réutilisent la même racine React et écrasent le contenu existant du conteneur.
 
 ## Ajout d'un bloc
@@ -38,7 +34,7 @@ L'éditeur de script du Bloc JS prend en charge la coloration syntaxique, les in
 
 De plus, vous pouvez directement invoquer l'employé IA "Ingénieur Frontend · Nathan" depuis le coin supérieur droit de l'éditeur. Nathan peut vous aider à écrire ou à modifier des scripts en fonction du contexte actuel. Vous pouvez ensuite "Apply to editor" (Appliquer à l'éditeur) en un clic et exécuter le code pour en voir l'effet. Pour plus de détails, consultez :
 
-- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/ai-coding)
+- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/)
 
 ## Environnement d'exécution et sécurité
 

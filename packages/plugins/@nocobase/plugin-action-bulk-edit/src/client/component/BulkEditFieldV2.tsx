@@ -10,7 +10,7 @@
 import { Select, Space } from 'antd';
 import React, { useState, useEffect } from 'react';
 import { css } from '@emotion/css';
-import { BulkEditFormItemValueType } from '../models/types';
+import { BulkEditFormItemValueType } from '../../client-v2/types';
 import { lang } from '../locale';
 
 function toFormFieldValue(value: any) {

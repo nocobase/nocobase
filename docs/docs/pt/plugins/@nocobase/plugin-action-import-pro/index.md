@@ -1,4 +1,6 @@
 ---
+title: "Action: Import records Pro"
+keywords: "Actions"
 displayName: "Action: Import records Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

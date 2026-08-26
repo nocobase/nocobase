@@ -8,7 +8,7 @@
  */
 
 import actions, { Context, utils } from '@nocobase/actions';
-import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import PluginWorkflowServer, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 import ManualInstruction from './ManualInstruction';
 
@@ -21,7 +21,7 @@ export async function submit(context: Context, next) {
     return context.throw(401);
   }
 
-  const plugin: WorkflowPlugin = context.app.getPlugin(WorkflowPlugin);
+  const plugin = context.app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
   const instruction = plugin.instructions.get('manual') as ManualInstruction;
 
   const task = await repository.findOne({
@@ -40,6 +40,17 @@ export async function submit(context: Context, next) {
   const { forms = {} } = task.node.config;
   const [formKey] = Object.keys(values.result ?? {}).filter((key) => key !== '_');
   const actionKey = values.result?._;
+
+  if (!task.execution) {
+    return context.throw(400);
+  }
+  if (
+    task.execution.status === EXECUTION_STATUS.STARTED &&
+    plugin.timeoutManager.isExpired(task.execution) &&
+    (await plugin.timeoutManager.abort(task.execution))
+  ) {
+    return context.throw(400, context.t('Execution timed out', { ns: 'workflow' }));
+  }
 
   const actionItem = forms[formKey]?.actions?.find((item) => item.key === actionKey);
   // NOTE: validate status
@@ -103,6 +114,10 @@ export async function submit(context: Context, next) {
   context.status = 202;
 
   await next();
+
+  if (task.execution.status !== EXECUTION_STATUS.STARTED) {
+    return;
+  }
 
   task.job.execution = task.execution;
   task.job.latestTask = task;

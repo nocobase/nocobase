@@ -1,11 +1,17 @@
+---
+title: "Cache"
+description: "NocoBase server-side cache: app.cacheManager, get/set/del, cache instances, accessing cache in plugins."
+keywords: "Cache,cacheManager,get,set,del,server-side cache,NocoBase"
+---
+
 # Cache
 
-NocoBase's Cache module is based on <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> and provides caching functionality for plugin development. The system has two built-in cache types:
+NocoBase's Cache module is based on <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> and provides caching functionality for plugin development. It has two built-in cache types:
 
 - **memory** - Memory cache based on lru-cache, provided by node-cache-manager by default
 - **redis** - Redis cache based on node-cache-manager-redis-yet
 
-More cache types can be extended and registered through the API.
+More cache types can be registered through the API.
 
 ## Basic Usage
 
@@ -81,7 +87,7 @@ const myCache = this.app.cacheManager.getCache('myPlugin');
 
 ## Basic Cache Methods
 
-Cache instances provide rich cache operation methods, most of which are inherited from node-cache-manager.
+Cache instances provide common cache operation methods, most of which are inherited from node-cache-manager.
 
 ### get / set
 
@@ -105,7 +111,7 @@ await cache.reset();
 
 ### wrap
 
-The `wrap()` method is a very useful tool that first attempts to get data from cache, and if there's a cache miss, executes the function and stores the result in cache.
+`wrap()` first attempts to get data from cache, and if there's a cache miss, executes the callback function and stores the result in cache.
 
 ```ts
 const data = await cache.wrap('user:1', async () => {
@@ -145,7 +151,7 @@ const remainingTTL = await cache.ttl('key');
 
 ### wrapWithCondition
 
-`wrapWithCondition()` is similar to `wrap()`, but can decide whether to use cache through conditions.
+`wrapWithCondition()` is similar to `wrap()`, but allows you to decide whether to use cache through conditions.
 
 ```ts
 const data = await cache.wrapWithCondition(
@@ -194,7 +200,7 @@ import { redisStore, RedisStore } from 'cache-manager-redis-yet';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // Register Redis store (if system hasn't registered it)
+    // Register Redis store (if not yet registered)
     this.app.cacheManager.registerStore({
       name: 'redis',
       store: redisStore,
@@ -223,3 +229,10 @@ export default class PluginCacheDemo extends Plugin {
 4. **TTL Settings**: Set TTL reasonably based on data update frequency to balance performance and consistency.
 5. **Redis Connection**: When using Redis, ensure connection parameters and passwords are correctly configured in production environment.
 
+## Related Links
+
+- [Context](./context.md) - Access cache via `ctx.cache` in middleware and Actions
+- [Plugin](./plugin.md) - Create and manage custom cache instances in plugins
+- [Server Development Overview](./index.md) - Overall server architecture and where the cache module fits
+- [Middleware](./middleware.md) - Combine cache with request handling logic in middleware
+- [Database](./database.md) - Cache is often used together with database queries to improve performance

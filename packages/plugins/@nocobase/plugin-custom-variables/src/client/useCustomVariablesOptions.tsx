@@ -151,6 +151,7 @@ export const useCustomVariablesOptions = () => {
   const api = useAPIClient();
   const { getVariableScopeInfo } = useVariableScopeInfo();
   const [loading, setLoading] = useState(false);
+  const { scopeId } = getVariableScopeInfo();
 
   const refresh = useCallback(() => {
     const { scopeId } = getVariableScopeInfo();
@@ -193,6 +194,7 @@ export const useCustomVariablesOptions = () => {
   }, [refresh]);
 
   return {
+    scopeId,
     options,
     loading,
     refresh,

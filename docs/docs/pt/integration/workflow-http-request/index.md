@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Integração de Requisições HTTP em Fluxos de Trabalho
 
 Através do nó de Requisição HTTP, os **fluxos de trabalho** do NocoBase podem enviar requisições proativamente para qualquer serviço HTTP, facilitando a troca de dados e a integração de negócios com sistemas externos.
@@ -63,7 +59,7 @@ O nó de Requisição HTTP é um componente central de integração em **fluxos 
 
 ### 1. Verifique se o **plugin** está habilitado
 
-O nó de Requisição HTTP é um recurso integrado do **plugin** de **fluxo de trabalho**. Certifique-se de que o **[plugin](/plugins/@nocobase/plugin-workflow/)** de **Fluxo de Trabalho** esteja habilitado.
+O nó de Requisição HTTP é um recurso integrado do **plugin** de **fluxo de trabalho**. Certifique-se de que o **[plugin](../../plugins/@nocobase/plugin-workflow/index.md)** de **Fluxo de Trabalho** esteja habilitado.
 
 ### 2. Adicione um nó de Requisição HTTP ao **fluxo de trabalho**
 
@@ -322,8 +318,8 @@ Esses dois recursos se complementam para construir uma solução completa de int
 
 ## Recursos Relacionados
 
-- [Documentação do **Plugin** de **Fluxo de Trabalho**](/plugins/@nocobase/plugin-workflow/)
+- [Documentação do **Plugin** de **Fluxo de Trabalho**](../../plugins/@nocobase/plugin-workflow/index.md)
 - [**Fluxo de Trabalho**: Nó de Requisição HTTP](/workflow/nodes/request)
-- [**Fluxo de Trabalho**: Gatilho de Webhook](/integration/workflow-webhook/)
-- [Autenticação por Chaves de API](/integration/api-keys/)
-- [**Plugin** de Documentação da API](/plugins/@nocobase/plugin-api-doc/)
+- [**Fluxo de Trabalho**: Gatilho de Webhook](../workflow-webhook/index.md)
+- [Autenticação por Chaves de API](../api-keys/index.md)
+- [**Plugin** de Documentação da API](../../plugins/@nocobase/plugin-api-doc/index.md)

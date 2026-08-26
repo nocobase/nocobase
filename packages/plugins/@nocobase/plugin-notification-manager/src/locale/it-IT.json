@@ -29,6 +29,7 @@
   "Notification Management": "Gestione Notifiche",
   "Notification manager": "Gestore notifiche",
   "Notification type": "Tipo di notifica",
+  "Notification type {{type}} is not registered.": "Il tipo di notifica {{type}} non è registrato.",
   "Query users": "Cerca utenti",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "Generato casualmente e non modificabile. Supporta lettere, numeri e underscore, deve iniziare con una lettera.",
   "Reason": "Motivo",

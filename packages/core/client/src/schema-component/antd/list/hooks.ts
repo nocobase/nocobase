@@ -9,8 +9,7 @@
 
 import { SpaceProps, theme } from 'antd';
 import { useFieldSchema } from '@formily/react';
-import { useDesignable } from '../../../';
-import { useListBlockContext } from './List.Decorator';
+import { useDesignable } from '../../hooks/useDesignable';
 import { useDataBlockHeight } from '../../hooks/useBlockSize';
 import { useBlockHeightProps } from '../../../block-provider/hooks/useBlockHeightProps';
 

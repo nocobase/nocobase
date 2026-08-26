@@ -12,19 +12,11 @@ import { useForm, useFormEffects, ISchema } from '@formily/react';
 import { css, SchemaComponent } from '@nocobase/client';
 import React, { useState } from 'react';
 import { NAMESPACE } from '../../locale';
-import { SCHEDULE_MODE } from './constants';
+import { SCHEDULE_MODE, scheduleModeOptions } from './constants';
 import { EndsByField } from './EndsByField';
 import { OnField } from './OnField';
 import { RepeatField } from './RepeatField';
 import { ScheduleModes } from './ScheduleModes';
-
-const scheduleModeOptions = [
-  { value: SCHEDULE_MODE.STATIC, label: `{{t("Based on certain date", { ns: "${NAMESPACE}" })}}` },
-  {
-    value: SCHEDULE_MODE.DATE_FIELD,
-    label: `{{t("Based on date field of collection", { ns: "${NAMESPACE}" })}}`,
-  },
-];
 
 export const ScheduleConfig = () => {
   const { values = {}, clearFormGraph } = useForm();
@@ -51,6 +43,7 @@ export const ScheduleConfig = () => {
           'x-component': 'Radio.Group',
           enum: scheduleModeOptions,
           required: true,
+          'x-disabled': true,
           default: SCHEDULE_MODE.STATIC,
         }}
       />

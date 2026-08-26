@@ -1,8 +1,4 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-# Sous-tableau
+# Sous-tableau (édition en ligne)
 
 ## Introduction
 
@@ -28,7 +24,7 @@ Le composant par défaut pour un champ de relation est le sélecteur déroulant 
 
 ## Options de configuration des champs
 
-### Autoriser la sélection de données existantes (désactivé par défaut)
+### Autoriser la sélection de données existantes (activé par défaut)
 
 Permet de sélectionner et d'associer des données existantes.
 

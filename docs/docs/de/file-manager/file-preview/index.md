@@ -15,7 +15,7 @@ Für Dateitypen ohne native Vorschau können Sie entsprechende Datei-Vorschau-Pl
 
 Derzeit stellt NocoBase die folgenden Datei-Vorschau-Plugins bereit:
 
-* Office-Datei-Vorschau-Plugin
+* [Office-Datei-Vorschau-Plugin](../file-preview/ms-office.md)
 
 ## PDF-Vorschau mit externem Speicher
 

@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Workflow Webhook-Integration
 
 Durch Webhook-Trigger kann NocoBase HTTP-Aufrufe von Drittsystemen empfangen und Workflows automatisch auslösen, was eine nahtlose Integration mit externen Systemen ermöglicht.
@@ -55,7 +51,7 @@ Wenn sich Daten in externen Systemen (wie CRM, ERP) ändern, werden diese in Ech
 
 ### 1. Plugin installieren
 
-Suchen und installieren Sie im Plugin-Manager das **[Workflow: Webhook-Trigger](/plugins/@nocobase/plugin-workflow-webhook/)** Plugin.
+Suchen und installieren Sie im Plugin-Manager das **[Workflow: Webhook-Trigger](/plugins/@nocobase/plugin-workflow-webhook/index.md)** Plugin.
 
 > Hinweis: Dies ist ein kommerzielles Plugin, das separat erworben oder abonniert werden muss.
 
@@ -246,7 +242,7 @@ if (branch === 'main') {
 
 ## Verwandte Ressourcen
 
-- [Dokumentation zum Workflow-Plugin](/plugins/@nocobase/plugin-workflow/)
+- [Dokumentation zum Workflow-Plugin](/plugins/@nocobase/plugin-workflow/index.md)
 - [Workflow: Webhook-Trigger](/workflow/triggers/webhook)
-- [Workflow: HTTP-Anfrage-Knoten](/integration/workflow-http-request/)
-- [API-Schlüssel-Authentifizierung](/integration/api-keys/)
+- [Workflow: HTTP-Anfrage-Knoten](/integration/workflow-http-request/index.md)
+- [API-Schlüssel-Authentifizierung](/integration/api-keys/index.md)

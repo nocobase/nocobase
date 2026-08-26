@@ -15,6 +15,7 @@ import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
 import { useTableBlockParams } from '../modules/blocks/data-blocks/table/hooks/useTableBlockDecoratorProps';
 import { SchemaComponentOptions } from '../schema-component';
 import { TableElementRefContext } from '../schema-component/antd/table-v2/Table';
+import { TableBlockContextBasicValue } from './TableBlockContextBasicValue';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
 import { TableUidContext } from './TableUidContext';
@@ -23,16 +24,6 @@ import { TableUidContext } from './TableUidContext';
  */
 export const TableBlockContext = createContext<any>({});
 TableBlockContext.displayName = 'TableBlockContext';
-
-const TableBlockContextBasicValue = createContext<{
-  field: any;
-  rowKey: string;
-  dragSortBy?: string;
-  childrenColumnName?: string;
-  showIndex?: boolean;
-  dragSort?: boolean;
-}>(null);
-TableBlockContextBasicValue.displayName = 'TableBlockContextBasicValue';
 
 /**
  * @internal
@@ -249,11 +240,4 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
  */
 export const useTableBlockContext = () => {
   return useContext(TableBlockContext);
-};
-
-/**
- * @internal
- */
-export const useTableBlockContextBasicValue = () => {
-  return useContext(TableBlockContextBasicValue);
 };

@@ -2,26 +2,36 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Introducción a la solución"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Diseño detallado"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Instalación"
+  },
+  {
+    "type": "dir",
+    "name": "guide",
+    "label": "Guía de operaciones"
+  },
+  {
+    "type": "file",
+    "name": "changelog",
+    "label": "Registro de cambios"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "CRM heredado (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Más contenido"
   }
 ]

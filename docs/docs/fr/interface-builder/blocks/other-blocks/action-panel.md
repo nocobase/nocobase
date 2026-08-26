@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Bloc : Plan de travail
 
 ## Introduction

@@ -40,6 +40,7 @@ export const createLogger = (options: LoggerOptions) => {
   const winstonOptions = {
     levels,
     level: getLoggerLevel(),
+    silent: process.env.LOGGER_SILENT === 'true' ? true : false,
     ...rest,
     transports: getTransports(options),
   };

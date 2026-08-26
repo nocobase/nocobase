@@ -10,9 +10,18 @@
 import React, { lazy as ReactLazy } from 'react';
 import { Spin } from 'antd';
 import { get } from 'lodash';
-import { useImported, loadableResource } from 'react-imported-component';
 
 export const LAZY_COMPONENT_KEY = Symbol('LAZY_COMPONENT_KEY');
+
+type ModuleImportor<TModule extends Record<string, any> = Record<string, any>> = () => Promise<TModule>;
+
+type LazyCacheRecord<TModule extends Record<string, any> = Record<string, any>> = {
+  error?: unknown;
+  module?: TModule;
+  promise?: Promise<TModule>;
+};
+
+const useLazyCache = new Map<string, LazyCacheRecord>();
 
 type LazyComponentType<M extends Record<string, any>, K extends keyof M> = {
   [P in K]: M[P];
@@ -89,30 +98,47 @@ export function lazy<M extends Record<string, any>, K extends keyof M>(
 /**
  * A hook to lazily load a module and return a specific export from it.
  *
- * This hook uses `useImported` to dynamically import a module and return a specific export
- * from the module. It throws a promise while the module is being loaded, which can be caught
- * by the parent error boundary to show a loading state.
+ * This hook dynamically imports a module and returns a specific export from it.
+ * It throws a promise while the module is being loaded, which can be caught by
+ * the parent Suspense boundary to show a loading state.
+ *
+ * @deprecated Use this hook only when you need to dynamically load a module inside a hook. Otherwise, use lazy() to load React components, or use import() directly to load modules, utility functions, or third-party libraries. Avoid adding new usages of useLazy.
  *
  * @template T - The type of the export being picked from the module.
  *
- * @param {Parameters<typeof useImported>[0]} importor - The function to import the module.
+ * @param {ModuleImportor} importor - The function to import the module.
  * @param {string | ((module: any) => T)} picker - The name of the export to pick or a function to pick the export.
  * @returns {T} The picked export from the imported module.
  *
  * @throws {Promise} Throws a promise while the module is being loaded.
  */
-export function useLazy<T = () => any>(
-  importor: Parameters<typeof useImported>[0],
-  picker: string | ((module: any) => T),
-): T {
+export function useLazy<T = () => any>(importor: ModuleImportor, picker: string | ((module: any) => T)): T {
   const exportPicker = typeof picker === 'function' ? picker : (module) => module[picker];
-  const loadable = loadableResource(importor);
-  if (!loadable.payload) {
-    throw new Promise((resolve, reject) => {
-      loadable.loadIfNeeded();
-      loadable.resolution.then(resolve).catch(reject);
-    });
+  const cacheKey = importor.toString();
+  const cached = useLazyCache.get(cacheKey);
+
+  if (cached?.error) {
+    throw cached.error;
   }
-  const imported = exportPicker(loadable.payload);
-  return imported as T;
+
+  if (cached?.module) {
+    return exportPicker(cached.module) as T;
+  }
+
+  if (!cached?.promise) {
+    const record: LazyCacheRecord = cached || {};
+    record.promise = importor()
+      .then((module) => {
+        record.module = module;
+        return module;
+      })
+      .catch((error) => {
+        record.error = error;
+        throw error;
+      });
+    useLazyCache.set(cacheKey, record);
+    throw record.promise;
+  }
+
+  throw cached.promise;
 }

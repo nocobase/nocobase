@@ -1,4 +1,6 @@
 ---
+title: "Action: Print"
+keywords: "Actions"
 displayName: "Action: Print"
 packageName: '@nocobase/plugin-action-print'
 description: |

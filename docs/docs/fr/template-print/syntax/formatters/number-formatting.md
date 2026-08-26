@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 ### Formatage des nombres
 
 #### 1. :formatN(precision)
@@ -10,11 +6,10 @@ Cette documentation a été traduite automatiquement par IA.
 Formate un nombre selon les paramètres de localisation.
 Paramètre :
 - `precision` : Le nombre de décimales.
-  Pour les formats ODS/XLSX, le nombre de décimales affichées est déterminé par l'éditeur de texte ; pour les autres formats, ce paramètre est utilisé.
+  Pour les formats ODS/XLSX, le nombre de décimales affichées est déterminé par l'éditeur de texte ; pour les autres formats, cela dépend de ce paramètre.
 
 ##### Exemple
 ```
-// Environnement d'exemple : options API { "lang": "en-us" }
 '10':formatN()         // Renvoie "10.000"
 '1000.456':formatN()   // Renvoie "1,000.456"
 ```

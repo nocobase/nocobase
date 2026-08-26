@@ -29,6 +29,7 @@ export default {
       name: 'avatar',
       type: 'string',
       interface: 'image',
+      defaultValue: 'nocobase-015-male',
     },
     {
       name: 'bio',
@@ -42,7 +43,8 @@ export default {
     },
     {
       name: 'defaultPrompt',
-      type: 'virtual',
+      type: 'text',
+      interface: 'textarea',
     },
     {
       name: 'greeting',
@@ -105,6 +107,12 @@ export default {
       type: 'string',
       allowNull: false,
       defaultValue: 'business', // business, developer
+    },
+    {
+      name: 'deprecated',
+      type: 'boolean',
+      allowNull: false,
+      defaultValue: false,
     },
   ],
 };

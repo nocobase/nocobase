@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Personalizar Marca
 
 ## Introdução
@@ -14,7 +10,7 @@ Na parte inferior da página de login:
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-A Posição 1 pode ser configurada através da opção de Logo em [Configurações do Sistema](/system-management/system-settings/). As Posições 2 e 3 podem ser configuradas usando este plugin.
+A Posição 1 pode ser configurada através da opção de Logo em [Configurações do Sistema](../system-settings/index.md). As Posições 2 e 3 podem ser configuradas usando este plugin.
 
 ## Instruções de Uso
 

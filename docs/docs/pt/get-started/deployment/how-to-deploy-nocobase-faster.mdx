@@ -1,0 +1,388 @@
+---
+title: "Como Implantar Mais Rápido"
+description: "Aprenda a otimizar a implantação do NocoBase com técnicas como HTTP/2, CDN, localização do servidor, compressão e caching para reduzir significativamente o tempo de carregamento."
+keywords: "NocoBase,implantação,desempenho,HTTP/2,CDN,otimização"
+---
+
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+# Como Implantar Mais Rápido
+
+Muitos usuários podem perceber que o NocoBase está rodando mais devagar do que o esperado após a implantação. Isso geralmente se deve ao ambiente de rede, configurações do servidor ou arquitetura de implantação. Antes de mergulhar nas técnicas de otimização, vamos primeiro observar os valores de referência para velocidades normais de carregamento do NocoBase, para evitar preocupações desnecessárias.
+
+### Valores de Referência para Velocidade Normal de Carregamento do NocoBase
+
+A seguir estão as velocidades de carregamento testadas no ambiente de demonstração do NocoBase:
+
+* Tempo necessário para entrar na aplicação pela primeira vez digitando a URL: aproximadamente 2 segundos
+* Tempo necessário para alternar entre páginas dentro da aplicação: aproximadamente 50-300 milissegundos
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/886b8e6afd4eea8fd1ff601fdbaecaf0.mp4" />
+</video>
+
+<video autoplay loop width="100%">
+      <source src="https://static-docs.nocobase.com/c240cf4029820f0e4c2bbb58723e2d76.mp4" />
+</video>
+
+A seguir, compartilharei uma série de técnicas de otimização de implantação simples, porém eficazes, que podem melhorar significativamente a velocidade de acesso ajustando as configurações de implantação, sem precisar modificar nenhum código:
+
+## I. Otimização de Rede e Infraestrutura
+
+### 1. Versão do Protocolo HTTP: Adote o HTTP/2 com Facilidade
+
+【Pré-requisitos】
+
+- **Suporte a HTTPS Obrigatório**: Isso é importante! Quase todos os navegadores modernos só suportam HTTP/2 sobre conexões HTTPS, portanto você precisa configurar primeiro os certificados SSL.
+- **Requisitos do Servidor**: Você precisa usar um software de servidor que suporte HTTP/2, como Nginx 1.9.5+ ou Apache 2.4.17+.
+- **Versão do TLS**: TLS 1.2 ou superior é recomendado (TLS 1.3 é o melhor), pois versões antigas de SSL não suportam HTTP/2.
+
+【Dicas】
+
+O protocolo tradicional HTTP/1.1 tem limitações ao lidar com várias requisições — normalmente apenas 6-8 conexões simultâneas, o que é como esperar na fila para comprar ingressos, causando atrasos facilmente.
+![250416_http1_en](https://static-docs.nocobase.com/250416_http1_en.png)
+
+O HTTP/2 usa a tecnologia de "multiplexação" para lidar com várias requisições simultaneamente, acelerando muito o carregamento de recursos; já o mais recente HTTP/3 tem desempenho ainda melhor em redes instáveis, com excelentes resultados.
+
+![250416_http2_en](https://static-docs.nocobase.com/250416_http2_en.png)
+
+【Sugestões de Otimização】
+
+- Certifique-se de que seu servidor web tem o suporte a HTTP/2 ativado, o que é fácil de configurar na maioria dos servidores (como Nginx, Caddy).
+- No Nginx, basta adicionar o parâmetro `http2` após a diretiva listen:
+
+```nginx
+listen 443 ssl http2;
+```
+
+【Verificação】
+
+No painel de desenvolvedor do seu navegador, abra a opção "Network", clique com o botão direito e marque "Protocol" para ver a versão do protocolo de conexão atual:
+![20250407145442](https://static-docs.nocobase.com/20250407145442.png)
+
+Com base em nossos testes, a velocidade geral melhora cerca de 10%, com ganhos de desempenho mais significativos quando o sistema possui muitos blocos e recursos.
+
+### 2. Largura de Banda da Rede: Quanto Maior, Melhor, com Cobrança Flexível
+
+【Dicas】
+
+Assim como as rodovias são mais fluidas que as ruas locais, a largura de banda determina a eficiência da transmissão de dados. Quando o NocoBase é carregado pela primeira vez, ele precisa baixar muitos recursos de frontend, e uma largura de banda insuficiente pode facilmente se tornar um gargalo.
+
+【Sugestões de Otimização】
+
+- Escolha uma largura de banda suficiente (50Mbps+ recomendado para muitos usuários), não economize neste recurso crítico.
+- Recomende a cobrança "pay-as-you-go" (pague pelo uso): muitos provedores de nuvem oferecem esse modelo flexível, permitindo que você tenha mais largura de banda nos horários de pico enquanto controla os custos no uso normal.
+
+### 3. Latência de Rede e Localização Geográfica do Servidor: Mais Perto Significa Mais Rápido
+
+【Dicas】
+
+Latência é o tempo de espera na transmissão de dados. Mesmo com largura de banda suficiente, se o servidor estiver muito longe dos usuários (por exemplo, usuários na China, mas servidor nos EUA), cada resposta de requisição pode ficar mais lenta devido à longa distância.
+
+【Sugestões de Otimização】
+
+- Procure implantar o NocoBase em regiões mais próximas da sua principal base de usuários.
+- Se seus usuários estiverem distribuídos globalmente, considere usar serviços de aceleração global (como Alibaba Cloud Global Accelerator ou AWS Global Accelerator) para otimizar o roteamento de rede e reduzir a latência.
+
+【Verificação】
+
+Use o comando ping para testar a latência a partir de diferentes regiões.
+Essa abordagem mostra a melhoria mais evidente, com a velocidade de acesso aumentando de 1 a 3 vezes ou mais, dependendo da região.
+Atravessando 12 fusos horários, 13 segundos:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+
+Atravessando 2 fusos horários, 8 segundos:
+![20250409131039](https://static-docs.nocobase.com/20250409131039.png)
+
+Mesma região, cerca de 3 segundos:
+![20250409130928](https://static-docs.nocobase.com/20250409130928.png)
+
+## II. Otimização da Arquitetura de Implantação
+
+### 4. Métodos de Implantação e Proxy do Servidor: Escolha a Arquitetura Mais Adequada
+
+【Pré-requisitos】
+
+- **Permissões do Servidor**: Você precisa de acesso root ou sudo para configurar serviços como o Nginx.
+- **Habilidades Básicas**: É necessário algum conhecimento básico de configuração de servidor, mas não se preocupe, exemplos de configuração específicos serão fornecidos.
+- **Acesso a Portas**: Garanta que seu firewall permita acesso às portas 80 (HTTP) e 443 (HTTPS).
+
+【Dicas】
+
+Quando os usuários acessam o NocoBase, as requisições vão diretamente para o seu servidor. Um método de implantação apropriado permite que seu servidor lide com as requisições de forma mais eficiente, fornecendo respostas mais rápidas.
+
+【Diferentes Soluções e Recomendações】
+
+**Iniciar o NocoBase sem usar um proxy reverso para recursos estáticos (não recomendado):**
+
+- Desvantagens: Este método é simples, mas tem desempenho ruim ao lidar com alta concorrência ou arquivos estáticos; adequado apenas para desenvolvimento e testes.
+- Recomendação: Evite este método, se possível.
+
+> Consulte a "[Documentação de Instalação](https://v2.docs.nocobase.com/get-started/quickstart)"
+
+Sem um proxy reverso, o carregamento da página inicial leva cerca de 6,1 segundos
+![20250409131357](https://static-docs.nocobase.com/20250409131357.png)
+
+**Usando Nginx / Caddy como proxy reverso (fortemente recomendado):**
+
+- Vantagens: Servidores de proxy reverso podem lidar com conexões concorrentes de forma eficiente, servir arquivos estáticos, implementar balanceamento de carga e tornar a configuração do HTTP/2 simples.
+- Recomendação: Em ambientes de produção, após a implantação da aplicação (implantação do código-fonte / create-nocobase-app / imagem Docker), use Nginx ou Caddy como proxy reverso.
+
+> Consulte a "[Documentação de Implantação](https://v2.docs.nocobase.com/get-started/deployment/production)"
+
+Com o proxy Nginx, o carregamento da página inicial leva cerca de 3-4 segundos
+![20250409131541](https://static-docs.nocobase.com/20250409131541.png)
+
+![20250416081410](https://static-docs.nocobase.com/20250416081410.png)
+
+**Usando implantação em cluster com balanceamento de carga (adequado para cenários de alta concorrência e alta disponibilidade):**
+
+- Vantagens: Ao implantar várias instâncias para lidar com as requisições, você pode melhorar significativamente a estabilidade geral do sistema e a capacidade de concorrência.
+- Para métodos de implantação específicos, consulte **[Modo Cluster](https://docs.nocobase.com/welcome/getting-started/deployment/cluster-mode)**
+
+### 5. Uso de CDN para Acelerar Recursos Estáticos
+
+【Pré-requisitos】
+
+- **Requisitos de Domínio**: Você precisa de um nome de domínio registrado e da capacidade de gerenciar suas configurações de DNS.
+- **Certificado SSL**: A maioria dos serviços de CDN exige a configuração de um certificado SSL (você pode usar certificados gratuitos da Let's Encrypt).
+- **Escolha do Serviço**: Escolha provedores de CDN apropriados com base nas regiões dos usuários (usuários na China continental precisam de CDNs com registro ICP).
+
+【Dicas】
+A CDN (Content Delivery Network) faz cache dos seus recursos estáticos em nós ao redor do mundo, permitindo que os usuários obtenham recursos do nó mais próximo, como tirar água de uma fonte próxima, reduzindo muito os atrasos de carregamento.
+
+Além disso, a maior vantagem das CDNs é a capacidade de **reduzir significativamente a carga e a pressão sobre a largura de banda do seu servidor de aplicação**. Quando muitos usuários acessam o NocoBase simultaneamente sem uma CDN, todas as requisições de recursos estáticos (JavaScript, CSS, imagens, etc.) atingem seu servidor diretamente, podendo causar saturação da largura de banda, degradação de desempenho ou até mesmo travamentos do servidor. Ao descarregar essas requisições para uma CDN, seu servidor pode focar no processamento da lógica de negócios principal, oferecendo aos usuários uma experiência mais estável.
+
+![20250416_0826](https://static-docs.nocobase.com/20250416_0826.png)
+
+【Sugestões de Otimização】• Configure seu servidor para distribuir requisições de recursos estáticos por meio de uma CDN.• Escolha provedores de CDN adequados com base na localização dos usuários:
+
+- Usuários globais: Cloudflare, Akamai, AWS CloudFront;
+- Usuários da China continental: Alibaba Cloud CDN, Tencent Cloud CDN, Baidu Cloud Acceleration. Exemplo de configuração:
+
+```nginx
+# Redireciona recursos estáticos para o domínio da CDN
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    rewrite ^(.*)$ https://your-cdn-domain.com$1 permanent;
+}
+```
+
+- Para projetos pequenos, o plano gratuito da Cloudflare pode fornecer uma boa aceleração via CDN:
+
+1. Registre uma conta na Cloudflare e adicione seu domínio;
+2. Modifique o DNS para apontar seu domínio para os servidores da Cloudflare;
+3. Defina níveis apropriados de cache no painel de controle.
+
+**Observação Especial**: Mesmo que todos os seus usuários estejam na mesma região, ainda é altamente recomendável usar uma CDN, pois ela reduz efetivamente a carga do servidor e melhora a estabilidade geral do sistema, especialmente em períodos de alto tráfego.
+
+## III. Otimização de Recursos Estáticos
+
+### 6. Configuração de Compressão e Cache no Servidor
+
+【Pré-requisitos】
+
+- **Recursos de CPU**: A compressão aumenta a carga da CPU do servidor, portanto seu servidor deve ter capacidade de processamento suficiente.
+- **Suporte a Módulos no Nginx**: A compressão Gzip geralmente é nativa, mas a compressão Brotli pode exigir a instalação de um módulo adicional.
+- **Permissões de Configuração**: Você precisa ter permissão para modificar as configurações do servidor.
+
+【Dicas】
+
+Ao ativar a compressão e implementar estratégias razoáveis de cache, você pode reduzir significativamente o volume de transferência de dados e requisições repetidas, essencialmente "emagrecendo" seus recursos para fazer com que a velocidade de carregamento decole.
+![20250416081719](https://static-docs.nocobase.com/20250416081719.png)
+
+【Sugestões de Otimização】
+
+- Solução mais simples: Use o serviço gratuito de CDN da Cloudflare, que ativa automaticamente a compressão Gzip.
+- Ative a compressão Gzip ou Brotli, que pode ser configurada no Nginx assim:
+
+```nginx
+# Ativar compressão Gzip
+gzip on;
+gzip_comp_level 6;
+gzip_min_length 1000;
+gzip_proxied any;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+# Se houver suporte à compressão Brotli, ative-a para uma compressão mais eficiente
+brotli on;
+brotli_comp_level 6;
+brotli_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+```
+
+- Defina cabeçalhos de cache apropriados para recursos estáticos a fim de reduzir carregamentos repetidos:
+
+```nginx
+location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000";
+    access_log off;
+}
+```
+
+### 7. Uso de SSL/TLS e Otimização de Desempenho
+
+【Pré-requisitos】
+
+- **Certificado SSL**: Você precisa de um certificado SSL válido (pode usar certificados gratuitos da Let's Encrypt).
+- **Permissões de Configuração do Servidor**: Você precisa ser capaz de modificar as configurações de SSL.
+- **Configuração de DNS**: Configure resolvedores DNS confiáveis para o OCSP Stapling.
+
+【Dicas】
+
+A segurança sempre vem em primeiro lugar, mas uma configuração inadequada de HTTPS pode adicionar algum atraso. Aqui estão algumas dicas de otimização para ajudá-lo a manter alto desempenho enquanto garante a segurança.
+
+【Sugestões de Otimização】
+
+- Use o TLS 1.3, que é atualmente a versão mais rápida do TLS. Configure no Nginx:
+
+```nginx
+ssl_protocols TLSv1.2 TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+```
+
+- Ative o OCSP Stapling para reduzir o tempo de verificação do certificado:
+
+```nginx
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+```
+
+- Reduza o tempo repetido de handshake através da reutilização de sessão:
+
+```nginx
+ssl_session_cache shared:SSL:10m;
+ssl_session_timeout 10m;
+```
+
+【Efeito da Otimização Entre Regiões】
+**Observação Especial**: O exemplo a seguir mostra os efeitos da otimização em um cenário entre regiões/atravessando 12 fusos horários, que é fundamentalmente diferente do cenário de acesso local (cerca de 3 segundos) mencionado anteriormente. A latência de rede causada pela distância geográfica é inevitável, mas a otimização ainda pode melhorar significativamente a velocidade:
+
+Com HTTP/2 + cache de CDN + compressão Gzip + compressão Brotli combinados:
+Antes da otimização (acesso entre regiões), 13 segundos:
+![20250416130618](https://static-docs.nocobase.com/20250416130618.png)
+Depois da otimização (acesso entre regiões), 8 segundos:
+![20250409173528](https://static-docs.nocobase.com/20250409173528.png)
+
+Este exemplo mostra que mesmo quando as localizações geográficas são distantes, medidas de otimização apropriadas ainda podem reduzir o tempo de carregamento em cerca de 40%, melhorando muito a experiência do usuário.
+
+## IV. Monitoramento e Solução de Problemas
+
+### 8. Monitoramento de Desempenho e Análise Básica
+
+【Pré-requisitos】
+
+- **Acessibilidade**: Seu site deve estar publicamente acessível para usar a maioria das ferramentas de teste online.
+- **Habilidades Básicas**: Você precisa entender o significado básico das métricas de desempenho, embora explicaremos cada indicador-chave.
+
+【Dicas】
+
+É difícil otimizar com precisão sem saber onde estão os gargalos. Recomendamos usar algumas ferramentas gratuitas para monitorar o desempenho do site e ajudar a identificar problemas.
+
+【Sugestões de Otimização】
+
+**Use as seguintes ferramentas gratuitas para verificar o desempenho do site:**
+
+- [Google PageSpeed Insights](https://pagespeed.web.dev/)
+- [WebPageTest](https://www.webpagetest.org/)
+- [Pingdom](https://tools.pingdom.com/)
+
+**Concentre-se nestas métricas-chave:**
+
+- Tempo de carregamento da página
+- Tempo de resposta do servidor
+- Tempo de resolução de DNS
+- Tempo de handshake SSL
+
+**Soluções para problemas comuns:**
+
+- Resolução de DNS lenta? Considere trocar o serviço de DNS ou ativar a pré-resolução de DNS.
+- Handshake SSL lento? Otimize a configuração SSL, ative a reutilização de sessão.
+- Resposta lenta do servidor? Verifique os recursos do servidor, faça upgrade se necessário.
+- Carregamento lento de recursos estáticos? Tente implementar uma CDN e ajustar as estratégias de cache.
+
+## Checklist Rápido de Otimização de Implantação
+
+O checklist a seguir pode ajudá-lo a verificar e otimizar rapidamente sua implantação do NocoBase:
+
+1. **Verificação da Versão HTTP**
+
+   - [ ]  HTTPS ativado (pré-requisito para HTTP/2)
+   - [ ]  HTTP/2 ativado
+   - [ ]  Considere oferecer suporte ao HTTP/3 se as condições permitirem
+2. **Avaliação de Largura de Banda**
+
+   - [ ]  Largura de banda suficiente no servidor (recomendado pelo menos 10Mbps, 50Mbps+ preferencial)
+   - [ ]  Considere o modelo de cobrança pay-as-you-go em vez de largura de banda fixa
+3. **Escolha da Localização do Servidor**
+
+   - [ ]  A localização do servidor deve estar próxima das regiões dos usuários
+   - [ ]  Considere usar serviços de aceleração global para usuários no mundo todo
+4. **Arquitetura de Implantação**
+
+   - [ ]  Use Nginx/Caddy como proxy reverso para separar recursos estáticos da API
+   - [ ]  Se necessário, adote implantação multi-instância e tecnologia de balanceamento de carga
+5. **Implementação de CDN**
+
+   - [ ]  Acelere a distribuição de recursos estáticos por meio de CDN
+   - [ ]  Configure estratégias de cache apropriadas
+   - [ ]  Garanta que a CDN suporte HTTP/2 ou HTTP/3
+6. **Compressão e Cache**
+
+   - [ ]  Ative a compressão Gzip ou Brotli
+   - [ ]  Defina cabeçalhos de cache de navegador apropriados
+7. **Otimização SSL/TLS**
+
+   - [ ]  Use TLS 1.3 para melhorar a velocidade do handshake
+   - [ ]  Ative o OCSP Stapling
+   - [ ]  Configure a reutilização de sessão SSL
+8. **Monitoramento de Desempenho**
+
+   - [ ]  Use regularmente ferramentas de teste de desempenho para avaliar seu site
+   - [ ]  Monitore as métricas-chave (tempos de carregamento, resposta, resolução, handshake)
+   - [ ]  Otimize com base nos problemas identificados
+
+## Perguntas Frequentes
+
+【Q】Meu servidor está implantado em uma região diferente da dos meus usuários, o que causa acesso lento. O que devo fazer?
+
+【A】A melhor solução é escolher um servidor em nuvem na mesma região dos seus principais usuários. Se isso não for possível, você também pode:
+
+1. Usar um serviço de CDN para acelerar os recursos estáticos;
+2. Utilizar serviços de aceleração global para otimizar o roteamento de rede;
+3. Ativar o máximo possível de medidas de compressão e otimização de cache.
+
+【Q】Por que meu NocoBase é lento no primeiro carregamento, mas rápido depois?
+
+【A】O primeiro carregamento lento é normal, pois é necessário baixar muitos recursos inicialmente.
+
+Usando nosso Demo oficial como exemplo, o primeiro carregamento normalmente leva cerca de 3 segundos. Os acessos diários subsequentes ao digitar a URL levam cerca de 1-2 segundos, enquanto a navegação entre páginas dentro da aplicação é muito rápida, em aproximadamente 50-300 milissegundos, com latência muito baixa.
+
+![20250416130719](https://static-docs.nocobase.com/20250416130719.png)
+
+Para tempos de carregamento excessivamente longos, ainda há espaço para otimização:
+
+1. Garanta que o HTTP/2 esteja ativado;
+2. Implemente aceleração via CDN;
+3. Ative a compressão Gzip/Brotli;
+4. Verifique se a largura de banda do servidor é suficiente.
+
+【Q】Atualmente uso uma hospedagem compartilhada e não posso modificar a configuração do Nginx. O que devo fazer?
+
+【A】Nesse caso, embora as opções de otimização sejam menores, ainda recomendamos:
+
+1. Tentar usar serviços de CDN (como o Cloudflare);
+2. Otimizar os parâmetros que podem ser ajustados dentro da aplicação;
+3. Se as condições permitirem, considere migrar para um VPS que suporte mais configurações personalizadas.
+
+---
+
+Por meio dessas estratégias simples, porém práticas, de otimização de implantação, você pode melhorar significativamente a velocidade de acesso do NocoBase e proporcionar aos usuários uma experiência mais fluida. Muitas medidas de otimização podem ser concluídas em poucas horas, não exigem alterações de código e mostram resultados facilmente.
+
+Operações diárias:
+![2504161639operatio_user2](https://static-docs.nocobase.com/2504161639operatio_user2.gif)
+![2504161639operation3](https://static-docs.nocobase.com/2504161639operation3.gif)

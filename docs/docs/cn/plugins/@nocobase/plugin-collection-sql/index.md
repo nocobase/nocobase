@@ -1,8 +1,8 @@
 ---
-displayName: "数据表: SQL"
-packageName: '@nocobase/plugin-collection-sql'
 title: "数据表: SQL"
 keywords: "数据表: SQL,插件,NocoBase"
+displayName: "数据表: SQL"
+packageName: '@nocobase/plugin-collection-sql'
 description: |
   提供 SQL 数据表模板
 isFree: true

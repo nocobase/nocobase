@@ -1,32 +1,58 @@
 ---
-title: "插件客户端开发概述"
-description: "NocoBase 客户端插件开发：Plugin 类、路由、区块、Resource、DataSourceManager、i18n、样式主题、测试。"
-keywords: "客户端插件,Client Plugin,路由,区块,Resource,DataSourceManager,NocoBase"
+title: "客户端插件开发概述"
+description: "NocoBase 客户端插件开发概述：知识主线 Plugin → Router → Component → Context → FlowEngine，快速索引表帮助定位章节。"
+keywords: "客户端插件,Plugin,Router,Component,Context,FlowEngine,FlowModel,NocoBase"
 ---
 
 # 概述
 
-NocoBase 客户端插件开发提供了多种功能和能力，帮助开发者定制和扩展 NocoBase 的前端功能。以下是 NocoBase 客户端插件开发的主要能力和相关章节：
+NocoBase 的客户端插件可以做很多事：注册新页面、写自定义组件、调用后端 API、添加区块和字段，甚至扩展操作按钮。所有这些能力都通过一个统一的插件入口来组织。
 
-| 功能模块                  | 说明                                           | 相关章节                                      |
-|---------------------------|------------------------------------------------|-----------------------------------------------|
-| **插件类**               | 创建和管理客户端插件，扩展前端功能             | [plugin.md](plugin.md)                       |
-| **路由管理**               | 自定义前端路由，实现页面导航和跳转             | [router.md](router.md)                       |
-| **资源操作**               | 管理前端资源，处理数据获取和操作               | [resource.md](resource.md)                   |
-| **请求处理**               | 自定义 HTTP 请求，处理 API 调用和数据传输      | [request.md](request.md)                     |
-| **上下文管理**             | 获取和使用应用上下文，访问全局状态和服务       | [context.md](context.md)                     |
-| **权限控制**               | 实现前端权限控制，控制页面和功能的访问权限     | [acl.md](acl.md)                             |
-| **数据源管理**             | 管理和使用多数据源，实现数据源的切换和访问     | [data-source-manager.md](data-source-manager.md) |
-| **样式与主题**             | 自定义样式和主题，实现界面定制和美化           | [styles-themes.md](styles-themes.md)          |
-| **多语言支持**             | 集成多语言支持，实现国际化和本地化             | [i18n.md](i18n.md)                            |
-| **日志输出**               | 自定义日志格式和输出方式，提升调试和监控能力   | [logger.md](logger.md)                        |
-| **编写测试用例**           | 编写和运行测试用例，保证插件稳定性和功能准确性 | [test.md](test.md)                            |
+如果你已经有 React 开发经验，上手会很快——大部分场景就是写普通的 React 组件，再借助 NocoBase 提供的上下文能力（比如发请求、国际化）来和 NocoBase 对接。只有当你需要让组件出现在 NocoBase 的可视化配置界面里时，才需要了解 [FlowEngine](./flow-engine/index.md)。
 
-UI 扩展
+:::warning 注意
 
-| 功能模块      | 说明                                                                                   | 相关章节                                      |
-|---------------|----------------------------------------------------------------------------------------|-----------------------------------------------|
-| **UI 配置化**  | 使用流引擎和流模型，实现组件属性的动态化配置与编排，支持复杂页面和交互的可视化定制   | [flow-engine](../../flow-engine/index.md) 和 [flow-model](../../flow-engine/flow-model.md) |
-| **区块扩展**  | 自定义页面区块，打造可复用的 UI 模块与布局                                         | [blocks](../../ui-development-block/index.md) |
-| **字段扩展**  | 自定义字段类型，实现复杂数据的展示与编辑  | [fields](../../ui-development-field/index.md) |
-| **操作扩展**  | 自定义操作类型，实现复杂逻辑与交互处理  | [actions](../../ui-development-action/index.md) |
+NocoBase 正在从 `client`（v1）向 `client-v2` 迁移，目前 `client-v2` 还在开发中。本文档介绍的内容供尝鲜体验，不建议直接上生产环境。新开发的插件请使用 `src/client-v2/` 目录和 `@nocobase/client-v2` 的 API。
+
+:::
+
+## 学习路径
+
+建议按以下顺序了解客户端插件开发，从简单到复杂：
+
+```
+Plugin（入口）→ Router（页面）→ Component（组件）→ Context（上下文）→ FlowEngine（UI 扩展）
+```
+
+其中：
+
+1. **[Plugin](./plugin)**：插件的入口类，在 `load()` 等生命周期里注册路由、模型等资源。
+2. **[Router](./router)**：通过 `router.add()` 注册页面路由，通过 `pluginSettingsManager` 注册插件设置页。
+3. **[Component](./component/index.md)**：路由挂载的就是 React 组件。默认用 React + Antd 写就行，跟普通前端开发没有区别。
+4. **[Context](./ctx/index.md)**：插件里可以通过 `this.context` 拿到上下文，组件里通过 `useFlowContext()` 拿到上下文，就能用 NocoBase 提供的能力——发请求（`ctx.api`）、国际化（`ctx.t`）、日志（`ctx.logger`）等。
+5. **[FlowEngine](./flow-engine/index.md)**：如果你的组件需要出现在「添加区块 / 字段 / 操作」菜单里、支持用户可视化配置，就需要用 FlowModel 来包装。
+
+前四步覆盖大多数插件场景。只有需要深度集成 NocoBase UI 配置体系时，才需要走到第五步。不确定该用哪种方式，可以看 [Component vs FlowModel](./component-vs-flow-model)。
+
+## 快速索引
+
+| 我想要……                             | 去哪里看                                                |
+| ------------------------------------ | ------------------------------------------------------- |
+| 了解客户端插件基本结构               | [Plugin 插件](./plugin)                                 |
+| 添加一个独立页面                     | [Router 路由](./router)                                 |
+| 添加一个插件设置页                   | [Router 路由](./router)                                 |
+| 写一个普通 React 组件                | [Component 组件开发](./component/index.md)                       |
+| 调用后端 API、使用 NocoBase 内置能力 | [Context → 常用能力](./ctx/common-capabilities)         |
+| 自定义组件样式                       | [Styles & Themes 样式与主题](./component/styles-themes) |
+| 添加一个新的区块                     | [FlowEngine → 区块扩展](./flow-engine/block)            |
+| 添加一个新的字段组件                 | [FlowEngine → 字段扩展](./flow-engine/field)            |
+| 添加一个新的操作按钮                 | [FlowEngine → 操作扩展](./flow-engine/action)           |
+| 不确定用 Component 还是 FlowModel    | [Component vs FlowModel](./component-vs-flow-model)     |
+| 看一个完整的插件是怎么做的           | [插件实战示例](./examples/index.md)                              |
+
+## 相关链接
+
+- [编写第一个插件](../write-your-first-plugin) — 从零创建一个可运行的插件
+- [服务端开发概述](../server) — 客户端插件通常需要配合服务端
+- [FlowEngine 完整文档](../../flow-engine/index.md) — FlowModel、Flow、Context 的完整参考
+- [项目目录结构](../project-structure) — 插件文件放在哪里

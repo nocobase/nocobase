@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # Integração de Webhook do Fluxo de Trabalho
 
 Através de gatilhos Webhook, o NocoBase pode receber chamadas HTTP de sistemas de terceiros e acionar automaticamente **fluxos de trabalho**, permitindo uma integração perfeita com sistemas externos.
@@ -55,7 +51,7 @@ Quando dados são alterados em sistemas externos (como CRM, ERP), Webhooks envia
 
 ### 1. Instalar o **plugin**
 
-Localize e instale o **[Fluxo de Trabalho: Gatilho Webhook](/plugins/@nocobase/plugin-workflow-webhook/)** **plugin** no gerenciador de **plugins**.
+Localize e instale o **[Fluxo de Trabalho: Gatilho Webhook](../../plugins/@nocobase/plugin-workflow-webhook/index.md)** **plugin** no gerenciador de **plugins**.
 
 > Observação: Este é um **plugin** comercial que requer compra ou assinatura separada.
 
@@ -246,7 +242,7 @@ if (branch === 'main') {
 
 ## Recursos Relacionados
 
-- [Documentação do **Plugin** de **Fluxo de Trabalho**](/plugins/@nocobase/plugin-workflow/)
+- [Documentação do **Plugin** de **Fluxo de Trabalho**](../../plugins/@nocobase/plugin-workflow/index.md)
 - [**Fluxo de Trabalho**: Gatilho Webhook](/workflow/triggers/webhook)
-- [**Fluxo de Trabalho**: Nó de Requisição HTTP](/integration/workflow-http-request/)
-- [Autenticação por Chaves de API](/integration/api-keys/)
+- [**Fluxo de Trabalho**: Nó de Requisição HTTP](../workflow-http-request/index.md)
+- [Autenticação por Chaves de API](../api-keys/index.md)

@@ -1,10 +1,6 @@
 ---
 pkg: '@nocobase/plugin-verification-totp-authenticator'
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 
 # Verifizierung: TOTP-Authentifikator
 

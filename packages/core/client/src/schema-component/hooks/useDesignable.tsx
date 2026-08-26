@@ -25,7 +25,7 @@ import { addAppVersion } from './addAppVersion';
 
 // @ts-ignore
 import clientPkg from '../../../package.json';
-import { useMobileLayout } from '../../route-switch/antd/admin-layout';
+import { useMobileLayout } from '@nocobase/client-v2';
 
 interface CreateDesignableProps {
   current: Schema;

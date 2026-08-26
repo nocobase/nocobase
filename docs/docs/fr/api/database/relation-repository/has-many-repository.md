@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # HasManyRepository
 
 `HasManyRepository` est un dépôt de relation utilisé pour gérer les relations `HasMany`.

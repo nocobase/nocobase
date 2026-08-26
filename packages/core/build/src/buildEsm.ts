@@ -9,7 +9,6 @@
 
 import path from 'path';
 import { PkgLog, UserConfig, getEnvDefine } from './utils';
-import { build as viteBuild } from 'vite';
 import fg from 'fast-glob';
 import { rspack } from '@rspack/core';
 
@@ -190,29 +189,4 @@ function build(
     plugins: [new rspack.DefinePlugin(getEnvDefine())],
     stats: 'errors-warnings',
   });
-
-  // return viteBuild(
-  //   userConfig.modifyViteConfig({
-  //     mode: process.env.NODE_ENV || 'production',
-  //     define: getEnvDefine(),
-  //     build: {
-  //       minify: false,
-  //       outDir,
-  //       cssCodeSplit: true,
-  //       emptyOutDir: true,
-  //       sourcemap,
-  //       lib: {
-  //         entry,
-  //         formats: ['es'],
-  //         fileName: 'index',
-  //       },
-  //       target: ['node16'],
-  //       rollupOptions: {
-  //         cache: true,
-  //         treeshake: true,
-  //         external,
-  //       },
-  //     },
-  //   }),
-  // );
 }

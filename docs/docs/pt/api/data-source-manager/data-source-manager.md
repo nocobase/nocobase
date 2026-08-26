@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 # DataSourceManager
 
 `DataSourceManager` é a classe de gerenciamento para múltiplas instâncias de `fonte de dados`.

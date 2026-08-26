@@ -1,7 +1,3 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
 ## Problemas Comuns e Soluções
 
 ### 1. Colunas e células vazias em modelos Excel desaparecem na renderização

@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
-
 
 
 # テンプレート印刷
@@ -26,7 +22,7 @@ pkg: "@nocobase/plugin-action-template-print"
 
 ### プラグインのインストール
 
-[商用プラグインのインストールとアップグレード](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide) を参照してください。
+[商用プラグインのインストールとアップグレード](https://www.nocobase.com/ja/blog/nocobase-commercial-license-activation-guide) を参照してください。
 
 ### LibreOffice のインストール (オプション)
 

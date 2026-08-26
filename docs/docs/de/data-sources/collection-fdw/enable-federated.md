@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # So aktivieren Sie die Federated Engine in MySQL
 
 Die MySQL-Datenbank aktiviert das Federated-Modul standardmäßig nicht. Sie müssen die `my.cnf`-Konfiguration anpassen. Wenn Sie die Docker-Version verwenden, können Sie diese Erweiterung über Volumes handhaben:

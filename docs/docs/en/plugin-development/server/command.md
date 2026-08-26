@@ -1,6 +1,12 @@
+---
+title: "Command"
+description: "NocoBase server-side custom commands: app.command, commander, CLI extensions, yarn nocobase subcommands."
+keywords: "Command,app.command,commander,CLI,yarn nocobase,NocoBase"
+---
+
 # Command
 
-In NocoBase, commands are used to execute operations related to applications or plugins in the command line, such as running system tasks, executing migration or sync operations, initializing configuration, or interacting with running application instances. Developers can define custom commands for plugins and register them through the `app` object, executing them in CLI as `nocobase <command>`.
+In NocoBase, commands are used to execute operations related to applications or plugins in the command line -- such as running system tasks, executing migrations, initializing configuration, or interacting with running application instances. You can define custom commands for plugins and register them through the `app` object, executing them in CLI as `nocobase <command>`.
 
 ## Command Types
 
@@ -13,9 +19,9 @@ In NocoBase, command registration is divided into two types:
 
 ## Dynamic Commands
 
-Use `app.command()` to define plugin commands. Commands can only be executed after the plugin is enabled. Command files should be placed in `src/server/commands/*.ts` in the plugin directory.
+Use `app.command()` to define plugin commands. Commands can only be executed after the plugin is enabled. Command files are typically placed in `src/server/commands/*.ts` in the plugin directory.
 
-Example
+### Example
 
 ```ts
 import { Application } from '@nocobase/server';
@@ -33,14 +39,14 @@ export default function (app: Application) {
 }
 ```
 
-Description
+Where:
 
-- `app.command('echo')`: Defines a command named `echo`.  
-- `.option('-v, --version')`: Adds an option to the command.  
-- `.action()`: Defines command execution logic.  
-- `app.version.get()`: Gets the current application version.
+- `app.command('echo')` -- Defines a command named `echo`.
+- `.option('-v, --version')` -- Adds an option to the command.
+- `.action()` -- Defines command execution logic.
+- `app.version.get()` -- Gets the current application version.
 
-Execute Command
+### Execute Command
 
 ```bash
 nocobase echo
@@ -49,9 +55,9 @@ nocobase echo -v
 
 ## Static Commands
 
-Use `Application.registerStaticCommand()` to register. Static commands can be executed without enabling plugins, suitable for installation, initialization, migration, or debugging tasks. Register in the plugin class's `staticImport()` method.
+Use `Application.registerStaticCommand()` to register. Static commands can be executed without enabling plugins, suitable for installation, initialization, migration, or debugging tasks. They are typically registered in the plugin class's `staticImport()` method.
 
-Example
+### Example
 
 ```ts
 import { Application, Plugin } from '@nocobase/server';
@@ -73,17 +79,17 @@ export default class PluginHelloServer extends Plugin {
 }
 ```
 
-Execute Command
+### Execute Command
 
 ```bash
 nocobase echo
 nocobase echo --version
 ```
 
-Description
+Where:
 
-- `Application.registerStaticCommand()` registers commands before the application is instantiated.  
-- Static commands are usually used to execute global tasks unrelated to application or plugin state.  
+- `Application.registerStaticCommand()` registers commands before the application is instantiated.
+- Static commands are usually used to execute global tasks unrelated to application or plugin state.
 
 ## Command API
 
@@ -95,25 +101,22 @@ Command objects provide three optional helper methods to control command executi
 | `auth()`   | Verify database configuration is correct   | `app.command('seed').auth().action()` |
 | `preload()` | Preload application configuration (execute `app.load()`) | `app.command('sync').preload().action()` |
 
-Configuration Description
+### Configuration Description
 
-- **`ipc()`**  
-  By default, commands execute in a new application instance.  
-  After enabling `ipc()`, commands interact with the currently running application instance through inter-process communication (IPC), suitable for real-time operation commands (such as refreshing cache, sending notifications).
+- **`ipc()`**
+  Generally speaking, commands execute in a new application instance. After enabling `ipc()`, commands interact with the currently running application instance through inter-process communication (IPC), suitable for real-time operation commands (such as refreshing cache, sending notifications).
 
-- **`auth()`**  
-  Check whether database configuration is available before command execution.  
-  If database configuration is incorrect or connection fails, the command will not continue. Commonly used for tasks involving database writes or reads.
+- **`auth()`**
+  Check whether database configuration is available before command execution. If database configuration is incorrect or connection fails, the command will not continue. Commonly used for tasks involving database writes or reads.
 
-- **`preload()`**  
-  Preload application configuration before executing the command, equivalent to executing `app.load()`.  
-  Suitable for commands that depend on configuration or plugin context.
+- **`preload()`**
+  Preload application configuration before executing the command, equivalent to executing `app.load()`. Suitable for commands that depend on configuration or plugin context.
 
-For more API methods, see [AppCommand](/api/server/app-command).
+For more API methods, see [AppCommand API](../../api/server/app-command.md).
 
 ## Common Examples
 
-Initialize Default Data
+### Initialize Default Data
 
 ```ts
 app
@@ -127,7 +130,7 @@ app
   });
 ```
 
-Reload Cache for Running Instance (IPC Mode)
+### Reload Cache for Running Instance (IPC Mode)
 
 ```ts
 app
@@ -138,7 +141,7 @@ app
   });
 ```
 
-Static Registration of Installation Command
+### Static Registration of Installation Command
 
 ```ts
 Application.registerStaticCommand((app) => {
@@ -149,4 +152,13 @@ Application.registerStaticCommand((app) => {
     });
 });
 ```
+
+## Related Links
+
+- [Plugin](./plugin.md) -- Plugin lifecycle and core API
+- [Server Development Overview](./index.md) -- Overview of all server-side modules
+- [Test](./test.md) -- How to write server-side plugin tests
+- [Migration](./migration.md) -- Data migration and upgrade scripts
+- [Plugin Development Overview](../index.md) -- Overall plugin development introduction
+- [AppCommand API](../../api/server/app-command.md) -- Complete API reference for AppCommand
 

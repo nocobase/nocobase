@@ -1,0 +1,127 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan hệ thống quản lý nhiệm vụ"
+  },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Chương 1: Làm quen với NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-designing-system",
+    "label": "Chương 2: Thiết kế hệ thống quản lý nhiệm vụ"
+  },
+  {
+    "type": "file",
+    "name": "03-task-data",
+    "label": "Chương 3: Quản lý dữ liệu nhiệm vụ"
+  },
+  {
+    "type": "file",
+    "name": "04-plugins",
+    "label": "Chương 4: Plugin nhiệm vụ và bình luận"
+  },
+  {
+    "type": "file",
+    "name": "05-tabs-dynamic-blocks",
+    "label": "Chương 5: Tab và Block động"
+  },
+  {
+    "type": "file",
+    "name": "06-user-permissions",
+    "label": "Chương 6: Người dùng và Quyền"
+  },
+  {
+    "type": "file",
+    "name": "07-workflow",
+    "label": "Chương 7: Workflow"
+  },
+  {
+    "type": "file",
+    "name": "08-project-overview",
+    "label": "Tổng quan nền tảng quản lý dự án"
+  },
+  {
+    "type": "file",
+    "name": "09-knowledge-base",
+    "label": "Chương 8: Cơ sở tri thức - Bảng cây"
+  },
+  {
+    "type": "file",
+    "name": "10-dashboard-charts",
+    "label": "Chương 9: Bảng nhiệm vụ và biểu đồ"
+  },
+  {
+    "type": "file",
+    "name": "11-dashboard-filters",
+    "label": "Chương 10: Bộ lọc và điều kiện trên bảng"
+  },
+  {
+    "type": "file",
+    "name": "12-subtasks-workhours",
+    "label": "Chương 11: Nhiệm vụ con và tính giờ làm việc"
+  },
+  {
+    "type": "file",
+    "name": "13-meeting-rooms",
+    "label": "Chương 12: Đặt phòng họp và Workflow"
+  },
+  {
+    "type": "file",
+    "name": "14-user-review",
+    "label": "Triển khai duyệt đăng ký người dùng"
+  },
+  {
+    "type": "file",
+    "name": "15-crm-lead-conversion",
+    "label": "Triển khai chuyển đổi khách hàng tiềm năng CRM"
+  },
+  {
+    "type": "file",
+    "name": "16-markdown-tips",
+    "label": "Mẹo dùng Block Markdown"
+  },
+  {
+    "type": "file",
+    "name": "17-crm-overview",
+    "label": "Tổng quan tính năng CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "18-lead-followup",
+    "label": "Theo dõi khách hàng tiềm năng và quản lý trạng thái"
+  },
+  {
+    "type": "file",
+    "name": "19-crm-sales-cloud",
+    "label": "Hệ thống CRM Sales Cloud"
+  },
+  {
+    "type": "file",
+    "name": "20-api-keys",
+    "label": "Lấy dữ liệu bằng API Keys"
+  },
+  {
+    "type": "file",
+    "name": "21-markdown-variables",
+    "label": "Cách dùng biến template Markdown"
+  },
+  {
+    "type": "file",
+    "name": "22-deploy-faster",
+    "label": "Cách triển khai NocoBase nhanh hơn"
+  },
+  {
+    "type": "file",
+    "name": "23-crm-pipeline",
+    "label": "Trực quan hóa pipeline bán hàng CRM"
+  },
+  {
+    "type": "file",
+    "name": "24-crm-demo-deploy",
+    "label": "Hướng dẫn triển khai CRM Demo"
+  }
+]

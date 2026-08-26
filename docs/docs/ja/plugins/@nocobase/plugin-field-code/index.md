@@ -1,4 +1,6 @@
 ---
+title: "Collection field: Code"
+keywords: "Collection fields"
 displayName: "Collection field: Code"
 packageName: '@nocobase/plugin-field-code'
 supportedVersions:

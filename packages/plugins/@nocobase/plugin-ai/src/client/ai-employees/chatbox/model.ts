@@ -9,6 +9,7 @@
 
 import { AIConfigRepository, LLMServiceItem } from '../../repositories/AIConfigRepository';
 import { ModelRef } from './stores/chat-box';
+import type { AIEmployee } from '../types';
 
 export const MODEL_PREFERENCE_STORAGE_KEY = 'ai_model_preference_';
 
@@ -26,48 +27,96 @@ export const isValidModel = (value: ModelRef | null | undefined, allModels: Mode
 export const isSameModel = (a?: ModelRef | null, b?: ModelRef | null) =>
   a?.llmService === b?.llmService && a?.model === b?.model;
 
-export const resolveModel = (api: any, username: string, allModels: ModelRef[], currentOverride?: ModelRef | null) => {
-  if (isValidModel(currentOverride, allModels)) {
+export const getAIEmployeeConfiguredModels = (aiEmployee: AIEmployee | null | undefined): ModelRef[] => {
+  const modelSettings = aiEmployee?.modelSettings;
+  if (!modelSettings?.enabled) {
+    return [];
+  }
+  const models = Array.isArray(modelSettings.models) ? modelSettings.models : [];
+  const configuredModels = models.reduce<ModelRef[]>((result, model) => {
+    if (model.llmService && model.model) {
+      result.push({
+        llmService: model.llmService,
+        model: model.model,
+      });
+    }
+    return result;
+  }, []);
+  if (configuredModels.length) {
+    return configuredModels;
+  }
+  if (modelSettings.llmService && modelSettings.model) {
+    return [
+      {
+        llmService: modelSettings.llmService,
+        model: modelSettings.model,
+      },
+    ];
+  }
+  return [];
+};
+
+export const getAIEmployeeModels = (aiEmployee: AIEmployee | null | undefined, allModels: ModelRef[]) => {
+  if (!aiEmployee?.modelSettings?.enabled) {
+    return allModels;
+  }
+  return getAIEmployeeConfiguredModels(aiEmployee).filter((model) => isValidModel(model, allModels));
+};
+
+export const resolveModel = (
+  api: any,
+  aiEmployee: AIEmployee | null | undefined,
+  allModels: ModelRef[],
+  currentOverride?: ModelRef | null,
+) => {
+  const scopedModels = getAIEmployeeModels(aiEmployee, allModels);
+  if (!scopedModels.length) {
+    return null;
+  }
+  if (isValidModel(currentOverride, scopedModels)) {
     return currentOverride;
+  }
+  if (aiEmployee?.modelSettings?.enabled) {
+    return scopedModels[0] || null;
   }
   let cachedId: string | null = null;
   try {
-    cachedId = api?.storage.getItem(MODEL_PREFERENCE_STORAGE_KEY + username);
+    cachedId = api?.storage.getItem(MODEL_PREFERENCE_STORAGE_KEY + aiEmployee?.username);
   } catch (err) {
     console.log(err);
   }
   if (cachedId) {
     if (cachedId.includes(':')) {
       const [cachedService, cachedModelId] = cachedId.split(':');
-      const cached = allModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
+      const cached = scopedModels.find((item) => item.llmService === cachedService && item.model === cachedModelId);
       if (cached) {
         return cached;
       }
     } else {
-      const cached = allModels.find((item) => item.model === cachedId);
+      const cached = scopedModels.find((item) => item.model === cachedId);
       if (cached) {
         return cached;
       }
     }
   }
-  return allModels[0] || null;
+  return scopedModels[0] || null;
 };
 
 export const ensureModel = async ({
   api,
   aiConfigRepository,
-  username,
+  aiEmployee,
   currentOverride,
   onResolved,
 }: {
   api: any;
   aiConfigRepository: AIConfigRepository;
-  username: string;
+  aiEmployee?: AIEmployee | null;
   currentOverride?: ModelRef | null;
   onResolved?: (override: ModelRef | null) => void;
 }): Promise<ModelRef | null> => {
   const allModels = getAllModels(await aiConfigRepository.getLLMServices());
-  const resolvedOverride = resolveModel(api, username, allModels, currentOverride);
+  const resolvedOverride = resolveModel(api, aiEmployee, allModels, currentOverride);
   if (!isSameModel(currentOverride, resolvedOverride)) {
     onResolved?.(resolvedOverride);
   }

@@ -1,19 +1,15 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
-:::
 
-
-# データソース - KingbaseES データベース
+# データソース - 人大金倉 (KingbaseES)
 
 ## はじめに
 
-KingbaseES データベースは、データソースとして、プライマリデータベースとしても外部データベースとしても使用できます。
+人大金倉 (KingbaseES) データベースをデータソースとして使用します。プライマリデータベースとしても外部データベースとしても使用できます。
 
 :::warning
-現在、pg モードで動作する KingbaseES データベースのみをサポートしています。
+現在、pg モードで動作する 人大金倉 (KingbaseES) データベースのみをサポートしています。
 :::
 
 ## インストール
@@ -45,7 +41,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -76,7 +72,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -121,5 +117,5 @@ yarn nocobase upgrade
 
 ## 利用ガイド
 
-- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/) をご参照ください。
+- プライマリデータベース：[メインデータソース](/data-sources/data-source-main/index.md) をご参照ください。
 - 外部データベース：[データソース / 外部データベース](/data-sources/data-source-manager/external-database) をご参照ください。

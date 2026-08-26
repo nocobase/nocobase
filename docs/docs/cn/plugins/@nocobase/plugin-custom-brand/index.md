@@ -1,8 +1,8 @@
 ---
-displayName: "自定义品牌"
-packageName: '@nocobase/plugin-custom-brand'
 title: "自定义品牌"
 keywords: "自定义品牌,插件,NocoBase"
+displayName: "自定义品牌"
+packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x

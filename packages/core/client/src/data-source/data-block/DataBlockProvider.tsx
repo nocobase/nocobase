@@ -13,7 +13,7 @@ import { ACLCollectionProvider } from '../../acl/ACLProvider';
 import { UseRequestOptions, UseRequestService } from '../../api-client';
 import { DataBlockCollector, FilterParam } from '../../filter-provider/FilterProvider';
 import { withDynamicSchemaProps } from '../../hoc/withDynamicSchemaProps';
-import { Designable, useDesignable } from '../../schema-component';
+import { Designable, useDesignable } from '../../schema-component/hooks/useDesignable';
 import {
   AssociationProvider,
   CollectionManagerProvider,

@@ -1,4 +1,6 @@
 ---
+title: "AI: Knowledge base"
+keywords: "AI"
 displayName: "AI: Knowledge base"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

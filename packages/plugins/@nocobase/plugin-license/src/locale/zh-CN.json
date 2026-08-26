@@ -33,5 +33,15 @@
   "Please go to the": "请前往",
   "License Settings": "授权设置",
   "page to enter the license key.": "页面填写授权密钥。",
-  "License information": "授权信息"
+  "License information": "授权信息",
+  "Status": "状态",
+  "Active": "有效",
+  "Invalid": "无效",
+  "Current domain": "当前域名",
+  "Service connection": "服务连接",
+  "Plugin service login": "插件服务登录",
+  "Connected": "已连接",
+  "Disconnected": "未连接",
+  "Submit": "提交",
+  "Network error. Please try again.": "网络错误，请重试。"
 }

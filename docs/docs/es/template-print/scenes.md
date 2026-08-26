@@ -1,8 +1,4 @@
 
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Uso de la función «Impresión de plantillas» para generar un ejemplo de Contrato de Suministro y Compra
 

@@ -18,22 +18,57 @@ import path from 'path';
 import { build as tsupBuild } from 'tsup';
 import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
 import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
+import { deleteServerFiles } from './deleteServerFiles';
 import { getPackageJson, PkgLog, UserConfig } from './utils';
 import {
   buildCheck,
   checkRequire,
   getExcludePackages,
   getIncludePackages,
-  getPackagesFromFiles,
+  getPluginBrowserSourcePackages,
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { obfuscate } from './utils/obfuscationResult';
+import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
-const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
-const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
+const serverGlobalFiles: string[] = ['src/**', '!src/client/**', '!src/client-v2/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
+
+type PluginClientLane = 'client' | 'client-v2';
+
+const pluginClientLaneConfig: Record<
+  PluginClientLane,
+  {
+    distDir: string;
+    entryDir: string;
+    rootEntryFile: string;
+    externalSubpaths: string[];
+  }
+> = {
+  client: {
+    distDir: 'client',
+    entryDir: 'client',
+    rootEntryFile: 'client.js',
+    externalSubpaths: ['client', 'client-v2'],
+  },
+  'client-v2': {
+    distDir: 'client-v2',
+    entryDir: 'client-v2',
+    rootEntryFile: 'client-v2.js',
+    externalSubpaths: ['client', 'client-v2'],
+  },
+};
+
+function getClientGlobalFiles(lane: PluginClientLane) {
+  const entryDir = pluginClientLaneConfig[lane].entryDir;
+  const excludedClientDirs = Object.values(pluginClientLaneConfig)
+    .map((item) => item.entryDir)
+    .filter((dir) => dir !== entryDir)
+    .map((dir) => `!src/${dir}/**`);
+  return ['src/**', '!src/server/**', ...excludedClientDirs, ...globExcludeFiles];
+}
 
 const external = [
   // nocobase
@@ -133,8 +168,6 @@ const external = [
   'ahooks',
   'lodash',
   'china-division',
-  'file-saver',
-
   // langChain
   'langchain',
   '@langchain/core',
@@ -146,10 +179,9 @@ const external = [
   '@langchain/google-genai',
   '@langchain/deepseek',
   '@langchain/ollama',
+  '@langchain/mcp-adapters',
 ];
-const pluginPrefix = (
-  process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
-).split(',');
+const pluginPrefix = (process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-').split(',');
 
 const target_dir = 'dist';
 
@@ -251,25 +283,6 @@ async function copyAiDocSources(cwd: string, log: PkgLog) {
   }
 }
 
-export function deleteServerFiles(cwd: string, log: PkgLog) {
-  log('delete server files');
-  const files = fg.globSync(['*'], {
-    cwd: path.join(cwd, target_dir),
-    absolute: true,
-    deep: 1,
-    onlyFiles: true,
-  });
-  const dirs = fg.globSync(['*', '!client', '!node_modules'], {
-    cwd: path.join(cwd, target_dir),
-    absolute: true,
-    deep: 1,
-    onlyDirectories: true,
-  });
-  [...files, ...dirs].forEach((item) => {
-    fs.removeSync(item);
-  });
-}
-
 export function writeExternalPackageVersion(cwd: string, log: PkgLog) {
   log('write external version');
   const sourceFiles = fg
@@ -297,7 +310,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
   const includePackages = getIncludePackages(sourcePackages, external, pluginPrefix);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
-  let tips = [];
+  const tips = [];
   if (includePackages.length) {
     tips.push(
       `These packages ${chalk.yellow(includePackages.join(', '))} will be ${chalk.italic(
@@ -331,6 +344,7 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     }
 
     // copy package
+    await fs.remove(outputDir);
     await fs.copy(depDir, outputDir, { errorOnExist: false });
 
     // delete files
@@ -359,10 +373,12 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
     await ncc(dep, nccConfig).then(
       ({ code, assets }: { code: string; assets: Record<string, { source: string; permissions: number }> }) => {
         // emit dist file
+        fs.ensureDirSync(path.dirname(mainFile));
         fs.writeFileSync(mainFile, code, 'utf-8');
 
         // emit assets
         Object.entries(assets).forEach(([name, item]) => {
+          fs.ensureDirSync(path.dirname(path.join(outputDir, name)));
           fs.writeFileSync(path.join(outputDir, name), item.source, {
             encoding: 'utf-8',
             mode: item.permissions,
@@ -414,6 +430,7 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -470,6 +487,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
     }),
   );
@@ -486,7 +504,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   const externalOptions = {
     external: [],
     noExternal: [],
-    onSuccess: async () => { },
+    onSuccess: async () => {},
     esbuildPlugins: [],
   };
   // other plugins build to a bundle just include plugin-commercial
@@ -524,6 +542,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
       loader: {
         ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
         '.json': 'copy',
+        '.txt': 'copy',
       },
 
       ...externalOptions,
@@ -539,10 +558,33 @@ export async function buildPluginClient(
   userConfig: any,
   sourcemap: boolean,
   log: PkgLog,
+  lane: PluginClientLane = 'client',
   isCommercial = false,
 ) {
-  log('build plugin client');
+  const laneConfig = pluginClientLaneConfig[lane];
+  const entryDir = path.join(cwd, 'src', laneConfig.entryDir);
+  const rootEntryFile = path.join(cwd, laneConfig.rootEntryFile);
+
+  if (!fs.existsSync(rootEntryFile)) {
+    log('skip plugin %s build, root entry not found', lane);
+    return false;
+  }
+
+  if (!fs.existsSync(entryDir)) {
+    log('Missing %s. Please create it.', chalk.red(`src/${laneConfig.entryDir}`));
+    process.exit(-1);
+  }
+
+  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: entryDir });
+  if (!entry[0]) {
+    log('Missing %s entry file.', chalk.red(`src/${laneConfig.entryDir}/index.{ts,tsx,js,jsx}`));
+    process.exit(-1);
+    return false;
+  }
+
+  log('build plugin %s', lane);
   const packageJson = getPackageJson(cwd);
+  const clientGlobalFiles = getClientGlobalFiles(lane);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
   if (isCommercial) {
     const commercialFiles = fg.globSync(clientGlobalFiles, {
@@ -551,29 +593,34 @@ export async function buildPluginClient(
     });
     clientFiles.push(...commercialFiles);
   }
-  const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
-  const sourcePackages = getPackagesFromFiles(clientFileSource);
+  const sourceCwds = [cwd];
+  if (isCommercial) {
+    sourceCwds.push(path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL));
+  }
+  const sourcePackages = getPluginBrowserSourcePackages(sourceCwds, globExcludeFiles);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
+  const browserExternalPackages = excludePackages.filter((packageName) => packageName !== 'file-saver');
 
   checkRequire(clientFiles, log);
-  buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
-  const outDir = path.join(cwd, target_dir, 'client');
+  buildCheck({ cwd, packageJson, entry: lane, files: clientFiles, log });
+  const outDir = path.join(cwd, target_dir, laneConfig.distDir);
 
-  const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
+  const globals = browserExternalPackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
-      prev[`${curr}/client`] = `${curr}/client`;
+      laneConfig.externalSubpaths.forEach((subpath) => {
+        prev[`${curr}/${subpath}`] = `${curr}/${subpath}`;
+      });
     }
     prev[curr] = curr;
     return prev;
   }, {});
 
-  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
   const compiler = rspack({
     mode: 'production',
     // mode: "development",
     context: cwd,
-    entry: './src/client/' + entry[0],
+    entry: `./src/${laneConfig.entryDir}/` + entry[0],
     target: ['web', 'es5'],
     output: {
       path: outDir,
@@ -582,7 +629,7 @@ export async function buildPluginClient(
       publicPath: `auto`, // will be generated by the custom plugin
       clean: true,
       library: {
-        name: packageJson.name,
+        name: lane === 'client-v2' ? `${packageJson.name}/client-v2` : packageJson.name,
         type: 'umd',
         umdNamedDefine: true,
       },
@@ -651,18 +698,6 @@ export async function buildPluginClient(
           issuer: /\.[jt]sx?$/,
           resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
-        },
-        {
-          test: /\.(?:js|mjs|cjs|ts|tsx)$/,
-          exclude: /node_modules/,
-          use: {
-            loader: 'babel-loader',
-            options: {
-              targets: 'defaults',
-              // presets: [['@babel/preset-env']],
-              plugins: ['react-imported-component/babel'],
-            },
-          },
         },
         {
           test: /\.jsx$/,
@@ -743,36 +778,15 @@ export async function buildPluginClient(
         'process.env.NODE_ENV': JSON.stringify('production'),
         'process.env.NODE_DEBUG': false,
       }),
-      {
-        apply(compiler) {
-          compiler.hooks.compilation.tap('CustomPublicPathPlugin', (compilation) => {
-            compilation.hooks.runtimeModule.tap('CustomPublicPathPlugin', (module) => {
-              if (module.name === 'auto_public_path') {
-                // 处理所有可能的情况
-                module.source = {
-                  source: `
-__webpack_require__.p = (function() {
-  var publicPath = window['__webpack_public_path__'] || '/';
-  // 确保路径以 / 结尾
-  if (!publicPath.endsWith('/')) {
-    publicPath += '/';
-  }
-  return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`,
-                };
-              }
-            });
-          });
-        },
-      },
+      new AutoInjectPublicPathPlugin(packageJson.name, laneConfig.distDir),
       process.env.BUILD_ANALYZE === 'true' &&
-      new RsdoctorRspackPlugin({
-        // plugin options
-        // supports: {
-        //   generateTileGraph: true,
-        // },
-        mode: 'brief',
-      }),
+        new RsdoctorRspackPlugin({
+          // plugin options
+          // supports: {
+          //   generateTileGraph: true,
+          // },
+          mode: 'brief',
+        }),
     ].filter(Boolean),
     node: {
       global: true,
@@ -800,45 +814,6 @@ __webpack_require__.p = (function() {
       resolve(null);
     });
   });
-  // await viteBuild(userConfig.modifyViteConfig({
-  //   mode: 'production',
-  //   define: {
-  //     'process.env.NODE_ENV': JSON.stringify('production'),
-  //   },
-  //   logLevel: 'warn',
-  //   build: {
-  //     minify: true,
-  //     outDir,
-  //     cssCodeSplit: false,
-  //     emptyOutDir: true,
-  //     sourcemap,
-  //     lib: {
-  //       entry,
-  //       formats: ['umd'],
-  //       name: packageJson.name,
-  //       fileName: () => outputFileName,
-  //     },
-  //     target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-  //     rollupOptions: {
-  //       cache: true,
-  //       external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
-  //       output: {
-  //         exports: 'named',
-  //         globals: {
-  //           react: 'React',
-  //           'react/jsx-runtime': 'jsxRuntime',
-  //           ...globals,
-  //         },
-  //       },
-  //     },
-  //   },
-  //   plugins: [
-  //     react(),
-  //     cssInjectedByJsPlugin({ styleId: packageJson.name }),
-  //   ],
-  // }));
-
-  // checkFileSize(outDir, log);
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
@@ -846,10 +821,12 @@ export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap
     cwd.includes('/pro-plugins/') &&
     fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))
   ) {
-    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client', true);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client-v2', true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
-    await buildPluginClient(cwd, userConfig, sourcemap, log);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client');
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client-v2');
     await buildPluginServer(cwd, userConfig, sourcemap, log);
   }
   writeExternalPackageVersion(cwd, log);

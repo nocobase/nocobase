@@ -9,13 +9,14 @@
 
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useRecord } from '../../../record-provider';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+
 export const getVariableComponentWithScope = (Com, data = []) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
@@ -34,20 +35,56 @@ export const getVariableComponentWithScope = (Com, data = []) => {
 
 const useEvnVariable = () => {
   const environmentVariables = useGlobalVariable('$env');
-  if (environmentVariables) {
-    const { children } = environmentVariables;
-    return {
+  const envSignature = useMemo(() => {
+    if (!environmentVariables) {
+      return null;
+    }
+    return JSON.stringify(
+      (environmentVariables.children || []).map((child) => ({
+        name: child?.name,
+        type: child?.type,
+        title: child?.title,
+      })),
+    );
+  }, [environmentVariables]);
+  const stableEnvironmentVariablesRef = useRef<any>(null);
+  const stableEnvironmentVariablesSignatureRef = useRef<string | null>(null);
+
+  if (!environmentVariables) {
+    stableEnvironmentVariablesRef.current = null;
+    stableEnvironmentVariablesSignatureRef.current = null;
+    return null;
+  }
+
+  if (stableEnvironmentVariablesSignatureRef.current !== envSignature) {
+    const { children = [] } = environmentVariables;
+    stableEnvironmentVariablesRef.current = {
       ...environmentVariables,
       children: children.filter((v) => v.type === 'default'),
     };
+    stableEnvironmentVariablesSignatureRef.current = envSignature;
   }
-  return null;
+
+  return stableEnvironmentVariablesRef.current;
+};
+
+export const FlowSettingsVariableTextArea = (props) => {
+  const environmentVariables = useEvnVariable();
+  const Com = useMemo(
+    () => getVariableComponentWithScope(Variable.TextArea, environmentVariables ? [environmentVariables] : []),
+    [environmentVariables],
+  );
+
+  return <Com {...props} />;
 };
 
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
   const environmentVariables = useEvnVariable();
-  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
+  const Com = useMemo(
+    () => getVariableComponentWithScope(Variable.TextArea, environmentVariables ? [environmentVariables] : []),
+    [environmentVariables],
+  );
 
   const urlSchema = useMemo(() => {
     return {

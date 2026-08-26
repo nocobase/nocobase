@@ -8,15 +8,15 @@ keywords: "ACL,权限控制,registerSnippet,allow,deny,权限片段,角色权限
 
 ACL（Access Control List）用于控制资源操作权限。你可以将权限赋予角色，也可以跳过角色限制直接约束权限。ACL 系统提供了灵活的权限管理机制，支持权限片段、中间件、条件判断等多种方式。
 
-:::tip 注意
+:::tip 提示
 
-ACL 对象归属于数据源（`dataSource.acl`），主数据源的 ACL 可以通过 `app.acl` 快捷访问。其他数据源的 ACL 使用方式详见 [数据源管理](./data-source-manager.md) 章节。
+ACL 对象归属于数据源（`dataSource.acl`），主数据源的 ACL 可以通过 `app.acl` 快捷访问。其他数据源的 ACL 使用方式详见 [DataSourceManager 数据源管理](./data-source-manager.md)。
 
 :::
 
 ## 注册权限片段（Snippet）
 
-权限片段（Snippet）可以将常用的权限组合注册为可复用的权限单元。角色绑定 snippet 后即可获得对应的一组权限，这样可以减少重复配置，提高权限管理的效率。
+权限片段（Snippet）可以把常用的权限组合注册为可复用的权限单元。角色绑定 Snippet 后就能获得对应的一组权限，减少重复配置。
 
 ```ts
 acl.registerSnippet({
@@ -27,7 +27,7 @@ acl.registerSnippet({
 
 ## 跳过角色约束的权限（allow）
 
-`acl.allow()` 用于允许某些操作绕过角色约束，适用于公开 API、需要动态判断的权限场景，或者需要基于请求上下文进行权限判断的情况。
+`acl.allow()` 用于让某些操作绕过角色约束，适用于公开 API、需要动态判断权限的场景，或者需要基于请求上下文做权限判断的情况。
 
 ```ts
 // 公开访问，无需登录
@@ -50,7 +50,7 @@ acl.allow('orders', ['create', 'update'], (ctx) => {
 
 ## 注册权限中间件（use）
 
-`acl.use()` 用于注册自定义权限中间件，可以在权限检查流程中插入自定义逻辑。通常和 `ctx.permission` 一起搭配使用，用于自定义权限规则。适用于需要实现非常规权限控制的场景，比如公开表单需要自定义密码验证、基于请求参数的动态权限判断等。
+`acl.use()` 用于注册自定义权限中间件，可以在权限检查流程中插入自定义逻辑。通常来说和 `ctx.permission` 一起搭配使用，用于自定义权限规则。适用于需要实现非常规权限控制的场景，比如公开表单需要自定义密码验证、基于请求参数的动态权限判断等。
 
 **典型应用场景：**
 
@@ -89,7 +89,7 @@ acl.use(async (ctx, next) => {
 
 ## 为特定操作添加固定数据约束（addFixedParams）
 
-`addFixedParams` 可以为某些资源的操作添加固定的数据范围（filter）约束，这些约束会绕过角色限制直接应用，通常用于保护系统关键数据。
+`addFixedParams` 可以为某些资源的操作添加固定的数据范围（filter）约束，这些约束会绕过角色限制直接生效，通常来说用于保护系统关键数据。
 
 ```ts
 acl.addFixedParams('roles', 'destroy', () => {
@@ -107,11 +107,15 @@ acl.addFixedParams('roles', 'destroy', () => {
 // 即使用户拥有删除角色的权限，也无法删除 root、admin、member 这些系统角色
 ```
 
-> **提示：** `addFixedParams` 可用于防止敏感数据被误删或修改，比如系统内置角色、管理员账户等。这些约束会与角色权限叠加生效，确保即使拥有权限也无法操作被保护的数据。
+:::tip 提示
+
+`addFixedParams` 可以用来防止敏感数据被误删或修改，比如系统内置角色、管理员账户等。这些约束会跟角色权限叠加生效，确保即使拥有权限也无法操作被保护的数据。
+
+:::
 
 ## 判断权限（can）
 
-`acl.can()` 用于判断某个角色是否有权限执行指定操作，返回权限结果对象或 `null`。常用于在业务逻辑中动态判断权限，比如在中间件或操作的 Handler 中根据角色决定是否允许执行某些操作。
+`acl.can()` 用于判断某个角色是否有权限执行指定操作，返回权限结果对象或 `null`。通常来说用在中间件或操作的 Handler 中，根据角色动态判断是否允许执行某些操作。
 
 ```ts
 const result = acl.can({
@@ -129,7 +133,11 @@ if (result) {
 }
 ```
 
-> **提示：** 如果传入多个角色，会依次检查每个角色，返回角色的并集结果。
+:::tip 提示
+
+如果传入多个角色，会依次检查每个角色，返回角色的并集结果。
+
+:::
 
 **类型定义：**
 
@@ -151,7 +159,7 @@ interface CanResult {
 
 ## 注册可配置操作（setAvailableAction）
 
-如果你希望自定义操作可以在界面上配置权限（比如在角色管理页面中显示），需要使用 `setAvailableAction` 进行注册。注册后的操作会出现在权限配置界面中，管理员可以在界面上配置不同角色的操作权限。
+如果你希望自定义操作可以在界面上配置权限（比如在「角色管理」页面中显示），需要用 `setAvailableAction` 注册。注册后的操作会出现在权限配置界面中，管理员可以在界面上为不同角色配置操作权限。
 
 ```ts
 acl.setAvailableAction('importXlsx', {
@@ -169,4 +177,12 @@ acl.setAvailableAction('importXlsx', {
   - `'existing-data'`：修改已有数据的操作（如更新、删除等）
 - **onNewRecord**：是否在新记录创建时生效，仅对 `'new-data'` 类型有效
 
-注册后，该操作会出现在权限配置界面中，管理员可以在角色管理页面中配置该操作的权限。
+注册后，该操作会出现在权限配置界面中，管理员可以在「角色管理」页面中配置该操作的权限。
+
+## 相关链接
+
+- [ResourceManager 资源管理](./resource-manager.md) — 注册自定义接口与资源操作
+- [Plugin 插件](./plugin.md) — 在插件生命周期中注册权限
+- [Context 请求上下文](./context.md) — 在请求中获取当前角色和权限信息
+- [Middleware 中间件](./middleware.md) — ACL 中间件的注册与使用
+- [DataSourceManager 数据源管理](./data-source-manager.md) — 各数据源各自拥有独立的 ACL 实例

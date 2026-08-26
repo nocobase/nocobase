@@ -13,6 +13,7 @@ import { Application } from '../application';
 import { Plugin } from '../plugin';
 import longJson from './fixtures/long-json';
 import { getBodyLimit } from '../helper';
+import { MockServer, mockServer } from '@nocobase/test';
 
 class MyPlugin extends Plugin {
   async load() {}
@@ -27,12 +28,7 @@ describe('application', () => {
   let agent;
 
   beforeEach(() => {
-    app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-        logging: false,
-      },
+    app = mockServer({
       resourcer: {
         prefix: '/api',
       },
@@ -157,12 +153,7 @@ describe('body limit test', () => {
     const bodyLimit = getBodyLimit();
     expect(bodyLimit).toBe('1kb');
 
-    const app = new Application({
-      database: {
-        dialect: 'sqlite',
-        storage: ':memory:',
-        logging: false,
-      },
+    const app = mockServer({
       resourcer: {
         prefix: '/api',
       },

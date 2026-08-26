@@ -1,0 +1,37 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Guía de uso"
+  },
+  {
+    "type": "file",
+    "name": "guide-overview",
+    "label": "Introducción al sistema y paneles"
+  },
+  {
+    "type": "file",
+    "name": "guide-leads",
+    "label": "Gestión de Leads"
+  },
+  {
+    "type": "file",
+    "name": "guide-opportunities",
+    "label": "Gestión de Oportunidades"
+  },
+  {
+    "type": "file",
+    "name": "guide-products-orders",
+    "label": "Productos, cotizaciones y Pedidos"
+  },
+  {
+    "type": "file",
+    "name": "guide-customers-emails",
+    "label": "Clientes, contactos y correos"
+  },
+  {
+    "type": "file",
+    "name": "guide-roles",
+    "label": "Roles y permisos"
+  }
+]

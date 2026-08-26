@@ -8,7 +8,6 @@
  */
 
 import { Model, Transaction } from '@nocobase/database';
-import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
 import _ from 'lodash';
@@ -179,11 +178,7 @@ export class PluginMobileServer extends Plugin {
   }
 
   registerLocalizationSource() {
-    const localizationPlugin = this.app.pm.get('localization') as PluginLocalizationServer;
-    if (!localizationPlugin) {
-      return;
-    }
-    localizationPlugin.sourceManager.registerSource('mobile-routes', {
+    this.app.localeManager.registerSource('mobile-routes', {
       title: tval('Mobile routes'),
       sync: async (ctx) => {
         const mobileRoutes = await ctx.db.getRepository('mobileRoutes').find({

@@ -109,7 +109,7 @@ export const ChartRendererProvider: React.FC<ChartRendererProps> = (props) => {
         !manual && hasFilter(config, filterValues) ? appendFilter(config, filterValues) : parsedQuery;
       try {
         const res = await api.request({
-          url: 'charts:query',
+          url: 'charts:queryData',
           method: 'POST',
           data: {
             uid: schema?.['x-uid'],

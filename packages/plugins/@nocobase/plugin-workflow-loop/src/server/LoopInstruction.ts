@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import evaluators from '@nocobase/evaluators';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel, logicCalculate } from '@nocobase/plugin-workflow';
 import { EXIT } from '../constants';
@@ -20,7 +21,7 @@ export type LoopInstructionConfig = {
   target: any;
   condition?:
     | {
-        checkpoint?: number;
+        checkpoint?: 0 | 1;
         continueOnFalse?: boolean;
         calculation?: any;
         expression?: string;
@@ -53,6 +54,21 @@ function calculateCondition(node: FlowNodeModel, processor: Processor) {
 }
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    target: Joi.alternatives().try(Joi.number(), Joi.array(), Joi.string()),
+    condition: Joi.alternatives()
+      .try(
+        Joi.object({
+          checkpoint: Joi.number().valid(0, 1).default(0),
+          continueOnFalse: Joi.boolean(),
+          calculation: Joi.object(),
+        }),
+        Joi.boolean().valid(false),
+      )
+      .default(false),
+    exit: Joi.number().valid(EXIT.RETURN, EXIT.BREAK, EXIT.CONTINUE),
+  });
+
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const [branch] = processor.getBranches(node);
     const target = processor.getParsedValue(node.config.target, node.id);

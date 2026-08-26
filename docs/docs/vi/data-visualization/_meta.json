@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/data-visualization/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bắt đầu nhanh",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Giới thiệu tính năng",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Truy vấn dữ liệu",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tùy chọn biểu đồ",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Xem trước và lưu",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sử dụng biến ngữ cảnh",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bộ lọc trang và liên kết",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nâng cao",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Truy vấn dữ liệu bằng SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tùy chỉnh cấu hình biểu đồ",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tùy chỉnh sự kiện tương tác",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Câu hỏi thường gặp",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Thực hành tốt nhất",
+    "link": "/data-visualization/best-practices"
+  }
+]

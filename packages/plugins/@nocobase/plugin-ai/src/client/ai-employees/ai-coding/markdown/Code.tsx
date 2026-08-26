@@ -12,7 +12,8 @@ import { Card, Typography, Button, App, Space, Tooltip, Divider } from 'antd';
 import { CloseOutlined, CodeOutlined, CopyOutlined, ExpandOutlined } from '@ant-design/icons';
 import { lazy } from '@nocobase/client';
 import { FlowModelContext, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
-import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useChat } from '../../chatbox/hooks/useChat';
+import { useChatConversationsStore } from '../../chatbox/stores/chat-conversations';
 import { useT } from '../../../locale';
 
 const { CodeHighlight } = lazy(() => import('../../common/CodeHighlight'), 'CodeHighlight');
@@ -29,6 +30,8 @@ export const CodeInternal: React.FC<{
 export const Code = (props: any) => {
   const ctx = useFlowContext<FlowModelContext>();
   const t = useT();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -48,8 +51,8 @@ export const Code = (props: any) => {
     isFullText = pattern.test(message.content);
   }
 
-  const editorRefMap = useChatMessagesStore.use.editorRef();
-  const currentEditorRefUid = useChatMessagesStore.use.currentEditorRefUid();
+  const editorRefMap = chat.use.editorRef();
+  const currentEditorRefUid = chat.use.currentEditorRefUid();
   const editorRef = editorRefMap[currentEditorRefUid];
 
   return match ? (

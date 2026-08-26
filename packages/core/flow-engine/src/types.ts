@@ -145,6 +145,8 @@ export enum ActionScene {
   ACTION_LINKAGE_RULES,
   /** 动态事件流可用 */
   DYNAMIC_EVENT_FLOW,
+  /** 菜单项联动规则可用 */
+  MENU_LINKAGE_RULES,
 }
 
 /**
@@ -388,6 +390,65 @@ export interface CreateModelOptions {
   delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
+
+/**
+ * FlowModel loader result.
+ * Supports returning the model constructor directly, a default export, or a module object containing the named export.
+ */
+export type FlowModelLoaderResult =
+  | ModelConstructor
+  | {
+      default?: ModelConstructor;
+      [key: string]: unknown;
+    }
+  | Record<string, unknown>;
+
+/**
+ * FlowModel loader function.
+ */
+export type FlowModelLoader = () => Promise<FlowModelLoaderResult>;
+
+/**
+ * FlowModel loader entry (normalized internal form).
+ */
+export interface FlowModelLoaderEntry {
+  loader: FlowModelLoader;
+  extends?: string[];
+  // meta?: Partial<FlowModelMeta>;
+  // scenes?: string[];
+}
+
+/**
+ * FlowModel loader input (user-facing form for registerModelLoaders).
+ * The `extends` field accepts flexible formats that will be normalized to `string[]` at registration time.
+ */
+export interface FlowModelLoaderInput {
+  loader: FlowModelLoader;
+  extends?: string | ModelConstructor | (string | ModelConstructor)[];
+}
+
+/**
+ * FlowModel loader entry map (normalized internal form).
+ */
+export type FlowModelLoaderMap = Record<string, FlowModelLoaderEntry>;
+
+/**
+ * FlowModel loader input map (user-facing form for registerModelLoaders).
+ */
+export type FlowModelLoaderInputMap = Record<string, FlowModelLoaderInput>;
+
+/**
+ * Batch ensure result.
+ */
+export interface EnsureBatchResult {
+  requested: string[];
+  loaded: string[];
+  failed: Array<{
+    name: string;
+    error?: unknown;
+  }>;
+}
+
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;

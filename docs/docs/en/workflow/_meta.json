@@ -6,7 +6,7 @@
   {
     "type": "custom-link",
     "label": "Overview",
-    "link": "/workflow/index"
+    "link": "/workflow/"
   },
   {
     "type": "custom-link",
@@ -16,11 +16,12 @@
   {
     "type": "custom-link",
     "label": "Triggers",
+    "collapsed": true,
     "items": [
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/workflow/triggers/index"
+        "link": "/workflow/triggers/"
       },
       {
         "type": "custom-link",
@@ -62,11 +63,12 @@
   {
     "type": "custom-link",
     "label": "Nodes",
+    "collapsed": true,
     "items": [
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/workflow/nodes/index"
+        "link": "/workflow/nodes/"
       },
       {
         "type": "custom-link",
@@ -90,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Multi-conditions",
+            "label": "Multi-condition Branch",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -273,7 +275,7 @@
       {
         "type": "custom-link",
         "label": "Overview",
-        "link": "/workflow/development/index"
+        "link": "/workflow/development/"
       },
       {
         "type": "custom-link",

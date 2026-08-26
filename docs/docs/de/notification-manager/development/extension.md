@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # Erweiterung von Benachrichtigungskanal-Typen
 
 NocoBase ermöglicht es Ihnen, Benachrichtigungskanal-Typen bei Bedarf zu erweitern, zum Beispiel für SMS-Benachrichtigungen oder App-Push-Benachrichtigungen.

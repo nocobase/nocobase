@@ -1,4 +1,6 @@
 ---
+title: "HTTP request encryption"
+keywords: "Security"
 displayName: "HTTP request encryption"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

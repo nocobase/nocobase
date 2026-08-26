@@ -1,4 +1,6 @@
 ---
+title: "Redis queue adapter"
+keywords: "Architecture"
 displayName: "Redis queue adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

@@ -15,7 +15,7 @@ Pour les types de fichiers qui ne prennent pas en charge l'aperçu natif, vous p
 
 NocoBase fournit actuellement les plugins d'aperçu de fichiers suivants :
 
-* Plugin d'aperçu des fichiers Office
+* [Plugin d'aperçu des fichiers Office](../file-preview/ms-office.md)
 
 ## Aperçu PDF avec stockage externe
 

@@ -15,10 +15,10 @@ import antdEnUs from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
 import React, { useEffect } from 'react';
 import { ThemeConfig } from '../../../types';
-import { ThemeEditor, enUS, zhCN } from '../../antd-token-previewer';
+import { ThemeEditor, enUS, zhCN } from '../../../client-v2/antd-token-previewer';
 import { useUpdateThemeSettings } from '../../hooks/useUpdateThemeSettings';
 import { useTranslation } from '../../locale';
-import { changeAlgorithmFromFunctionToString } from '../../utils/changeAlgorithmFromFunctionToString';
+import { changeAlgorithmFromFunctionToString } from '../../../client-v2/utils/changeAlgorithmFromFunctionToString';
 import { useThemeEditorContext } from '../ThemeEditorProvider';
 import { useThemeListContext } from '../ThemeListProvider';
 

@@ -8,14 +8,13 @@
  */
 
 import React from 'react';
-import { SchemaSettingsItem, useNavigateNoUpdate, useAPIClient, useCurrentUserContext } from '@nocobase/client';
+import { SchemaSettingsItem, useNavigateNoUpdate, useAPIClient } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const SignOut = () => {
   const { t } = useTranslation();
   const navigate = useNavigateNoUpdate();
   const api = useAPIClient();
-  const ctx = useCurrentUserContext();
   return (
     <SchemaSettingsItem
       title="signOut"
@@ -25,9 +24,8 @@ export const SignOut = () => {
         if (data?.data?.redirect) {
           window.location.href = data.data.redirect;
         } else {
-          navigate(`/signin?redirect=${encodeURIComponent('')}`);
+          navigate(`/signin?redirect=${encodeURIComponent('')}`, { replace: true });
         }
-        ctx.mutate(null);
       }}
     >
       {t('Sign out')}

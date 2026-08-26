@@ -29,6 +29,7 @@
   "Notification Management": "通知管理",
   "Notification manager": "通知管理",
   "Notification type": "通知タイプ",
+  "Notification type {{type}} is not registered.": "通知タイプ {{type}} は登録されていません。",
   "Query users": "ユーザーを検索",
   "Randomly generated and can not be modified. Support letters, numbers and underscores, must start with an letter.": "ランダム生成され変更不可。英字、数字、アンダースコアをサポートし、英字で始まる必要があります。",
   "Reason": "理由",

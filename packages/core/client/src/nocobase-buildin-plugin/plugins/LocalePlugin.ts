@@ -33,6 +33,7 @@ export class LocalePlugin extends Plugin {
       this.app.use(App, { component: false });
       if (data?.data?.lang) {
         api.auth.setLocale(data?.data?.lang);
+        this.app.setDocumentLanguage(data?.data?.lang);
         this.app.i18n.changeLanguage(data?.data?.lang);
       }
       Object.keys(data?.data?.resources || {}).forEach((key) => {

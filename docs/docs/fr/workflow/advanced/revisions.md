@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Gestion des versions
 
 Une fois qu'un flux de travail configuré a été déclenché au moins une fois, si vous souhaitez modifier sa configuration ou ses nœuds, vous devrez créer une nouvelle version avant d'apporter des changements. Cette approche garantit que l'historique d'exécution des flux de travail précédemment déclenchés ne sera pas affecté par les modifications futures.
@@ -12,7 +8,7 @@ Sur la page de configuration du flux de travail, vous pouvez consulter les versi
 
 Dans le menu « Plus d'actions » (« ... ») situé à sa droite, vous pouvez choisir de copier la version actuellement affichée vers une nouvelle version :
 
-![Copier le flux de travail vers une nouvelle version](https://static-docs.nocobase.com/2805798e6caca2af00483390a744256.png)
+![Copier le flux de travail vers une nouvelle version](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
 
 Après avoir copié vers une nouvelle version, cliquez sur le bouton bascule « Activer »/« Désactiver » pour passer la version correspondante à l'état activé. La nouvelle version du flux de travail prendra alors effet.
 

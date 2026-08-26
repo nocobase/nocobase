@@ -44,6 +44,7 @@ and provide some testing suggestions.
 - [ ] All changes have been self-tested and work as expected
 - [ ] Test cases are updated/provided or not needed
 - [ ] Doc is updated/provided or not needed
+- [ ] If documentation was changed, the corresponding files in all other languages have been updated to keep them in sync (or this change does not affect docs)
 - [ ] Component demo is updated/provided or not needed
 - [ ] Changelog is provided or not needed
 - [ ] Request a code review if it is necessary

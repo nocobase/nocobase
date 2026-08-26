@@ -21,6 +21,11 @@
   },
   {
     "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/template-print/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "FAQ",
     "link": "/template-print/faq"
   },

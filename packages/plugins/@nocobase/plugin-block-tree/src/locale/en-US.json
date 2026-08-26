@@ -1,7 +1,15 @@
 {
+  "Connect data blocks": "Connect data blocks",
+  "Configured": "Configured",
   "Expand all": "Expand all",
+  "Foreign key": "Foreign key",
+  "No supported data blocks": "No supported data blocks",
   "Root records per page": "Root records per page",
   "Search": "Search",
   "Searchable": "Searchable",
-  "Tree": "Tree"
+  "Select field": "Select field",
+  "Tree settings": "Tree settings",
+  "Tree": "Tree",
+  "Unconnected": "Unconnected",
+  "Include child nodes when filtering": "Include child nodes when filtering"
 }

@@ -1,0 +1,125 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Pengantar",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Apa itu FlowEngine?",
+        "link": "/flow-engine/what-is-flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hubungan FlowEngine dengan Plugin",
+        "link": "/flow-engine/flow-engine-and-plugins"
+      },
+      {
+        "type": "custom-link",
+        "label": "Memulai Cepat",
+        "link": "/flow-engine/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Roadmap Pembelajaran",
+        "link": "/flow-engine/learning-roadmap"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Panduan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Mendaftarkan FlowModel",
+        "link": "/flow-engine/register-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Membuat FlowModel",
+        "link": "/flow-engine/create-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Merender FlowModel",
+        "link": "/flow-engine/flow-model-renderer"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event Flow & Konfigurasi FlowModel",
+        "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "AddSubModelButton",
+        "link": "/flow-engine/add-sub-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Persistensi FlowModel",
+        "link": "/flow-engine/flow-model-repository"
+      },
+      {
+        "type": "custom-link",
+        "label": "Siklus Hidup FlowModel",
+        "link": "/flow-engine/flow-model-lifecycle"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sistem Konteks FlowModel",
+        "link": "/flow-engine/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mekanisme Reaktif: Observable",
+        "link": "/flow-engine/observable"
+      },
+      {
+        "type": "custom-link",
+        "label": "Component vs FlowModel",
+        "link": "/plugin-development/client/component-vs-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Extension Point Plugin RunJS",
+        "link": "/flow-engine/runjs-extension-points"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Schema",
+        "link": "/flow-engine/ui-schema"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Definitions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ModelDefinition",
+        "link": "/flow-engine/definitions/model-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowDefinition",
+        "link": "/flow-engine/definitions/flow-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "EventDefinition",
+        "link": "/flow-engine/definitions/event-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "ActionDefinition",
+        "link": "/flow-engine/definitions/action-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "StepDefinition",
+        "link": "/flow-engine/definitions/step-definition"
+      }
+    ]
+  }
+]

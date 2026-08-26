@@ -11,15 +11,18 @@ import React from 'react';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { Space, Spin, Tag } from 'antd';
-import { useChatMessagesStore } from './stores/chat-messages';
+import { useChat } from './hooks/useChat';
 import { SearchOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
 import { Typography } from 'antd';
+import { useChatConversationsStore } from './stores/chat-conversations';
 const { Paragraph } = Typography;
 
 export const AIThinking: React.FC<{ nickname: string }> = ({ nickname }) => {
   const t = useT();
-  const webSearching = useChatMessagesStore.use.webSearching();
+  const currentConversation = useChatConversationsStore.use.currentConversation();
+  const chat = useChat(currentConversation);
+  const webSearching = chat.use.webSearching();
   const { token } = useToken();
   return (
     <Space direction="vertical">

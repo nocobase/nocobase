@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { screen, userEvent, sleep, act, render, waitFor } from '@nocobase/test/client';
+import { screen, userEvent, act, render, waitFor } from '@nocobase/test/client';
 
 import { SchemaSettingsItemType, SchemaSettings, Application, useSchemaSettingsRender } from '@nocobase/client';
 
@@ -20,7 +20,7 @@ export async function createAndHover(items: SchemaSettingsItemType[], appOptions
   const Demo = () => {
     const { render } = useSchemaSettingsRender('test');
 
-    return render();
+    return <div data-testid="render">{render()}</div>;
   };
   const app = new Application({
     providers: [Demo],
@@ -31,11 +31,16 @@ export async function createAndHover(items: SchemaSettingsItemType[], appOptions
   const Root = app.getRootComponent();
   render(<Root />);
   await waitFor(() => {
-    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    expect(screen.getByTestId('render')).toBeInTheDocument();
   });
+
   const user = userEvent.setup();
-  await user.hover(screen.getByRole('button'));
-  await waitFor(async () => {
-    expect(screen.queryByRole('menu')).toBeInTheDocument();
+
+  await act(async () => {
+    await user.hover(screen.getByRole('button'));
+  });
+
+  await waitFor(() => {
+    expect(document.body.querySelector('.ant-dropdown-menu')).toBeInTheDocument();
   });
 }

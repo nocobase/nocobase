@@ -1,7 +1,3 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
 # HTTP API
 
 Dateiuploads für Anhangsfelder und Dateisammlungen können über die HTTP API abgewickelt werden. Die Aufrufmethode variiert je nach dem von der Anlage oder Dateisammlung verwendeten Speicher-Engine.

@@ -12,7 +12,7 @@ import { BackupManager, BackupSettings } from '../../managers/backup';
 import { MockServer } from '@nocobase/test';
 import path from 'path';
 import { storagePathJoin } from '@nocobase/utils';
-import { BACKUP_EXTENSION } from '../../utils';
+import { BACKUP_EXTENSION, METADATA_EXTENSION } from '../../utils';
 import fs from 'fs';
 import * as cp from 'child_process';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
@@ -57,6 +57,7 @@ vi.mock('child_process', async (importOriginal) => {
 const backupFileBaseName = 'backup_for_unit_tests';
 const backupFilesFolder = storagePathJoin('backups', 'main');
 const finalBackupFilePath = path.join(backupFilesFolder, `${backupFileBaseName}.${BACKUP_EXTENSION}`);
+const finalMetadataFilePath = path.join(backupFilesFolder, `${backupFileBaseName}${METADATA_EXTENSION}`);
 
 async function listZipEntries(filePath: string) {
   return await new Promise<string[]>((resolve, reject) => {
@@ -98,6 +99,7 @@ describe('BackupManager', async () => {
 
   afterAll(async () => {
     fs.promises.unlink(finalBackupFilePath).catch(() => {});
+    fs.promises.unlink(finalMetadataFilePath).catch(() => {});
   });
 
   it('createBackupName', async () => {
@@ -289,10 +291,22 @@ describe('BackupManager', async () => {
   });
 
   describe('destroy', async () => {
-    it('should delete the backup file', async () => {
+    it('should delete the backup file and metadata file', async () => {
       const backupManager = new BackupManager(app, null, defaultBackupSettings);
       await backupManager.backup(backupFileBaseName);
       await backupManager.destroy(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
+      const files = await fs.promises.readdir(backupFilesFolder);
+      expect(files).not.toContain(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
+      expect(files).not.toContain(`${backupFileBaseName}${METADATA_EXTENSION}`);
+    });
+
+    it('should ignore missing metadata file when deleting backup file', async () => {
+      const backupManager = new BackupManager(app, null, defaultBackupSettings);
+      await backupManager.backup(backupFileBaseName);
+      await fs.promises.unlink(finalMetadataFilePath);
+
+      await expect(backupManager.destroy(`${backupFileBaseName}.${BACKUP_EXTENSION}`)).resolves.toBeUndefined();
+
       const files = await fs.promises.readdir(backupFilesFolder);
       expect(files).not.toContain(`${backupFileBaseName}.${BACKUP_EXTENSION}`);
     });

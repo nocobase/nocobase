@@ -3,6 +3,15 @@
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
  * Authors: NocoBase Team.
  *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
@@ -18,6 +27,12 @@ import {
 import { flatten } from '@nocobase/utils/client';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { AddVariableButton } from './AddVariableButton';
+import { registerAdminLayoutMenuBadgeStep } from './adminLayoutMenuBadgeStep';
+import {
+  clearCustomVariableRequestCache,
+  getCustomVariableConfig,
+  parseCustomVariable,
+} from './customVariableRequestCache';
 import EditBadge from './EditBadge';
 import { useCustomVariablesOptions } from './useCustomVariablesOptions';
 import { variableInitializer } from './variableInitializer';
@@ -28,11 +43,7 @@ class PluginCustomVariablesClient extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(variableInitializer);
 
-    // Add Edit badge setting to menuSettings:menuItem
-    this.app.schemaSettingsManager.addItem('menuSettings:menuItem', 'badge', {
-      Component: EditBadge,
-      sort: 401,
-    });
+    registerAdminLayoutMenuBadgeStep(this.t.bind(this));
 
     this.app.schemaSettingsManager.addItem('PageTabSettings', 'badge', {
       Component: EditBadge,
@@ -41,6 +52,9 @@ class PluginCustomVariablesClient extends Plugin {
 
     this.app.apiClient.axios.interceptors.response.use((response) => {
       const url = response.config.url.split('?')[0];
+      if (['customVariables:create', 'customVariables:update', 'customVariables:destroy'].includes(url)) {
+        clearCustomVariableRequestCache();
+      }
       this.app.eventBus.dispatchEvent(new CustomEvent(`collection:${url}`));
       return response;
     });
@@ -48,7 +62,7 @@ class PluginCustomVariablesClient extends Plugin {
     this.app.registerVariable({
       name: '$customVariables',
       useOption() {
-        const { options, refresh, loading } = useCustomVariablesOptions();
+        const { options, refresh, loading, scopeId } = useCustomVariablesOptions();
         const { t } = useTranslation(NAMESPACE);
         const option = useMemo(() => {
           return {
@@ -68,9 +82,9 @@ class PluginCustomVariablesClient extends Plugin {
         return useMemo(() => {
           return {
             option,
-            visible: !loading,
+            visible: !!scopeId && !loading,
           };
-        }, [option, loading]);
+        }, [option, loading, scopeId]);
       },
       useCtx() {
         const api = useAPIClient();
@@ -82,6 +96,7 @@ class PluginCustomVariablesClient extends Plugin {
         const eventNamesRef = React.useRef<Set<string>>(new Set());
 
         const refresh = useCallback(() => {
+          clearCustomVariableRequestCache();
           setRefreshId((id) => id + 1);
         }, []);
 
@@ -129,16 +144,7 @@ class PluginCustomVariablesClient extends Plugin {
         return useMemo(() => {
           return async ({ variableName }) => {
             const name = variableName.replace('$customVariables.', '');
-            const response = await api.request({
-              url: `customVariables:get?filter[name]=${name}`,
-              method: 'GET',
-            });
-
-            if (!response?.data?.data) {
-              throw new Error(`Custom variable "${name}" not found. It may have been deleted.`);
-            }
-
-            const variable = response.data.data;
+            const variable = await getCustomVariableConfig(api, name);
             const filterCtx = await getFilterCtx(variable.options.params.filter);
 
             // Define event names to listen to
@@ -159,13 +165,7 @@ class PluginCustomVariablesClient extends Plugin {
               app.eventBus.addEventListener(eventName, refresh);
             });
 
-            const { data } = await api.request({
-              url: `customVariables:parse?name=${name}`,
-              method: 'POST',
-              data: { filterCtx },
-            });
-
-            return data?.data;
+            return parseCustomVariable(api, name, filterCtx);
           };
         }, [refreshId]);
       },
@@ -173,4 +173,5 @@ class PluginCustomVariablesClient extends Plugin {
   }
 }
 
+export { registerAdminLayoutMenuBadgeStep };
 export default PluginCustomVariablesClient;

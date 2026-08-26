@@ -113,7 +113,7 @@
           {
             "type": "custom-link",
             "label": "扩展认证类型",
-            "link": "/auth-verification/auth/dev"
+            "link": "/auth-verification/auth/dev/"
           },
           {
             "type": "custom-link",

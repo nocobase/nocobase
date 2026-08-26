@@ -15,18 +15,18 @@ import { createSwitchSettingsItem } from '../../../../application/schema-setting
 import { useTableBlockContext } from '../../../../block-provider';
 import { useCollectionManager_deprecated, useCollection_deprecated } from '../../../../collection-manager';
 import { FilterBlockType } from '../../../../filter-provider/utils';
-import { useDesignable } from '../../../../schema-component';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 import { SchemaSettingsBlockHeightItem } from '../../../../schema-settings/SchemaSettingsBlockHeightItem';
 import { SchemaSettingsBlockTitleItem } from '../../../../schema-settings/SchemaSettingsBlockTitleItem';
 import { SchemaSettingsConnectDataBlocks } from '../../../../schema-settings/SchemaSettingsConnectDataBlocks';
 import { SchemaSettingsSortField } from '../../../../schema-settings/SchemaSettingsSortField';
+import { SchemaSettingsLinkageRules } from '../../../../schema-settings/SchemaSettings';
 import { SchemaSettingsTemplate } from '../../../../schema-settings/SchemaSettingsTemplate';
 import { setDefaultSortingRulesSchemaSettingsItem } from '../../../../schema-settings/setDefaultSortingRulesSchemaSettingsItem';
 import { setTheDataScopeSchemaSettingsItem } from '../../../../schema-settings/setTheDataScopeSchemaSettingsItem';
 import { useBlockTemplateContext } from '../../../../schema-templates/BlockTemplateProvider';
 import { setDataLoadingModeSettingsItem } from '../details-multi/setDataLoadingModeSettingsItem';
 import { SchemaSettingsItemType } from '../../../../application';
-import { SchemaSettingsLinkageRules } from '../../../../schema-settings';
 import { LinkageRuleCategory } from '../../../../schema-settings/LinkageRules/type';
 
 const enabledIndexColumn: SchemaSettingsItemType = {

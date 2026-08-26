@@ -19,7 +19,9 @@ import { useCollectionManager_deprecated, useCollection_deprecated } from '../..
 import { useFieldComponentName } from '../../../../common/useFieldComponentName';
 import { useCollection } from '../../../../data-source';
 import { fieldComponentSettingsItem } from '../../../../data-source/commonsSettingsItem';
-import { useCompile, useDesignable, useValidateSchema } from '../../../../schema-component';
+import { useValidateSchema } from '../../../../schema-component/antd/form-item/FormItem.Settings';
+import { useCompile } from '../../../../schema-component/hooks/useCompile';
+import { useDesignable } from '../../../../schema-component/hooks/useDesignable';
 import {
   useIsFieldReadPretty,
   useIsFormReadPretty,

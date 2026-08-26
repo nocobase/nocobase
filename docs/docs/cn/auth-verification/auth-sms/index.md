@@ -11,7 +11,7 @@ keywords: "短信认证,短信登录,SMS 登录,验证码登录,自动注册,Noc
 
 短信认证插件支持用户通过短信注册用户，登录 NocoBase.
 
-> 需要配合 [`@nocobase/plugin-verification` 插件](/auth-verification/verification/)提供的短信验证码功能使用
+> 需要配合 [`@nocobase/plugin-verification` 插件](/auth-verification/verification/index.md)提供的短信验证码功能使用
 
 ## 添加短信认证
 

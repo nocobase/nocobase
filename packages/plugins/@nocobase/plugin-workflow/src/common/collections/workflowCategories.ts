@@ -11,6 +11,7 @@ export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only'],
   name: 'workflowCategories',
+  dataCategory: 'business',
   shared: true,
   fields: [
     {

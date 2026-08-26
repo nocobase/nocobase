@@ -1,1 +1,8 @@
-{}
+{
+  "Simple collection action": "简单数据表操作",
+  "Simple record action": "简单记录操作",
+  "Simple both action": "简单通用操作",
+  "Collection action clicked": "数据表操作被点击了",
+  "Record action clicked, record ID: {{id}}, row index: {{index}}": "记录操作被点击了，记录 ID：{{id}}，行索引：{{index}}",
+  "Both action clicked": "通用操作被点击了"
+}

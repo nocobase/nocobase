@@ -1,10 +1,6 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 # Campo de Ordenación
 

@@ -8,8 +8,8 @@
  */
 
 import { useMemo } from 'react';
-import { useTableBlockContextBasicValue } from '../../block-provider/TableBlockProvider';
-import { useDataBlockRequestData } from '../../data-source';
+import { useTableBlockContextBasicValue } from '../../block-provider/TableBlockContextBasicValue';
+import { useDataBlockRequestData } from '../../data-source/data-block/DataBlockRequestProvider';
 import { useCollection } from '../../data-source/collection/CollectionProvider';
 import { useCurrentPopupContext } from '../../schema-component/antd/page/PagePopups';
 import { getStoredPopupContext } from '../../schema-component/antd/page/pagePopupUtils';

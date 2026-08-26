@@ -107,6 +107,7 @@
   "KnowledgeBase": "Knowledge Base",
   "LLM service": "LLM szolgáltatás",
   "LLM services": "LLM szolgáltatások",
+  "LLM service test failed. Please check the service configuration.": "Az LLM szolgáltatás tesztje sikertelen. Kérjük, ellenőrizze a szolgáltatás konfigurációját.",
   "Label for task selection buttons when multiple tasks exist": "Label for task selection buttons when multiple tasks exist",
   "Limit": "Limit",
   "Max completion tokens description": "A generálható tokenek maximális határa egy befejezéshez, beleértve a látható kimeneti tokeneket és a gondolkodási tokeneket.",

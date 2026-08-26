@@ -498,6 +498,38 @@ describe('notification manager server', () => {
     );
   });
 
+  test('messages:send action should return manager send result', async () => {
+    const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
+    const send = vi.spyOn(plugin, 'send').mockResolvedValue({
+      status: 'success',
+      triggerFrom: 'api-test',
+      channelName: testChannelData.name,
+      queued: true,
+    });
+
+    const { body } = await agent.resource('messages').send({
+      values: {
+        channelName: testChannelData.name,
+        message: { content: 'test' },
+        triggerFrom: 'api-test',
+      },
+    });
+
+    expect(send).toHaveBeenCalledWith({
+      channelName: testChannelData.name,
+      message: { content: 'test' },
+      triggerFrom: 'api-test',
+    });
+    expect(body.data).toEqual(
+      expect.objectContaining({
+        status: 'success',
+        channelName: testChannelData.name,
+        triggerFrom: 'api-test',
+        queued: true,
+      }),
+    );
+  });
+
   test('plugin should reuse channels cache after initial load', async () => {
     const plugin = app.pm.get('notification-manager') as PluginNotificationManagerServer;
     const repository = app.db.getRepository(COLLECTION_NAME.channels);

@@ -1,5 +1,14 @@
-const { resolve } = require('path');
+const path = require('path');
+const { resolve } = path;
 const fs = require('fs-extra');
+
+function resolvePluginStoragePath() {
+  if (process.env.PLUGIN_STORAGE_PATH) {
+    const p = process.env.PLUGIN_STORAGE_PATH;
+    return path.isAbsolute(p) ? p : path.resolve(process.cwd(), p);
+  }
+  return path.join(process.env.STORAGE_PATH || path.resolve(process.cwd(), 'storage'), 'plugins');
+}
 
 /**
  * Recursively get plugin names from a directory
@@ -28,6 +37,36 @@ async function getStoragePluginNames(target) {
   return plugins;
 }
 
+async function getPluginNamesFromSourceRoot(rootPath) {
+  if (!(await fs.pathExists(rootPath))) {
+    return [];
+  }
+  return await getStoragePluginNames(rootPath);
+}
+
+async function isValidPluginSourcePath(candidate) {
+  return await fs.pathExists(resolve(candidate, 'package.json'));
+}
+
+function getPluginSourceRoots(storagePluginsPath) {
+  return [
+    resolve(process.cwd(), 'packages/plugins'),
+    resolve(process.cwd(), 'packages/pro-plugins'),
+    storagePluginsPath,
+  ];
+}
+
+async function resolvePluginSourcePath(pluginName, storagePluginsPath) {
+  const sourceRoots = getPluginSourceRoots(storagePluginsPath);
+  for (const rootPath of sourceRoots) {
+    const candidate = resolve(rootPath, pluginName);
+    if (await isValidPluginSourcePath(candidate)) {
+      return candidate;
+    }
+  }
+  return '';
+}
+
 /**
  * Ensure the organization directory exists for scoped packages
  * @param {string} nodeModulesPath - Path to node_modules
@@ -43,22 +82,35 @@ async function ensureOrgDirectory(nodeModulesPath, pluginName) {
 }
 
 /**
- * Check if a symlink already points to the correct target
- * @param {string} linkPath - Path to the symlink
- * @param {string} targetPath - Expected target path
- * @returns {Promise<boolean>} True if symlink exists and points to target
+ * Check whether node_modules entry is a real directory, symlink, or missing
+ * @param {string} linkPath - Path inside node_modules
+ * @returns {Promise<'missing'|'dir'|'symlink'|'other'>}
  */
+async function getNodeModulesEntryType(linkPath) {
+  try {
+    const statResult = await fs.lstat(linkPath);
+    if (statResult.isSymbolicLink()) {
+      return 'symlink';
+    }
+    if (statResult.isDirectory()) {
+      return 'dir';
+    }
+    return 'other';
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return 'missing';
+    }
+    return 'other';
+  }
+}
+
 async function isSymlinkValid(linkPath, targetPath) {
   try {
-    if (await fs.pathExists(linkPath)) {
-      const realPath = await fs.realpath(linkPath);
-      return realPath === targetPath;
-    }
-  } catch (error) {
-    // If realpath fails, the symlink is invalid
+    const realPath = await fs.realpath(linkPath);
+    return realPath === targetPath;
+  } catch {
     return false;
   }
-  return false;
 }
 
 /**
@@ -110,13 +162,18 @@ async function createPluginSymLink(pluginName, sourcePath, nodeModulesPath, plug
       return;
     }
 
+    const linkPath = resolve(nodeModulesPath, pluginName);
+    const entryType = await getNodeModulesEntryType(linkPath);
+
+    if (entryType === 'dir') {
+      return;
+    }
+
     // Ensure organization directory exists for scoped packages
     await ensureOrgDirectory(nodeModulesPath, pluginName);
 
-    const linkPath = resolve(nodeModulesPath, pluginName);
-
     // Check if symlink already points to the correct target
-    if (await isSymlinkValid(linkPath, targetPath)) {
+    if (entryType === 'symlink' && (await isSymlinkValid(linkPath, targetPath))) {
       return; // Symlink is already correct, no need to recreate
     }
 
@@ -133,10 +190,9 @@ async function createPluginSymLink(pluginName, sourcePath, nodeModulesPath, plug
 /**
  * Create a symlink for a storage plugin
  * @param {string} pluginName - Name of the plugin
- * @returns {Promise<void>}
  */
 async function createStoragePluginSymLink(pluginName) {
-  const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
+  const storagePluginsPath = resolvePluginStoragePath();
   const nodeModulesPath = process.env.NODE_MODULES_PATH;
   await createPluginSymLink(pluginName, storagePluginsPath, nodeModulesPath, 'storage');
 }
@@ -146,7 +202,7 @@ async function createStoragePluginSymLink(pluginName) {
  * @returns {Promise<void>}
  */
 async function createStoragePluginsSymlink() {
-  const storagePluginsPath = resolve(process.cwd(), 'storage/plugins');
+  const storagePluginsPath = resolvePluginStoragePath();
   if (!(await fs.pathExists(storagePluginsPath))) {
     return;
   }
@@ -178,7 +234,59 @@ async function createDevPluginsSymlink() {
   await Promise.all(pluginNames.map((pluginName) => createDevPluginSymLink(pluginName)));
 }
 
+/**
+ * Create symlinks for all plugins from all sources
+ * @returns {Promise<void>}
+ */
+async function syncPluginSymlinks() {
+  const nodeModulesPath = process.env.NODE_MODULES_PATH;
+  if (!nodeModulesPath) {
+    return;
+  }
+
+  const storagePluginsPath = resolvePluginStoragePath();
+  const sourceRoots = getPluginSourceRoots(storagePluginsPath);
+  const pluginNames = new Set();
+
+  for (const rootPath of sourceRoots) {
+    const names = await getPluginNamesFromSourceRoot(rootPath);
+    names.forEach((name) => pluginNames.add(name));
+  }
+
+  await Promise.all(
+    [...pluginNames].map(async (pluginName) => {
+      const linkPath = resolve(nodeModulesPath, pluginName);
+      const entryType = await getNodeModulesEntryType(linkPath);
+
+      if (entryType === 'dir') {
+        return;
+      }
+
+      const sourcePath = await resolvePluginSourcePath(pluginName, storagePluginsPath);
+      if (!sourcePath) {
+        if (entryType === 'symlink' || entryType === 'other') {
+          await removeExistingLink(linkPath, pluginName, 'plugin');
+        }
+        return;
+      }
+
+      if (entryType === 'symlink' && (await isSymlinkValid(linkPath, sourcePath))) {
+        return;
+      }
+
+      await ensureOrgDirectory(nodeModulesPath, pluginName);
+      await removeExistingLink(linkPath, pluginName, 'plugin');
+      await fs.symlink(sourcePath, linkPath, 'dir');
+    }),
+  );
+}
+
+exports.resolvePluginStoragePath = resolvePluginStoragePath;
+exports.getStoragePluginNames = getStoragePluginNames;
+exports.getPluginSourceRoots = getPluginSourceRoots;
+exports.resolvePluginSourcePath = resolvePluginSourcePath;
 exports.createStoragePluginSymLink = createStoragePluginSymLink;
 exports.createStoragePluginsSymlink = createStoragePluginsSymlink;
 exports.createDevPluginSymLink = createDevPluginSymLink;
 exports.createDevPluginsSymlink = createDevPluginsSymlink;
+exports.syncPluginSymlinks = syncPluginSymlinks;

@@ -22,3 +22,16 @@ export class SimpleBothActionModel extends ActionModel {
 SimpleBothActionModel.define({
   label: tExpr('Simple both action'),
 });
+
+SimpleBothActionModel.registerFlow({
+  key: 'clickFlow',
+  title: tExpr('Simple both action'),
+  on: 'click',
+  steps: {
+    showMessage: {
+      async handler(ctx) {
+        ctx.message.info(ctx.t('Both action clicked'));
+      },
+    },
+  },
+});

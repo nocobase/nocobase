@@ -10,8 +10,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
-import { GeneralSchemaDesigner, SchemaSettingsDivider, SchemaSettingsModalItem, SchemaSettingsRemove } from '../../../';
+import { GeneralSchemaDesigner } from '../../../schema-settings/GeneralSchemaDesigner';
+import {
+  SchemaSettingsDivider,
+  SchemaSettingsModalItem,
+  SchemaSettingsRemove,
+} from '../../../schema-settings/SchemaSettings';
+import { useDesignable } from '../../hooks/useDesignable';
 
 export const TabsDesigner = () => {
   const field = useField();

@@ -1,0 +1,30 @@
+[
+  { "type": "file", "name": "index", "label": "Pengantar Tutorial" },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Bab 1: Mengenal NocoBase"
+  },
+  {
+    "type": "file",
+    "name": "02-data-modeling",
+    "label": "Bab 2: Pemodelan Data"
+  },
+  {
+    "type": "file",
+    "name": "03-building-pages",
+    "label": "Bab 3: Membangun Halaman"
+  },
+  {
+    "type": "file",
+    "name": "04-forms-and-details",
+    "label": "Bab 4: Form dan Detail"
+  },
+  {
+    "type": "file",
+    "name": "05-roles-and-permissions",
+    "label": "Bab 5: Pengguna dan Izin"
+  },
+  { "type": "file", "name": "06-workflows", "label": "Bab 6: Workflow" },
+  { "type": "file", "name": "07-dashboard", "label": "Bab 7: Dashboard" }
+]

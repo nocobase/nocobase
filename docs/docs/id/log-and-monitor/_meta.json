@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Log",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Log Sisi Server",
+        "link": "/log-and-monitor/logger/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Log Sisi Server, Audit Log, Riwayat Record",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Telemetri",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Petunjuk Penggunaan",
+        "link": "/log-and-monitor/telemetry/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Exporter",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

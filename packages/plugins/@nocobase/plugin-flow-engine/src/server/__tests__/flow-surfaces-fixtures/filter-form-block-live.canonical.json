@@ -1,0 +1,236 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "FilterFormBlockModel"
+  },
+  "tree": {
+    "alias": "block.filterForm1",
+    "use": "FilterFormBlockModel",
+    "stepParams": {
+      "resourceSettings": {
+        "init": {
+          "dataSourceKey": "main",
+          "collectionName": ""
+        }
+      },
+      "formFilterBlockModelSettings": {
+        "layout": {
+          "layout": "horizontal",
+          "colon": false
+        },
+        "defaultValues": {
+          "value": []
+        }
+      }
+    },
+    "subModels": {
+      "actions": [
+        {
+          "alias": "action.submit1",
+          "use": "FilterFormSubmitActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Filter",
+                "type": ""
+              }
+            }
+          }
+        },
+        {
+          "alias": "node.FilterFormResetActionModel1",
+          "use": "FilterFormResetActionModel",
+          "stepParams": {
+            "buttonSettings": {
+              "general": {
+                "title": "Reset",
+                "type": ""
+              }
+            }
+          }
+        }
+      ],
+      "grid": [
+        {
+          "alias": "block.filterForm1.grid",
+          "use": "FilterFormGridModel",
+          "subModels": {
+            "items": [
+              {
+                "alias": "field.name.wrapper",
+                "use": "FilterFormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "name"
+                    }
+                  },
+                  "filterFormItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    },
+                    "init": {
+                      "defaultTargetUid": "c2pkrw9t20qa",
+                      "filterField": {
+                        "name": "name"
+                      }
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.name.inner",
+                      "use": "InputFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "name"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.species.wrapper",
+                "use": "FilterFormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "species"
+                    }
+                  },
+                  "filterFormItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    },
+                    "init": {
+                      "defaultTargetUid": "c2pkrw9t20qa",
+                      "filterField": {
+                        "name": "species"
+                      }
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.species.inner",
+                      "use": "SelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "species"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.status.wrapper",
+                "use": "FilterFormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "status"
+                    }
+                  },
+                  "filterFormItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    },
+                    "init": {
+                      "defaultTargetUid": "c2pkrw9t20qa",
+                      "filterField": {
+                        "name": "status"
+                      }
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.status.inner",
+                      "use": "SelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "status"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "alias": "field.owner.wrapper",
+                "use": "FilterFormItemModel",
+                "stepParams": {
+                  "fieldSettings": {
+                    "init": {
+                      "dataSourceKey": "main",
+                      "collectionName": "pets",
+                      "fieldPath": "owner"
+                    }
+                  },
+                  "filterFormItemSettings": {
+                    "showLabel": {
+                      "showLabel": true
+                    },
+                    "init": {
+                      "defaultTargetUid": "c2pkrw9t20qa",
+                      "filterField": {
+                        "name": "owner"
+                      }
+                    }
+                  }
+                },
+                "subModels": {
+                  "field": [
+                    {
+                      "alias": "field.owner.inner",
+                      "use": "FilterFormRecordSelectFieldModel",
+                      "stepParams": {
+                        "fieldSettings": {
+                          "init": {
+                            "dataSourceKey": "main",
+                            "collectionName": "pets",
+                            "fieldPath": "owner"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Pet Management",
+    "icon": null,
+    "options": null
+  }
+}

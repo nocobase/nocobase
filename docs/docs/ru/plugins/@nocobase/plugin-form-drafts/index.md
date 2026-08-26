@@ -1,4 +1,6 @@
 ---
+title: "Form drafts"
+keywords: "Form drafts,Plugin,NocoBase"
 displayName: "Form drafts"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

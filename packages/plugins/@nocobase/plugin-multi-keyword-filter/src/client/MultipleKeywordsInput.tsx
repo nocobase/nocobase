@@ -11,18 +11,17 @@ import { Alert, Button, message, Modal, Select, Space, Tooltip, Typography } fro
 import React, { FC, useRef, useState } from 'react';
 import { useT } from './locale';
 import { UploadOutlined } from '@ant-design/icons';
-import _ from 'lodash';
 import { useField } from '@formily/react';
-import Item from 'antd/es/list/Item';
+import { normalizeKeywords, type KeywordValue } from '../shared/normalizeKeywords';
 
 const tokenSeparator = '\n';
 
-const trim = (str: string) => (_.isString(str) ? str.trim() : str);
+export { normalizeKeywords };
 
 export const MultipleKeywordsInput: FC<{
   fieldInterface: string;
-  value?: string[];
-  onChange?: (value: string[], option?: any) => void;
+  value?: KeywordValue[];
+  onChange?: (value: KeywordValue[], option?: unknown) => void;
   style?: React.CSSProperties;
 }> = (props) => {
   const { fieldInterface, ...selectProps } = props;
@@ -40,24 +39,12 @@ export const MultipleKeywordsInput: FC<{
     field.validator = null;
   }
 
-  const onChange = (...arg: [any, any]) => {
-    if (['integer', 'number'].includes(fieldInterface)) {
-      arg[0] = arg[0]
-        .map(trim)
-        .map((item: string) => parseInt(item, 10))
-        .filter((item: number) => !isNaN(item));
-    }
-    if (['percent'].includes(fieldInterface)) {
-      arg[0] = arg[0]
-        .map(trim)
-        .map((item: string) => parseFloat(item))
-        .filter((item: number) => !isNaN(item));
-    }
+  const emitChange = (values: KeywordValue[], option?: unknown) => {
+    props.onChange?.(normalizeKeywords(values, fieldInterface), option);
+  };
 
-    if (props.onChange) {
-      arg[0] = arg[0].map(trim).filter((item: string) => item !== '');
-      props.onChange(...arg);
-    }
+  const onChange = (values: KeywordValue[], option?: unknown) => {
+    emitChange(values, option);
   };
 
   const handleImportButtonClick = () => {
@@ -69,9 +56,10 @@ export const MultipleKeywordsInput: FC<{
     if (file) {
       try {
         setImportLoading(true);
+        const XLSX = await import('xlsx');
 
         // Read Excel file
-        const data = await readExcel(file);
+        const data = await readExcel(file, XLSX);
         if (data.length === 0) {
           message.error(t('excelFileEmpty'));
           setImportLoading(false);
@@ -103,15 +91,13 @@ export const MultipleKeywordsInput: FC<{
   };
 
   // Read Excel file content
-  const readExcel = (file: File): Promise<any[]> => {
+  const readExcel = (file: File, XLSX: typeof import('xlsx')): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = (e) => {
         try {
-          // 仅在用户实际导入 Excel 时再加载 xlsx，避免首次挂载输入组件时触发 Suspense 闪烁
-          const XLSX = await import('xlsx');
           const data = e.target?.result;
-          const workbook = XLSX.read(data, { type: 'binary' });
+          const workbook = XLSX.read(data, { type: 'array' });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
@@ -156,12 +142,9 @@ export const MultipleKeywordsInput: FC<{
       return;
     }
 
-    // Set keywords to the input field
-    if (props.onChange) {
-      const keywordArray = keywords.split(tokenSeparator).filter(Boolean);
-      props.onChange(keywordArray);
-      message.success(t('importSuccess', { count: keywordArray.length }));
-    }
+    const keywordArray = keywords.split(tokenSeparator).filter(Boolean);
+    emitChange(keywordArray);
+    message.success(t('importSuccess', { count: keywordArray.length }));
   };
 
   // Handle column selection confirmation
@@ -186,7 +169,7 @@ export const MultipleKeywordsInput: FC<{
           allowClear
           suffixIcon={null}
           maxTagCount="responsive"
-          open={_.isEmpty(selectProps.value) ? false : undefined}
+          open={!selectProps.value?.length ? false : undefined}
           {...selectProps}
           onChange={onChange}
         />

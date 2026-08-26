@@ -28,7 +28,12 @@ export default class WorkflowModel extends Model {
   declare description?: string;
   declare type: string;
   declare config: any;
-  declare options: any;
+  declare options: {
+    timeout?: number;
+    stackLimit?: number;
+    deleteExecutionOnStatus?: number[];
+    [key: string]: any;
+  };
   declare sync: boolean;
 
   declare createdAt: Date;

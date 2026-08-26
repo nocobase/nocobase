@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/preset-cluster"
 title: "集群部署准备工作"
 description: "集群部署前准备：商业插件授权（PubSub、Queue、Lock、WorkerID 适配器）、数据库、Redis/RabbitMQ 中间件、共享存储、负载均衡配置。"
 keywords: "集群准备,商业插件授权,Redis 中间件,RabbitMQ,共享存储,负载均衡,Nginx,NocoBase"
@@ -119,7 +120,7 @@ server {
 
 ## 环境变量配置
 
-集群内的所有节点应使用同样的环境变量配置，除 NocoBase 基本的[环境变量](/api/cli/env)，还需配置以下与中间件相关的环境变量。
+集群内的所有节点应使用同样的环境变量配置，除 NocoBase 基本的[环境变量](../api/app/env)，还需配置以下与中间件相关的环境变量。
 
 ### 关键密钥
 

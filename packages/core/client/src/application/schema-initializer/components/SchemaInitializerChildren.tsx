@@ -9,7 +9,7 @@
 
 import React, { FC, memo, useMemo } from 'react';
 
-import { useFindComponent } from '../../../schema-component';
+import { useFindComponent } from '../../../schema-component/hooks/useDesignable';
 import { SchemaInitializerItemContext } from '../context';
 import { SchemaInitializerItemType } from '../types';
 export const SchemaInitializerChildren: FC<{ children: SchemaInitializerItemType[] }> = (props) => {

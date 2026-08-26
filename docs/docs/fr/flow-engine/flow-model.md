@@ -1,7 +1,3 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
 # Démarrer avec FlowModel
 
 ## FlowModel personnalisé
@@ -32,7 +28,12 @@ class HelloModel extends FlowModel {
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Import dynamique : le module du modèle n'est chargé que lorsque ce modèle est réellement nécessaire pour la première fois
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

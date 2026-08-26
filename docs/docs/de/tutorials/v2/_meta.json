@@ -1,0 +1,30 @@
+[
+  { "type": "file", "name": "index", "label": "Tutorial-Einführung" },
+  {
+    "type": "file",
+    "name": "01-getting-started",
+    "label": "Kapitel 1: NocoBase kennenlernen"
+  },
+  {
+    "type": "file",
+    "name": "02-data-modeling",
+    "label": "Kapitel 2: Datenmodellierung"
+  },
+  {
+    "type": "file",
+    "name": "03-building-pages",
+    "label": "Kapitel 3: Seiten aufbauen"
+  },
+  {
+    "type": "file",
+    "name": "04-forms-and-details",
+    "label": "Kapitel 4: Formulare und Details"
+  },
+  {
+    "type": "file",
+    "name": "05-roles-and-permissions",
+    "label": "Kapitel 5: Benutzer und Berechtigungen"
+  },
+  { "type": "file", "name": "06-workflows", "label": "Kapitel 6: Workflows" },
+  { "type": "file", "name": "07-dashboard", "label": "Kapitel 7: Dashboard" }
+]
