@@ -8,10 +8,30 @@
  */
 
 import { FlowEngine } from '@nocobase/flow-engine';
+import { FormActionGroupModel, FormActionModel, FormSubmitActionModel } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
+import { PUBLIC_FORM_SUBMIT_ACTION_MODEL } from '../constants';
 import { PublicFormSubmitActionModel } from '../models/PublicFormSubmitActionModel';
 
 describe('PublicFormSubmitActionModel', () => {
+  it('is addable only within public forms', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ FormActionModel, FormSubmitActionModel, PublicFormSubmitActionModel });
+
+    const regularFormActionNames = (await FormActionGroupModel.defineChildren(engine.context)).map(
+      (item) => item.useModel,
+    );
+    expect(regularFormActionNames).toContain('FormSubmitActionModel');
+    expect(regularFormActionNames).not.toContain(PUBLIC_FORM_SUBMIT_ACTION_MODEL);
+
+    engine.context.defineProperty('allowedFormActionModelNames', {
+      value: [PUBLIC_FORM_SUBMIT_ACTION_MODEL],
+    });
+
+    const publicFormActions = await FormActionGroupModel.defineChildren(engine.context);
+    expect(publicFormActions.map((item) => item.useModel)).toEqual([PUBLIC_FORM_SUBMIT_ACTION_MODEL]);
+  });
+
   it('does not read record filterByTk when submitting a public create form', () => {
     const engine = new FlowEngine();
     engine.registerModels({ PublicFormSubmitActionModel });
