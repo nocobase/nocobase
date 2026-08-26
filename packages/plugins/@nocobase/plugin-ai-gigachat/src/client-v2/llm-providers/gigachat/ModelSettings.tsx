@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React, { useMemo } from 'react';
 import { createModelSettingsForm, type OptionField } from '@nocobase/plugin-ai/client-v2';
 
 const gigachatCompletionFields: OptionField[] = [
@@ -80,4 +81,8 @@ const gigachatCompletionFields: OptionField[] = [
   },
 ];
 
-export const ModelSettingsForm = createModelSettingsForm(gigachatCompletionFields);
+export const ModelSettingsForm: React.FC = () => {
+  const SettingsForm = useMemo(() => createModelSettingsForm(gigachatCompletionFields), []);
+
+  return <SettingsForm />;
+};
