@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowContext, FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
+import { FlowContext, FlowEngine, FlowModel, FlowModelProvider } from '@nocobase/flow-engine';
+import { render, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildCurrentItemTitle,
@@ -82,6 +83,29 @@ describe('RecordPickerFieldModel item context', () => {
     expect(normalizeRecordPickerValue(rows, fieldNames, false)).toEqual({ id: 1, name: 'A', label: 'A', value: 1 });
     expect(normalizeRecordPickerValue(undefined, fieldNames, true)).toEqual([]);
     expect(normalizeRecordPickerValue(undefined, fieldNames, false)).toBeUndefined();
+  });
+
+  it('renders existing values before field names are initialized', () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RecordPickerFieldModel });
+    const field = engine.createModel<RecordPickerFieldModel>({
+      use: 'RecordPickerFieldModel',
+      uid: 'record-picker-without-field-names',
+    });
+    field.context.defineProperty('collectionField', {
+      value: {
+        type: 'hasMany',
+        targetCollection: {
+          filterTargetKey: 'id',
+          titleCollectionField: { name: 'name' },
+        },
+      },
+    });
+    field.setProps({ value: [{ id: 1, name: 'Alice' }], onClick: vi.fn(), onChange: vi.fn() });
+
+    const result = render(React.createElement(FlowModelProvider, { model: field }, field.render()));
+
+    expect(result.getByRole('combobox')).toBeTruthy();
   });
 
   it('queues ID-only picker values for association label hydration', () => {
