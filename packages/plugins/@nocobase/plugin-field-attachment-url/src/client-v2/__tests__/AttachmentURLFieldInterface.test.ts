@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { CollectionFieldInterfaceManager } from '@nocobase/client-v2';
 import { describe, expect, it, vi } from 'vitest';
 import { AttachmentURLFieldModel, PluginFieldAttachmentUrlClient } from '../index';
+import { FileCollectionSelect } from '../FileCollectionSelect';
 import { AttachmentURLFieldInterface } from '../interfaces/attachment-url';
 
 describe('AttachmentURLFieldInterface', () => {
@@ -53,6 +55,7 @@ describe('AttachmentURLFieldInterface', () => {
       name: 'attachmentURL',
       type: 'object',
       group: 'media',
+      supportDataSourceType: ['main'],
       title: '{{t("Attachment (URL)")}}',
       default: {
         interface: 'attachmentURL',
@@ -74,12 +77,8 @@ describe('AttachmentURLFieldInterface', () => {
     expect(fieldInterface.configure.items).toEqual([
       expect.objectContaining({
         name: 'target',
-        component: 'Select',
+        Component: FileCollectionSelect,
         required: true,
-        defaultValue: 'attachments',
-        schema: {
-          enum: '{{fileCollections}}',
-        },
       }),
       expect.objectContaining({
         name: 'targetKey',
@@ -87,5 +86,15 @@ describe('AttachmentURLFieldInterface', () => {
         hidden: true,
       }),
     ]);
+  });
+
+  it('is available only for the main data source', () => {
+    const manager = new CollectionFieldInterfaceManager({});
+    manager.addFieldInterfaces([AttachmentURLFieldInterface]);
+
+    expect(manager.getFieldInterfaces('main')).toContainEqual(expect.objectContaining({ name: 'attachmentURL' }));
+    expect(manager.getFieldInterfaces('postgres')).not.toContainEqual(
+      expect.objectContaining({ name: 'attachmentURL' }),
+    );
   });
 });

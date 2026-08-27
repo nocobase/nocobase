@@ -8,11 +8,13 @@
  */
 
 import { CollectionFieldInterface } from '@nocobase/client-v2';
+import { FileCollectionSelect } from '../FileCollectionSelect';
 
 export class AttachmentURLFieldInterface extends CollectionFieldInterface {
   name = 'attachmentURL';
   type = 'object';
   group = 'media';
+  supportDataSourceType = ['main'];
   title = '{{t("Attachment (URL)")}}';
   default = {
     interface: 'attachmentURL',
@@ -30,12 +32,8 @@ export class AttachmentURLFieldInterface extends CollectionFieldInterface {
       {
         name: 'target',
         title: '{{t("Which file collection should it be uploaded to")}}',
-        component: 'Select',
+        Component: FileCollectionSelect,
         required: true,
-        defaultValue: 'attachments',
-        schema: {
-          enum: '{{fileCollections}}',
-        },
       },
       {
         name: 'targetKey',
